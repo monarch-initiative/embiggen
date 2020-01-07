@@ -92,7 +92,7 @@ class SkipGramWord2Vec(Word2Vec):
     """
     Class to run word2vec using skip grams
     """
-
+    # TODO num_sampled was 64 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def __init__(self,
                  data,
                  worddictionary,
@@ -105,7 +105,7 @@ class SkipGramWord2Vec(Word2Vec):
                  min_occurrence=2,
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=64
+                 num_sampled=6
                  ):
         super(SkipGramWord2Vec, self).__init__(learning_rate,
                                                batch_size,
@@ -119,9 +119,15 @@ class SkipGramWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
+        if any(isinstance(el, list) for el in self.data):
+            self.list_of_lists = True
+        else:
+            self.list_of_lists = False
         self.calculate_vocabulary_size()
         self.optimizer = tf.optimizers.SGD(learning_rate)
         self.data_index = 0
+        self.current_sentence = 0
+        self.num_sentences = len(self.data)
         # Do not display examples during training unless the user calls add_display_words, i.e., default is None
         self.display = None
         # Ensure the following ops & var are assigned on CPU
@@ -145,6 +151,16 @@ class SkipGramWord2Vec(Word2Vec):
         with tf.device('/cpu:0'):
             # Compute the average NCE loss for the batch.
             y = tf.cast(y, tf.int64)
+            """
+            print("self.nce_weights=%s (%s) " % (self.nce_weights, type(self.nce_weights)))
+            print("self.nce_biases=%s (%s) " % (self.nce_biases,type(self.nce_biases)))
+            print("y=%s (%s)" % (y,type(y)))
+            print("x_embed=%s (%s) " % (x_embed,type(x_embed)))
+            print("self.num_sampled=%s" % type(self.num_sampled))
+            print("self.vocabulary_size=%s" % type(self.vocabulary_size))
+            exit(1)
+            """
+
             loss = tf.reduce_mean(
                 tf.nn.nce_loss(weights=self.nce_weights,
                                biases=self.nce_biases,
@@ -152,6 +168,9 @@ class SkipGramWord2Vec(Word2Vec):
                                inputs=x_embed,
                                num_sampled=self.num_sampled,
                                num_classes=self.vocabulary_size))
+            dummy = loss
+            print("loss = ", loss)
+            print(dummy)
             return loss
 
     # Evaluation.
@@ -164,9 +183,11 @@ class SkipGramWord2Vec(Word2Vec):
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
             return cosine_sim_op
 
-    def next_batch(self, batch_size, num_skips, skip_window):
+    def next_batch(self, data, batch_size, num_skips, skip_window):
         """
-        Generate training batch for the skip-gram model.
+        Generate training batch for the skip-gram model. This assumes that all of the data is in one
+        and only one list (for instance, the data might derive from a book). To get batches
+        from a list of lists (e.g., node2vec), use the 'next_batch_from_list_of_list' function
         :param batch_size:
         :param num_skips:
         :param skip_window:
@@ -174,7 +195,6 @@ class SkipGramWord2Vec(Word2Vec):
         """
         assert batch_size % num_skips == 0
         assert num_skips <= 2 * skip_window
-        data = self.data
         batch = np.ndarray(shape=batch_size, dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
         # get window size (words left and right + current one).
@@ -190,23 +210,57 @@ class SkipGramWord2Vec(Word2Vec):
             context_words = [w for w in range(span) if w != skip_window]
             words_to_use = random.sample(context_words, num_skips)
             for j, context_word in enumerate(words_to_use):
-                # print("j: {} type {}".format(j, type(j)))
-                # print("i: {} type {}".format(j, type(i)))
-                # print("num_skips: {} type {}".format(num_skips, type(num_skips)))
-                # print("skip_window: {} type {}".format(skip_window, type(skip_window)))
-                # print("batch: {} type {}".format(batch[0], type(batch)))
-                # print("buffer: {} type {}".format(buffer[0], type(buffer)))
+                # j is the index of an element of words_to_use and context_word is that element
+                # buffer -- the sliding window
+                # buffer[skip_window] -- the center element of the sliding window
+                #  buffer[context_word] -- the integer value of the word/node we are trying to predict with the skip-gram model
                 batch[i * num_skips + j] = buffer[skip_window]
                 labels[i * num_skips + j, 0] = buffer[context_word]
             if self.data_index == len(data):
+                # i.e., we are at the end of data and need to reset the index to the beginning
                 buffer.extend(data[0:span])
                 self.data_index = span
             else:
                 buffer.append(data[self.data_index])
-                self.data_index += 1
+                self.data_index += 1 # i.e., move the sliding window 1 position to the right
         # Backtrack a little bit to avoid skipping words in the end of a batch.
         self.data_index = (self.data_index + len(data) - span) % len(data)
         return batch, labels
+
+    def next_batch_from_list_of_lists(self, walk_count, num_skips, skip_window):
+        """
+        Generate training batch for the skip-gram model. This assumes that all of the data is in one
+        and only one list (for instance, the data might derive from a book). To get batches
+        from a list of lists (e.g., node2vec), use the 'next_batch_from_list_of_list' function
+        :param walk_count: number of walks (sublists or sentences) to ingest
+        :param num_skips: The number of data points to extract for each center node
+        :param skip_window: The size of the surrounding window (For instance, if skip_window=2 and num_skips=1,
+        we look at 5 nodes at a time, and choose one data point from the 4 nodes that surround the center node
+        :return: A batch of data points ready for learning
+        """
+        # assert batch_size % num_skips == 0
+        assert num_skips <= 2 * skip_window
+        # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
+        span = 2 * skip_window + 1
+        batch = np.ndarray(shape=0, dtype=np.int32)
+        labels = np.ndarray(shape=(0, 1), dtype=np.int32)
+        for i in range(walk_count):
+            sentence = self.data[self.current_sentence]
+            self.current_sentence += 1
+            sentence_len = len(sentence)
+            batch_count = sentence_len - span + 1
+            current_batch, current_labels = self.next_batch(sentence, batch_count, num_skips, skip_window)
+            batch = np.append(batch, current_batch)
+            labels = np.append(labels, current_labels)
+            if self.current_sentence == self.num_sentences:
+                self.current_sentence = 0
+            N = len(labels)
+            labels = labels.reshape([N,1])
+        return batch, labels
+
+        # get window size (words left and right + current one).
+
+
 
     # Optimization process.
     def run_optimization(self, x, y):
@@ -234,7 +288,11 @@ class SkipGramWord2Vec(Word2Vec):
 
         # Run training for the given number of steps.
         for step in range(1, self.num_steps + 1):
-            batch_x, batch_y = self.next_batch(self.batch_size, self.num_skips, self.skip_window)
+            if self.list_of_lists:
+                walkcount = 2
+                batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
+            else:
+                batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
             self.run_optimization(batch_x, batch_y)
 
             if step % display_step == 0 or step == 1:

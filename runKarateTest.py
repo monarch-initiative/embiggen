@@ -3,15 +3,15 @@
 
 # 1 Input test graph
 #from gensim.models import Word2Vec
-import hn2v
-from hn2v import LinkPrediction
-from hn2v import CSFGraph
+import n2v
+from n2v import LinkPrediction
+from n2v import CSFGraph
 import os
 
-from hn2v.word2vec import SkipGramWord2Vec
+from n2v.word2vec import SkipGramWord2Vec
 
-training_file = os.path.join(os.path.dirname(__file__), 'data', 'karate.train')
-test_file= os.path.join(os.path.dirname(__file__), 'data', 'karate.test')
+training_file = os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate.train')
+test_file= os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate.test')
 
 #g = nx.read_edgelist(training_file, nodetype=str, create_using=nx.DiGraph())
 
@@ -28,7 +28,7 @@ p = 1
 q = 1
 gamma = 1
 useGamma = False
-hetgraph = hn2v.hetnode2vec.Graph(g, p, q, gamma, useGamma)
+hetgraph = n2v.hetnode2vec.Graph(g, p, q, gamma, useGamma)
 
 walk_length = 80
 num_walks = 100
@@ -38,9 +38,30 @@ dimensions = 128
 window_size = 10
 workers = 8
 
+print(walks)
+
+
+
+
+if 34 in walks:
+    print("BAD")
+    exit(1)
+
 
 worddictionary = g.get_node_to_index_map()
 reverse_worddictionary = g.get_index_to_node_map()
+
+numberwalks = []
+for w in walks:
+    nwalk = []
+    for node in w:
+        i = worddictionary[node]
+        if i > 33:
+            raise TypeError("BAD INDEX")
+        nwalk.append(i)
+    numberwalks.append(nwalk)
+
+
 #model = Word2Vec(walks, size=dimensions, window=window_size, min_count=0, sg=1, workers=workers, iter=iter)
 
 """
@@ -58,7 +79,8 @@ data,
                  num_sampled=64
 """
 
-model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary)
+
+model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary)
 model.train(display_step=2)
 
 """
