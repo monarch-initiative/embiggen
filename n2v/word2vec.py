@@ -92,7 +92,6 @@ class SkipGramWord2Vec(Word2Vec):
     """
     Class to run word2vec using skip grams
     """
-    # TODO num_sampled was 64 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def __init__(self,
                  data,
                  worddictionary,
@@ -105,7 +104,8 @@ class SkipGramWord2Vec(Word2Vec):
                  min_occurrence=2,
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=6
+                 num_sampled=64,
+                 display=None
                  ):
         super(SkipGramWord2Vec, self).__init__(learning_rate,
                                                batch_size,
@@ -115,7 +115,8 @@ class SkipGramWord2Vec(Word2Vec):
                                                min_occurrence,
                                                skip_window,
                                                num_skips,
-                                               num_sampled)
+                                               num_sampled,
+                                               display)
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -124,6 +125,11 @@ class SkipGramWord2Vec(Word2Vec):
         else:
             self.list_of_lists = False
         self.calculate_vocabulary_size()
+        # This should not be a problem with real data, but with toy examples the number of nodes might be
+        # lower than the default value of num_sampled of 64. However, num_sampled needs to be less than
+        # the number of examples (num_sampled is the number of negative samples that get evaluated per positive example)
+        if self.num_sampled > self.vocabulary_size:
+            self.num_sampled = self.vocabulary_size/2
         self.optimizer = tf.optimizers.SGD(learning_rate)
         self.data_index = 0
         self.current_sentence = 0
@@ -168,9 +174,6 @@ class SkipGramWord2Vec(Word2Vec):
                                inputs=x_embed,
                                num_sampled=self.num_sampled,
                                num_classes=self.vocabulary_size))
-            dummy = loss
-            print("loss = ", loss)
-            print(dummy)
             return loss
 
     # Evaluation.
@@ -251,11 +254,9 @@ class SkipGramWord2Vec(Word2Vec):
             batch_count = sentence_len - span + 1
             current_batch, current_labels = self.next_batch(sentence, batch_count, num_skips, skip_window)
             batch = np.append(batch, current_batch)
-            labels = np.append(labels, current_labels)
+            labels = np.append(labels, current_labels, axis=0)
             if self.current_sentence == self.num_sentences:
                 self.current_sentence = 0
-            N = len(labels)
-            labels = labels.reshape([N,1])
         return batch, labels
 
         # get window size (words left and right + current one).
@@ -300,7 +301,7 @@ class SkipGramWord2Vec(Word2Vec):
                 print("step: %i, loss: %f" % (step, loss))
 
             # Evaluation.
-            if step % self.eval_step == 0 or step == 1:
+            if not self.display is None and (step % self.eval_step == 0 or step == 1):
                 print("Evaluation...")
                 sim = self.evaluate(self.get_embedding(x_test)).numpy()
                 print(sim[0])

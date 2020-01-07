@@ -81,7 +81,7 @@ data,
 
 
 model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary)
-model.train(display_step=2)
+model.train(display_step=100)
 
 """
 NEEDS TO BE REFACTORED
