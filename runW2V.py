@@ -2,17 +2,18 @@ from urllib.request import urlopen
 import os.path
 
 # Tale of Two Cities, Dickens, from Gutenberg project
-from hn2v.text_encoder import TextEncoder
-from hn2v.word2vec import SkipGramWord2Vec
+from n2v.text_encoder import TextEncoder
+from n2v.word2vec import SkipGramWord2Vec
 
 local_file = 'twocities.txt'
 
-
 if not os.path.exists(local_file):
     url = 'https://www.gutenberg.org/files/98/98-0.txt'
-    data = urlopen(url)
-    fh = open(local_file, 'w')
-    fh.write(data)
+    with urlopen(url) as response:
+        resource = response.read()
+        content = resource.decode('utf-8')
+        fh = open(local_file, 'w')
+        fh.write(content)
 else:
     print("{} was previously downloaded".format(local_file))
 

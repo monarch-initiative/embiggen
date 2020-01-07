@@ -1,14 +1,14 @@
-""" Heterogeneous Node2Vec
-.. module:: hn2v
+""" N2V: A python library for node2vec family algorithms
+.. module:: n2v
    :platform: Unix, Windows
-   :synopsis: Extension of Node2Vec to heterogeneous networks
+   :synopsis: node2vec family algorithms
 
 .. moduleauthor:: Vida Ravanmehr <vida.ravanmehr@jax.org>, Peter N Robinson <peter.robinson@jax.org>
 
 """
-from .hn2v_parser import HN2VParser
-from .hn2v_parser import StringInteraction
-from .hn2v_parser import WeightedTriple
+from .n2v_parser import HN2VParser
+from .n2v_parser import StringInteraction
+from .n2v_parser import WeightedTriple
 from .hetnode2vec import Graph
 from .link_prediction import LinkPrediction
 from .csf_graph import CSFGraph
