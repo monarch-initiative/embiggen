@@ -86,6 +86,24 @@ class Word2Vec:
             self.vocabulary_size = min(self.max_vocabulary_size, len(set(self.data)))
             print("Vocabulary size (flat) is %d" % self.vocabulary_size)
 
+    def write_embeddings(self, outfilename):
+        if self.embedding is None:
+            raise TypeError("Could not find self.embedding")
+        if self.id2word is None:
+            raise TypeError("Could not find self.id2word dictionary")
+        id_list = self.id2word.keys()
+        #id_list.sort() # TODO FIGURE OUT HOW TO SORT ME
+        fh = open(outfilename, "w")
+        with tf.device('/cpu:0'):
+            for id in id_list:
+                fh.write(self.id2word[id])
+                x_embed = tf.nn.embedding_lookup(self.embedding, id)
+                x = x_embed.numpy()
+                for it in x:
+                    fh.write("\t{}".format(it))
+                fh.write("\n")
+
+
 
 
 class SkipGramWord2Vec(Word2Vec):
@@ -313,3 +331,4 @@ class SkipGramWord2Vec(Word2Vec):
                     for k in range(top_k):
                         log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
                     print(log_str)
+

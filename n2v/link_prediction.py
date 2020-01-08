@@ -17,15 +17,15 @@ log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
 log.addHandler(handler)
 
 class LinkPrediction:
-    def __init__(self, train_graph, test_graph, embedded_train_graph_path, params={}):
+    def __init__(self, train_edges, test_edges, embedded_train_graph_path, params={}):
         """
         Set up for predicting links from results of node2vec analysis
-        :param train_graph: The complete training graph
-        :param test_graph:  List of links that we want to predict
+        :param train_edges: The complete training graph
+        :param test_edges:  List of links that we want to predict
         :param embedded_train_graph_path: THe file produced by word2vec with the nodes embedded as vectors
         """
-        self.g_train = train_graph
-        self.g_test = test_graph
+        self.train_edges = train_edges
+        self.test_edges = test_edges
         self.embedded_train_graph = embedded_train_graph_path
         self.map_node_vector = {}
         self.read_embedded_training_graph()
@@ -48,9 +48,9 @@ class LinkPrediction:
         n_lines = 0
         map_node_vector = {}  # reading the embedded graph to a map, key:node, value:vector
         with open(self.embedded_train_graph, 'r') as f:
-            next(f)#skip the header which contains 2 integers; number of nodes and dimension
+            #next(f)#skip the header which contains 2 integers; number of nodes and dimension
             for line in f:
-                fields = line.split(' ') #the format of each line: node v_1 v_2 ... v_d where v_i's are elements of
+                fields = line.split('\t') #the format of each line: node v_1 v_2 ... v_d where v_i's are elements of
                 # the array corresponding to the embedding of the node
                 embe_vec = [float(i) for i in fields[1:]]
                 map_node_vector.update({fields[0]: embe_vec})#map each node to its corresponding vector
@@ -63,26 +63,31 @@ class LinkPrediction:
 
         # true test edges are edges that exist in g_test. These are edges that we would like to predict.
         # Therefore, we can call them false edges.
-        self.true_test_edges = [edge for edge in self.g_test.edges(data=True)]
+        self.true_test_edges = [edge for edge in self.test_edges]
 
         # false edges are edges that don't exit in the training graph and test graph.
         # To find false edges, we first find false edges of training graph and then remove test
         # edges from false edges of the training graph
         log.debug('getting non existing (false) edges')
-        false_training_edges = [pair for pair in IT.combinations(self.g_train.nodes(), 2)
-                           if not self.g_train.has_edge(*pair)]
+        #############################
+        #############  HERE
+        for pair in IT.combinations(self.train_edges, 2):
+            print("pair: ", pair)
+        exit(1)
+        false_training_edges = [pair for pair in IT.combinations(self.train_edges, 2)
+                                if not pair in self.train_edges]
         log.debug("number of edges that don't exist in train but may exist in test".
                   format(len(false_training_edges)))
         # The following edges are not either in the training or in the test set.
         self.false_edges = [pair for pair in false_training_edges
-                               if not self.g_test.has_edge(*pair)]
+                            if not pair in self.test_edges]
         log.debug("number of false edges:{}".format(len(self.false_edges)))
 
         # create false edges
 
         #np.random.seed(0)
         #np.random.shuffle(self.false_edges)#TODO:replcae shuffle with for loop to get random number
-        number_true_train_edges = len([edge for edge in self.g_train.edges(data=True)])
+        number_true_train_edges = len(self.train_edges)
 
         # We want K times the number of positive edges, where K is a number between 1 and 10
         # number_test_edges_false = int(frac_negative_edges * len(true_negatives))
@@ -107,10 +112,10 @@ class LinkPrediction:
 
     def predict_links(self):
         self.__setup_training_and_test_data()
-        true_train_edge_embs = self.transform(edge_list=self.g_train.edges, node2vector_map=self.map_node_vector,
-                                            size_limit=len(self.g_train.edges), edge_embedding_method=self.edge_embedding_method)
+        true_train_edge_embs = self.transform(edge_list=self.train_edges, node2vector_map=self.map_node_vector,
+                                              size_limit=len(self.train_edges), edge_embedding_method=self.edge_embedding_method)
         false_train_edge_embs = self.transform(edge_list=self.false_train_edges, node2vector_map=self.map_node_vector,
-         size_limit=len(self.g_train.edges),edge_embedding_method=self.edge_embedding_method)
+                                               size_limit=len(self.train_edges), edge_embedding_method=self.edge_embedding_method)
         print(len(true_train_edge_embs),len(false_train_edge_embs))
         train_edge_embs = np.concatenate([true_train_edge_embs, false_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
@@ -127,8 +132,8 @@ class LinkPrediction:
         test_edge_labels = np.concatenate([np.ones(len(true_test_edge_embs)), np.zeros(len(false_test_edge_embs))])
         log.debug('get test edge labels')
 
-        log.debug("Total nodes: {}".format(self.g_train.number_of_nodes()))
-        log.debug("Total edges of training graph: {}".format(self.g_train.size()))
+        #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
+        log.debug("Total edges of training graph: {}".format(len(self.train_edges)))
         log.debug("Training edges (negative): {}".format(len(false_train_edge_embs)))
         log.debug("Test edges (positive): {}".format(len(self.true_test_edges)))
         log.debug("Test edges (negative): {}".format(len(false_test_edge_embs)))
@@ -187,7 +192,11 @@ class LinkPrediction:
         for edge in edge_list:
             if num_edges < max_num_edges:
                 node1 = edge[0]
+                mytype = type(node1)
+                print("Node 1 %s: %s" % (node1, mytype))
                 node2 = edge[1]
+                mytype = type(node2)
+                print("Node 2  %s: %s" % (node2, mytype))
                 emb1 = node2vector_map[node1]
                 emb2 = node2vector_map[node2]
                 if edge_embedding_method == "hadamard":
@@ -221,13 +230,13 @@ class LinkPrediction:
         return embs
 
     def output_diagnostics_to_logfile(self):
-        self.log_edge_node_information(self.g_train, "training")
-        self.log_edge_node_information(self.g_test, "test")
+        self.log_edge_node_information(self.train_edges, "training")
+        self.log_edge_node_information(self.test_edges, "test")
 
-    def log_edge_node_information(self, nx_g, group):
+    def log_edge_node_information(self, edge_list, group):
         """
         log the number of nodes and edges of each type of the graph
-        :param nx_g: the input graph, either training or test
+        :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
         :return:
         """
         num_gene_gene = 0
@@ -239,8 +248,8 @@ class LinkPrediction:
         num_gene = 0
         num_prot = 0
         num_dis = 0
-
-        for edge in nx_g.edges():
+        nodes = set()
+        for edge in edge_list:
             if (edge[0].startswith("g") and edge[1].startswith("g")):
                 num_gene_gene += 1
             elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
@@ -256,7 +265,9 @@ class LinkPrediction:
                 num_prot_dis += 1
             elif edge[0].startswith("d") and edge[1].startswith("d"):
                 num_dis_dis += 1
-        for node in nx_g.nodes():
+            nodes.add(edge[0])
+            nodes.add(edge[1])
+        for node in nodes:
             if node.startswith("g"):
                 num_gene += 1
             elif node.startswith("p"):

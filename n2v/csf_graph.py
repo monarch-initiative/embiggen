@@ -192,7 +192,7 @@ class CSFGraph:
     def edges(self):
         """
         return a list of tuples with all edges in the graph
-        each tuple is like (2, 3)
+        each tuple is like ('2', '3')
         """
         edge_list = []
         for source_idx in range(len(self.offset_to_edge_) - 1):
