@@ -71,10 +71,15 @@ class LinkPrediction:
         log.debug('getting non existing (false) edges')
         #############################
         #############  HERE
-        for pair in IT.combinations(self.train_edges, 2):
+        train_nodes = set()
+        for edge in self.train_edges:
+             train_nodes.add(edge[0])
+             train_nodes.add(edge[1])
+
+        for pair in IT.combinations(train_nodes, 2):
             print("pair: ", pair)
         exit(1)
-        false_training_edges = [pair for pair in IT.combinations(self.train_edges, 2)
+        false_training_edges = [pair for pair in IT.combinations(train_nodes, 2)
                                 if not pair in self.train_edges]
         log.debug("number of edges that don't exist in train but may exist in test".
                   format(len(false_training_edges)))

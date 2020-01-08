@@ -59,7 +59,7 @@ model.write_embeddings(output_filenname)
 test_graph = CSFGraph(test_file)
 path_to_embedded_graph = output_filenname
 parameters = {'edge_embedding_method': "hadamard",
-              'portion_false_edges': 2}
+              'portion_false_edges': 1}
 
 
 lp = LinkPrediction(training_graph.edges(), test_graph.edges(), path_to_embedded_graph, params=parameters)
