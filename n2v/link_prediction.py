@@ -139,10 +139,10 @@ class LinkPrediction:
         log.debug('get test edge labels')
 
         #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
-        log.debug("Total edges of training graph: {}".format(len(self.train_edges)))
-        log.debug("Training edges (negative): {}".format(len(false_train_edge_embs)))
-        log.debug("Test edges (positive): {}".format(len(self.true_test_edges)))
-        log.debug("Test edges (negative): {}".format(len(false_test_edge_embs)))
+        log.debug("Number of true training edges: {}".format(len(self.train_edges)))
+        log.debug("Number of false training edges: {}".format(len(false_train_edge_embs)))
+        log.debug("Number of true test edges: {}".format(len(self.true_test_edges)))
+        log.debug("Number of false test edges: {}".format(len(false_test_edge_embs)))
 
         log.debug('logistic regression')
         # Train logistic regression classifier on train-set edge embeddings

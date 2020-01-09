@@ -64,7 +64,7 @@ parameters = {'edge_embedding_method': "hadamard",
 
 lp = LinkPrediction(training_graph.edges(), test_graph.edges(), path_to_embedded_graph, params=parameters)
 
-lp.output_diagnostics_to_logfile()
+#lp.output_diagnostics_to_logfile()
 lp.predict_links()
 lp.output_Logistic_Reg_results()
 
