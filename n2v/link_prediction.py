@@ -78,7 +78,7 @@ class LinkPrediction:
 
         for pair in IT.combinations(train_nodes, 2):
             print("pair: ", pair)
-        exit(1)
+        #exit(1)
         false_training_edges = [pair for pair in IT.combinations(train_nodes, 2)
                                 if not pair in self.train_edges]
         log.debug("number of edges that don't exist in train but may exist in test".
@@ -238,7 +238,7 @@ class LinkPrediction:
         self.log_edge_node_information(self.train_edges, "training")
         self.log_edge_node_information(self.test_edges, "test")
 
-    def log_edge_node_information(self, edge_list, group):
+    def log_edge_node_information(self, edge_list, group):#TODO:Needs to be modified for homogenous graphs
         """
         log the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
