@@ -46,12 +46,10 @@ for w in walks:
     nwalk = []
     for node in w:
         i = worddictionary[node]
-        if i > 33:
-            raise TypeError("BAD INDEX")
         nwalk.append(i)
     numberwalks.append(nwalk)
 
-model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
+model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=1000)
 model.train(display_step=100)
 output_filenname = 'karate.embedded'
 model.write_embeddings(output_filenname)
@@ -62,7 +60,7 @@ parameters = {'edge_embedding_method': "hadamard",
               'portion_false_edges': 1}
 
 
-lp = LinkPrediction(training_graph.edges(), test_graph.edges(), path_to_embedded_graph, params=parameters)
+lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph, params=parameters)
 
 #lp.output_diagnostics_to_logfile()
 lp.predict_links()

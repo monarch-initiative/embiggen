@@ -63,7 +63,7 @@ class CSFGraph:
                 nodeA = fields[0]
                 nodeB = fields[1]
                 try:
-                    weight = int(fields[2])
+                    weight = float(fields[2])
                 except Exception as e:
                     print("[ERROR] Could not parse weight field (must be an integer): {}".format(fields[2]))
                     continue

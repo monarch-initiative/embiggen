@@ -101,12 +101,7 @@ class Graph:
         g = self.g
         p = self.p
         q = self.q
-        gamma = self.gamma
         unnormalized_probs = []
-        num_same_network = 0
-        num_diff_network = 0
-        log.info("source node:{}".format(src))
-        log.info("destination node:{}".format(dst))
         for dst_nbr in g.neighbors(dst):
             #log.info("neighbour of destination node:{}".format(dst_nbr))
             edge_weight = g.weight(dst, dst_nbr)
@@ -118,8 +113,6 @@ class Graph:
                 unnormalized_probs.append(edge_weight / q)
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-        log.info("number of walks in the same network:{} ".format(num_same_network))
-        log.info("number of walks in different network:{} ".format(num_diff_network))
         return self.__alias_setup(normalized_probs)
 
     def __preprocess_transition_probs(self):
@@ -130,17 +123,10 @@ class Graph:
 
         alias_nodes = {}
         for node in g.nodes():
-            # self.calculate_proportion_of_different_neighbors(node)
             unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
-            log.info("unnormalized probs {}".format(unnormalized_probs))
             norm_const = sum(unnormalized_probs)
-            log.info("norm_const {}".format(norm_const))
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-            log.info("normalized probs {}".format(normalized_probs))
-            # normalized_probs = np.true_divide(unnormalized_probs, norm_const)
             alias_nodes[node] = self.__alias_setup(normalized_probs)
-            log.info("alias_nodes[node] {}".format(alias_nodes[node]))
-            log.info("node {}".format(node))
 
         alias_edges = {}
 
