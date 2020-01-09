@@ -93,10 +93,15 @@ class LinkPrediction:
 
         # We want K (portion_false_edges) times the number of positive edges, where K is a number between 1 and 10
 
-        number_false_train_edges = self.portion_false_edges * number_true_train_edges
-        number_false_test_edges = self.portion_false_edges * len(self.true_test_edges)
-        log.debug("number of false edges that are left for test:{}".format(number_false_test_edges))
-        log.debug("number of false edges that are left for train:{}".format(number_false_train_edges))
+        number_false_train_edges = self.portion_false_edges * number_true_train_edges #We need to carefully choose it!
+        number_false_test_edges = self.portion_false_edges * len(self.true_test_edges)#We need to carefully choose it!
+        if number_false_train_edges > len(self.false_edges):#for now! It needs to be checked!!
+            number_false_train_edges = number_true_train_edges
+
+        if number_false_test_edges > len(self.false_edges):#for now! It needs to be checked!!
+            number_false_test_edges = len(self.true_test_edges)
+        log.debug("number of false training edges:{}".format(number_false_train_edges))
+        log.debug("number of false test edges:{}".format(number_false_test_edges))
 
         number_rand_numbers = number_false_train_edges + number_false_test_edges
         rand_numbers = self.rand_num_generator(0, number_rand_numbers, number_rand_numbers)#generate random numbers
