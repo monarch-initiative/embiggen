@@ -88,13 +88,10 @@ class LinkPrediction:
 
         # create false edges
 
-        #np.random.seed(0)
-        #np.random.shuffle(self.false_edges)#
+
         number_true_train_edges = len(self.train_edges)
 
-        # We want K times the number of positive edges, where K is a number between 1 and 10
-        # number_test_edges_false = int(frac_negative_edges * len(true_negatives))
-        # number_false_train_edges = len(true_negatives) - number_test_edges_false\
+        # We want K (portion_false_edges) times the number of positive edges, where K is a number between 1 and 10
 
         number_false_train_edges = self.portion_false_edges * number_true_train_edges
         number_false_test_edges = self.portion_false_edges * len(self.true_test_edges)
@@ -102,15 +99,15 @@ class LinkPrediction:
         log.debug("number of false edges that are left for train:{}".format(number_false_train_edges))
 
         number_rand_numbers = number_false_train_edges + number_false_test_edges
-        rand_numbers = self.rand_num_generator(0, number_true_train_edges, number_rand_numbers)
+        rand_numbers = self.rand_num_generator(0, number_rand_numbers, number_rand_numbers)#generate random numbers
+        #between 0 and number_rand_numbers. rand_numbers gives of shuffling of total indices
         for i in range(0, number_false_train_edges):
             self.false_train_edges.append(self.false_edges[rand_numbers[i]])
 
         for i in range(number_false_train_edges, number_rand_numbers):
             self.false_test_edges.append(self.false_edges[rand_numbers[i]])
 
-        #self.false_test_edges = self.false_edges[0:number_false_test_edges]
-        #self.false_train_edges = self.false_edges[number_false_test_edges:len(self.false_edges)]
+
 
     def predict_links(self):
         self.__setup_training_and_test_data()
@@ -301,5 +298,4 @@ class LinkPrediction:
         res = []
         for j in range(num):
              res.append(random.randint(start, end))
-
         return res
