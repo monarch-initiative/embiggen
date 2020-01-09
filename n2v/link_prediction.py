@@ -33,7 +33,7 @@ class LinkPrediction:
         self.edge_embedding_method = params.get('edge_embedding_method', default_edge_embedding_method)
 
         # for false_edges, We want portion_false_edges times the number of true edges,
-        # where portion_false_edges is a number between 2 and 10
+        # where portion_false_edges is a number between 1 and 10
         default_portion_false_edges = 2
         self.portion_false_edges = params.get('portion_false_edges', default_portion_false_edges)
         self.false_test_edges = []
@@ -48,7 +48,6 @@ class LinkPrediction:
         n_lines = 0
         map_node_vector = {}  # reading the embedded graph to a map, key:node, value:vector
         with open(self.embedded_train_graph, 'r') as f:
-            #next(f)#skip the header which contains 2 integers; number of nodes and dimension
             for line in f:
                 fields = line.split('\t') #the format of each line: node v_1 v_2 ... v_d where v_i's are elements of
                 # the array corresponding to the embedding of the node
@@ -78,10 +77,9 @@ class LinkPrediction:
 
         for pair in IT.combinations(train_nodes, 2):
             print("pair: ", pair)
-        #exit(1)
         false_training_edges = [pair for pair in IT.combinations(train_nodes, 2)
                                 if not pair in self.train_edges]
-        log.debug("number of edges that don't exist in train but may exist in test".
+        log.debug("number of edges that don't exist in training edges but may exist in test edges".
                   format(len(false_training_edges)))
         # The following edges are not either in the training or in the test set.
         self.false_edges = [pair for pair in false_training_edges
@@ -91,7 +89,7 @@ class LinkPrediction:
         # create false edges
 
         #np.random.seed(0)
-        #np.random.shuffle(self.false_edges)#TODO:replcae shuffle with for loop to get random number
+        #np.random.shuffle(self.false_edges)#
         number_true_train_edges = len(self.train_edges)
 
         # We want K times the number of positive edges, where K is a number between 1 and 10
@@ -112,13 +110,14 @@ class LinkPrediction:
             self.false_test_edges.append(self.false_edges[rand_numbers[i]])
 
         #self.false_test_edges = self.false_edges[0:number_false_test_edges]
-
         #self.false_train_edges = self.false_edges[number_false_test_edges:len(self.false_edges)]
 
     def predict_links(self):
         self.__setup_training_and_test_data()
+        #Train-set edge embeddings and labels
         true_train_edge_embs = self.transform(edge_list=self.train_edges, node2vector_map=self.map_node_vector,
                                               size_limit=len(self.train_edges), edge_embedding_method=self.edge_embedding_method)
+        #get the edge embedding of false training edges
         false_train_edge_embs = self.transform(edge_list=self.false_train_edges, node2vector_map=self.map_node_vector,
                                                size_limit=len(self.train_edges), edge_embedding_method=self.edge_embedding_method)
         print(len(true_train_edge_embs),len(false_train_edge_embs))
@@ -126,7 +125,7 @@ class LinkPrediction:
         # Create train-set edge labels: 1 = true edge, 0 = false edge
         train_edge_labels = np.concatenate([np.ones(len(true_train_edge_embs)), np.zeros(len(false_train_edge_embs))])
 
-        # Test-set edge embeddings, labels
+        # Test-set edge embeddings and labels
         true_test_edge_embs = self.transform(edge_list=self.true_test_edges, node2vector_map=self.map_node_vector,
                                             size_limit=len(self.true_test_edges), edge_embedding_method=self.edge_embedding_method)
 
@@ -240,8 +239,8 @@ class LinkPrediction:
 
     def log_edge_node_information(self, edge_list, group):#TODO:Needs to be modified for homogenous graphs
         """
-        log the number of nodes and edges of each type of the graph
-        :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
+        log the number of nodes and edges of each type of a hetrogenous graph which has 3 types of nodes: genes, proteins and diseases.
+        :param edge_list: e.g.,  [('g1','g7), ('g88','d22'),...], either training or test
         :return:
         """
         num_gene_gene = 0
