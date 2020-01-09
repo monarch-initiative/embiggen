@@ -351,7 +351,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                  num_sampled=7,#default=64
                  display=None
                  ):
-        super(SkipGramWord2Vec, self).__init__(learning_rate,
+        super(ContinuousBagOfWordsWord2Vec, self).__init__(learning_rate,
                                                batch_size,
                                                num_steps,
                                                embedding_size,
