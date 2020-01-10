@@ -19,6 +19,18 @@ class CSFGraph:
             self.nodeB = nB
             self.weight = w
 
+        def get_edge_type_string(self):
+            '''
+            For the summary output of the graph, we would like to show how many homogeneous and
+            how many heterogeneous edges there are. We expect nodes types to be coded using the
+            first characters of the nodes. For instance, g1-g3 would we coded as 'gg' and 'g1-p45'
+            would be coded as 'gp'. We assume an undirected graph. We sort the characters alphabetically.
+            :return:
+            '''
+            na = self.nodeA[0]
+            nb = self.nodeB[0]
+            return "".join(sorted([na, nb]))
+
         def __hash__(self):
             """
             Do not include weight in the hash function, we are interested in
@@ -53,6 +65,7 @@ class CSFGraph:
             raise TypeError("Could not find graph file {}".format(filepath))
         nodes = set()
         edges = set()
+        self.edgetype2count_dictionary = defaultdict(int)
         with open(filepath) as f:
             for line in f:
                 # print(line)
@@ -73,6 +86,7 @@ class CSFGraph:
                 inverse_edge = CSFGraph.Edge(nodeB, nodeA, weight)
                 edges.add(edge)
                 edges.add(inverse_edge)
+                self.edgetype2count_dictionary[edge.get_edge_type_string()] += 1
         # When we get here, we can create the graph
         # print("Got {} nodes and {} edges".format(len(nodes), len(edges)))
         # convert the sets to lists
@@ -219,3 +233,21 @@ class CSFGraph:
         :return:
         """
         return self.index_to_node_map
+
+    def __str__(self):
+        return 'CSFGraph(nodes: %d; edges: %d)' % (self.node_count(),  self.edge_count())
+
+    def print_edge_type_distribution(self):
+        """
+        This function is intended to be used for debugging or logging.
+        It returns a string with the total counts of edges according to type.
+        If the graph only has one node type, it just shows the total edge count.
+        :return:
+        """
+        if len(self.edgetype2count_dictionary) < 2:
+            print( "edge count: %d" % self.edge_count() )
+        else:
+            edgecounts = []
+            for category, count in self.edgetype2count_dictionary.items():
+                print("%s - count: %d" % (category, count) )
+

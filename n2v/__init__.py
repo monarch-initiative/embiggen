@@ -9,6 +9,6 @@
 from .n2v_parser import HN2VParser
 from .n2v_parser import StringInteraction
 from .n2v_parser import WeightedTriple
-from .hetnode2vec import Graph
+from .hetnode2vec import N2vGraph
 from .link_prediction import LinkPrediction
 from .csf_graph import CSFGraph

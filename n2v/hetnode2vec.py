@@ -17,11 +17,9 @@ log.addHandler(handler)
 log.addHandler(logging.StreamHandler())
 
 
-class Graph:
+class N2vGraph:
     """
-    A class to represent the Graph and its associated
-    functionality.
-
+    A class to represent perform random walks on a graph in order to derive the data needed for the node2vec algorithm.
     """
 
     def __init__(self, csf_graph, p, q, gamma, doHN2V=True):
@@ -122,18 +120,26 @@ class Graph:
         g = self.g
 
         alias_nodes = {}
+        c = 0
         for node in g.nodes():
             unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
             norm_const = sum(unnormalized_probs)
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
+            if c % 100 == 0 and c > 1:
+                print("Processed %d nodes" % c)
+            c += 1
 
         alias_edges = {}
 
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
+        c = 0
         for edge in g.edges():
             alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
+            if c % 1000 == 0 and c > 1:
+                print("Processed %d edges" % c)
+            c += 1
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
@@ -300,6 +306,13 @@ class Graph:
             return kk
         else:
             return j[kk]
+
+    def __str__(self):
+        '''
+        summary of the class for printing
+        :return:
+        '''
+        return 'Graph'
 
 # def _repr_html_(self):
 #    G = self.G

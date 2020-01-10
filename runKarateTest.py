@@ -28,7 +28,7 @@ p = 1
 q = 1
 gamma = 1
 useGamma = False
-hetgraph = n2v.hetnode2vec.Graph(training_graph, p, q, gamma, useGamma)
+hetgraph = n2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, useGamma)
 
 walk_length = 80
 num_walks = 20

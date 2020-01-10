@@ -12,13 +12,17 @@ training_file = os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate
 training_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/hn2v/edgelist.txt'
 #test_file= os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate.test')
 
-
+print("Reading training file %s" % training_file)
 training_graph = CSFGraph(training_file)
+print(training_graph)
+training_graph.print_edge_type_distribution()
+
+
 p = 1
 q = 1
 gamma = 1
 useGamma = False
-hetgraph = n2v.hetnode2vec.Graph(training_graph, p, q, gamma, useGamma)
+hetgraph = n2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, useGamma)
 
 walk_length = 80
 num_walks = 25
