@@ -2,7 +2,7 @@ import argparse
 import networkx as nx
 import os
 import logging
-from hn2v import LinkPrediction
+from n2v import LinkPrediction
 
 
 

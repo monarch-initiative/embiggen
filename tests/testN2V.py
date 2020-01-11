@@ -3,7 +3,7 @@ from unittest import TestCase
 import networkx as nx
 import os.path
 import numpy as np
-from hn2v.hetnode2vec import Graph
+from n2v import N2vGraph
 
 
 def calculate_total_probs(j, q):
@@ -65,11 +65,10 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        is_directed = False
         p = 1
         q = 1
         gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
         g0g1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
@@ -90,11 +89,10 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        is_directed = False
         p = 1
         q = 1
         gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'g2'
         g1g2tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
@@ -117,11 +115,10 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        is_directed = False
         p = 1
         q = 1
         gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
         g1p1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
@@ -146,11 +143,10 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        is_directed = False
         p = 1
         q = 1
         gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
         g1p1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple

@@ -1,10 +1,10 @@
+import unittest
 from unittest import TestCase
 import os
 
-
-from hn2v.hn2v_parser import WeightedTriple
-from hn2v.hn2v_parser import StringInteraction
-from hn2v.hn2v_parser import HN2VParser
+from n2v import WeightedTriple
+from n2v import StringInteraction
+from n2v import n2vParser
 
 ## files used by many tests
 gene2ensembl = os.path.join(os.path.dirname(__file__), 'data', 'small_gene2ensem.txt.gz')
@@ -262,10 +262,10 @@ class TestStringInteraction(TestCase):
         self.assertEqual(expected, str(si.get_edge_type()))
 
 
-class TestHN2VParser(TestCase):
+class Testn2vParser(TestCase):
 
     def setUp(self):
-        self._parser = HN2VParser(params=params)
+        self._parser = n2vParser(params=params)
         self._parser.parse()
 
     def test_not_null(self):
