@@ -28,6 +28,10 @@ To do. We will submit N2V to PyPI as soon as the code is a bit more mature.
 Unit testing
 ^^^^^^^^^^^^
 
+cd in the N2V directory and enter: ::
+
+    $ nosetests tests/
+
 
 
 
