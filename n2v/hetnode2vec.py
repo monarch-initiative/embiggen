@@ -156,10 +156,8 @@ class N2vGraph:
         g = self.g
         p = self.p
         q = self.q
-        num_same_network = 0
-        num_diff_network = 0
-        log.info("source node:{}".format(src))
-        log.info("destination node:{}".format(dst))
+        # log.info("source node:{}".format(src))
+        # log.info("destination node:{}".format(dst))
         dsttype = dst[0]
         dst2count = defaultdict(int)  # counts for going from current node ("dst") to nodes of a given type (g, p,d)
         dst2prob = defaultdict(float)  # probs calculated from own2count
@@ -199,8 +197,6 @@ class N2vGraph:
             i += 1
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-        log.info("number of walks in the same network:{} ".format(num_same_network))
-        log.info("number of walks in different network:{} ".format(num_diff_network))
         return self.__alias_setup(normalized_probs)
 
     def __preprocess_transition_probs_n2v(self):
@@ -247,7 +243,7 @@ class N2vGraph:
                 unnormalized_probs[i] = prob * G.weight(node, nbr)
                 i += 1
             norm_const = sum(unnormalized_probs)
-            log.info("norm_const {}".format(norm_const))
+            # log.info("norm_const {}".format(norm_const))
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
         for edge in G.edges():

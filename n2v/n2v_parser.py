@@ -333,11 +333,11 @@ class n2vParser:
         else:
             print("[INFO] gene disease training file: {}".format(self.gene_disease_train_path))
 
-        if not os.path.isfile(self.gene_disease_test_path):
-            raise Exception(
-                "Could not find gene disease test similarity file at {}".format(self.gene_disease_test_path))
-        else:
-            print("[INFO] gene disease test file: {}".format(self.gene_disease_test_path))
+        # if not os.path.isfile(self.gene_disease_test_path):
+        #   raise Exception(
+        #       "Could not find gene disease test similarity file at {}".format(self.gene_disease_test_path))
+        # else:
+        #    print("[INFO] gene disease test file: {}".format(self.gene_disease_test_path))
         print("[INFO] All four input files were found")
 
     def _parse_gene2ensembl(self):

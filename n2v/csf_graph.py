@@ -65,7 +65,9 @@ class CSFGraph:
             raise TypeError("Could not find graph file {}".format(filepath))
         nodes = set()
         edges = set()
+
         self.edgetype2count_dictionary = defaultdict(int)
+        self.nodetype2count_dictionary = defaultdict(int)
         with open(filepath) as f:
             for line in f:
                 # print(line)
@@ -118,6 +120,8 @@ class CSFGraph:
         self.offset_to_edge_[0] = 0
         i = 0
         for n in node_list:
+            nodetype = n[0]
+            self.nodetype2count_dictionary[nodetype] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]
             # n_edges can be zero here, that is OK
@@ -244,6 +248,8 @@ class CSFGraph:
         If the graph only has one node type, it just shows the total edge count.
         :return:
         """
+        for n, count in self.nodetype2count_dictionary.items():
+            print("node type %s - count: %d" % (n,count))
         if len(self.edgetype2count_dictionary) < 2:
             print( "edge count: %d" % self.edge_count() )
         else:
