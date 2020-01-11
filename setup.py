@@ -17,7 +17,6 @@ setup(name='n2v',
       license='BSD3',
       packages=['n2v'],
       install_requires=[
-            'networkx',
             'numpy>=1.16.4',
             'matplotlib',
             'scipy>=1.2.2',
