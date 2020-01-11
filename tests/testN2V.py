@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-import networkx as nx
 import os.path
 import numpy as np
+from n2v import CSFGraph
 from n2v import N2vGraph
 
 
@@ -22,14 +22,14 @@ def calculate_total_probs(j, q):
             alias_index = j[i]
             probs[alias_index] += 1 - p
     s = np.sum(probs)
-    return probs/s
+    return probs / s
+
 
 class TestHetGraph(TestCase):
 
     def setUp(self):
-        inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = nx.read_edgelist(inputfile, nodetype=str, data=(('weight', float),), create_using=nx.DiGraph())
-        g = g.to_undirected() #adding this to show the graph is not firected.
+        infile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
+        g = CSFGraph(infile)
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')
@@ -71,7 +71,7 @@ class TestHetGraph(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
-        g0g1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
+        g0g1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g0g1edges = alias_edge_tuple.get(g0g1tuple)
         # g0g1 edges has the alias map and probabilities as a 2-tuple
@@ -80,7 +80,7 @@ class TestHetGraph(TestCase):
         idx = self.get_index_of_neighbor('g1', 'd1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
-        d1prob = probs[idx] #total probability of going from g1 to d1
+        d1prob = probs[idx]  # total probability of going from g1 to d1
         self.assertAlmostEqual(1.0 / 3.0, d1prob)
 
     def test_gamma_probs_2(self):
@@ -95,7 +95,7 @@ class TestHetGraph(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'g2'
-        g1g2tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
+        g1g2tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1g2edges = alias_edge_tuple.get(g1g2tuple)
         # g1g2 edges has the alias map and probabilities as a 2-tuple
@@ -105,9 +105,8 @@ class TestHetGraph(TestCase):
         idx = self.get_index_of_neighbor('g2', 'g1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1g2edges[0], g1g2edges[1])
-        g1prob = probs[idx] #total probability of going from g2 to g1
+        g1prob = probs[idx]  # total probability of going from g2 to g1
         self.assertAlmostEqual(1.0, g1prob)
-
 
     def test_gamma_probs_3(self):
         """
@@ -121,7 +120,7 @@ class TestHetGraph(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
-        g1p1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
+        g1p1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
@@ -130,11 +129,10 @@ class TestHetGraph(TestCase):
         idx = self.get_index_of_neighbor('p1', 'g1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
-        g1prob = probs[idx] #total probability of going from p1 to g1.
+        g1prob = probs[idx]  # total probability of going from p1 to g1.
         # p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
-        #The probability of going back to g1 is gamma which is 1/3
-        self.assertAlmostEqual(1.0/3.0, g1prob)
-
+        # The probability of going back to g1 is gamma which is 1/3
+        self.assertAlmostEqual(1.0 / 3.0, g1prob)
 
     def test_gamma_probs_4(self):
         """
@@ -149,7 +147,7 @@ class TestHetGraph(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
-        g1p1tuple = (src, dst) # this is a key of the dictionary alias_edge_tuple
+        g1p1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
@@ -158,7 +156,7 @@ class TestHetGraph(TestCase):
         idx = self.get_index_of_neighbor('p1', 'p2')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
-        p2prob = probs[idx] #total probability of going from p1 to p2.
+        p2prob = probs[idx]  # total probability of going from p1 to p2.
         # p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
-        #The probability of going  to p2 is gamma which is (2/3*29) ~ 0.023
-        self.assertAlmostEqual(2.0/87.0, p2prob)
+        # The probability of going  to p2 is gamma which is (2/3*29) ~ 0.023
+        self.assertAlmostEqual(2.0 / 87.0, p2prob)
