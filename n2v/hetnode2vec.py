@@ -4,6 +4,7 @@ import logging
 import os
 import time
 from collections import defaultdict
+from multiprocessing import Pool
 
 log = logging.getLogger("hn2v.log")
 
@@ -113,22 +114,23 @@ class N2vGraph:
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return self.__alias_setup(normalized_probs)
 
-    def __preprocess_transition_probs(self):
+    def _get_alias_node(self, node):
+        g = self.g
+        unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
+        norm_const = sum(unnormalized_probs)
+        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        return [node, self.__alias_setup(normalized_probs)]
+
+    def __preprocess_transition_probs(self, num_processes=8):
         """
         Preprocessing of transition probabilities for guiding the random walks.
         """
         g = self.g
 
         alias_nodes = {}
-        c = 0
-        for node in g.nodes():
-            unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
-            norm_const = sum(unnormalized_probs)
-            normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-            alias_nodes[node] = self.__alias_setup(normalized_probs)
-            if c % 100 == 0 and c > 1:
-                print("Processed %d nodes" % c)
-            c += 1
+        with Pool(processes=num_processes) as pool:
+            for [orig_node, alias_node] in pool.map(self._get_alias_node, g.nodes()):
+                alias_nodes[orig_node] = alias_node
 
         alias_edges = {}
 
