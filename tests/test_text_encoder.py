@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import os.path
 from _collections import defaultdict
-from hn2v.text_encoder import TextEncoder
+from n2v import TextEncoder
 
 
 class TestTextEncoderSentences(TestCase):

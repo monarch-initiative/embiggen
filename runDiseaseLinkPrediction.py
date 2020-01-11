@@ -4,11 +4,11 @@ from n2v import LinkPrediction
 import os
 
 
-test_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/hn2v/g2d_test.txt'
+test_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/n2v/g2d_test.txt'
 test_graph = CSFGraph(test_file)
 
 
-training_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/hn2v/edgelist.txt'
+training_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/n2v/edgelist.txt'
 training_graph = CSFGraph(training_file)
 
 

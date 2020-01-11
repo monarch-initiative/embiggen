@@ -4,11 +4,12 @@ import logging
 import os
 import time
 from collections import defaultdict
+from multiprocessing import Pool
 
-log = logging.getLogger("hn2v.log")
+log = logging.getLogger("n2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
-    os.environ.get("LOGFILE", "hn2v.log"))
+    os.environ.get("LOGFILE", "n2v.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
@@ -22,21 +23,21 @@ class N2vGraph:
     A class to represent perform random walks on a graph in order to derive the data needed for the node2vec algorithm.
     """
 
-    def __init__(self, csf_graph, p, q, gamma, doHN2V=True):
+    def __init__(self, csf_graph, p, q, gamma, don2v=True):
         """
         Note that the CSF graph is always undirected. It stores two directed edges to represent each undirected edge.
         :param csf_graph: An undirected Compressed Storage Format graph object
         :param p:
         :param q:
         :param gamma:
-        :param doHN2V:
+        :param don2v:
         """
         self.g = csf_graph
         self.p = p
         self.q = q
         self.gamma = gamma
-        if doHN2V:
-            self.__preprocess_transition_probs_hn2v()
+        if don2v:
+            self.__preprocess_transition_probs_n2v()
         else:
             self.__preprocess_transition_probs()
 
@@ -92,10 +93,12 @@ class N2vGraph:
        # else:
         #    return False
 
-    def get_alias_edge(self, src, dst):
+    def get_alias_edge(self, edge):
         """
         Get the alias edge setup lists for a given edge.
         """
+        src = edge[0]
+        dst = edge[1]
         g = self.g
         p = self.p
         q = self.q
@@ -111,42 +114,42 @@ class N2vGraph:
                 unnormalized_probs.append(edge_weight / q)
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-        return self.__alias_setup(normalized_probs)
+        return [edge, self.__alias_setup(normalized_probs)]
 
-    def __preprocess_transition_probs(self):
+    def _get_alias_node(self, node):
+        g = self.g
+        unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
+        norm_const = sum(unnormalized_probs)
+        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        return [node, self.__alias_setup(normalized_probs)]
+
+
+
+    def __preprocess_transition_probs(self, num_processes=8):
         """
         Preprocessing of transition probabilities for guiding the random walks.
         """
         g = self.g
 
         alias_nodes = {}
-        c = 0
-        for node in g.nodes():
-            unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
-            norm_const = sum(unnormalized_probs)
-            normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-            alias_nodes[node] = self.__alias_setup(normalized_probs)
-            if c % 100 == 0 and c > 1:
-                print("Processed %d nodes" % c)
-            c += 1
+        with Pool(processes=num_processes) as pool:
+            for [orig_node, alias_node] in pool.map(self._get_alias_node, g.nodes()):
+                alias_nodes[orig_node] = alias_node
 
         alias_edges = {}
 
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
-        c = 0
-        for edge in g.edges():
-            alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
-            if c % 1000 == 0 and c > 1:
-                print("Processed %d edges" % c)
-            c += 1
+        with Pool(processes=num_processes) as pool:
+            for [orig_edge, alias_edge] in pool.map(self.get_alias_edge, g.edges()):
+                alias_edges[orig_edge] = alias_edge
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
 
         return
 
-    def get_alias_edge_hn2v(self, src, dst):
+    def get_alias_edge_n2v(self, src, dst):
         """
         Get the alias edge setup lists for a given edge.
         """
@@ -200,7 +203,7 @@ class N2vGraph:
         log.info("number of walks in different network:{} ".format(num_diff_network))
         return self.__alias_setup(normalized_probs)
 
-    def __preprocess_transition_probs_hn2v(self):
+    def __preprocess_transition_probs_n2v(self):
         """
         Preprocessing of transition probabilities for guiding the random walks.
         This version uses gamma to calculate weighted skipping across a heterogeneous network
@@ -241,14 +244,14 @@ class N2vGraph:
             for nbr in sorted_neighbors:
                 nbrtype = nbr[0]
                 prob = own2prob[nbrtype]
-                unnormalized_probs[i] = prob * G.weight(inode, nbr)
+                unnormalized_probs[i] = prob * G.weight(node, nbr)
                 i += 1
             norm_const = sum(unnormalized_probs)
             log.info("norm_const {}".format(norm_const))
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
-            alias_edges[edge] = self.get_alias_edge_hn2v(edge[0], edge[1])
+            alias_edges[edge] = self.get_alias_edge_n2v(edge[0], edge[1])
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes

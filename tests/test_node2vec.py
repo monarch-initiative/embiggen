@@ -3,7 +3,7 @@ from unittest import TestCase
 import networkx as nx
 import os.path
 import numpy as np
-from hn2v.hetnode2vec import Graph
+from n2v import N2vGraph
 
 
 def calculate_total_probs(j, q):
@@ -37,11 +37,10 @@ class TestGraph(TestCase):
         self.graph = g
 
     def test_simple_graph(self):
-        is_directed = False
         p = 1
         q = 1
         gamma = 1
-        g = Graph(self.graph, is_directed, p, q, gamma)
+        g = N2vGraph(self.graph, p, q, gamma)
         src='g1'
         dst='g2'
         j_alias, q_alias = g.get_alias_edge(src, dst)
@@ -95,11 +94,10 @@ class TestHetGraph(TestCase):
         self.assertEqual(150, m)
 
     def test_raw_probs(self):
-        is_directed = False
         p = 1
         q = 1
         gamma = 1
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
         j_alias, q_alias = g.get_alias_edge(src, dst)
@@ -109,107 +107,6 @@ class TestHetGraph(TestCase):
         # recreate the original probabilities. They should be a vector of length 102 where all values are 10.0/102.0.
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(10.0/1020.0, original_probs[self.d1index])
-
-
-    # def test_gamma2(self):
-    #     """
-    #     We are using gamma2 to record the proportion of nodes with different edge types from the original node
-    #     :return:
-    #     """
-    #     is_directed = False
-    #     p = 1
-    #     q = 1
-    #     gamma = 1
-    #     g = Graph(self.graph, is_directed, p, q, gamma)
-    #     #g1 has 100 gene neighbors, 1 protein node, 1 disease node
-    #     # thus the proportion of different nodes is 2/102
-    #     gamma2 = self.graph.node['g1']['gamma2']
-    #     #we expect gamma2 to be self.gamma/proportion of different node types
-    #     expected = g.gamma / (2.0/102.0)
-    #     self.assertAlmostEqual(expected, gamma2)
-
-    def test_calculate_proportion_of_different_neighbors(self):
-        """
-        There is one neighbor to g2 which is g1. So, gamma2 is 1.
-        :return:
-        """
-        is_directed = False
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
-        node ='g2'
-        g.calculate_proportion_of_different_neighbors(node)
-        self.assertEqual(1, self.graph.node['g2']['gamma2'])
-
-
-    def test_calculate_proportion_of_different_neighbors_2(self):
-        """
-        g1 has 2 neighbors in different networks and 100 neighbors in the same network.
-        So, prop =  2/102. Thus, gamma2 is (1/3) / (2/102) = 51/3 = 17
-        :return:
-        """
-        is_directed = False
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
-        node ='g1'
-        g.calculate_proportion_of_different_neighbors(node)
-        self.assertEqual((1.0/3.0)/(2.0/102.0), self.graph.node['g1']['gamma2'])
-
-    def test_alias_edge_2_length_1(self):
-        """
-        There are 102 edges from g_1. So, the length of j_alias is 102.
-        :return:
-        """
-        is_directed = False
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
-        src = 'g0'
-        dst = 'g1'
-        j_alias, q_alias = g.get_alias_edgeHN2V(src, dst)
-        self.assertEqual(102, len(j_alias))
-
-    def test_alias_edge_2_length_2(self):
-        """
-        Tests if the lengths of j_alias array and q_alias array are equal.
-        :return:
-        """
-        is_directed = False
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
-        src = 'g1'
-        dst = 'd1'
-        j_alias, q_alias = g.get_alias_edgeHN2V(src, dst)
-        self.assertEqual(len(q_alias), len(j_alias))
-
-    def test_gamma_probs(self):
-        """
-        Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma = 1/k
-        where k=3, i.e., the number of different node types
-        :return:
-        """
-        is_directed = False
-        p = 1
-        q = 1
-        gamma = float(1)/float(3)
-        g = Graph(self.graph, is_directed, p, q, gamma, True)
-        src = 'g0'
-        dst = 'g1'
-        j_alias, q_alias = g.get_alias_edgeHN2V(src, dst)
-        alias_tuple = g.retrieve_alias_nodes()
-        # recreate the original probabilities.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        numerator = g.gamma / (2.0/102.0)
-        denominator = 100.0/102.0 + 102.0 * g.gamma
-        expected = numerator/denominator
-        self.assertAlmostEqual(1.0/3.0, original_probs[self.d1index])
-
 
 
 
