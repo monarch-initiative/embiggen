@@ -93,10 +93,12 @@ class N2vGraph:
        # else:
         #    return False
 
-    def get_alias_edge(self, src, dst):
+    def get_alias_edge(self, edge):
         """
         Get the alias edge setup lists for a given edge.
         """
+        src = edge[0]
+        dst = edge[1]
         g = self.g
         p = self.p
         q = self.q
@@ -112,7 +114,7 @@ class N2vGraph:
                 unnormalized_probs.append(edge_weight / q)
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-        return self.__alias_setup(normalized_probs)
+        return [edge, self.__alias_setup(normalized_probs)]
 
     def _get_alias_node(self, node):
         g = self.g
@@ -120,6 +122,8 @@ class N2vGraph:
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return [node, self.__alias_setup(normalized_probs)]
+
+
 
     def __preprocess_transition_probs(self, num_processes=8):
         """
@@ -136,12 +140,9 @@ class N2vGraph:
 
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
-        c = 0
-        for edge in g.edges():
-            alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
-            if c % 1000 == 0 and c > 1:
-                print("Processed %d edges" % c)
-            c += 1
+        with Pool(processes=num_processes) as pool:
+            for [orig_edge, alias_edge] in pool.map(self.get_alias_edge, g.edges()):
+                alias_edges[orig_edge] = alias_edge
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
