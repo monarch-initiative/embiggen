@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'HN2V'
+project = 'n2v'
 copyright = '2019, Vida Ravanmehr, Peter N Robinson'
 author = 'Vida Ravanmehr, Peter N Robinson'
 
@@ -108,7 +108,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'HN2Vdoc'
+htmlhelp_basename = 'n2vdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -135,7 +135,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'HN2V.tex', 'HN2V Documentation',
+    (master_doc, 'n2v.tex', 'n2v Documentation',
      'Vida Ravanmehr, Peter N Robinson', 'manual'),
 ]
 
@@ -145,7 +145,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'hn2v', 'HN2V Documentation',
+    (master_doc, 'n2v', 'n2v Documentation',
      [author], 1)
 ]
 
@@ -156,8 +156,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'HN2V', 'HN2V Documentation',
-     author, 'HN2V', 'One line description of project.',
+    (master_doc, 'n2v', 'n2v Documentation',
+     author, 'n2v', 'One line description of project.',
      'Miscellaneous'),
 ]
 

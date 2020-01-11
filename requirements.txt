@@ -1,6 +1,0 @@
-numpy>=1.16.4
-matplotlib
-scipy>=1.2.2
-pandas
-scikit-learn
-tensorflow>=2.0

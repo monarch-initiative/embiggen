@@ -9,7 +9,7 @@ import os
 from n2v.word2vec import SkipGramWord2Vec
 
 training_file = os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate.train')
-training_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/hn2v/edgelist.txt'
+training_file = '/home/robinp/PycharmProjects/IDG2KG-project-management/n2v/edgelist.txt'
 #test_file= os.path.join(os.path.dirname(__file__), 'tests', 'data', 'karate.test')
 
 print("Reading training file %s" % training_file)

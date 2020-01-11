@@ -7,13 +7,13 @@ and adapted from code at https://github.com/aditya-grover/node2vec
 import argparse
 import networkx as nx
 from gensim.models import Word2Vec
-import hn2v
+import n2v
 import os
 import logging
-log = logging.getLogger("hn2v.log")
+log = logging.getLogger("n2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
-    os.environ.get("LOGFILE", "hn2v.log"))
+    os.environ.get("LOGFILE", "n2v.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
@@ -104,15 +104,15 @@ def main(args):
 	"""
 	nx_g = read_graph()
 	log.debug("Extracted graph with {}".format(nx_g))
-	g = hn2v.hetnode2vec.Graph(nx_g, args.directed, args.p, args.q, args.gamma, True)  # gamma is a parameter when we traverse
-	# from one nodetype to another nodetype. Change True to False if you don't want to use the modified get-alias_adgeHN2V
+	g = n2v.hetnode2vec.Graph(nx_g, args.directed, args.p, args.q, args.gamma, True)  # gamma is a parameter when we traverse
+	# from one nodetype to another nodetype. Change True to False if you don't want to use the modified get-alias_adgen2v
 	log.info("Done: preprocess transition probabilities ")
 	walks = g.simulate_walks(args.num_walks, args.walk_length)
 	learn_embeddings(walks)
 
 
 if __name__ == "__main__":
-	log.debug("starting execution of run_hn2v.py")
+	log.debug("starting execution of run_n2v.py")
 	args = parse_args()
 	output_args_to_logger(args)
 	main(args)

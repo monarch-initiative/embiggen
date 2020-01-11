@@ -1,11 +1,11 @@
-.. HN2V documentation master file, created by
+.. n2v documentation master file, created by
    sphinx-quickstart on Sat Jun  8 08:57:04 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to HN2V's documentation!
+Welcome to n2v's documentation!
 ================================
-Heterogeneous Node2Vec (HN2V) extends the Node2Vec algorithm to use a
+Heterogeneous Node2Vec (n2v) extends the Node2Vec algorithm to use a
 heterogeneous network.
 
 .. toctree::

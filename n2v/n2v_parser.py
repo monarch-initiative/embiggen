@@ -233,7 +233,7 @@ class StringInteraction:
             return False
 
 
-class HN2VParser:
+class n2vParser:
     """
     A class to parse the graph.
     """
@@ -245,7 +245,7 @@ class HN2VParser:
         elif not os.path.exists(data_dir):
             raise Exception("`data_dir` does not exist. Make it and download the required files to run this script.")
         self.data_dir = data_dir
-        log.info("Initializing HN2VParser with data directory: {}".format(self.data_dir))
+        log.info("Initializing n2vParser with data directory: {}".format(self.data_dir))
         # initialize expected paths to files 
 
         # initialize dictionaries we will need to parse the data
@@ -488,7 +488,7 @@ class HN2VParser:
 
     def _parse_pairwise_disease_similarity_file(self):
         """
-        Parse the hn2v/data/pairwise_disease_similarity.tsv file from pairdc
+        Parse the n2v/data/pairwise_disease_similarity.tsv file from pairdc
         disease1	d2d	disease2	similarity
         OMIM:212050	d2d	OMIM:308230	3.2942230999469757
         (...)
@@ -760,7 +760,7 @@ class HN2VParser:
 
     def parse(self):
         """
-        Parse all of the input files for HN2V
+        Parse all of the input files for n2v
         """
         log.debug("Parsing gene2ensembl {}".format(self.gene2ensembl_path))
         self._parse_gene2ensembl()
