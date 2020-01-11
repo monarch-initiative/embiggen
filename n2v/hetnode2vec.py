@@ -241,7 +241,7 @@ class N2vGraph:
             for nbr in sorted_neighbors:
                 nbrtype = nbr[0]
                 prob = own2prob[nbrtype]
-                unnormalized_probs[i] = prob * G.weight(inode, nbr)
+                unnormalized_probs[i] = prob * G.weight(node, nbr)
                 i += 1
             norm_const = sum(unnormalized_probs)
             log.info("norm_const {}".format(norm_const))
