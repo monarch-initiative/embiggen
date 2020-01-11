@@ -3,11 +3,10 @@ import re
 import os
 import string
 import bz2
-import numpy as np
 from math import ceil
 
-
 stopwords = set(['the', 'a', 'an', 'another', 'for', 'an', 'nor', 'but', 'or', 'yet', 'so'])
+
 
 class TextEncoder:
     """
@@ -44,7 +43,7 @@ class TextEncoder:
         text = text.replace("'s", " is")
         text = text.replace("'m", " am")
 
-        ## Numbers with Word
+        # Numbers with Word
         text = text.replace("0", " zero ")
         text = text.replace("1", " one ")
         text = text.replace("2", " two ")
@@ -63,7 +62,7 @@ class TextEncoder:
         text = " ".join(text.split())
         return text
 
-    def read_databz2(filename):
+    def read_databz2(self, filename):
         """
         Extract the first file enclosed in a zip (bz2) file as a list of words
         and pre-processes it using the nltk python library
@@ -113,7 +112,6 @@ class TextEncoder:
         with open(self.filename) as f:
             filecontents = f.read().replace('\n', '')
             sentences = re.split("(?<=[.!?])\\s+", filecontents)
-        print("got {} sentences".format(len(sentences)))
         for sent in sentences:
             sent = TextEncoder.clean_text(sent)
             # tokenizes a string to a list of words
@@ -176,7 +174,6 @@ class TextEncoder:
         count = [['UNK', -1]]
         flat_list_of_words = [item for sublist in sentences for item in sublist]
         vocabulary_size = min(50000, len(set(flat_list_of_words)))
-        print("vocabulary_size: %d" % vocabulary_size)
         # Gets only the vocabulary_size most common words as the vocabulary
         # All the other words will be replaced with UNK token
         # A counter is a container that stores elements as dictionary keys,
@@ -213,11 +210,10 @@ class TextEncoder:
 
         reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
         # Make sure the dictionary is of size of the vocabulary
-        print("len dict {} vocab size {}".format(len(dictionary), vocabulary_size))
         assert len(dictionary) == vocabulary_size
         del sentences  # Hint to reduce memory.
-        #log.info('Most common words (+UNK) {}', str(count[:5)])
-        #log.info('Sample data: {}', str(data[:10]))
+        # log.info('Most common words (+UNK) {}', str(count[:5)])
+        # log.info('Sample data: {}', str(data[:10]))
         return data, count, dictionary, reverse_dictionary
 
 
