@@ -96,6 +96,9 @@ class N2vGraph:
     def get_alias_edge(self, edge):
         """
         Get the alias edge setup lists for a given edge.
+        :param edge:
+            edge to be aliased
+        :returns [original_edge, [j, q]]
         """
         src = edge[0]
         dst = edge[1]
