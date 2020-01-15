@@ -12,9 +12,10 @@ np.random.seed(seed)
 
 num_nodes = 100
 num_edges = 5000
+max_weight = 100
 graph = nx.complete_graph(num_nodes)
 
-weights = np.random.rand(num_edges)
+weights = np.random.randint(max_weight, size=num_edges)
 node1 = np.random.randint(1, num_nodes, num_edges)
 node2 = np.random.randint(1, num_nodes, num_edges)
 df = pd.DataFrame({'node1': node1, 'node2': node2, 'weight': weights})
