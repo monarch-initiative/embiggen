@@ -158,14 +158,21 @@ class SkipGramWord2Vec(Word2Vec):
         # (some ops are not compatible on GPU).
         with tf.device('/cpu:0'):
             # Create the embedding variable (each row represent a word embedding vector).
+            # self.embedding wiull have shape = (#n_words, dimensions)
+            # where dimensions refers to thhe size of the embedding vectors
             self.embedding = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
             # Construct the variables for the NCE loss.
             self.nce_weights = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
             self.nce_biases = tf.Variable(tf.zeros([self.vocabulary_size]))
 
     def get_embedding(self, x):
-        # Ensure the following ops& var are assigned on CPU
-        # (some ops are not compatible on GPU).
+        '''
+        Get the embedding corresponding to the datapoints in x
+        Note that we ensure that this code is carried out on the CPU because some ops are
+        not compatible with thhe GPU
+        :param x: data point indices, with shape (batch_size,)
+        :return corresponding embeddings, with shape (batch_size, embedding_dimension)
+        '''
         with tf.device('/cpu:0'):
             # Lookup the corresponding embedding vectors for each sample in X.
             x_embed = tf.nn.embedding_lookup(self.embedding, x)
@@ -384,6 +391,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # (some ops are not compatible on GPU).
         with tf.device('/cpu:0'):
             # Create the embedding variable (each row represent a word embedding vector).
+            # self.embedding will have size (#words, dim), where dim is hte dimension of the embedding vector, e.g. 200
             self.embedding =tf.Variable(tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0,dtype=tf.float32))
             ## Should we initialize with iniform or normal?
             # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
@@ -397,23 +405,25 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
 
     def get_embedding(self, x):
-        # Ensure the following ops& var are assigned on CPU
-        # (some ops are not compatible on GPU).
-        with tf.device('/cpu:0'):
-            # Look up embeddings for a batch of inputs.
-            # Here we do embedding lookups for each column in the input placeholder
-            # and then average them to produce an embedding_size word vector
-            stacked_embedings = None
-            print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
-            for i in range(2 * self.skip_window):
-                embedding_i = tf.nn.embedding_lookup(self.embedding, x)
-                print("embedding_i shape", embedding_i.shape)
-                x_size, y_size, extraWHAT = embedding_i.get_shape().as_list() # added ',_' -- is this correct?
-                if stacked_embedings is None:
-                    stacked_embedings = tf.reshape(embedding_i, [x_size, y_size, extraWHAT])
-                else:
-                    stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
-                                                                  tf.reshape(embedding_i, [x_size, y_size, extraWHAT])])
+        '''
+        :param x: A batch-size long list of windows of words (sliding windows) e.g.,
+        [[ 2619 15572 15573 15575 15576 15577], [15572 15573 15574 15576 15577 15578], ...]
+        The function performs embedding lookups for each column in the input (except the middle one)
+        and then averages the them to produce a word vector
+        The dimension of x is (batchsize, 2*skip_window), e.g., (128,6)
+        Note that x does not contain the middle word
+        '''
+        stacked_embedings = None
+        print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
+        for i in range(2 * self.skip_window):
+            embedding_i = tf.nn.embedding_lookup(self.embedding, x[:,i])
+            print("embedding_i shape", embedding_i.shape)
+            x_size, y_size = embedding_i.get_shape().as_list() # added ',_' -- is this correct?
+            if stacked_embedings is None:
+                stacked_embedings = tf.reshape(embedding_i, [x_size, y_size, 1])
+            else:
+                stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
+                                                                  tf.reshape(embedding_i, [x_size, y_size, 1])])
 
             assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
             print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
@@ -445,8 +455,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             """
 
             loss = tf.reduce_mean(
-                tf.nn.nce_loss(weights=self.nce_weights,
-                               biases=self.nce_biases,
+                tf.nn.nce_loss(weights=self.softmax_weights,
+                               biases=self.softmax_biases,
                                labels=y,
                                inputs=x_embed,
                                num_sampled=self.num_sampled,
@@ -465,21 +475,14 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def generate_batch_cbow(self, data, batch_size, window_size):
         '''
-        Generate the next batch of data for thhe continous bag of words algorithm
-        This function assumes that all input data is in one vector in self.data. To train
-        on sentences TODO.
-        :param batch_size:
+        Generate the next batch of data for CBOW
+        :param data: list of words. TODO make class variable
+        :param batch_size: number of examples to process at once
+        :param window_size: number of words to consider on eachh side of central word
+        :return: batch CBOW data for training
         '''
-        # window_size is the amount of words we're looking at from each side of a given word
-        # creates a single batch
-
-        # data_index is updated by 1 everytime we read a set of data point
-        #global data_index
-
-        # span defines the total window size, where
-        # data we consider at an instance looks as follows.
-        # [ skip_window target skip_window ]
-        # e.g if skip_window = 2 then span = 5
+        # span is the total size of the sliding window we look at.
+        # [ skip_window central_word skip_window ]
         span = 2 * window_size + 1  # [ skip_window target skip_window ]
 
         # two numpy arrays to hold target words (batch)
@@ -488,7 +491,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
 
-        # The buffer holds the data contained within the span
+        # The buffer holds the data contained within the span.
+        # The deque essentially implements a sliding window
         buffer = collections.deque(maxlen=span)
 
         # Fill the buffer and update the data_index
@@ -496,30 +500,20 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             buffer.append(data[self.data_index])
             self.data_index = (self.data_index + 1) % len(data)
 
-        # Here we do the batch reading
-        # We iterate through each batch index
         # For each batch index, we iterate through span elements
         # to fill in the columns of batch array
         for i in range(batch_size):
-            target = window_size  # target label at the center of the buffer
-            #target_to_avoid = [window_size]  # we only need to know the words around a given word, not the word itself
-
-            # add selected target to avoid_list for next time
+            target = window_size  # target word at the center of the buffer
             col_idx = 0
             for j in range(span):
-                # ignore the target word when creating the batch
                 if j == span // 2:
-                    continue
+                    continue # i.e., ignore the center wortd
                 batch[i, col_idx] = buffer[j]
                 col_idx += 1
             labels[i, 0] = buffer[target]
-
-            # Everytime we read a data point,
-            # we need to move the span by 1
-            # to create a fresh new span
+            # move the span by 1, i.e., sliding window, since buffer is deque with limited size
             buffer.append(data[self.data_index])
             self.data_index = (self.data_index + 1) % len(data)
-
         return batch, labels
 
     @DeprecationWarning
@@ -565,10 +559,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 loss = self.nce_loss(emb, y)
 
             # Compute gradients.
-            gradients = g.gradient(loss, [self.embedding, self.nce_weights, self.nce_biases])
+            gradients = g.gradient(loss, [self.embedding, self.softmax_weights, self.softmax_biases])
 
             # Update W and b following gradients.
-            self.optimizer.apply_gradients(zip(gradients, [self.embedding, self.nce_weights, self.nce_biases]))
+            self.optimizer.apply_gradients(zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
 
     def train(self, display_step=2000):
         # Words for testing.
