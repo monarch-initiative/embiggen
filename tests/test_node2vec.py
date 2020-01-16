@@ -43,17 +43,20 @@ class TestGraph(TestCase):
         src = 'g1'
         dst = 'g2'
         edge = (src, dst)
-        j_alias, q_alias = g.get_alias_edge(edge)
+        orig_edge, [j_alias, q_alias] = g.get_alias_edge(edge)
+
+        self.assertEqual(orig_edge, edge,
+                         "get_alias_edge didn't send back the original edge")
         self.assertEqual(len(j_alias), len(q_alias))
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
         # TODO REFACTORED WHAT IS GOING ON
-        # self.assertEqual(4, len(j_alias))
+        self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be 0.2, 0.2, 0.4, 0.2
-        # original_probs = calculate_total_probs(j_alias, q_alias)
-        # self.assertAlmostEqual(0.2, original_probs[0])
-        # self.assertAlmostEqual(0.2, original_probs[1])
-        # self.assertAlmostEqual(0.4, original_probs[2])
-        # self.assertAlmostEqual(0.2, original_probs[3])
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(0.2, original_probs[0])
+        self.assertAlmostEqual(0.2, original_probs[1])
+        self.assertAlmostEqual(0.4, original_probs[2])
+        self.assertAlmostEqual(0.2, original_probs[3])
 
 
 class TestHetGraph(TestCase):
