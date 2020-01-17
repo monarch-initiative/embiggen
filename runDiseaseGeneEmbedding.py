@@ -59,20 +59,24 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
 @click.option("test_file", "-t", type=click.Path(exists=True))
 @click.option("training_file", "-r", type=click.Path(exists=True))
 @click.option("embedded_graph", "-e", type=click.Path(exists=True))
-def disease_link_prediction(test_file, training_file, embedded_graph):
+@click.option("edge_embedding_method", "-m", default="hadamard")
+@click.option("portion_false_edges", "-p", default=1)
+def disease_link_prediction(test_file, training_file, embedded_graph,
+                            edge_embedding_method, portion_false_edges):
     """
     Predict disease links
     """
     test_graph = CSFGraph(test_file)
     training_graph = CSFGraph(training_file)
 
-    parameters = {'edge_embedding_method': "hadamard",
-                  'portion_false_edges': 1}
+    parameters = {'edge_embedding_method': edge_embedding_method,
+                  'portion_false_edges': portion_false_edges}
 
     lp = LinkPrediction(training_graph, test_graph, embedded_graph, params=parameters)
     lp.predict_links()
     lp.output_Logistic_Reg_results()
     training_graph = CSFGraph(training_file)
+
 
 if __name__ == "__main__":
     cli()
