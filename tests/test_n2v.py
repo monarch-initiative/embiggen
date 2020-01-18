@@ -6,14 +6,20 @@ from n2v import WeightedTriple
 from n2v import StringInteraction
 from n2v import n2vParser
 
-## files used by many tests
-gene2ensembl = os.path.join(os.path.dirname(__file__), 'data', 'small_gene2ensem.txt.gz')
-string_ppi = os.path.join(os.path.dirname(__file__), 'data', 'small_protein_actions_v11.txt.gz')
+# files used by many tests
+gene2ensembl = os.path.join(os.path.dirname(
+    __file__), 'data', 'small_gene2ensem.txt.gz')
+string_ppi = os.path.join(os.path.dirname(
+    __file__), 'data', 'small_protein_actions_v11.txt.gz')
 
-hpo_path = os.path.join(os.path.dirname(__file__), 'data', 'small_disease_disease.txt')
-gtex_path = os.path.join(os.path.dirname(__file__), 'data', 'small_gtex.txt.gz')
-gene_disease_train_path = os.path.join(os.path.dirname(__file__), 'data', 'small_gene_disease.txt')
-gene_disease_test_path = os.path.join(os.path.dirname(__file__), 'data', 'small_g2d_test.txt')
+hpo_path = os.path.join(os.path.dirname(__file__),
+                        'data', 'small_disease_disease.txt')
+gtex_path = os.path.join(os.path.dirname(
+    __file__), 'data', 'small_gtex.txt.gz')
+gene_disease_train_path = os.path.join(
+    os.path.dirname(__file__), 'data', 'small_gene_disease.txt')
+gene_disease_test_path = os.path.join(
+    os.path.dirname(__file__), 'data', 'small_g2d_test.txt')
 
 params = {'gtex_path': gtex_path, 'gene2ensembl_path': gene2ensembl, 'string_path': string_ppi,
           'g2d_train_path': gene_disease_train_path, 'g2d_test_path': gene_disease_test_path, 'd2d_path': hpo_path}
@@ -30,6 +36,11 @@ class TestWeightedTriple(TestCase):
         self.assertEqual(42, wt.get_subject())
 
     def test_get_object(self):
+        wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
+        print(wt.get_triple())
+        assert wt.get_triple() == "42\t84\tmadeup-edgetype"
+
+    def test_get_triple(self):
         wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
         self.assertEqual(84, wt.get_object())
 
@@ -95,7 +106,8 @@ class TestStringInteraction(TestCase):
               "f",
               "309"]
 
-    line4 = '\t'.join(array4)  # a line with non-valid triple. "action" = "random" is not valid
+    # a line with non-valid triple. "action" = "random" is not valid
+    line4 = '\t'.join(array4)
 
     array5 = ["9606.ENSP00000000233",
               "9606.ENSP00000223369",
@@ -104,7 +116,8 @@ class TestStringInteraction(TestCase):
               "",
               "t",
               "913"]
-    line5 = '\t'.join(array5)  # a line with non-valid triple. "action" = "random" is not valid
+    # a line with non-valid triple. "action" = "random" is not valid
+    line5 = '\t'.join(array5)
 
     def test1(self):
         self.assertTrue(True)
@@ -255,6 +268,7 @@ class TestStringInteraction(TestCase):
         si = StringInteraction(TestStringInteraction.line3)
         expected = "['ENSP00000000233', 'activation', 'ENSP00000248901']"
         self.assertEqual(expected, str(si.get_edge_type()))
+
 
 '''
 class Testn2vParser(TestCase):
