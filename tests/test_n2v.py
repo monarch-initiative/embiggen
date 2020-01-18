@@ -50,6 +50,11 @@ class TestWeightedTriple(TestCase):
         with self.assertRaises(TypeError):
             WeightedTriple.map_string("Totally not a StringInteraction")
 
+    def test_map_string_to_gene_id_exception(self):
+        with self.assertRaises(TypeError):
+            WeightedTriple.map_string_to_gene_id(
+                "Totally not a StringInteraction", None)
+
     def test_get_triple(self):
         wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
         self.assertEqual(84, wt.get_object())
