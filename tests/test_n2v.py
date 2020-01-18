@@ -37,8 +37,14 @@ class TestWeightedTriple(TestCase):
 
     def test_get_object(self):
         wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
-        print(wt.get_triple())
         assert wt.get_triple() == "42\t84\tmadeup-edgetype"
+
+    def test_create_gene_disease_weighted_triple(self):
+        wt1 = WeightedTriple(42, 84, 0.7, "gene_dis")
+        wt2 = WeightedTriple.create_gene_disease_weighted_triple(
+            42, 84, 0.7
+        )
+        assert str(wt1) == str(wt2)
 
     def test_get_triple(self):
         wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
