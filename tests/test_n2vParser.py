@@ -24,8 +24,29 @@ params = {'gtex_path': gtex_path, 'gene2ensembl_path': gene2ensembl, 'string_pat
 
 
 class TestN2vParser(TestCase):
-    def test_n2vParser(self):
+    def test_n2vParser_init(self):
+        n2vParser(data_dir="tests/data", params=params)
+
+    def test_get_num_proteins_not_mapped_count(self):
         p = n2vParser(data_dir="tests/data", params=params)
+        # TODO: currently testing only execution, in
+        # the future it will be necessary to also test
+        # if the return value is correct
+        p.get_num_proteins_not_mapped_count()
+
+    def test_get_number_proteins_found_TCRD(self):
+        p = n2vParser(data_dir="tests/data", params=params)
+        # TODO: currently testing only execution, in
+        # the future it will be necessary to also test
+        # if the return value is correct
+        p.get_number_proteins_found_TCRD()
+
+    def test_parse(self):
+        p = n2vParser(data_dir="tests/data", params=params)
+        # TODO: currently testing only execution, in
+        # the future it will be necessary to also test
+        # if the return value is correct
+        p.parse()
 
     def test_n2vParser_wrong_path(self):
         with self.assertRaises(Exception):
