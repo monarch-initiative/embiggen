@@ -46,6 +46,13 @@ class TestWeightedTriple(TestCase):
         )
         assert str(wt1) == str(wt2)
 
+    def test_create_gtex(self):
+        wt1 = WeightedTriple(42, 84, 0.7, "gtex")
+        wt2 = WeightedTriple.create_gtex(
+            42, 84, 0.7
+        )
+        assert str(wt1) == str(wt2)
+
     def test_map_string_exception(self):
         with self.assertRaises(TypeError):
             WeightedTriple.map_string("Totally not a StringInteraction")
