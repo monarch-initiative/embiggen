@@ -48,6 +48,13 @@ class TestN2vParser(TestCase):
         # if the return value is correct
         p.parse()
 
+    def test_summary(self):
+        p = n2vParser(data_dir="tests/data", params=params)
+        # TODO: currently testing only execution,
+        # but the following method currently
+        # consists only of a "pass"
+        p.print_summary()
+
     def test_n2vParser_wrong_path(self):
         with self.assertRaises(Exception):
             n2vParser(data_dir="tests/dataty", params=params)
