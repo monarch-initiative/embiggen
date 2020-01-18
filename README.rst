@@ -27,8 +27,8 @@ To do. We will submit N2V to PyPI as soon as the code is a bit more mature.
 
 Unit testing
 ^^^^^^^^^^^^
+To run the unit testing on the package, generating the coverage and the html report, you can use:
 
+.. code:: bash
 
-
-
-
+    nosetests --with-coverage --cover-package=n2v --cover-html
