@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import random
 import logging
@@ -135,17 +137,27 @@ class N2vGraph:
         g = self.g
 
         alias_nodes = {}
+        num_nodes = len(g.nodes())  # for progress updates
         with Pool(processes=num_processes) as pool:
-            for [orig_node, alias_node] in pool.map(self._get_alias_node, g.nodes()):
+            for i, [orig_node, alias_node] in enumerate(
+                    pool.imap_unordered(self._get_alias_node, g.nodes())):
                 alias_nodes[orig_node] = alias_node
+                sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
+                                 format(100*i/num_nodes))
+        sys.stderr.write("\rDone making alias nodes.\n")
 
         alias_edges = {}
 
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
+        num_edges = len(g.edges())  # for progress updates
         with Pool(processes=num_processes) as pool:
-            for [orig_edge, alias_edge] in pool.map(self.get_alias_edge, g.edges()):
+            for i, [orig_edge, alias_edge] in enumerate(
+                    pool.imap_unordered(self.get_alias_edge, g.edges())):
                 alias_edges[orig_edge] = alias_edge
+                sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
+                                 format(100*i/num_edges))
+        sys.stderr.write("\rDone making alias edges.\n")
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
