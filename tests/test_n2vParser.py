@@ -25,7 +25,8 @@ params = {'gtex_path': gtex_path, 'gene2ensembl_path': gene2ensembl, 'string_pat
 
 class TestN2vParser(TestCase):
     def test_n2vParser_init(self):
-        n2vParser(data_dir="tests/data", params=params)
+        p = n2vParser(data_dir="tests/data", params=params)
+        p.qc_input()
 
     def test_get_num_proteins_not_mapped_count(self):
         p = n2vParser(data_dir="tests/data", params=params)
@@ -47,6 +48,14 @@ class TestN2vParser(TestCase):
         # the future it will be necessary to also test
         # if the return value is correct
         p.parse()
+        p.output_ensembl_gene2gene_id("output.test.txt")
+        os.remove("output.test.txt")
+        p.get_gene_disease_count()
+        p.get_ensembl_gene2gene_map_count()
+        p.get_unique_string_protein_set()
+        p.get_string_valid_ppi_count()
+        p.get_string_raw_ppi_count()
+        p.get_protein2gene_map_count()
 
     def test_summary(self):
         p = n2vParser(data_dir="tests/data", params=params)
