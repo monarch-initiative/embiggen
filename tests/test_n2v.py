@@ -6,6 +6,13 @@ from n2v import WeightedTriple
 from n2v import StringInteraction
 from n2v import n2vParser
 
+from urllib.request import urlopen
+import os.path
+
+# Tale of Two Cities, Dickens, from Gutenberg project
+from n2v.text_encoder import TextEncoder
+from n2v.word2vec import SkipGramWord2Vec
+
 # files used by many tests
 gene2ensembl = os.path.join(os.path.dirname(
     __file__), 'data', 'small_gene2ensem.txt.gz')
@@ -290,6 +297,26 @@ class TestStringInteraction(TestCase):
         si = StringInteraction(TestStringInteraction.line3)
         expected = "['ENSP00000000233', 'activation', 'ENSP00000248901']"
         self.assertEqual(expected, str(si.get_edge_type()))
+
+    def test_execution(self):
+        local_file = 'twocities.txt'
+
+        if not os.path.exists(local_file):
+            url = 'https://www.gutenberg.org/files/98/98-0.txt'
+            with urlopen(url) as response:
+                resource = response.read()
+                content = resource.decode('utf-8')
+                fh = open(local_file, 'w')
+                fh.write(content)
+        else:
+            print("{} was previously downloaded".format(local_file))
+
+        encoder = TextEncoder(local_file)
+        data, count, dictionary, reverse_dictionary = encoder.build_dataset()
+        model = SkipGramWord2Vec(
+            data, worddictionary=dictionary, reverse_worddictionary=reverse_dictionary)
+        model.add_display_words(count)
+        model.train(display_step=1000)
 
 
 '''

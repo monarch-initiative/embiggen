@@ -10,3 +10,5 @@ __pycache__
 */__pycache__/*
 .single_run
 .coverage*
+twocities.txt
+karate.embedded
