@@ -748,7 +748,6 @@ class n2vParser:
         """
         node2nodetype = {}
         with open(fname, 'a') as f:
-
             for i in self.gene_disease_test:
                 sub = i.get_subject()
                 obj = i.get_object()

@@ -56,6 +56,12 @@ class TestN2vParser(TestCase):
         p.get_string_valid_ppi_count()
         p.get_string_raw_ppi_count()
         p.get_protein2gene_map_count()
+        p.output_nodes_and_edges_test_set("output.tsv")
+        os.remove("output.tsv")
+        p.output_nodes_and_edges("output.tsv")
+        os.remove("output.tsv")
+        p.gene_protein_disease_edges("output.tsv")
+        os.remove("output.tsv")
 
     def test_summary(self):
         p = n2vParser(data_dir="tests/data", params=params)
