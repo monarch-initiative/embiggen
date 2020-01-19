@@ -52,6 +52,6 @@ class TestKarate(TestCase):
         lp = LinkPrediction(training_graph, test_graph,
                             path_to_embedded_graph, params=parameters)
 
-        # lp.output_diagnostics_to_logfile()
+        lp.output_diagnostics_to_logfile()
         lp.predict_links()
         lp.output_Logistic_Reg_results()
