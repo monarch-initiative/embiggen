@@ -12,3 +12,4 @@ __pycache__
 .coverage*
 twocities.txt
 karate.embedded
+unmapped_proteins.txt
