@@ -116,7 +116,7 @@ class SkipGramWord2Vec(Word2Vec):
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=1000,#default=3000000
+                 num_steps=100000,#default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
                  min_occurrence=1,#default=2
@@ -425,11 +425,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
                                                                   tf.reshape(embedding_i, [x_size, y_size, 1])])
 
-            assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
-            print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
-            mean_embeddings = tf.reduce_mean(stacked_embedings, 2, keepdims=False)
-            print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
-            return mean_embeddings
+        assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
+        print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
+        mean_embeddings = tf.reduce_mean(stacked_embedings, 2, keepdims=False)
+        print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
+        return mean_embeddings
 
 
     def get_loss(self, mean_embeddings, y):
@@ -439,7 +439,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         loss = tf.reduce_mean(
             tf.nn.sampled_softmax_loss(weights=self.softmax_weights, biases=self.softmax_biases, inputs=mean_embeddings,
                                        labels=y, num_sampled=self.num_sampled, num_classes=self.vocabulary_size))
-    @DeprecationWarning
     def nce_loss(self, x_embed, y):
         with tf.device('/cpu:0'):
             # Compute the average NCE loss for the batch.
@@ -488,8 +487,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # two numpy arrays to hold target words (batch)
         # and context words (labels)
         # Note that batch has span-1=2*window_size columns
-        batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
-        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+        batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int64)
+        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int64)
 
         # The buffer holds the data contained within the span.
         # The deque essentially implements a sliding window
