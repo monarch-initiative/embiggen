@@ -5,21 +5,21 @@ import tensorflow as tf
 import collections
 
 
-
 class Word2Vec:
     """
     Superclass of all of the word2vec family algorithms.
     """
+
     def __init__(self,
-                 learning_rate = 0.1,
-                 batch_size = 128,
-                 num_steps = 3000000,
+                 learning_rate=0.1,
+                 batch_size=128,
+                 num_steps=3000000,
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=1,#default=2
-                 skip_window = 3 ,
+                 min_occurrence=1,  # default=2
+                 skip_window=3,
                  num_skips=2,
-                 num_sampled=7,#default=64
+                 num_sampled=7,  # default=64
                  display=None
                  ):
         """
@@ -48,7 +48,7 @@ class Word2Vec:
         self.display_examples = []
         # Evaluation Parameters.
         # eval_words = ['five', 'of', 'going', 'hardware', 'american', 'britain']
-        #TODO add FUNCTION FOR EVALUATION
+        # TODO add FUNCTION FOR EVALUATION
         eval_words = ['house', 'oliver', 'twist', 'nose']
 
     def add_display_words(self, count, num=5):
@@ -64,7 +64,7 @@ class Word2Vec:
             return
         if num > 16:
             print("[WARNING] maximum of 16 display words allowed (you passed %d)" % num)
-            num = 16 # display is a costly operation, do not allow more than 10 words
+            num = 16  # display is a costly operation, do not allow more than 10 words
         # Pick a random validation set of 'num' words to sample nearest neighbors
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements
         valid_window = 50
@@ -92,7 +92,7 @@ class Word2Vec:
         if self.id2word is None:
             raise TypeError("Could not find self.id2word dictionary")
         id_list = self.id2word.keys()
-        #id_list.sort() # TODO FIGURE OUT HOW TO SORT ME
+        # id_list.sort() # TODO FIGURE OUT HOW TO SORT ME
         fh = open(outfilename, "w")
         with tf.device('/cpu:0'):
             for id in id_list:
@@ -104,25 +104,24 @@ class Word2Vec:
                 fh.write("\n")
 
 
-
-
 class SkipGramWord2Vec(Word2Vec):
     """
     Class to run word2vec using skip grams
     """
+
     def __init__(self,
                  data,
                  worddictionary,
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=100000,#default=3000000
+                 num_steps=10000,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=1,#default=2
+                 min_occurrence=1,  # default=2
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=7,#default=64
+                 num_sampled=7,  # default=64
                  display=None
                  ):
         super(SkipGramWord2Vec, self).__init__(learning_rate,
@@ -138,8 +137,12 @@ class SkipGramWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
+
+        # takes the input data and goes through each element
         if any(isinstance(el, list) for el in self.data):
-            self.list_of_lists = True
+
+            # update this to check the first item, but demand its a list or int and then die
+            self.list_of_lists = True  # graph version
         else:
             self.list_of_lists = False
         self.calculate_vocabulary_size()
@@ -147,7 +150,7 @@ class SkipGramWord2Vec(Word2Vec):
         # lower than the default value of num_sampled of 64. However, num_sampled needs to be less than
         # the number of examples (num_sampled is the number of negative samples that get evaluated per positive example)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size/2
+            self.num_sampled = self.vocabulary_size / 2
         self.optimizer = tf.optimizers.SGD(learning_rate)
         self.data_index = 0
         self.current_sentence = 0
@@ -207,7 +210,8 @@ class SkipGramWord2Vec(Word2Vec):
             # Compute the cosine similarity between input data embedding and every embedding vectors
             x_embed = tf.cast(x_embed, tf.float32)
             x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
-            embedding_norm = self.embedding / tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
+            embedding_norm = self.embedding / tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True),
+                                                      tf.float32)
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
             return cosine_sim_op
 
@@ -250,7 +254,7 @@ class SkipGramWord2Vec(Word2Vec):
                 self.data_index = span
             else:
                 buffer.append(data[self.data_index])
-                self.data_index += 1 # i.e., move the sliding window 1 position to the right
+                self.data_index += 1  # i.e., move the sliding window 1 position to the right
         # Backtrack a little bit to avoid skipping words in the end of a batch.
         self.data_index = (self.data_index + len(data) - span) % len(data)
         return batch, labels
@@ -286,8 +290,6 @@ class SkipGramWord2Vec(Word2Vec):
 
         # get window size (words left and right + current one).
 
-
-
     # Optimization process.
     def run_optimization(self, x, y):
         with tf.device('/cpu:0'):
@@ -304,8 +306,8 @@ class SkipGramWord2Vec(Word2Vec):
 
     def train(self, display_step=2000):
         # Words for testing.
-        #display_step = 2000
-        #eval_step = 2000
+        # display_step = 2000
+        # eval_step = 2000
         if display_step is not None:
             for w in self.display_examples:
                 print("{}: id={}".format(self.id2word[w], w))
@@ -334,40 +336,42 @@ class SkipGramWord2Vec(Word2Vec):
                     top_k = 8  # number of nearest neighbors.
                     nearest = (-sim[i, :]).argsort()[1:top_k + 1]
                     disp_example = self.id2word[self.display_examples[i]]
-                    log_str = '"%s" nearest neighbors:' %  disp_example
+                    log_str = '"%s" nearest neighbors:' % disp_example
                     for k in range(top_k):
                         log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
                     print(log_str)
+
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """
     Class to run word2vec using skip grams
     """
+
     def __init__(self,
                  data,
                  worddictionary,
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=1000,#default=3000000
+                 num_steps=1000,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=1,#default=2
+                 min_occurrence=1,  # default=2
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=7,#default=64
+                 num_sampled=7,  # default=64
                  display=None
                  ):
         super(ContinuousBagOfWordsWord2Vec, self).__init__(learning_rate,
-                                               batch_size,
-                                               num_steps,
-                                               embedding_size,
-                                               max_vocabulary_size,
-                                               min_occurrence,
-                                               skip_window,
-                                               num_skips,
-                                               num_sampled,
-                                               display)
+                                                           batch_size,
+                                                           num_steps,
+                                                           embedding_size,
+                                                           max_vocabulary_size,
+                                                           min_occurrence,
+                                                           skip_window,
+                                                           num_skips,
+                                                           num_sampled,
+                                                           display)
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -380,7 +384,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # lower than the default value of num_sampled of 64. However, num_sampled needs to be less than
         # the number of examples (num_sampled is the number of negative samples that get evaluated per positive example)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size/2
+            self.num_sampled = self.vocabulary_size / 2
         self.optimizer = tf.optimizers.SGD(learning_rate)
         self.data_index = 0
         self.current_sentence = 0
@@ -392,17 +396,18 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         with tf.device('/cpu:0'):
             # Create the embedding variable (each row represent a word embedding vector).
             # self.embedding will have size (#words, dim), where dim is hte dimension of the embedding vector, e.g. 200
-            self.embedding =tf.Variable(tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0,dtype=tf.float32))
+            self.embedding = tf.Variable(
+                tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32))
             ## Should we initialize with iniform or normal?
             # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
             # Construct the variables for the NCE loss.
-            #self.nce_weights = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
-            #self.nce_biases = tf.Variable(tf.zeros([self.vocabulary_size]))
+            # self.nce_weights = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            # self.nce_biases = tf.Variable(tf.zeros([self.vocabulary_size]))
             # Softmax Weights and Biases
             self.softmax_weights = tf.Variable(tf.random.truncated_normal([self.vocabulary_size, embedding_size],
-                                                              stddev=0.5 / math.sqrt(embedding_size), dtype=tf.float32))
-            self.softmax_biases = tf.Variable(tf.random.uniform([self.vocabulary_size],0.0,0.01))
-
+                                                                          stddev=0.5 / math.sqrt(embedding_size),
+                                                                          dtype=tf.float32))
+            self.softmax_biases = tf.Variable(tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
     def get_embedding(self, x):
         '''
@@ -416,29 +421,30 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         stacked_embedings = None
         print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
         for i in range(2 * self.skip_window):
-            embedding_i = tf.nn.embedding_lookup(self.embedding, x[:,i])
+            embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
             print("embedding_i shape", embedding_i.shape)
-            x_size, y_size = embedding_i.get_shape().as_list() # added ',_' -- is this correct?
+            x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
             if stacked_embedings is None:
                 stacked_embedings = tf.reshape(embedding_i, [x_size, y_size, 1])
             else:
                 stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
-                                                                  tf.reshape(embedding_i, [x_size, y_size, 1])])
-
+                                                              tf.reshape(embedding_i, [x_size, y_size, 1])])
         assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
         print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
         mean_embeddings = tf.reduce_mean(stacked_embedings, 2, keepdims=False)
         print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
         return mean_embeddings
 
-
     def get_loss(self, mean_embeddings, y):
         # Compute the softmax loss, using a sample of the negative labels each time.
         # inputs are embeddings of the train words
         # with this loss we optimize weights, biases, embeddings
+        y = tf.cast(y, tf.int64)
         loss = tf.reduce_mean(
             tf.nn.sampled_softmax_loss(weights=self.softmax_weights, biases=self.softmax_biases, inputs=mean_embeddings,
                                        labels=y, num_sampled=self.num_sampled, num_classes=self.vocabulary_size))
+        return loss
+
     def nce_loss(self, x_embed, y):
         with tf.device('/cpu:0'):
             # Compute the average NCE loss for the batch.
@@ -468,7 +474,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # Compute the cosine similarity between input data embedding and every embedding vectors
             x_embed = tf.cast(x_embed, tf.float32)
             x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
-            embedding_norm = self.embedding / tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
+            embedding_norm = self.embedding / tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True),
+                                                      tf.float32)
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
             return cosine_sim_op
 
@@ -487,7 +494,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # two numpy arrays to hold target words (batch)
         # and context words (labels)
         # Note that batch has span-1=2*window_size columns
-        batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int64)
+        batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int64)
 
         # The buffer holds the data contained within the span.
@@ -506,7 +513,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             col_idx = 0
             for j in range(span):
                 if j == span // 2:
-                    continue # i.e., ignore the center wortd
+                    continue  # i.e., ignore the center wortd
                 batch[i, col_idx] = buffer[j]
                 col_idx += 1
             labels[i, 0] = buffer[target]
@@ -532,7 +539,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
         batch = np.ndarray(shape=0, dtype=np.int32)
-        labels = np.ndarray(shape=(0, 1), dtype=np.int32)
+        labels = np.ndarray(shape=(0, 1), dtype=np.int64)
         for i in range(walk_count):
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
@@ -546,8 +553,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         return batch, labels
 
         # get window size (words left and right + current one).
-
-
 
     # Optimization process.
     def run_optimization(self, x, y):
@@ -565,8 +570,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def train(self, display_step=2000):
         # Words for testing.
-        #display_step = 2000
-        #eval_step = 2000
+        # display_step = 2000
+        # eval_step = 2000
         if display_step is not None:
             for w in self.display_examples:
                 print("{}: id={}".format(self.id2word[w], w))
@@ -591,7 +596,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     top_k = 8  # number of nearest neighbors.
                     nearest = (-sim[i, :]).argsort()[1:top_k + 1]
                     disp_example = self.id2word[self.display_examples[i]]
-                    log_str = '"%s" nearest neighbors:' %  disp_example
+                    log_str = '"%s" nearest neighbors:' % disp_example
                     for k in range(top_k):
                         log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
                     print(log_str)
