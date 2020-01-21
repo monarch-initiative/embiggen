@@ -429,7 +429,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             else:
                 stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
                                                               tf.reshape(embedding_i, [x_size, y_size, 1])])
-
         assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
         print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
         mean_embeddings = tf.reduce_mean(stacked_embedings, 2, keepdims=False)
@@ -446,7 +445,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                        labels=y, num_sampled=self.num_sampled, num_classes=self.vocabulary_size))
         return loss
 
-    # @DeprecationWarning
     def nce_loss(self, x_embed, y):
         with tf.device('/cpu:0'):
             # Compute the average NCE loss for the batch.
