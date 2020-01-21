@@ -541,7 +541,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
         batch = np.ndarray(shape=0, dtype=np.int32)
-        labels = np.ndarray(shape=(0, 1), dtype=tf.int64)
+        labels = np.ndarray(shape=(0, 1), dtype=np.int64)
         for i in range(walk_count):
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
