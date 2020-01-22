@@ -1,6 +1,9 @@
 import logging
+import sys
 
 import click
+from click import get_os_args
+
 import n2v
 from n2v import CSFGraph
 from n2v.word2vec import SkipGramWord2Vec
@@ -11,7 +14,7 @@ def cli():
     pass
 
 @cli.command()
-@click.option("training_file", "-t", type=click.Path(exists=True))
+@click.option("training_file", "-t", type=click.Path(exists=True), required=True)
 @click.option("output_file", "-o", default='disease.embedded')
 @click.option("p", "-p", type=int, default=1)
 @click.option("q", "-q", type=int, default=1)
@@ -56,9 +59,9 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
     model.write_embeddings(output_file)
 
 @cli.command()
-@click.option("test_file", "-t", type=click.Path(exists=True))
-@click.option("training_file", "-r", type=click.Path(exists=True))
-@click.option("embedded_graph", "-e", type=click.Path(exists=True))
+@click.option("test_file", "-t", type=click.Path(exists=True), required=True)
+@click.option("training_file", "-r", type=click.Path(exists=True), required=True)
+@click.option("embedded_graph", "-e", type=click.Path(exists=True), required=True)
 @click.option("edge_embedding_method", "-m", default="hadamard")
 @click.option("portion_false_edges", "-p", default=1)
 def disease_link_prediction(test_file, training_file, embedded_graph,
@@ -79,4 +82,10 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
 
 
 if __name__ == "__main__":
-    cli()
+    try:
+        cli()
+    except SystemExit as e:
+        args = get_os_args()
+        commands = list(cli.commands.keys())
+        if args and args[0] not in commands:
+            sys.exit("\nFirst argument should be a command: " + str(commands))
