@@ -17,6 +17,8 @@ setup(name='n2v',
       license='BSD3',
       packages=['n2v'],
       install_requires=[
+          'sklearn',
+          'pandas',
           'silence_tensorflow',
           'numpy>=1.16.4',
           'tensorflow>=2.0',
