@@ -277,6 +277,7 @@ class SkipGramWord2Vec(Word2Vec):
         batch = np.ndarray(shape=0, dtype=np.int32)
         labels = np.ndarray(shape=(0, 1), dtype=np.int32)
         for i in range(walk_count):
+            # here, sentence can be one random walk
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
             sentence_len = len(sentence)
@@ -419,10 +420,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         Note that x does not contain the middle word
         '''
         stacked_embedings = None
-        print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
+        # print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
         for i in range(2 * self.skip_window):
             embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
-            print("embedding_i shape", embedding_i.shape)
+            # print("embedding_i shape", embedding_i.shape)
             x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
             if stacked_embedings is None:
                 stacked_embedings = tf.reshape(embedding_i, [x_size, y_size, 1])
@@ -430,9 +431,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 stacked_embedings = tf.concat(axis=2, values=[stacked_embedings,
                                                               tf.reshape(embedding_i, [x_size, y_size, 1])])
         assert stacked_embedings.get_shape().as_list()[2] == 2 * self.skip_window
-        print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
+        # print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
         mean_embeddings = tf.reduce_mean(stacked_embedings, 2, keepdims=False)
-        print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
+        # print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
         return mean_embeddings
 
     def get_loss(self, mean_embeddings, y):
@@ -522,7 +523,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.data_index = (self.data_index + 1) % len(data)
         return batch, labels
 
-    @DeprecationWarning
+
     def next_batch_from_list_of_lists(self, walk_count, num_skips, skip_window):
         """
         Generate training batch for the skip-gram model. This assumes that all of the data is in one
@@ -545,7 +546,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.current_sentence += 1
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
-            current_batch, current_labels = self.next_batch(sentence, batch_count, num_skips, skip_window)
+            if self.list_of_lists:
+                current_batch, current_labels = self.next_batch_from_list_of_lists (sentence, batch_count, num_skips, skip_window)
+            else:
+                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips, skip_window)
             batch = np.append(batch, current_batch)
             labels = np.append(labels, current_labels, axis=0)
             if self.current_sentence == self.num_sentences:
