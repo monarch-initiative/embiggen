@@ -1,8 +1,10 @@
 import logging
 import os
 import sys
+import tempfile
+from urllib.request import urlopen
 
-import click
+import click as click
 from click import get_os_args
 
 import n2v
@@ -128,6 +130,35 @@ def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamm
 
     lp.predict_links()
     lp.output_Logistic_Reg_results()
+
+@cli.command()
+@click.option("test_url", "-t", default="https://www.gutenberg.org/files/98/98-0.txt")
+@click.option('--algorithm',
+              type=click.Choice(["skipgram", "cbow"], case_sensitive=False),
+              default="skipgram")
+def run_w2v_test(test_url, algorithm):
+    local_file = tempfile.NamedTemporaryFile().name
+
+    with urlopen(test_url) as response:
+        resource = response.read()
+        content = resource.decode('utf-8')
+        fh = open(local_file, 'w')
+        fh.write(content)
+
+    encoder = n2v.text_encoder.TextEncoder(local_file)
+    data, count, dictionary, reverse_dictionary = encoder.build_dataset()
+    print("Extracted a dataset with %d words" % len(data))
+    if algorithm == 'cbow':
+        logging.warning('Using cbow')
+        model = n2v.word2vec.ContinuousBagOfWordsWord2Vec(
+                                data, worddictionary=dictionary,
+                                reverse_worddictionary=reverse_dictionary)
+    else:
+        logging.warning('Using skipgram')
+        model = SkipGramWord2Vec(data, worddictionary=dictionary,
+                                 reverse_worddictionary=reverse_dictionary)
+    model.add_display_words(count)
+    model.train(display_step=1000)
 
 
 if __name__ == "__main__":
