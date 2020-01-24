@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 
 import click
@@ -79,6 +80,54 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
     lp.predict_links()
     lp.output_Logistic_Reg_results()
     training_graph = CSFGraph(training_file)
+
+
+@cli.command()
+@click.option("training_file", "-t", type=click.Path(exists=True), required=True,
+              default="tests/data/karate.train")
+@click.option("test_file", "-t", type=click.Path(exists=True), required=True,
+              default="tests/data/karate.test")
+@click.option("output_file", "-o", default='karate.output')
+@click.option("p", "-p", type=int, default=1)
+@click.option("q", "-q", type=int, default=1)
+@click.option("gamma", "-g", type=int, default=1)
+@click.option("use_gamma", "-u", is_flag=True, default=False)
+@click.option("walk_length", "-w", type=int, default=80)
+@click.option("num_walks", "-n", type=int, default=25)
+def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
+                    walk_length, num_walks):
+    training_graph = CSFGraph(training_file)
+    hetgraph = n2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+
+    walks = hetgraph.simulate_walks(num_walks, walk_length)
+    worddictionary = training_graph.get_node_to_index_map()
+    reverse_worddictionary = training_graph.get_index_to_node_map()
+
+    numberwalks = []
+    for w in walks:
+        nwalk = []
+        for node in w:
+            i = worddictionary[node]
+            nwalk.append(i)
+        numberwalks.append(nwalk)
+
+    model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary,
+                             reverse_worddictionary=reverse_worddictionary,
+                             num_steps=1000)
+    model.train(display_step=100)
+    output_filenname = 'karate.embedded'
+    model.write_embeddings(output_filenname)
+
+    test_graph = CSFGraph(test_file)
+    path_to_embedded_graph = output_filenname
+    parameters = {'edge_embedding_method': "hadamard",
+                  'portion_false_edges': 1}
+
+    lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph,
+                        params=parameters)
+
+    lp.predict_links()
+    lp.output_Logistic_Reg_results()
 
 
 if __name__ == "__main__":
