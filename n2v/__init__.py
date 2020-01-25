@@ -13,7 +13,9 @@ from .hetnode2vec import N2vGraph
 from .link_prediction import LinkPrediction
 from .csf_graph import CSFGraph
 from .text_encoder import TextEncoder
+from .word2vec import CBOWBatcherListOfLists
 
 __all__ = [
-    "n2vParser", "StringInteraction", "WeightedTriple", "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder"
+    "n2vParser", "StringInteraction", "WeightedTriple", "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder",
+    "CBOWBatcherListOfLists"
 ]
