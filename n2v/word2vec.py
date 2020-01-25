@@ -6,29 +6,30 @@ import collections
 
 
 class CBOWBatcherListOfLists:
-    '''
+    """
     Encapsulate functionality for getting the next batch for Continuous Bag of Words (CBOW)
     The input is expected to be a list of lists of ints, such as we get from node2vec
     This class is an implementation detail and should not be used outside of this file
-    '''
-    def __init__(self, data, batch_size=128, window_size=2, sentences_per_batch=1):
+    """
+
+    def __init__(self, data, window_size=2, sentences_per_batch=1):
         """Setup Continuous Bag of Words Batch generation for data that is presented
         as a list of list of integers (as is typical for node2vec). Note that we generate
-        batches that consist of all of the data from k windows, where k is at least one
+        batches that consist of all of the data from k windows, where k is at least one.
+
         Args:
             data: a list of lists of integers, representing sentences/random walks
-            batch_size: NOT USED PROBABLY REMOVE
             window_size: size of sliding window for continuous bag of words
             sentences_per_batch: number of sentences to include in one batch
         """
         self.data = data
         self.window_size = window_size
-        self.sentences_per_batch =  sentences_per_batch
+        self.sentences_per_batch = sentences_per_batch
         # span is the total size of the sliding window we look at.
         # [ skip_window central_word skip_window ]
         self.span = 2 * self.window_size + 1  # [ skip_window target skip_window ]
-        self.sentence_index = 0 # index of the sentence that will be used next for batch generation
-        self.word_index = 0 # index of word in the current sentence that will be used next
+        self.sentence_index = 0  # index of the sentence that will be used next for batch generation
+        self.word_index = 0  # index of word in the current sentence that will be used next
         self.data_index = 0
         # Do some Q/C
         self.sentence_count = len(self.data)
@@ -38,7 +39,7 @@ class CBOWBatcherListOfLists:
             if sentence_len is None:
                 sentence_len = len(sent)
             elif sentence_len != len(sent):
-                raise TypeError("Sentence lengths need to be equasl for sll sentences")
+                raise TypeError("Sentence lengths need to be equal for sll sentences")
         self.sentence_len = sentence_len
         # This is the number of examples we will return per batch
         # Note that we return integer multiples of all of the examples we can get out of
@@ -48,42 +49,23 @@ class CBOWBatcherListOfLists:
         if self.sentence_count < 2:
             raise TypeError("Expected more than one sentence for CBOW Batcher")
 
-
-    def at_end_of_sentence(self):
-        """
-        Check if there is enough room to extract another sliding window of words.
-        If there is not enough room, we are "at the end of the sentence" and will
-        need to go to the next sentence.
-
-        Returns:
-            True iff we are out of room with the current sentence.
-        """
-        if self.data_index + self.span > self.sentence_len:
-            return True
-        else:
-            return False
-
-
-    def go_to_beginning_of_next_sentence(self):
-        self.sentence_index += 1
-        if self.sentence_index >= self.sentence_count:
-            self.sentence_index = 0
-        self.data_index = 0
-
     def get_next_sentence(self):
+        """Return the next sentence available for processing. Rotate to
+        the beginning of the dataset if we are at the end.
+        """
         sentence = self.data[self.sentence_index]
         self.sentence_index += 1
         if self.sentence_index == self.sentence_count:
-            self.sentence_index = 0 # reset
+            self.sentence_index = 0  # reset
         return sentence
 
     def generate_batch(self):
-        '''
+        """
         Generate the next batch of data for CBOW
 
         Returns:
             A batch CBOW data for training
-        '''
+        """
         span = self.span
         # two numpy arrays to hold target words (batch)
         # and context words (labels)
@@ -94,31 +76,26 @@ class CBOWBatcherListOfLists:
         # The buffer holds the data contained within the span.
         # The deque essentially implements a sliding window
         buffer = collections.deque(maxlen=span)
+        target_idx = self.window_size  # target word index at the center of the buffer
 
         for _ in range(self.sentences_per_batch):
-            # choose the current sentence. If we need to because there is not enough left in
-            # the current sentence, go to the next sentence.
             sentence = self.get_next_sentence()
-            # Fill the buffer and update the data_index
-            buffer.extend(sentence[0:span])
-            word_index = span # go to end of sliding window
+            # buffer is a sliding window with span elements
+            buffer.extend(sentence[0:span-1])
+            word_index = span - 1  # go to end of sliding window
             # For each batch index, we iterate through span elements
             # to fill in the columns of batch array
             for i in range(self.max_word_index):
-                print("index i = %d" % i)
-                target = self.window_size  # target word index at the center of the buffer
+                # Put the next window into the buffer
+                buffer.append(sentence[word_index])
+                word_index = word_index + 1
                 col_idx = 0
                 for j in range(span):
                     if j == span // 2:
                         continue  # i.e., ignore the center wortd
                     batch[i, col_idx] = buffer[j]
                     col_idx += 1
-                labels[i, 0] = buffer[target]
-                # move the span by 1, i.e., sliding window, since buffer is deque with limited size
-                # Put the next window into the buffer
-                buffer.append(sentence[word_index])
-                word_index = word_index + 1
-
+                labels[i, 0] = buffer[target_idx]
 
         return batch, labels
 
@@ -641,7 +618,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.data_index = (self.data_index + 1) % len(data)
         return batch, labels
 
-
     def next_batch_from_list_of_lists(self, walk_count, num_skips, skip_window):
         """
         Generate training batch for the skip-gram model. This assumes that all of the data is in one
@@ -665,7 +641,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
             if self.list_of_lists:
-                current_batch, current_labels = self.next_batch_from_list_of_lists (sentence, batch_count, num_skips, skip_window)
+                current_batch, current_labels = self.next_batch_from_list_of_lists(sentence, batch_count, num_skips,
+                                                                                   skip_window)
             else:
                 current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips, skip_window)
             batch = np.append(batch, current_batch)

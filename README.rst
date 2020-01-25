@@ -13,7 +13,19 @@ This package allows users to perform node2vec analysis using several different
 word2vec family algorithms.
 
 
+Getting started
+~~~~~~~~~~~~~~~
 
+There are many ways of running python. Here is one recommended way to get this code running. We will remove some of the auxialiary files once the module is about to be submitted, but the following is good for development.  ::
+
+  $ conda deactivate
+  $ conda create -n py37 python=3.7
+  $ activate py37
+  $ pip install tensorflow # currently 2.1
+  $ sudo apt install python-nose # if needed
+  $ nosetests tests # in N2V directory. 
+
+If the unit tests run correctly, then you are ready to go!
 
 
 
@@ -32,3 +44,5 @@ To run the unit testing on the package, generating the coverage and the html rep
 .. code:: bash
 
     nosetests --with-coverage --cover-package=n2v --cover-html
+    # or
+    nosetests --nologcover tests/filename.py # suppress log statements
