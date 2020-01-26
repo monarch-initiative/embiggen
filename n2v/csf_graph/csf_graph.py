@@ -1,60 +1,13 @@
 import os.path
 import numpy as np
 from collections import defaultdict
+from .edge import Edge
 
 
 class CSFGraph:
     """
     Compressed Storage Format graph class (cannot be modified after graph construction)
     """
-
-    class Edge:
-        """
-        Class to organize edge data during the construction of the graph. We do not need
-        Edge objects in the final graph (edges are encoded using arrays)
-        """
-
-        def __init__(self, nA, nB, w):
-            self.nodeA = nA
-            self.nodeB = nB
-            self.weight = w
-
-        def get_edge_type_string(self):
-            '''
-            For the summary output of the graph, we would like to show how many homogeneous and
-            how many heterogeneous edges there are. We expect nodes types to be coded using the
-            first characters of the nodes. For instance, g1-g3 would we coded as 'gg' and 'g1-p45'
-            would be coded as 'gp'. We assume an undirected graph. We sort the characters alphabetically.
-            :return:
-            '''
-            na = self.nodeA[0]
-            nb = self.nodeB[0]
-            return "".join(sorted([na, nb]))
-
-        def __hash__(self):
-            """
-            Do not include weight in the hash function, we are interested in
-            the edges. Users are responsible for not including the same edge
-            twice with different weights
-            """
-            return hash((self.nodeA, self.nodeB))
-
-        def __eq__(self, other):
-            """
-            For equality, we disregard the edge weight
-            """
-            return (self.nodeA, self.nodeB) == (other.nodeA, other.nodeB)
-
-        def __ne__(self, other):
-            return not (self == other)
-
-        def __lt__(self, other):
-            """
-            We sort on (1) source node and (2) destination node
-            """
-            if self.nodeA == other.nodeA:
-                return self.nodeB < other.nodeB
-            return self.nodeA < other.nodeA
 
     def __init__(self, filepath):
         if filepath is None:
@@ -73,22 +26,25 @@ class CSFGraph:
                 # print(line)
                 fields = line.rstrip('\n').split()
                 if not len(fields) == 3:
-                    print("[ERROR] Skipping malformed line with {} fields ({}).".format(len(fields), line))
+                    print("[ERROR] Skipping malformed line with {} fields ({}).".format(
+                        len(fields), line))
                     continue
                 nodeA = fields[0]
                 nodeB = fields[1]
                 try:
                     weight = float(fields[2])
                 except Exception as e:
-                    print("[ERROR] Could not parse weight field (must be an integer): {}".format(fields[2]))
+                    print("[ERROR] Could not parse weight field (must be an integer): {}".format(
+                        fields[2]))
                     continue
                 nodes.add(nodeA)
                 nodes.add(nodeB)
-                edge = CSFGraph.Edge(nodeA, nodeB, weight)
-                inverse_edge = CSFGraph.Edge(nodeB, nodeA, weight)
+                edge = Edge(nodeA, nodeB, weight)
+                inverse_edge = Edge(nodeB, nodeA, weight)
                 edges.add(edge)
                 edges.add(inverse_edge)
-                self.edgetype2count_dictionary[edge.get_edge_type_string()] += 1
+                self.edgetype2count_dictionary[edge.get_edge_type_string(
+                )] += 1
         # When we get here, we can create the graph
         # print("Got {} nodes and {} edges".format(len(nodes), len(edges)))
         # convert the sets to lists
@@ -131,17 +87,18 @@ class CSFGraph:
         # third pass -- add the actual edges
         # use the offset variable to keep track of how many edges we have already
         # entered for a given source index
-        current_source_index = -1;
+        current_source_index = -1
         offset = 0
         j = 0
         for edge in edge_list:
             source_index = self.node_to_index_map[edge.nodeA]
             dest_index = self.node_to_index_map[edge.nodeB]
             if source_index != current_source_index:
-                current_source_index = source_index;
-                offset = 0;  # start a new block
+                current_source_index = source_index
+                offset = 0  # start a new block
             else:
-                offset += 1  # go to next index (for a new destination of the previous source)
+                # go to next index (for a new destination of the previous source)
+                offset += 1
             self.edge_to[j] = dest_index
             self.edge_weight[j] = edge.weight
             j += 1
@@ -171,7 +128,8 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
         # We should never get here
-        raise TypeError("Could not identify edge between {} and {}".format(source, dest))
+        raise TypeError(
+            "Could not identify edge between {} and {}".format(source, dest))
 
     def neighbors(self, source):
         """
@@ -239,7 +197,7 @@ class CSFGraph:
         return self.index_to_node_map
 
     def __str__(self):
-        return 'CSFGraph(nodes: %d; edges: %d)' % (self.node_count(),  self.edge_count())
+        return 'CSFGraph(nodes: %d edges: %d)' % (self.node_count(),  self.edge_count())
 
     def print_edge_type_distribution(self):
         """
@@ -249,11 +207,10 @@ class CSFGraph:
         :return:
         """
         for n, count in self.nodetype2count_dictionary.items():
-            print("node type %s - count: %d" % (n,count))
+            print("node type %s - count: %d" % (n, count))
         if len(self.edgetype2count_dictionary) < 2:
-            print( "edge count: %d" % self.edge_count() )
+            print("edge count: %d" % self.edge_count())
         else:
             edgecounts = []
             for category, count in self.edgetype2count_dictionary.items():
-                print("%s - count: %d" % (category, count) )
-
+                print("%s - count: %d" % (category, count))
