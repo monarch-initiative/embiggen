@@ -96,7 +96,7 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
 @click.option("use_gamma", "-u", is_flag=True, default=False)
 @click.option("walk_length", "-w", type=int, default=80)
 @click.option("num_walks", "-n", type=int, default=25)
-def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
+def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                     walk_length, num_walks):
     training_graph = CSFGraph(training_file)
     hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
@@ -136,7 +136,7 @@ def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamm
 @click.option('--algorithm',
               type=click.Choice(["skipgram", "cbow"], case_sensitive=False),
               default="skipgram")
-def run_w2v_test(test_url, algorithm):
+def w2v(test_url, algorithm):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:
