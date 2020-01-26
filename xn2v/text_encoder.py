@@ -75,8 +75,8 @@ class TextEncoder:
         text = text.replace("9", " nine ")
         text = text.replace("10", " ten ")
 
-        # remove punctuation
-        text = text.translate(str.maketrans('', '', string.punctuation))
+        # remove punctuation - gets non-ascii + ascii punctuation
+        text = re.sub(r'[^\w\s]', ' ', text.translate(str.maketrans('', '', string.punctuation)))
 
         return ' '.join(text.split())
 
