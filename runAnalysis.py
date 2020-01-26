@@ -7,10 +7,10 @@ from urllib.request import urlopen
 import click as click
 from click import get_os_args
 
-import n2v
-from n2v import CSFGraph
-from n2v.word2vec import SkipGramWord2Vec
-from n2v import LinkPrediction
+import xn2v
+from xn2v import CSFGraph
+from xn2v.word2vec import SkipGramWord2Vec
+from xn2v import LinkPrediction
 
 @click.group()
 def cli():
@@ -42,7 +42,7 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
     print(training_graph)
     training_graph.print_edge_type_distribution()
 
-    hetgraph = n2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
     walks = hetgraph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()
     reverse_worddictionary = training_graph.get_index_to_node_map()
@@ -99,7 +99,7 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
 def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                     walk_length, num_walks):
     training_graph = CSFGraph(training_file)
-    hetgraph = n2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
 
     walks = hetgraph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()
@@ -145,12 +145,12 @@ def run_w2v_test(test_url, algorithm):
         fh = open(local_file, 'w')
         fh.write(content)
 
-    encoder = n2v.text_encoder.TextEncoder(local_file)
+    encoder = xn2v.text_encoder.TextEncoder(local_file)
     data, count, dictionary, reverse_dictionary = encoder.build_dataset()
     print("Extracted a dataset with %d words" % len(data))
     if algorithm == 'cbow':
         logging.warning('Using cbow')
-        model = n2v.word2vec.ContinuousBagOfWordsWord2Vec(
+        model = xn2v.word2vec.ContinuousBagOfWordsWord2Vec(
                                 data, worddictionary=dictionary,
                                 reverse_worddictionary=reverse_dictionary)
     else:

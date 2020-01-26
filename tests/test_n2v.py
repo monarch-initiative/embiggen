@@ -2,16 +2,16 @@ import unittest
 from unittest import TestCase
 import os
 
-from n2v import WeightedTriple
-from n2v import StringInteraction
-from n2v import n2vParser
+from xn2v import WeightedTriple
+from xn2v import StringInteraction
+from xn2v import xn2vParser
 
 from urllib.request import urlopen
 import os.path
 
 # Tale of Two Cities, Dickens, from Gutenberg project
-from n2v.text_encoder import TextEncoder
-from n2v.word2vec import SkipGramWord2Vec
+from xn2v.text_encoder import TextEncoder
+from xn2v.word2vec import SkipGramWord2Vec
 
 # files used by many tests
 gene2ensembl = os.path.join(os.path.dirname(
@@ -320,10 +320,10 @@ class TestStringInteraction(TestCase):
 
 
 '''
-class Testn2vParser(TestCase):
+class Testxn2vParser(TestCase):
 
     def setUp(self):
-        self._parser = n2vParser(params=params)
+        self._parser = xn2vParser(params=params)
         self._parser.parse()
 
     def test_not_null(self):

@@ -8,10 +8,10 @@ import time
 from collections import defaultdict
 from multiprocessing import Pool
 
-log = logging.getLogger("n2v.log")
+log = logging.getLogger("xn2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
-    os.environ.get("LOGFILE", "n2v.log"))
+    os.environ.get("LOGFILE", "xn2v.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
@@ -25,21 +25,21 @@ class N2vGraph:
     A class to represent perform random walks on a graph in order to derive the data needed for the node2vec algorithm.
     """
 
-    def __init__(self, csf_graph, p, q, gamma, don2v=True):
+    def __init__(self, csf_graph, p, q, gamma, doxn2v=True):
         """
         Note that the CSF graph is always undirected. It stores two directed edges to represent each undirected edge.
         :param csf_graph: An undirected Compressed Storage Format graph object
         :param p:
         :param q:
         :param gamma:
-        :param don2v:
+        :param doxn2v:
         """
         self.g = csf_graph
         self.p = p
         self.q = q
         self.gamma = gamma
-        if don2v:
-            self.__preprocess_transition_probs_n2v()
+        if doxn2v:
+            self.__preprocess_transition_probs_xn2v()
         else:
             self.__preprocess_transition_probs()
 
@@ -164,7 +164,7 @@ class N2vGraph:
 
         return
 
-    def get_alias_edge_n2v(self, src, dst):
+    def get_alias_edge_xn2v(self, src, dst):
         """
         Get the alias edge setup lists for a given edge.
         """
@@ -214,7 +214,7 @@ class N2vGraph:
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return self.__alias_setup(normalized_probs)
 
-    def __preprocess_transition_probs_n2v(self):
+    def __preprocess_transition_probs_xn2v(self):
         """
         Preprocessing of transition probabilities for guiding the random walks.
         This version uses gamma to calculate weighted skipping across a heterogeneous network
@@ -262,7 +262,7 @@ class N2vGraph:
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
-            alias_edges[edge] = self.get_alias_edge_n2v(edge[0], edge[1])
+            alias_edges[edge] = self.get_alias_edge_xn2v(edge[0], edge[1])
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes

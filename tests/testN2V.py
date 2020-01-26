@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import os.path
 import numpy as np
-from n2v import CSFGraph
-from n2v import N2vGraph
+from xn2v import CSFGraph
+from xn2v import N2vGraph
 
 
 def calculate_total_probs(j, q):

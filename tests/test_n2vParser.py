@@ -2,7 +2,7 @@ import unittest
 from unittest import TestCase
 import os
 
-from n2v import n2vParser
+from xn2v import xn2vParser
 
 # files used by many tests
 gene2ensembl = os.path.join(os.path.dirname(
@@ -24,26 +24,26 @@ params = {'gtex_path': gtex_path, 'gene2ensembl_path': gene2ensembl, 'string_pat
 
 
 class TestN2vParser(TestCase):
-    def test_n2vParser_init(self):
-        p = n2vParser(data_dir="tests/data", params=params)
+    def test_xn2vParser_init(self):
+        p = xn2vParser(data_dir="tests/data", params=params)
         p.qc_input()
 
     def test_get_num_proteins_not_mapped_count(self):
-        p = n2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir="tests/data", params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
         p.get_num_proteins_not_mapped_count()
 
     def test_get_number_proteins_found_TCRD(self):
-        p = n2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir="tests/data", params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
         p.get_number_proteins_found_TCRD()
 
     def test_parse(self):
-        p = n2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir="tests/data", params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
@@ -64,16 +64,16 @@ class TestN2vParser(TestCase):
         os.remove("output.tsv")
 
     def test_summary(self):
-        p = n2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir="tests/data", params=params)
         # TODO: currently testing only execution,
         # but the following method currently
         # consists only of a "pass"
         p.print_summary()
 
-    def test_n2vParser_wrong_path(self):
+    def test_xn2vParser_wrong_path(self):
         with self.assertRaises(Exception):
-            n2vParser(data_dir="tests/dataty", params=params)
+            xn2vParser(data_dir="tests/dataty", params=params)
         with self.assertRaises(Exception):
-            n2vParser(data_dir="tests/test_n2vParser.py", params=params)
+            xn2vParser(data_dir="tests/test_xn2vParser.py", params=params)
         with self.assertRaises(Exception):
-            n2vParser(data_dir="tests/data")
+            xn2vParser(data_dir="tests/data")

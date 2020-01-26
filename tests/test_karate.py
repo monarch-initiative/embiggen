@@ -1,11 +1,11 @@
 import unittest
 from unittest import TestCase
-import n2v
-from n2v import LinkPrediction
-from n2v import CSFGraph
+import xn2v
+from xn2v import LinkPrediction
+from xn2v import CSFGraph
 import os
 
-from n2v.word2vec import SkipGramWord2Vec
+from xn2v.word2vec import SkipGramWord2Vec
 
 training_file = os.path.join(os.path.dirname(
     __file__), 'data', 'karate.train')
@@ -21,7 +21,7 @@ class TestKarate(TestCase):
         q = 1
         gamma = 1
         useGamma = False
-        hetgraph = n2v.hetnode2vec.N2vGraph(
+        hetgraph = xn2v.hetnode2vec.N2vGraph(
             training_graph, p, q, gamma, useGamma)
 
         walk_length = 80

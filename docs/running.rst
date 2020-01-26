@@ -1,5 +1,5 @@
 .. _rstrunning:
-Running n2v
+Running xn2v
 ============
 
 
@@ -8,8 +8,8 @@ todo
 
 To run the code to parse the files and output edges, ::
 
-  from n2v import n2vParser                                                          
-  p = n2vParser()
+  from xn2v import xn2vParser                                                          
+  p = xn2vParser()
   p.parse()
   out_filename="my-edges.tsv"
   p.output_edges(out_filename)

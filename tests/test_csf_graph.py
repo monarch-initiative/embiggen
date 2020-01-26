@@ -1,6 +1,6 @@
 from unittest import TestCase
 import os.path
-from n2v import CSFGraph
+from xn2v import CSFGraph
 
 
 class TestCSFGraph(TestCase):
