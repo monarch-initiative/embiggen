@@ -1,4 +1,16 @@
+.notipy.json
+coverage.xml
+\.DS_Store
 __pycache__
 .coverage
-*.log
+**/__pycache__/*
 .vscode
+*.log
+\.vscode/
+*/__pycache__/*
+.single_run
+.coverage*
+twocities.txt
+karate.embedded
+unmapped_proteins.txt
+cover
