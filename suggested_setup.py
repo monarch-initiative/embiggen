@@ -61,11 +61,11 @@ setup(
     # Add here the package dependencies
     install_requires=[
     "",
-    "numpy>=1.16.4",
-    "sklearn",
     "pandas",
+    "sklearn",
+    "silence_tensorflow",
     "tensorflow>=2.0",
-    "silence_tensorflow"
+    "numpy>=1.16.4"
 ],
     extras_require=extras,
 )
