@@ -133,10 +133,11 @@ class TextEncoder:
         library.
 
         Returns:
-            A list of cleaned words from the file.
+            A nested list of cleaned words from the file.
         """
 
         data = []
+        count = 0
 
         with open(self.filename) as file:
 
@@ -145,12 +146,20 @@ class TextEncoder:
             sentences = re.split("(?<=[.!?])\\s+", file.read().replace('\n', ''))
 
         for sent in sentences:
-            cleaned_sent = self.clean_text(sent)
+            sent = self.clean_text(sent)
 
-            # tokenize string to list of words
-            data.extend([word for word in cleaned_sent.split() if word not in self.stopwords])
+            # tokenizes a string to a list of words
+            words = sent.split()
+            taker_words = []
 
-        print("Extracted {} non-stop words and {} sentences".format(len(data), len(sentences)))
+            for word in words:
+                if word not in self.stopwords:
+                    taker_words.append(word)
+                    count += 1
+
+            data.append(taker_words)
+
+        print("Extracted {} non-stop words and {} sentences".format(count, len(data)))
 
         return data
 
@@ -204,7 +213,7 @@ class TextEncoder:
         words. All the other words will be replaced with an UNK token.
 
         Returns:
-            data: A list of the most  commonly occurring word indices.
+            data: A list of the most commonly occurring word indices.
             count: A list of tuples, where the first item in each tuple is a word and the second is the word frequency.
             dictionary: A dictionary where the keys are words and the values are the word id.
             reversed dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
