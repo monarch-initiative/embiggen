@@ -23,7 +23,7 @@ setup(
     version='0.1.0',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
-    url='https://github.com/TheJacksonLaboratory/N2V',
+    url='https://github.com/monarch-initiative/N2V',
     keywords='node2vec. word2vec',
     author='Vida Ravanmehr, Peter Robinson',
     author_email='vida.ravanmehr@jax.org, peter.robinson@jax.org',
