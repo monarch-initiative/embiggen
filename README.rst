@@ -72,7 +72,7 @@ slightly different results, here's three of them:
     :alt: Codacy Maintainability
 
 .. |code_climate_maintainability| image:: https://api.codeclimate.com/v1/badges/25771b0f4426c0aa425f/maintainability
-    :target: https://codeclimate.com/github/monarch-initiative/n2v/maintainability
+    :target: https://codeclimate.com/github/monarch-initiative/N2V
     :alt: Maintainability
 
 .. |code_climate_coverage| image:: https://api.codeclimate.com/v1/badges/25771b0f4426c0aa425f/test_coverage
