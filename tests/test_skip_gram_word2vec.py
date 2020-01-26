@@ -1,9 +1,9 @@
-import n2v
-from n2v import CSFGraph
+import xn2v
+from xn2v import CSFGraph
 import os
 import unittest
 from unittest import TestCase
-from n2v.word2vec import SkipGramWord2Vec
+from xn2v.word2vec import SkipGramWord2Vec
 
 
 class TestSkipGramWord2Vec(TestCase):
@@ -26,7 +26,7 @@ class TestSkipGramWord2Vec(TestCase):
         q = 1
         gamma = 1
         useGamma = False
-        hetgraph = n2v.hetnode2vec.N2vGraph(
+        hetgraph = xn2v.hetnode2vec.N2vGraph(
             training_graph, p, q, gamma, useGamma)
 
         walk_length = 80

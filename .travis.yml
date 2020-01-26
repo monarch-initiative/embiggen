@@ -27,7 +27,7 @@ after_script:
 script:
 - rm -rf .coverage
 - coverage erase
-- nosetests --with-coverage --cover-package=n2v --cover-xml
+- nosetests --with-coverage --cover-package=xn2v --cover-xml
 - coverage combine --append || true
 - coverage report
 - coverage xml

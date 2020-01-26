@@ -1,7 +1,7 @@
-Node2Vec
+Extended Node2Vec
 =========================================================================================
 |travis| |sonar_quality| |sonar_maintainability| |codacy|
-|code_climate_maintainability| |pip| |downloads|
+|code_climate_maintainability|
 
 Implementation of node2vec with several word2vec family algorithms
 
@@ -18,7 +18,7 @@ embeddings with the word2vec algorithm.
 This package allows users to perform node2vec analysis
 using several different word2vec family algorithms.
 
-Setting up N2V
+Setting up xn2v
 -----------------------------------
 To do. We will submit N2V to PyPI as soon as the code is a bit more mature.
 
@@ -29,7 +29,7 @@ the coverage and the html report, you can use:
 
 .. code:: bash
 
-    nosetests --with-coverage --cover-package=n2v --cover-html
+    nosetests --with-coverage --cover-package=xn2v --cover-html
 
 Tests Coverage
 ----------------------------------------------
@@ -59,12 +59,12 @@ slightly different results, here's three of them:
     :target: https://coveralls.io/github/monarch-initiative/n2v?branch=master
     :alt: Coveralls Coverage
 
-.. |pip| image:: https://badge.fury.io/py/n2v.svg
-    :target: https://badge.fury.io/py/n2v
+.. |pip| image:: https://badge.fury.io/py/xn2v.svg
+    :target: https://badge.fury.io/py/xn2v
     :alt: Pypi project
 
-.. |downloads| image:: https://pepy.tech/badge/n2v
-    :target: https://pepy.tech/badge/n2v
+.. |downloads| image:: https://pepy.tech/badge/xn2v
+    :target: https://pepy.tech/badge/xn2v
     :alt: Pypi total project downloads
 
 .. |codacy| image:: https://api.codacy.com/project/badge/Grade/17ecd62a13ee424b87b3fd0b644fdaac

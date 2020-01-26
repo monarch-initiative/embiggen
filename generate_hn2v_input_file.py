@@ -1,7 +1,7 @@
-# Can be run from ipython as %run  run_hnn2v_analysis.py
+# Can be run from ipython as %run  run_hnxn2v_analysis.py
 import sys
 import os
-from n2v import n2vParser
+from xn2v import xn2vParser
 
 
 import logging.handlers
@@ -71,7 +71,7 @@ parameters = {'string_threshold': 700,
               'g2d_test_path' : g2d_test_path,
               'd2d_path': d2d_path}
 
-parser = n2vParser(params=parameters)
+parser = xn2vParser(params=parameters)
 parser.parse()
 parser.print_summary()
 outfilename_training = "edgelist.txt"

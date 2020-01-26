@@ -1,7 +1,7 @@
 import unittest
 from unittest import TestCase
 import os
-from n2v import LinkPrediction, CSFGraph
+from xn2v import LinkPrediction, CSFGraph
 
 
 class TestLinkPrediction(TestCase):

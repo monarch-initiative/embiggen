@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from n2v import CBOWBatcherListOfLists
+from xn2v import CBOWBatcherListOfLists
 
 
 class TestTextEncoderSentences(TestCase):
