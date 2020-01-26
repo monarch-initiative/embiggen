@@ -47,7 +47,7 @@ class CBOWBatcherListOfLists:
         self.batch_size = self.sentences_per_batch * (self.sentence_len - self.span + 1)
         self.max_word_index = self.sentence_len - self.span + 1
         if self.sentence_count < 2:
-            raise TypeError("Expected more than one sentence for CBOW Batcher")
+            raise TypeError("Expected more than one sentence for CBOWBatcherListOfLists")
 
     def get_next_sentence(self):
         """Return the next sentence available for processing. Rotate to
@@ -91,7 +91,8 @@ class CBOWBatcherListOfLists:
                 word_index = word_index + 1
                 col_idx = 0
                 for j in range(span):
-                    if j == span // 2:
+                    # if j == span // 2:
+                    if j == target_idx:
                         continue  # i.e., ignore the center wortd
                     batch[i, col_idx] = buffer[j]
                     col_idx += 1

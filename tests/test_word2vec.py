@@ -39,6 +39,21 @@ class TestTextEncoderSentences(TestCase):
         self.assertEqual(3, batch[1][0])
         self.assertEqual(7, batch[1][1])
         self.assertEqual(5, labels[1])
-        # get another batch
+        # get another batch. We expect the second list
         batch, labels = self.batcher.generate_batch()
         self.assertEqual(batch.shape, batch_shape)
+        self.assertEqual(2, batch[0][0])
+        self.assertEqual(6, batch[0][1])
+        self.assertEqual(4, labels[0])
+        # get another batch. We expect the third list
+        batch, labels = self.batcher.generate_batch()
+        self.assertEqual(batch.shape, batch_shape)
+        self.assertEqual(112, batch[0][0])
+        self.assertEqual(116, batch[0][1])
+        self.assertEqual(114, labels[0])
+        # get another batch. We expect to go back to the first list
+        batch, labels = self.batcher.generate_batch()
+        self.assertEqual(batch.shape, batch_shape)
+        self.assertEqual(1, batch[0][0])
+        self.assertEqual(5, batch[0][1])
+        self.assertEqual(3, labels[0])
