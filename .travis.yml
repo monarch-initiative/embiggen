@@ -1,14 +1,40 @@
+dist: trusty
+sudo: false
 git:
   depth: false
+addons:
+  sonarcloud:
+    organization: "monarch-initiative"
+    token:
+      secure: p/89xiWcWPZLwAl6De+GqK66qMJHuhvDRTl6YHT952vbsDkzX6nrFa8/UW6FmEfkeDopJYS3zWSSrhizCWZtDvwWq/TddD9hSw+KAAKE6IWMEPcK8okUILXrTX72laEe2/y0LBr61/2386J2rjoOy/lWFXtaHdrwczFXucqsyH7aAmeeA8WHJwTkMr99i75G4jGhadXz0s4k1csRN6Gmj8XKncfSgbM+u5HE9xWWL0T5j13cIjsWT/pL/s0XMa8fqlK1vjA+gRBoBtF5V3cwcmVdJi1Mp+ul3KwbRmduu2zWAMGzdMlZ7HZ3ya5t28DRdr+ePB4wowOwwJXfo5StQ9cuTY9uZ/IiRXS9MDSgD2d3h+KDlD0FYfF3IeH4bAFTOX6XgnWHrH7ZbBNGNf2uy+2HBFeVm9udiCjFzOmunK9Zt4D9YDzzHUUDKzfQrr4n7V6ghGU5jbGDKmKnnmuFpeWvTpOLrSMQe64BEmQUR4sO7DybGND80GPlSFlMo5NaMWRCoPG5VO4xYYloZlZoG6VpKUj0MXF0RDcKL3NW78SyfQmUEPvv8xuf3lcxRC86G6po0aXPQdH+eLg6rG/hxlWodw4h0XUQS7+f3O7ntwBPFie0Imb8zlveNe4gJUclswCJZ9mL4+6IvFQM32BA9ppXNaw0PMBM7zBpnvtrRbk=
 language: python
 python:
 - '3.6'
 before_install:
+- pip install pip --upgrade
+- pip uninstall -y numpy
+- pip install numpy --upgrade
 - pip install --upgrade pytest
+- pip install tensorflow==2.0
 install:
 - pip install .[test]
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 script:
-- nosetests --with-coverage --cover-package=n2v
+- rm -rf .coverage
+- coverage erase
+- nosetests --with-coverage --cover-package=n2v --cover-xml
+- coverage combine --append || true
+- coverage report
+- coverage xml
+- 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
+after_success:
+  - coveralls
+  - python-codacy-coverage -r coverage.xml
 env:
   global:
   - secure: G+6L9J0/zJOhZTUI2KsVIffqTSNbrFWNKKxeKw/epwutiwMpo/ZOOxBD3xTA9eQCXeIK3qq6YgJZTSVGv+nEbnKjUCeKJnQr2NOHfQ5ke8w4XeTk5C4Wkvwb7V7PVrwkRxWO5b32mvwECzwro07pl1gqZ50M59iyiW9ZK3ofuGoT0dq2j18s1cKvPkUE/HbYS2NPGPHde/Hf+WFcWO7Xx5yAZDcscu1h8/hSR95VXcx6fD9q3gkDv4dE6O/OpUErNFQYLyepgNgM6+iqwTrjotc9Ch/I60KnheQbx6fFoHLiE/gOpGJxZE271hea9SZFrDWq3dzLDW+fKwY+4h/I5wXsYbmmVV/mCeL9iOG70GnSB0lBu6JHqAS17YfDNPdhADuYqj7pzfmm8gh0yDa/ppjIxPNGc7qTa8A1cWhTBmrjkT5A4plfLgA8KG4Vr3EOL5BWAltguBbBusuDySy2bIpaNczyZB79BNoJaJZkMW7lNqtYChTKFe3zIqPn/RLIv3Db5Jt2qxQp3pjCKu6+B2Pwz3FFR6qvA7SBC5y3wAL7MTSzcE5oA3ZuKRHqhMeJbdFFPsuJnuOwQ2J3bDxay9nAt23F9fQEzU58vePtq4Mja3ufqh2go2O9LTurDUMiLSiB8Wc0t8f7DR0D/zCTUY9yR4CO25MQlYVPfi/eBaE=

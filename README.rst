@@ -1,24 +1,43 @@
-n2v
+Node2Vec
 =========================================================================================
-|travis| |sonar_quality| |sonar_maintainability| |codacy| |code_climate_maintainability| |pip| |downloads|
+|travis| |sonar_quality| |sonar_maintainability| |codacy|
+|code_climate_maintainability| |pip| |downloads|
 
 Implementation of node2vec with several word2vec family algorithms
 
-How do I install this package?
-----------------------------------------------
-As usual, just download it using pip:
+The paper node2vec: Scalable Feature Learning for Networks
+introduced a method for mapping the nodes of a graph to a low-dimensional
+space of features that maximizes the likelihood of preserving
+network neighborhoods of nodes.
+An approach to generating random walks that resemble either
+BFS or DFS traversals was presented.
+The random walks generate "sentences" that together can
+be regarded as a corpus of text that can be used to generate
+embeddings with the word2vec algorithm.
 
-.. code:: shell
+This package allows users to perform node2vec analysis
+using several different word2vec family algorithms.
 
-    pip install n2v
+Setting up N2V
+-----------------------------------
+To do. We will submit N2V to PyPI as soon as the code is a bit more mature.
+
+Unit testing
+-----------------------------------
+To run the unit testing on the package, generating
+the coverage and the html report, you can use:
+
+.. code:: bash
+
+    nosetests --with-coverage --cover-package=n2v --cover-html
 
 Tests Coverage
 ----------------------------------------------
-Since some software handling coverages sometime get slightly different results, here's three of them:
+Since some software handling coverages sometime get
+slightly different results, here's three of them:
 
 |coveralls| |sonar_coverage| |code_climate_coverage|
 
-todo
 
 .. |travis| image:: https://travis-ci.org/monarch-initiative/n2v.png
    :target: https://travis-ci.org/monarch-initiative/n2v
@@ -46,9 +65,9 @@ todo
 
 .. |downloads| image:: https://pepy.tech/badge/n2v
     :target: https://pepy.tech/badge/n2v
-    :alt: Pypi total project downloads 
+    :alt: Pypi total project downloads
 
-.. |codacy|  image:: https://api.codacy.com/project/badge/Grade/17ecd62a13ee424b87b3fd0b644fdaac
+.. |codacy| image:: https://api.codacy.com/project/badge/Grade/17ecd62a13ee424b87b3fd0b644fdaac
     :target: https://www.codacy.com/gh/monarch-initiative/N2V?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=monarch-initiative/N2V&amp;utm_campaign=Badge_Grade
     :alt: Codacy Maintainability
 

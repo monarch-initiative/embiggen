@@ -1,5 +1,9 @@
 from validate_version_code import validate_version_code
 from n2v.__version__ import __version__
+from unittest import TestCase
 
-def test_version():
-    assert validate_version_code(__version__)
+
+class TestTextEncoderSentences(TestCase):
+
+    def test_version(self):
+        assert validate_version_code(__version__)
