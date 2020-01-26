@@ -1,7 +1,7 @@
 Extended Node2Vec
 =========================================================================================
 |travis| |sonar_quality| |sonar_maintainability| |codacy|
-|code_climate_maintainability| |pip| |downloads|
+|code_climate_maintainability|
 
 Implementation of node2vec with several word2vec family algorithms
 
