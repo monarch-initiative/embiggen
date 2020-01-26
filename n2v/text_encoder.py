@@ -76,7 +76,7 @@ class TextEncoder:
         text = text.replace("10", " ten ")
 
         # remove punctuation
-        text = [text.replace(p, ' ') for p in set(string.punctuation)][0]
+        text = text.translate(str.maketrans('', '', string.punctuation))
 
         return ' '.join(text.split())
 
@@ -118,7 +118,6 @@ class TextEncoder:
         data = []
 
         with open(self.filename) as file:
-
             print('Reading data from {filename}'.format(filename=self.filename))
 
             for line in file:
@@ -140,7 +139,6 @@ class TextEncoder:
         count = 0
 
         with open(self.filename) as file:
-
             print('Reading data from {filename}'.format(filename=self.filename))
 
             sentences = re.split("(?<=[.!?])\\s+", file.read().replace('\n', ''))
@@ -150,14 +148,14 @@ class TextEncoder:
 
             # tokenizes a string to a list of words
             words = sent.split()
-            taker_words = []
+            keep_words = []
 
             for word in words:
                 if word not in self.stopwords:
-                    taker_words.append(word)
+                    keep_words.append(word)
                     count += 1
 
-            data.append(taker_words)
+            data.append(keep_words)
 
         print("Extracted {} non-stop words and {} sentences".format(count, len(data)))
 
