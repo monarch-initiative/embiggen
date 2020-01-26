@@ -55,8 +55,8 @@ slightly different results, here's three of them:
     :target: https://sonarcloud.io/dashboard/index/monarch-initiative_n2v
     :alt: SonarCloud Coverage
 
-.. |coveralls| image:: https://coveralls.io/repos/github/monarch-initiative/n2v/badge.svg?branch=master
-    :target: https://coveralls.io/github/monarch-initiative/n2v?branch=master
+.. |coveralls| image:: https://coveralls.io/repos/github/monarch-initiative/N2V/badge.svg?branch=master
+    :target: https://coveralls.io/github/monarch-initiative/N2V?branch=master
     :alt: Coveralls Coverage
 
 .. |pip| image:: https://badge.fury.io/py/xn2v.svg
