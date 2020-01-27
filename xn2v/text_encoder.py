@@ -75,8 +75,8 @@ class TextEncoder:
         text = text.replace("9", " nine ")
         text = text.replace("10", " ten ")
 
-        # remove punctuation
-        text = text.translate(str.maketrans('', '', string.punctuation))
+        # remove punctuation - gets non-ascii + ascii punctuation
+        text = re.sub(r'[^\w\s]', ' ', text.translate(str.maketrans('', '', string.punctuation)))
 
         return ' '.join(text.split())
 
@@ -165,7 +165,7 @@ class TextEncoder:
         """Builds a dataset by traversing over a input text and compiling a list of the most commonly occurring words.
 
         Returns:
-            data: A list of the most  commonly occurring word indices.
+            data: A list of the most commonly occurring word indices.
             count: A list of tuples, where the first item in each tuple is a word and the second is the word frequency.
             dictionary: A dictionary where the keys are words and the values are the word id.
             reversed dictionary: A dictionary that is the reverse of the dictionary object mentioned above.

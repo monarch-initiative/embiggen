@@ -35,6 +35,7 @@ setup(
         'pandas',
         'sklearn',
         'tensorflow==2.0',
+        'click'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
