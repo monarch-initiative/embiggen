@@ -142,10 +142,6 @@ class Word2Vec:
         self.num_sampled = num_sampled
         self.display = display
         self.display_examples = []
-        # Evaluation Parameters.
-        # eval_words = ['five', 'of', 'going', 'hardware', 'american', 'britain']
-        # TODO add FUNCTION FOR EVALUATION
-        eval_words = ['house', 'oliver', 'twist', 'nose']
 
     def add_display_words(self, count, num=5):
         '''
@@ -191,9 +187,9 @@ class Word2Vec:
         # id_list.sort() # TODO FIGURE OUT HOW TO SORT ME
         fh = open(outfilename, "w")
         with tf.device('/cpu:0'):
-            for id in id_list:
-                fh.write(self.id2word[id])
-                x_embed = tf.nn.embedding_lookup(self.embedding, id)
+            for idtf in id_list:
+                fh.write(self.id2word[idtf])
+                x_embed = tf.nn.embedding_lookup(self.embedding, idtf)
                 x = x_embed.numpy()
                 for it in x:
                     fh.write("\t{}".format(it))
@@ -636,16 +632,15 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         span = 2 * skip_window + 1
         batch = np.ndarray(shape=0, dtype=np.int32)
         labels = np.ndarray(shape=(0, 1), dtype=np.int64)
-        for i in range(walk_count):
+        for _ in range(walk_count):
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
             if self.list_of_lists:
-                current_batch, current_labels = self.next_batch_from_list_of_lists(sentence, batch_count, num_skips,
-                                                                                   skip_window)
+                current_batch, current_labels = self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
             else:
-                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips, skip_window)
+                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips)
             batch = np.append(batch, current_batch)
             labels = np.append(labels, current_labels, axis=0)
             if self.current_sentence == self.num_sentences:

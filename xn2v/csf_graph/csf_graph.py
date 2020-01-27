@@ -211,6 +211,5 @@ class CSFGraph:
         if len(self.edgetype2count_dictionary) < 2:
             print("edge count: %d" % self.edge_count())
         else:
-            edgecounts = []
             for category, count in self.edgetype2count_dictionary.items():
                 print("%s - count: %d" % (category, count))

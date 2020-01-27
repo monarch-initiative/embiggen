@@ -4,7 +4,6 @@ import os
 
 from xn2v import WeightedTriple
 from xn2v import StringInteraction
-from xn2v import xn2vParser
 
 from urllib.request import urlopen
 import os.path

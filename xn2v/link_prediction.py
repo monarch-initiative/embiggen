@@ -7,7 +7,6 @@ from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
 import logging
 import os
 import itertools as IT
-import random
 
 
 handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))

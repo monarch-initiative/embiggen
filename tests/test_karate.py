@@ -1,4 +1,3 @@
-import unittest
 from unittest import TestCase
 import xn2v
 from xn2v import LinkPrediction
