@@ -14,8 +14,9 @@ from .link_prediction import LinkPrediction
 from .csf_graph import CSFGraph
 from .text_encoder import TextEncoder
 from .word2vec import CBOWBatcherListOfLists
+from .kW2V import kWord2Vec
 
 __all__ = [
     "xn2vParser", "StringInteraction", "WeightedTriple", "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder",
-    "CBOWBatcherListOfLists"
+    "CBOWBatcherListOfLists", "kWord2Vec"
 ]
