@@ -5,7 +5,6 @@
 ############################
 
 import random
-import math
 import numpy as np
 import tensorflow as tf
 import collections
@@ -59,7 +58,7 @@ class NCE(tf.keras.layers.Layer):
         # return 1
         return self.num_classes
 
-class Word2Vec:
+class kWord2Vec:
     """
     Superclass of all of the word2vec family algorithms.
     """
@@ -101,6 +100,8 @@ class Word2Vec:
         self.num_sampled = num_sampled
         self.display = display
         self.display_examples = []
+        self.data_index = 0
+        self.current_sentence = 0
 
         # Q/C
         # 1. check if we have a flat list of ints or a list of lists of ints
@@ -139,12 +140,12 @@ class Word2Vec:
                 tf.keras.layers.Embedding(input_dim=self.vocabulary_size,  # embedding input
                                         output_dim=self.embedding_dim),   # embedding output
                 tf.keras.layers.Dense(units=self.vocabulary_size,
-                                    input_shape=(self.vocabulary_size, self.embedding_size),
+                                    input_shape=(self.vocabulary_size, self.embedding_dim),
                                     activation=tf.nn.softmax,
                                     use_bias=True,
                                     kernel_initializer=tf.keras.initializers.RandomNormal())
             ])
-            self.model.compile(loss=NCE(),
+            self.model.compile(loss=NCE(num_classes=self.vocabulary_size),
               optimizer=tf.optimizers.SGD(self.learning_rate),
               metrics=['accuracy'])
 
@@ -221,7 +222,7 @@ class Word2Vec:
         span = 2 * skip_window + 1
         batch = np.ndarray(shape=0, dtype=np.int32)
         labels = np.ndarray(shape=(0, 1), dtype=np.int32)
-        for i in range(walk_count):
+        for _ in range(walk_count):
             # here, sentence can be one random walk
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
@@ -236,10 +237,6 @@ class Word2Vec:
 
     def train(self, display_step=2000):
         # Words for testing.
-        # display_step = 2000
-        # eval_step = 2000
-
-        nce = NCE(self.vocabulary_size)
         # Run training for the given number of steps.
         for step in range(1, self.num_steps + 1):
             if self.list_of_lists:
@@ -247,6 +244,6 @@ class Word2Vec:
                 batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
             else:
                 batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
-            with tf.GradientTape() as tape:
-                self.model.fit(batch_x, batch_y, epochs=1)
-                # self.model.evaluate() ?? Can we use this to show the nearest words
+            self.model.fit(batch_x, batch_y, epochs=1)
+            # possibly show progress??
+            # self.model.evaluate() ?? Can we use this to show the nearest words
