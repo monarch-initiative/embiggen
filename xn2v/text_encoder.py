@@ -165,7 +165,7 @@ class TextEncoder:
         """Builds a dataset by traversing over a input text and compiling a list of the most commonly occurring words.
 
         Returns:
-            data: A list of the most  commonly occurring word indices.
+            data: A list of the most commonly occurring word indices.
             count: A list of tuples, where the first item in each tuple is a word and the second is the word frequency.
             dictionary: A dictionary where the keys are words and the values are the word id.
             reversed dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
