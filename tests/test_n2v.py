@@ -311,7 +311,7 @@ class TestStringInteraction(TestCase):
             print("{} was previously downloaded".format(local_file))
 
         encoder = TextEncoder(local_file)
-        data, count, dictionary, reverse_dictionary = encoder.build_dataset()
+        data, count, dictionary, reverse_dictionary = encoder.build_dataset_with_keras()
         model = SkipGramWord2Vec(
             data, worddictionary=dictionary, reverse_worddictionary=reverse_dictionary)
         model.add_display_words(count)
