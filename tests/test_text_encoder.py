@@ -37,7 +37,7 @@ class TestTextEncoderEnBlock(TestCase):
     def setUp(self):
         infile = os.path.join(os.path.dirname(__file__), 'data', 'greatExpectations3.txt')
         encoder = TextEncoder(infile)
-        data, count, dictionary, reverse_dictionary = encoder.build_dataset()
+        data, count, dictionary, reverse_dictionary = encoder.build_dataset_with_keras()
         self.data = data
         self.count = count
         self.dictionary = dictionary
