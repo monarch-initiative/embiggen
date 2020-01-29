@@ -6,6 +6,10 @@ import bz2
 
 from math import ceil
 
+from keras.preprocessing.text import text_to_word_sequence
+from keras_preprocessing.text import Tokenizer
+from pandas.core.common import flatten
+
 
 class TextEncoder:
     """
@@ -100,7 +104,6 @@ class TextEncoder:
             for i in range(ceil(file_size // chunk_size) + 1):
                 bytes_to_read = min(chunk_size, file_size - (i * chunk_size))
                 file_string = file.read(bytes_to_read).decode('utf-8')
-
                 # lowercase and tokenize into list of words
                 data.extend(file_string.lower().split())
 
@@ -260,3 +263,50 @@ class TextEncoder:
         # log.info('Most common words (+UNK) {}', str(count[:5)])
         # log.info('Sample data: {}', str(data[:10]))
         return data, count, dictionary, dict(zip(dictionary.values(), dictionary.keys()))
+
+
+    def build_dataset_with_keras(self, max_vocab_size=50000):
+        text = self.get_raw_text()
+        words = text_to_word_sequence(text, lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        words = self.remove_stopwords(words)
+        max_vocab_size = min(max_vocab_size, len(set(words)))
+        print("Max vocab size: {}".format(max_vocab_size))
+        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token.
+        # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
+        # will be 1st index
+        # max_vocab_size + 1 because Keras reserves the 0th index
+        tokenizer = Tokenizer(num_words=max_vocab_size + 1, oov_token='UNK', lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        sentences = self.parse_file_into_sentences()
+        tokenizer.fit_on_texts(sentences)
+        sequences = tokenizer.texts_to_sequences(sentences)
+        # for downstream compatibility
+        flatted_sequences = list(flatten(sequences))
+        dictionary = tokenizer.word_index
+        reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
+        count = tokenizer.word_counts
+        # for downstream compatibility
+        count_as_tuples = list(zip(list(count.keys()), list(count.values())))
+
+        return flatted_sequences, count_as_tuples, dictionary, reverse_dictionary
+
+    def get_raw_text(self):
+        text = open(self.filename).read()
+        return text
+
+    def parse_file_into_sentences(self):
+        sentences = []
+
+        with open(self.filename) as file:
+            print('Reading data from {filename}'.format(filename=self.filename))
+            for line in file:
+                # calling clean_text since Keras does not undo contractions
+                cleaned_line = self.clean_text(line)
+                # removing stopwords since Keras does not support removing a defined set of words
+                cleaned_line = self.remove_stopwords(cleaned_line.split(' '))
+                sentences.append(' '.join(cleaned_line))
+        return sentences
+
+    def remove_stopwords(self, words):
+        filtered_words = []
+        filtered_words.extend([word for word in words if word not in self.stopwords])
+        return filtered_words
