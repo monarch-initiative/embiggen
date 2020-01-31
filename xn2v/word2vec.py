@@ -160,7 +160,7 @@ class Word2Vec:
         # Pick a random validation set of 'num' words to sample nearest neighbors
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements
         valid_window = 50
-        valid_examples = np.array(random.sample(range(valid_window), num))
+        valid_examples = np.array(random.sample(range(2, valid_window), num))
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements after element 1000
         # This is to sample some less common words
         self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
