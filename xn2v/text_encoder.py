@@ -269,7 +269,6 @@ class TextEncoder:
         words = text_to_word_sequence(text, lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
-        print("Max vocab size: {}".format(max_vocab_size))
         # initialize Tokenizer with 'UNK' as the out-of-vocabulary token.
         # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
         # will be 1st index
@@ -280,12 +279,24 @@ class TextEncoder:
         sequences = tokenizer.texts_to_sequences(sentences)
         # for downstream compatibility
         flatted_sequences = list(flatten(sequences))
-        dictionary = tokenizer.word_index
-        reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
         count = tokenizer.word_counts
         # for downstream compatibility
-        count_as_tuples = list(zip(list(count.keys()), list(count.values())))
-
+        filtered_count = {}
+        dictionary = {}
+        for k, v in tokenizer.word_index.items():
+            if v <= max_vocab_size:
+                if k == 'UNK':
+                    filtered_count['UNK'] = 0
+                    dictionary['UNK'] = 1
+                    continue
+                filtered_count[k] = count[k]
+                dictionary[k] = v
+            else:
+                filtered_count['UNK'] += 1
+        reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
+        # for downstream compatibility
+        count_as_tuples = list(zip(list(filtered_count.keys()), list(filtered_count.values())))
+        assert max_vocab_size == len(count_as_tuples)
         return flatted_sequences, count_as_tuples, dictionary, reverse_dictionary
 
     def get_raw_text(self):
