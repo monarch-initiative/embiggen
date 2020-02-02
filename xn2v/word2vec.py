@@ -160,7 +160,7 @@ class Word2Vec:
         # Pick a random validation set of 'num' words to sample nearest neighbors
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements
         valid_window = 50
-        valid_examples = np.array(random.sample(range(valid_window), num))
+        valid_examples = np.array(random.sample(range(2, valid_window), num))
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements after element 1000
         # This is to sample some less common words
         self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
@@ -172,10 +172,10 @@ class Word2Vec:
         # self.data is either a list (e.g., from a text) or a list of lists (e.g., from a collection of random walks)
         if any(isinstance(el, list) for el in self.data):
             flat_list = [item for sublist in self.data for item in sublist]
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)))
+            self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
             print("Vocabulary size (list of lists) is %d" % self.vocabulary_size)
         else:
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(self.data)))
+            self.vocabulary_size = min(self.max_vocabulary_size, len(set(self.data)) + 1)
             print("Vocabulary size (flat) is %d" % self.vocabulary_size)
 
     def write_embeddings(self, outfilename):
