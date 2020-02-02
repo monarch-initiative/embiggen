@@ -24,7 +24,7 @@ class TestCSFGraph(TestCase):
         self.g.print_edge_type_distribution()
 
     def test_count_nodes(self):
-        # The graph in unweighted_small_graph.txt has 11 nodes
+        # The graphh in small_graph.txt has 11 nodes
         expected_num = 11
         self.assertEqual(expected_num, self.g.node_count())
 
@@ -65,7 +65,7 @@ class TestCSFGraph(TestCase):
     def test_edges(self):
         """
         Test the method that should get all edges as tuples
-        wc -l unweighted_small_graph.txt reveals 21 edges, but the Graph class
+        wc -l small_graph.txt reveals 21 edges, but the Graph class
         creates a total of 42 edges to make an undirected graph.
         """
         edge_list = self.g.edges()
