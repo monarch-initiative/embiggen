@@ -207,7 +207,7 @@ class SkipGramWord2Vec(Word2Vec):
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=10000,  # default=3000000
+                 num_steps=100,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
                  min_occurrence=1,  # default=2

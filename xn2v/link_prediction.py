@@ -6,7 +6,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
 import logging
 import os
-import itertools as IT
 
 
 handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
@@ -17,31 +16,26 @@ log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
 log.addHandler(handler)
 
 class LinkPrediction:
-    def __init__(self, train_graph, test_graph, embedded_train_graph_path, params={}):
+    def __init__(self, pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
+                 embedded_train_graph_path, edge_embedding_method):
         """
         Set up for predicting links from results of node2vec analysis
-        :param train_graph: The complete training graph
-        :param test_graph:  Graph of links that we want to predict
+        :param pos_train_graph: The training graph
+        :param pos_test_graph:  Graph of links that we want to predict
+        :param neg_train_graph: Graph of non-existence links in training graph
+        :param neg_test_graph: Graph of non-existence links that we want to predict as negative edges
         :param embedded_train_graph_path: THe file produced by word2vec with the nodes embedded as vectors
         """
-        self.train_edges = train_graph.edges()
-        self.test_edges = test_graph.edges()
-        self.train_nodes = train_graph.nodes()
-        self.test_nodes = test_graph.nodes()
+        self.pos_train_edges = pos_train_graph.edges()
+        self.pos_test_edges = pos_test_graph.edges()
+        self.neg_train_edges = neg_train_graph.edges()
+        self.neg_test_edges = neg_test_graph.edges()
+        self.train_nodes = pos_train_graph.nodes()
+        self.test_nodes = pos_test_graph.nodes()
         self.embedded_train_graph = embedded_train_graph_path
         self.map_node_vector = {}
         self.read_embeddings()
-        default_edge_embedding_method = "hadamard"
-        self.edge_embedding_method = params.get('edge_embedding_method', default_edge_embedding_method)
-
-        # for false_edges, We want portion_false_edges times the number of true edges,
-        # where portion_false_edges is a number between 2 and 10
-        default_portion_false_edges = 2
-        self.portion_false_edges = params.get('portion_false_edges', default_portion_false_edges)
-        self.false_test_edges = []
-        self.false_train_edges = []
-        self.true_test_edges = []
-        self.__input_training_and_test_data()
+        self.edge_embedding_method = edge_embedding_method
 
     def read_embeddings(self):
         """
@@ -63,123 +57,27 @@ class LinkPrediction:
         log.debug("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
-    def generate_random_negative_edges(self, negative_training_proportion = 1.0, negative_test_proportion = 1.0):
-        """
-        Generate random edges under the assumption that they are true negative.
-
-        :return:
-        """
-        train_nodes = self.train_nodes
-        number_false_train_edges = int(negative_training_proportion * len(self.train_edges))
-        number_false_test_edges = int(negative_test_proportion * len(self.test_edges))
-        false_training_edges = set()
-        false_test_edges = set()
-        for pair in IT.combinations(train_nodes, 2):
-            if pair in self.train_edges or pair in self.test_edges:
-                continue
-            if len(false_training_edges) >= number_false_train_edges:
-                break
-            false_training_edges.add(pair)
-        for pair in IT.combinations(train_nodes, 2):
-            if pair in self.train_edges or pair in self.test_edges:
-                continue
-            if len(false_test_edges) >= number_false_test_edges:
-                break
-            if pair in false_training_edges:
-                continue
-            false_test_edges.add(pair)
-        self.false_test_edges = list(false_test_edges)
-        self.false_train_edges = list(false_training_edges)
-
-
-        """
-        false_training_edges = [pair for pair in IT.combinations(train_nodes, 2)
-                                if not pair in self.train_edges]
-        log.debug("number of edges that don't exist in train but may exist in test".
-                  format(len(false_training_edges)))
-        # The following edges are not either in the training or in the test set.
-        self.false_edges = [pair for pair in false_training_edges
-                            if not pair in self.test_edges]
-        log.debug("number of false edges:{}".format(len(self.false_edges)))
-        # np.random.seed(0)
-        # np.random.shuffle(self.false_edges)#TODO:replcae shuffle with for loop to get random number
-        number_true_train_edges = len(self.train_edges)
-
-        # We want K times the number of positive edges, where K is a number between 1 and 10
-        # number_test_edges_false = int(frac_negative_edges * len(true_negatives))
-        # number_false_train_edges = len(true_negatives) - number_test_edges_false\
-
-        number_false_train_edges = self.portion_false_edges * number_true_train_edges
-        number_false_test_edges = self.portion_false_edges * len(self.true_test_edges)
-        log.debug("number of false edges that are left for test:{}".format(number_false_test_edges))
-        log.debug("number of false edges that are left for train:{}".format(number_false_train_edges))
-
-        number_rand_numbers = number_false_train_edges + number_false_test_edges
-        rand_numbers = self.rand_num_generator(0, number_true_train_edges, number_rand_numbers)
-        for i in range(0, number_false_train_edges):
-            self.false_train_edges.append(self.false_edges[rand_numbers[i]])
-
-        for i in range(number_false_train_edges, number_rand_numbers):
-            self.false_test_edges.append(self.false_edges[rand_numbers[i]])
-
-        if number_false_train_edges > len(self.false_edges):  # for now! It needs to be checked!!
-            number_false_train_edges = number_true_train_edges
-
-        if number_false_test_edges > len(self.false_edges):  # for now! It needs to be checked!!
-            number_false_test_edges = len(self.true_test_edges)
-        log.debug("number of false training edges:{}".format(number_false_train_edges))
-        log.debug("number of false test edges:{}".format(number_false_test_edges))
-
-        number_rand_numbers = number_false_train_edges + number_false_test_edges
-        rand_numbers = self.rand_num_generator(0, number_rand_numbers, number_rand_numbers)  # generate random numbers
-        # between 0 and number_rand_numbers. rand_numbers gives of shuffling of total indices
-        for i in range(0, number_false_train_edges):
-            self.false_train_edges.append(self.false_edges[rand_numbers[i]])
-
-        for i in range(number_false_train_edges, number_rand_numbers):
-            self.false_test_edges.append(self.false_edges[rand_numbers[i]])
-
-        # self.false_test_edges = self.false_edges[0:number_false_test_edges]
-
-        # self.false_train_edges = self.false_edges[number_false_test_edges:len(self.false_edges)]
-        """
-
-    def __input_training_and_test_data(self):
-
-        # true test edges are edges that exist in g_test. These are edges that we would like to predict.
-        # Therefore, we can call them false edges.
-        self.true_test_edges = [edge for edge in self.test_edges]
-
-        # false edges are edges that don't exit in the training graph and test graph.
-        # To find false edges, we first find false edges of training graph and then remove test
-        # edges from false edges of the training graph
-        log.debug('getting non existing (false) edges')
-        #############################
-        #############  HERE
-        self.generate_random_negative_edges()
-
-
     def predict_links(self):
-        true_train_edge_embs = self.transform(edge_list=self.train_edges, node2vector_map=self.map_node_vector)
-        false_train_edge_embs = self.transform(edge_list=self.false_train_edges, node2vector_map=self.map_node_vector)
+        pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
+        neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
         #print(len(true_train_edge_embs),len(false_train_edge_embs))
-        train_edge_embs = np.concatenate([true_train_edge_embs, false_train_edge_embs])
+        train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
-        train_edge_labels = np.concatenate([np.ones(len(true_train_edge_embs)), np.zeros(len(false_train_edge_embs))])
+        train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
 
         # Test-set edge embeddings, labels
-        true_test_edge_embs = self.transform(edge_list=self.true_test_edges, node2vector_map=self.map_node_vector)
-        false_test_edge_embs = self.transform(edge_list=self.false_test_edges, node2vector_map=self.map_node_vector)
-        test_edge_embs = np.concatenate([true_test_edge_embs, false_test_edge_embs])
+        pos_test_edge_embs = self.transform(edge_list=self.pos_test_edges, node2vector_map=self.map_node_vector)
+        neg_test_edge_embs = self.transform(edge_list=self.neg_test_edges, node2vector_map=self.map_node_vector)
+        test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
         # Create test-set edge labels: 1 = true edge, 0 = false edge
-        test_edge_labels = np.concatenate([np.ones(len(true_test_edge_embs)), np.zeros(len(false_test_edge_embs))])
+        test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
         log.debug('get test edge labels')
 
         #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
-        log.debug("Total edges of training graph: {}".format(len(self.train_edges)))
-        log.debug("Training edges (negative): {}".format(len(false_train_edge_embs)))
-        log.debug("Test edges (positive): {}".format(len(self.true_test_edges)))
-        log.debug("Test edges (negative): {}".format(len(false_test_edge_embs)))
+        log.debug("Total edges of training graph: {}".format(len(self.pos_train_edges)))
+        log.debug("Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        log.debug("Test edges (positive): {}".format(len(self.pos_test_edges)))
+        log.debug("Test edges (negative): {}".format(len(neg_test_edge_embs)))
         log.debug('logistic regression')
         # Train logistic regression classifier on train-set edge embeddings
         edge_classifier = LogisticRegression()
@@ -262,8 +160,8 @@ class LinkPrediction:
         return embs
 
     def output_diagnostics_to_logfile(self):
-        self.log_edge_node_information(self.train_edges, "training")
-        self.log_edge_node_information(self.test_edges, "test")
+        self.log_edge_node_information(self.pos_train_edges, "true_training")
+        self.log_edge_node_information(self.pos_test_edges, "true_test")
 
     def log_edge_node_information(self, edge_list, group):
         """
