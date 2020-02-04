@@ -48,9 +48,15 @@ workers = 8
 worddictionary = g.get_node_to_index_map()
 reverse_worddictionary = g.get_index_to_node_map()
 
+numberwalks = []
+for w in walks:
+    nwalk = []
+    for node in w:
+        i = worddictionary[node]
+        nwalk.append(i)
+    numberwalks.append(nwalk)
 
-
-model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary)
+model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
 model.train(display_step=2)
 
 """
