@@ -24,7 +24,8 @@ class LinkPrediction:
         :param pos_test_graph:  Graph of links that we want to predict
         :param neg_train_graph: Graph of non-existence links in training graph
         :param neg_test_graph: Graph of non-existence links that we want to predict as negative edges
-        :param embedded_train_graph_path: THe file produced by word2vec with the nodes embedded as vectors
+        :param embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
+        :param edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or "weightedL2"
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -163,7 +164,7 @@ class LinkPrediction:
         self.log_edge_node_information(self.pos_train_edges, "true_training")
         self.log_edge_node_information(self.pos_test_edges, "true_test")
 
-    def log_edge_node_information(self, edge_list, group):
+    def log_edge_node_information(self, edge_list, group):#TODO:modify it for the homogenous graph
         """
         log the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
