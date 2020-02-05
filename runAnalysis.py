@@ -77,7 +77,7 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
     parameters = {'edge_embedding_method': edge_embedding_method,
                   'portion_false_edges': portion_false_edges}
 
-    lp = LinkPrediction(training_graph, test_graph, embedded_graph, params=parameters)
+    lp = LinkPrediction(training_graph, test_graph, embedded_graph, params=parameters)#TODO:modify this part to work with new link prediction
     lp.predict_links()
     lp.output_Logistic_Reg_results()
     training_graph = CSFGraph(training_file)
@@ -125,7 +125,7 @@ def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                   'portion_false_edges': 1}
 
     lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph,
-                        params=parameters)
+                        params=parameters)#TODO:modify this part to work with new link prediction
 
     lp.predict_links()
     lp.output_Logistic_Reg_results()

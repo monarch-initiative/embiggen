@@ -1,5 +1,4 @@
 import sys
-
 import numpy as np
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
@@ -110,13 +109,13 @@ class LinkPrediction:
         specificity = confusion_matrix[0, 0] * (1.0) / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * (1.0)
         sensitivity = confusion_matrix[1, 1] * (1.0) / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * (1.0)
 
-        log.info("predictions: {}".format(str(self.predictions)))
-        log.info("confusion matrix: {}".format(str(confusion_matrix)))
+        log.debug("predictions: {}".format(str(self.predictions)))
+        log.debug("confusion matrix: {}".format(str(confusion_matrix)))
         log.debug('Accuracy : {}'.format(accuracy))
         log.debug('Specificity : {}'.format(specificity))
         log.debug('Sensitivity : {}'.format(sensitivity))
-        log.debug("het_node2vec Test ROC score: {} ".format(str(self.test_roc)))
-        log.debug("het_node2vec Test AP score: {} ".format(str(self.test_average_precision)))
+        log.debug("node2vec Test ROC score: {} ".format(str(self.test_roc)))
+        log.debug("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
 
     def transform(self,edge_list, node2vector_map):
         """
