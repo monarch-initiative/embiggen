@@ -160,10 +160,11 @@ class LinkPrediction:
         return embs
 
     def output_diagnostics_to_logfile(self):
-        self.log_edge_node_information(self.pos_train_edges, "true_training")
-        self.log_edge_node_information(self.pos_test_edges, "true_test")
+        LinkPrediction.log_edge_node_information(self.pos_train_edges, "true_training")
+        LinkPrediction.log_edge_node_information(self.pos_test_edges, "true_test")
 
-    def log_edge_node_information(self, edge_list, group):#TODO:modify it for the homogenous graph
+    @staticmethod
+    def log_edge_node_information(edge_list, group):#TODO:modify it for the homogenous graph
         """
         log the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
