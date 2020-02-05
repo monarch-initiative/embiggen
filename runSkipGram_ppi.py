@@ -3,8 +3,6 @@ import sys
 import tempfile
 from urllib.request import urlopen
 
-
-
 import xn2v
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
@@ -18,17 +16,11 @@ import os
 training_file = os.path.join(os.path.dirname(__file__),  'pos_train_edges')
 #training_file = os.path.join(os.path.dirname(__file__),  'karate.train')
 
-#test_file= os.path.join(os.path.dirname(__file__), 'data', 'karate.test')
+test_file= os.path.join(os.path.dirname(__file__), 'data', 'karate.test')
 
 
 g = CSFGraph(training_file)
 
-#for edge in g.edges():
-#    g[edge[0]][edge[1]]['weight'] = 1
-
-# Note -- weights of 1 added to karate files
-
-#g_train = g.to_undirected()
 
 p = 1
 q = 1
@@ -48,15 +40,15 @@ workers = 8
 worddictionary = g.get_node_to_index_map()
 reverse_worddictionary = g.get_index_to_node_map()
 
-numberwalks = []
+walks_integer_nodes = []
 for w in walks:
     nwalk = []
     for node in w:
         i = worddictionary[node]
         nwalk.append(i)
-    numberwalks.append(nwalk)
+    walks_integer_nodes.append(nwalk)
 
-model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
+model = SkipGramWord2Vec(walks_integer_nodes, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
 model.train(display_step=2)
 
 """

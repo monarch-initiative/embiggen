@@ -28,7 +28,7 @@ class CSFGraph:
                 nodeA = fields[0]
                 nodeB = fields[1]
                 if len(fields) == 2:
-                    print("[INFO] Edge is unweighted. We assign 1.0 to the weight of the dge.")
+                    print("[INFO] Edge is unweighted. We assign 1.0 to the weight of the edge.")
                     weight = 1.0
                 else:
                     try:
