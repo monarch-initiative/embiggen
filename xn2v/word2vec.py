@@ -230,6 +230,7 @@ class SkipGramWord2Vec(Word2Vec):
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
 
+
         # takes the input data and goes through each element
         if any(isinstance(el, list) for el in self.data):#check each element is a list
             for el in self.data:
@@ -471,6 +472,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
+        self.batcher = CBOWBatcherListOfLists(data)
         if any(isinstance(el, list) for el in self.data):
             self.list_of_lists = True
         else:
@@ -641,7 +643,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
             if self.list_of_lists:
-                current_batch, current_labels = self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
+                current_batch, current_labels = self.batcher.generate_batch() #self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
             else:
                 current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips)
             batch = np.append(batch, current_batch)
