@@ -5,7 +5,7 @@ from xn2v import CSFGraph
 from xn2v import N2vGraph
 from xn2v import ContinuousBagOfWordsWord2Vec
 
-
+import os.path
 
 class TestTextEncoderSentences(TestCase):
     def setUp(self):
@@ -72,6 +72,7 @@ class TestCBOWconstruction(TestCase):
         # neg_train = 'data/ppismall/neg_train_edges'
         #pos_test = 'data/ppismall/pos_test_edges'
         pos_train = 'data/ppismall/pos_train_edges'
+        pos_train = os.path.abspath(pos_train)
         training_graph = CSFGraph(pos_train)
         worddictionary = training_graph.get_node_to_index_map()
         reverse_worddictionary = training_graph.get_index_to_node_map()
