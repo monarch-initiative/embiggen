@@ -5,7 +5,6 @@ from xn2v import CSFGraph
 from xn2v import N2vGraph
 from xn2v import ContinuousBagOfWordsWord2Vec
 
-import os.path
 
 
 class TestTextEncoderSentences(TestCase):
