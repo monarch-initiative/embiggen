@@ -207,7 +207,7 @@ class SkipGramWord2Vec(Word2Vec):
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=10000,  # default=3000000
+                 num_steps=100,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
                  min_occurrence=1,  # default=2
@@ -231,12 +231,15 @@ class SkipGramWord2Vec(Word2Vec):
         self.id2word = reverse_worddictionary
 
         # takes the input data and goes through each element
-        if any(isinstance(el, list) for el in self.data):
+        if any(isinstance(el, list) for el in self.data):#check each element is a list
+            for el in self.data:
+              if any(isinstance(item, int) for item in el):#check each element of the list is integer
+                  self.list_of_lists = True  # graph version
+              else:
+                  self.list_of_lists = False
+                  raise TypeError("The item needs to be a list of walks where each walk is a sequence of (integer) nodes.")
 
-            # update this to check the first item, but demand its a list or int and then die
-            self.list_of_lists = True  # graph version
-        else:
-            self.list_of_lists = False
+
         self.calculate_vocabulary_size()
         # This should not be a problem with real data, but with toy examples the number of nodes might be
         # lower than the default value of num_sampled of 64. However, num_sampled needs to be less than

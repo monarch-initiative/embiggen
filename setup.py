@@ -34,7 +34,7 @@ setup(
         'numpy>=1.16.4',
         'pandas',
         'sklearn',
-        'tensorflow==2.0',
+        'tensorflow',
         'click'
     ],
     test_suite='nose.collector',
