@@ -142,10 +142,6 @@ class Word2Vec:
         self.num_sampled = num_sampled
         self.display = display
         self.display_examples = []
-        # Evaluation Parameters.
-        # eval_words = ['five', 'of', 'going', 'hardware', 'american', 'britain']
-        # TODO add FUNCTION FOR EVALUATION
-        eval_words = ['house', 'oliver', 'twist', 'nose']
 
     def add_display_words(self, count, num=5):
         '''
@@ -164,7 +160,7 @@ class Word2Vec:
         # Pick a random validation set of 'num' words to sample nearest neighbors
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements
         valid_window = 50
-        valid_examples = np.array(random.sample(range(valid_window), num))
+        valid_examples = np.array(random.sample(range(2, valid_window), num))
         # We sample 'num'' datapoints randomly from the first 'valid_window' elements after element 1000
         # This is to sample some less common words
         self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
@@ -176,10 +172,10 @@ class Word2Vec:
         # self.data is either a list (e.g., from a text) or a list of lists (e.g., from a collection of random walks)
         if any(isinstance(el, list) for el in self.data):
             flat_list = [item for sublist in self.data for item in sublist]
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)))
+            self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
             print("Vocabulary size (list of lists) is %d" % self.vocabulary_size)
         else:
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(self.data)))
+            self.vocabulary_size = min(self.max_vocabulary_size, len(set(self.data)) + 1)
             print("Vocabulary size (flat) is %d" % self.vocabulary_size)
 
     def write_embeddings(self, outfilename):
@@ -191,9 +187,9 @@ class Word2Vec:
         # id_list.sort() # TODO FIGURE OUT HOW TO SORT ME
         fh = open(outfilename, "w")
         with tf.device('/cpu:0'):
-            for id in id_list:
-                fh.write(self.id2word[id])
-                x_embed = tf.nn.embedding_lookup(self.embedding, id)
+            for idtf in id_list:
+                fh.write(self.id2word[idtf])
+                x_embed = tf.nn.embedding_lookup(self.embedding, idtf)
                 x = x_embed.numpy()
                 for it in x:
                     fh.write("\t{}".format(it))
@@ -211,7 +207,7 @@ class SkipGramWord2Vec(Word2Vec):
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=10000,  # default=3000000
+                 num_steps=100,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
                  min_occurrence=1,  # default=2
@@ -234,13 +230,17 @@ class SkipGramWord2Vec(Word2Vec):
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
 
-        # takes the input data and goes through each element
-        if any(isinstance(el, list) for el in self.data):
 
-            # update this to check the first item, but demand its a list or int and then die
-            self.list_of_lists = True  # graph version
-        else:
-            self.list_of_lists = False
+        # takes the input data and goes through each element
+        if any(isinstance(el, list) for el in self.data):#check each element is a list
+            for el in self.data:
+              if any(isinstance(item, int) for item in el):#check each element of the list is integer
+                  self.list_of_lists = True  # graph version
+              else:
+                  self.list_of_lists = False
+                  raise TypeError("The item needs to be a list of walks where each walk is a sequence of (integer) nodes.")
+
+
         self.calculate_vocabulary_size()
         # This should not be a problem with real data, but with toy examples the number of nodes might be
         # lower than the default value of num_sampled of 64. However, num_sampled needs to be less than
@@ -472,6 +472,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
+        self.batcher = CBOWBatcherListOfLists(data)
         if any(isinstance(el, list) for el in self.data):
             self.list_of_lists = True
         else:
@@ -636,16 +637,15 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         span = 2 * skip_window + 1
         batch = np.ndarray(shape=0, dtype=np.int32)
         labels = np.ndarray(shape=(0, 1), dtype=np.int64)
-        for i in range(walk_count):
+        for _ in range(walk_count):
             sentence = self.data[self.current_sentence]
             self.current_sentence += 1
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
             if self.list_of_lists:
-                current_batch, current_labels = self.next_batch_from_list_of_lists(sentence, batch_count, num_skips,
-                                                                                   skip_window)
+                current_batch, current_labels = self.batcher.generate_batch() #self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
             else:
-                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips, skip_window)
+                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips)
             batch = np.append(batch, current_batch)
             labels = np.append(labels, current_labels, axis=0)
             if self.current_sentence == self.num_sentences:

@@ -25,18 +25,18 @@ class CSFGraph:
             for line in f:
                 # print(line)
                 fields = line.rstrip('\n').split()
-                if not len(fields) == 3:
-                    print("[ERROR] Skipping malformed line with {} fields ({}).".format(
-                        len(fields), line))
-                    continue
                 nodeA = fields[0]
                 nodeB = fields[1]
-                try:
-                    weight = float(fields[2])
-                except Exception as e:
-                    print("[ERROR] Could not parse weight field (must be an integer): {}".format(
-                        fields[2]))
-                    continue
+                if len(fields) == 2:
+                    print("[INFO] Edge is unweighted. We assign 1.0 to the weight of the edge.")
+                    weight = 1.0
+                else:
+                    try:
+                        weight = float(fields[2])
+                    except Exception as e:
+                        print("[ERROR] Could not parse weight field (must be an integer): {}".format(
+                           fields[2]))
+                        continue
                 nodes.add(nodeA)
                 nodes.add(nodeB)
                 edge = Edge(nodeA, nodeB, weight)
@@ -211,6 +211,5 @@ class CSFGraph:
         if len(self.edgetype2count_dictionary) < 2:
             print("edge count: %d" % self.edge_count())
         else:
-            edgecounts = []
             for category, count in self.edgetype2count_dictionary.items():
                 print("%s - count: %d" % (category, count))

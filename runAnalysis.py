@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 import tempfile
 from urllib.request import urlopen
@@ -62,26 +61,36 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
     model.write_embeddings(output_file)
 
 @cli.command()
-@click.option("test_file", "-t", type=click.Path(exists=True), required=True)
-@click.option("training_file", "-r", type=click.Path(exists=True), required=True)
+
+@click.option("positive_training_file", "-r", type=click.Path(exists=True), required=True)
+@click.option("positive_test_file", "-t", type=click.Path(exists=True), required=True)
+@click.option("negative_test_file",  type=click.Path(exists=True), required=True)
+@click.option("negative_training_file", "-r", type=click.Path(exists=True), required=True)
 @click.option("embedded_graph", "-e", type=click.Path(exists=True), required=True)
 @click.option("edge_embedding_method", "-m", default="hadamard")
-@click.option("portion_false_edges", "-p", default=1)
-def disease_link_prediction(test_file, training_file, embedded_graph,
-                            edge_embedding_method, portion_false_edges):
+def disease_link_prediction(positive_training_file,
+                            positive_test_file,
+                            negative_training_file,
+                            negative_test_file,
+                            embedded_graph,
+                            edge_embedding_method):
     """
     Predict disease links
     """
-    test_graph = CSFGraph(test_file)
-    training_graph = CSFGraph(training_file)
 
-    parameters = {'edge_embedding_method': edge_embedding_method,
-                  'portion_false_edges': portion_false_edges}
-
-    lp = LinkPrediction(training_graph, test_graph, embedded_graph, params=parameters)
+    training_graph = CSFGraph(positive_training_file)
+    test_graph = CSFGraph(positive_test_file)
+    negative_training_graph = CSFGraph(negative_training_file)
+    negative_test_graph = CSFGraph(negative_test_file)
+    lp = LinkPrediction(training_graph,
+                        test_graph,
+                        negative_training_graph,
+                        negative_test_graph,
+                        embedded_graph,
+                        edge_embedding_method=edge_embedding_method)
     lp.predict_links()
     lp.output_Logistic_Reg_results()
-    training_graph = CSFGraph(training_file)
+
 
 
 @cli.command()
@@ -96,7 +105,7 @@ def disease_link_prediction(test_file, training_file, embedded_graph,
 @click.option("use_gamma", "-u", is_flag=True, default=False)
 @click.option("walk_length", "-w", type=int, default=80)
 @click.option("num_walks", "-n", type=int, default=25)
-def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
+def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                     walk_length, num_walks):
     training_graph = CSFGraph(training_file)
     hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
@@ -126,7 +135,7 @@ def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamm
                   'portion_false_edges': 1}
 
     lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph,
-                        params=parameters)
+                        params=parameters)#TODO:modify this part to work with new link prediction
 
     lp.predict_links()
     lp.output_Logistic_Reg_results()
@@ -136,7 +145,7 @@ def run_karate_test(training_file, test_file, output_file, p, q, gamma, use_gamm
 @click.option('--algorithm',
               type=click.Choice(["skipgram", "cbow"], case_sensitive=False),
               default="skipgram")
-def run_w2v_test(test_url, algorithm):
+def w2v(test_url, algorithm):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:

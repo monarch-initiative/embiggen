@@ -1,17 +1,11 @@
 import unittest
 from unittest import TestCase
-import os
 
 from xn2v import WeightedTriple
 from xn2v import StringInteraction
-from xn2v import xn2vParser
 
-from urllib.request import urlopen
 import os.path
 
-# Tale of Two Cities, Dickens, from Gutenberg project
-from xn2v.text_encoder import TextEncoder
-from xn2v.word2vec import SkipGramWord2Vec
 
 # files used by many tests
 gene2ensembl = os.path.join(os.path.dirname(
@@ -44,21 +38,21 @@ class TestWeightedTriple(TestCase):
 
     def test_get_object(self):
         wt = WeightedTriple(42, 84, 0.7, "madeup-edgetype")
-        assert wt.get_triple() == "42\t84\tmadeup-edgetype"
+        self.assertEqual(wt.get_triple(), "42\t84\tmadeup-edgetype")
 
     def test_create_gene_disease_weighted_triple(self):
         wt1 = WeightedTriple(42, 84, 0.7, "gene_dis")
         wt2 = WeightedTriple.create_gene_disease_weighted_triple(
             42, 84, 0.7
         )
-        assert str(wt1) == str(wt2)
+        self.assertEqual(str(wt1), str(wt2))
 
     def test_create_gtex(self):
         wt1 = WeightedTriple(42, 84, 0.7, "gtex")
         wt2 = WeightedTriple.create_gtex(
             42, 84, 0.7
         )
-        assert str(wt1) == str(wt2)
+        self.assertEqual(str(wt1), str(wt2))
 
     def test_map_string_exception(self):
         with self.assertRaises(TypeError):
@@ -297,70 +291,6 @@ class TestStringInteraction(TestCase):
         si = StringInteraction(TestStringInteraction.line3)
         expected = "['ENSP00000000233', 'activation', 'ENSP00000248901']"
         self.assertEqual(expected, str(si.get_edge_type()))
-
-    def test_execution(self):
-        local_file = 'twocities.txt'
-
-        if not os.path.exists(local_file):
-            url = 'https://www.gutenberg.org/files/98/98-0.txt'
-            with urlopen(url) as response:
-                resource = response.read()
-                content = resource.decode('utf-8')
-                fh = open(local_file, 'w')
-                fh.write(content)
-        else:
-            print("{} was previously downloaded".format(local_file))
-
-        encoder = TextEncoder(local_file)
-        data, count, dictionary, reverse_dictionary = encoder.build_dataset()
-        model = SkipGramWord2Vec(
-            data, worddictionary=dictionary, reverse_worddictionary=reverse_dictionary)
-        model.add_display_words(count)
-        model.train(display_step=1000)
-
-
-'''
-class Testxn2vParser(TestCase):
-
-    def setUp(self):
-        self._parser = xn2vParser(params=params)
-        self._parser.parse()
-
-    def test_not_null(self):
-        self.assertIsNotNone(self._parser)
-
-    def test_get_correct_number_of_ensembl_protein_mapping_entries(self):
-        # the small_gene2ensem.txt.gz has seven 9606 (human) entries.
-        # six of the entries have a ENSP protein id
-        self.assertEqual(6, self._parser.get_protein2gene_map_count())
-
-    def test_get_correct_number_of_ensembl_gene_mapping_entries(self):
-        # the small_gene2ensem.txt.gz has seven 9606 (human) entries.
-        # all of the entries have  ENSG gene id, but there are only
-        # four unique gene id's for entries with a protein (other entries
-        # are discarded)
-        
-        self.assertEqual(4, self._parser.get_ensembl_gene2gene_map_count())
-
-    def test_map_gene_ident_gene_id(self):
-        self.assertEqual('21', self._parser.ensg2geneID_map.get("ENSG00000167972"))
-
-    def test_above_threshold_ppi(self):
-        # zcat small_9606.protein.actions.txt.gz | awk 'BEGIN{FS="\t"} NR>1 $7>699{ lines[$2] = $0 } END { for (l in lines) print lines[l] }' | wc -l
-
-        self.assertEqual(2, self._parser.get_string_raw_ppi_count())
-
-    def test_string_mapping(self):
-        pass
-
-    def test_number_unique_string_proteins(self):
-        protein_set = self._parser.get_unique_string_protein_set()
-        N = len(protein_set)  ## number of unique proteins in STRING dataset
-        self.assertEqual(3, N)
-
-    def test_number_gene_disease(self):
-        self.assertEqual(22, self._parser.get_gene_disease_count())
-'''
 
 if __name__ == '__main__':
     unittest.main()

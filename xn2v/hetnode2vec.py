@@ -62,8 +62,8 @@ class N2vGraph:
                     walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
                 else:
                     prev = walk[-2]
-                    next = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0], alias_edges[(prev, cur)][1])]
-                    walk.append(next)
+                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0], alias_edges[(prev, cur)][1])]
+                    walk.append(nxt)
             else:
                 break
 
@@ -84,16 +84,6 @@ class N2vGraph:
                 walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
 
         return walks
-
-    #def is_in_same_network_nodetype(self, src, dst):
-        """
-        checks if the nodes src and dst belongs to the same network or not. They are in one network if they both start
-        with 'g' or 'd' or 'p'
-        """
-     #   if src[0] == dst[0]:
-      #      return True
-       # else:
-        #    return False
 
     def get_alias_edge(self, edge):
         """
