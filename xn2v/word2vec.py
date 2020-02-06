@@ -3,7 +3,7 @@ import math
 import numpy as np
 import tensorflow as tf
 import collections
-
+from xn2v import CBOWListBatcher
 
 class Word2Vec:
     """
@@ -376,7 +376,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
-        self.batcher = CBOWBatcherListOfLists(data)
+        self.batcher = CBOWListBatcher(data)
         if any(isinstance(el, list) for el in self.data):
             self.list_of_lists = True
         else:
