@@ -71,8 +71,8 @@ class TestCBOWconstruction(TestCase):
         # neg_test = 'data/ppismall/neg_test_edges'
         # neg_train = 'data/ppismall/neg_train_edges'
         #pos_test = 'data/ppismall/pos_test_edges'
-        pos_train = 'data/ppismall/pos_train_edges'
-        pos_train = os.path.abspath(pos_train)
+        pos_train = './data/ppismall/pos_train_edges'
+        #pos_train = os.path.abspath(pos_train)
         training_graph = CSFGraph(pos_train)
         worddictionary = training_graph.get_node_to_index_map()
         reverse_worddictionary = training_graph.get_index_to_node_map()
