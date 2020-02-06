@@ -143,13 +143,13 @@ class CSFGraph:
             nbrs.append(nbr)
         return nbrs
 
-    def neighbors_as_ints(self, source):
+    def neighbors_as_ints(self, source_idx):
         """
-        :param source: source node
+        :param source_idx: source node, represented as an integer
         :return: list of indices of neighbors of source
         """
         nbrs_ints = []
-        source_idx = self.node_to_index_map[source]
+        # source_idx = self.node_to_index_map[source]
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             nbr = self.edge_to[i]
             nbrs_ints.append(nbr)
