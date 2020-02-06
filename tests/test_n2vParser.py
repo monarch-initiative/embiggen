@@ -24,26 +24,29 @@ params = {'gtex_path': gtex_path, 'gene2ensembl_path': gene2ensembl, 'string_pat
 
 
 class TestN2vParser(TestCase):
+    def setUp(self) -> None:
+        curdir = os.path.dirname(__file__)
+        self.datadir = os.path.join(curdir, "data")
     def test_xn2vParser_init(self):
-        p = xn2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir=self.datadir, params=params)
         p.qc_input()
 
     def test_get_num_proteins_not_mapped_count(self):
-        p = xn2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir=self.datadir, params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
         p.get_num_proteins_not_mapped_count()
 
     def test_get_number_proteins_found_TCRD(self):
-        p = xn2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir=self.datadir, params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
         p.get_number_proteins_found_TCRD()
 
     def test_parse(self):
-        p = xn2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir=self.datadir, params=params)
         # TODO: currently testing only execution, in
         # the future it will be necessary to also test
         # if the return value is correct
@@ -64,7 +67,7 @@ class TestN2vParser(TestCase):
         os.remove("output.tsv")
 
     def test_summary(self):
-        p = xn2vParser(data_dir="tests/data", params=params)
+        p = xn2vParser(data_dir=self.datadir, params=params)
         # TODO: currently testing only execution,
         # but the following method currently
         # consists only of a "pass"
