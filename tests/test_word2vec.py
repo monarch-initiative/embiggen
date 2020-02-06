@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from xn2v import CBOWBatcherListOfLists
+# from xn2v.w2v import CBOWBatcherListOfLists
 from xn2v import CSFGraph
 from xn2v import N2vGraph
-from xn2v import ContinuousBagOfWordsWord2Vec
+from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 
 import os.path
 
