@@ -15,16 +15,14 @@ class TestCSFGraph(TestCase):
         self.assertIsNotNone(self.g)
 
     def test_get_node_to_index_map(self):
-        self.g.get_node_to_index_map()
+        self.assertIsNotNone(self.g.get_node_to_index_map())
 
     def test_get_index_to_node_map(self):
-        self.g.get_index_to_node_map()
+        self.assertIsNotNone(self.g.get_index_to_node_map())
 
-    def test_print_edge_type_distribution(self):
-        self.g.print_edge_type_distribution()
 
     def test_count_nodes(self):
-        # The graphh in small_graph.txt has 11 nodes
+        # The graph in small_graph.txt has 11 nodes
         expected_num = 11
         self.assertEqual(expected_num, self.g.node_count())
 
@@ -44,19 +42,34 @@ class TestCSFGraph(TestCase):
         self.assertEqual(expected, weight)
 
     def test_get_neighbors1(self):
-        # The neighhbors of p4 are g4, p2, p3
+        # The neighbors of p4 are g4, p2, p3
         nbrs = self.g.neighbors('p4')
         # print(nbrs)
         self.assertEqual(['g4', 'p2', 'p3'], nbrs)
 
-    def test_nodes_as_integers(self):
-        self.g.nodes_as_integers()
+    def test_get_neighbors_as_ints_1(self):
+        # The neighbors of p4 are g4, p2, p3 and their indices are 6, 8, 9
+        p4_idx = self.g.node_to_index_map['p4']
+        nbrs = self.g.neighbors_as_ints(p4_idx)
+        #print("index of g4 = {}, index of p2 = {}, index of p3 = {}".
+              #format(self.g.node_to_index_map['g4'], self.g.node_to_index_map['p2'],self.g.node_to_index_map['p3']))
+        self.assertEqual([6, 8, 9], nbrs)
+
 
     def test_get_neighbors2(self):
         # The neighbors of g2 are g1, g3, p1, p2
         nbrs = self.g.neighbors('g2')
         # print(nbrs)
         self.assertEqual(['g1', 'g3', 'p1', 'p2'], nbrs)
+
+    def test_get_neighbors_as_ints_2(self):
+        g2_idx = self.g.node_to_index_map['g2']
+        # The neighbors of g2 are g1, g3, p1, p2 and their indices are 3, 5, 7, 8
+        nbrs = self.g.neighbors_as_ints(g2_idx)
+        #print("index of g1 = {}, index of g3 = {}, index of p1 = {}, index of p2 = {}".
+        #format(self.g.node_to_index_map['g1'], self.g.node_to_index_map['g3'], self.g.node_to_index_map['p1'],
+        #self.g.node_to_index_map['p2']))
+        self.assertEqual([3, 5, 7, 8], nbrs)
 
     def test_check_nodetype(self):
         self.assertTrue(self.g.same_nodetype('g1', 'g2'))
