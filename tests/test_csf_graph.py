@@ -50,7 +50,7 @@ class TestCSFGraph(TestCase):
         self.assertEqual(['g4', 'p2', 'p3'], nbrs)
 
     def test_get_neighbors_as_ints_1(self):
-        # The neighbors of p4 are g4, p2, p3
+        # The neighbors of p4 are g4, p2, p3 and their indices are 6, 8, 9
         nbrs = self.g.neighbors_as_ints('p4')
         #print("index of g4 = {}, index of p2 = {}, index of p3 = {}".
               #format(self.g.node_to_index_map['g4'], self.g.node_to_index_map['p2'],self.g.node_to_index_map['p3']))
@@ -66,7 +66,7 @@ class TestCSFGraph(TestCase):
         self.assertEqual(['g1', 'g3', 'p1', 'p2'], nbrs)
 
     def test_get_neighbors_as_ints_2(self):
-        # The neighbors of g2 are g1, g3, p1, p2
+        # The neighbors of g2 are g1, g3, p1, p2 and their indices are 3, 5, 7, 8
         nbrs = self.g.neighbors_as_ints('g2')
         #print("index of g1 = {}, index of g3 = {}, index of p1 = {}, index of p2 = {}".
         #format(self.g.node_to_index_map['g1'], self.g.node_to_index_map['g3'], self.g.node_to_index_map['p1'],
