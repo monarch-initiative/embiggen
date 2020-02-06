@@ -13,12 +13,12 @@ from .hetnode2vec import N2vGraph
 from .link_prediction import LinkPrediction
 from .csf_graph import CSFGraph
 from .text_encoder import TextEncoder
-from .word2vec import CBOWBatcherListOfLists
+from .w2v.cbow_list_batcher import CBOWListBatcher
 from .word2vec import ContinuousBagOfWordsWord2Vec
 from .word2vec import SkipGramWord2Vec
 from .kW2V import kWord2Vec
 
 __all__ = [
     "xn2vParser", "StringInteraction", "WeightedTriple", "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder",
-    "CBOWBatcherListOfLists", "kWord2Vec", "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec"
+    "CBOWListBatcher", "kWord2Vec", "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec"
 ]
