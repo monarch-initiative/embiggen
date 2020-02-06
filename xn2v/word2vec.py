@@ -247,7 +247,7 @@ class SkipGramWord2Vec(Word2Vec):
         # the number of examples (num_sampled is the number of negative samples that get evaluated per positive example)
         if self.num_sampled > self.vocabulary_size:
             self.num_sampled = self.vocabulary_size / 2
-        self.optimizer = tf.optimizers.SGD(learning_rate)
+        self.optimizer = tf.keras.optimizers.SGD(learning_rate)
         self.data_index = 0
         self.current_sentence = 0
         self.num_sentences = len(self.data)
