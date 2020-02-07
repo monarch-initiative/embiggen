@@ -28,7 +28,7 @@ class CSFGraph:
                 nodeA = fields[0]
                 nodeB = fields[1]
                 if len(fields) == 2:
-                    print("[INFO] Edge is unweighted. We assign 1.0 to the weight of the edge.")
+                    # If no weight is given in the input file, assign a default weight of 1.0
                     weight = 1.0
                 else:
                     try:
