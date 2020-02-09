@@ -78,7 +78,7 @@ class N2vGraph:
         nodes = g.nodes()  # this is a list
         log.info('Walk iteration:')
         for walk_iter in range(num_walks):
-            print("{}/{}".format(walk_iter+1, num_walks))
+            print("{}/{}".format(walk_iter + 1, num_walks))
             random.shuffle(nodes)
             for node in nodes:
                 walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
@@ -99,7 +99,7 @@ class N2vGraph:
         q = self.q
         unnormalized_probs = []
         for dst_nbr in g.neighbors(dst):
-            #log.info("neighbour of destination node:{}".format(dst_nbr))
+            # log.info("neighbour of destination node:{}".format(dst_nbr))
             edge_weight = g.weight(dst, dst_nbr)
             if dst_nbr == src:
                 unnormalized_probs.append(edge_weight / p)
@@ -118,8 +118,6 @@ class N2vGraph:
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return [node, self.__alias_setup(normalized_probs)]
 
-
-
     def __preprocess_transition_probs(self, num_processes=8):
         """
         Preprocessing of transition probabilities for guiding the random walks.
@@ -133,7 +131,7 @@ class N2vGraph:
                     pool.imap_unordered(self._get_alias_node, g.nodes())):
                 alias_nodes[orig_node] = alias_node
                 sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
-                                 format(100*i/num_nodes))
+                                 format(100 * i / num_nodes))
         sys.stderr.write("\rDone making alias nodes.\n")
 
         alias_edges = {}
@@ -146,7 +144,7 @@ class N2vGraph:
                     pool.imap_unordered(self.get_alias_edge, g.edges())):
                 alias_edges[orig_edge] = alias_edge
                 sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
-                                 format(100*i/num_edges))
+                                 format(100 * i / num_edges))
         sys.stderr.write("\rDone making alias edges.\n")
 
         self.alias_nodes = alias_nodes
