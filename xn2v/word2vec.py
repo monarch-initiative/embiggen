@@ -10,14 +10,14 @@ class Word2Vec:
     """Superclass of all of the word2vec family algorithms.
 
     Attributes:
-        word2id: A dictionary where the keys are integers and values are the nodes represented by the integers.
+        word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
         data: A list or list of lists (if sentences or paths from node2vec).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
         num_steps: The number of epochs to run when training the model.
         display_step: An integer that is used to determine the number of steps to display.
-        eval_step: Total iterations to run.
+        eval_step: This attribute stores the total number of iterations to run during training.
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words. Total number of different words in the vocabulary.
         min_occurrence: Minimum number of times a word needs to appear to be included.
@@ -56,16 +56,17 @@ class Word2Vec:
         self.embedding = None
 
     def add_display_words(self, count: list, num: int = 5):
-        """If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
-        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm. This
-        function finds the display words.
+        """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
+        sample.
 
-        Note. Display is a costly operation. We do not allow more than 10 words and thus if user asks for more than
-        10, we pick a random validation set of 'num' words to sample nearest neighbors from. This is done by sampling
-        randomly from the first 'valid_window' elements.
+        If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
+        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm.
+        It is important to note that display is a costly operation. We do not allow more than 16 nodes/words and thus if
+        user asks for more than 16, we pick a random validation set of 'num' nodes/words that includes common and
+        uncommon nodes/words.
 
         Args:
-            count: A list of tuples (k:word v:int).
+            count: A list of tuples (key:word, value:int).
             num: An integer representing the number of words to sample.
 
         Returns:
@@ -76,7 +77,7 @@ class Word2Vec:
             self.display = None
             # print("[WARNING] add_display_words requires a list of tuples with k:word v:int (count)")
             # return
-            raise Exception('[WARNING] add_display_words requires a list of tuples with k:word v:int (count)')
+            raise Exception('[WARNING] add_display_words requires a list of tuples with key:word, value:int (count)')
 
         if num > 16:
             print('[WARNING] maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
@@ -137,7 +138,7 @@ class SkipGramWord2Vec(Word2Vec):
     """Class to run word2vec using skip grams.
 
     Attributes:
-        word2id: A dictionary where the keys are integers and values are the nodes represented by the integers.
+        word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
         data: A list or list of lists (if sentences or paths from node2vec).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
@@ -465,7 +466,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """Class to run word2vec using skip grams.
 
     Attributes:
-        word2id: A dictionary where the keys are integers and values are the nodes represented by the integers.
+        word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
         data: A list or list of lists (if sentences or paths from node2vec).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
