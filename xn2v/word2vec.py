@@ -119,7 +119,6 @@ class Word2Vec:
 
         Returns:
             None.
-
         """
 
         if not self.embedding:
@@ -160,7 +159,6 @@ class SkipGramWord2Vec(Word2Vec):
         num_sentences: An integer that stores the total number of sentences.
         nce_weights: A variable that stores the classifier weights.
         nce_biases: A variable that stores classifier biases.
-
     """
 
     def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
@@ -169,9 +167,9 @@ class SkipGramWord2Vec(Word2Vec):
                  skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,  # default=64
                  display=None):
 
-        super(SkipGramWord2Vec, self).__init__(data, worddictionary, reverse_worddictionary, learning_rate, batch_size,
-                                               num_steps, embedding_size, max_vocabulary_size, min_occurrence,
-                                               skip_window, num_skips, num_sampled, display)
+        super().__init__(data, worddictionary, reverse_worddictionary, learning_rate, batch_size, num_steps,
+                         embedding_size, max_vocabulary_size, min_occurrence, skip_window, num_skips, num_sampled,
+                         display)
 
         # could comment these out if sticking with inheritance from super
         self.data = data
@@ -192,9 +190,9 @@ class SkipGramWord2Vec(Word2Vec):
 
         self.calculate_vocabulary_size()
 
-        # this should not be a problem with real data, but with toy exs the # of nodes might be lower than the default
-        # value of num_sampled of 64. However, num_sampled needs to be less than the # of exs (num_sampled is the #
-        # of negative samples that get evaluated per positive ex)
+        # set vocabulary size
+        # with toy exs the # of nodes might be lower than the default value of num_sampled of 64. num_sampled needs to
+        # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
         if self.num_sampled > self.vocabulary_size:
             self.num_sampled = self.vocabulary_size/2
 
@@ -223,13 +221,14 @@ class SkipGramWord2Vec(Word2Vec):
             x: Data point index, with shape (batch_size,).
 
         Returns:
-            Corresponding embeddings, with shape (batch_size, embedding_dimension).
-
+            embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension).
         """
         with tf.device('/cpu:0'):
 
             # lookup the corresponding embedding vectors for each sample in x
-            return tf.nn.embedding_lookup(self.embedding, x)
+            embedding = tf.nn.embedding_lookup(self.embedding, x)
+
+            return embedding
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray):
         """Calculates the noise-contrastive estimation training loss.
