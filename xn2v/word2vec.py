@@ -231,7 +231,7 @@ class SkipGramWord2Vec(Word2Vec):
             return embedding
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray):
-        """Calculates the noise-contrastive estimation training loss.
+        """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
 
         Args:
             x_embed: A Tensor with shape [batch_size, dim].
@@ -239,11 +239,9 @@ class SkipGramWord2Vec(Word2Vec):
 
         Returns:
             loss: A batch_size 1-D tensor of per-example NCE losses.
-
         """
 
         with tf.device('/cpu:0'):
-            # compute the average NCE loss for the batch.
             y = tf.cast(y, tf.int64)
 
             # print("self.nce_weights=%s (%s) " % (self.nce_weights, type(self.nce_weights)))
