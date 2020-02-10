@@ -3,7 +3,7 @@ import math
 import numpy as np
 import tensorflow as tf
 import collections
-from xn2v import CBOWListBatcher
+from xn2v.w2v.cbow_list_batcher import CBOWListBatcher
 
 class Word2Vec:
     """
