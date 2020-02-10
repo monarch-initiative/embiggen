@@ -5,6 +5,7 @@ import tensorflow as tf
 import collections
 from xn2v import CBOWListBatcher
 
+
 class Word2Vec:
     """
     Superclass of all of the word2vec family algorithms.
@@ -134,16 +135,15 @@ class SkipGramWord2Vec(Word2Vec):
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
 
-
         # takes the input data and goes through each element
-        if any(isinstance(el, list) for el in self.data):#check each element is a list
+        if any(isinstance(el, list) for el in self.data):  # check each element is a list
             for el in self.data:
-              if any(isinstance(item, int) for item in el):#check each element of the list is integer
-                  self.list_of_lists = True  # graph version
-              else:
-                  self.list_of_lists = False
-                  raise TypeError("The item needs to be a list of walks where each walk is a sequence of (integer) nodes.")
-
+                if any(isinstance(item, int) for item in el):  # check each element of the list is integer
+                    self.list_of_lists = True  # graph version
+                else:
+                    self.list_of_lists = False
+                    raise TypeError(
+                        "The item needs to be a list of walks where each walk is a sequence of (integer) nodes.")
 
         self.calculate_vocabulary_size()
         # This should not be a problem with real data, but with toy examples the number of nodes might be
@@ -307,9 +307,10 @@ class SkipGramWord2Vec(Word2Vec):
 
     def train(self, display_step=2000):
         # Words for testing.
+        do_display = self.display_step is not None and len(self.display_examples) > 0
         # display_step = 2000
         # eval_step = 2000
-        if display_step is not None:
+        if do_display:
             for w in self.display_examples:
                 print("{}: id={}".format(self.id2word[w], w))
 
@@ -329,7 +330,7 @@ class SkipGramWord2Vec(Word2Vec):
                 print("step: %i, loss: %f" % (step, loss))
 
             # Evaluation.
-            if not self.display is None and (step % self.eval_step == 0 or step == 1):
+            if do_display and (step % self.eval_step == 0 or step == 1):
                 print("Evaluation...")
                 sim = self.evaluate(self.get_embedding(x_test)).numpy()
                 print(sim[0])
@@ -547,7 +548,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             sentence_len = len(sentence)
             batch_count = sentence_len - span + 1
             if self.list_of_lists:
-                current_batch, current_labels = self.batcher.generate_batch() #self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
+                current_batch, current_labels = self.batcher.generate_batch()  # self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
             else:
                 current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips)
             batch = np.append(batch, current_batch)

@@ -56,7 +56,7 @@ class N2vGraph:
         while len(walk) < walk_length:
             cur = walk[-1]
             # g returns a sorted list of neighbors
-            cur_nbrs = g.neighbors(cur)
+            cur_nbrs = g.neighbors_as_ints(cur)
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
                     walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
@@ -75,7 +75,7 @@ class N2vGraph:
         """
         g = self.g
         walks = []
-        nodes = g.nodes()  # this is a list
+        nodes = g.nodes_as_integers()  # this is a list
         log.info('Walk iteration:')
         for walk_iter in range(num_walks):
             print("{}/{}".format(walk_iter + 1, num_walks))
@@ -98,9 +98,9 @@ class N2vGraph:
         p = self.p
         q = self.q
         unnormalized_probs = []
-        for dst_nbr in g.neighbors(dst):
+        for dst_nbr in g.neighbors_as_ints(dst):
             # log.info("neighbour of destination node:{}".format(dst_nbr))
-            edge_weight = g.weight(dst, dst_nbr)
+            edge_weight = g.weight_from_ints(dst, dst_nbr)
             if dst_nbr == src:
                 unnormalized_probs.append(edge_weight / p)
             elif g.has_edge(dst_nbr, src):
@@ -113,7 +113,7 @@ class N2vGraph:
 
     def _get_alias_node(self, node):
         g = self.g
-        unnormalized_probs = [g.weight(node, nbr) for nbr in g.neighbors(node)]
+        unnormalized_probs = [g.weight_from_ints(node, nbr) for nbr in g.neighbors_as_ints(node)]
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return [node, self.__alias_setup(normalized_probs)]
@@ -125,10 +125,10 @@ class N2vGraph:
         g = self.g
 
         alias_nodes = {}
-        num_nodes = len(g.nodes())  # for progress updates
+        num_nodes = len(g.nodes_as_integers())  # for progress updates
         with Pool(processes=num_processes) as pool:
             for i, [orig_node, alias_node] in enumerate(
-                    pool.imap_unordered(self._get_alias_node, g.nodes())):
+                    pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
                 sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
                                  format(100 * i / num_nodes))
@@ -141,7 +141,7 @@ class N2vGraph:
         num_edges = len(g.edges())  # for progress updates
         with Pool(processes=num_processes) as pool:
             for i, [orig_edge, alias_edge] in enumerate(
-                    pool.imap_unordered(self.get_alias_edge, g.edges())):
+                    pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
                 sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
                                  format(100 * i / num_edges))
