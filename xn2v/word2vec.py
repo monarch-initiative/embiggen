@@ -109,7 +109,10 @@ class Word2Vec:
             print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
 
     def write_embeddings(self, outfilename: str):
-        """Processes and writes embedding data to a local directory.
+        """Writes embedding data to a local directory. Data is written out in the following format, which is consistent
+        with current standards:
+            'ENSP00000371067' 0.6698335 , -0.83192813, -0.3676057 , ...,  0.9241863 , -2.1407487 , -0.6607736
+            'ENSP00000374213' -0.6342755 , -2.0504158 , -1.169239  , ..., -0.8034669 , 0.5925971 , -0.00864262
 
         Args:
             outfilename: A string containing a filepath for writing embedding data.
