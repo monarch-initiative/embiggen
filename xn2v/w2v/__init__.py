@@ -1,4 +1,4 @@
-from .cbow_list_batcher import CBOWListBatcher
+from .cbow_list_batcher import CBOWBatcherListOfLists
 
 
-__all__ = ["CBOWListBatcher"]
+__all__ = ["CBOWBatcherListOfLists"]
