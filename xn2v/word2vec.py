@@ -60,10 +60,10 @@ class Word2Vec:
         sample.
 
         If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
-        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm.
-        It is important to note that display is a costly operation. We do not allow more than 16 nodes/words and thus if
-        user asks for more than 16, we pick a random validation set of 'num' nodes/words that includes common and
-        uncommon nodes/words.
+        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm. It is
+        important to note that display is a costly operation. Up to 16 nodes/words are permitted. If a user asks for
+        more than 16, a random validation set of 'num' nodes/words, that includes common and uncommon nodes/words, is
+        selected from a 'valid_window' of 50 nodes/words.
 
         Args:
             count: A list of tuples (key:word, value:int).
@@ -81,9 +81,9 @@ class Word2Vec:
 
         if num > 16:
             print('[WARNING] maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
-            num = 16  # display is a costly operation, do not allow more than 10 words
+            num = 16
 
-        # pick a random validation set of 'num' words to sample nearest neighbors
+        # pick a random validation set of 'num' words to sample
         valid_window = 50
         valid_examples = np.array(random.sample(range(2, valid_window), num))
 
@@ -93,15 +93,13 @@ class Word2Vec:
         return None
 
     def calculate_vocabulary_size(self):
-        """Calculates the vocabulary size for the input data (i.e. list of words, nested list of words or list of
-        graph paths).
+        """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
+        or list of lists (i.e. from a collection of sentences or random walks).
 
         Returns:
             None.
-
         """
 
-        # self.data is either a list (e.g., from a text) or a list of lists (e.g., from a collection of random walks)
         if any(isinstance(el, list) for el in self.data):
             flat_list = [item for sublist in self.data for item in sublist]
             self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
@@ -122,15 +120,15 @@ class Word2Vec:
         """
 
         if not self.embedding:
-            raise TypeError('Could not find self.embedding')
+            raise ValueError('No embedding data found (i.e. self.embedding is None)')
         if not self.id2word:
-            raise TypeError('Could not find self.id2word dictionary')
+            raise ValueError('No node/word dictionary data found (i.e. self.id2word is None)')
 
         with tf.device('/cpu:0'):
             with open(outfilename, 'w') as fh:
-                for idtf in sorted(list(self.id2word.keys())):
-                    embed = tf.nn.embedding_lookup(self.embedding, idtf).numpy()
-                    word = self.id2word[idtf]
+                for x in sorted(list(self.id2word.keys())):
+                    embed = tf.nn.embedding_lookup(self.embedding, x).numpy()
+                    word = self.id2word[x]
                     fh.write('{word} {embedding}\n'.format(word=word, embedding=' '.join(map(str, embed))))
 
 
