@@ -1,9 +1,11 @@
-import random
+import collections
 import math
+import random
+
 import numpy as np
 import tensorflow as tf
-import collections
-from xn2v.w2v.cbow_list_batcher import CBOWBatcherListOfLists
+
+from xn2v.w2v.cbow_list_batcher import CBOWListBatcher
 
 
 class Word2Vec:
@@ -175,7 +177,6 @@ class SkipGramWord2Vec(Word2Vec):
                          embedding_size, max_vocabulary_size, min_occurrence, skip_window, num_skips, num_sampled,
                          display)
 
-        # could comment these out if sticking with inheritance from super
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -506,7 +507,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
-        self.batcher = CBOWBatcherListOfLists(data)
+        self.batcher = CBOWListBatcher(data)
 
         # takes the input data and goes through each element
         # first, check each element is a list
@@ -540,7 +541,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         with tf.device('/cpu:0'):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self.embedding = tf.Variable(
-                tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32))
+                tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
+                                         )
 
             # should we initialize with uniform or normal?
             # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
@@ -700,7 +702,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             col_idx = 0
 
             for j in range(span):
-                if j == span // 2:
+                if j == span//2:
                     continue  # i.e., ignore the center word
                 batch[i, col_idx] = buffer[j]
                 col_idx += 1
