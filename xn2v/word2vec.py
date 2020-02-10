@@ -263,22 +263,20 @@ class SkipGramWord2Vec(Word2Vec):
             return loss
 
     def evaluate(self, x_embed: tf.Tensor):
-        """Computes the cosine similarity.
+        """Computes the cosine similarity between a provided embedding and all other embedding vectors.
 
         Args:
             x_embed: A Tensor containing word embeddings.
 
         Returns:
-            cosine_sim_op: A tensor containing the cosine similarity between input data embedding and every embedding
-                vectors.
-
+            cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
         """
 
         with tf.device('/cpu:0'):
             x_embed_cast = tf.cast(x_embed, tf.float32)
-            x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
+            x_embed_norm = x_embed_cast/tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
             x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self.embedding / x_embed_sqrt
+            embedding_norm = self.embedding/x_embed_sqrt
 
             # calculate cosine similarity
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
@@ -286,19 +284,19 @@ class SkipGramWord2Vec(Word2Vec):
             return cosine_sim_op
 
     def next_batch(self, data: list, batch_size: int, num_skips: int, skip_window: int):
-        """Generate training batch for the skip-gram model. This assumes that all of the data is in one and only one
-        list (for instance, the data might derive from a book). To get batches from a list of lists (e.g., node2vec),
-        use the 'next_batch_from_list_of_list' function.
+        """Generates a training batch for the skip-gram model.
+
+        Assumptions: All of the data is in one and only one list (for instance, the data might derive from a book).
 
         Args:
-            data:
-            batch_size:
-            num_skips:
-            skip_window:
+            data: A list of words or nodes.
+            batch_size: An integer specifying the size of the batch to generate.
+            num_skips: The number of data points to extract for each center node.
+            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
+                `[i - window_size, i + window_size+1]`.
 
         Returns:
-            A list where the first item us a batch and the second item is the batch's labels.
-
+            A list where the first item is a batch and the second item is the batch's labels.
         """
 
         # check that batch_size is evenly divisible by num_skips and num_skips is less or equal to skip window size
@@ -347,19 +345,18 @@ class SkipGramWord2Vec(Word2Vec):
         return batch, labels
 
     def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int):
-        """Generate training batch for the skip-gram model. This assumes that all of the data is in one and only one
-        list (for instance, the data might derive from a book). To get batches from a list of lists (e.g., node2vec),
-        use the 'next_batch_from_list_of_list' function.
+        """Generate training batch for the skip-gram model.
+
+        Assumption: This assumes that all of the data is stored as a list of lists (e.g., node2vec).
 
         Args:
             walk_count: The number of walks (sublists or sentences) to ingest.
             num_skips: The number of data points to extract for each center node.
-            skip_window: The size of the surrounding window (For instance, if skip_window=2 and num_skips=1,
-                we look at 5 nodes at a time, and choose one data point from the 4 nodes that surround the center node.
+            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
+                `[i - window_size, i + window_size+1]`.
 
         Returns:
             A list where the first item us a batch and the second item is the batch's labels.
-
         """
 
         assert num_skips <= 2 * skip_window
@@ -386,23 +383,23 @@ class SkipGramWord2Vec(Word2Vec):
 
         return batch, labels
 
-    def run_optimization(self, x, y):
-        """
+    def run_optimization(self, x: np.array, y: np.array):
+        """Runs optimization for each batch by retrieving an embedding and calculating NCE loss. Once the loss has
+        been calculated, the gradients are computed and the weights and biases are updated accordingly.
 
         Args:
-            x:
-            y:
+            x: An array of integers to use as batch training data.
+            y: An array of labels to use when evaluating loss for an epoch.
 
         Returns:
             None.
-
         """
 
         with tf.device('/cpu:0'):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
-                emb = self.get_embedding(x)
-                loss = self.nce_loss(emb, y)
+                embedding = self.get_embedding(x)
+                loss = self.nce_loss(embedding, y)
 
             # compute gradients
             gradients = g.gradient(loss, [self.embedding, self.nce_weights, self.nce_biases])
@@ -410,21 +407,22 @@ class SkipGramWord2Vec(Word2Vec):
             # update W and b following gradients
             self.optimizer.apply_gradients(zip(gradients, [self.embedding, self.nce_weights, self.nce_biases]))
 
+            return None
+
     def train(self, display_step: int = 2000):
-        """
+        """Trains a SkipGram model.
 
         Args:
-            display_step: An integer that is used to determine the number of steps to display.
+            display_step: An integer that is used to determine the number of steps to display when training the model.
 
         Returns:
             None.
-
         """
 
         # words for testing; display_step = 2000; eval_step = 2000
         if display_step is not None:
             for w in self.display_examples:
-                print('{}: id={}'.format(self.id2word[w], w))
+                print('{word}: id={index}'.format(word=self.id2word[w], index=w))
 
         x_test = np.array(self.display_examples)
 
@@ -458,6 +456,8 @@ class SkipGramWord2Vec(Word2Vec):
                         log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
 
                     print(log_str)
+
+        return None
 
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
