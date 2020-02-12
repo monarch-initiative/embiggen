@@ -4,6 +4,8 @@ import numpy as np
 import tensorflow as tf
 import collections
 from xn2v import CBOWListBatcher
+assert tf.__version__ >= "2.0"
+
 
 class Word2Vec:
     """
