@@ -28,7 +28,7 @@ class CSFGraph:
                 nodeA = fields[0]
                 nodeB = fields[1]
                 if len(fields) == 2:
-                    # If no weight is given in the input file, assign a default weight of 1.0
+                    # no weight provided. Assign a default value of 1.0
                     weight = 1.0
                 else:
                     try:
