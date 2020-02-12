@@ -3,9 +3,10 @@ from unittest import TestCase
 
 
 from xn2v import CBOWListBatcher
+from xn2v import SkipGramBatcher
 
 
-class TestTextEncoderSentences(TestCase):
+class TestCBOWListBatcher(TestCase):
     def setUp(self):
         list1 = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
         list2 = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
@@ -59,3 +60,31 @@ class TestTextEncoderSentences(TestCase):
         self.assertEqual(1, batch[0][0])
         self.assertEqual(5, batch[0][1])
         self.assertEqual(3, labels[0])
+
+
+
+class TestSkipGramBatcher(TestCase):
+    """
+    Test the batcher function for SkipGrams with input data being one long list of integers
+    usually representing a text.
+    """
+    def setUp(self):
+        list1 = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+        list2 = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        list3 = [112, 114, 116, 118, 1110, 1112, 1114, 1116, 1118, 1120]
+        data = [list1, list2, list3]
+        data = [item for sublist in data for item in sublist]
+        # ctor has batch_size, num_skips, skip_window
+        batch_size = 8
+        num_skips = 1
+        skip_window = 1
+        self.batcher = SkipGramBatcher(data, batch_size=batch_size, num_skips=num_skips, skip_window=skip_window)
+
+    def test_ctor(self):
+        self.assertIsNotNone(self.batcher)
+        self.assertEqual(0, self.batcher.data_index)
+        self.assertEqual(1, self.batcher.skip_window)
+        # span is 2*window_size +1
+        self.assertEqual(3, self.batcher.span)
+        # batch size is calculated as (sentence_len - span + 1)=10-3+1
+        self.assertEqual(8, self.batcher.batch_size)
