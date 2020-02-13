@@ -74,11 +74,11 @@ class LinkPrediction:
         log.debug('get test edge labels')
 
         #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
-        log.debug("Total edges of training graph: {}".format(len(self.pos_train_edges)))
-        log.debug("Training edges (negative): {}".format(len(neg_train_edge_embs)))
-        log.debug("Test edges (positive): {}".format(len(self.pos_test_edges)))
-        log.debug("Test edges (negative): {}".format(len(neg_test_edge_embs)))
-        log.debug('logistic regression')
+        print("Total edges of training graph: {}".format(len(self.pos_train_edges)))
+        print("Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        print("Test edges (positive): {}".format(len(self.pos_test_edges)))
+        print("Test edges (negative): {}".format(len(neg_test_edge_embs)))
+        print('logistic regression')
         # Train logistic regression classifier on train-set edge embeddings
         edge_classifier = LogisticRegression()
         edge_classifier.fit(train_edge_embs, train_edge_labels)
@@ -109,13 +109,13 @@ class LinkPrediction:
         specificity = confusion_matrix[0, 0] * (1.0) / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * (1.0)
         sensitivity = confusion_matrix[1, 1] * (1.0) / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * (1.0)
 
-        log.debug("predictions: {}".format(str(self.predictions)))
-        log.debug("confusion matrix: {}".format(str(confusion_matrix)))
-        log.debug('Accuracy : {}'.format(accuracy))
-        log.debug('Specificity : {}'.format(specificity))
-        log.debug('Sensitivity : {}'.format(sensitivity))
-        log.debug("node2vec Test ROC score: {} ".format(str(self.test_roc)))
-        log.debug("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
+        print("predictions: {}".format(str(self.predictions)))
+        print("confusion matrix: {}".format(str(confusion_matrix)))
+        print('Accuracy : {}'.format(accuracy))
+        print('Specificity : {}'.format(specificity))
+        print('Sensitivity : {}'.format(sensitivity))
+        print("node2vec Test ROC score: {} ".format(str(self.test_roc)))
+        print("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
 
     def transform(self,edge_list, node2vector_map):
         """
