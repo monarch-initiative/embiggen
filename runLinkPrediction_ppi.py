@@ -16,7 +16,7 @@ pos_training_file = os.path.join(os.path.dirname(__file__),  'pos_train_edges')
 pos_test_file = os.path.join(os.path.dirname(__file__),  'pos_test_edges')
 
 neg_test_file = os.path.join(os.path.dirname(__file__),  'neg_test_edges')
-neg_training_file = os.path.join(os.path.dirname(__file__),  'neg_training_edges')
+neg_training_file = os.path.join(os.path.dirname(__file__),  'neg_train_edges')
 
 
 pos_train_graph = CSFGraph(pos_training_file)
@@ -49,7 +49,7 @@ for w in walks:
         nwalk.append(i)
     walks_integer_nodes.append(nwalk)
 
-model = SkipGramWord2Vec(walks_integer_nodes, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
+model = SkipGramWord2Vec(walks_integer_nodes, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=1000)
 model.train(display_step=2)
 
 

@@ -4,7 +4,6 @@ import random
 
 import numpy as np
 import tensorflow as tf
-
 from xn2v.w2v.cbow_list_batcher import CBOWListBatcher
 
 
