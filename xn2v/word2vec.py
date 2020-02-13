@@ -124,7 +124,7 @@ class Word2Vec:
             None.
         """
 
-        if not self.embedding:
+        if self.embedding is None:
             raise ValueError('No embedding data found (i.e. self.embedding is None)')
         if not self.id2word:
             raise ValueError('No node/word dictionary data found (i.e. self.id2word is None)')
