@@ -305,7 +305,10 @@ class SkipGramWord2Vec(Word2Vec):
         """
 
         # check that batch_size is evenly divisible by num_skips and num_skips is less or equal to skip window size
-        assert batch_size % num_skips == 0 and num_skips <= 2 * skip_window
+        if batch_size % num_skips != 0:
+            raise ValueError('ERROR: The batch_size is not evenly divisible by num_skips')
+        if num_skips > 2 * skip_window:
+            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
 
         batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
@@ -364,7 +367,8 @@ class SkipGramWord2Vec(Word2Vec):
             A list where the first item us a batch and the second item is the batch's labels.
         """
 
-        assert num_skips <= 2 * skip_window
+        if num_skips > 2 * skip_window:
+            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
 
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
@@ -581,7 +585,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 stacked_embeddings = tf.concat(axis=2, values=[stacked_embeddings,
                                                                tf.reshape(embedding_i, [x_size, y_size, 1])])
 
-        assert stacked_embeddings.get_shape().as_list()[2] == 2 * self.skip_window
+        if stacked_embeddings.get_shape().as_list()[2] != 2 * self.skip_window:
+            raise ValueError('ERROR: Please Check Skip Window Size')
+
         # print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
         # print("Reduced mean embedding size: %s" % mean_embeddings.get_shape().as_list())
@@ -729,7 +735,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             A list where the first item us a batch and the second item is the batch's labels.
         """
 
-        assert num_skips <= 2 * skip_window
+        if num_skips > 2 * skip_window:
+            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
 
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
