@@ -1,6 +1,7 @@
 import xn2v
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
+from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 import os
 
 dir = '/home/peter/GIT/node2vec-eval'
@@ -31,6 +32,11 @@ reverse_worddictionary = g.get_index_to_node_map()
 model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
 model.train(display_step=2)
 
+
+print("And now let's try CBOW")
+
+model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
+model.train(display_step=2)
 
 
 
