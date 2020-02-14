@@ -12,7 +12,7 @@ class TestCBOWListBatcher(TestCase):
         list2 = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
         list3 = [112, 114, 116, 118, 1110, 1112, 1114, 1116, 1118, 1120]
         data = [list1, list2, list3]
-        self.batcher = CBOWListBatcher(data, window_size=1)
+        self.batcher = CBOWListBatcher(data, window_size=1, sentences_per_batch=1)
 
     def test_ctor(self):
         self.assertIsNotNone(self.batcher)

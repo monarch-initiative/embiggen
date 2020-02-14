@@ -8,7 +8,7 @@ class CBOWListBatcher:
     This class is an implementation detail and should not be used outside of this file
     """
 
-    def __init__(self, data, window_size=2, sentences_per_batch=1):
+    def __init__(self, data, window_size, sentences_per_batch):
         """Setup Continuous Bag of Words Batch generation for data that is presented
         as a list of list of integers (as is typical for node2vec). Note that we generate
         batches that consist of all of the data from k windows, where k is at least one.
@@ -71,12 +71,13 @@ class CBOWListBatcher:
 
         # The buffer holds the data contained within the span.
         # The deque essentially implements a sliding window
-        buffer = collections.deque(maxlen=span)
+
         target_idx = self.window_size  # target word index at the center of the buffer
 
         for _ in range(self.sentences_per_batch):
             sentence = self.get_next_sentence()
             # buffer is a sliding window with span elements
+            buffer = collections.deque(maxlen=span)
             buffer.extend(sentence[0:span-1])
             word_index = span - 1  # go to end of sliding window
             # For each batch index, we iterate through span elements
