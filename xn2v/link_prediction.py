@@ -2,6 +2,8 @@ import sys
 import numpy as np
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
 import logging
 import os
@@ -36,6 +38,10 @@ class LinkPrediction:
         self.map_node_vector = {}
         self.read_embeddings()
         self.edge_embedding_method = edge_embedding_method
+        self.train_edge_embs = []
+        self.train_edge_labels = []
+        self.test_edge_labels = []
+        self.tes_edge_embs = []
 
     def read_embeddings(self):
         """
@@ -57,20 +63,20 @@ class LinkPrediction:
         log.debug("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
-    def predict_links(self):
+    def prepare_lables_test_training(self):
         pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
         neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
         #print(len(true_train_edge_embs),len(false_train_edge_embs))
-        train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
+        self.train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
-        train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
+        self.train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
 
         # Test-set edge embeddings, labels
         pos_test_edge_embs = self.transform(edge_list=self.pos_test_edges, node2vector_map=self.map_node_vector)
         neg_test_edge_embs = self.transform(edge_list=self.neg_test_edges, node2vector_map=self.map_node_vector)
-        test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
+        self.test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
         # Create test-set edge labels: 1 = true edge, 0 = false edge
-        test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
+        self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
         log.debug('get test edge labels')
 
         #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
@@ -78,22 +84,34 @@ class LinkPrediction:
         print("Training edges (negative): {}".format(len(neg_train_edge_embs)))
         print("Test edges (positive): {}".format(len(self.pos_test_edges)))
         print("Test edges (negative): {}".format(len(neg_test_edge_embs)))
-        print('logistic regression')
-        # Train logistic regression classifier on train-set edge embeddings
-        edge_classifier = LogisticRegression()
-        edge_classifier.fit(train_edge_embs, train_edge_labels)
 
-        self.predictions = edge_classifier.predict(test_edge_embs)
-        self.confusion_matrix = metrics.confusion_matrix(test_edge_labels, self.predictions)
+
+
+
+    def predict_links(self, classifier ):
+        # Train  classifier on train-set edge embeddings
+        if classifier == "LR":
+            edge_classifier = LogisticRegression()
+        elif classifier == "RF":
+            edge_classifier = RandomForestClassifier()#TODO: work on the parameters
+        else:
+            #implement SVM. This needs some work to do.#TODO:complete SVM
+            edge_classifier = SVC()
+
+
+        edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
+
+        self.predictions = edge_classifier.predict(self.test_edge_embs)
+        self.confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.predictions)
 
         # Predicted edge scores: probability of being of class "1" (real edge)
-        test_preds = edge_classifier.predict_proba(test_edge_embs)[:, 1]
-        fpr, tpr, _ = roc_curve(test_edge_labels, test_preds)
+        test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
+        fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
-        self.test_roc = roc_auc_score(test_edge_labels, test_preds)#get the auc score
-        self.test_average_precision = average_precision_score(test_edge_labels, test_preds)
+        self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
+        self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
-    def output_Logistic_Reg_results(self):
+    def output_classifier_results(self):
         """
         The method prints some metrics of the performance of the logistic regression classifier. including accuracy, specificity and sensitivity
         :param predictions: prediction results of the logistic regression

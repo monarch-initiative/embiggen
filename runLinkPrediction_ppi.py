@@ -69,8 +69,11 @@ def parse_args():
                         help='hyperparameter for jumping from one network to another network '
                              'in heterogeneous graphs. Default is 1.')
 
-    parser.add_argument('--useGamma', dest='useGamma', action='store_false', help="True if the graph is heterogeneous, "
+    parser.add_argument('--useGamma', dest='useGamma', action='store_false', help="True if the graph is heterogeneous,"
                                                                                   "False if the graph is homogeneous.")
+
+    parser.add_argument('--classifier', nargs='?', default='LR',
+                        help="Binary classifier for link prediction, it should be either LR, RF or SVM")
 
     return parser.parse_args()
 
@@ -107,8 +110,9 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
                         args.embed_graph, args.edge_embed_method)
 
-    lp.predict_links()
-    lp.output_Logistic_Reg_results()
+    lp.prepare_lables_test_training()
+    lp.predict_links(args.classifier)
+    lp.output_classifier_results()
 
 def read_graphs():
     """
