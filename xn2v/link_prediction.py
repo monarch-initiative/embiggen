@@ -106,7 +106,7 @@ class LinkPrediction:
 
         # Predicted edge scores: probability of being of class "1" (real edge)
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
-        fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
+        #fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
