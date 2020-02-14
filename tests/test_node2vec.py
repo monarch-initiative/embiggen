@@ -40,8 +40,8 @@ class TestGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma)
-        src = 'g1'
-        dst = 'g2'
+        src = self.graph.get_node_index('g1')
+        dst = self.graph.get_node_index('g2')
         edge = (src, dst)
         orig_edge, [j_alias, q_alias] = g.get_alias_edge(edge)
 
@@ -49,7 +49,6 @@ class TestGraph(TestCase):
                          "get_alias_edge didn't send back the original edge")
         self.assertEqual(len(j_alias), len(q_alias))
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
-        # TODO REFACTORED WHAT IS GOING ON
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be 0.2, 0.2, 0.4, 0.2
         original_probs = calculate_total_probs(j_alias, q_alias)
@@ -104,14 +103,13 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, True)
-        src = 'g0'
-        dst = 'g1'
+        src = self.graph.get_node_index('g1')
+        dst = self.graph.get_node_index('g2')
         edge = (src, dst)
         j_alias, q_alias = g.get_alias_edge(edge)
         self.assertEqual(len(j_alias), len(q_alias))
-        # there are 102 outgoing edges from g1. one edge from g1 to g0, 99 edges from g1 to g_i, i=2,...,100, one edge from g1 to d1
-        # TODO REFACTORED WHAT IS GOPING ON?
-        # self.assertEqual(102, len(j_alias))
+        # outgoing edges from g2: g1->g2, g1->g3, g1->p1, g1->d3
+        #self.assertEqual(3, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 102 where all values are 10.0/102.0.
         # original_probs = calculate_total_probs(j_alias, q_alias)
-        # self.assertAlmostEqual(10.0 / 1020.0, original_probs[self.d1index])
+        #self.assertAlmostEqual(10.0 / 1020.0, original_probs[self.d1index])
