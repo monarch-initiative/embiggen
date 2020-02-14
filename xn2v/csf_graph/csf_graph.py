@@ -131,6 +131,19 @@ class CSFGraph:
         raise TypeError(
             "Could not identify edge between {} and {}".format(source, dest))
 
+    def weight_from_ints(self, source_idx, dest_idx):
+        """
+        SAME AS ABOVE. Part of refactoring so that the class API uses ints to represent nodes.
+        """
+        # WAS source_idx = self.node_to_index_map[source]
+        # WAS dest_idx = self.node_to_index_map[dest]
+        for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
+            if dest_idx == self.edge_to[i]:
+                return self.edge_weight[i]
+        # We should never get here -- this error should never happen!
+        raise TypeError(
+            "Could not identify edge between {} and {}".format(source_idx, dest_idx))
+
     def neighbors(self, source):
         """
         :param source: source node
@@ -192,6 +205,21 @@ class CSFGraph:
                 edge_list.append(tpl)
         return edge_list
 
+    def edges_as_ints(self):
+        """
+        return a list of tuples with all edges in the graph
+        each tuple is like (2, 3). This gets the indices of the nodes that belong to the edge.
+        """
+        edge_list = []
+        for source_idx in range(len(self.offset_to_edge_) - 1):
+            src = self.index_to_node_map[source_idx]
+            for j in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
+                nbr_idx = self.edge_to[j]
+                nbr = self.index_to_node_map[nbr_idx]
+                tpl = (source_idx, nbr_idx)
+                edge_list.append(tpl)
+        return edge_list
+
     def get_node_to_index_map(self):
         """
         This is equivalent to the 'dictionary' of word2vec, where the key is the word (or node label) and the
@@ -199,6 +227,11 @@ class CSFGraph:
         :return: dictionary of node to int indices
         """
         return self.node_to_index_map
+
+    def get_node_index(self, node):
+        if not node in self.node_to_index_map:
+            raise ValueError("Could not find {} in node-to-index map".format(node))
+        return self.node_to_index_map.get(node)
 
     def get_index_to_node_map(self):
         """

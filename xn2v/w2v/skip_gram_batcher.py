@@ -9,7 +9,7 @@ class SkipGramBatcher:
         Encapsulate functionality for getting the next batch for SkipGram from
         a single list of ints (e.g. from a single text with no sentences). Use
         SkipGramListBatcher for Node2Vec.
-        The input is expected to be a list ints
+        The input is expected to be a list of ints
         This class is an implementation detail and should not be used outside of this file
         """
 

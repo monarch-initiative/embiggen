@@ -452,6 +452,7 @@ class SkipGramWord2Vec(Word2Vec):
             # evaluation
             if self.display is not None and (epoch % self.eval_step == 0 or epoch == 1):
                 print('Evaluation...')
+
                 sim = self.evaluate(self.get_embedding(x_test)).numpy()
                 print(sim[0])
 
@@ -508,6 +509,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                          display)
 
         sentences_per_batch = 1
+
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -576,6 +578,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # print('Defining {} embedding lookups representing each word in the context'.format(2 * self.skip_window))
 
         for i in range(2 * self.skip_window):
+            # print("x:", x.shape)
+            # print("i:",i)
+            # print("x[:,i]", x[:,i])
+            # print("self.skip_window:",self.skip_window)
+            # print("self.embedding:", self.embedding.shape)
             embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
             x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
 
@@ -810,6 +817,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         for step in range(1, self.num_steps + 1):
             batch_x, batch_y = self.batcher.generate_batch()
             # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
+
             self.run_optimization(batch_x, batch_y)
 
             if step % display_step == 0 or step == 1:

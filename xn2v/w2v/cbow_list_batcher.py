@@ -91,6 +91,7 @@ class CBOWListBatcher:
             # buffer is a sliding window with span elements
             buffer = collections.deque(maxlen=span)
             buffer.extend(sentence[0:span - 1])
+
             word_index = span - 1  # go to end of sliding window
 
             # For each batch index, we iterate through span elements to fill in the columns of batch array
