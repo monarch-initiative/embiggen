@@ -429,7 +429,7 @@ class SkipGramWord2Vec(Word2Vec):
         """
 
         # words for testing; display_step = 2000; eval_step = 2000
-        if display_step is not None:
+        if display_step is not None and len(self.display_examples) > 0:
             for w in self.display_examples:
                 print('{word}: id={index}'.format(word=self.id2word[w], index=w))
 
@@ -452,6 +452,7 @@ class SkipGramWord2Vec(Word2Vec):
             # evaluation
             if self.display is not None and (epoch % self.eval_step == 0 or epoch == 1):
                 print('Evaluation...')
+
                 sim = self.evaluate(self.get_embedding(x_test)).numpy()
                 print(sim[0])
 
@@ -507,10 +508,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                          embedding_size, max_vocabulary_size, min_occurrence, skip_window, num_skips, num_sampled,
                          display)
 
+        sentences_per_batch=1
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
-        self.batcher = CBOWListBatcher(data)
+        self.batcher = CBOWListBatcher(data, window_size=skip_window, sentences_per_batch=sentences_per_batch)
 
         # takes the input data and goes through each element
         # first, check each element is a list
@@ -575,6 +577,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # print('Defining {} embedding lookups representing each word in the context'.format(2 * self.skip_window))
 
         for i in range(2 * self.skip_window):
+            # print("x:", x.shape)
+            # print("i:",i)
+            # print("x[:,i]", x[:,i])
+            # print("self.skip_window:",self.skip_window)
+            # print("self.embedding:", self.embedding.shape)
             embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
             # print("embedding_i shape", embedding_i.shape)
             x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
@@ -808,7 +815,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         # run training for the given number of steps.
         for step in range(1, self.num_steps + 1):
-            batch_x, batch_y = self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
+            batch_x, batch_y = self.batcher.generate_batch() #self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
             self.run_optimization(batch_x, batch_y)
 
             if step % display_step == 0 or step == 1:
