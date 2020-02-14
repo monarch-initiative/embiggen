@@ -4,7 +4,9 @@ from xn2v.word2vec import SkipGramWord2Vec
 import os
 
 dir = '/home/peter/GIT/node2vec-eval'
-training_file = '/home/peter/GIT/N2V/tests/data/ppismall/pos_train_edges' # os.path.join(dir, 'pos_train_edges')
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+training_file = os.path.join(current_dir,'tests/data/ppismall/pos_train_edges') # os.path.join(dir, 'pos_train_edges')
 
 g = CSFGraph(training_file)
 
@@ -25,16 +27,6 @@ workers = 8
 
 worddictionary = g.get_node_to_index_map()
 reverse_worddictionary = g.get_index_to_node_map()
-
-"""
-walks_integer_nodes = []
-for w in walks:
-    nwalk = []
-    for node in w:
-        i = worddictionary[node]
-        nwalk.append(i)
-    walks_integer_nodes.append(nwalk)
-"""
 
 model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary, num_steps=100)
 model.train(display_step=2)
