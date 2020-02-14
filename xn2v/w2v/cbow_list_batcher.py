@@ -83,19 +83,19 @@ class CBOWListBatcher:
         labels = np.ndarray(shape=(self.batch_size, 1), dtype=np.int64)
 
         # The buffer holds the data contained within the span. The deque essentially implements a sliding window
-        buffer = collections.deque(maxlen=span)
         target_idx = self.window_size  # target word index at the center of the buffer
 
         for _ in range(self.sentences_per_batch):
             sentence = self.get_next_sentence()
 
             # buffer is a sliding window with span elements
-            buffer.extend(sentence[0:span-1])
+            buffer = collections.deque(maxlen=span)
+            buffer.extend(sentence[0:span - 1])
             word_index = span - 1  # go to end of sliding window
 
-            # for each batch index, we iterate through span elements to fill in the columns of batch array
+            # For each batch index, we iterate through span elements to fill in the columns of batch array
             for i in range(self.max_word_index):
-                # put the next window into the buffer
+                # Put the next window into the buffer
                 buffer.append(sentence[word_index])
                 word_index = word_index + 1
                 col_idx = 0
@@ -103,8 +103,7 @@ class CBOWListBatcher:
                 for j in range(span):
                     # if j == span // 2:
                     if j == target_idx:
-                        continue  # i.e., ignore the center word
-
+                        continue  # i.e., ignore the center wortd
                     batch[i, col_idx] = buffer[j]
                     col_idx += 1
 
