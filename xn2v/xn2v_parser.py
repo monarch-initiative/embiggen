@@ -453,7 +453,6 @@ class xn2vParser:
     def _map_string2geneid(self):
         bad_interaction = 0
         c = 0
-        log.debug("Starting to _map_string2geneid")
         for i in self.string_ppi:
             if WeightedTriple.protein_a_and_b_in_ens2gene(i, self.ensp2geneID_map):
                 wt = WeightedTriple.map_string_to_gene_id(i, self.ensp2geneID_map)

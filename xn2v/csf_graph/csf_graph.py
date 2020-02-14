@@ -228,6 +228,11 @@ class CSFGraph:
         """
         return self.node_to_index_map
 
+    def get_node_index(self, node):
+        if not node in self.node_to_index_map:
+            raise ValueError("Could not find {} in node-to-index map".format(node))
+        return self.node_to_index_map.get(node)
+
     def get_index_to_node_map(self):
         """
         This is equivalent to the 'reverse dictionary' of word2vec, where the key is the integer index and the
