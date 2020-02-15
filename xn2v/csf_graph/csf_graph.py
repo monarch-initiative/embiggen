@@ -26,7 +26,7 @@ class CSFGraph:
         edge_to: A numpy array with length the number of edges. Each index in the array contains the index of an edge,
             such that it can be used to look up the destination nodes that an edge in a given index points to.
         edge_weight: A numpy array with length the number of edges. Each item in the array represents an edge's index
-            and each valeu in the array contains an edge weight.
+            and each value in the array contains an edge weight.
         offset_to_edge_: A numpy array with length the number of unique nodes +1. Each index in the array represents a
             node and the value stored at each node's index is the total number of edges coming out of that node.
         node_to_index_map: A dictionary where keys contain node labels and values contain the integer index of each
@@ -185,6 +185,9 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
 
+        # We should never get here -- leaving this in, but there are more pythonic ways to handle this error
+        raise TypeError("Could not identify edge between {} and {}".format(source, dest))
+
     def weight_from_ints(self, source_idx: int, dest_idx: int):
         """Takes user provided integers, representing indices for a source and destination node, and returns
         weights for each edge that exists between these nodes.
@@ -203,6 +206,10 @@ class CSFGraph:
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
+
+        # We should never get here -- this error should never happen!
+        # leaving this in, but there are more pythonic ways to handle this error
+        raise TypeError("Could not identify edge between {} and {}".format(source_idx, dest_idx))
 
     def neighbors(self, source: str):
         """Gets a list of node names, which are the neighbors of the user-provided source node.
