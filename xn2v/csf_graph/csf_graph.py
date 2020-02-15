@@ -185,8 +185,8 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
 
-        # We should never get here -- leaving this in, but there are more pythonic ways to handle this error
-        raise TypeError("Could not identify edge between {} and {}".format(source, dest))
+        # We should never get here
+        # raise TypeError("Could not identify edge between {} and {}".format(source, dest))
 
     def weight_from_ints(self, source_idx: int, dest_idx: int):
         """Takes user provided integers, representing indices for a source and destination node, and returns
@@ -208,8 +208,7 @@ class CSFGraph:
                 return self.edge_weight[i]
 
         # We should never get here -- this error should never happen!
-        # leaving this in, but there are more pythonic ways to handle this error
-        raise TypeError("Could not identify edge between {} and {}".format(source_idx, dest_idx))
+        # raise TypeError("Could not identify edge between {} and {}".format(source_idx, dest_idx))
 
     def neighbors(self, source: str):
         """Gets a list of node names, which are the neighbors of the user-provided source node.
