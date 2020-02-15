@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import random
 import logging
+from logging import handlers
 import os
 import time
 from collections import defaultdict
@@ -266,7 +267,8 @@ class N2vGraph:
     def retrieve_alias_edges(self):
         return self.alias_edges
 
-    def __alias_setup(self, probs):
+    @staticmethod
+    def __alias_setup(probs):
         """
             Compute utility lists for non-uniform sampling from discrete distributions.
             Refer to https://hips.seas.harvard.edu/blog/2013/03/03/the-alias-method-efficient-
@@ -297,7 +299,8 @@ class N2vGraph:
                 larger.append(large)
         return j, q
 
-    def alias_draw(self, j, q):
+    @staticmethod
+    def alias_draw(j, q):
         """
         Draw sample from a non-uniform discrete distribution using alias sampling.
         """
@@ -311,10 +314,10 @@ class N2vGraph:
             return j[kk]
 
     def __str__(self):
-        '''
+        """
         summary of the class for printing
         :return:
-        '''
+        """
         return 'Graph'
 
 # def _repr_html_(self):
