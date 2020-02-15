@@ -268,8 +268,7 @@ class N2vGraph:
     def retrieve_alias_edges(self):
         return self.alias_edges
 
-    @staticmethod
-    def __alias_setup(probs):
+    def __alias_setup(self, probs):
         """
             Compute utility lists for non-uniform sampling from discrete distributions.
             Refer to https://hips.seas.harvard.edu/blog/2013/03/03/the-alias-method-efficient-
@@ -300,8 +299,7 @@ class N2vGraph:
                 larger.append(large)
         return j, q
 
-    @staticmethod
-    def alias_draw(j, q):
+    def alias_draw(self, j, q):
         """
         Draw sample from a non-uniform discrete distribution using alias sampling.
         """
