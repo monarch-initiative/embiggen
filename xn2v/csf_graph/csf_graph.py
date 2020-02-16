@@ -52,8 +52,7 @@ class CSFGraph:
         self.node_to_index_map: defaultdict = defaultdict(int)
         self.index_to_node_map: defaultdict = defaultdict(str)
 
-        # read in and process edge data, creating a dictionary that stores edge information.
-        # filepath = 'tests/data/small_graph.txt'
+        # read in and process edge data, creating a dictionary that stores edge information
         with open(filepath) as f:
             for line in f:
                 fields = line.rstrip('\n').split()
