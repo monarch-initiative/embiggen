@@ -8,7 +8,8 @@ from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 
 
 class TestCBOWconstruction(TestCase):
-    """ Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks."""
+    """Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks."""
+
     def setUp(self):
         # neg_test = 'data/ppismall/neg_test_edges'
         # neg_train = 'data/ppismall/neg_train_edges'
@@ -25,14 +26,16 @@ class TestCBOWconstruction(TestCase):
         worddictionary = training_graph.get_node_to_index_map()
         reverse_worddictionary = training_graph.get_index_to_node_map()
 
-        # generate walks
+        # initialize n2v object
         p, q, gamma = 1, 1, 1
         use_gamma = False
         self.number_of_nodes_in_training = training_graph.node_count()
-        self.n2v_graph = N2vGraph(training_graph, p, q, gamma, use_gamma)
+        self.n2v_graph = N2vGraph(csf_graph=training_graph, p=p, q=q, gamma=gamma, doxn2v=use_gamma)
+
+        # generate random walks
         self.walk_length = 10
         self.num_walks = 5
-        self.walks = self.n2v_graph.simulate_walks(self.num_walks, self.walk_length)
+        self.walks = self.n2v_graph.simulate_walks(num_walks=self.num_walks, walk_length=self.walk_length)
 
         # build cbow model
         self.cbow = ContinuousBagOfWordsWord2Vec(self.walks,
@@ -52,5 +55,7 @@ class TestCBOWconstruction(TestCase):
         walk_count = 2
         num_skips = 1
         skip_window = 2
-        batch = self.cbow.next_batch_from_list_of_lists(walk_count, num_skips, skip_window)
+        batch = self.cbow.next_batch_from_list_of_lists(walk_count=walk_count,
+                                                        num_skips=num_skips,
+                                                        skip_window=skip_window)
         self.assertIsNotNone(batch)
