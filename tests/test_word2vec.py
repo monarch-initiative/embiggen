@@ -1,16 +1,14 @@
+import os.path
+
 from unittest import TestCase
 
 from xn2v import CSFGraph
 from xn2v import N2vGraph
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 
-import os.path
-
 
 class TestCBOWconstruction(TestCase):
-    """
-    Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks.
-    """
+    """ Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks."""
     def setUp(self):
         # neg_test = 'data/ppismall/neg_test_edges'
         # neg_train = 'data/ppismall/neg_train_edges'
@@ -46,19 +44,22 @@ class TestCBOWconstruction(TestCase):
             walks_integer_nodes.append(nwalk)
 
         self.walks = walks_integer_nodes
+
+        # build cbow model
         self.cbow = ContinuousBagOfWordsWord2Vec(self.walks,
                                                  worddictionary=worddictionary,
                                                  reverse_worddictionary=reverse_worddictionary,
                                                  num_steps=100)
 
     def test_number_of_walks_performed(self):
-
         # expected number of walks is num_walks times the number of nodes in the training graph
         expected_n_walks = self.num_walks * self.number_of_nodes_in_training
         self.assertEqual(expected_n_walks, len(self.walks))
 
     def test_get_cbow_batch(self):
+
         self.assertIsNotNone(self.cbow)
+
         walk_count = 2
         num_skips = 1
         skip_window = 2
