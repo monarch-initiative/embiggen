@@ -32,18 +32,7 @@ class TestCBOWconstruction(TestCase):
         self.n2v_graph = N2vGraph(training_graph, p, q, gamma, use_gamma)
         self.walk_length = 10
         self.num_walks = 5
-        walks = self.n2v_graph.simulate_walks(self.num_walks, self.walk_length)
-
-        walks_integer_nodes = []
-        for w in walks:
-            nwalk = []
-
-            for node in w:
-                i = worddictionary[node]
-                nwalk.append(i)
-            walks_integer_nodes.append(nwalk)
-
-        self.walks = walks_integer_nodes
+        self.walks = self.n2v_graph.simulate_walks(self.num_walks, self.walk_length)
 
         # build cbow model
         self.cbow = ContinuousBagOfWordsWord2Vec(self.walks,
