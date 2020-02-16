@@ -23,19 +23,20 @@ class CSFGraph:
             the keys are strings which represent a node type (i.e. a string that is comprised of the first character
             of a node) and values are integers, which represent the count of the node type. For example:
                 {'d': 3, 'g': 4, 'p': 4}
+        node_to_index_map: A dictionary where keys contain node labels and values contain the integer index of each
+            node from the sorted list of unique nodes in the graph.
+        index_to_node_map: A dictionary where keys contain the integer index of each node from the sorted list of
+            unique nodes in the graph and values contain node labels.
         edge_to: A numpy array with length the number of edges. Each index in the array contains the index of an edge,
             such that it can be used to look up the destination nodes that an edge in a given index points to.
         edge_weight: A numpy array with length the number of edges. Each item in the array represents an edge's index
             and each value in the array contains an edge weight.
         offset_to_edge_: A numpy array with length the number of unique nodes +1. Each index in the array represents a
             node and the value stored at each node's index is the total number of edges coming out of that node.
-        node_to_index_map: A dictionary where keys contain node labels and values contain the integer index of each
-            node from the sorted list of unique nodes in the graph.
-        index_to_node_map: A dictionary where keys contain the integer index of each node from the sorted list of
-            unique nodes in the graph and values contain node labels.
+
     """
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: str):
         if filepath is None:
             raise TypeError('ERROR: Need to pass path of file with edges')
         if not isinstance(filepath, str):
@@ -44,7 +45,8 @@ class CSFGraph:
             raise TypeError('ERROR: Could not find graph file {}'.format(filepath))
 
         # create variables to store node and edge information
-        nodes, edges = set(), set()
+        nodes: set = set()
+        edges: set = set()
         self.edgetype2count_dictionary: defaultdict = defaultdict(int)
         self.nodetype2count_dictionary: defaultdict = defaultdict(int)
         self.node_to_index_map: defaultdict = defaultdict(int)
@@ -89,8 +91,7 @@ class CSFGraph:
             self.node_to_index_map[node_list[i]] = i
             self.index_to_node_map[i] = node_list[i]
 
-        # initialize edge arrays
-        # convert edge sets to numpy arrays, sorted alphabetically on on their source element
+        # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
         edge_list = sorted(edges)
         total_edge_count = len(edge_list)
         total_vertex_count = len(node_list)
@@ -100,28 +101,27 @@ class CSFGraph:
         # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
         self.offset_to_edge_: np.ndarray = np.zeros(total_vertex_count + 1, dtype=np.int32)
 
-        # create the graph - this done by performing three passes over the data
-        # first pass: count # of edges emanating from each source id
+        # create the graph - this done in three steps
+        # step 1: count # of edges emanating from each source id
         index2edge_count = defaultdict(int)
 
         for edge in edge_list:
             source_index = self.node_to_index_map[edge.node_a]
             index2edge_count[source_index] += 1
 
-        # second pass: set the offset_to_edge_ according to the number of edges emanating from each source ids
+        # step 2: set the offset_to_edge_ according to the number of edges emanating from each source ids
         self.offset_to_edge_[0], offset, i = 0, 0, 0
 
         for n in node_list:
             node_type = n[0]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
-            # n_edges can be zero here, that is OK
-            n_edges = index2edge_count[source_index]
+            n_edges = index2edge_count[source_index]  # n_edges can be zero here
             i += 1
             offset += n_edges
             self.offset_to_edge_[i] = offset
 
-        # third pass: add the actual edges
+        # step 3: add the actual edges
         current_source_index = -1
         j, offset = 0, 0
 
@@ -134,15 +134,14 @@ class CSFGraph:
                 current_source_index = source_index
                 offset = 0  # start a new block
             else:
-                # go to next index (for a new destination of the previous source)
-                offset += 1
+                offset += 1  # go to next index (for a new destination of the previous source)
 
             self.edge_to[j] = dest_index
             self.edge_weight[j] = edge.weight
             j += 1
 
     def nodes(self):
-        """Method which returns a list of graph nodes."""
+        """Returns a list of graph nodes."""
 
         return list(self.node_to_index_map.keys())
 
@@ -185,9 +184,6 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
 
-        # We should never get here
-        # raise TypeError("Could not identify edge between {} and {}".format(source, dest))
-
     def weight_from_ints(self, source_idx: int, dest_idx: int):
         """Takes user provided integers, representing indices for a source and destination node, and returns
         weights for each edge that exists between these nodes.
@@ -206,9 +202,6 @@ class CSFGraph:
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
-
-        # We should never get here -- this error should never happen!
-        # raise TypeError("Could not identify edge between {} and {}".format(source_idx, dest_idx))
 
     def neighbors(self, source: str):
         """Gets a list of node names, which are the neighbors of the user-provided source node.
@@ -251,8 +244,8 @@ class CSFGraph:
         """Checks if an edge exists between src and dest node.
 
         Args:
-            src:
-            dest:
+            src: The name of a source node.
+            dest: The name of a destination node.
 
         Returns:
             A boolean value is returned, where True means an exists and False means no edge exists.
@@ -300,6 +293,7 @@ class CSFGraph:
 
         for source_idx in range(len(self.offset_to_edge_) - 1):
             src = self.index_to_node_map[source_idx]
+
             for j in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
                 nbr_idx = self.edge_to[j]
                 nbr = self.index_to_node_map[nbr_idx]
