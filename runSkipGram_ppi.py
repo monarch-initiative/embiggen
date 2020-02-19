@@ -2,7 +2,7 @@ import xn2v
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
-import os
+import sys
 
 dir = '/home/peter/GIT/node2vec-eval'
 import os
