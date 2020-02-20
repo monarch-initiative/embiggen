@@ -72,16 +72,19 @@ class Word2Vec:
 
         Returns:
             None.
+
+        Raises:
+            TypeError: If the user does not provide a list of display words.
         """
 
         if not isinstance(count, list):
             self.display = None
             # print("[WARNING] add_display_words requires a list of tuples with k:word v:int (count)")
             # return
-            raise Exception('[WARNING] add_display_words requires a list of tuples with key:word, value:int (count)')
+            raise TypeError('self.display requires a list of tuples with key:word, value:int (count)')
 
         if num > 16:
-            print('[WARNING] maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
+            print('WARNING: maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
             num = 16
 
         # pick a random validation set of 'num' words to sample
@@ -122,12 +125,16 @@ class Word2Vec:
 
         Returns:
             None.
+
+        Raises:
+            - ValueError: If the embedding attribute contains no data.
+            - ValueError: If the node id to integer dictionary contains no data.
         """
 
         if self.embedding is None:
             raise ValueError('No embedding data found (i.e. self.embedding is None)')
         if not self.id2word:
-            raise ValueError('No node/word dictionary data found (i.e. self.id2word is None)')
+            raise ValueError('No node to integer word mapping dictionary data found (i.e. self.id2word is None)')
 
         with tf.device('/cpu:0'):
             with open(outfilename, 'w') as fh:
@@ -190,7 +197,7 @@ class SkipGramWord2Vec(Word2Vec):
                     self.list_of_lists = True
                 else:
                     self.list_of_lists = False
-                    raise TypeError('The item must be a list of walks where each walk is a sequence of (int) nodes.')
+                    raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
 
         # set vocabulary size
         self.calculate_vocabulary_size()
@@ -198,7 +205,7 @@ class SkipGramWord2Vec(Word2Vec):
         # with toy exs the # of nodes might be lower than the default value of num_sampled of 64. num_sampled needs to
         # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size/2
+            self.num_sampled = self.vocabulary_size / 2
 
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
@@ -228,7 +235,6 @@ class SkipGramWord2Vec(Word2Vec):
             embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension).
         """
         with tf.device('/cpu:0'):
-
             # lookup the corresponding embedding vectors for each sample in x
             embedding = tf.nn.embedding_lookup(self.embedding, x)
 
@@ -263,7 +269,7 @@ class SkipGramWord2Vec(Word2Vec):
                                inputs=x_embed,
                                num_sampled=self.num_sampled,
                                num_classes=self.vocabulary_size)
-                                    )
+            )
 
             return loss
 
@@ -279,9 +285,9 @@ class SkipGramWord2Vec(Word2Vec):
 
         with tf.device('/cpu:0'):
             x_embed_cast = tf.cast(x_embed, tf.float32)
-            x_embed_norm = x_embed_cast/tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
+            x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
             x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self.embedding/x_embed_sqrt
+            embedding_norm = self.embedding / x_embed_sqrt
 
             # calculate cosine similarity
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
@@ -302,13 +308,17 @@ class SkipGramWord2Vec(Word2Vec):
 
         Returns:
             A list where the first item is a batch and the second item is the batch's labels.
+
+        Raises:
+            - ValueError: If the batch size is not evenly divisible by the number of skips.
+            - ValueError: If the number of skips is not <= twice the skip window length.
         """
 
         # check that batch_size is evenly divisible by num_skips and num_skips is less or equal to skip window size
         if batch_size % num_skips != 0:
-            raise ValueError('ERROR: The batch_size is not evenly divisible by num_skips')
+            raise ValueError('The value of self.batch_size must be evenly divisible by the value of self.num_skips')
         if num_skips > 2 * skip_window:
-            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
+            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
 
         batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
@@ -365,10 +375,13 @@ class SkipGramWord2Vec(Word2Vec):
 
         Returns:
             A list where the first item us a batch and the second item is the batch's labels.
+
+        Raises:
+           ValueError: If the number of skips is not <= twice the skip window length.
         """
 
         if num_skips > 2 * skip_window:
-            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
+            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
 
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
@@ -533,7 +546,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # with toy exs the # of nodes might be lower than the default value of num_sampled of 64. num_sampled needs to
         # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size/2
+            self.num_sampled = self.vocabulary_size / 2
 
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
         self.data_index = 0
@@ -548,14 +561,14 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self.embedding = tf.Variable(
                 tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
-                                         )
+            )
 
             # should we initialize with uniform or normal?
             # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
 
             # construct the variables for the softmax loss
             self.softmax_weights = tf.Variable(tf.random.truncated_normal([self.vocabulary_size, embedding_size],
-                                                                          stddev=0.5/math.sqrt(embedding_size),
+                                                                          stddev=0.5 / math.sqrt(embedding_size),
                                                                           dtype=tf.float32))
 
             self.softmax_biases = tf.Variable(tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
@@ -572,28 +585,25 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         Returns:
             mean_embeddings: An averaged word embedding vector.
+
+        Raises:
+            ValueError: If the shape of stacked_embeddings is not equal to twice the skip_window length.
         """
 
         stacked_embeddings = None
-        # print('Defining {} embedding lookups representing each word in the context'.format(2 * self.skip_window))
 
         for i in range(2 * self.skip_window):
-            # print("x:", x.shape)
-            # print("i:",i)
-            # print("x[:,i]", x[:,i])
-            # print("self.skip_window:",self.skip_window)
-            # print("self.embedding:", self.embedding.shape)
             embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
             x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
 
             if stacked_embeddings is None:
                 stacked_embeddings = tf.reshape(embedding_i, [x_size, y_size, 1])
             else:
-                stacked_embeddings = tf.concat(axis=2, values=[stacked_embeddings,
-                                                               tf.reshape(embedding_i, [x_size, y_size, 1])])
+                stacked_embedding_value = [stacked_embeddings, tf.reshape(embedding_i, [x_size, y_size, 1])]
+                stacked_embeddings = tf.concat(axis=2, values=stacked_embedding_value)
 
         if stacked_embeddings.get_shape().as_list()[2] != 2 * self.skip_window:
-            raise ValueError('ERROR: Please Check Skip Window Size')
+            raise ValueError('The shape of self.stack_embeddings must be twice the length of self.skip_window')
 
         # print("Stacked embedding size: %s" % stacked_embedings.get_shape().as_list())
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
@@ -615,14 +625,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         """
 
         y = tf.cast(y, tf.int64)
-        loss = tf.reduce_mean(
-            tf.nn.sampled_softmax_loss(weights=self.softmax_weights,
-                                       biases=self.softmax_biases,
-                                       inputs=mean_embeddings,
-                                       labels=y,
-                                       num_sampled=self.num_sampled,
-                                       num_classes=self.vocabulary_size)
-                                )
+        loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(weights=self.softmax_weights,
+                                                         biases=self.softmax_biases,
+                                                         inputs=mean_embeddings,
+                                                         labels=y,
+                                                         num_sampled=self.num_sampled,
+                                                         num_classes=self.vocabulary_size)
+                              )
 
         return loss
 
@@ -648,14 +657,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # print("self.vocabulary_size=%s" % type(self.vocabulary_size))
             # exit(1)
 
-            loss = tf.reduce_mean(
-                tf.nn.nce_loss(weights=self.softmax_weights,
-                               biases=self.softmax_biases,
-                               labels=y,
-                               inputs=x_embed,
-                               num_sampled=self.num_sampled,
-                               num_classes=self.vocabulary_size)
-                                   )
+            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.softmax_weights,
+                                                 biases=self.softmax_biases,
+                                                 labels=y,
+                                                 inputs=x_embed,
+                                                 num_sampled=self.num_sampled,
+                                                 num_classes=self.vocabulary_size)
+                                  )
 
             return loss
 
@@ -671,9 +679,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         with tf.device('/cpu:0'):
             x_embed = tf.cast(x_embed, tf.float32)
-            x_embed_norm = x_embed/tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
+            x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
             x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self.embedding/x_embed_sqrt
+            embedding_norm = self.embedding / x_embed_sqrt
 
             # calculate cosine similarity
             cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
@@ -714,7 +722,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             col_idx = 0
 
             for j in range(span):
-                if j == span//2:
+                if j == span // 2:
                     continue  # i.e., ignore the center word
                 batch[i, col_idx] = buffer[j]
                 col_idx += 1
@@ -740,10 +748,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         Returns:
             A list where the first item us a batch and the second item is the batch's labels.
+
+        Raises:
+            ValueError: If the number of skips is not <= twice the skip window length.
         """
 
         if num_skips > 2 * skip_window:
-            raise ValueError('ERROR: The number of skips is not <= 2 * skip_window')
+            raise ValueError('The value of self.num_skips must be <= twice the self.skip_window length')
 
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * skip_window + 1
