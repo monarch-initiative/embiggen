@@ -1,18 +1,21 @@
 import argparse
-
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
+from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
 import xn2v
-import os
-import logging
+import sys
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-handler.setFormatter(formatter)
-log = logging.getLogger()
-log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-log.addHandler(handler)
+
+# import os
+# import logging
+#
+# handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+# handler.setFormatter(formatter)
+# log = logging.getLogger()
+# log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+# log.addHandler(handler)
 
 
 
@@ -22,16 +25,16 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
-    parser.add_argument('--pos_train', nargs='?', default='pos_train_edges',
+    parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall/pos_train_edges',
                         help='Input positive training edges path')
 
-    parser.add_argument('--pos_test', nargs='?', default='pos_test_edges',
+    parser.add_argument('--pos_test', nargs='?', default='tests/data/ppismall/pos_test_edges',
                         help='Input positive test edges path')
 
-    parser.add_argument('--neg_train', nargs='?', default='neg_train_edges',
+    parser.add_argument('--neg_train', nargs='?', default='tests/data/ppismall/neg_train_edges',
                         help='Input negative training edges path')
 
-    parser.add_argument('--neg_test', nargs='?', default='neg_test_edges',
+    parser.add_argument('--neg_test', nargs='?', default='tests/data/ppismall/neg_test_edges',
                         help='Input negative test edges path')
 
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
@@ -71,27 +74,37 @@ def parse_args():
 
     parser.add_argument('--useGamma', dest='useGamma', action='store_false', help="True if the graph is heterogeneous, "
                                                                                   "False if the graph is homogeneous.")
+    parser.set_defaults(useGamma=False)
+    parser.add_argument('--classifier', nargs='?', default='LR',
+                        help="Binary classifier for link prediction, it should be either LR, RF or SVM")
+
+    parser.add_argument('--type', nargs='?', default='homogen',
+                        help="Type of graph which is either homogen for homogeneous graph or heterogen for heterogeneous graph")
+
+    parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
+                        help="word2vec model. It can be either Skipgram or CBOW")
 
     return parser.parse_args()
 
 
-def learn_embeddings(walks, pos_train_graph):
+def learn_embeddings(walks, pos_train_graph, w2v_model):
     '''
-    Learn embeddings by optimizing the Skipgram objective using SGD.
+    Learn embeddings by optimizing the Skipgram or CBOW objective using SGD.
     '''
+
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
-    walks_integer_nodes = []
-    for w in walks:
-        nwalk = []
-        for node in w:
-            i = worddictionary[node]
-            nwalk.append(i)
-        walks_integer_nodes.append(nwalk)
-
-    model = SkipGramWord2Vec(walks_integer_nodes, worddictionary=worddictionary,
+    if w2v_model == "Skipgram":
+        model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
                              reverse_worddictionary=reverse_worddictionary, num_steps=100)
+    elif w2v_model == "CBOW":
+        model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=100)
+    else:
+        print("[ERROR] enter Skipgram or CBOW")
+        sys.exit(1)
+
     model.train(display_step=2)
 
     model.write_embeddings(args.embed_graph)
@@ -105,10 +118,12 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     :return: Metrics of logistic regression as the results of link prediction
     """
     lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                        args.embed_graph, args.edge_embed_method)
+                        args.embed_graph, args.edge_embed_method, args.classifier, args.type)
 
+    lp.prepare_lables_test_training()
     lp.predict_links()
-    lp.output_Logistic_Reg_results()
+    lp.output_classifier_results()
+    lp.output_edge_node_information()
 
 def read_graphs():
     """
@@ -130,12 +145,13 @@ def main(args):
     Finally, link prediction is performed.
 
     :param args: parameters of node2vec and link prediction
-    :return: Result of link prediction using logistic regression. TODO: implement RF and SVM and add the option of CBOW for word2vec
+    :return: Result of link prediction
     """
+    print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}".format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
     pos_train_g = xn2v.hetnode2vec.N2vGraph(pos_train_graph,  args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
-    learn_embeddings(walks, pos_train_graph)
+    learn_embeddings(walks, pos_train_graph,args.w2v_model)
     linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph)
 
 

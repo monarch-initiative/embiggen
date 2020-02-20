@@ -2,21 +2,23 @@ import sys
 import numpy as np
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
-import logging
-import os
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
+from sklearn.metrics import roc_auc_score, average_precision_score
+#import logging
+#import os
 
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-handler.setFormatter(formatter)
-log = logging.getLogger()
-log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-log.addHandler(handler)
+# handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+# handler.setFormatter(formatter)
+# log = logging.getLogger()
+# log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+# log.addHandler(handler)
 
 class LinkPrediction:
     def __init__(self, pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                 embedded_train_graph_path, edge_embedding_method):
+                 embedded_train_graph_path, edge_embedding_method, classifier, graph_type):
         """
         Set up for predicting links from results of node2vec analysis
         :param pos_train_graph: The training graph
@@ -25,6 +27,9 @@ class LinkPrediction:
         :param neg_test_graph: Graph of non-existence links that we want to predict as negative edges
         :param embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
         :param edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or "weightedL2"
+        :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest or "SVM" for support
+        vector machine
+        :param graph_type : It can be "homogen" for homogeneous graph or "heterogen" for heterogeneous graph
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -36,6 +41,12 @@ class LinkPrediction:
         self.map_node_vector = {}
         self.read_embeddings()
         self.edge_embedding_method = edge_embedding_method
+        self.train_edge_embs = []
+        self.train_edge_labels = []
+        self.test_edge_labels = []
+        self.tes_edge_embs = []
+        self.classifier = classifier
+        self.graph_type = graph_type
 
     def read_embeddings(self):
         """
@@ -54,54 +65,73 @@ class LinkPrediction:
                 n_lines += 1
         f.close()
         self.map_node_vector = map_node_vector
-        log.debug("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
+        print("[INFO]Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
-    def predict_links(self):
+    def prepare_lables_test_training(self):
+        """
+        label positive edge embeddings with 1 and negative edge embeddings with 0.
+        :return:
+        """
         pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
         neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
         #print(len(true_train_edge_embs),len(false_train_edge_embs))
-        train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
+        self.train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
-        train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
+        self.train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
 
         # Test-set edge embeddings, labels
         pos_test_edge_embs = self.transform(edge_list=self.pos_test_edges, node2vector_map=self.map_node_vector)
         neg_test_edge_embs = self.transform(edge_list=self.neg_test_edges, node2vector_map=self.map_node_vector)
-        test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
+        self.test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
         # Create test-set edge labels: 1 = true edge, 0 = false edge
-        test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
-        log.debug('get test edge labels')
+        self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
+        print('get test edge labels')
 
-        #log.debug("Total nodes: {}".format(self.train_edges.number_of_nodes()))
-        print("Total edges of training graph: {}".format(len(self.pos_train_edges)))
-        print("Training edges (negative): {}".format(len(neg_train_edge_embs)))
-        print("Test edges (positive): {}".format(len(self.pos_test_edges)))
-        print("Test edges (negative): {}".format(len(neg_test_edge_embs)))
-        print('logistic regression')
-        # Train logistic regression classifier on train-set edge embeddings
-        edge_classifier = LogisticRegression()
-        edge_classifier.fit(train_edge_embs, train_edge_labels)
+        print("[INFO]: Total edges of training graph: {}".format(len(self.pos_train_edges)))
+        print("[INFO]: Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        print("[INFO]: Test edges (positive): {}".format(len(self.pos_test_edges)))
+        print("[INFO]: Test edges (negative): {}".format(len(neg_test_edge_embs)))
 
-        self.predictions = edge_classifier.predict(test_edge_embs)
-        self.confusion_matrix = metrics.confusion_matrix(test_edge_labels, self.predictions)
+
+
+
+    def predict_links(self):
+        """
+        Train  classifier on train-set edge embeddings. Classifier is LR:logistic regression or RF:random forest
+        or SVM:support vector machine. All classifiers work using default parameters.
+        :return:
+        """
+
+        if self.classifier == "LR":
+            edge_classifier = LogisticRegression()
+        elif self.classifier == "RF":
+            edge_classifier = RandomForestClassifier()
+        else:
+            #implement SVM.
+            edge_classifier = svm.SVC(probability=True)
+
+
+        edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
+
+        self.predictions = edge_classifier.predict(self.test_edge_embs)
+        self.confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.predictions)
 
         # Predicted edge scores: probability of being of class "1" (real edge)
-        test_preds = edge_classifier.predict_proba(test_edge_embs)[:, 1]
-        fpr, tpr, _ = roc_curve(test_edge_labels, test_preds)
+        test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
+        #fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
-        self.test_roc = roc_auc_score(test_edge_labels, test_preds)#get the auc score
-        self.test_average_precision = average_precision_score(test_edge_labels, test_preds)
+        self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
+        self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
-    def output_Logistic_Reg_results(self):
+    def output_classifier_results(self):
         """
         The method prints some metrics of the performance of the logistic regression classifier. including accuracy, specificity and sensitivity
-        :param predictions: prediction results of the logistic regression
-        :param confusion_matrix:  confusion_matrix[0, 0]: True negatives, confusion_matrix[0, 1]: False positives,
+        predictions: prediction results of the logistic regression
+        confusion_matrix:  confusion_matrix[0, 0]: True negatives, confusion_matrix[0, 1]: False positives,
         confusion_matrix[1, 1]: True positives and confusion_matrix[1, 0]: False negatives
-        :param test_roc: AUC score
-        :param test_average_precision: Average precision
-        :return:
+        test_roc: AUC score
+        test_average_precision: Average precision
          """
         confusion_matrix = self.confusion_matrix
         total = sum(sum(confusion_matrix))
@@ -153,66 +183,78 @@ class LinkPrediction:
                 # belong to each edge
                 edge_emb = np.power((emb1 - emb2), 2)
             else:
-                log.error("You need to enter hadamard, average, weightedL1, weightedL2")
+                print("[ERROR]You need to enter hadamard, average, weightedL1, weightedL2")
                 sys.exit(1)
             embs.append(edge_emb)
         embs = np.array(embs)
         return embs
 
-    def output_diagnostics_to_logfile(self):
-        LinkPrediction.log_edge_node_information(self.pos_train_edges, "true_training")
-        LinkPrediction.log_edge_node_information(self.pos_test_edges, "true_test")
+    def output_edge_node_information(self):
+        self.edge_node_information(self.pos_train_edges, "true_training")
+        self.edge_node_information(self.pos_test_edges, "true_test")
 
-    @staticmethod
-    def log_edge_node_information(edge_list, group):#TODO:modify it for the homogenous graph
+    def edge_node_information(self, edge_list, group):
         """
-        log the number of nodes and edges of each type of the graph
+        print the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
         :return:
         """
-        num_gene_gene = 0
-        num_gene_dis = 0
-        num_gene_prot = 0
-        num_prot_prot = 0
-        num_prot_dis = 0
-        num_dis_dis = 0
-        num_gene = 0
-        num_prot = 0
-        num_dis = 0
-        nodes = set()
-        for edge in edge_list:
-            if (edge[0].startswith("g") and edge[1].startswith("g")):
-                num_gene_gene += 1
-            elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
-                  (edge[0].startswith("d") and edge[1].startswith("g"))):
-                num_gene_dis += 1
-            elif ((edge[0].startswith("g") and edge[1].startswith("p")) or
-                  (edge[0].startswith("p") and edge[1].startswith("g"))):
-                num_gene_prot += 1
-            elif edge[0].startswith("p") and edge[1].startswith("p"):
-                num_prot_prot += 1
-            elif (edge[0].startswith("p") and edge[1].startswith("d")) or (
-                    edge[0].startswith("d") and edge[1].startswith("p")):
-                num_prot_dis += 1
-            elif edge[0].startswith("d") and edge[1].startswith("d"):
-                num_dis_dis += 1
-            nodes.add(edge[0])
-            nodes.add(edge[1])
-        for node in nodes:
-            if node.startswith("g"):
-                num_gene += 1
-            elif node.startswith("p"):
-                num_prot += 1
-            elif node.startswith("d"):
-                num_dis += 1
-        log.debug("##### edge/node diagnostics for {} #####".format(group))
-        log.debug("{}: number of gene-gene edges : {}".format(group, num_gene_gene))
-        log.debug("{}: number of gene-dis edges : {}".format(group, num_gene_dis))
-        log.debug("{}: number of gene-prot edges : {}".format(group, num_gene_prot))
-        log.debug("{}: number of prot_prot edges : {}".format(group, num_prot_prot))
-        log.debug("{}: number of prot_dis edges : {}".format(group, num_prot_dis))
-        log.debug("{}: number of dis_dis edges : {}".format(group, num_dis_dis))
-        log.debug("{}: number of gene nodes : {}".format(group, num_gene))
-        log.debug("{}: number of protein nodes : {}".format(group, num_prot))
-        log.debug("{}: number of disease nodes : {}".format(group, num_dis))
-        log.debug("##########")
+        if self.graph_type == "homogen":
+            num_edges = 0
+            nodes = set()
+            for edge in edge_list:
+                num_edges += 1
+                nodes.add(edge[0])
+                nodes.add(edge[1])
+
+            print("##### edge/node diagnostics for {} #####".format(group))
+            print("{}: number of  edges : {}".format(group, num_edges))
+            print("{}: number of nodes : {}".format(group, len(nodes)))
+
+        else:
+            num_gene_gene = 0
+            num_gene_dis = 0
+            num_gene_prot = 0
+            num_prot_prot = 0
+            num_prot_dis = 0
+            num_dis_dis = 0
+            num_gene = 0
+            num_prot = 0
+            num_dis = 0
+            nodes = set()
+            for edge in edge_list:
+                if (edge[0].startswith("g") and edge[1].startswith("g")):
+                    num_gene_gene += 1
+                elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
+                      (edge[0].startswith("d") and edge[1].startswith("g"))):
+                    num_gene_dis += 1
+                elif ((edge[0].startswith("g") and edge[1].startswith("p")) or
+                      (edge[0].startswith("p") and edge[1].startswith("g"))):
+                    num_gene_prot += 1
+                elif edge[0].startswith("p") and edge[1].startswith("p"):
+                    num_prot_prot += 1
+                elif (edge[0].startswith("p") and edge[1].startswith("d")) or (
+                        edge[0].startswith("d") and edge[1].startswith("p")):
+                    num_prot_dis += 1
+                elif edge[0].startswith("d") and edge[1].startswith("d"):
+                    num_dis_dis += 1
+                nodes.add(edge[0])
+                nodes.add(edge[1])
+            for node in nodes:
+                if node.startswith("g"):
+                    num_gene += 1
+                elif node.startswith("p"):
+                    num_prot += 1
+                elif node.startswith("d"):
+                    num_dis += 1
+            print("##### edge/node diagnostics for {} #####".format(group))
+            print("[INFO]{}: number of gene-gene edges : {}".format(group, num_gene_gene))
+            print("[INFO]{}: number of gene-dis edges : {}".format(group, num_gene_dis))
+            print("[INFO]{}: number of gene-prot edges : {}".format(group, num_gene_prot))
+            print("[INFO]{}: number of prot_prot edges : {}".format(group, num_prot_prot))
+            print("[INFO]{}: number of prot_dis edges : {}".format(group, num_prot_dis))
+            print("[INFO]{}: number of dis_dis edges : {}".format(group, num_dis_dis))
+            print("[INFO]{}: number of gene nodes : {}".format(group, num_gene))
+            print("[INFO]{}: number of protein nodes : {}".format(group, num_prot))
+            print("[INFO]{}: number of disease nodes : {}".format(group, num_dis))
+            print("##########")
