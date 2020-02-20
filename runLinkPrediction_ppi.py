@@ -82,16 +82,9 @@ def learn_embeddings(walks, pos_train_graph):
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
-    walks_integer_nodes = []
-    for w in walks:
-        nwalk = []
-        for node in w:
-            i = worddictionary[node]
-            nwalk.append(i)
-        walks_integer_nodes.append(nwalk)
-
-    model = SkipGramWord2Vec(walks_integer_nodes, worddictionary=worddictionary,
+    model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
                              reverse_worddictionary=reverse_worddictionary, num_steps=100)
+
     model.train(display_step=2)
 
     model.write_embeddings(args.embed_graph)
@@ -119,7 +112,7 @@ def read_graphs():
     pos_train_graph = CSFGraph(args.pos_train)
     pos_test_graph = CSFGraph(args.pos_test)
     neg_train_graph = CSFGraph(args.neg_train)
-    neg_test_graph = CSFGraph(args. neg_test)
+    neg_test_graph = CSFGraph(args.neg_test)
     return pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph
 
 
@@ -133,7 +126,7 @@ def main(args):
     :return: Result of link prediction using logistic regression. TODO: implement RF and SVM and add the option of CBOW for word2vec
     """
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
-    pos_train_g = xn2v.hetnode2vec.N2vGraph(pos_train_graph,  args.p, args.q, args.gamma, args.useGamma)
+    pos_train_g = xn2v.hetnode2vec.N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
     learn_embeddings(walks, pos_train_graph)
     linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph)
