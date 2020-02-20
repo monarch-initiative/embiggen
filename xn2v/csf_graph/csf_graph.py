@@ -34,15 +34,19 @@ class CSFGraph:
         offset_to_edge_: A numpy array with length the number of unique nodes +1. Each index in the array represents a
             node and the value stored at each node's index is the total number of edges coming out of that node.
 
+    Raises:
+        - TypeError: If the filepath attribute is empty.
+        - TypeError: If the filepath attribute must be type str.
+        - ValueError: If the file referenced by filepath cannot be found.
     """
 
     def __init__(self, filepath: str):
         if filepath is None:
-            raise TypeError('ERROR: Need to pass path of file with edges')
+            raise TypeError('The filepath attribute cannot be empty.')
         if not isinstance(filepath, str):
-            raise TypeError('ERROR: filepath argument must be string')
+            raise TypeError('The filepath attribute must be type str')
         if not os.path.exists(filepath):
-            raise TypeError('ERROR: Could not find graph file {}'.format(filepath))
+            raise ValueError('Could not find graph file {}'.format(filepath))
 
         # create variables to store node and edge information
         nodes: set = set()
@@ -332,10 +336,13 @@ class CSFGraph:
 
         Returns:
             An integer index for the user-provided node.
+
+        Raises:
+            ValueError: If a referenced node is not included in self.node_to_index_map.
         """
 
         if node not in self.node_to_index_map:
-            raise ValueError('Could not find {} in node-to-index map'.format(node))
+            raise ValueError('Could not find {} in self.node_to_index_map'.format(node))
         else:
             return self.node_to_index_map.get(node)
 
