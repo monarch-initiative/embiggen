@@ -47,7 +47,7 @@ class LinkPrediction:
         with open(self.embedded_train_graph, 'r') as f:
             #next(f)#skip the header which contains 2 integers; number of nodes and dimension
             for line in f:
-                fields = line.split('\t') #the format of each line: node v_1 v_2 ... v_d where v_i's are elements of
+                fields = line.split() #the format of each line: node v_1 v_2 ... v_d where v_i's are elements of
                 # the array corresponding to the embedding of the node
                 embe_vec = [float(i) for i in fields[1:]]
                 map_node_vector.update({fields[0]: embe_vec})#map each node to its corresponding vector
