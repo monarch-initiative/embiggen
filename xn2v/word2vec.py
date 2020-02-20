@@ -171,6 +171,9 @@ class SkipGramWord2Vec(Word2Vec):
         num_sentences: An integer that stores the total number of sentences.
         nce_weights: A variable that stores the classifier weights.
         nce_biases: A variable that stores classifier biases.
+
+    Raises:
+        TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
     def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
@@ -234,6 +237,7 @@ class SkipGramWord2Vec(Word2Vec):
         Returns:
             embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension).
         """
+
         with tf.device('/cpu:0'):
             # lookup the corresponding embedding vectors for each sample in x
             embedding = tf.nn.embedding_lookup(self.embedding, x)
@@ -509,6 +513,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         num_sentences: An integer that stores the total number of sentences.
         softmax_weights: A variable that stores the classifier weights.
         softmax_biases: A variable that stores classifier biases.
+
+    Raises:
+        TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
     def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
@@ -534,11 +541,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             for el in self.data:
                 # then, check each element of the list is integer
                 if any(isinstance(item, int) for item in el):
-                    # graph version
                     self.list_of_lists = True
                 else:
                     self.list_of_lists = False
-                    raise TypeError('The item must be a list of walks where each walk is a sequence of (int) nodes.')
+                    raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
 
         # set vocabulary size
         self.calculate_vocabulary_size()
