@@ -2,6 +2,7 @@ import argparse
 
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
+from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
 import xn2v
 import os
@@ -17,9 +18,10 @@ log.addHandler(handler)
 
 
 def parse_args():
-    '''
-    Parses arguments.
-    '''
+    """Parses arguments.
+
+    """
+
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
     parser.add_argument('--pos_train', nargs='?', default='pos_train_edges',
@@ -75,19 +77,27 @@ def parse_args():
     return parser.parse_args()
 
 
-def learn_embeddings(walks, pos_train_graph):
+def learn_embeddings(walks, pos_train_graph, w2v_model):
     '''
     Learn embeddings by optimizing the Skipgram objective using SGD.
     '''
+
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
-    model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary, num_steps=100)
+    if w2v_model == "Skipgram":
+        model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=100)
+    elif w2v_model == "CBOW":
+        model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
+                                             reverse_worddictionary=reverse_worddictionary, num_steps=100)
+    else:
+        raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
 
     model.train(display_step=2)
 
     model.write_embeddings(args.embed_graph)
+
 
 def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     """
