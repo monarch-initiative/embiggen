@@ -11,9 +11,10 @@ class TestCBOWconstruction(TestCase):
     """Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks."""
 
     def setUp(self):
-        # neg_test = 'data/ppismall/neg_test_edges'
-        # neg_train = 'data/ppismall/neg_train_edges'
-        # pos_test = 'data/ppismall/pos_test_edges'
+        # pos_train = 'tests/data/ppismall/pos_train_edges'
+        # neg_test = 'tests/data/ppismall/neg_test_edges'
+        # neg_train = 'tests/data/ppismall/neg_train_edges'
+        # pos_test = 'tests/data/ppismall/pos_test_edges'
 
         curdir = os.path.dirname(__file__)
         pos_train = os.path.join(curdir, "data/ppismall/pos_train_edges")
