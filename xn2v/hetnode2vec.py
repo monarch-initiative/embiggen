@@ -2,7 +2,9 @@ import sys
 
 import numpy as np
 import random
+import logging.handlers
 import logging
+from logging import handlers
 import os
 import time
 from collections import defaultdict
@@ -311,10 +313,10 @@ class N2vGraph:
             return j[kk]
 
     def __str__(self):
-        '''
+        """
         summary of the class for printing
         :return:
-        '''
+        """
         return 'Graph'
 
 # def _repr_html_(self):
