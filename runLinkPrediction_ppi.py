@@ -84,6 +84,9 @@ def parse_args():
     parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
                         help="word2vec model. It can be either Skipgram or CBOW")
 
+    parser.add_argument('--num_steps', type=int, default=100000,
+                        help='number of steps for GD.  Default is 100000.')
+
     return parser.parse_args()
 
 
@@ -97,15 +100,15 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
 
     if w2v_model == "Skipgram":
         model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary, num_steps=100)
+                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     elif w2v_model == "CBOW":
         model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=100)
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     else:
         print("[ERROR] enter Skipgram or CBOW")
         sys.exit(1)
 
-    model.train(display_step=2)
+    model.train(display_step=100)
 
     model.write_embeddings(args.embed_graph)
 
@@ -147,7 +150,8 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}".format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model))
+    print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}"
+          .format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model, args.num_steps))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
     pos_train_g = xn2v.hetnode2vec.N2vGraph(pos_train_graph,  args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
