@@ -16,6 +16,7 @@ before_install:
 - pip install numpy --upgrade
 - pip install --upgrade pytest
 - pip install tensorflow==2.0
+- pip install pylint
 install:
 - pip install .[test]
 before_script:
@@ -31,6 +32,7 @@ script:
 - coverage combine --append || true
 - coverage report
 - coverage xml
+- pylint --errors-only --exit-zero xn2v
 - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
 after_success:
   - coveralls
