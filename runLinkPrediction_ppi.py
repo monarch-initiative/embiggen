@@ -4,7 +4,6 @@ from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
 import xn2v
-import sys
 
 
 # import os
