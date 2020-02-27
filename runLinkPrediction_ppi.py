@@ -97,19 +97,10 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
 
     if w2v_model == "Skipgram":
         model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=100)
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     elif w2v_model == "CBOW":
         model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_steps=100)
-    else:
-        raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
-
-    if w2v_model == "Skipgram":
-        model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary, num_steps=100)
-    elif w2v_model == "CBOW":
-        model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=100)
+                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     else:
         raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
 
