@@ -4,6 +4,9 @@ import random
 
 import numpy as np
 import tensorflow as tf
+
+from typing import Dict, List, Optional, Tuple, Union
+
 from xn2v.w2v.cbow_list_batcher import CBOWListBatcher
 
 
@@ -21,21 +24,21 @@ class Word2Vec:
         eval_step: This attribute stores the total number of iterations to run during training.
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
-        min_occurrence: Minimum number of times a word needs to appear to be included.
+        min_occurrence: Minimum number of times a word needs to appear to be included (default=2).
         skip_window: How many words to consider left and right.
         num_skips: How many times to reuse an input to generate a label.
-        num_sampled: Number of negative examples to sample.
+        num_sampled: Number of negative examples to sample (default=64).
         display: An integer of the number of words to display.
         display_examples: A list containing examples from the vocabulary the user wishes to display.
         vocabulary_size: An integer storing the total number of unique words in the vocabulary.
         embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
     """
 
-    def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
-                 batch_size: int = 128, num_steps: int = 3000000, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1,  # default=2
-                 skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,  # default=64
-                 display: int = None):
+    def __init__(self, data: List[Union[int, str]], worddictionary: Dict[str, int],
+                 reverse_worddictionary: Dict[int, str], learning_rate: float = 0.1, batch_size: int = 128,
+                 num_steps: int = 3000000, embedding_size: int = 200, max_vocabulary_size: int = 50000,
+                 min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
+                 display: Optional[int] = None) -> None:
 
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -52,11 +55,11 @@ class Word2Vec:
         self.num_skips = num_skips
         self.num_sampled = num_sampled
         self.display = display
-        self.display_examples: list = []
-        self.vocabulary_size = None
-        self.embedding = None
+        self.display_examples: List = Optional[str, int]
+        self.vocabulary_size: Optional[int] = None
+        self.embedding: Optional[np.ndarray] = None
 
-    def add_display_words(self, count: list, num: int = 5):
+    def add_display_words(self, count: list, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
         sample.
 
@@ -96,7 +99,7 @@ class Word2Vec:
 
         return None
 
-    def calculate_vocabulary_size(self):
+    def calculate_vocabulary_size(self) -> None:
         """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
         or list of lists (i.e. from a collection of sentences or random walks).
 
@@ -114,7 +117,7 @@ class Word2Vec:
 
         return None
 
-    def write_embeddings(self, outfilename: str):
+    def write_embeddings(self, outfilename: str) -> None:
         """Writes embedding data to a local directory. Data is written out in the following format, which is consistent
         with current standards:
             'ENSP00000371067' 0.6698335 , -0.83192813, -0.3676057 , ...,  0.9241863 , -2.1407487 , -0.6607736
@@ -155,13 +158,13 @@ class SkipGramWord2Vec(Word2Vec):
         data: A list or list of lists (if sentences or paths from node2vec).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
-        num_steps: The number of epochs to run when training the model.
+        num_steps: The number of epochs to run when training the model (default=3000000).
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
-        min_occurrence: Minimum number of times a word needs to appear to be included.
+        min_occurrence: Minimum number of times a word needs to appear to be included (default=2).
         skip_window: How many words to consider left and right.
         num_skips: How many times to reuse an input to generate a label.
-        num_sampled: Number of negative examples to sample.
+        num_sampled: Number of negative examples to sample (default=64).
         display: An integer of the number of words to display.
         embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
         list_of_lists: A boolean which indicates whether or not the input data contains a list of lists.
@@ -176,11 +179,11 @@ class SkipGramWord2Vec(Word2Vec):
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
-    def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
-                 batch_size: int = 128, num_steps: int = 100,  # default=3000000
-                 embedding_size: int = 200, max_vocabulary_size: int = 50000, min_occurrence: int = 1,  # default=2
-                 skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,  # default=64
-                 display=None):
+    def __init__(self, data: List[Union[int, str]], worddictionary: Dict[str, int],
+                 reverse_worddictionary: Dict[int, str], learning_rate: float = 0.1, batch_size: int = 128,
+                 num_steps: int = 100, embedding_size: int = 200, max_vocabulary_size: int = 50000, min_occurrence:
+                 int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7, display: Optional[int]
+                 = None) -> None:
 
         super().__init__(data, worddictionary, reverse_worddictionary, learning_rate, batch_size, num_steps,
                          embedding_size, max_vocabulary_size, min_occurrence, skip_window, num_skips, num_sampled,
@@ -197,9 +200,9 @@ class SkipGramWord2Vec(Word2Vec):
                 # then, check each element of the list is integer
                 if any(isinstance(item, int) for item in el):
                     # graph version
-                    self.list_of_lists = True
+                    self.list_of_lists: bool = True
                 else:
-                    self.list_of_lists = False
+                    self.list_of_lists: bool = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
 
         # set vocabulary size
@@ -208,26 +211,26 @@ class SkipGramWord2Vec(Word2Vec):
         # with toy exs the # of nodes might be lower than the default value of num_sampled of 64. num_sampled needs to
         # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size / 2
+            self.num_sampled = int(self.vocabulary_size/2)
 
-        self.optimizer = tf.keras.optimizers.SGD(learning_rate)
+        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
         self.num_sentences: int = len(self.data)
 
         # do not display examples during training unless the user calls add_display_words (i.e. default is None)
-        self.display = None
+        self.display: display
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device('/cpu:0'):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self.embedding = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            self.embedding: tf.Variable = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
 
             # construct the variables for the NCE loss
-            self.nce_weights = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
-            self.nce_biases = tf.Variable(tf.zeros([self.vocabulary_size]))
+            self.nce_weights: tf.Variable = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            self.nce_biases: tf.Variable = tf.Variable(tf.zeros([self.vocabulary_size]))
 
-    def get_embedding(self, x: np.ndarray):
+    def get_embedding(self, x: np.ndarray) -> tf.Tensor:  # TODO - CHECK
         """Get the embedding corresponding to the data points in x. Note, we ensure that this code is carried out on
         the CPU because some ops are not compatible with the GPU.
 
@@ -244,7 +247,7 @@ class SkipGramWord2Vec(Word2Vec):
 
             return embedding
 
-    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray):
+    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> tf.Tensor:  # TODO - CHECK
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
 
         Args:
@@ -266,18 +269,17 @@ class SkipGramWord2Vec(Word2Vec):
             # print("self.vocabulary_size=%s" % type(self.vocabulary_size))
             # exit(1)
 
-            loss = tf.reduce_mean(
-                tf.nn.nce_loss(weights=self.nce_weights,
-                               biases=self.nce_biases,
-                               labels=y,
-                               inputs=x_embed,
-                               num_sampled=self.num_sampled,
-                               num_classes=self.vocabulary_size)
-            )
+            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.nce_weights,
+                                                 biases=self.nce_biases,
+                                                 labels=y,
+                                                 inputs=x_embed,
+                                                 num_sampled=self.num_sampled,
+                                                 num_classes=self.vocabulary_size)
+                                  )
 
             return loss
 
-    def evaluate(self, x_embed: tf.Tensor):
+    def evaluate(self, x_embed: tf.Tensor) -> tf.Tensor:
         """Computes the cosine similarity between a provided embedding and all other embedding vectors.
 
         Args:
@@ -298,7 +300,8 @@ class SkipGramWord2Vec(Word2Vec):
 
             return cosine_sim_op
 
-    def next_batch(self, data: list, batch_size: int, num_skips: int, skip_window: int):
+    def next_batch(self, data: List[Union[int, str]], batch_size: int, num_skips: int, skip_window: int) ->\
+            Tuple[np.ndarray, np.ndarray]:
         """Generates a training batch for the skip-gram model.
 
         Assumptions: All of the data is in one and only one list (for instance, the data might derive from a book).
@@ -366,7 +369,8 @@ class SkipGramWord2Vec(Word2Vec):
 
         return batch, labels
 
-    def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int):
+    def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int) ->\
+            Tuple[np.ndarray, np.ndarray]:
         """Generate training batch for the skip-gram model.
 
         Assumption: This assumes that all of the data is stored as a list of lists (e.g., node2vec).
@@ -409,7 +413,7 @@ class SkipGramWord2Vec(Word2Vec):
 
         return batch, labels
 
-    def run_optimization(self, x: np.array, y: np.array):
+    def run_optimization(self, x: np.array, y: np.array) -> None:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
         calculated, the gradients are computed and the weights and biases are updated accordingly.
 
@@ -496,13 +500,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         data: A list or list of lists (if sentences or paths from node2vec).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
-        num_steps: The number of epochs to run when training the model.
+        num_steps: The number of epochs to run when training the model (default=3000000).
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
-        min_occurrence: Minimum number of times a word needs to appear to be included.
+        min_occurrence: Minimum number of times a word needs to appear to be included (default=2).
         skip_window: How many words to consider left and right.
         num_skips: How many times to reuse an input to generate a label.
-        num_sampled: Number of negative examples to sample.
+        num_sampled: Number of negative examples to sample (default=64).
         display: An integer of the number of words to display.
         embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
         batcher: A list of CBOW data for training; the first item is a batch and the second item is the batch labels.
@@ -518,11 +522,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
-    def __init__(self, data: list, worddictionary: dict, reverse_worddictionary: dict, learning_rate: float = 0.1,
-                 batch_size: int = 128, num_steps: int = 1000,  # default=3000000
-                 embedding_size: int = 200, max_vocabulary_size: int = 50000, min_occurrence: int = 1,  # default=2
-                 skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,  # default=64
-                 display: int = None):
+    def __init__(self, data: List[Union[int, str]], worddictionary: Dict[str, int],
+                 reverse_worddictionary: Dict[int, str], learning_rate: float = 0.1, batch_size: int = 128,
+                 num_steps: int = 1000, embedding_size: int = 200, max_vocabulary_size: int = 50000,
+                 min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
+                 display: Optional[int] = None) -> None:
 
         super().__init__(data, worddictionary, reverse_worddictionary, learning_rate, batch_size, num_steps,
                          embedding_size, max_vocabulary_size, min_occurrence, skip_window, num_skips, num_sampled,
@@ -533,7 +537,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
-        self.batcher = CBOWListBatcher(data, window_size=skip_window, sentences_per_batch=sentences_per_batch)
+        self.batcher: CBOWListBatcher = CBOWListBatcher(data, skip_window, sentences_per_batch)
 
         # takes the input data and goes through each element
         # first, check each element is a list
@@ -541,9 +545,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             for el in self.data:
                 # then, check each element of the list is integer
                 if any(isinstance(item, int) for item in el):
-                    self.list_of_lists = True
+                    self.list_of_lists: bool = True
                 else:
-                    self.list_of_lists = False
+                    self.list_of_lists: bool = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
 
         # set vocabulary size
@@ -552,7 +556,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # with toy exs the # of nodes might be lower than the default value of num_sampled of 64. num_sampled needs to
         # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
         if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = self.vocabulary_size / 2
+            self.num_sampled = int(self.vocabulary_size/2)
 
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
         self.data_index = 0
@@ -565,7 +569,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device('/cpu:0'):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self.embedding = tf.Variable(
+            self.embedding: tf.Variable = tf.Variable(
                 tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
             )
 
@@ -573,13 +577,14 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
 
             # construct the variables for the softmax loss
-            self.softmax_weights = tf.Variable(tf.random.truncated_normal([self.vocabulary_size, embedding_size],
-                                                                          stddev=0.5 / math.sqrt(embedding_size),
-                                                                          dtype=tf.float32))
-
+            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, embedding_size],
+                                                         stddev=0.5 / math.sqrt(embedding_size),
+                                                         dtype=tf.float32)
+            # get weights and biases
+            self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
             self.softmax_biases = tf.Variable(tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
-    def get_embedding(self, x: np.ndarray):
+    def get_embedding(self, x: np.ndarray) -> np.ndarray:
         """The function performs embedding lookups for each column in the input (except the middle one) and then
         averages the them to produce a word vector. The dimension of x is (batchsize, 2*skip_window), e.g., (128,6).
 
@@ -600,7 +605,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         for i in range(2 * self.skip_window):
             embedding_i = tf.nn.embedding_lookup(self.embedding, x[:, i])
-            x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
+            x_size, y_size = embedding_i.get_shape().as_list()
 
             if stacked_embeddings is None:
                 stacked_embeddings = tf.reshape(embedding_i, [x_size, y_size, 1])
@@ -617,7 +622,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return mean_embeddings
 
-    def get_loss(self, mean_embeddings: tf.Tensor, y: np.ndarray):
+    def get_loss(self, mean_embeddings: tf.Tensor, y: np.ndarray) -> tf.Tensor:
         """Computes the softmax loss, using a sample of the negative labels each time. The inputs are embeddings of the
         train words with this loss we optimize weights, biases, embeddings.
 
@@ -636,12 +641,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                                          inputs=mean_embeddings,
                                                          labels=y,
                                                          num_sampled=self.num_sampled,
-                                                         num_classes=self.vocabulary_size)
-                              )
+                                                         num_classes=self.vocabulary_size))
 
         return loss
 
-    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray):
+    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> tf.Tensor:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
 
         Args:
@@ -668,12 +672,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                                  labels=y,
                                                  inputs=x_embed,
                                                  num_sampled=self.num_sampled,
-                                                 num_classes=self.vocabulary_size)
-                                  )
+                                                 num_classes=self.vocabulary_size))
 
             return loss
 
-    def evaluate(self, x_embed: tf.Tensor):
+    def evaluate(self, x_embed: tf.Tensor) -> tf.Tensor:
         """Computes the cosine similarity between a provided embedding and all other embedding vectors.
 
         Args:
@@ -694,7 +697,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             return cosine_sim_op
 
-    def generate_batch_cbow(self, data: list, batch_size: int, window_size: int):
+    def generate_batch_cbow(self, data: List[Union[int, str]], batch_size: int, window_size: int) ->\
+            Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
 
         Args:
@@ -741,7 +745,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return batch, labels
 
-    def next_batch_from_list_of_lists(self, walk_count, num_skips, skip_window):
+    def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int) ->\
+            Tuple[np.ndarray, np.ndarray]:
         """Generates training batch for the skip-gram model. This assumes that all of the data is in one and only one
         list (for instance, the data might derive from a book). To get batches from a list of lists (e.g., node2vec),
         use the 'next_batch_from_list_of_list' function.
@@ -787,7 +792,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return batch, labels
 
-    def run_optimization(self, x: np.array, y: np.array):
+    def run_optimization(self, x: np.array, y: np.array) -> None:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has
         been calculated, the gradients are computed and the weights and biases are updated accordingly.
 
@@ -813,7 +818,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return None
 
-    def train(self, display_step: int = 2000):
+    def train(self, display_step: int = 2000) -> None:
         """Trains a CBOW model.
 
         Args:
