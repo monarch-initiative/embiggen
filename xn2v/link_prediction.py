@@ -3,6 +3,7 @@ import numpy as np
 from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+
 from sklearn import svm
 from sklearn.metrics import roc_auc_score, average_precision_score
 #import logging
@@ -109,7 +110,7 @@ class LinkPrediction:
             edge_classifier = RandomForestClassifier()
         else:
             #implement SVM.
-            edge_classifier = svm.SVC(probability=True)
+            edge_classifier = svm.SVC(probability = True)
 
 
         edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
