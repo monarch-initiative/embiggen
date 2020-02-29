@@ -1,5 +1,7 @@
 import collections
-import numpy as np
+import numpy as np   # type: ignore
+
+from typing import List, Tuple
 
 
 class CBOWListBatcher:
@@ -13,11 +15,20 @@ class CBOWListBatcher:
 
     Attributes:
         data: A list of lists of integers, representing sentences/random walks.
+        span: The total size of the sliding window [skip_window central_word skip_window].
+        sentence_index: Index of the sentence that will be used next for batch generation.
+        word_index: Index of the word in the sentence that will be used next for batch generation.
+        data_index: Index of the list that will be used next for batch generation.
+        sentence_count: The number of lists in the input data.
+        sentence_len: The length of the sentences or walks.
+        batch_size: The number of samples to draw for a given training batch.
+        max_word_index: An integer representing the position of the last word or node in the sentence or walk.
         window_size: The size of sliding window for continuous bag of words.
         sentences_per_batch: The number of sentences to include in a batch.
+
     """
 
-    def __init__(self, data: list, window_size: int = 2, sentences_per_batch: int = 1):
+    def __init__(self, data: List[List[int]], window_size: int = 2, sentences_per_batch: int = 1) -> None:
         self.data = data
         self.window_size = window_size
         self.sentences_per_batch = sentences_per_batch
@@ -27,8 +38,6 @@ class CBOWListBatcher:
 
         # index of the sentence that will be used next for batch generation
         self.sentence_index: int = 0
-
-        # index of word in the current sentence that will be used next
         self.word_index: int = 0
         self.data_index: int = 0
 
@@ -36,10 +45,10 @@ class CBOWListBatcher:
         self.sentence_count: int = len(self.data)
 
         # enforce that all sentences have the same length
-        sentence_len = None
+        sentence_len = 0
 
         for sent in self.data:
-            if sentence_len is None:
+            if sentence_len == 0:
                 sentence_len = len(sent)
             elif sentence_len != len(sent):
                 raise TypeError('Sentence lengths need to be equal for sll sentences')
@@ -53,7 +62,7 @@ class CBOWListBatcher:
         if self.sentence_count < 2:
             raise TypeError('Expected more than one sentence for CBOWBatcherListOfLists')
 
-    def get_next_sentence(self):
+    def get_next_sentence(self) -> List[int]:
         """Method returns the next sentence available for processing.
 
         Returns:
@@ -68,12 +77,12 @@ class CBOWListBatcher:
 
         return sentence
 
-    def generate_batch(self):
+    def generate_batch(self) -> Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
 
         Returns:
-            A list of CBOW data (each stored as a numpy.ndarray) for training; the first item is a batch and
-            the second item is the batch labels.
+            A list of CBOW data (each stored as a numpy.ndarray) for training; the first item is a batch and the second
+            item is the batch labels.
         """
 
         span = self.span
@@ -89,7 +98,7 @@ class CBOWListBatcher:
             sentence = self.get_next_sentence()
 
             # buffer is a sliding window with span elements
-            buffer = collections.deque(maxlen=span)
+            buffer: collections.deque = collections.deque(maxlen=span)
             buffer.extend(sentence[0:span - 1])
 
             word_index = span - 1  # go to end of sliding window
@@ -104,7 +113,7 @@ class CBOWListBatcher:
                 for j in range(span):
                     # if j == span // 2:
                     if j == target_idx:
-                        continue  # i.e., ignore the center wortd
+                        continue  # i.e., ignore the center word
                     batch[i, col_idx] = buffer[j]
                     col_idx += 1
 
