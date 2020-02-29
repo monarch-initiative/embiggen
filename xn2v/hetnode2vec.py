@@ -32,10 +32,10 @@ class N2vGraph:
         """
         Note that the CSF graph is always undirected. It stores two directed edges to represent each undirected edge.
         :param csf_graph: An undirected Compressed Storage Format graph object
-        :param p:
-        :param q:
-        :param gamma:
-        :param doxn2v:
+        :param p: return parameter
+        :param q: In-out parameter
+        :param gamma: parameter to jump from one nodetype to another nodetype (only in hetrogeneous graphs)
+        :param doxn2v: true if graph is hetrogen. otherwise it is false for homogen. graphs.
         """
         self.g = csf_graph
         self.p = p

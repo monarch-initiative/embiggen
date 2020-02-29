@@ -127,6 +127,8 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     lp.predict_links()
     lp.output_classifier_results()
     lp.output_edge_node_information()
+    lp.predicted_ppi_links()
+    lp.predicted_ppi_non_links()
 
 def read_graphs():
     """
