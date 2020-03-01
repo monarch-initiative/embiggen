@@ -19,6 +19,7 @@ class TestTextEncoderSentences(TestCase):
         wordcount = defaultdict()
         for item in self.count:
             wordcount[item[0]] = item[1]
+
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
@@ -47,6 +48,7 @@ class TestTextEncoderEnBlock(TestCase):
         wordcount = defaultdict()
         for item in self.count:
             wordcount[item[0]] = item[1]
+
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
