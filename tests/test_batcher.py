@@ -1,7 +1,5 @@
 from unittest import TestCase
 
-
-
 from xn2v import CBOWListBatcher
 from xn2v import SkipGramBatcher
 
@@ -19,10 +17,12 @@ class TestCBOWListBatcher(TestCase):
         self.assertEqual(0, self.batcher.sentence_index)
         self.assertEqual(0, self.batcher.word_index)
         self.assertEqual(1, self.batcher.window_size)
+
         # span is 2*window_size +1
         self.assertEqual(3, self.batcher.span)
         self.assertEqual(3, self.batcher.sentence_count)
         self.assertEqual(10, self.batcher.sentence_len)
+
         # batch size is calculated as (sentence_len - span + 1)=10-3+1
         self.assertEqual(8, self.batcher.batch_size)
 
@@ -31,29 +31,35 @@ class TestCBOWListBatcher(TestCase):
         batch, labels = self.batcher.generate_batch()
         batch_shape = (8, 2)
         self.assertEqual(batch.shape, batch_shape)
+
         label_shape = (8, 1)
         self.assertEqual(labels.shape, label_shape)
+
         # batch represents the context words [[1,5],[3,7]]
         # label represents the center words [[3],[5]]
         self.assertEqual(1, batch[0][0])
         self.assertEqual(5, batch[0][1])
         self.assertEqual(3, labels[0])
+
         # now the second example
         self.assertEqual(3, batch[1][0])
         self.assertEqual(7, batch[1][1])
         self.assertEqual(5, labels[1])
+
         # get another batch. We expect the second list
         batch, labels = self.batcher.generate_batch()
         self.assertEqual(batch.shape, batch_shape)
         self.assertEqual(2, batch[0][0])
         self.assertEqual(6, batch[0][1])
         self.assertEqual(4, labels[0])
+
         # get another batch. We expect the third list
         batch, labels = self.batcher.generate_batch()
         self.assertEqual(batch.shape, batch_shape)
         self.assertEqual(112, batch[0][0])
         self.assertEqual(116, batch[0][1])
         self.assertEqual(114, labels[0])
+
         # get another batch. We expect to go back to the first list
         batch, labels = self.batcher.generate_batch()
         self.assertEqual(batch.shape, batch_shape)

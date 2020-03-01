@@ -59,4 +59,5 @@ class TestCBOWconstruction(TestCase):
         batch = self.cbow.next_batch_from_list_of_lists(walk_count=walk_count,
                                                         num_skips=num_skips,
                                                         skip_window=skip_window)
+
         self.assertIsNotNone(batch)
