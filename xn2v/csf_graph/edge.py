@@ -60,7 +60,7 @@ class Edge:
 
         return edge_equality
 
-    def __ne__(self, other: str):
+    def __ne__(self, other):
         """Determines if two objects are equal.
 
         Return:
