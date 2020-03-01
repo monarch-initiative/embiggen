@@ -22,7 +22,7 @@ class TestTextEncoderSentences(TestCase):
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
-        self.assertEqual(0, wordcount['the'])  # Stopwords should have been removed
+        self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed
 
     def test_number_of_sentences(self):
         # Our text has three sentences
@@ -50,4 +50,4 @@ class TestTextEncoderEnBlock(TestCase):
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
-        self.assertEqual(0, wordcount['the'])  # Stopwords should have been removed
+        self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed
