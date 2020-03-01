@@ -26,6 +26,9 @@ class CBOWListBatcher:
         window_size: The size of sliding window for continuous bag of words.
         sentences_per_batch: The number of sentences to include in a batch.
 
+    Raises:
+        ValueError: If the length of all sentences or walks is not the same.
+        ValueError: If less than one sentence/walk for CBOWBatcherListOfLists is provided.
     """
 
     def __init__(self, data: List[List[Union[str, int]]], window_size: int = 2,
@@ -53,7 +56,7 @@ class CBOWListBatcher:
             if sentence_len == 0:
                 sentence_len = len(sent)
             elif sentence_len != len(sent):
-                raise TypeError('Sentence lengths need to be equal for sll sentences')
+                raise ValueError('Sentence/walk lengths need to be equal.')
 
         self.sentence_len: int = sentence_len
 
@@ -62,7 +65,7 @@ class CBOWListBatcher:
         self.max_word_index: int = self.sentence_len - self.span + 1
 
         if self.sentence_count < 2:
-            raise TypeError('Expected more than one sentence for CBOWBatcherListOfLists')
+            raise ValueError('Expected more than one sentence/walk for CBOWBatcherListOfLists.')
 
     def get_next_sentence(self) -> List[Union[int, str]]:
         """Method returns the next sentence available for processing.
