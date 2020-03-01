@@ -1,10 +1,9 @@
 import sys
 
-import numpy as np
+import numpy as np    # type: ignore
 import random
 import logging.handlers
 import logging
-from logging import handlers
 import os
 import time
 from collections import defaultdict

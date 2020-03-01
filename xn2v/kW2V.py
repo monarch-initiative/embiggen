@@ -5,8 +5,8 @@
 ############################
 
 import random
-import numpy as np
-import tensorflow as tf
+import numpy as np   # type: ignore
+import tensorflow as tf   # type: ignore
 import collections
 
 class NCE(tf.keras.layers.Layer):
@@ -38,7 +38,7 @@ class NCE(tf.keras.layers.Layer):
 
     # keras Layer interface
     def call(self, x):
-        import tensorflow.keras.backend as K
+        import tensorflow.keras.backend as K   # type: ignore
         predictions, targets = x
 
         # tensorflow

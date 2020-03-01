@@ -6,8 +6,8 @@ import bz2
 
 from math import ceil
 
-from pandas.core.common import flatten
-from tensorflow.keras.preprocessing.text import text_to_word_sequence, Tokenizer
+from pandas.core.common import flatten   # type: ignore
+from tensorflow.keras.preprocessing.text import text_to_word_sequence, Tokenizer   # type: ignore
 
 
 class TextEncoder:

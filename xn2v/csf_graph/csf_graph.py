@@ -1,4 +1,4 @@
-import numpy as np
+import numpy as np   # type: ignore
 import os.path
 
 from collections import defaultdict
@@ -106,7 +106,7 @@ class CSFGraph:
 
         # create the graph - this done in three steps
         # step 1: count # of edges emanating from each source id
-        index2edge_count = defaultdict(int)
+        index2edge_count: defaultdict = defaultdict(int)
 
         for edge in edge_list:
             source_index = self.node_to_index_map[edge.node_a]

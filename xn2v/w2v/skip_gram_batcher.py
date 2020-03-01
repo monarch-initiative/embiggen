@@ -1,7 +1,6 @@
 import collections
-import numpy as np
+import numpy as np   # type: ignore
 import random
-
 
 
 class SkipGramBatcher:

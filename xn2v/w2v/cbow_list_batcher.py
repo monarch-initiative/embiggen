@@ -1,7 +1,7 @@
 import collections
 import numpy as np   # type: ignore
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
 class CBOWListBatcher:
@@ -28,7 +28,9 @@ class CBOWListBatcher:
 
     """
 
-    def __init__(self, data: List[List[int]], window_size: int = 2, sentences_per_batch: int = 1) -> None:
+    def __init__(self, data: List[List[Union[str, int]]], window_size: int = 2,
+                 sentences_per_batch: int = 1) -> None:
+
         self.data = data
         self.window_size = window_size
         self.sentences_per_batch = sentences_per_batch
@@ -62,7 +64,7 @@ class CBOWListBatcher:
         if self.sentence_count < 2:
             raise TypeError('Expected more than one sentence for CBOWBatcherListOfLists')
 
-    def get_next_sentence(self) -> List[int]:
+    def get_next_sentence(self) -> List[Union[int, str]]:
         """Method returns the next sentence available for processing.
 
         Returns:
