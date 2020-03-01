@@ -16,7 +16,7 @@ class TestTextEncoderSentences(TestCase):
         self.reverse_dictionary = reverse_dictionary
 
     def testWordCounts(self):
-        wordcount = defaultdict(int)
+        wordcount = defaultdict()
         for item in self.count:
             wordcount[item[0]] = item[1]
         self.assertEqual(1, wordcount['spiders'])
@@ -44,7 +44,7 @@ class TestTextEncoderEnBlock(TestCase):
         self.reverse_dictionary = reverse_dictionary
 
     def testWordCounts(self):
-        wordcount = defaultdict(int)
+        wordcount = defaultdict()
         for item in self.count:
             wordcount[item[0]] = item[1]
         self.assertEqual(1, wordcount['spiders'])
