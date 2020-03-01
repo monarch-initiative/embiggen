@@ -327,11 +327,7 @@ class TextEncoder:
 
         # initialize tokenizer with 'UNK' as the oof token. Since Keras reserves the 0th index for padding sequences,
         # the index for 'UNK' will be 1st index max_vocab_size + 1 because Keras reserves the 0th index
-        tokenizer = Tokenizer(num_words=max_vocab_size + 1,
-                              oov_token='UNK',
-                              lower=True,
-                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
-
+        tokenizer = Tokenizer(max_vocab_size + 1, 'UNK', True, '\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
         sequences = tokenizer.texts_to_sequences(sentences)
