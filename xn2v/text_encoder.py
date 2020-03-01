@@ -318,6 +318,9 @@ class TextEncoder:
             count_as_tuples: A list of tuples, the first item is a word and the second is the word frequency.
             dictionary: A dictionary where the keys are words and the values are the word id.
             reverse_dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
+
+        Raises:
+            ValueError: If the length of count_as_tuples does not match max_vocab_size.
         """
 
         text = self.get_raw_text()
@@ -353,5 +356,9 @@ class TextEncoder:
 
         # for downstream compatibility
         count_as_tuples = list(zip(list(filtered_count.keys()), list(filtered_count.values())))
-        assert max_vocab_size == len(count_as_tuples)
+
+        # make sure the dictionary is of size of the vocabulary
+        if max_vocab_size != len(count_as_tuples):
+            raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
+
         return flatted_sequences, count_as_tuples, dictionary, reverse_dictionary
