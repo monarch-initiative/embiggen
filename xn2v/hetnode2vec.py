@@ -1,13 +1,14 @@
-import sys
-
-import numpy as np    # type: ignore
-import random
 import logging.handlers
 import logging
+import numpy as np    # type: ignore
 import os
+import random
+import sys
 import time
+
 from collections import defaultdict
 from multiprocessing import Pool
+from typing import Dict
 
 log = logging.getLogger("xn2v.log")
 
@@ -274,10 +275,11 @@ class N2vGraph:
         alias_nodes = {}
 
         for node in g.nodes():
-
             owntype = node[0]
-            own2count = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g,p,d)
-            own2prob = defaultdict(float)  # probs calculated from own2count
+
+            # counts for going from current node ("own") to nodes of a given type(g,p,d)
+            own2count: Dict = defaultdict(int)
+            own2prob: Dict = defaultdict(float)  # probs calculated from own2count
             total_neighbors = 0
 
             # g returns a sorted list of neighbors of node
