@@ -288,7 +288,13 @@ class TextEncoder:
             print('Reading data from {filename}'.format(filename=self.filename))
 
             for line in file:
-                sentences.append(' '.join(self.remove_stopwords(self.clean_text(line).split(' '))))
+                # calling clean_text since Keras does not undo contractions
+                cleaned_line = self.clean_text(line)
+
+                # removing stopwords since Keras does not support removing a defined set of words
+                cleaned_lines = ' '.join(self.remove_stopwords(cleaned_line.split(' ')))
+
+                sentences.append(cleaned_lines)
 
         return sentences
 
@@ -328,9 +334,13 @@ class TextEncoder:
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
 
-        # initialize tokenizer with 'UNK' as the oof token. Since Keras reserves the 0th index for padding sequences,
-        # the index for 'UNK' will be 1st index max_vocab_size + 1 because Keras reserves the 0th index
-        tokenizer = Tokenizer(max_vocab_size + 1, 'UNK', True, '\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token.
+        # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
+        # will be 1st index
+        # max_vocab_size + 1 because Keras reserves the 0th index
+        tokenizer = Tokenizer(num_words=max_vocab_size + 1, oov_token='UNK', lower=True,
+                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
         sequences = tokenizer.texts_to_sequences(sentences)
@@ -340,24 +350,26 @@ class TextEncoder:
         count = tokenizer.word_counts
 
         # for downstream compatibility
-        filtered_count = {}
-        dictionary = {}
+        filtered_count, dictionary = {}, {}
+
         for k, v in tokenizer.word_index.items():
             if v <= max_vocab_size:
                 if k == 'UNK':
                     filtered_count['UNK'] = 0
                     dictionary['UNK'] = 1
                     continue
+
                 filtered_count[k] = count[k]
                 dictionary[k] = v
+
             else:
                 filtered_count['UNK'] += 1
+
         reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
 
         # for downstream compatibility
-        count_as_tuples = list(zip(list(filtered_count.keys()), list(filtered_count.values())))
+        count_as_tuples = [list(x) for x in list(zip(list(filtered_count.keys()), list(filtered_count.values())))]
 
-        # make sure the dictionary is of size of the vocabulary
         if max_vocab_size != len(count_as_tuples):
             raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
 
