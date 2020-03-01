@@ -17,6 +17,7 @@ class TestTextEncoderSentences(TestCase):
 
     def testWordCounts(self):
         wordcount = defaultdict()
+
         for item in self.count:
             wordcount[item[0]] = item[1]
 
@@ -26,7 +27,8 @@ class TestTextEncoderSentences(TestCase):
         self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed
 
     def test_number_of_sentences(self):
-        # Our text has three sentences
+
+        # our text has three sentences
         self.assertEqual(3, len(self.data))
 
 
@@ -46,6 +48,7 @@ class TestTextEncoderEnBlock(TestCase):
 
     def testWordCounts(self):
         wordcount = defaultdict()
+
         for item in self.count:
             wordcount[item[0]] = item[1]
 
