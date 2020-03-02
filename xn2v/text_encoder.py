@@ -316,6 +316,10 @@ class TextEncoder:
     def build_dataset_with_keras(self, max_vocab_size=50000) -> Tuple[List, List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
 
+        Note. The Tokenizer method is initialized with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th
+        index for padding sequences, the index for  'UNK' will be 1st index max_vocab_size + 1 because Keras reserves
+        the 0th index.
+
         Args:
             max_vocab_size: An integer specifying the maximum vocabulary size.
 
@@ -334,21 +338,18 @@ class TextEncoder:
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
 
-        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th index for padding
-        # sequences, the index for 'UNK' will be 1st index max_vocab_size + 1 because Keras reserves the 0th index
-        tokenizer = Tokenizer(num_words=max_vocab_size + 1, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
+        # initialize tokenizer
+        tokenizer = Tokenizer(num_words=max_vocab_size + 1,
+                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
                               lower=True, oov_token=['UNK'][0])
 
+        # apply tokenizer to process text
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
         sequences = tokenizer.texts_to_sequences(sentences)
-
-        # for downstream compatibility
-        flatted_sequences = list(flatten(sequences))
+        flatted_sequences = list(flatten(sequences))  # for downstream compatibility
         count = tokenizer.word_counts
-
-        # for downstream compatibility
-        filtered_count, dictionary = {}, {}
+        filtered_count, dictionary = {}, {}  # for downstream compatibility
 
         for k, v in tokenizer.word_index.items():
             if v <= max_vocab_size:
@@ -359,16 +360,14 @@ class TextEncoder:
 
                 filtered_count[k] = count[k]
                 dictionary[k] = v
-
             else:
                 filtered_count['UNK'] += 1
 
         reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
-
         # for downstream compatibility
-        count_as_tuples = [list(x) for x in list(zip(list(filtered_count.keys()), list(filtered_count.values())))]
+        count_as_list = [list(x) for x in list(zip(list(filtered_count.keys()), list(filtered_count.values())))]
 
-        if max_vocab_size != len(count_as_tuples):
+        if max_vocab_size != len(count_as_list):
             raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
-
-        return flatted_sequences, count_as_tuples, dictionary, reverse_dictionary
+        else:
+            return flatted_sequences, count_as_list, dictionary, reverse_dictionary
