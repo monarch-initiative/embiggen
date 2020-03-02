@@ -334,16 +334,10 @@ class TextEncoder:
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
 
-        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token.
-        # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
-        # will be 1st index
-        # max_vocab_size + 1 because Keras reserves the 0th index
-        tokenizer = Tokenizer(num_words=max_vocab_size + 1,
-                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
-                              lower=True,
-                              split=' ',
-                              char_level=False,
-                              oov_token=['UNK'][0])
+        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th index for padding
+        # sequences, the index for 'UNK' will be 1st index max_vocab_size + 1 because Keras reserves the 0th index
+        tokenizer = Tokenizer(num_words=max_vocab_size + 1, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
+                              lower=True, oov_token=['UNK'][0])
 
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
