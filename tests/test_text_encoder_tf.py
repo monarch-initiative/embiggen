@@ -17,7 +17,7 @@ class TestTextEncoderSentences(TestCase):
         infile = os.path.join(os.path.dirname(__file__), 'data', 'greatExpectations3.txt')
 
         # run text encoder
-        encoder = TextEncoder(filename=infile, token_type='sentences')
+        encoder = TextEncoder(filename=infile, data_type='sentences')
         self.data, self.count, self.dictionary, self.reverse_dictionary = encoder.build_dataset()
 
     def testWordCounts(self):
@@ -50,7 +50,7 @@ class TestTextEncoderEnBlock(TestCase):
         infile = os.path.join(os.path.dirname(__file__), 'data', 'greatExpectations3.txt')
 
         # run text encoder
-        encoder = TextEncoder(filename=infile, token_type='words')
+        encoder = TextEncoder(filename=infile, data_type='words')
         self.data, self.count, self.dictionary, self.reverse_dictionary = encoder.build_dataset()
 
     def testWordCounts(self):

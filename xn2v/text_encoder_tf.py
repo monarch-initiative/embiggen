@@ -21,7 +21,7 @@ class TextEncoder:
 
     Attributes:
         filename: A filepath and name to text which needs encoding.
-        token_type: A string which is used to indicate whether or not the data should be read in as a single text
+        data_type: A string which is used to indicate whether or not the data should be read in as a single text
             object or as a list of sentences. Passed values can be "words" or "sentences" (default="sentences").
         stopwords: A set of stopwords. If nothing is passed by user a default list of stopwords is utilized.
 
@@ -31,7 +31,7 @@ class TextEncoder:
         IOError: If the file referenced by filename could not be found.
     """
 
-    def __init__(self, filename: str, token_type: Optional[str] = None, stopwords: set = None):
+    def __init__(self, filename: str, data_type: Optional[str] = None, stopwords: set = None):
 
         if filename is None:
             raise ValueError('filename cannot be None')
@@ -42,7 +42,7 @@ class TextEncoder:
         else:
             self.filename = filename
 
-        self.token_type = token_type if token_type else 'sentences'
+        self.data_type = data_type if data_type else 'sentences'
 
         try:
             self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
@@ -94,16 +94,16 @@ class TextEncoder:
         return text
 
     def process_input_text(self) -> List[str]:
-        """Reads in data from a file and returns the data as a single string (if token_type is "words") or as a list
-        of strings (if the token_type is "sentences").
+        """Reads in data from a file and returns the data as a single string (if data_type is "words") or as a list
+        of strings (if the data_type is "sentences").
 
         Returns:
             text: A string or list of stings of text from the read in file.
         """
 
         print('Reading data from {filename} and processing it as {data_type}'.format(filename=self.filename,
-                                                                                     data_type=self.token_type))
-        if self.token_type == 'words':
+                                                                                     data_type=self.data_type))
+        if self.data_type == 'words':
             word_data = open(self.filename).read()
             return self.clean_text(word_data).split()
         else:
@@ -134,7 +134,7 @@ class TextEncoder:
         text = self.process_input_text()
 
         # get word count and set max_vocab_size
-        if self.token_type == 'words':
+        if self.data_type == 'words':
             word_count = len(set(text))
             max_vocab = min(max_vocab, word_count) + 1
             word_index_list = list(zip(['UNK'] + list(unique_everseen(text)), range(1, word_count + 2)))
