@@ -4,7 +4,7 @@ import tensorflow as tf  # type: ignore
 import re
 
 from collections import Counter
-from more_itertools import unique_everseen
+from more_itertools import unique_everseen  # type: ignore
 from pandas.core.common import flatten  # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
