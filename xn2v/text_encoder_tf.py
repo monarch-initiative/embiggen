@@ -137,8 +137,8 @@ class TextEncoder:
         if self.token_type == 'words':
             word_count = len(set(text))
             max_vocab = min(max_vocab, word_count) + 1
-            word_index_list = list(zip(list(unique_everseen(['UNK'] + text)), range(1, word_count + 2)))
-            sequences = [[x[1] for x in word_index_list if word in x[0]][0] for word in text]
+            word_index_list = list(zip(['UNK'] + list(unique_everseen(text)), range(1, word_count + 2)))
+            sequences = [[x[1] - 1 for x in word_index_list if word in x[0]][0] for word in text]
         else:
             word_count = len(set([word for sentence in text for word in sentence.split()]))
             max_vocab = min(max_vocab, word_count) + 1
