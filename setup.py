@@ -36,6 +36,7 @@ setup(
         'sklearn',
         'tensorflow>=2.0',
         'click',
+        'nltk',
         'more_itertools'
     ],
     test_suite='nose.collector',

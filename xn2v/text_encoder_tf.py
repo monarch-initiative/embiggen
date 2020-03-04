@@ -1,3 +1,4 @@
+import nltk  # type: ignore
 import os
 import tensorflow as tf  # type: ignore
 import re
@@ -43,8 +44,11 @@ class TextEncoder:
 
         self.token_type = token_type if token_type else 'sentences'
 
-        self.stopwords = {'the', 'a', 'an', 'another', 'for', 'an', 'nor', 'but', 'or', 'yet', 'so'} \
-            if stopwords is None else stopwords
+        try:
+            self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
+        except LookupError:
+            nltk.download('stopwords')
+            self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
 
     def clean_text(self, text: str) -> str:
         """Takes a text string and performs several tasks that are intended to clean the text including making the
