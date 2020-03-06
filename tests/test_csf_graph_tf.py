@@ -101,12 +101,35 @@ class TestCSFGraph(TestCase):
         else:
             self.assertEqual(42, len([edge for edge in edge_list]))
 
-        # p1 p3 and p3 p1 are valid edges
+        ###########################
+        # EDGE: p4, p3 - valid edge
         t1 = tf.Variable(('p4', 'p3'), dtype=tf.string)
-        self.assertTrue(1 == len([edge for edge in edge_list if all(x for x in (edge == t1).numpy())]))
 
+        # find edge in tensor stack
+        t1_edge_search_result = [edge for edge in edge_list if all(x for x in (edge == t1).numpy())]
+
+        # if edge is in tensor stack, length of search results should be 1
+        t1_edge_search_result_len = len(t1_edge_search_result)
+        self.assertTrue(1 == t1_edge_search_result_len)
+
+        ###########################
+        # EDGE: p3, p1 - valid edge
         t2 = tf.Variable(('p3', 'p1'), dtype=tf.string)
-        self.assertTrue(1 == len([edge for edge in edge_list if all(x for x in (edge == t2).numpy())]))
 
+        # find edge in tensor stack
+        t2_edge_search_result = [edge for edge in edge_list if all(x for x in (edge == t2).numpy())]
+
+        # if edge is in tensor stack, length of search results should be 1
+        t2_edge_search_result_len = len(t2_edge_search_result)
+        self.assertTrue(1 == t2_edge_search_result_len)
+
+        ###########################
+        # EDGE: made up - invalid edge
         made_up = tf.Variable(('z1', 'q123'), dtype=tf.string)
-        self.assertTrue(0 == len([edge for edge in edge_list if all(x for x in (edge == made_up).numpy())]))
+
+        # find edge in tensor stack
+        made_up_edge_search_result = [edge for edge in edge_list if all(x for x in (edge == made_up).numpy())]
+
+        # if edge is in tensor stack, length of search results should be 1
+        made_up_edge_search_result_len = len(made_up_edge_search_result)
+        self.assertFalse(1 == made_up_edge_search_result_len)
