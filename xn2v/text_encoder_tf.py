@@ -121,8 +121,10 @@ class TextEncoder:
             max_vocab: An integer specifying the maximum vocabulary size.
 
         Returns:
-            flatted_sequences: A list of the most commonly occurring word indices.
-            count_as_tuples: A list of tuples, the first item is a word and the second is the word frequency.
+            tensor_data: A tf.Tensor (tf.data.Dataset if a single span of text or list of sentences of the same length
+                OR a tf.RaggedTensor if the list of sentences differ in length) the first  item is a word and
+                the second is the word frequency.
+            count_list: A list of tuples, the first item is a word and the second is the word frequency.
             dictionary: A dictionary where the keys are words and the values are the word id.
             reverse_dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
 
