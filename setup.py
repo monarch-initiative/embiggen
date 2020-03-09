@@ -11,7 +11,8 @@ test_deps = [
     "coveralls",
     'nose',
     "nose-cov",
-    "validate_version_code"
+    "validate_version_code",
+    "pylint"
 ]
 
 extras = {
@@ -35,7 +36,8 @@ setup(
         'pandas',
         'sklearn',
         'tensorflow>=2.0',
-        'click'
+        'click',
+        'tqdm'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
