@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import collections
 from xn2v import CBOWListBatcher
-from tqdm import tqdm, trange
+from tqdm import trange
 
 
 class Word2Vec:
