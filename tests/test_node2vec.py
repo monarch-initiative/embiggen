@@ -35,7 +35,7 @@ class TestGraph(TestCase):
         g = CSFGraph(inputfile)
         self.graph = g
 
-    def test_simple_graph(self):
+    def test_raw_probs_simple_graph_1(self):
         p = 1
         q = 1
         gamma = 1
@@ -45,7 +45,7 @@ class TestGraph(TestCase):
         src = 'g1'
         dst = 'g2'
         edge = (src, dst)
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src,dst)
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         #orig_edge, [j_alias, q_alias] = g.get_alias_edge(src, dst)
         #self.assertEqual(orig_edge, edge,
                         # "get_alias_edge didn't send back the original edge")
@@ -58,6 +58,23 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(0.125, original_probs[1])
         self.assertAlmostEqual(0.5, original_probs[2])
         self.assertAlmostEqual(0.25, original_probs[3])
+
+    def test_raw_probs_simple_graph_2(self):
+        p = 1
+        q = 1
+        gamma = 1
+        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        # src = self.graph.get_node_index('g0')
+        # dst = self.graph.get_node_index('g1')
+        src = 'g1'
+        dst = 'g4'
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        self.assertEqual(len(j_alias), len(q_alias))
+        # outgoing edges from g4: g1, g3, p4, d2
+        self.assertEqual(4, len(j_alias))
+        # recreate the original probabilities. They should be a vector of length 4.
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        #self.assertAlmostEqual(1.0/4.0, original_probs[1])
 
 
 class TestHetGraph(TestCase):
@@ -134,3 +151,5 @@ class TestHetGraph(TestCase):
         # recreate the original probabilities. They should be a vector of length 1 with value 1.
         original_probs = calculate_total_probs(j_alias, q_alias)
         #self.assertAlmostEqual(1.0/30.0, original_probs[1])
+
+
