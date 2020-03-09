@@ -25,16 +25,16 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
-    parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall/pos_train_edges',
+    parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall/pos_train_edges_entire_ppi',
                         help='Input positive training edges path')
 
-    parser.add_argument('--pos_test', nargs='?', default='tests/data/ppismall/pos_test_edges',
+    parser.add_argument('--pos_test', nargs='?', default='tests/data/ppismall/pos_test_edges_entire_ppi',
                         help='Input positive test edges path')
 
-    parser.add_argument('--neg_train', nargs='?', default='tests/data/ppismall/neg_train_edges',
+    parser.add_argument('--neg_train', nargs='?', default='tests/data/ppismall/neg_train_edges_entire_ppi',
                         help='Input negative training edges path')
 
-    parser.add_argument('--neg_test', nargs='?', default='tests/data/ppismall/neg_test_edges',
+    parser.add_argument('--neg_test', nargs='?', default='tests/data/ppismall/neg_test_edges_entire_ppi',
                         help='Input negative test edges path')
 
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
