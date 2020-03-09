@@ -347,7 +347,7 @@ class N2vGraph:
     @staticmethod
     def __alias_setup(probs):
         """Compute utility lists for non-uniform sampling from discrete distributions. Refer to
-        https://hips.seas.harvard.edu/blog/2013/03/03/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
+        https://lips.cs.princeton.edu/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
 
         Args:
             probs: The normalized probabilities calculated by , e.g., [0.4 0.28 0.32].
