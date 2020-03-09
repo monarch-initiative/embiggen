@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import collections
 from xn2v import CBOWListBatcher
-
+from tqdm import tqdm, trange
 
 
 class Word2Vec:
@@ -318,17 +318,18 @@ class SkipGramWord2Vec(Word2Vec):
         x_test = np.array(self.display_examples)
 
         # Run training for the given number of steps.
-        for step in range(1, self.num_steps + 1):
-            if self.list_of_lists:
-                walkcount = 2
-                batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
-            else:
-                batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
-            self.run_optimization(batch_x, batch_y)
+        with trange(1, self.num_steps + 1) as pbar:
+            for step in pbar:
+                if self.list_of_lists:
+                    walkcount = 2
+                    batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
+                else:
+                    batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
+                self.run_optimization(batch_x, batch_y)
 
-            if step % display_step == 0 or step == 1:
-                loss = self.nce_loss(self.get_embedding(batch_x), batch_y)
-                print("step: %i, loss: %f" % (step, loss))
+                if step % display_step == 0 or step == 1:
+                    loss = self.nce_loss(self.get_embedding(batch_x), batch_y)
+                    pbar.set_description("step: %i, loss: %f" % (step, loss))
 
             # Evaluation.
             if do_display and (step % self.eval_step == 0 or step == 1):
