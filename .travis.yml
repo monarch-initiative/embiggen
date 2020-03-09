@@ -17,6 +17,7 @@ before_install:
 - pip install --upgrade pytest
 - pip install tensorflow==2.0
 - pip install pylint
+- pip install tqdm
 install:
 - pip install .[test]
 before_script:
