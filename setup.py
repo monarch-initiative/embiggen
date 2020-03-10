@@ -11,7 +11,8 @@ test_deps = [
     "coveralls",
     'nose',
     "nose-cov",
-    "validate_version_code"
+    "validate_version_code",
+    "pylint"
 ]
 
 extras = {
@@ -37,7 +38,7 @@ setup(
         'tensorflow>=2.0',
         'click',
         'nltk',
-        'more_itertools',
+        'more_itertools'
         'tqdm'
     ],
     test_suite='nose.collector',
