@@ -3,7 +3,7 @@ import os.path
 import tensorflow as tf   # type: ignore
 
 from collections import defaultdict
-from typing import Dict, Union
+from typing import Dict, Set, Union
 
 from xn2v.csf_graph.edge import Edge
 
@@ -52,12 +52,12 @@ class CSFGraph:
             raise ValueError('Could not find graph file {}'.format(filepath))
 
         # create variables to store node and edge information
-        nodes: set = set()
-        edges: set = set()
-        self.edgetype2count_dictionary = defaultdict(int)  # type: defaultdict
+        nodes: Set[str] = set()
+        edges: Set[Edge] = set()
+        self.edgetype2count_dictionary: Dict = defaultdict(int)
         self.nodetype2count_dictionary: Dict = defaultdict(int)
-        self.node_to_index_map: defaultdict = defaultdict(int)
-        self.index_to_node_map: defaultdict = defaultdict(str)
+        self.node_to_index_map: Dict = defaultdict(int)
+        self.index_to_node_map: Dict = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
         with open(filepath) as f:
@@ -93,9 +93,9 @@ class CSFGraph:
         node_list = sorted(nodes)
 
         # create node data dictionaries
-        for i in range(len(node_list)):
-            self.node_to_index_map[node_list[i]] = i
-            self.index_to_node_map[i] = node_list[i]
+        for i in enumerate(node_list):
+            self.node_to_index_map[i[1]] = i[0]
+            self.index_to_node_map[i[0]] = i[1]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
         edge_list = sorted(edges)
