@@ -1,13 +1,13 @@
 import sys
 import numpy as np   # type: ignore
-from sklearn import metrics   # type: ignore
-from sklearn.linear_model import LogisticRegression   # type: ignore
-from sklearn.ensemble import RandomForestClassifier   # type: ignore
 
-from sklearn import svm   # type: ignore
+from sklearn.linear_model import LogisticRegression   # type: ignore
+from sklearn import metrics   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
-#import logging
-#import os
+from sklearn.ensemble import RandomForestClassifier   # type: ignore
+from sklearn import svm   # type: ignore
+# import logging
+# import os
 
 
 # handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
