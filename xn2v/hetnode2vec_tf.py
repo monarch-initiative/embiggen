@@ -14,7 +14,8 @@ log = logging.getLogger("xn2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
     os.environ.get("LOGFILE", "xn2v.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 # log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -23,14 +24,14 @@ log.addHandler(logging.StreamHandler())
 
 
 class N2vGraph:
-    """A class to represent perform random walks on a graph in order to derive the data needed for the node2vec
-    algorithm.
+    """A class to represent perform random walks on a graph in order to derive the data
+    needed for the node2vec algorithm.
 
     Assumptions: That the CSF graph is always undirected.
 
     Attributes:
-        csf_graph: An undirected Compressed Storage Format graph object. Graph stores two directed edges to represent
-            each undirected edge.
+        csf_graph: An undirected Compressed Storage Format graph object. Graph stores
+        two directed edges to represent each undirected edge.
         p:
         q:
         gamma:
@@ -70,10 +71,12 @@ class N2vGraph:
 
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
-                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
+                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0],
+                                                         alias_nodes[cur][1])])
                 else:
                     prev = walk[-2]
-                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0], alias_edges[(prev, cur)][1])]
+                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0],
+                                                   alias_edges[(prev, cur)][1])]
                     walk.append(nxt)
             else:
                 break
@@ -100,7 +103,8 @@ class N2vGraph:
             print("{}/{}".format(walk_iter + 1, num_walks))
             random.shuffle(nodes)
             for node in nodes:
-                walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
+                walks.append(self.node2vec_walk(walk_length=walk_length,
+                                                start_node=node))
 
         return walks
 
@@ -147,9 +151,11 @@ class N2vGraph:
         """
 
         g = self.g
-        unnormalized_probs = [g.weight_from_ints(node, nbr) for nbr in g.neighbors_as_ints(node)]
+        unnormalized_probs = [g.weight_from_ints(node, nbr)
+                              for nbr in g.neighbors_as_ints(node)]
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [float(u_prob) / norm_const
+                            for u_prob in unnormalized_probs]
 
         return [node, self.__alias_setup(normalized_probs)]
 
@@ -178,8 +184,9 @@ class N2vGraph:
 
         alias_edges = {}
 
-        # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
-        # We do not need to create any additional edges for the random walk as in the Stanford implementation
+        # Note that g.edges returns two directed edges to represent an undirected edge
+        # between any two nodes.  We do not need to create any additional edges for the
+        # random walk as in the Stanford implementation
         num_edges = len(g.edges())  # for progress updates
 
         with Pool(processes=num_processes) as pool:
@@ -211,7 +218,8 @@ class N2vGraph:
         # log.info("source node:{}".format(src))
         # log.info("destination node:{}".format(dst))
         dsttype = dst[0]
-        dst2count = defaultdict(int)  # counts for going from current node ("dst") to nodes of a given type (g, p,d)
+        dst2count = defaultdict(int)  # counts for going from current node ("dst") to
+        # nodes of a given type (g, p,d)
         dst2prob = defaultdict(float)  # probs calculated from own2count
         total_neighbors = 0
 
@@ -236,7 +244,8 @@ class N2vGraph:
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
         else:
-            dst2prob[dsttype] = (1 - total_non_own_probability) / float(dst2count[dsttype])
+            dst2prob[dsttype] = \
+                (1 - total_non_own_probability) / float(dst2count[dsttype])
 
         # Now assign the final unnormalized probs
         unnormalized_probs = np.zeros(total_neighbors)
@@ -261,10 +270,12 @@ class N2vGraph:
         return self.__alias_setup(normalized_probs)
 
     def __preprocess_transition_probs_xn2v(self) -> None:
-        """Preprocessing of transition probabilities for guiding the random walks. This version uses gamma to
-        calculate weighted skipping across a heterogeneous network.
+        """Preprocessing of transition probabilities for guiding the random walks.
+        This version uses gamma to calculate weighted skipping across a heterogeneous
+        network.
 
-        Assumption: The type of the node is encoded by its first character (e.g. g42 is a gene).
+        Assumption: The type of the node is encoded by its first character (e.g. g42 is
+        a gene).
 
         Returns:
             None.
@@ -304,7 +315,8 @@ class N2vGraph:
             if own2count[owntype] == 0:
                 own2prob[owntype] = 0
             else:
-                own2prob[owntype] = (1 - total_non_own_probability) / float(own2count[owntype])
+                own2prob[owntype] = \
+                    (1 - total_non_own_probability) / float(own2count[owntype])
 
             # now assign the final unnormalized probs
             unnormalized_probs = np.zeros(total_neighbors)
@@ -318,7 +330,8 @@ class N2vGraph:
 
             norm_const = sum(unnormalized_probs)
             # log.info("norm_const {}".format(norm_const))
-            normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+            normalized_probs = \
+                [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
 
         for edge in g.edges():
@@ -329,8 +342,10 @@ class N2vGraph:
         endtime = time.time()
         duration = endtime - starttime
 
-        log.info("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
-        print("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
+        log.info("Setup alias probabilities for graph in {:.2f} seconds."
+                 .format(duration))
+        print("Setup alias probabilities for graph in {:.2f} seconds."
+              .format(duration))
 
         return None
 
@@ -346,7 +361,8 @@ class N2vGraph:
 
     @staticmethod
     def __alias_setup(probs):
-        """Compute utility lists for non-uniform sampling from discrete distributions. Refer to
+        """Compute utility lists for non-uniform sampling from discrete distributions.
+        Refer to:
         https://lips.cs.princeton.edu/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
 
         The alias method allows sampling from a discrete distribution in O(1) time.
