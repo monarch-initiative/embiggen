@@ -10,7 +10,7 @@ from collections import defaultdict
 from logging import handlers
 from multiprocessing import Pool
 from typing import Dict
-from tqdm import tqdm, trange
+from tqdm import tqdm, trange   # type: ignore
 
 log = logging.getLogger("xn2v.log")
 

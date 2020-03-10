@@ -6,7 +6,7 @@ import tensorflow as tf   # type: ignore
 
 from typing import Dict, List, Optional, Tuple, Union
 from xn2v import CBOWListBatcher
-from tqdm import trange
+from tqdm import trange  # type: ignore
 
 
 class Word2Vec:
