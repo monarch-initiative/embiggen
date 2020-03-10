@@ -116,16 +116,18 @@ class CSFGraph:
             index2edge_count[source_index] += 1
 
         # step 2: set the offset_to_edge_ according to the number of edges emanating from each source ids
-        self.offset_to_edge_[0], offset, i = 0, 0, 0
+        self.offset_to_edge_[0] = 0
+        offset: int = 0
+        counter = 0
 
         for n in node_list:
             node_type = n[0]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]  # n_edges can be zero here
-            i += 1
+            counter += 1
             offset += n_edges
-            self.offset_to_edge_[i] = offset
+            self.offset_to_edge_[counter] = offset
 
         # step 3: add the actual edges
         current_source_index = -1
