@@ -1,14 +1,16 @@
 import logging.handlers
 import logging
-import numpy as np    # type: ignore
+import numpy as np  # type: ignore
 import os
 import random
 import sys
 import time
 
 from collections import defaultdict
+from logging import handlers
 from multiprocessing import Pool
 from typing import Dict
+from tqdm import tqdm, trange   # type: ignore
 
 log = logging.getLogger("xn2v.log")
 
@@ -38,6 +40,14 @@ class N2vGraph:
     """
 
     def __init__(self, csf_graph, p, q, gamma, doxn2v=True) -> None:
+        """
+        Note that the CSF graph is always undirected. It stores two directed edges to represent each undirected edge.
+        :param csf_graph: An undirected Compressed Storage Format graph object
+        :param p: return parameter
+        :param q: In-out parameter
+        :param gamma: parameter to jump from one nodetype to another nodetype (only in hetrogeneous graphs)
+        :param doxn2v: true if graph is hetrogen. otherwise it is false for homogen. graphs.
+        """
 
         self.g = csf_graph
         self.p = p
@@ -94,10 +104,8 @@ class N2vGraph:
         g = self.g
         walks = []
         nodes = g.nodes_as_integers()  # this is a list
-        log.info('Walk iteration:')
 
-        for walk_iter in range(num_walks):
-            print("{}/{}".format(walk_iter + 1, num_walks))
+        for _ in trange(num_walks):
             random.shuffle(nodes)
             for node in nodes:
                 walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
@@ -166,13 +174,11 @@ class N2vGraph:
 
         alias_nodes = {}
         num_nodes = len(g.nodes_as_integers())  # for progress updates
-
-        with Pool(processes=num_processes) as pool:
+        with Pool(processes=num_processes) as pool, tqdm(total=num_nodes) as pbar:
             for i, [orig_node, alias_node] in enumerate(
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
-                sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
-                                 format(100 * i / num_nodes))
+                pbar.update(i)
 
         sys.stderr.write("\rDone making alias nodes.\n")
 
@@ -181,13 +187,11 @@ class N2vGraph:
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
         num_edges = len(g.edges())  # for progress updates
-
-        with Pool(processes=num_processes) as pool:
+        with Pool(processes=num_processes) as pool, tqdm(total=num_edges) as pbar:
             for i, [orig_edge, alias_edge] in enumerate(
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
-                sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
-                                 format(100 * i / num_edges))
+                pbar.update(i)
         sys.stderr.write("\rDone making alias edges.\n")
 
         self.alias_nodes = alias_nodes
