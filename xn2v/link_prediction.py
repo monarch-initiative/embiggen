@@ -1,13 +1,13 @@
 import sys
 import numpy as np   # type: ignore
-from sklearn import metrics   # type: ignore
-from sklearn.linear_model import LogisticRegression   # type: ignore
-from sklearn.ensemble import RandomForestClassifier   # type: ignore
 
-from sklearn import svm   # type: ignore
+from sklearn.linear_model import LogisticRegression   # type: ignore
+from sklearn import metrics   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
-#import logging
-#import os
+from sklearn.ensemble import RandomForestClassifier   # type: ignore
+from sklearn import svm   # type: ignore
+# import logging
+# import os
 
 
 # handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
@@ -109,8 +109,9 @@ class LinkPrediction:
         elif self.classifier == "RF":
             edge_classifier = RandomForestClassifier()
         else:
-            #implement SVM.
-            edge_classifier = svm.SVC(probability = True)
+            #implement linear SVM.
+            model_svc = svm.LinearSVC()
+            edge_classifier = CalibratedClassifierCV(model_svc)
 
 
         edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
@@ -124,6 +125,24 @@ class LinkPrediction:
 
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
+
+    def predicted_ppi_links(self):
+        """
+        :return: positive test edges and their prediction, 1: predicted correctly, 0: otherwise
+        """
+        print("positive test edges and their prediction:")
+        for i in range(len(self.pos_test_edges)):
+            print(self.pos_test_edges[i], self.predictions[i])
+
+    def predicted_ppi_non_links(self):
+        """
+        :return: negative test edges (non-edges) and their prediction, 0: predicted correctly, 1: otherwise
+        """
+        print("negative test edges and their prediction:")
+
+        for i in range(len(self.neg_test_edges)):
+            print(self.neg_test_edges[i], self.predictions[i+len(self.pos_test_edges)])
+
 
     def output_classifier_results(self):
         """

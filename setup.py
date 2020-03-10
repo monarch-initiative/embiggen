@@ -11,7 +11,8 @@ test_deps = [
     "coveralls",
     'nose',
     "nose-cov",
-    "validate_version_code"
+    "validate_version_code",
+    "pylint"
 ]
 
 extras = {
@@ -38,6 +39,7 @@ setup(
         'click',
         'nltk',
         'more_itertools'
+        'tqdm'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,

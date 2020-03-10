@@ -1,13 +1,12 @@
 import collections
 import math
-import random
-
 import numpy as np   # type: ignore
+import random
 import tensorflow as tf   # type: ignore
 
 from typing import Dict, List, Optional, Tuple, Union
-
-from xn2v.w2v.cbow_list_batcher import CBOWListBatcher
+from xn2v import CBOWListBatcher
+from tqdm import trange
 
 
 class Word2Vec:
@@ -446,49 +445,47 @@ class SkipGramWord2Vec(Word2Vec):
         """
 
         # words for testing; display_step = 2000; eval_step = 2000
-        if display_step is not None and len(self.display_examples) > 0:
+        do_display = self.display_step is not None and len(self.display_examples) > 0
+
+        if do_display:
             for w in self.display_examples:
                 print('{word}: id={index}'.format(word=self.id2word[w], index=w))
 
         x_test = np.array(self.display_examples)
 
-        # run training for the given number of steps
-        for epoch in range(1, self.num_steps + 1):
-            if self.list_of_lists:
-                walk_count = 2
-                batch_x, batch_y = self.next_batch_from_list_of_lists(walk_count, self.num_skips, self.skip_window)
-            else:
-                batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
+        # run training for the given number of steps.
+        with trange(1, self.num_steps + 1) as pbar:
+            for step in pbar:
+                if self.list_of_lists:
+                    walkcount = 2
+                    batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
+                else:
+                    batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
+                self.run_optimization(batch_x, batch_y)
 
-            self.run_optimization(batch_x, batch_y)
+                if step % display_step == 0 or step == 1:
+                    loss = self.nce_loss(self.get_embedding(batch_x), batch_y)
+                    pbar.set_description("step: %i, loss: %f" % (step, loss))
 
-            if epoch % display_step == 0 or epoch == 1:
-                loss = self.nce_loss(self.get_embedding(batch_x), batch_y)
-                print('step: {}, loss: {}'.format(epoch, loss))
-
-            # evaluation
-            if self.display is not None and (epoch % self.eval_step == 0 or epoch == 1):
-                print('Evaluation...')
-
+            # Evaluation.
+            if do_display and (step % self.eval_step == 0 or step == 1):
+                print("Evaluation...")
                 sim = self.evaluate(self.get_embedding(x_test)).numpy()
                 print(sim[0])
-
                 for i in range(len(self.display_examples)):
-                    top_k = 8  # number of nearest neighbors
+                    top_k = 8  # number of nearest neighbors.
                     nearest = (-sim[i, :]).argsort()[1:top_k + 1]
                     disp_example = self.id2word[self.display_examples[i]]
-                    log_str = '{} nearest neighbors:'.format(disp_example)
-
+                    log_str = '"%s" nearest neighbors:' % disp_example
                     for k in range(top_k):
-                        log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
-
+                        log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
                     print(log_str)
 
         return None
 
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
-    """Class to run word2vec using skip grams.
+    """Class to run word2vec using continuous bag of words (cbow).
 
     Attributes:
         word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
