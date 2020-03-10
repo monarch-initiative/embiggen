@@ -435,19 +435,3 @@ class N2vGraph:
 
         return 'Graph'
 
-# def _repr_html_(self):
-#    G = self.G
-#    if isinstance(G,(nx.MultiDiGraph,nx.MultiGraph)):
-#      return self.multigraph_html()
-
-#   html = '<table><caption>Heterogeneous Node2Vec Graph Summary</caption><thead><tr><th>Node A</th>'
-#  html += '<th>Node B</th><th>Edge type</th><th>Edge weight</th></tr></thead>'
-#  html += "<tbody>"
-#  for n,nbrs in G.adj.items():
-#      for nbr,eattr in nbrs.items():
-#          #wt = eattr['weight']#
-#          wt = eattr.get('weight', 0)
-#         et = eattr.get('edgetype','n/a')
-#         html += '<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(n,nbr,et,wt)
-# html += '</tbody></table>'
-# return html
