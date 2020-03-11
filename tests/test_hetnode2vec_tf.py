@@ -13,14 +13,15 @@ class TestGraph(TestCase):
         g = CSFGraph(inputfile)
         self.graph = g
 
-    def test_raw_probs_simple_graph_1(self):
         p = 1
         q = 1
         gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        self.n2vgraph = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+
+    def test_raw_probs_simple_graph_1(self):
         src = 'g1'
         dst = 'g2'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        [j_alias, q_alias] = self.n2vgraph.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
 
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
@@ -34,13 +35,9 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(0.25, original_probs[3])
 
     def test_raw_probs_simple_graph_2(self):
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
         src = 'g1'
         dst = 'g4'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        [j_alias, q_alias] = self.n2vgraph.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
 
         # outgoing edges from g4: g1, g3, p4, d2
