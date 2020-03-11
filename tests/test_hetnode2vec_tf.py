@@ -96,8 +96,6 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        # src = self.graph.get_node_index('g0')
-        # dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'g2'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
