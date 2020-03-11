@@ -56,7 +56,7 @@ class Word2Vec:
         self.num_skips = num_skips
         self.num_sampled = num_sampled
         self.display = display
-        self.display_examples: List = Union[str, int]
+        self.display_examples: List[Union[str, int]] = []
         self.vocabulary_size: int = 0
         self.embedding: Optional[np.ndarray] = None
 
