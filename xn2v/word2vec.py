@@ -56,7 +56,7 @@ class Word2Vec:
         self.num_skips = num_skips
         self.num_sampled = num_sampled
         self.display = display
-        self.display_examples: List[Union[str, int]] = []
+        self.display_examples: Union[Dict, List] = []
         self.vocabulary_size: int = 0
         self.embedding: Optional[np.ndarray] = None
 
@@ -395,6 +395,7 @@ class SkipGramWord2Vec(Word2Vec):
             self.current_sentence += 1
 
             # sentence can be one random walk
+            # if
             sentence = self.data[self.current_sentence]
             batch_count = (len(sentence) - span) + 1
 
