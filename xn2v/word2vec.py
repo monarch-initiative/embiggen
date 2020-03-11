@@ -392,10 +392,7 @@ class SkipGramWord2Vec(Word2Vec):
         labels = np.ndarray(shape=(0, 1), dtype=np.int32)
 
         for i in range(walk_count):
-            self.current_sentence += 1
-
             # sentence can be one random walk
-            # if
             sentence = self.data[self.current_sentence]
             batch_count = (len(sentence) - span) + 1
 
@@ -404,6 +401,7 @@ class SkipGramWord2Vec(Word2Vec):
             batch = np.append(batch, current_batch)
             labels = np.append(labels, current_labels, axis=0)
 
+            self.current_sentence += 1
             if self.current_sentence == self.num_sentences:
                 self.current_sentence = 0
 
