@@ -1,28 +1,9 @@
 from unittest import TestCase
 
 import os.path
-import numpy as np
 from xn2v import CSFGraph
 from xn2v import N2vGraph
-
-
-def calculate_total_probs(j, q):
-    """
-    Use the alias method to calculate the total probabilites of the discrete events
-    :param j: alias vector
-    :param q: alias-method probabilities
-    :return:
-    """
-    N = len(j)
-    probs = np.zeros(N)
-    for i in range(N):
-        p = q[i]
-        probs[i] += p
-        if p < 1.0:
-            alias_index = j[i]
-            probs[alias_index] += 1 - p
-    s = np.sum(probs)
-    return probs / s
+from tests.utils.utils import calculate_total_probs
 
 
 class TestHetGraph(TestCase):
