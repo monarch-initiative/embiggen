@@ -58,30 +58,31 @@ class TextEncoder:
         text = text.lower()
 
         # undo contractions
-        text = text.replace("\n", "")
-        text = text.replace("\xad", "")
-        text = text.replace("'ve", " have")
-        text = text.replace("'t", " not")
-        text = text.replace("'s", " is")
-        text = text.replace("'m", " am")
+        contractions = {
+            "": ["\n", "\xad"],
+            "'ve": [" have"],
+            "'t": [" not"],
+            "'s": [" is"],
+            "'m": [" am"]
+        }
+
+        for k, values in contractions.items():
+            for v in values:
+                text = text.replace(v, k)
 
         # replace numbers with words representing number
-        text = text.replace("0", " zero ")
-        text = text.replace("1", " one ")
-        text = text.replace("2", " two ")
-        text = text.replace("3", " three ")
-        text = text.replace("4", " four ")
-        text = text.replace("5", " five ")
-        text = text.replace("6", " six ")
-        text = text.replace("7", " seven ")
-        text = text.replace("8", " eight ")
-        text = text.replace("9", " nine ")
-        text = text.replace("10", " ten ")
+        numbers = [
+            "zero", "one", "two", "three",
+            "four", "five", "six", "seven",
+            "eight", "nine", "ten"
+        ]
+        for i, n in enumerate(numbers):
+            text = text.replace(str(i), " {} ".format(n))
 
         # remove punctuation - gets non-ascii + ascii punctuation
         text = re.sub(r'[^\w\s]', ' ', text.translate(str.maketrans('', '', string.punctuation)))
 
-        return ' '.join(text.split())
+        return ' '.join(text.split(" "))
 
     def read_databz2(self):
         """ Extracts the first file enclosed in a zip (bz2) file as a list of words and pre-processes it using the
