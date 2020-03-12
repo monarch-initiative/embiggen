@@ -165,31 +165,21 @@ class StringInteraction:
     # action - the effect of the action ("inhibition", "activation" or unknown(missing))
     # a_is_acting - the directionality of the action if applicable ('t' gives that item_id_a is acting upon item_id_b)
 
-    def is_activation(self):
-        if self.action == "activation":
-            return True
-        else:
-            return False
+    def is_activation(self)->bool:
+        """Return boolean representing wethever interaction is activation."""
+        return self.action == "activation"
 
-    def is_inhibition(self):
-        if self.action == "inhibition":
-            return True
-        else:
-            return False
+    def is_inhibition(self)->bool:
+        """Return boolean representing wethever interaction is inhibition."""
+        return self.action == "inhibition"
+        
+    def is_missing_action(self)->bool:
+        """Return boolean representing wethever interaction has no action."""
+        return not self.action
 
-    def is_missing_action(self):
-        if self.action == "":
-            return True
-        else:
-            return False
-
-    def is_a_acting(self):
-        if self.a_is_acting:
-            return True
-        else:
-            return False
-
-
+    def is_a_acting(self)->bool:
+        """Return boolean representing wethever interaction is active."""
+        return self.a_is_acting
 
     # removes the first part of the name of protein A, e.g. from "9606.ENSP00000000233" return "ENSP00000000233"
     def get_protein_a_name(self):
@@ -199,11 +189,9 @@ class StringInteraction:
     def get_protein_b_name(self):
         return self.protein_b
 
-    def is_score_greater_thresh(self, threshold):
-        if self.score >= threshold:
-            return True
-        else:
-            return False
+    def is_score_greater_thresh(self, threshold:float)->bool:
+        """Return boolean representing wethever interaction has score greated than threshold."""
+        return self.score >= threshold
 
     def get_edge_type(self):
         triple = []
