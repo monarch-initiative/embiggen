@@ -57,13 +57,13 @@ class TextEncoder:
         # ensure text is lower case
         text = text.lower()
 
-        contractions = [
+        contractions = {
             "":["\n", "\xad"],
             "'ve":[" have"],
             "'t":[" not"],
             "'s":[" is"],
             "'m": [" am"]
-        ]
+        }
         
         # undo contractions
         for k, values in contractions.items():
