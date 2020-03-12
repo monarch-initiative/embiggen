@@ -17,21 +17,19 @@ class TestGraph(TestCase):
         p = 1
         q = 1
         gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        # src = self.graph.get_node_index('g1')
-        # dst = self.graph.get_node_index('g2')
+        g = N2vGraph(self.graph, p, q, gamma,doxn2v=True)
+        #src = self.graph.get_node_index('g1')
+        #dst = self.graph.get_node_index('g2')
         src = 'g1'
         dst = 'g2'
-        # edge = (src, dst)
+        edge = (src, dst)
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        # orig_edge, [j_alias, q_alias] = g.get_alias_edge(src, dst)
-        # self.assertEqual(orig_edge, edge,
-        # "get_alias_edge didn't send back the original edge")
+        #orig_edge, [j_alias, q_alias] = g.get_alias_edge(src, dst)
+        #self.assertEqual(orig_edge, edge,
+                        # "get_alias_edge didn't send back the original edge")
         self.assertEqual(len(j_alias), len(q_alias))
-
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
         self.assertEqual(4, len(j_alias))
-
         # recreate the original probabilities. They should be 0.125, 0.125, 0.5, 0.25
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(0.125, original_probs[0])
@@ -64,7 +62,6 @@ class TestHetGraph(TestCase):
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
         g = CSFGraph(inputfile)
-
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')
@@ -76,7 +73,6 @@ class TestHetGraph(TestCase):
             if n == node:
                 return i
             i += 1
-
         raise Exception("Could not find {} in self.nodes".format(node))
 
     def testGraphNodeCounts(self):
@@ -84,7 +80,6 @@ class TestHetGraph(TestCase):
         #We expect 101 gene nodes, 20 disease nodes, and 30 protein nodes
         :return:
         """
-
         g = self.graph
         n = g.node_count()
         self.assertEqual(151, n)
@@ -97,7 +92,6 @@ class TestHetGraph(TestCase):
          # may change in the future.
         :return:
         """
-
         g = self.graph
         m = g.edge_count()
         self.assertEqual(300, m)
