@@ -3,12 +3,10 @@ import os.path
 import tensorflow as tf   # type: ignore
 
 from collections import defaultdict
-from typing import Dict, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 from xn2v.csf_graph.edge import Edge
 
-
-# TODO: still need to finalize documentation and typing.
 
 class CSFGraph:
     """Class converts data in to a compressed storage format graph.
@@ -38,12 +36,12 @@ class CSFGraph:
             node and the value stored at each node's index is the total number of edges coming out of that node.
 
     Raises:
-        - TypeError: If the filepath attribute is empty.
-        - TypeError: If the filepath attribute must be type str.
-        - ValueError: If the file referenced by filepath cannot be found.
+        TypeError: If the filepath attribute is empty.
+        TypeError: If the filepath attribute must be type str.
+        ValueError: If the file referenced by filepath cannot be found.
     """
 
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: str) -> None:
         if filepath is None:
             raise TypeError('The filepath attribute cannot be empty.')
         if not isinstance(filepath, str):
@@ -54,10 +52,10 @@ class CSFGraph:
         # create variables to store node and edge information
         nodes: Set[str] = set()
         edges: Set[Edge] = set()
-        self.edgetype2count_dictionary: Dict = defaultdict(int)
-        self.nodetype2count_dictionary: Dict = defaultdict(int)
-        self.node_to_index_map: Dict = defaultdict(int)
-        self.index_to_node_map: Dict = defaultdict(str)
+        self.edgetype2count_dictionary: Dict[str, int] = defaultdict(int)
+        self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
+        self.node_to_index_map: Dict[str, int] = defaultdict(int)
+        self.index_to_node_map: Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
         with open(filepath) as f:
@@ -104,12 +102,11 @@ class CSFGraph:
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
-        # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
         self.offset_to_edge_: np.ndarray = np.zeros(total_vertex_count + 1, dtype=np.int32)
 
         # create the graph - this done in three steps
         # step 1: count # of edges emanating from each source id
-        index2edge_count: Dict = defaultdict(int)
+        index2edge_count: Dict[int, int] = defaultdict(int)
 
         for edge in edge_list:
             source_index = self.node_to_index_map[edge.node_a]
@@ -148,27 +145,27 @@ class CSFGraph:
             self.edge_weight[j] = edge.weight
             j += 1
 
-    def nodes(self):
+    def nodes(self) -> List[str]:
         """Returns a list of graph nodes."""
 
         return list(self.node_to_index_map.keys())
 
-    def nodes_as_integers(self):
+    def nodes_as_integers(self) -> List[int]:
         """Returns a list of integers representing the location of each node from the alphabetically-sorted list."""
 
         return list(self.index_to_node_map.keys())
 
-    def node_count(self):
+    def node_count(self) -> int:
         """Returns an integer that contains the total number of unique nodes in the graph"""
 
         return len(self.node_to_index_map)
 
-    def edge_count(self):
+    def edge_count(self) -> int:
         """Returns an integer that contains the total number of unique edges in the graph"""
 
         return len(self.edge_to)
 
-    def weight(self, source: str, dest: str):
+    def weight(self, source: str, dest: str) -> Optional[Union[float, int]]:
         """Takes user provided strings, representing node names for a source and destination node, and returns
         weights for each edge that exists between these nodes.
 
@@ -191,8 +188,12 @@ class CSFGraph:
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
+            else:
+                continue
 
-    def weight_from_ints(self, source_idx: int, dest_idx: int):
+        return None
+
+    def weight_from_ints(self, source_idx: int, dest_idx: int) -> Optional[Union[float, int]]:
         """Takes user provided integers, representing indices for a source and destination node, and returns
         weights for each edge that exists between these nodes.
 
@@ -210,8 +211,12 @@ class CSFGraph:
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
+            else:
+                continue
 
-    def neighbors(self, source: str):
+        return None
+
+    def neighbors(self, source: str) -> List[str]:
         """Gets a list of node names, which are the neighbors of the user-provided source node.
 
         Args:
@@ -230,7 +235,7 @@ class CSFGraph:
 
         return neighbors
 
-    def neighbors_as_ints(self, source_idx: int):
+    def neighbors_as_ints(self, source_idx: int) -> List[int]:
         """Gets a list of node indices, which are the neighbors of the user-provided source node.
 
         Args:
@@ -248,7 +253,7 @@ class CSFGraph:
 
         return neighbors_ints
 
-    def has_edge(self, src: str, dest: str):
+    def has_edge(self, src: str, dest: str) -> bool:
         """Checks if an edge exists between src and dest node.
 
         Args:
@@ -271,7 +276,7 @@ class CSFGraph:
         return False
 
     @staticmethod
-    def same_nodetype(n1: str, n2: str):
+    def same_nodetype(n1: str, n2: str) -> bool:
         """Encodes the node type using the first character of the node label. For instance, g1 and g2 have the same
         node type but g2 and p5 do not.
 
@@ -342,12 +347,12 @@ class CSFGraph:
 
         return tensor_data
 
-    def get_node_to_index_map(self):
+    def get_node_to_index_map(self) -> Dict[str, int]:
         """Returns a dictionary of the nodes in the graph and their corresponding integers."""
 
         return self.node_to_index_map
 
-    def get_node_index(self, node: str):
+    def get_node_index(self, node: str) -> Optional[int]:
         """Checks if a node exists in the node_to_index_map and if it is, the integer for that node is returned.
 
          Args:
@@ -365,17 +370,17 @@ class CSFGraph:
         else:
             return self.node_to_index_map.get(node)
 
-    def get_index_to_node_map(self):
+    def get_index_to_node_map(self) -> Dict[int, str]:
         """Returns a dictionary of the nodes in the graph and their corresponding integers."""
 
         return self.index_to_node_map
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Prints a string containing the total number of nodes and edges in the graph."""
 
         return 'CSFGraph(nodes: {}, edges: {})'.format(self.node_count(),  self.edge_count())
 
-    def print_edge_type_distribution(self):
+    def print_edge_type_distribution(self) -> None:
         """Prints node and edge type information for the graph.
 
         Note. This function is intended to be used for debugging or logging.
@@ -395,3 +400,5 @@ class CSFGraph:
         else:
             for category, count in self.edgetype2count_dictionary.items():
                 print('{} - count: {}'.format(category, count))
+
+        return None
