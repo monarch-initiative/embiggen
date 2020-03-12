@@ -4,6 +4,7 @@ import tensorflow as tf
 from unittest import TestCase
 
 from xn2v.text_encoder_tf import TextEncoder  # update once refactor is complete
+from tests.utils.utils import gets_tensor_length
 
 
 class TestTextEncoderSentences(TestCase):
@@ -35,10 +36,9 @@ class TestTextEncoderSentences(TestCase):
 
     def test_number_of_sentences(self):
 
-        if isinstance(self.data, tf.RaggedTensor):
-            self.assertEqual(3, self.data.shape[0])
-        else:
-            self.assertEqual(3, len([sentence for sentence in self.data]))
+        # test length of tensor
+        tensor_length = gets_tensor_length(self.data)
+        self.assertEqual(3, tensor_length)
 
 
 class TestTextEncoderEnBlock(TestCase):
