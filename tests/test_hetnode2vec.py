@@ -37,7 +37,7 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(0.5, original_probs[2])
         self.assertAlmostEqual(0.25, original_probs[3])
 
-    def test_raw_probs_simple_graph_2(self):
+    def test_raw_probs_simple_graph_2(self):# This test need to be checked.
         p = 1
         q = 1
         gamma = 1
@@ -51,8 +51,8 @@ class TestGraph(TestCase):
         # outgoing edges from g4: g1, g3, p4, d2
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        #self.assertAlmostEqual(1.0/4.0, original_probs[1])
+        original_probs = calculate_total_probs(j_alias, q_alias) #some original probs are not positive!!
+        #self.assertAlmostEqual(1.0/4.0, original_probs[1]) #Check probability!
 
 
 class TestHetGraph(TestCase):
@@ -113,7 +113,7 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(1.0, original_probs[0])
 
 
-    def test_raw_probs_2(self):
+    def test_raw_probs_2(self):# This test needs to be checked.
         p = 1
         q = 1
         gamma = 1
@@ -126,9 +126,9 @@ class TestHetGraph(TestCase):
         self.assertEqual(len(j_alias), len(q_alias))
         # outgoing edges from p1: g1, p2, ..., p30
         self.assertEqual(30, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 1 with value 1.
+        # recreate the original probabilities.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        #self.assertAlmostEqual(1.0/30.0, original_probs[1])
+        #self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
 
 
 class TestHetGraph2(TestCase):
