@@ -214,6 +214,7 @@ class N2vGraph:
         alias_nodes = {}
         for node in G.nodes():
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
+            node_as_int = G.node_to_index_map[node]
             owntype = node[0]
             own2count = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
             own2prob = defaultdict(float)  # probs calculated from own2count
@@ -248,9 +249,11 @@ class N2vGraph:
             norm_const = sum(unnormalized_probs)
             # log.info("norm_const {}".format(norm_const))
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
-            alias_nodes[node] = self.__alias_setup(normalized_probs)
+            alias_nodes[node_as_int] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
-            alias_edges[edge] = self.get_alias_edge_xn2v(edge[0], edge[1])
+            src_as_int = G.node_to_index_map[edge[0]]
+            dst_as_int = G.node_to_index_map[edge[1]]
+            alias_edges[(src_as_int, dst_as_int)] = self.get_alias_edge_xn2v(edge[0], edge[1])
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes

@@ -177,7 +177,9 @@ class TestHetGraph2(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
-        g0g1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
+        src_as_int = self.graph.node_to_index_map.get(src)
+        dst_as_int = self.graph.node_to_index_map.get(dst)
+        g0g1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g0g1edges = alias_edge_tuple.get(g0g1tuple)
         # g0g1 edges has the alias map and probabilities as a 2-tuple
@@ -201,7 +203,9 @@ class TestHetGraph2(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'g2'
-        g1g2tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
+        src_as_int = self.graph.node_to_index_map.get(src)
+        dst_as_int = self.graph.node_to_index_map.get(dst)
+        g1g2tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1g2edges = alias_edge_tuple.get(g1g2tuple)
         # g1g2 edges has the alias map and probabilities as a 2-tuple
@@ -226,7 +230,9 @@ class TestHetGraph2(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
-        g1p1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
+        src_as_int = self.graph.node_to_index_map.get(src)
+        dst_as_int = self.graph.node_to_index_map.get(dst)
+        g1p1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
@@ -253,7 +259,9 @@ class TestHetGraph2(TestCase):
         g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
-        g1p1tuple = (src, dst)  # this is a key of the dictionary alias_edge_tuple
+        src_as_int = self.graph.node_to_index_map.get(src)
+        dst_as_int = self.graph.node_to_index_map.get(dst)
+        g1p1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
         alias_edge_tuple = g.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
