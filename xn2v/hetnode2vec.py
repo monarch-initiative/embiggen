@@ -73,17 +73,31 @@ class N2vGraph:
 
         return walk
 
-    def simulate_walks(self, num_walks, walk_length):
-        """
-        Repeatedly simulate random walks from each node.
+    def simulate_walks(self, num_walks, walk_length, num_processes=8):
+        """Repeatedly simulate random walks from each node.
+
+        Randomly walk on graph and return walk as a list of lists of nodes
+
+        Args:
+            num_walks: how many walks for each node
+            walk_length: length (how many nodes) for each walk
+            num_processes: how many processors to use for parallelization
+
+        Returns:
+            List of lists of nodes
+
         """
         g = self.g
         walks = []
-        nodes = g.nodes_as_integers()  # this is a list
-        for _ in trange(num_walks):
-            random.shuffle(nodes)
-            for node in nodes:
-                walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
+
+        log.info("Doing random walks")
+        with Pool(processes=num_processes) as pool:
+            for _ in trange(num_walks):
+                nodes = g.nodes_as_integers()
+                random.shuffle(nodes)
+                for this_walk in pool.starmap(self.node2vec_walk,
+                                              [[walk_length, node] for node in nodes]):
+                    walks.append(this_walk)
 
         return walks
 
@@ -126,6 +140,7 @@ class N2vGraph:
         """
         g = self.g
 
+        log.info("Making alias nodes")
         alias_nodes = {}
         num_nodes = len(g.nodes_as_integers())  # for progress updates
         with Pool(processes=num_processes) as pool, tqdm(total=num_nodes) as pbar:
@@ -133,19 +148,18 @@ class N2vGraph:
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
                 pbar.update(i)
-        sys.stderr.write("\rDone making alias nodes.\n")
 
         alias_edges = {}
 
         # Note that g.edges returns two directed edges to represent an undirected edge between any two nodes
         # We do not need to create any additional edges for the random walk as in the Stanford implementation
+        log.info("Making alias edges")
         num_edges = len(g.edges())  # for progress updates
         with Pool(processes=num_processes) as pool, tqdm(total=num_edges) as pbar:
             for i, [orig_edge, alias_edge] in enumerate(
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
                 pbar.update(i)
-        sys.stderr.write("\rDone making alias edges.\n")
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
