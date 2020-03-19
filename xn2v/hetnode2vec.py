@@ -98,6 +98,8 @@ class N2vGraph:
                 for this_walk in pool.starmap(self.node2vec_walk,
                                               [[walk_length, node] for node in nodes]):
                     walks.append(this_walk)
+            pool.close()
+            pool.join()
 
         return walks
 
@@ -148,6 +150,8 @@ class N2vGraph:
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
                 pbar.update(i)
+            pool.close()
+            pool.join()
 
         alias_edges = {}
 
@@ -160,6 +164,8 @@ class N2vGraph:
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
                 pbar.update(i)
+            pool.close()
+            pool.join()
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
