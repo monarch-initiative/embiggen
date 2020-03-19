@@ -153,11 +153,11 @@ class N2vGraph:
         num_nodes = len(g.nodes_as_integers())  # for progress updates
         with Pool(processes=num_processes) as pool:
             for i, [orig_node, alias_node] in enumerate(tqdm(
-                        pool.imap_unordered(
-                            self._get_alias_node, g.nodes_as_integers()),
-                        total=num_nodes,
-                        desc="Creating alias nodes"
-                    )):
+                pool.imap_unordered(
+                    self._get_alias_node, g.nodes_as_integers()),
+                total=num_nodes,
+                desc="Creating alias nodes"
+            )):
                 alias_nodes[orig_node] = alias_node
             pool.close()
             pool.join()
