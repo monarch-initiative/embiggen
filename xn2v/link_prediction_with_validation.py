@@ -42,6 +42,7 @@ class LinkPredictionWithValidation:
         self.neg_valid_edges = neg_validation_graph.edges()
         self.neg_test_edges = neg_test_graph.edges()
         self.train_nodes = pos_train_graph.nodes()
+        self.validation_nodes = pos_validation_graph.nodes()
         self.test_nodes = pos_test_graph.nodes()
         self.embedded_train_graph = embedded_train_graph_path
         self.map_node_vector = {}

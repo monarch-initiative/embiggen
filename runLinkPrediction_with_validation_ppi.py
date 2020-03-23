@@ -23,7 +23,7 @@ def parse_args():
     '''
     Parses arguments.
     '''
-    parser = argparse.ArgumentParser(description="Run link Prediction.")
+    parser = argparse.ArgumentParser(description="Run link Prediction using training/validation and test sets.")
 
     parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall_with_validation/pos_train_edges_max_comp_graph',
                         help='Input positive training edges path')
@@ -138,8 +138,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
 
 def read_graphs():
     """
-    Reads pos_train, pos_test, neg_train and neg_test edges with CSFGraph
-    :return: pos_train, pos_test, neg_train and neg_test graphs in CSFGraph format
+    Reads pos_train, pos_validation, pos_test, neg_train, neg_validation and neg_test edges with CSFGraph
+    :return: pos_train, pos-validation, pos_test, neg_train, neg_validation and neg_test graphs in CSFGraph format
     """
 
     pos_train_graph = CSFGraph(args.pos_train)
@@ -153,12 +153,13 @@ def read_graphs():
 
 def main(args):
     """
-    The input files are positive training, positive test, negative training and negative test edges. The code
-    reads the files and create graphs in CSFGraph format. Then, the positive training graph is embedded.
-    Finally, link prediction is performed.
+    The input files are positive training, positive validation, positive test, negative training, negative validation
+     and negative test edges. The code reads the files and create graphs in CSFGraph format.
+     Then, the positive training graph is embedded.
+     Finally, link prediction is performed.
 
     :param args: parameters of node2vec and link prediction
-    :return: Result of link prediction
+    :return: Results of link prediction
     """
     print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}"
           .format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model, args.num_steps))
