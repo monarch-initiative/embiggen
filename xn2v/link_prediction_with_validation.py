@@ -50,10 +50,10 @@ class LinkPredictionWithValidation:
         self.edge_embedding_method = edge_embedding_method
         self.train_edge_embs = []
         self.valid_edges_embs = []
+        self.test_edge_embs = []
         self.train_edge_labels = []
         self.test_edge_labels = []
         self.valid_edge_labels = []
-        self.test_edge_embs = []
         self.classifier = classifier
         self.graph_type = graph_type
         self.validation_predictions = []
@@ -82,14 +82,13 @@ class LinkPredictionWithValidation:
         print("[INFO]Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
-    def prepare_lables_test_training(self):
+    def prepare_training_validation_test_labels(self):
         """
         label positive edge embeddings with 1 and negative edge embeddings with 0.
         :return:
         """
         pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
         neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
-        #print(len(true_train_edge_embs),len(false_train_edge_embs))
         self.train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
         self.train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
@@ -97,7 +96,6 @@ class LinkPredictionWithValidation:
         # Validation-set edge embeddings, labels
         pos_valid_edge_embs = self.transform(edge_list=self.pos_valid_edges, node2vector_map=self.map_node_vector)
         neg_valid_edge_embs = self.transform(edge_list=self.neg_valid_edges, node2vector_map=self.map_node_vector)
-        # print(len(true_train_edge_embs),len(false_train_edge_embs))
         self.valid_edge_embs = np.concatenate([pos_valid_edge_embs, neg_valid_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
         self.valid_edge_labels = np.concatenate([np.ones(len(pos_valid_edge_embs)), np.zeros(len(neg_valid_edge_embs))])
@@ -110,11 +108,11 @@ class LinkPredictionWithValidation:
         self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
         print('get test edge labels')
 
-        print("[INFO]: Total edges of training graph: {}".format(len(self.pos_train_edges)))
+        print("[INFO]: Training edges (positive): {}".format(len(pos_train_edge_embs)))
         print("[INFO]: Training edges (negative): {}".format(len(neg_train_edge_embs)))
-        print("[INFO]: Validation edges (positive): {}".format(len(self.pos_valid_edges)))
+        print("[INFO]: Validation edges (positive): {}".format(len(pos_valid_edge_embs)))
         print("[INFO]: Validation edges (negative): {}".format(len(neg_valid_edge_embs)))
-        print("[INFO]: Test edges (positive): {}".format(len(self.pos_test_edges)))
+        print("[INFO]: Test edges (positive): {}".format(len(pos_test_edge_embs)))
         print("[INFO]: Test edges (negative): {}".format(len(neg_test_edge_embs)))
 
     def predict_links(self):
@@ -169,10 +167,12 @@ class LinkPredictionWithValidation:
         """
         :return: negative test edges (non-edges) and their prediction, 0: predicted correctly, 1: otherwise
         """
-        print("negative test/validation edges and their prediction:")
+        print("negative validation edges and their prediction:")
 
         for i in range(len(self.neg_valid_edges)):
             print(self.neg_valid_edges[i], self.validation_predictions[i+len(self.pos_valid_edges)])
+
+        print("negative test edges and their prediction:")
 
         for i in range(len(self.neg_test_edges)):
             print(self.neg_test_edges[i], self.test_predictions[i+len(self.pos_test_edges)])
@@ -188,9 +188,10 @@ class LinkPredictionWithValidation:
          """
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
-        test_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) * (1.0) / total
-        test_specificity = valid_conf_matrix[0, 0] * (1.0) / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1]) * (1.0)
-        test_sensitivity = valid_conf_matrix[1, 1] * (1.0) / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1]) * (1.0)
+        test_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1])  / total
+        test_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+        test_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+        print("predictions for validation set:")
         print("predictions: {}".format(str(self.validation_predictions)))
         print("confusion matrix: {}".format(str(valid_conf_matrix)))
         print('Accuracy : {}'.format(test_accuracy))
@@ -201,9 +202,10 @@ class LinkPredictionWithValidation:
 
         test_conf_matrix = self.test_confusion_matrix
         total = sum(sum(test_conf_matrix))
-        test_accuracy = (test_conf_matrix[0, 0] + test_conf_matrix[1,1]) * (1.0) / total
-        test_specificity = test_conf_matrix[0, 0] * (1.0) / (test_conf_matrix[0, 0] + test_conf_matrix[0, 1]) * (1.0)
-        test_sensitivity = test_conf_matrix[1, 1] * (1.0) / (test_conf_matrix[1, 0] + test_conf_matrix[1, 1]) * (1.0)
+        test_accuracy = (test_conf_matrix[0, 0] + test_conf_matrix[1,1])  / total
+        test_specificity = test_conf_matrix[0, 0]  / (test_conf_matrix[0, 0] + test_conf_matrix[0, 1])
+        test_sensitivity = test_conf_matrix[1, 1]  / (test_conf_matrix[1, 0] + test_conf_matrix[1, 1])
+        print("predictions for test set:")
         print("predictions: {}".format(str(self.test_predictions)))
         print("confusion matrix: {}".format(str(test_conf_matrix)))
         print('Accuracy : {}'.format(test_accuracy))
@@ -255,8 +257,9 @@ class LinkPredictionWithValidation:
         return embs
 
     def output_edge_node_information(self):
-        self.edge_node_information(self.pos_train_edges, "true_training")
-        self.edge_node_information(self.pos_test_edges, "true_test")
+        self.edge_node_information(self.pos_train_edges, "positive_training")
+        self.edge_node_information(self.pos_train_edges, "positive_validation")
+        self.edge_node_information(self.pos_test_edges, "positive_test")
 
     def edge_node_information(self, edge_list, group):
         """
