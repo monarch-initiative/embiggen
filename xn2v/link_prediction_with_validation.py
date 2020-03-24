@@ -4,7 +4,6 @@ from sklearn import metrics
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.calibration import CalibratedClassifierCV
-
 from sklearn import svm
 from sklearn.metrics import roc_auc_score, average_precision_score
 #import logging
@@ -127,7 +126,7 @@ class LinkPredictionWithValidation:
         elif self.classifier == "RF":
             edge_classifier = RandomForestClassifier()
         else:
-            #implement linear SVM.
+            #implement linear SVM. #TODO: Use non-default parameters on HPC!
             model_svc = svm.LinearSVC()
             edge_classifier = CalibratedClassifierCV(model_svc)
 
@@ -188,31 +187,31 @@ class LinkPredictionWithValidation:
          """
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
-        valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1])  / total
-        valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
-        valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+        valid_accuracy = (valid_conf_matrix[0,0] + valid_conf_matrix[1, 1])/ total
+        valid_specificity = valid_conf_matrix[0,0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+        valid_sensitivity = valid_conf_matrix[1,1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
         print("predictions for validation set:")
-        print("predictions: {}".format(str(self.validation_predictions)))
-        print("confusion matrix: {}".format(str(valid_conf_matrix)))
-        print('Accuracy : {}'.format(valid_accuracy))
-        print('Specificity : {}'.format(valid_specificity))
-        print('Sensitivity : {}'.format(valid_sensitivity))
-        print("node2vec Test ROC score: {} ".format(str(self.valid_roc)))
-        print("node2vec Test AP score: {} ".format(str(self.valid_average_precision)))
+        print("predictions (validation): {}".format(str(self.validation_predictions)))
+        print("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
+        print('Accuracy (validation) : {}'.format(valid_accuracy))
+        print('Specificity (validation): {}'.format(valid_specificity))
+        print('Sensitivity (validation): {}'.format(valid_sensitivity))
+        print("node2vec Test ROC score (validation): {} ".format(str(self.valid_roc)))
+        print("node2vec Test AP score (validation): {} ".format(str(self.valid_average_precision)))
 
         test_conf_matrix = self.test_confusion_matrix
         total = sum(sum(test_conf_matrix))
-        valid_accuracy = (test_conf_matrix[0, 0] + test_conf_matrix[1,1])  / total
-        valid_specificity = test_conf_matrix[0, 0]  / (test_conf_matrix[0, 0] + test_conf_matrix[0, 1])
-        valid_sensitivity = test_conf_matrix[1, 1]  / (test_conf_matrix[1, 0] + test_conf_matrix[1, 1])
+        valid_accuracy = (test_conf_matrix[0,0] + test_conf_matrix[1,1])  / total
+        valid_specificity = test_conf_matrix[0,0]/ (test_conf_matrix[0,0] + test_conf_matrix[0,1])
+        valid_sensitivity = test_conf_matrix[1,1]/ (test_conf_matrix[1,0] + test_conf_matrix[1,1])
         print("predictions for test set:")
-        print("predictions: {}".format(str(self.test_predictions)))
-        print("confusion matrix: {}".format(str(test_conf_matrix)))
-        print('Accuracy : {}'.format(valid_accuracy))
-        print('Specificity : {}'.format(valid_specificity))
-        print('Sensitivity : {}'.format(valid_sensitivity))
-        print("node2vec Test ROC score: {} ".format(str(self.test_roc)))
-        print("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
+        print("predictions (test): {}".format(str(self.test_predictions)))
+        print("confusion matrix (test): {}".format(str(test_conf_matrix)))
+        print('Accuracy (test): {}'.format(valid_accuracy))
+        print('Specificity (test): {}'.format(valid_specificity))
+        print('Sensitivity (test): {}'.format(valid_sensitivity))
+        print("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
+        print("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
         """
