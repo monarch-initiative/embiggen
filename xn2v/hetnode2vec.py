@@ -4,12 +4,13 @@ import numpy as np
 import random
 import logging.handlers
 import logging
-from logging import handlers
 import os
 import time
 from collections import defaultdict
 from multiprocessing import Pool
-from tqdm import tqdm, trange
+
+
+from tqdm import tqdm,trange
 from logging import handlers
 
 log = logging.getLogger("xn2v.log")
