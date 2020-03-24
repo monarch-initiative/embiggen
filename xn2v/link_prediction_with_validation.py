@@ -258,7 +258,7 @@ class LinkPredictionWithValidation:
 
     def output_edge_node_information(self):
         self.edge_node_information(self.pos_train_edges, "positive_training")
-        self.edge_node_information(self.pos_train_edges, "positive_validation")
+        self.edge_node_information(self.pos_valid_edges, "positive_validation")
         self.edge_node_information(self.pos_test_edges, "positive_test")
 
     def edge_node_information(self, edge_list, group):

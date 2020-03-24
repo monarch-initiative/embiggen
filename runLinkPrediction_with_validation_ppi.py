@@ -38,7 +38,7 @@ def parse_args():
                         help='Input negative training edges path')
 
     parser.add_argument('--neg_valid', nargs='?', default='tests/data/ppismall_with_validation/neg_validation_edges_max_comp_graph',
-                        help='Input negative training edges path')
+                        help='Input negative validation edges path')
 
     parser.add_argument('--neg_test', nargs='?', default='tests/data/ppismall_with_validation/neg_test_edges_max_comp_graph',
                         help='Input negative test edges path')
