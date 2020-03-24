@@ -121,8 +121,10 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
 def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph):
     """
     :param pos_train_graph: positive training graph
+    :param pos_valid_graph: positive validation graph
     :param pos_test_graph: positive test graph
     :param neg_train_graph: negative training graph
+    :param neg_valid_graph: negative validation graph
     :param neg_test_graph: negative test graph
     :return: Metrics of logistic regression as the results of link prediction
     """
