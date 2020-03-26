@@ -18,8 +18,6 @@ class TestGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma,doxn2v=True)
-        #src = self.graph.get_node_index('g1')
-        #dst = self.graph.get_node_index('g2')
         src = 'g1'
         dst = 'g2'
         edge = (src, dst)
@@ -42,8 +40,6 @@ class TestGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        # src = self.graph.get_node_index('g0')
-        # dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'g4'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
@@ -96,12 +92,17 @@ class TestHetGraph(TestCase):
         self.assertEqual(300, m)
 
     def test_raw_probs_1(self):
+        """The intention here (I think) is to test aliases and probabilities for
+        nodes that are only connected to one other node. Here that's g2 which is only
+        connected to g1.
+
+        j_alias and q_alias should therefore be length 1, and original
+        probabilities should have one entry which is AlmostEqual to 1.0
+        """
         p = 1
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        #src = self.graph.get_node_index('g0')
-        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'g2'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
@@ -118,8 +119,6 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        #src = self.graph.get_node_index('g0')
-        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'p1'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
