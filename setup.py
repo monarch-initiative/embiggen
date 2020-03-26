@@ -12,7 +12,8 @@ test_deps = [
     'nose',
     "nose-cov",
     "validate_version_code",
-    "pylint"
+    "pylint",
+    "silence_tensorflow"
 ]
 
 extras = {
@@ -31,13 +32,13 @@ setup(
     license='BSD3',
     packages=['xn2v'],
     install_requires=[
-        'silence_tensorflow',
         'numpy>=1.16.4',
         'pandas',
         'sklearn',
         'tensorflow>=2.0',
         'click',
-        'tqdm'
+        'tqdm',
+        'click'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
