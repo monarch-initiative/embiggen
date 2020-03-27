@@ -48,9 +48,8 @@ class TestHetGraph(TestCase):
 
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(inputfile)
-        self.graph = g
-        self.nodes = g.nodes()
+        self.graph = CSFGraph(inputfile)
+        self.nodes = self.graph.nodes()
         self.g1index = self.__get_index('g1')
         self.d1index = self.__get_index('d1')
 
@@ -84,9 +83,7 @@ class TestHetGraph(TestCase):
 
         :return:
         """
-        g = self.graph
-        n = g.node_count()
-        self.assertEqual(151, n)
+        self.assertEqual(151,  self.graph.node_count())
 
     def testGraphEdgeCounts(self):
         """
@@ -96,9 +93,7 @@ class TestHetGraph(TestCase):
          # may change in the future.
         :return:
         """
-        g = self.graph
-        m = g.edge_count()
-        self.assertEqual(300, m)
+        self.assertEqual(300, self.graph.edge_count())
 
     def test_raw_probs_1(self):
         """The intention here (I think) is to test aliases and probabilities for
@@ -122,6 +117,7 @@ class TestHetGraph(TestCase):
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0, original_probs[0])
 
+    @skip
     def test_raw_probs_2(self):# This test needs to be checked.
         """The intention here is to test aliases and probabilities for
         a node (p1) that is connected to 29 other protein nodes (p2 - 30)
@@ -142,7 +138,7 @@ class TestHetGraph(TestCase):
         self.assertEqual(30, len(j_alias))
         # recreate the original probabilities.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        #self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
+        self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
 
     def test_gamma_probs(self):
         """
