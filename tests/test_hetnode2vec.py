@@ -96,8 +96,8 @@ class TestHetGraph(TestCase):
         nodes that are only connected to one other node. Here that's g2 which is only
         connected to g1.
 
-        j_alias and q_alias should therefore be length 1, and original
-        probabilities should have one entry which is AlmostEqual to 1.0
+        j_alias, q_alias, and original probabilities should be len(1), and
+        original probabilities should have one entry which is AlmostEqual to 1.0
         """
         p = 1
         q = 1
@@ -113,8 +113,14 @@ class TestHetGraph(TestCase):
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0, original_probs[0])
 
-
     def test_raw_probs_2(self):# This test needs to be checked.
+        """The intention here is to test aliases and probabilities for
+        a node (p1) that is connected to 29 other protein nodes (p2 - 30)
+        and one gene node (g1)
+
+        j_alias, and q_alias, and original probabilities should be len(30). g1 should
+        have one probability, all the p* nodes should have another
+        """
         p = 1
         q = 1
         gamma = 1
