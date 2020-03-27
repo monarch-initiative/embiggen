@@ -62,6 +62,10 @@ class TestHetGraph(TestCase):
         self.nodes = self.graph.nodes()
         self.g1index = self.__get_index('g1')
         self.d1index = self.__get_index('d1')
+        p = 1
+        q = 1
+        gamma = 1
+        self.n2v_walk_default_params = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
 
     def __get_index(self, node):
         i = 0
@@ -113,16 +117,9 @@ class TestHetGraph(TestCase):
         j_alias, q_alias, and original probabilities should be len(1), and
         original probabilities should have one entry which is AlmostEqual to 1.0
         """
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
         src = 'g1'
         dst = 'g2'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from g2: g1
-        self.assertEqual(1, len(j_alias))
+        [j_alias, q_alias] = self.n2v_walk_default_params.get_alias_edge_xn2v(src, dst)
         # recreate the original probabilities. They should be a vector of length 1 with value 1.
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0, original_probs[0])
@@ -136,16 +133,9 @@ class TestHetGraph(TestCase):
         j_alias, and q_alias, and original probabilities should be len(30). g1 should
         have one probability, all the p* nodes should have another
         """
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
         src = 'g1'
         dst = 'p1'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from p1: g1, p2, ..., p30
-        self.assertEqual(30, len(j_alias))
+        [j_alias, q_alias] = self.n2v_walk_default_params.get_alias_edge_xn2v(src, dst)
         # recreate the original probabilities.
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
@@ -156,16 +146,12 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g0g1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = g.retrieve_alias_edges()
+        alias_edge_tuple = self.n2v_walk_default_params.retrieve_alias_edges()
         g0g1edges = alias_edge_tuple.get(g0g1tuple)
         # g0g1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of d1
