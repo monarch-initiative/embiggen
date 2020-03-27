@@ -262,7 +262,8 @@ class N2vGraph:
                 i += 1
             norm_const = sum(unnormalized_probs)
             # log.info("norm_const {}".format(norm_const))
-            normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+            normalized_probs = [
+                float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node_as_int] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
             src_as_int = G.node_to_index_map[edge[0]]
