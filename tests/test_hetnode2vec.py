@@ -17,13 +17,23 @@ class TestGraph(TestCase):
         self.gamma = 1
         self.n2v_walk = N2vGraph(self.graph, self.p, self.q, self.gamma, doxn2v=True)
 
-    def test_raw_probs_simple_graph_1(self):
+    def test_j_alias_q_alias_length(self):
+        """Test that j_alias and q_alias lengths are equal, and the correct length
+
+        destination node is g2, which has 4 neighbors: g1, g3, p1, p2, so *_alias
+        should both be length 4
+        :return:
+        """
         src = 'g1'
         dst = 'g2'
         [j_alias, q_alias] = self.n2v_walk.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
-        # there are 4 outgoing edges from g2: g1, g3, p1, p2
         self.assertEqual(4, len(j_alias))
+
+    def test_raw_probs_simple_graph_1(self):
+        src = 'g1'
+        dst = 'g2'
+        [j_alias, q_alias] = self.n2v_walk.get_alias_edge_xn2v(src, dst)
         # recreate the original probabilities. They should be 0.125, 0.125, 0.5, 0.25
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(0.125, original_probs[0])
