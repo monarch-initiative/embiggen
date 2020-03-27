@@ -8,14 +8,18 @@ from tests.utils.utils import calculate_total_probs
 
 class TestSimpleHetGraph(TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls) -> None:
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
         g = CSFGraph(inputfile)
-        self.graph = g
-        self.p = 1
-        self.q = 1
-        self.gamma = 1
-        self.n2v_walk = N2vGraph(self.graph, self.p, self.q, self.gamma, doxn2v=True)
+        cls.graph = g
+        cls.p = 1
+        cls.q = 1
+        cls.gamma = 1
+        cls.n2v_walk = N2vGraph(cls.graph, cls.p, cls.q, cls.gamma, doxn2v=True)
+
+    def setUp(self):
+        pass
 
     def test_j_alias_q_alias_length(self):
         """Test that j_alias and q_alias lengths are equal, and the correct length
@@ -56,37 +60,25 @@ class TestSimpleHetGraph(TestCase):
 
 class TestComplexHetGraph(TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls) -> None:
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        self.graph = CSFGraph(inputfile)
-        self.nodes = self.graph.nodes()
-        self.g1index = self.__get_index('g1')
-        self.d1index = self.__get_index('d1')
-        p = 1
-        q = 1
-        gamma = 1
-        self.n2v_walk_default_params = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        cls.graph = CSFGraph(inputfile)
+        cls.nodes = cls.graph.nodes()
+        cls.g1index = cls.__get_index(cls.nodes, 'g1')
+        cls.d1index = cls.__get_index(cls.nodes, 'd1')
 
-    def __get_index(self, node):
-        if node in self.nodes:
-            return self.nodes.index(node)
-        else:
-            raise Exception("Could not find {} in self.nodes".format(node))
+        # do walk with default params: p = 1, q = 1, gamma = 1
+        cls.n2v_walk_default_params = \
+            N2vGraph(csf_graph=cls.graph, p=1, q=1, gamma=1, doxn2v=True)
 
-    def _get_index_of_neighbor(self, node, neighbor):
-        """
-        Searches for the index of a neighbor of node
-        If there is no neighbor, return None
-        :param node:
-        :param neighbor:
-        :return:
-        """
-        neighbors = sorted(self.graph.neighbors(node))
+        # do walk with default params: p = 1, q = 1, gamma = 0.3
+        gamma = float(1) / float(3)
+        cls.n2v_walk_gamma_0_3 = \
+            N2vGraph(csf_graph=cls.graph, p = 1, q = 1, gamma=gamma, doxn2v=True)
 
-        if neighbor in neighbors:
-            return neighbors.index(neighbor)
-        else:
-            return None
+    def setUp(self):
+        pass
 
     def testGraphNodeCounts(self):
         """
@@ -143,16 +135,12 @@ class TestComplexHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g0g1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = g.retrieve_alias_edges()
+        alias_edge_tuple = self.n2v_walk_gamma_0_3.retrieve_alias_edges()
         g0g1edges = alias_edge_tuple.get(g0g1tuple)
         # g0g1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of d1
@@ -163,22 +151,19 @@ class TestComplexHetGraph(TestCase):
         d1prob = probs[idx]  # total probability of going from g1 to d1
         self.assertAlmostEqual(1.0 / 3.0, d1prob)
 
+    # the following three methods use random walk with p/q/gamma of 1/1/0.3
     def test_gamma_probs_2(self):
         """
         Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma = 1/k
         where k=3, i.e., the number of different node types
         :return:
         """
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'g2'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g1g2tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = g.retrieve_alias_edges()
+        alias_edge_tuple = self.n2v_walk_gamma_0_3.retrieve_alias_edges()
         g1g2edges = alias_edge_tuple.get(g1g2tuple)
         # g1g2 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of g1
@@ -196,16 +181,12 @@ class TestComplexHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g1p1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = g.retrieve_alias_edges()
+        alias_edge_tuple = self.n2v_walk_gamma_0_3.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of p2
@@ -225,16 +206,12 @@ class TestComplexHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
-        p = 1
-        q = 1
-        gamma = float(1) / float(3)
-        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g1'
         dst = 'p1'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g1p1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = g.retrieve_alias_edges()
+        alias_edge_tuple = self.n2v_walk_gamma_0_3.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of p2
@@ -246,3 +223,25 @@ class TestComplexHetGraph(TestCase):
         # p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
         # The probability of going  to p2 is gamma which is (2/3*29) ~ 0.023
         self.assertAlmostEqual(2.0 / 87.0, p2prob)
+
+    def _get_index_of_neighbor(self, node, neighbor):
+        """
+        Searches for the index of a neighbor of node
+        If there is no neighbor, return None
+        :param node:
+        :param neighbor:
+        :return:
+        """
+        neighbors = sorted(self.graph.neighbors(node))
+
+        if neighbor in neighbors:
+            return neighbors.index(neighbor)
+        else:
+            return None
+
+    @staticmethod
+    def __get_index(nodes, node):
+        if node in nodes:
+            return nodes.index(node)
+        else:
+            raise Exception("Could not find {} in self.nodes".format(node))
