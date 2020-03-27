@@ -69,6 +69,22 @@ class TestHetGraph(TestCase):
             i += 1
         raise Exception("Could not find {} in self.nodes".format(node))
 
+    def get_index_of_neighbor(self, node, neighbor):
+        """
+        Searches for the index of a neighbor of node
+        If there is no neighbor, return None
+        :param node:
+        :param neighbor:
+        :return:
+        """
+        neighbors = sorted(self.graph.neighbors(node))
+        i = 0
+        for n in neighbors:
+            if n == neighbor:
+                return i
+            i += 1
+        return None
+
     def testGraphNodeCounts(self):
         """
         #We expect 101 gene nodes, 20 disease nodes, and 30 protein nodes
@@ -134,41 +150,6 @@ class TestHetGraph(TestCase):
         # recreate the original probabilities.
         original_probs = calculate_total_probs(j_alias, q_alias)
         #self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
-
-
-class TestHetGraph2(TestCase):
-
-    def setUp(self):
-        infile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(infile)
-        self.graph = g
-        self.nodes = g.nodes()
-        self.g1index = self.__get_index('g1')
-        self.d1index = self.__get_index('d1')
-
-    def __get_index(self, node):
-        i = 0
-        for n in self.nodes:
-            if n == node:
-                return i
-            i += 1
-        raise Exception("Could not find {} in self.nodes".format(node))
-
-    def get_index_of_neighbor(self, node, neighbor):
-        """
-        Searches for the index of a neighbor of node
-        If there is no neighbor, return None
-        :param node:
-        :param neighbor:
-        :return:
-        """
-        neighbors = sorted(self.graph.neighbors(node))
-        i = 0
-        for n in neighbors:
-            if n == neighbor:
-                return i
-            i += 1
-        return None
 
     def test_gamma_probs(self):
         """
