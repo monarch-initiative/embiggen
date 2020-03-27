@@ -146,12 +146,16 @@ class TestHetGraph(TestCase):
         where k=3, i.e., the number of different node types
         :return:
         """
+        p = 1
+        q = 1
+        gamma = float(1) / float(3)
+        g = N2vGraph(self.graph, p, q, gamma, True)
         src = 'g0'
         dst = 'g1'
         src_as_int = self.graph.node_to_index_map.get(src)
         dst_as_int = self.graph.node_to_index_map.get(dst)
         g0g1tuple = (src_as_int, dst_as_int)  # this is a key of the dictionary alias_edge_tuple
-        alias_edge_tuple = self.n2v_walk_default_params.retrieve_alias_edges()
+        alias_edge_tuple = g.retrieve_alias_edges()
         g0g1edges = alias_edge_tuple.get(g0g1tuple)
         # g0g1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of d1
