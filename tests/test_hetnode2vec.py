@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase, skip
 
 import os.path
 from xn2v import CSFGraph
@@ -12,19 +12,15 @@ class TestGraph(TestCase):
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
         g = CSFGraph(inputfile)
         self.graph = g
+        self.p = 1
+        self.q = 1
+        self.gamma = 1
+        self.n2v_walk = N2vGraph(self.graph, self.p, self.q, self.gamma, doxn2v=True)
 
     def test_raw_probs_simple_graph_1(self):
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma,doxn2v=True)
         src = 'g1'
         dst = 'g2'
-        edge = (src, dst)
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        #orig_edge, [j_alias, q_alias] = g.get_alias_edge(src, dst)
-        #self.assertEqual(orig_edge, edge,
-                        # "get_alias_edge didn't send back the original edge")
+        [j_alias, q_alias] = self.n2v_walk.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
         self.assertEqual(4, len(j_alias))
@@ -35,20 +31,17 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(0.5, original_probs[2])
         self.assertAlmostEqual(0.25, original_probs[3])
 
+    @skip
     def test_raw_probs_simple_graph_2(self):# This test need to be checked.
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
         src = 'g1'
         dst = 'g4'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        [j_alias, q_alias] = self.n2v_walk.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
         # outgoing edges from g4: g1, g3, p4, d2
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias) #some original probs are not positive!!
-        #self.assertAlmostEqual(1.0/4.0, original_probs[1]) #Check probability!
+        self.assertAlmostEqual(1.0/4.0, original_probs[1]) #Check probability!
 
 
 class TestHetGraph(TestCase):
@@ -69,7 +62,7 @@ class TestHetGraph(TestCase):
             i += 1
         raise Exception("Could not find {} in self.nodes".format(node))
 
-    def get_index_of_neighbor(self, node, neighbor):
+    def _get_index_of_neighbor(self, node, neighbor):
         """
         Searches for the index of a neighbor of node
         If there is no neighbor, return None
@@ -171,7 +164,7 @@ class TestHetGraph(TestCase):
         # g0g1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of d1
         # We want the probability of going from g1 to d1 -- it should be equal to gamma, because there is only one g1 to disease edge
-        idx = self.get_index_of_neighbor('g1', 'd1')
+        idx = self._get_index_of_neighbor('g1', 'd1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
         d1prob = probs[idx]  # total probability of going from g1 to d1
@@ -198,7 +191,7 @@ class TestHetGraph(TestCase):
         # The following code searches for the index of g1
         # We want the probability of going from g2 to g1 -- it should be equal to 1 because there is only one neighbor to g2
         # and it is in the same network
-        idx = self.get_index_of_neighbor('g2', 'g1')
+        idx = self._get_index_of_neighbor('g2', 'g1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1g2edges[0], g1g2edges[1])
         g1prob = probs[idx]  # total probability of going from g2 to g1
@@ -224,7 +217,7 @@ class TestHetGraph(TestCase):
         # g1p1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of p2
         # We want the probability of going from p1 to p2 -- it should be equal
-        idx = self.get_index_of_neighbor('p1', 'g1')
+        idx = self._get_index_of_neighbor('p1', 'g1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
         g1prob = probs[idx]  # total probability of going from p1 to g1.
@@ -253,7 +246,7 @@ class TestHetGraph(TestCase):
         # g1p1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of p2
         # We want the probability of going from p1 to p2 -- it should be equal
-        idx = self.get_index_of_neighbor('p1', 'p2')
+        idx = self._get_index_of_neighbor('p1', 'p2')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
         p2prob = probs[idx]  # total probability of going from p1 to p2.
