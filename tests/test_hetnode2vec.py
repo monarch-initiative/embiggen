@@ -6,7 +6,7 @@ from xn2v import N2vGraph
 from tests.utils.utils import calculate_total_probs
 
 
-class TestGraph(TestCase):
+class TestSimpleHetGraph(TestCase):
 
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
@@ -54,7 +54,7 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(1.0/4.0, original_probs[1]) #Check probability!
 
 
-class TestHetGraph(TestCase):
+class TestComplexHetGraph(TestCase):
 
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
@@ -84,12 +84,11 @@ class TestHetGraph(TestCase):
         :return:
         """
         neighbors = sorted(self.graph.neighbors(node))
-        i = 0
-        for n in neighbors:
-            if n == neighbor:
-                return i
-            i += 1
-        return None
+
+        if neighbor in neighbors:
+            return neighbors.index(neighbor)
+        else:
+            return None
 
     def testGraphNodeCounts(self):
         """
