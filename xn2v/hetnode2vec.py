@@ -4,19 +4,21 @@ import numpy as np
 import random
 import logging.handlers
 import logging
-from logging import handlers
 import os
 import time
 from collections import defaultdict
 from multiprocessing import Pool
-from tqdm import tqdm, trange
+
+
+from tqdm import tqdm,trange
 from logging import handlers
 
 log = logging.getLogger("xn2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
     os.environ.get("LOGFILE", "xn2v.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -63,10 +65,12 @@ class N2vGraph:
             cur_nbrs = g.neighbors_as_ints(cur)
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
-                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0], alias_nodes[cur][1])])
+                    walk.append(cur_nbrs[self.alias_draw(
+                        alias_nodes[cur][0], alias_nodes[cur][1])])
                 else:
                     prev = walk[-2]
-                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0], alias_edges[(prev, cur)][1])]
+                    nxt = cur_nbrs[self.alias_draw(
+                        alias_edges[(prev, cur)][0], alias_edges[(prev, cur)][1])]
                     walk.append(nxt)
             else:
                 break
@@ -98,6 +102,8 @@ class N2vGraph:
                 for this_walk in pool.starmap(self.node2vec_walk,
                                               [[walk_length, node] for node in nodes]):
                     walks.append(this_walk)
+            pool.close()
+            pool.join()
 
         return walks
 
@@ -124,14 +130,17 @@ class N2vGraph:
             else:
                 unnormalized_probs.append(edge_weight / q)
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return [edge, self.__alias_setup(normalized_probs)]
 
     def _get_alias_node(self, node):
         g = self.g
-        unnormalized_probs = [g.weight_from_ints(node, nbr) for nbr in g.neighbors_as_ints(node)]
+        unnormalized_probs = [g.weight_from_ints(
+            node, nbr) for nbr in g.neighbors_as_ints(node)]
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return [node, self.__alias_setup(normalized_probs)]
 
     def __preprocess_transition_probs(self, num_processes=8):
@@ -143,11 +152,16 @@ class N2vGraph:
         log.info("Making alias nodes")
         alias_nodes = {}
         num_nodes = len(g.nodes_as_integers())  # for progress updates
-        with Pool(processes=num_processes) as pool, tqdm(total=num_nodes) as pbar:
-            for i, [orig_node, alias_node] in enumerate(
-                    pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
+        with Pool(processes=num_processes) as pool:
+            for i, [orig_node, alias_node] in enumerate(tqdm(
+                pool.imap_unordered(
+                    self._get_alias_node, g.nodes_as_integers()),
+                total=num_nodes,
+                desc="Creating alias nodes"
+            )):
                 alias_nodes[orig_node] = alias_node
-                pbar.update(i)
+            pool.close()
+            pool.join()
 
         alias_edges = {}
 
@@ -160,6 +174,8 @@ class N2vGraph:
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
                 pbar.update(i)
+            pool.close()
+            pool.join()
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
@@ -176,7 +192,8 @@ class N2vGraph:
         # log.info("source node:{}".format(src))
         # log.info("destination node:{}".format(dst))
         dsttype = dst[0]
-        dst2count = defaultdict(int)  # counts for going from current node ("dst") to nodes of a given type (g, p,d)
+        # counts for going from current node ("dst") to nodes of a given type (g, p,d)
+        dst2count = defaultdict(int)
         dst2prob = defaultdict(float)  # probs calculated from own2count
         total_neighbors = 0
         # No need to explicitly sort, g returns a sorted list
@@ -197,7 +214,8 @@ class N2vGraph:
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
         else:
-            dst2prob[dsttype] = (1 - total_non_own_probability) / float(dst2count[dsttype])
+            dst2prob[dsttype] = (
+                1 - total_non_own_probability) / float(dst2count[dsttype])
         # Now assign the final unnormalized probs
         unnormalized_probs = np.zeros(total_neighbors)
         i = 0
@@ -213,7 +231,8 @@ class N2vGraph:
                 unnormalized_probs[i] = prob * edge_weight / q
             i += 1
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return self.__alias_setup(normalized_probs)
 
     def __preprocess_transition_probs_xn2v(self):
@@ -230,7 +249,8 @@ class N2vGraph:
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
             node_as_int = G.node_to_index_map[node]
             owntype = node[0]
-            own2count = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
+            # counts for going from current node ("own") to nodes of a given type (g, p,d)
+            own2count = defaultdict(int)
             own2prob = defaultdict(float)  # probs calculated from own2count
             total_neighbors = 0
             # G returns a sorted list of neighbors of node
@@ -251,7 +271,8 @@ class N2vGraph:
             if own2count[owntype] == 0:
                 own2prob[owntype] = 0
             else:
-                own2prob[owntype] = (1 - total_non_own_probability) / float(own2count[owntype])
+                own2prob[owntype] = (
+                    1 - total_non_own_probability) / float(own2count[owntype])
             # Now assign the final unnormalized probs
             unnormalized_probs = np.zeros(total_neighbors)
             i = 0
@@ -265,6 +286,7 @@ class N2vGraph:
             normalized_probs = [
                 float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node_as_int] = self.__alias_setup(normalized_probs)
+
         for edge in G.edges():
             src_as_int = G.node_to_index_map[edge[0]]
             dst_as_int = G.node_to_index_map[edge[1]]
@@ -274,8 +296,10 @@ class N2vGraph:
         self.alias_nodes = alias_nodes
         endtime = time.time()
         duration = endtime - starttime
-        log.info("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
-        print("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
+        log.info(
+            "Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
+        print(
+            "Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
 
     def retrieve_alias_nodes(self):
         return self.alias_nodes

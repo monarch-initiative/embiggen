@@ -8,6 +8,7 @@
 """
 from .hetnode2vec import N2vGraph
 from .link_prediction import LinkPrediction
+from .link_prediction_with_validation import LinkPredictionWithValidation
 from .csf_graph import CSFGraph
 from .text_encoder import TextEncoder
 from .w2v.cbow_list_batcher import CBOWListBatcher
