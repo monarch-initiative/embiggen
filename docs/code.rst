@@ -1,5 +1,5 @@
-n2v
+xn2v
 ====
-.. automodule:: n2v
+.. automodule:: xn2v
     :members:
     :imported-members:
