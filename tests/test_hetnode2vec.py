@@ -68,12 +68,10 @@ class TestComplexHetGraph(TestCase):
         self.n2v_walk_default_params = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
 
     def __get_index(self, node):
-        i = 0
-        for n in self.nodes:
-            if n == node:
-                return i
-            i += 1
-        raise Exception("Could not find {} in self.nodes".format(node))
+        if node in self.nodes:
+            return self.nodes.index(node)
+        else:
+            raise Exception("Could not find {} in self.nodes".format(node))
 
     def _get_index_of_neighbor(self, node, neighbor):
         """
