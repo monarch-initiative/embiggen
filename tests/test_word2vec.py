@@ -8,9 +8,7 @@ import os.path
 
 
 class TestCBOWconstruction(TestCase):
-    """
-    Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks
-    """
+    """Use the test files in test/data/ppismall to construct a CBOW and test that we can get some random walks."""
 
     def setUp(self):
         # neg_test = 'data/ppismall/neg_test_edges'

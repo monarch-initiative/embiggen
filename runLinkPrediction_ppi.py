@@ -1,9 +1,10 @@
 import argparse
 from xn2v import CSFGraph
+from xn2v import N2vGraph
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
-import xn2v
+from xn2v.utils import write_embeddings
 import sys
 
 
@@ -18,11 +19,10 @@ import sys
 # log.addHandler(handler)
 
 
-
 def parse_args():
-    '''
+    """
     Parses arguments.
-    '''
+    """
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
     parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall/pos_train_edges',
@@ -79,7 +79,8 @@ def parse_args():
                         help="Binary classifier for link prediction, it should be either LR, RF or SVM")
 
     parser.add_argument('--type', nargs='?', default='homogen',
-                        help="Type of graph which is either homogen for homogeneous graph or heterogen for heterogeneous graph")
+                        help="Type of graph which is either homogen for homogeneous graph or heterogen for "
+                             "heterogeneous graph")
 
     parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
                         help="word2vec model. It can be either Skipgram or CBOW")
@@ -91,26 +92,27 @@ def parse_args():
 
 
 def learn_embeddings(walks, pos_train_graph, w2v_model):
-    '''
+    """
     Learn embeddings by optimizing the Skipgram or CBOW objective using SGD.
-    '''
+    """
 
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
     if w2v_model == "Skipgram":
         model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     elif w2v_model == "CBOW":
         model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
+                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
     else:
         print("[ERROR] enter Skipgram or CBOW")
         sys.exit(1)
 
     model.train(display_step=100)
 
-    model.write_embeddings(args.embed_graph)
+    write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
+
 
 def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     """
@@ -130,6 +132,7 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     lp.predicted_ppi_links()
     lp.predicted_ppi_non_links()
 
+
 def read_graphs():
     """
     Reads pos_train, pos_test, neg_train and neg_test edges with CSFGraph
@@ -139,7 +142,7 @@ def read_graphs():
     pos_train_graph = CSFGraph(args.pos_train)
     pos_test_graph = CSFGraph(args.pos_test)
     neg_train_graph = CSFGraph(args.neg_train)
-    neg_test_graph = CSFGraph(args. neg_test)
+    neg_test_graph = CSFGraph(args.neg_test)
     return pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph
 
 
@@ -153,11 +156,11 @@ def main(args):
     :return: Result of link prediction
     """
     print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}"
-          .format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model, args.num_steps))
+          .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
-    pos_train_g = xn2v.hetnode2vec.N2vGraph(pos_train_graph,  args.p, args.q, args.gamma, args.useGamma)
+    pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
-    learn_embeddings(walks, pos_train_graph,args.w2v_model)
+    learn_embeddings(walks, pos_train_graph, args.w2v_model)
     linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph)
 
 
