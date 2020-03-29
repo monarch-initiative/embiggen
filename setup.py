@@ -31,12 +31,13 @@ setup(
     license='BSD3',
     packages=['xn2v'],
     install_requires=[
-        'silence_tensorflow',
+        'click',
+        'keras',
         'numpy>=1.16.4',
         'pandas',
+        'silence_tensorflow',
         'sklearn',
         'tensorflow>=2.0',
-        'click',
         'tqdm'
     ],
     test_suite='nose.collector',
