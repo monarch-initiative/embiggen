@@ -5,11 +5,11 @@
 Embedding Utility Functions.
 
 Reads and Writes Embedding Data
-* writes_embeddings
-* loads_embeddings
+* write_embeddings
+* load_embeddings
 
 manipulates or Processes Embeddings
-* gets_embedding
+* get_embedding
 
 """
 
