@@ -25,7 +25,7 @@ from typing import Dict, List, Union
 # TODO: consider updating writes_embeddings to not require id2word when writing embedding data
 
 
-def get_embedding(x: int, embedding: np.ndarray, device: str = 'cpu') -> Union[np.ndarray, tf.Tensor]:
+def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu') -> Union[np.ndarray, tf.Tensor]:
     """Get the embedding corresponding to the data points in x. Note, we ensure that this code is carried out on
     the CPU because some ops are not compatible with the GPU.
 
