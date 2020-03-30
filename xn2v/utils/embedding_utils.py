@@ -4,12 +4,13 @@
 """
 Embedding Utility Functions.
 
+Manipulates or Processes Embeddings
+* get_embedding
+* calculates_cosine_similarity
+
 Reads and Writes Embedding Data
 * write_embeddings
 * load_embeddings
-
-manipulates or Processes Embeddings
-* get_embedding
 
 """
 
@@ -25,7 +26,8 @@ from typing import Dict, List, Union
 # TODO: consider updating writes_embeddings to not require id2word when writing embedding data
 
 
-def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu') -> Union[np.ndarray, tf.Tensor]:
+def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu')  \
+        -> Union[np.ndarray, tf.Tensor]:
     """Get the embedding corresponding to the data points in x. Note, we ensure that this code is carried out on
     the CPU because some ops are not compatible with the GPU.
 
@@ -50,7 +52,33 @@ def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Var
             return embedding
 
 
-def write_embeddings(out_file: str, embedding: np.ndarray, reverse_worddictionary: Dict, device: str = 'cpu') -> None:
+def calculate_cosine_similarity(x_embed: tf.Tensor, embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu') \
+        -> Union[np.ndarray, tf.Tensor]:
+    """Computes the cosine similarity between a provided embedding and all other embedding vectors.
+
+        Args:
+            x_embed: A Tensor containing word embeddings.
+            embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
+            device: A string that indicates whether to run computations on (default=cpu).
+
+        Returns:
+            cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
+        """
+
+    with tf.device(device):
+        x_embed_cast = tf.cast(x_embed, tf.float32)
+        x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
+        x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(embedding), 1, keepdims=True), tf.float32)
+        embedding_norm = embedding / x_embed_sqrt
+
+        # calculate cosine similarity
+        cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
+
+        return cosine_sim_op
+
+
+def write_embeddings(out_file: str, embedding: Union[np.ndarray, tf.Variable], reverse_worddictionary: Dict,
+                     device: str = 'cpu') -> None:
     """Writes embedding data to a local directory. Data is written out in the following format, which is consistent
     with current standards:
         'ENSP00000371067' 0.6698335 , -0.83192813, -0.3676057 , ...,  0.9241863 , -2.1407487 , -0.6607736

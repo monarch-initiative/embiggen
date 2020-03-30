@@ -8,7 +8,7 @@ from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
 
 from xn2v import CBOWListBatcher
-from xn2v.utils import get_embedding
+from xn2v.utils import get_embedding, calculate_cosine_similarity
 
 
 class Word2Vec:
@@ -189,26 +189,26 @@ class SkipGramWord2Vec(Word2Vec):
 
             return loss
 
-    def evaluate(self, x_embed: tf.Tensor) -> Union[np.ndarray, tf.Tensor]:
-        """Computes the cosine similarity between a provided embedding and all other embedding vectors.
-
-        Args:
-            x_embed: A Tensor containing word embeddings.
-
-        Returns:
-            cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
-        """
-
-        with tf.device(self.device_type):
-            x_embed_cast = tf.cast(x_embed, tf.float32)
-            x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
-            x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self.embedding / x_embed_sqrt
-
-            # calculate cosine similarity
-            cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
-
-            return cosine_sim_op
+    # def evaluate(self, x_embed: tf.Tensor) -> Union[np.ndarray, tf.Tensor]:
+    #     """Computes the cosine similarity between a provided embedding and all other embedding vectors.
+    #
+    #     Args:
+    #         x_embed: A Tensor containing word embeddings.
+    #
+    #     Returns:
+    #         cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
+    #     """
+    #
+    #     with tf.device(self.device_type):
+    #         x_embed_cast = tf.cast(x_embed, tf.float32)
+    #         x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
+    #         x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
+    #         embedding_norm = self.embedding / x_embed_sqrt
+    #
+    #         # calculate cosine similarity
+    #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
+    #
+    #         return cosine_sim_op
 
     def next_batch(self, data: List[Union[int, str]], batch_size: int, num_skips: int, skip_window: int) \
             -> Tuple[np.ndarray, np.ndarray]:
@@ -377,7 +377,10 @@ class SkipGramWord2Vec(Word2Vec):
             # Evaluation.
             if do_display and (step % self.eval_step == 0 or step == 1):
                 print("Evaluation...")
-                sim = self.evaluate(get_embedding(x_test, self.embedding, self.device_type)).numpy()
+                sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
+                                                  self.embedding,
+                                                  self.device_type).numpy()
+
                 print(sim[0])
                 for i in range(len(self.display_examples)):
                     top_k = 8  # number of nearest neighbors.
@@ -737,7 +740,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # evaluation
             if self.display is not None and (step % self.eval_step == 0 or step == 1):
                 print('Evaluation...\n')
-                sim = self.evaluate(self.cbow_embedding(x_test)).numpy()
+
+                sim = calculate_cosine_similarity(self.cbow_embedding(x_test),
+                                                  self.embedding,
+                                                  self.device_type).numpy()
+
                 print(sim[0])
 
                 for i in range(len(self.display_examples)):

@@ -11,6 +11,8 @@ from xn2v import N2vGraph
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v.utils import get_embedding, write_embeddings, load_embeddings
 
+# TODO: add test for calculates_cosine_similarity in utils/embedding_utils
+
 
 class TestEmbeddingUtils(unittest.TestCase):
     """Class to test the methods designed to work with embeddings from the embedding utility script."""
