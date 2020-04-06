@@ -15,13 +15,13 @@ class Word2Vec:
     def __init__(self,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=3000000,
+                 num_steps=1000000,
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=1,  # default=2
+                 min_occurrence=2,
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=7,  # default=64
+                 num_sampled=64,
                  display=None
                  ):
         """
@@ -113,13 +113,13 @@ class SkipGramWord2Vec(Word2Vec):
                  reverse_worddictionary,
                  learning_rate=0.1,
                  batch_size=128,
-                 num_steps=100,  # default=3000000
+                 num_steps=100000,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=1,  # default=2
+                 min_occurrence=2,
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=7,  # default=64
+                 num_sampled=64,
                  display=None
                  ):
         super(SkipGramWord2Vec, self).__init__(learning_rate,
