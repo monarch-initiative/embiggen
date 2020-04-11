@@ -18,10 +18,10 @@ class Word2Vec:
                  num_steps=100000,
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=2,
+                 min_occurrence=1, #default 2
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=64,
+                 num_sampled= 7, #default 64
                  display=None
                  ):
         """
@@ -116,10 +116,10 @@ class SkipGramWord2Vec(Word2Vec):
                  num_steps=100000,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=2,
+                 min_occurrence=1, #default 2
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=64,
+                 num_sampled=7, #default 64
                  display=None
                  ):
         super(SkipGramWord2Vec, self).__init__(learning_rate,
@@ -360,10 +360,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                  num_steps=100000,  # default=3000000
                  embedding_size=200,
                  max_vocabulary_size=50000,
-                 min_occurrence=2,
+                 min_occurrence=1, #default 2
                  skip_window=3,
                  num_skips=2,
-                 num_sampled=64,
+                 num_sampled=7, #default 64
                  display=None
                  ):
         super(ContinuousBagOfWordsWord2Vec, self).__init__(learning_rate,
