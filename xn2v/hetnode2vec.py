@@ -203,13 +203,18 @@ class N2vGraph:
             dst2count[nbrtype] += 1
             total_neighbors += 1
         total_non_own_probability = 0.0
+        num_types = 0
+        for n, count in dst2count.items():
+            if dst2count[n] != 0:
+                num_types += 1
+
         for n, count in dst2count.items():
             if n == dsttype:
                 # we need to count up the other types before we can calculate this!
                 continue
             else:
                 # owntype is going to a different node type
-                dst2prob[n] = float(self.gamma) / float(count)
+                dst2prob[n] = float(self.gamma) / (float(count) * num_types)
                 total_non_own_probability += dst2prob[n]
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
