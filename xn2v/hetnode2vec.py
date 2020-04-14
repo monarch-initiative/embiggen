@@ -219,8 +219,7 @@ class N2vGraph:
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
         else:
-            dst2prob[dsttype] = (
-                1 - total_non_own_probability) / float(dst2count[dsttype])
+            dst2prob[dsttype] = (1 - total_non_own_probability) / float(dst2count[dsttype])
         # Now assign the final unnormalized probs
         unnormalized_probs = np.zeros(total_neighbors)
         i = 0

@@ -30,14 +30,14 @@ class TestGraph(TestCase):
         self.assertEqual(len(j_alias), len(q_alias))
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
         self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be 0.125, 0.125, 0.5, 0.25
+        # recreate the original probabilities. They should be 0.25, 0.25, 0.3333, 0.1666
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(0.25, original_probs[0])
         self.assertAlmostEqual(0.25, original_probs[1])
         self.assertAlmostEqual(1.0/3.0, original_probs[2])
         self.assertAlmostEqual(1.0/6.0, original_probs[3])
 
-    def test_raw_probs_simple_graph_2(self):# This test need to be checked.
+    def test_raw_probs_simple_graph_2(self):
         p = 1
         q = 1
         gamma = 1
@@ -51,11 +51,11 @@ class TestGraph(TestCase):
         # outgoing edges from g4: d2, g1, g3, p4
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias) #some original probs are not positive!!
-        self.assertAlmostEqual(1.0/3.0, original_probs[0]) #Check probability!
-        self.assertAlmostEqual(1.0/6.0, original_probs[1]) #Check probability!
-        self.assertAlmostEqual(1.0/6.0, original_probs[2]) #Check probability!
-        self.assertAlmostEqual(1.0/3.0, original_probs[3]) #Check probability!
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(1.0/3.0, original_probs[0])
+        self.assertAlmostEqual(1.0/6.0, original_probs[1])
+        self.assertAlmostEqual(1.0/6.0, original_probs[2])
+        self.assertAlmostEqual(1.0/3.0, original_probs[3])
 
 
 class TestHetGraph(TestCase):
@@ -103,8 +103,6 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        #src = self.graph.get_node_index('g0')
-        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'g2'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
@@ -116,13 +114,11 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(1.0, original_probs[0])
 
 
-    def test_raw_probs_2(self):# This test needs to be checked.
+    def test_raw_probs_3(self):
         p = 1
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        #src = self.graph.get_node_index('g0')
-        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'p1'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
@@ -131,7 +127,41 @@ class TestHetGraph(TestCase):
         self.assertEqual(30, len(j_alias))
         # recreate the original probabilities.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        #self.assertAlmostEqual(1.0/30.0, original_probs[1])#check the probability
+        self.assertAlmostEqual(1.0 / 2, original_probs[0])
+        self.assertAlmostEqual(1.0/58.0, original_probs[1])
+
+    def test_raw_probs_4(self):
+        p = 1
+        q = 1
+        gamma = 1
+        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        src = 'g1'
+        dst = 'd1'
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        self.assertEqual(len(j_alias), len(q_alias))
+        # outgoing edges from d1: d2, ..., d20, g1
+        self.assertEqual(20, len(j_alias))
+        # recreate the original probabilities.
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(1.0 / 38, original_probs[0])
+        self.assertAlmostEqual(1.0 / 2, original_probs[19])
+
+    def test_raw_probs_5(self):
+        p = 1
+        q = 1
+        gamma = 1.0/3.0
+        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        src = 'g1'
+        dst = 'p1'
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        self.assertEqual(len(j_alias), len(q_alias))
+        # outgoing edges from p1: g1, p2, ..., p30
+        self.assertEqual(30, len(j_alias))
+        # recreate the original probabilities.
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[0])
+        self.assertAlmostEqual(5/174.0, original_probs[25])
+        self.assertAlmostEqual(5/174.0, original_probs[29])
 
 
 class TestHetGraph2(TestCase):
@@ -190,7 +220,7 @@ class TestHetGraph2(TestCase):
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
         d1prob = probs[idx]  # total probability of going from g1 to d1
-        #self.assertAlmostEqual(1.0 / 3.0, d1prob)
+        self.assertAlmostEqual(1.0 / 3.0, d1prob)
 
     def test_gamma_probs_2(self):
         """
