@@ -22,11 +22,7 @@ class TestGraph(TestCase):
         #dst = self.graph.get_node_index('g2')
         src = 'g1'
         dst = 'g2'
-        edge = (src, dst)
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        #orig_edge, [j_alias, q_alias] = g.get_alias_edge(src, dst)
-        #self.assertEqual(orig_edge, edge,
-                        # "get_alias_edge didn't send back the original edge")
         self.assertEqual(len(j_alias), len(q_alias))
         # there are 4 outgoing edges from g2: g1, g3, p1, p2
         self.assertEqual(4, len(j_alias))
@@ -164,7 +160,7 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(5/174.0, original_probs[29])
 
 
-class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
+class TestHetGraph2(TestCase):
 
     def setUp(self):
         infile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
@@ -200,7 +196,7 @@ class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
 
     def test_gamma_probs(self):
         """
-        Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma = 1/k
+        Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma/k
         where k=3, i.e., the number of different node types
         :return:
         """
@@ -218,14 +214,14 @@ class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
         # We want the probability of going from g1 to d1 -- it should be equal to gamma, because there is only one g1 to disease edge
         idx = self.get_index_of_neighbor('g1', 'd1')
         self.assertIsNotNone(idx)
-        #probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
-        #d1prob = probs[idx]  # total probability of going from g1 to d1
-        #self.assertAlmostEqual(1.0 / 3.0, d1prob)
+        probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
+        d1prob = probs[idx]  # total probability of going from g1 to d1 is (gamma/3) = 1/9. d1 is in different network
+        #and is the only neighbor of g1 in this network. g1 is connected to 3 nodetypes. So, gamma/3.
+        self.assertAlmostEqual(1.0 / 9.0, d1prob)
 
     def test_gamma_probs_2(self):
         """
-        Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma = 1/k
-        where k=3, i.e., the number of different node types
+        Test that our rebalancing methods cause us to go from g2 to g1 with a probability 1
         :return:
         """
         p = 1
@@ -243,14 +239,14 @@ class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
         # and it is in the same network
         idx = self.get_index_of_neighbor('g2', 'g1')
         self.assertIsNotNone(idx)
-        #probs = calculate_total_probs(g1g2edges[0], g1g2edges[1])
-        #g1prob = probs[idx]  # total probability of going from g2 to g1
-        #self.assertAlmostEqual(1.0, g1prob)
+        probs = calculate_total_probs(g1g2edges[0], g1g2edges[1])
+        g1prob = probs[idx]  # total probability of going from g2 to g1
+        self.assertAlmostEqual(1.0, g1prob)
 
     def test_gamma_probs_3(self):
         """
-        Test that our rebalancing methods cause us to go from g1 to d1 with a probability of gamma = 1/k
-        where k=3, i.e., the number of different node types
+        Test that our rebalancing methods cause us to go from p1 to g1 with a probability of gamma/ k
+        where k=2, i.e., the number of different node types
         :return:
         """
         p = 1
@@ -267,17 +263,19 @@ class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
         # We want the probability of going from p1 to p2 -- it should be equal
         idx = self.get_index_of_neighbor('p1', 'g1')
         self.assertIsNotNone(idx)
-        #probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
-        #g1prob = probs[idx]  # total probability of going from p1 to g1.
+        probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
+        g1prob = probs[idx]  # total probability of going from p1 to g1.
         ## p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
-        # The probability of going back to g1 is gamma which is 1/3
-        #self.assertAlmostEqual(1.0 / 3.0, g1prob)
+        # The probability of going back to g1 is gamma/2 which is (1/3)/2 = 1/6 because p1 is connected to 2 networks
+        # (gens and proteins). p1 is the only neighbor of g1 in proteins, so gamma/2.
+        self.assertAlmostEqual(1.0 / 6.0, g1prob)
 
     def test_gamma_probs_4(self):
         """
         Assume we have traversed the g1-p1 edge.
-        Test that our rebalancing methods cause us to go from p1 to g1 with a probability of gamma = 1/k
-        where k=3, i.e., the number of different node types
+        Test that our rebalancing methods cause us to go from p1 to p2 with a probability (1 - gamma/k)/n where
+        where k=2, i.e., the number of different node types connected to p1 and n=29 is the number of nodes in protein set ]
+        #connected to p1.
         :return:
         """
         p = 1
@@ -291,11 +289,11 @@ class TestHetGraph2(TestCase):# TODO: tests in this class need to be checked!!
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
         # The following code searches for the index of p2
-        # We want the probability of going from p1 to p2 -- it should be equal
+        # We want the probability of going from p1 to p2 --
         idx = self.get_index_of_neighbor('p1', 'p2')
         self.assertIsNotNone(idx)
-        #probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
-        #p2prob = probs[idx]  # total probability of going from p1 to p2.
+        probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
+        p2prob = probs[idx]  # total probability of going from p1 to p2.
         # p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
-        # The probability of going  to p2 is gamma which is (2/3*29) ~ 0.023
-        #self.assertAlmostEqual(2.0 / 87.0, p2prob)
+        # The probability of going  to p2 is (1-gamma/2)/29 which is (5/(6*29))
+        self.assertAlmostEqual(5.0 / 174.0, p2prob)
