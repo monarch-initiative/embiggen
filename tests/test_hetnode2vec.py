@@ -54,6 +54,7 @@ class TestGraph(TestCase):
         self.assertAlmostEqual(1.0/3.0, original_probs[3])
 
 
+
 class TestHetGraph(TestCase):
 
     def setUp(self):
@@ -158,6 +159,43 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(1.0 / 6.0, original_probs[0])
         self.assertAlmostEqual(5/174.0, original_probs[25])
         self.assertAlmostEqual(5/174.0, original_probs[29])
+
+    def test_raw_probs_6(self):
+        p = 1
+        q = 1
+        gamma = 1
+        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        src = 'd1'
+        dst = 'g1'
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        self.assertEqual(len(j_alias), len(q_alias))
+        # outgoing edges from g1: d1, g0, g2, ...., g100, p1
+        self.assertEqual(102, len(j_alias))
+        # recreate the original probabilities. They should be a vector of length 104.
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(1.0 / 3.0, original_probs[0]) #prob from g1 to d1
+        self.assertAlmostEqual(1.0 / 300.0, original_probs[1])#prob from g1 to g0
+        self.assertAlmostEqual(1.0 / 300.0, original_probs[30])#prob from g1 to g30
+        self.assertAlmostEqual(1.0 / 3.0, original_probs[101])#prob from g1 to p1
+
+    def test_raw_probs_7(self):
+        p = 1
+        q = 1
+        gamma = 1.0/2.0
+        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
+        src = 'd1'
+        dst = 'g1'
+        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
+        self.assertEqual(len(j_alias), len(q_alias))
+        # outgoing edges from g1: d1, g0, g2, ...., g100, p1
+        self.assertEqual(102, len(j_alias))
+        # recreate the original probabilities. They should be a vector of length 104.
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[0]) #prob from g1 to d1
+        self.assertAlmostEqual(2.0/300.0, original_probs[1])#prob from g1 to g0
+        self.assertAlmostEqual(2.0 / 300.0, original_probs[30])#prob from g1 to g30
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[101])#prob from g1 to p1
+
 
 
 class TestHetGraph2(TestCase):
