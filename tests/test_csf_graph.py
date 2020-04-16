@@ -37,7 +37,7 @@ class TestCSFGraph(TestCase):
         expected = 10  # for d1<->d3
         weight = self.g.weight('d1', 'd3')
         self.assertEqual(expected, weight)
-        expected = 7  # for g3<->g4
+        expected = 10  # for g3<->g4
         weight = self.g.weight('g3', 'g4')
         self.assertEqual(expected, weight)
 
