@@ -10,6 +10,7 @@ import xn2v
 from xn2v import CSFGraph
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v import LinkPrediction
+from xn2v.utils import write_embeddings
 
 @click.group()
 def cli():
@@ -58,7 +59,8 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
                              reverse_worddictionary=reverse_worddictionary,
                              num_steps=num_steps)
     model.train(display_step=display_step)
-    model.write_embeddings(output_file)
+
+    write_embeddings(output_file, model.embedding, reverse_worddictionary)
 
 @cli.command()
 
@@ -127,7 +129,8 @@ def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                              num_steps=1000)
     model.train(display_step=100)
     output_filenname = 'karate.embedded'
-    model.write_embeddings(output_filenname)
+
+    write_embeddings(output_filenname, model.embedding, reverse_worddictionary)
 
     test_graph = CSFGraph(test_file)
     path_to_embedded_graph = output_filenname
