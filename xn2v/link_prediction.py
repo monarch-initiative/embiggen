@@ -138,12 +138,14 @@ class LinkPrediction:
         accuracy = (confusion_matrix[0, 0] + confusion_matrix[1, 1]) * (1.0) / total
         specificity = confusion_matrix[0, 0] * (1.0) / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * (1.0)
         sensitivity = confusion_matrix[1, 1] * (1.0) / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * (1.0)
-
-        print("predictions: {}".format(str(self.predictions)))
+        f1_score = (2.0 * confusion_matrix[1,1] )/ (2.0 * confusion_matrix[1,1] + confusion_matrix[0, 1] + confusion_matrix[1, 0] )
+        #f1-score =2 * TP / (2 * TP + FP + FN)
+        #print("predictions: {}".format(str(self.predictions)))
         print("confusion matrix: {}".format(str(confusion_matrix)))
         print('Accuracy : {}'.format(accuracy))
         print('Specificity : {}'.format(specificity))
         print('Sensitivity : {}'.format(sensitivity))
+        print("F1-score : {}".format(f1_score))
         print("node2vec Test ROC score: {} ".format(str(self.test_roc)))
         print("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
 

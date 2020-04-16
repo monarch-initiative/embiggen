@@ -123,6 +123,7 @@ class SkipGramWord2Vec(Word2Vec):
 
         super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
                          skip_window, num_skips, num_sampled, display, device_type)
+
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -435,7 +436,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                          skip_window, num_skips, num_sampled, display, device_type)
 
         sentences_per_batch = 1
-
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary

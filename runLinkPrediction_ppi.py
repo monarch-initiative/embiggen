@@ -44,8 +44,8 @@ def parse_args():
                         help='Embeddings embedding method of the positive training graph. '
                              'It can be hadamard, weightedL1, weightedL2 or average')
 
-    parser.add_argument('--dimensions', type=int, default=128,
-                        help='Number of dimensions. Default is 128.')
+    parser.add_argument('--embedding_size', type=int, default=200,
+                        help='Number of dimensions which is size of the embedded vectors. Default is 200.')
 
     parser.add_argument('--walk-length', type=int, default=80,
                         help='Length of walk per source. Default is 80.')
@@ -53,8 +53,8 @@ def parse_args():
     parser.add_argument('--num-walks', type=int, default=10,
                         help='Number of walks per source. Default is 10.')
 
-    parser.add_argument('--window-size', type=int, default=10,
-                        help='Context size for optimization. Default is 10.')
+    parser.add_argument('--skip_window', type=int, default=3,
+                        help='Context size for optimization. Default is 3.')
 
     parser.add_argument('--iter', default=1, type=int,
                         help='Number of epochs in SGD')
@@ -159,8 +159,8 @@ def main(args):
     """
     print(
         "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}, skip_window={}, dimension={}"
-            .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps, args.skip_window,
-                    args.embedding_size))
+        .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps, args.skip_window,
+                args.embedding_size))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
     pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)

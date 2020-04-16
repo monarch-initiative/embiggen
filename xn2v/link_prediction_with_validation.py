@@ -170,12 +170,12 @@ class LinkPredictionWithValidation:
          """
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
-        valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
-        valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
-        valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
-        valid_f1_score = (2.0 * valid_conf_matrix[1, 1]) / (
-                    2.0 * valid_conf_matrix[1, 1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
-        # f1-score =2 * TP / (2 * TP + FP + FN)
+        valid_accuracy = (valid_conf_matrix[0,0] + valid_conf_matrix[1, 1]) / total
+        valid_specificity = valid_conf_matrix[0,0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+        valid_sensitivity = valid_conf_matrix[1,1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+        valid_f1_score = (2.0 * valid_conf_matrix[1,1]) / (2.0 * valid_conf_matrix[1,1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
+        #f1-score =2 * TP / (2 * TP + FP + FN)
+
         print("predictions for validation set:")
         print("predictions (validation): {}".format(str(self.validation_predictions)))
         print("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
@@ -189,11 +189,10 @@ class LinkPredictionWithValidation:
 
         test_conf_matrix = self.test_confusion_matrix
         total = sum(sum(test_conf_matrix))
-        test_accuracy = (test_conf_matrix[0, 0] + test_conf_matrix[1, 1]) / total
-        test_specificity = test_conf_matrix[0, 0] / (test_conf_matrix[0, 0] + test_conf_matrix[0, 1])
-        test_sensitivity = test_conf_matrix[1, 1] / (test_conf_matrix[1, 0] + test_conf_matrix[1, 1])
-        test_f1_score = (2.0 * test_conf_matrix[1, 1]) / (
-                    2.0 * test_conf_matrix[1, 1] + test_conf_matrix[0, 1] + test_conf_matrix[1, 0])
+        test_accuracy = (test_conf_matrix[0,0] + test_conf_matrix[1,1]) / total
+        test_specificity = test_conf_matrix[0,0] / (test_conf_matrix[0,0] + test_conf_matrix[0,1])
+        test_sensitivity = test_conf_matrix[1,1] / (test_conf_matrix[1,0] + test_conf_matrix[1,1])
+        test_f1_score = (2.0 * test_conf_matrix[1,1]) / (2.0 * test_conf_matrix[1,1] + test_conf_matrix[0, 1] + test_conf_matrix[1, 0])
 
         print("predictions for test set:")
         print("predictions (test): {}".format(str(self.test_predictions)))
