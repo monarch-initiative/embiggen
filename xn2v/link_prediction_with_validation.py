@@ -187,29 +187,36 @@ class LinkPredictionWithValidation:
          """
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
-        valid_accuracy = (valid_conf_matrix[0,0] + valid_conf_matrix[1, 1])/ total
+        valid_accuracy = (valid_conf_matrix[0,0] + valid_conf_matrix[1, 1]) / total
         valid_specificity = valid_conf_matrix[0,0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
         valid_sensitivity = valid_conf_matrix[1,1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+        valid_f1_score = (2.0 * valid_conf_matrix[1,1]) / (2.0 * valid_conf_matrix[1,1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
+        #f1-score =2 * TP / (2 * TP + FP + FN)
         print("predictions for validation set:")
         print("predictions (validation): {}".format(str(self.validation_predictions)))
         print("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
         print('Accuracy (validation) : {}'.format(valid_accuracy))
         print('Specificity (validation): {}'.format(valid_specificity))
         print('Sensitivity (validation): {}'.format(valid_sensitivity))
+        print('F1-score (validation): {}'.format(valid_f1_score))
+
         print("node2vec Test ROC score (validation): {} ".format(str(self.valid_roc)))
         print("node2vec Test AP score (validation): {} ".format(str(self.valid_average_precision)))
 
         test_conf_matrix = self.test_confusion_matrix
         total = sum(sum(test_conf_matrix))
-        valid_accuracy = (test_conf_matrix[0,0] + test_conf_matrix[1,1])  / total
-        valid_specificity = test_conf_matrix[0,0]/ (test_conf_matrix[0,0] + test_conf_matrix[0,1])
-        valid_sensitivity = test_conf_matrix[1,1]/ (test_conf_matrix[1,0] + test_conf_matrix[1,1])
+        test_accuracy = (test_conf_matrix[0,0] + test_conf_matrix[1,1]) / total
+        test_specificity = test_conf_matrix[0,0] / (test_conf_matrix[0,0] + test_conf_matrix[0,1])
+        test_sensitivity = test_conf_matrix[1,1] / (test_conf_matrix[1,0] + test_conf_matrix[1,1])
+        test_f1_score = (2.0 * test_conf_matrix[1,1]) / (2.0 * test_conf_matrix[1,1] + test_conf_matrix[0, 1] + test_conf_matrix[1, 0])
+
         print("predictions for test set:")
         print("predictions (test): {}".format(str(self.test_predictions)))
         print("confusion matrix (test): {}".format(str(test_conf_matrix)))
-        print('Accuracy (test): {}'.format(valid_accuracy))
-        print('Specificity (test): {}'.format(valid_specificity))
-        print('Sensitivity (test): {}'.format(valid_sensitivity))
+        print('Accuracy (test): {}'.format(test_accuracy))
+        print('Specificity (test): {}'.format(test_specificity))
+        print('Sensitivity (test): {}'.format(test_sensitivity))
+        print('F1-score (test): {}'.format(test_f1_score))
         print("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
         print("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
