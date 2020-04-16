@@ -49,7 +49,7 @@ class LinkPrediction:
         self.classifier = classifier
         self.graph_type = graph_type
 
-    def prepare_lables_test_training(self):
+    def prepare_labels_test_training(self):
         """
         label positive edge embeddings with 1 and negative edge embeddings with 0.
         :return:

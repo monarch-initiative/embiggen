@@ -125,7 +125,7 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
                         args.embed_graph, args.edge_embed_method, args.classifier, args.type)
 
-    lp.prepare_lables_test_training()
+    lp.prepare_labels_test_training()
     lp.predict_links()
     lp.output_classifier_results()
     lp.output_edge_node_information()
