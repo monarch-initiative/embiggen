@@ -28,10 +28,10 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be 0.25, 0.25, 0.3333, 0.1666
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(0.25, original_probs[0])
-        self.assertAlmostEqual(0.25, original_probs[1])
-        self.assertAlmostEqual(1.0/3.0, original_probs[2])
-        self.assertAlmostEqual(1.0/6.0, original_probs[3])
+        self.assertAlmostEqual(0.25, original_probs[0])#prob from g2 to g1: (1-1/2)/2 = 1/4
+        self.assertAlmostEqual(0.25, original_probs[1])#prob from g2 to g3: (1-1/2)/2 = 1/4
+        self.assertAlmostEqual(1.0/3.0, original_probs[2])#prob from g2 to p1: ((1/2)/2)*20 = 5 --> 5/7.5 = 1/3 (weight of edge:20)
+        self.assertAlmostEqual(1.0/6.0, original_probs[3])#prob from g2 to p2: ((1/2)/2)*10 = 2.5 --> 2.5/7.5 = 1/6 (weight of edge:10)
 
     def test_raw_probs_simple_graph_2(self):
         p = 1
@@ -46,10 +46,11 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0/3.0, original_probs[0])
-        self.assertAlmostEqual(1.0/6.0, original_probs[1])
-        self.assertAlmostEqual(1.0/6.0, original_probs[2])
-        self.assertAlmostEqual(1.0/3.0, original_probs[3])
+        self.assertAlmostEqual(1.0/3.0, original_probs[0])#prob from g4 to d2: gamma/number of node types of neighbors of g4
+        # = 1/3
+        self.assertAlmostEqual(1.0/6.0, original_probs[1])# prob from g4 to g1: (1-2/3)/2 = 1/6
+        self.assertAlmostEqual(1.0/6.0, original_probs[2])#prob from g4 to g3: (1-2/3)/2 = 1/6
+        self.assertAlmostEqual(1.0/3.0, original_probs[3])#prob from g4 to p4: 1/3
 
     def test_raw_probs_simple_graph_3(self):
         p = 1
@@ -64,10 +65,10 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 2.0, original_probs[0])
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[1])
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[2])
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[3])
+        self.assertAlmostEqual(1.0 / 2.0, original_probs[0]) #prob from p2 to g1: 1/2
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[1]) #prob from p2 to p1: (1-1/2)/3 = 1/6
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[2])#prob from p2 to p3: (1-1/2)/3 = 1/6
+        self.assertAlmostEqual(1.0 / 6.0, original_probs[3])#prob from p2 to p4: (1-1/2)/3 = 1/6
 
     def test_raw_probs_simple_graph_4(self):
         p = 1
@@ -82,10 +83,10 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 16.0, original_probs[0])
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[1])
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[2])
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[3])
+        self.assertAlmostEqual(1.0 / 16.0, original_probs[0]) #prob from p2 to g1: gamma/2 = (1/8)/2 = 1/16
+        self.assertAlmostEqual(15.0 / 48.0, original_probs[1])#prob from p2 to p1: (1-gamma/2)/3 = (15/16)/3 = 15/48
+        self.assertAlmostEqual(15.0 / 48.0, original_probs[2])#prob from p2 to p3: (1-gamma/2)/3 = (15/16)/3 = 15/48
+        self.assertAlmostEqual(15.0 / 48.0, original_probs[3])#prob from p2 to p4: (1-gamma/2)/3 = (15/16)/3 = 15/48
 
     def test_raw_probs_simple_graph_5(self):
         p = 1
@@ -100,10 +101,10 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 24.0, original_probs[0])
-        self.assertAlmostEqual(11.0 / 24.0, original_probs[1])
-        self.assertAlmostEqual(11.0 / 24.0, original_probs[2])
-        self.assertAlmostEqual(1.0 / 24.0, original_probs[3])
+        self.assertAlmostEqual(1.0 / 24.0, original_probs[0])#prob from g4 to d2: gamma/3 = 1/24
+        self.assertAlmostEqual(11.0 / 24.0, original_probs[1])#prob from g4 to g1: (1- 2*gamma/3)/2 = 11/24
+        self.assertAlmostEqual(11.0 / 24.0, original_probs[2])#prob from g4 to g3: (1- 2*gamma/3)/2 = 11/24
+        self.assertAlmostEqual(1.0 / 24.0, original_probs[3])#prob from g4 to p4: gamma/3 = 1/24
 
     def test_raw_probs_simple_graph_6(self):
         p = 1
@@ -118,10 +119,10 @@ class TestGraph(TestCase):
         self.assertEqual(4, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 4.
         original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(7.0 / 24.0, original_probs[0])
-        self.assertAlmostEqual(10.0 / 48.0, original_probs[1])
-        self.assertAlmostEqual(10.0 / 48.0, original_probs[2])
-        self.assertAlmostEqual(7.0 / 24.0, original_probs[3])
+        self.assertAlmostEqual(7.0 / 24.0, original_probs[0]) #prob from g4 to d2: gamma/3 = 7/24
+        self.assertAlmostEqual(10.0 / 48.0, original_probs[1])#prob from g4 to g1: (1-2gamma/3)/2 = 10/48
+        self.assertAlmostEqual(10.0 / 48.0, original_probs[2])#prob from g4 to g3: (1-2gamma/3)/2 = 10/48
+        self.assertAlmostEqual(7.0 / 24.0, original_probs[3])#prob from g4 to p4: gamma/3 = 7/24
 
 
 class TestHetGraph(TestCase):
