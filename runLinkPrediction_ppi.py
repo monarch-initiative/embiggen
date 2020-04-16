@@ -101,10 +101,12 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
 
     if w2v_model == "Skipgram":
         model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
+                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
+                                 embedding_size=args.embedding_size, skip_window=args.skip_window)
     elif w2v_model == "CBOW":
         model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps)
+                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
+                                             embedding_size=args.embedding_size, skip_window=args.skip_window)
     else:
         print("[ERROR] enter Skipgram or CBOW")
         sys.exit(1)
@@ -155,8 +157,10 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print("[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}"
-          .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps))
+    print(
+        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}, skip_window={}, dimension={}"
+            .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps, args.skip_window,
+                    args.embedding_size))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
     pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
     walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
