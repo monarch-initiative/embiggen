@@ -41,6 +41,9 @@ class TestCBOWconstruction(TestCase):
                                                  reverse_worddictionary=reverse_worddictionary,
                                                  num_steps=100)
 
+        # make sure that the model train function runs
+        self.cbow.train()
+
     def test_number_of_walks_performed(self):
 
         # expected number of walks is num_walks times the number of nodes in the training graph
