@@ -341,8 +341,8 @@ class TestHetGraph2(TestCase):
         idx = self.get_index_of_neighbor('g1', 'd1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g0g1edges[0], g0g1edges[1])
-        d1prob = probs[idx]  # total probability of going from g1 to d1 is (gamma/3) = 1/9. d1 is in different network
-        #and is the only neighbor of g1 in this network. g1 is connected to 3 nodetypes. So, gamma/3.
+        d1prob = probs[idx]  # total probability of going from g1 to d1 is (gamma/3) = 1/9, because d1 is in different network
+        #and is the only neighbor of g1 in this network. g1 is connected to 3 nodetypes.
         self.assertAlmostEqual(1.0 / 9.0, d1prob)
 
     def test_gamma_probs_2(self):
@@ -385,15 +385,15 @@ class TestHetGraph2(TestCase):
         alias_edge_tuple = g.retrieve_alias_edges()
         g1p1edges = alias_edge_tuple.get(g1p1tuple)
         # g1p1 edges has the alias map and probabilities as a 2-tuple
-        # The following code searches for the index of p2
-        # We want the probability of going from p1 to p2 -- it should be equal
+        # The following code searches for the index of g1
+        # We want the probability of going from p1 to g1 -- it should be equal
         idx = self.get_index_of_neighbor('p1', 'g1')
         self.assertIsNotNone(idx)
         probs = calculate_total_probs(g1p1edges[0], g1p1edges[1])
         g1prob = probs[idx]  # total probability of going from p1 to g1.
         ## p1 has g1 as a neighbor in different network and has 29 protein neighbors in the same network.
         # The probability of going back to g1 is gamma/2 which is (1/3)/2 = 1/6 because p1 is connected to 2 networks
-        # (gens and proteins). p1 is the only neighbor of g1 in proteins, so gamma/2.
+        # (gens and proteins). p1 is the only neighbor of g1 in proteins.
         self.assertAlmostEqual(1.0 / 6.0, g1prob)
 
     def test_gamma_probs_4(self):
