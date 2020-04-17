@@ -39,7 +39,7 @@ class TestCBOWconstruction(TestCase):
         self.cbow = ContinuousBagOfWordsWord2Vec(self.walks,
                                                  worddictionary=worddictionary,
                                                  reverse_worddictionary=reverse_worddictionary,
-                                                 num_steps=10)
+                                                 num_steps=100)
 
         # make sure that the model train function runs
         self.cbow.train()

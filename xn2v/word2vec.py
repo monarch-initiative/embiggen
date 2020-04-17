@@ -372,8 +372,9 @@ class SkipGramWord2Vec(Word2Vec):
                 self.run_optimization(batch_x, batch_y)
 
                 # if step % display_step == 0 or step == 1:
-                loss = self.nce_loss(get_embedding(batch_x, self.embedding, self.device_type), batch_y)
-                pbar.set_description("step: %i, loss: %f" % (step, loss))
+                if step % 10 == 0 or step == 1:
+                    loss = self.nce_loss(get_embedding(batch_x, self.embedding, self.device_type), batch_y)
+                    pbar.set_description("step: %i, loss: %f" % (step, loss))
 
             # Evaluation.
             if do_display and (step % self.eval_step == 0 or step == 1):
@@ -734,8 +735,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.run_optimization(batch_x, batch_y)
 
             # if step % display_step == 0 or step == 1:
-            loss = self.get_loss(self.cbow_embedding(batch_x), batch_y)
-            print("step: %i, loss: %f" % (step, loss))
+            if step % 10 == 0 or step == 1:
+                loss = self.get_loss(self.cbow_embedding(batch_x), batch_y)
+                print("step: %i, loss: %f" % (step, loss))
 
             # evaluation
             if self.display is not None and (step % self.eval_step == 0 or step == 1):
