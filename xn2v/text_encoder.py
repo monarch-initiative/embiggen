@@ -1,13 +1,12 @@
-import collections
-import re
-import os
-import string
 import bz2
-
-from math import ceil
+import collections
+import os
+import re
+import string
 
 from pandas.core.common import flatten
-from tensorflow.keras.preprocessing.text import text_to_word_sequence, Tokenizer
+from math import ceil
+from keras.preprocessing.text import text_to_word_sequence, Tokenizer
 
 
 class TextEncoder:
@@ -264,7 +263,6 @@ class TextEncoder:
         # log.info('Sample data: {}', str(data[:10]))
         return data, count, dictionary, dict(zip(dictionary.values(), dictionary.keys()))
 
-
     def build_dataset_with_keras(self, max_vocab_size=50000):
         text = self.get_raw_text()
         words = text_to_word_sequence(text, lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
@@ -274,7 +272,11 @@ class TextEncoder:
         # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
         # will be 1st index
         # max_vocab_size + 1 because Keras reserves the 0th index
-        tokenizer = Tokenizer(num_words=max_vocab_size + 1, oov_token='UNK', lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+        tokenizer = Tokenizer(num_words=max_vocab_size + 1,
+                              oov_token='UNK',
+                              lower=True,
+                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
         sequences = tokenizer.texts_to_sequences(sentences)
