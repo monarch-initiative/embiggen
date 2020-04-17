@@ -175,6 +175,8 @@ class LinkPrediction(object):
         for edge in edge_list:
             node1 = edge[0]
             node2 = edge[1]
+            print(node1, node2)
+
             emb1 = node2vector_map[node1]
             emb2 = node2vector_map[node2]
             if edge_embedding_method == "hadamard":
