@@ -12,7 +12,8 @@ test_deps = [
     'nose',
     "nose-cov",
     "validate_version_code",
-    "pylint"
+    "pylint",
+    "silence_tensorflow"
 ]
 
 extras = {
