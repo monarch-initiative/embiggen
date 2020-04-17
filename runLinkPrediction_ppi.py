@@ -85,7 +85,7 @@ def parse_args():
     parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
                         help="word2vec model. It can be either Skipgram or CBOW")
 
-    parser.add_argument('--num_steps', type=int, default=100000,
+    parser.add_argument('--num_steps', type=int, default=100,
                         help='number of steps for GD.  Default is 100000.')
 
     return parser.parse_args()
