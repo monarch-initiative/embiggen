@@ -7,8 +7,10 @@ from sklearn.calibration import CalibratedClassifierCV
 
 from sklearn import svm
 from sklearn.metrics import roc_auc_score, average_precision_score
-#import logging
-#import os
+# import logging
+# import os
+
+from xn2v.utils import load_embeddings
 
 
 # handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
@@ -18,21 +20,26 @@ from sklearn.metrics import roc_auc_score, average_precision_score
 # log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
 # log.addHandler(handler)
 
-class LinkPrediction:
+class LinkPrediction(object):
+    """
+    Set up for predicting links from results of node2vec analysis
+
+    Attributes:
+        pos_train_graph: The training graph
+        pos_test_graph:  Graph of links that we want to predict
+        neg_train_graph: Graph of non-existence links in training graph
+        neg_test_graph: Graph of non-existence links that we want to predict as negative edges
+        embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
+        edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or
+            "weightedL2"
+        classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
+            or "SVM" for support vector machine
+        graph_type: It can be "homogen" for homogeneous graph or "heterogen" for heterogeneous graph
+    """
+
     def __init__(self, pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
                  embedded_train_graph_path, edge_embedding_method, classifier, graph_type):
-        """
-        Set up for predicting links from results of node2vec analysis
-        :param pos_train_graph: The training graph
-        :param pos_test_graph:  Graph of links that we want to predict
-        :param neg_train_graph: Graph of non-existence links in training graph
-        :param neg_test_graph: Graph of non-existence links that we want to predict as negative edges
-        :param embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
-        :param edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or "weightedL2"
-        :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest or "SVM" for support
-        vector machine
-        :param graph_type : It can be "homogen" for homogeneous graph or "heterogen" for heterogeneous graph
-        """
+
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
         self.neg_train_edges = neg_train_graph.edges()
@@ -40,7 +47,7 @@ class LinkPrediction:
         self.train_nodes = pos_train_graph.nodes()
         self.test_nodes = pos_test_graph.nodes()
         self.embedded_train_graph = embedded_train_graph_path
-        self.map_node_vector = {}
+        self.map_node_vector = load_embeddings(self.embedded_train_graph)
         self.edge_embedding_method = edge_embedding_method
         self.train_edge_embs = []
         self.train_edge_labels = []
@@ -48,6 +55,11 @@ class LinkPrediction:
         self.tes_edge_embs = []
         self.classifier = classifier
         self.graph_type = graph_type
+        self.test_edge_embs = None
+        self.predictions = None
+        self.confusion_matrix = None
+        self.test_roc = None
+        self.test_average_precision = None
 
     def prepare_labels_test_training(self):
         """
@@ -56,7 +68,7 @@ class LinkPrediction:
         """
         pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
         neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
-        #print(len(true_train_edge_embs),len(false_train_edge_embs))
+        # print(len(true_train_edge_embs),len(false_train_edge_embs))
         self.train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
         self.train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
@@ -74,9 +86,6 @@ class LinkPrediction:
         print("[INFO]: Test edges (positive): {}".format(len(self.pos_test_edges)))
         print("[INFO]: Test edges (negative): {}".format(len(neg_test_edge_embs)))
 
-
-
-
     def predict_links(self):
         """
         Train  classifier on train-set edge embeddings. Classifier is LR:logistic regression or RF:random forest
@@ -89,10 +98,9 @@ class LinkPrediction:
         elif self.classifier == "RF":
             edge_classifier = RandomForestClassifier()
         else:
-            #implement linear SVM.
+            # implement linear SVM.
             model_svc = svm.LinearSVC()
             edge_classifier = CalibratedClassifierCV(model_svc)
-
 
         edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
 
@@ -101,7 +109,7 @@ class LinkPrediction:
 
         # Predicted edge scores: probability of being of class "1" (real edge)
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
-        #fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
+        # fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
@@ -121,26 +129,29 @@ class LinkPrediction:
         print("negative test edges and their prediction:")
 
         for i in range(len(self.neg_test_edges)):
-            print(self.neg_test_edges[i], self.predictions[i+len(self.pos_test_edges)])
-
+            print(self.neg_test_edges[i], self.predictions[i + len(self.pos_test_edges)])
 
     def output_classifier_results(self):
         """
-        The method prints some metrics of the performance of the logistic regression classifier. including accuracy, specificity and sensitivity
-        predictions: prediction results of the logistic regression
-        confusion_matrix:  confusion_matrix[0, 0]: True negatives, confusion_matrix[0, 1]: False positives,
-        confusion_matrix[1, 1]: True positives and confusion_matrix[1, 0]: False negatives
-        test_roc: AUC score
-        test_average_precision: Average precision
+        The method prints some metrics of the performance of the logistic regression classifier. including accuracy,
+        specificity and sensitivity
+
+        Attributes used in method:
+            predictions: prediction results of the logistic regression
+            confusion_matrix:  confusion_matrix[0, 0]: True negatives, confusion_matrix[0, 1]: False positives,
+            confusion_matrix[1, 1]: True positives and confusion_matrix[1, 0]: False negatives
+            test_roc: AUC score
+            test_average_precision: Average precision
          """
         confusion_matrix = self.confusion_matrix
         total = sum(sum(confusion_matrix))
-        accuracy = (confusion_matrix[0, 0] + confusion_matrix[1, 1]) * (1.0) / total
-        specificity = confusion_matrix[0, 0] * (1.0) / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * (1.0)
-        sensitivity = confusion_matrix[1, 1] * (1.0) / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * (1.0)
-        f1_score = (2.0 * confusion_matrix[1,1] )/ (2.0 * confusion_matrix[1,1] + confusion_matrix[0, 1] + confusion_matrix[1, 0] )
-        #f1-score =2 * TP / (2 * TP + FP + FN)
-        #print("predictions: {}".format(str(self.predictions)))
+        accuracy = (confusion_matrix[0, 0] + confusion_matrix[1, 1]) * 1.0 / total
+        specificity = confusion_matrix[0, 0] * 1.0 / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * 1.0
+        sensitivity = confusion_matrix[1, 1] * 1.0 / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * 1.0
+        f1_score = (2.0 * confusion_matrix[1, 1]) / (
+                    2.0 * confusion_matrix[1, 1] + confusion_matrix[0, 1] + confusion_matrix[1, 0])
+        # f1-score =2 * TP / (2 * TP + FP + FN)
+        # print("predictions: {}".format(str(self.predictions)))
         print("confusion matrix: {}".format(str(confusion_matrix)))
         print('Accuracy : {}'.format(accuracy))
         print('Specificity : {}'.format(specificity))
@@ -151,10 +162,12 @@ class LinkPrediction:
 
     def transform(self, edge_list, node2vector_map):
         """
-        This method finds embedding for edges of the graph. There are 4 ways to calculate edge embedding: Hadamard, Average, Weighted L1 and Weighted L2
+        This method finds embedding for edges of the graph. There are 4 ways to calculate edge embedding: Hadamard,
+        Average, Weighted L1 and Weighted L2
+
         :param edge_list:
         :param node2vector_map: key:node, value: embedded vector
-        :param size_limit: Maximum number of edges that are embedded
+        # :param size_limit: Maximum number of edges that are embedded
         :return: list of embedded edges
         """
         embs = []
@@ -199,6 +212,7 @@ class LinkPrediction:
         """
         print the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
+        :param group:
         :return:
         """
         if self.graph_type == "homogen":
@@ -225,7 +239,7 @@ class LinkPrediction:
             num_dis = 0
             nodes = set()
             for edge in edge_list:
-                if (edge[0].startswith("g") and edge[1].startswith("g")):
+                if edge[0].startswith("g") and edge[1].startswith("g"):
                     num_gene_gene += 1
                 elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
                       (edge[0].startswith("d") and edge[1].startswith("g"))):

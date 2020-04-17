@@ -7,6 +7,8 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn import svm
 from sklearn.metrics import roc_auc_score, average_precision_score
 
+from xn2v.utils import load_embeddings
+
 
 # import logging
 # import os
@@ -49,7 +51,7 @@ class LinkPredictionWithValidation:
         self.validation_nodes = pos_validation_graph.nodes()
         self.test_nodes = pos_test_graph.nodes()
         self.embedded_train_graph = embedded_train_graph_path
-        self.map_node_vector = {}
+        self.map_node_vector = load_embeddings(self.embedded_train_graph)
         self.edge_embedding_method = edge_embedding_method
         self.train_edge_embs = []
         self.valid_edges_embs = []
@@ -63,6 +65,11 @@ class LinkPredictionWithValidation:
         self.test_predictions = []
         self.test_confusion_matrix = []
         self.validation_confusion_matrix = []
+        self.valid_edge_embs = None
+        self.valid_roc = None
+        self.valid_average_precision = None
+        self.test_roc = None
+        self.test_average_precision = None
 
     def prepare_training_validation_test_labels(self):
         """
@@ -170,8 +177,8 @@ class LinkPredictionWithValidation:
          """
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
-        valid_accuracy = (valid_conf_matrix[0,0] + valid_conf_matrix[1, 1]) / total
-        valid_specificity = valid_conf_matrix[0,0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+        valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
+        valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
         valid_sensitivity = valid_conf_matrix[1,1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
         valid_f1_score = (2.0 * valid_conf_matrix[1,1]) / (2.0 * valid_conf_matrix[1,1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
         #f1-score =2 * TP / (2 * TP + FP + FN)
@@ -210,7 +217,7 @@ class LinkPredictionWithValidation:
         Average, Weighted L1 and Weighted L2
         :param edge_list:
         :param node2vector_map: key:node, value: embedded vector
-        :param size_limit: Maximum number of edges that are embedded
+        # :param size_limit: Maximum number of edges that are embedded
         :return: list of embedded edges
         """
         embs = []
@@ -256,6 +263,7 @@ class LinkPredictionWithValidation:
         """
         print the number of nodes and edges of each type of the graph
         :param edge_list: e.g.,  [('1','7), ('88','22'),...], either training or test
+        :param group:
         :return:
         """
         if self.graph_type == "homogen":
