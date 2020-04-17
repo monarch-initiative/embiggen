@@ -31,7 +31,7 @@ class Word2Vec:
         """
 
     def __init__(self, learning_rate: float = 0.1, batch_size: int = 128,
-                 num_steps: int = 3000000, embedding_size: int = 200, max_vocabulary_size: int = 50000,
+                 num_steps: int = 300000, embedding_size: int = 200, max_vocabulary_size: int = 50000,
                  min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
                  display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
@@ -117,7 +117,7 @@ class SkipGramWord2Vec(Word2Vec):
     """
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_steps: int = 100, embedding_size: int = 200,
+                 learning_rate: float = 0.1, batch_size: int = 128, num_steps: int = 300000, embedding_size: int = 200,
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
@@ -429,7 +429,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_steps: int = 1000, embedding_size: int = 200,
+                 learning_rate: float = 0.1, batch_size: int = 128, num_steps: int = 300000, embedding_size: int = 200,
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
