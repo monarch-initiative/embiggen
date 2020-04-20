@@ -258,3 +258,10 @@ class CSFGraph:
         else:
             for category, count in self.edgetype2count_dictionary.items():
                 print("%s - count: %d" % (category, count))
+
+    def node_degree(self, node):
+        """
+        :param node
+        :return: degree of node
+        """
+        return len(self.neighbors(node))
