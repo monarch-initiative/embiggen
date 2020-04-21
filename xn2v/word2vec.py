@@ -7,8 +7,10 @@ import tensorflow as tf
 from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
 
+
 from xn2v import CBOWListBatcher
 from xn2v.utils import get_embedding, calculate_cosine_similarity
+from xn2v.utils.tf_utils import TFUtilities
 
 
 class Word2Vec:
@@ -36,7 +38,7 @@ class Word2Vec:
 
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.num_steps = num_steps
+        self.n_steps = num_steps
         self.display_step = 2000
         self.eval_step = 2000
         self.embedding_size = embedding_size
@@ -98,7 +100,8 @@ class Word2Vec:
             self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
             print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         else:
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+            # self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+            self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(self.data) + 1)
             print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
 
         return None
@@ -130,9 +133,11 @@ class SkipGramWord2Vec(Word2Vec):
                 if any(isinstance(item, int) for item in el):
                     # graph version
                     self.list_of_lists: bool = True
+                    self.num_sentences: int = len(self.data)
                 else:
-                    self.list_of_lists = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
+        else:
+            self.list_of_lists = False
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -145,7 +150,7 @@ class SkipGramWord2Vec(Word2Vec):
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-        self.num_sentences: int = len(self.data)
+
 
         # do not display examples during training unless the user calls add_display_words (i.e. default is None)
         self.display = display
@@ -323,6 +328,35 @@ class SkipGramWord2Vec(Word2Vec):
 
         return None
 
+
+    def next_batch2(self, LST):
+        print(type(LST))
+        print("done next batch 2")
+        return None, None
+
+    def train2(self) -> None:
+        n_epochs = 5
+        window_len = 5
+        for epoch in range (1, n_epochs+1):
+            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
+                for sentence in self.data:
+                    # Sentence was a Tensor
+                    print(sentence)
+                    sentence = tf.data.Dataset.from_tensors(sentence)
+                    batch_x, batch_y = self.next_batch2(sentence)
+                    # self.run_optimization(batch_x, batch_y)
+            else:
+                datawindows = self.data.window(size=self.batch_size)
+                for wdw in datawindows:
+                    lst = list(wdw.as_numpy_iterator())
+
+                    if len(lst) < window_len:
+                        print("Warning: Skipping the final %d words of the text" % len(lst))
+                        continue
+                    wordlist = tf.data.Dataset.from_tensor_slices(lst)
+                    batch_x, batch_y = self.next_batch2(wordlist)
+                    # self.run_optimization(batch_x, batch_y)
+
     def train(self) -> None:
         """Trains a SkipGram model.
 
@@ -340,7 +374,7 @@ class SkipGramWord2Vec(Word2Vec):
         x_test = np.array(self.display_examples)
 
         # run training for the given number of steps.
-        with trange(1, self.num_steps + 1) as pbar:
+        with trange(1, self.n_steps + 1) as pbar:
             for step in pbar:
                 if self.list_of_lists:
                     walkcount = 2
@@ -685,7 +719,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         x_test = np.array(self.display_examples)
 
         # run training for the given number of steps.
-        for step in range(1, self.num_steps + 1):
+        for step in range(1, self.n_steps + 1):
             batch_x, batch_y = self.batcher.generate_batch()
             # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
 
