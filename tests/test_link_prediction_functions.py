@@ -131,3 +131,30 @@ class TestlinkPredictionScores_2(TestCase):
         # neighbors of "g3" = {g1}, neighbors of "g4" = {g1}. Thus the score = 1 * 1 = 1
         score = link_prediction_functions.DegreeProduct(self.g, node_1, node_2)
         self.assertEqual(1, score)
+
+    def test_CommonNeighbors_1(self):
+        ""
+        # Test the Common Neighbor score of two nodes
+        node_1 = "g1"
+        node_2 = "d2"
+        # neighbors of "g1" = {g0,g2,g3,...,g100,p1,d1}, neighbors of "d2" = {d1}. The intersection is d1. So, the score is 1.
+        score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
+        self.assertEqual(1, score)
+
+    def test_CommonNeighbors_2(self):
+        ""
+        # Test the Common Neighbor score of two nodes
+        node_1 = "g3"
+        node_2 = "p3"
+        # neighbors of "g3" = {g1}, neighbors of "p3" = {p1}. Thus the score = 0
+        score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
+        self.assertEqual(0, score)
+
+    def test_CommonNeighbors_3(self):
+        ""
+        # Test the Common Neighbor score of two nodes
+        node_1 = "g3"
+        node_2 = "g4"
+        # neighbors of "g3" = {g1}, neighbors of "g4" = {g1}. Thus the score = 1
+        score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
+        self.assertEqual(1, score)
