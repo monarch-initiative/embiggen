@@ -3,6 +3,7 @@ import math
 import numpy as np
 import random
 import tensorflow as tf
+import tensorflow_datasets as tfds
 
 from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
@@ -330,8 +331,10 @@ class SkipGramWord2Vec(Word2Vec):
 
     # do we need to indicate TensorSliceDataset
     # This is a subclass of the Dataset
+
     def next_batch2(self, dslist: tf.data.Dataset, dslen: int) -> \
             Tuple[np.ndarray, np.ndarray]:
+
         """Generate training batch for the skip-gram model.
         Assumption: This assumes that dslist is a td.data.Dataset object that contains one sentence or (or list of
         words
@@ -367,7 +370,11 @@ class SkipGramWord2Vec(Word2Vec):
         # This is the number of context words we sample for a single target word
         i = 0
         for x in dsdata:
+            print("C")
+            #word_with_contextds =  tfds.as_numpy(x) #[1 for n in range(dslen)]
+            print("D")
             word_with_context = list(x.as_numpy_iterator())
+            print("E")
             context_words = [w for w in range(span) if w != skip_window]
             words_to_use = random.sample(context_words, num_skips)  # indices starting from 0
             for j, context_word in enumerate(words_to_use):
