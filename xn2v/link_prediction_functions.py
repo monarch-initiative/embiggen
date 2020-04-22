@@ -100,3 +100,12 @@ def AdamicAdar(graph, node_1, node_2):
     return score
 
 
+#def get_cosine_sim(emb, valid_words, top_k):
+   # norm = np.sqrt(np.sum(emb**2,axis=1,keepdims=True))
+   # norm_emb = emb/norm
+    #in_emb = norm_emb[valid_words,:]
+   # similarity = np.dot(in_emb, np.transpose(norm_emb))
+    #sorted_ind = np.argsort(-similarity, axis=1)[:,1:top_k+1]
+    #return sorted_ind, valid_words
+
+

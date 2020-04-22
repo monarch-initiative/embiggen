@@ -16,7 +16,7 @@ class TestCSFGraph(TestCase):
     def test_notnull(self):
         self.assertIsNotNone(self.g)
 
-    def test_DegreeProduct(self):
+    def test_DegreeProduct_1(self):
         ""
         #Test the Degree product score of two nodes
         node_1 = "g1"
@@ -25,7 +25,16 @@ class TestCSFGraph(TestCase):
         score = link_prediction_functions.DegreeProduct(self.g, node_1, node_2)
         self.assertEqual(20, score)
 
-    def test_CommonNeighbors(self):
+    def test_DegreeProduct_2(self):
+        ""
+        # Test the Degree product score of two nodes
+        node_1 = "g4"
+        node_2 = "d1"
+        # neighbors of "g4" = {g1,g3,p4,d2}, neighbors of "d1" = {d1,d2, g3}. Thus the score = 4 * 3 = 12
+        score = link_prediction_functions.DegreeProduct(self.g, node_1, node_2)
+        self.assertEqual(12, score)
+
+    def test_CommonNeighbors_1(self):
         ""
         # Test the Common Neighbor score of two nodes
         node_1 = "g1"
@@ -34,7 +43,16 @@ class TestCSFGraph(TestCase):
         score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
         self.assertEqual(2, score)
 
-    def test_Jaccard(self):
+    def test_CommonNeighbors_2(self):
+        ""
+        # Test the Common Neighbor score of two nodes
+        node_1 = "g4"
+        node_2 = "d1"
+        # neighbors of "g4" = {g1,g3,p4,d2}, neighbors of "d1" = {d1,d2, g3}. The intersection is {d2,g3}
+        score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
+        self.assertEqual(2, score)
+
+    def test_Jaccard_1(self):
         ""
         # Test the Jaccard score of two nodes
         node_1 = "g1"
@@ -44,7 +62,17 @@ class TestCSFGraph(TestCase):
         score = link_prediction_functions.Jaccard(self.g, node_1, node_2)
         self.assertEqual(2.0/7.0, score)
 
-    def test_AdamicAdar(self):
+    def test_Jaccard_2(self):
+        ""
+        # Test the Jaccard score of two nodes
+        node_1 = "g4"
+        node_2 = "d1"
+        # neighbors of "g4" = {g1,g3,p4,d2}, neighbors of "d1" = {d1,d2, g3}. The intersection is {d2,g3}.
+        # The union = {g1,g3,p4,d1,d2}. So, score is 2/5.
+        score = link_prediction_functions.Jaccard(self.g, node_1, node_2)
+        self.assertEqual(2.0 / 5.0, score)
+
+    def test_AdamicAdar_1(self):
         ""
         # Test the AdamicAdar score of two nodes
         node_1 = "g1"
@@ -55,4 +83,14 @@ class TestCSFGraph(TestCase):
         score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
         self.assertAlmostEqual((1.0/np.log(5)) + (1.0/np.log(4)), score)
 
+    def test_AdamicAdar_2(self):
+        ""
+        # Test the AdamicAdar score of two nodes
+        node_1 = "g4"
+        node_2 = "d1"
+        # neighbors of "g4" = {g1,g3,p4,d2}, neighbors of "d1" = {d1,d2, g3}. The intersection is {d2,g3}.
+        # #Neighbors of d2 = {g4,d3,d1}, neighbors of g3 = {g1,g2,g4,d1,p3}
+        # The score = (1/log 3) + (1/ log 5) = (1/1.098) + (1/ 1.609) =  0.910+ 0.621 = 1.531
+        score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
+        self.assertAlmostEqual((1.0/np.log(3)) + (1.0/np.log(5)), score)
 
