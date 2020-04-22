@@ -158,3 +158,58 @@ class TestlinkPredictionScores_2(TestCase):
         # neighbors of "g3" = {g1}, neighbors of "g4" = {g1}. Thus the score = 1
         score = link_prediction_functions.CommonNeighbors(self.g, node_1, node_2)
         self.assertEqual(1, score)
+
+    def test_Jaccard_1(self):
+        ""
+        # Test the Jaccard score of two nodes
+        node_1 = "g1"
+        node_2 = "d2"
+        # neighbors of "g1" = {g0,g2,g3,...,g100,p1,d1}, neighbors of "d2" = {d1}.
+        # The intersection is d1. .
+        # The union = {g0,g2,g3,..., g100,p1,d1}. So, score is 1/102.
+        score = link_prediction_functions.Jaccard(self.g, node_1, node_2)
+        self.assertEqual(1.0/102.0, score)
+
+
+    def test_Jaccard_3(self):
+        ""
+        # Test the Jaccard score of two nodes
+        node_1 = "g3"
+        node_2 = "g4"
+        # neighbors of "g3" = {g1}, neighbors of "g4" = {g1}. The intersection is {g1}.
+        # The union is {g1}. So, the score is 1
+        score = link_prediction_functions.Jaccard(self.g, node_1, node_2)
+        self.assertEqual(1, score)
+
+    def test_AdamicAdar_1(self):
+        ""
+        # Test the AdamicAdar score of two nodes
+        node_1 = "g1"
+        node_2 = "d2"
+        # neighbors of "g1" = {g0,g2,g3,...,g100,p1,d1}, neighbors of "d2" = {d1}.
+        # The intersection is d1.
+        # #Neighbors of d1 = {g1,d2,..,d20},
+        # The score = (1/log 20) = 0.333
+        score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
+        self.assertAlmostEqual(1.0/np.log(20), score)
+
+
+    def test_AdamicAdar_2(self):
+        ""
+        # Test the AdamicAdar score of two nodes
+        node_1 = "g3"
+        node_2 = "p3"
+        # neighbors of "g3" = {g1}, neighbors of "p3" = {p1}. The intersection is {}.
+        # The score =0
+        score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
+        self.assertAlmostEqual(0, score)
+
+    def test_AdamicAdar_3(self):
+        ""
+        # Test the AdamicAdar score of two nodes
+        node_1 = "g3"
+        node_2 = "g4"
+        # neighbors of "g3" = {g1}, neighbors of "g4" = {g1}. The intersection is {g1}.
+        #neighbours of g1 = {g0, g2, ..., g100, p1,d1}. Score = 1/ log(102)
+        score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
+        self.assertAlmostEqual(1.0/np.log(102.0), score)
