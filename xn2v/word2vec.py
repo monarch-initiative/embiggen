@@ -373,8 +373,12 @@ class SkipGramWord2Vec(Word2Vec):
             print("C")
             #word_with_contextds =  tfds.as_numpy(x) #[1 for n in range(dslen)]
             print("D")
-            word_with_context = list(x.as_numpy_iterator())
+            print(type(x))
+            # word_with_context = list(x.as_numpy_iterator())
+            #word_with_context = [j for j in x]
+            word_with_context = [elem.numpy() for elem in x]
             print("E")
+            print(type(word_with_context))
             context_words = [w for w in range(span) if w != skip_window]
             words_to_use = random.sample(context_words, num_skips)  # indices starting from 0
             for j, context_word in enumerate(words_to_use):
