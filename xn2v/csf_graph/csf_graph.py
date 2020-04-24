@@ -1,3 +1,4 @@
+import logging
 import os.path
 import numpy as np
 from collections import defaultdict
@@ -9,7 +10,7 @@ class CSFGraph:
     Compressed Storage Format graph class (cannot be modified after graph construction)
     """
 
-    def __init__(self, edge_file: str, node_file: str = None):
+    def __init__(self, edge_file: str, node_file: str = None, default_weight=1):
         if edge_file is None:
             raise TypeError("Need to pass path of file with edges")
         if not isinstance(edge_file, str):
@@ -22,20 +23,23 @@ class CSFGraph:
         self.edgetype2count_dictionary = defaultdict(int)
         self.nodetype2count_dictionary = defaultdict(int)
         with open(edge_file) as f:
+            header = f.readline()
+            header_items = header.strip().split('\t')
             for line in f:
-                # print(line)
                 fields = line.rstrip('\n').split()
-                nodeA = fields[0]
-                nodeB = fields[1]
-                if len(fields) == 2:
-                    # no weight provided. Assign a default value of 1.0
-                    weight = 1.0
+                items = dict(zip(header_items, fields))
+                nodeA = items['subject']
+                nodeB = items['object']
+                if 'weight' not in items:
+                    # no weight provided. Assign a default value
+                    weight = default_weight
                 else:
                     try:
-                        weight = float(fields[2])
-                    except Exception as e:
-                        print("[ERROR] Could not parse weight field (must be an integer): {}".format(
-                           fields[2]))
+                        weight = float(items['weight'])
+                    except ValueError as e:
+                        logging.error("[ERROR] Could not parse weight field " +
+                                      "(must be an integer): {}".format(
+                                      items['weight']))
                         continue
                 nodes.add(nodeA)
                 nodes.add(nodeB)
