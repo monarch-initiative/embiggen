@@ -3,6 +3,8 @@ import os.path
 from xn2v import CSFGraph
 from xn2v import link_prediction_functions
 import numpy as np
+import math
+
 
 
 class TestlinkPredictionScores_1(TestCase):
@@ -213,3 +215,22 @@ class TestlinkPredictionScores_2(TestCase):
         #neighbours of g1 = {g0, g2, ..., g100, p1,d1}. Score = 1/ log(102)
         score = link_prediction_functions.AdamicAdar(self.g, node_1, node_2)
         self.assertAlmostEqual(1.0/np.log(102.0), score)
+
+class TestCosieSimilarity(TestCase):
+    def test_cos_sim_1(self):
+        X = np.array([1,2])
+        Y = np.array([3,4])
+        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
+        self.assertEqual(11/(5*math.sqrt(5)), cos_sim)
+
+    def test_cos_sim_2(self):
+        X = np.array([1,2,0])
+        Y = np.array([3,4,1])
+        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
+        self.assertEqual(11/(math.sqrt(26)*math.sqrt(5)), cos_sim)
+
+    def test_cos_sim_3(self):
+        X = np.array([1,0,0])
+        Y = np.array([3,4,0])
+        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
+        self.assertEqual(3.0/5.0, cos_sim)

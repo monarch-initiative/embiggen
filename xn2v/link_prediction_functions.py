@@ -5,6 +5,7 @@
 ###
 
 import numpy as np
+import sklearn
 
 def DegreeProduct(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
@@ -92,9 +93,6 @@ def AdamicAdar(graph, node_1, node_2):
         score = 0.0
         n_intersection = node_1_neighbors.intersection(node_2_neighbors)
 
-        #for c in n_intersection:
-            #w.append(graph.node_degree(c))
-        #score = 1.0/np.log(np.sum(w))
         for c in n_intersection:
             score += 1/np.log(graph.node_degree(c))
     return score
@@ -109,3 +107,9 @@ def AdamicAdar(graph, node_1, node_2):
     #return sorted_ind, valid_words
 
 
+def cosine_similarity(emb_1,emb_2):
+    nominator = np.dot(emb_1,emb_2)
+    denominator  = np.sqrt(emb_1.dot(emb_1)) * np.sqrt(emb_2.dot(emb_2))
+
+    similarity_score = nominator / denominator
+    return similarity_score
