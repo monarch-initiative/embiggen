@@ -6,9 +6,6 @@ from xn2v import CSFGraph
 class TestCSFGraph(TestCase):
     def setUp(self):
         data_dir = os.path.join(os.path.dirname( __file__), 'data')
-        # Convert Vida's edge files to KGX tsv files:
-        # echo -e "subject\tedge_label\tobject\trelation\tweight" > small_graph_edges.tsv;
-        # cat small_graph.txt | perl -p -e 's/[ ]+/\t/g' | perl -p -e 's/^(\S+)\s+(\S+)\s+(\S+)\s*$/$1\tbiolink:Association\t$2\tRO:0002616\t$3\n/g'  >> small_graph_edges.tsv
         self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
         self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
         g = CSFGraph(edge_file=self.edge_file)
