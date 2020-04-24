@@ -1,11 +1,15 @@
 from unittest import TestCase
 import os.path
 from xn2v import CSFGraph
+from xn2v.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
+    CSFGraphNoObjectColumnError
 
 
 class TestCSFGraph(TestCase):
     def setUp(self):
         data_dir = os.path.join(os.path.dirname( __file__), 'data')
+        self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
+        self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
         self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
         self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
         g = CSFGraph(edge_file=self.edge_file)
@@ -24,8 +28,16 @@ class TestCSFGraph(TestCase):
     # test constructor args
     def test_csfgraph_constructor_requires_arg(self):
         with self.assertRaises(Exception) as context:
-            g = CSFGraph()
+            CSFGraph()  # missing edge arg
             self.assertTrue(str('missing' in context.exception))
+
+    def test_csfgraph_constructor_check_for_subject_columns(self):
+        with self.assertRaises(CSFGraphNoSubjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_subject)  # file doesn't have subject col
+
+    def test_csfgraph_constructor_check_for_object_column(self):
+        with self.assertRaises(CSFGraphNoObjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_object)  # file doesn't have object col
 
     def test_csfgraph_constructor_accepts_edge_file(self):
         g = CSFGraph(edge_file=self.edge_file)

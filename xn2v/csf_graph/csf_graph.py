@@ -5,6 +5,14 @@ from collections import defaultdict
 from .edge import Edge
 
 
+class CSFGraphNoSubjectColumnError(Exception):
+    pass
+
+
+class CSFGraphNoObjectColumnError(Exception):
+    pass
+
+
 class CSFGraph:
     """
     Compressed Storage Format graph class (cannot be modified after graph construction)
@@ -22,9 +30,14 @@ class CSFGraph:
 
         self.edgetype2count_dictionary = defaultdict(int)
         self.nodetype2count_dictionary = defaultdict(int)
+
         with open(edge_file) as f:
             header = f.readline()
             header_items = header.strip().split('\t')
+            if 'subject' not in header_items:
+                raise CSFGraphNoSubjectColumnError("Edge file should have a 'subject' column")
+            if 'object' not in header_items:
+                raise CSFGraphNoObjectColumnError("Edge file should have an 'object' column")
             for line in f:
                 fields = line.rstrip('\n').split()
                 items = dict(zip(header_items, fields))
