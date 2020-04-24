@@ -9,19 +9,19 @@ class CSFGraph:
     Compressed Storage Format graph class (cannot be modified after graph construction)
     """
 
-    def __init__(self, filepath):
-        if filepath is None:
+    def __init__(self, edge_file: str, node_file: str = None):
+        if edge_file is None:
             raise TypeError("Need to pass path of file with edges")
-        if not isinstance(filepath, str):
+        if not isinstance(edge_file, str):
             raise TypeError("filepath argument must be string")
-        if not os.path.exists(filepath):
-            raise TypeError("Could not find graph file {}".format(filepath))
+        if not os.path.exists(edge_file):
+            raise TypeError("Could not find graph file {}".format(edge_file))
         nodes = set()
         edges = set()
 
         self.edgetype2count_dictionary = defaultdict(int)
         self.nodetype2count_dictionary = defaultdict(int)
-        with open(filepath) as f:
+        with open(edge_file) as f:
             for line in f:
                 # print(line)
                 fields = line.rstrip('\n').split()
