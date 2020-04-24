@@ -419,6 +419,99 @@ class SkipGramWord2Vec(Word2Vec):
                     batch_x, batch_y = self.next_batch2(wordlist, self.skip_window)
                     # self.run_optimization(batch_x, batch_y)
 
+    def next_batch2(self, wordlist: tf.Tensor) -> \
+            Tuple[np.ndarray, np.ndarray]:
+
+        """Generate training batch for the skip-gram model.
+        Assumption: This assumes that dslist is a td.data.Dataset object that contains one sentence or (or list of
+        words
+        Args:
+            dslist: A list of words to be used to create the batch
+            num_skips: The number of data points to extract for each center node.
+            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
+                       `[i - window_size, i + window_size+1]`.
+            dslen: The length of the Dataset object
+            Returns:
+                A list where the first item us a batch and the second item is the batch's labels.
+            Raises:
+                ValueError: If the number of skips is not <= twice the skip window length.
+
+            TODO -- should num_skips and skip_window be arguments or simply taken from self
+            within the method?
+            """
+        num_skips = self.num_skips
+        skip_window = self.skip_window
+        if num_skips > 2 * skip_window:
+            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
+        # TODO  -- We actually only need to check the above once in the Constructor?
+        # OR -- is there any situation where we will change this during training??
+        # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
+        span = 2 * skip_window + 1
+        # again, probably we can go: span = self.span
+        batch_size = ((dslen - (2 * skip_window)) * num_skips)
+        batch = np.ndarray(shape=batch_size, dtype=np.int32)
+        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+        # ds = tf.data.Dataset.from_tensor_slices(dslist)
+        window_shift = 1  # should always be one
+        dsdata = dslist.window(size=span, shift=window_shift, drop_remainder=True)
+        # This is the number of context words we sample for a single target word
+        i = 0
+        for x in dsdata:
+            print("C")
+            # word_with_contextds =  tfds.as_numpy(x) #[1 for n in range(dslen)]
+            print("D")
+            print(type(x))
+            # word_with_context = list(x.as_numpy_iterator())
+            # word_with_context = [j for j in x]
+            word_with_context = [elem.numpy() for elem in x]
+            print("E")
+            print(type(word_with_context))
+            context_words = [w for w in range(span) if w != skip_window]
+            words_to_use = random.sample(context_words, num_skips)  # indices starting from 0
+            for j, context_word in enumerate(words_to_use):
+                # word_with_context[skip_window] -- the center element of the sliding window
+                # word_with_context[context_word] -- the word/node we are trying to predict with the skip-gram model
+                batch[i * num_skips + j] = word_with_context[skip_window]
+                labels[i * num_skips + j, 0] = word_with_context[context_word]
+            i += 1
+        return batch, labels
+
+
+    def train3(self) -> None:
+        """
+        Trying out passing a simple Tensor to get_batch
+        :return:
+        """
+        n_epochs = 5
+        window_len = 2 * self.skip_window + 1
+        for epoch in range (1, n_epochs+1):
+            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
+                for sentence in self.data:
+                    # Sentence was a Tensor
+                    print(sentence)
+                    sentencelen = len(sentence)
+                    if sentencelen < window_len:
+                        continue
+                    batch_x, batch_y = self.next_batch3(sentence)
+                    print(batch_x)
+                    print(batch_y)
+                    print("-------")
+                    # self.run_optimization(batch_x, batch_y)
+            else:
+                datawindows = self.data.window(size=self.batch_size)
+                for wdw in datawindows:
+                    lst = list(wdw.as_numpy_iterator())
+
+                    if len(lst) < window_len:
+                        print("Warning: Skipping the final %d words of the text" % len(lst))
+                        continue
+                    wordlist = tf.data.Dataset.from_tensor_slices(lst)
+                    batch_x, batch_y = self.next_batch2(wordlist, self.skip_window)
+                    # self.run_optimization(batch_x, batch_y)
+
+
+
+
     def train(self) -> None:
         """Trains a SkipGram model.
 
