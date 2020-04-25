@@ -6,8 +6,8 @@ import random
 import sys
 import time
 
+import tensorflow as tf
 from collections import defaultdict
-from logging import handlers
 from multiprocessing import Pool
 from typing import Dict
 from tqdm import tqdm, trange   # type: ignore
@@ -109,8 +109,7 @@ class N2vGraph:
             random.shuffle(nodes)
             for node in nodes:
                 walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
-
-        return walks
+        return tf.ragged.constant(walks)
 
     def get_alias_edge(self, edge):
         """Get the alias edge setup lists for a given edge.
