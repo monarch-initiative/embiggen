@@ -20,7 +20,9 @@ class TFUtilities(object):
             TypeError: If an object other than a tf.data.Dataset or tf.RaggedTensor is passed.
         """
 
-        if isinstance(tensor, tf.RaggedTensor):
+        if isinstance(tensor, tf.Tensor):
+            return len(tensor)
+        elif isinstance(tensor, tf.RaggedTensor):
             return tensor.shape[0]
         elif isinstance(tensor, tf.data.Dataset):
             return len([edge for edge in tensor])

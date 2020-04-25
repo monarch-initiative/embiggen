@@ -1,4 +1,5 @@
 import tensorflow as tf
+import argparse
 
 from xn2v.text_encoder_tf import TextEncoder
 from xn2v import SkipGramWord2Vec
@@ -6,11 +7,13 @@ from xn2v import SkipGramWord2Vec
 print(tf.__version__)
 assert tf.__version__ >= "2.0"
 
+parser = argparse.ArgumentParser(description='Run word2vec as test.')
+parser.add_argument('-i', type=str, help='input file')
+args = parser.parse_args()
+inputfile = args.i  # should be the path of a book from Project Gutenberg
 
 
-treasure_island = '/Users/peterrobinson/Downloads/treasure.txt'
-
-encoder = TextEncoder(treasure_island, data_type='sentences')
+encoder = TextEncoder(inputfile, data_type='words')
 tensor_data,  count_list, dictionary,  reverse_dictionary = encoder.build_dataset()
 
 #print("count_list size=%d" % len(count_list))
@@ -27,7 +30,7 @@ sgw2v = SkipGramWord2Vec(data=tensor_data,
                          worddictionary=dictionary,
                          reverse_worddictionary=reverse_dictionary)
 
-sgw2v.train2()
+sgw2v.train3()
 
 exit(42)
 
