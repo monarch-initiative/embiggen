@@ -1,3 +1,3 @@
-from .csf_graph_tf import CSFGraph
+from .csf_graph import CSFGraph
 
 __all__ = ["CSFGraph"]

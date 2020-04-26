@@ -58,8 +58,10 @@ class TestCBOWconstruction(TestCase):
         walk_count = 2
         num_skips = 1
         skip_window = 2
-        batch = self.cbow.next_batch_from_list_of_lists(walk_count=walk_count,
-                                                        num_skips=num_skips,
-                                                        skip_window=skip_window)
+        # Apr 26 Peter commented this out. We are no longer using this function
+        # The function can be deleted if we are OK with the refactor
+        # batch = self.cbow.next_batch_from_list_of_lists(walk_count=walk_count,
+        #                                                num_skips=num_skips,
+        #                                                skip_window=skip_window)
 
-        self.assertIsNotNone(batch)
+        # self.assertIsNotNone(batch)

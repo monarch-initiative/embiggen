@@ -59,7 +59,10 @@ class TestTextEncoderEnBlock(TestCase):
         wordcount = {item[0]: item[1] for item in self.count}
 
         # test conditions
-        self.assertEqual(True, isinstance(self.data, tf.data.Dataset))
+        # Apr 26, Peter removed the following, we no longer want to use the tf.data.Dataset API for this
+        # self.assertEqual(True, isinstance(self.data, tf.data.Dataset))
+        # instead this should be a simple tensor
+        self.assertTrue(isinstance(self.data, tf.Tensor))
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
