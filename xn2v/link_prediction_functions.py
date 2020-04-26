@@ -108,8 +108,9 @@ def AdamicAdar(graph, node_1, node_2):
 
 
 def cosine_similarity(emb_1,emb_2):
+    #cosin_similarity of two vectors X and Y = <X,Y> / ||X||||Y|| where <X,Y> is the dot product
+    #and ||X|| is sqrt(<X,X>)
     nominator = np.dot(emb_1,emb_2)
-    denominator  = np.sqrt(emb_1.dot(emb_1)) * np.sqrt(emb_2.dot(emb_2))
-
+    denominator = np.sqrt(emb_1.dot(emb_1)) * np.sqrt(emb_2.dot(emb_2))
     similarity_score = nominator / denominator
     return similarity_score
