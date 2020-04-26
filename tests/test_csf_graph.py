@@ -1,27 +1,21 @@
-import os.path
-
 from unittest import TestCase
-
+import os.path
 from xn2v import CSFGraph
 
 
 class TestCSFGraph(TestCase):
     def setUp(self):
-        input_file = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
-        g = CSFGraph(input_file)
+        inputfile = os.path.join(os.path.dirname(
+            __file__), 'data', 'small_graph.txt')
+        g = CSFGraph(inputfile)
         self.g = g
-
-        return str(g)
+        str(g)
 
     def test_notnull(self):
         self.assertIsNotNone(self.g)
 
-        return None
-
     def test_get_node_to_index_map(self):
         self.assertIsNotNone(self.g.get_node_to_index_map())
-
-        return None
 
     def test_get_index_to_node_map(self):
         self.assertIsNotNone(self.g.get_index_to_node_map())
@@ -29,14 +23,15 @@ class TestCSFGraph(TestCase):
         return None
 
     def test_count_nodes(self):
-        # the graph in small_graph.txt has 11 nodes
+        # The graph in small_graph.txt has 11 nodes
         expected_num = 11
         self.assertEqual(expected_num, self.g.node_count())
 
         return None
 
     def test_count_edges(self):
-        # the graph is transformed into an undirected graph by adding the inverse of each edge
+        # Note that the graph is transformed into an undirected graph by
+        # adding the inverse of each edge
         # 21 edges are included in the file, thus we expect 2*21=42 edges
         expected_num = 42
         self.assertEqual(expected_num, self.g.edge_count())
@@ -44,13 +39,10 @@ class TestCSFGraph(TestCase):
         return None
 
     def test_get_weight(self):
-        # for d1<->d3
-        expected = 10
+        expected = 10  # for d1<->d3
         weight = self.g.weight('d1', 'd3')
         self.assertEqual(expected, weight)
-
-        # for g3<->g4
-        expected = 7
+        expected = 7  # for g3<->g4
         weight = self.g.weight('g3', 'g4')
         self.assertEqual(expected, weight)
 
@@ -103,17 +95,13 @@ class TestCSFGraph(TestCase):
         """Test the method that should get all edges as tuples wc -l small_graph.txt reveals 21 edges, but the Graph
         class creates a total of 42 edges to make an undirected graph.
         """
-
         edge_list = self.g.edges()
         self.assertEqual(42, len(edge_list))
-
         # p1 p3 and p3 p1 are valid edges
         t1 = ('p1', 'p3')
         self.assertTrue(t1 in edge_list)
-
         t2 = ('p3', 'p1')
         self.assertTrue(t2 in edge_list)
-
         made_up = ('z1', 'q123')
         self.assertFalse(made_up in edge_list)
 

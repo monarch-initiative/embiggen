@@ -48,13 +48,11 @@ class TestGraph(TestCase):
         dst = 'g4'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
-
         # outgoing edges from g4: g1, g3, p4, d2
         self.assertEqual(4, len(j_alias))
-
         # recreate the original probabilities. They should be a vector of length 4.
-        # original_probs = calculate_total_probs(j_alias, q_alias)
-        # self.assertAlmostEqual(1.0/4.0, original_probs[1])
+        original_probs = calculate_total_probs(j_alias, q_alias)
+        #self.assertAlmostEqual(1.0/4.0, original_probs[1])
 
 
 class TestHetGraph(TestCase):
@@ -101,16 +99,14 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        # src = self.graph.get_node_index('g0')
-        # dst = self.graph.get_node_index('g1')
+        #src = self.graph.get_node_index('g0')
+        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'g2'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
-
         # outgoing edges from g2: g1
         self.assertEqual(1, len(j_alias))
-
         # recreate the original probabilities. They should be a vector of length 1 with value 1.
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0, original_probs[0])
@@ -121,13 +117,12 @@ class TestHetGraph(TestCase):
         q = 1
         gamma = 1
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        # src = self.graph.get_node_index('g0')
-        # dst = self.graph.get_node_index('g1')
+        #src = self.graph.get_node_index('g0')
+        #dst = self.graph.get_node_index('g1')
         src = 'g1'
         dst = 'p1'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
-
         # outgoing edges from p1: g1, p2, ..., p30
         self.assertEqual(30, len(j_alias))
         # recreate the original probabilities. They should be a vector of length 1 with value 1.
