@@ -11,6 +11,7 @@ from .link_prediction import LinkPrediction
 from .link_prediction_with_validation import LinkPredictionWithValidation
 from .csf_graph import CSFGraph
 from .text_encoder import TextEncoder
+from .text_coocurrence_encoder import TextCooccurrenceEncoder
 from .w2v.cbow_list_batcher import CBOWListBatcher
 from .w2v.skip_gram_batcher import SkipGramBatcher
 from .word2vec import ContinuousBagOfWordsWord2Vec
@@ -18,6 +19,6 @@ from .word2vec import SkipGramWord2Vec
 from .kW2V import kWord2Vec
 
 __all__ = [
-    "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder",
+    "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder", "TextCooccurrenceEncoder",
     "CBOWListBatcher", "kWord2Vec", "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
 ]
