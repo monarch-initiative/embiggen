@@ -31,10 +31,11 @@ setup(
     license='BSD3',
     packages=['xn2v'],
     install_requires=[
+	'setuptools>=42.0.0',
         'numpy>=1.16.4',
         'pandas',
         'sklearn',
-        'tensorflow>=2.0',
+        'tensorflow>=2.0.0',
         'click'
     ],
     test_suite='nose.collector',
