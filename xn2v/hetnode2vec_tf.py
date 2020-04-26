@@ -50,13 +50,11 @@ class N2vGraph:
         else:
             self.__preprocess_transition_probs()
 
-    def node2vec_walk(self, walk_length, start_node):
+    def node2vec_walk(self, walk_length: int, start_node) -> list:
         """ Simulate a random walk starting from start node.
-
         Args:
-            walk_length:
+            walk_length: number of nodes to walk
             start_node:
-
         Returns:
             walk: A list of nodes, where each list constitutes a random walk.
         """
@@ -83,13 +81,11 @@ class N2vGraph:
 
         return walk
 
-    def simulate_walks(self, num_walks: int, walk_length: int):
+    def simulate_walks(self, num_walks: int, walk_length: int) -> list:
         """Repeatedly simulate random walks from each node.
-
         Args:
-            num_walks:
-            walk_length:
-
+            num_walks: number of individual walks to take
+            walk_length: length of one walk (number of nodes)
         Returns:
             walks: A list of nodes, where each list constitutes a random walk.
         """
@@ -99,8 +95,8 @@ class N2vGraph:
         nodes = g.nodes_as_integers()  # this is a list
         log.info('Walk iteration:')
 
-        for walk_iter in range(num_walks):
-            print("{}/{}".format(walk_iter + 1, num_walks))
+        for walk_iter in range(1, num_walks+1):
+            print("{}/{}".format(walk_iter, num_walks))
             random.shuffle(nodes)
             for node in nodes:
                 walks.append(self.node2vec_walk(walk_length=walk_length,

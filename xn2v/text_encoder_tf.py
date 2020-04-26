@@ -110,7 +110,7 @@ class TextEncoder:
             sentence_data = open(self.filename).readlines()
             return [self.clean_text(sent) for sent in sentence_data]
 
-    def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.data.Dataset, tf.RaggedTensor], List, Dict, Dict]:
+    def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
 
         Note. The Tokenizer method is initialized with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th
@@ -171,9 +171,13 @@ class TextEncoder:
         if max_vocab != len(count_list):
             raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
         else:
-            try:
-                tensor_data = tf.data.Dataset.from_tensor_slices(sequences)
-            except ValueError:
-                tensor_data = tf.ragged.constant(sequences)  # for nested lists of differing lengths
+            #try:
+            #    tensor_data = tf.data.Dataset.from_tensor_slices(sequences)
+            #except ValueError:
+            #    tensor_data = tf.ragged.constant(sequences)  # for nested lists of differing lengths
+            if isinstance(sequences, list):
+                tensor_data = tf.ragged.constant(sequences)
+            else:
+                tensor_data = tf.convert_to_tensor(sequences) # should now be a 1D tensor
 
         return tensor_data, count_list, dictionary, reverse_dictionary
