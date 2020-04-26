@@ -1,76 +1,12 @@
 import numpy as np
 import csv
-import collections
-from scipy.sparse import lil_matrix
+
+
 import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
+from random import shuffle
 
 assert tf.__version__ >= "2.0"
-
-
-def generate_batch_from_sentence(sentence, window_size):
-    """Generate a batch of co-occurence counts for this sentence
-  Args:
-    sentence: a list of integers representing words or nodes
-    window_size: the lenght of the window in which to count co-occurences
-  Returns:
-    batch, labels, weights
-  """
-    # two numpy arrays to hold target words (batch)
-    # and context words (labels)
-    # The weight is calculated to reflect the distance from the center word
-    # This is the number of context words we sample for a single target word
-    num_samples_per_centerword = 2 * window_size  # number of samples per center word
-    num_contexts = len(sentence) - num_samples_per_centerword  # total n of full-length contexts in the sentence
-    batch_size = num_contexts * num_samples_per_centerword  # For each context we sample num_samples time
-    batch = np.ndarray(shape=(batch_size), dtype=np.int32)
-    labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-    weights = np.ndarray(shape=(batch_size), dtype=np.float32)
-    # span defines the total window size, where
-    # data we consider at an instance looks as follows.
-    # [ skip_window target skip_window ]
-    span = 2 * window_size + 1
-    # This is the number of context words we sample for a single target word
-    num_samples_per_centerword = 2 * window_size
-    buffer: collections.deque = collections.deque(maxlen=span)
-    buffer.extend(sentence[0:span - 1])
-    data_index = span - 1
-    for i in range(num_contexts):
-        buffer.append(sentence[data_index])
-        data_index += 1  # move sliding window 1 spot to the right
-        k = 0
-        for j in list(range(window_size)) + list(range(window_size + 1, 2 * window_size + 1)):
-            batch[i * num_samples_per_centerword + k] = buffer[window_size]
-            labels[i * num_samples_per_centerword + k, 0] = buffer[j]
-            weights[i * num_samples_per_centerword + k] = abs(1.0 / (j - window_size))
-            k += 1
-    return batch, labels, weights
-
-
-def generate_cooc(sequences, vocab_size, window_size=2):
-    """
-    Generate co-occurence matrix by processing batches of data
-    We are using the list of list sparse matrix from scipy
-    """
-    cooc_mat = lil_matrix((vocab_size, vocab_size), dtype=np.float32)
-    print(cooc_mat.shape)
-    i = 0
-    for sequence in sequences:
-        batch, labels, weights = generate_batch_from_sentence(sequence, window_size)
-        labels = labels.reshape(-1)  # why is the reshape needed
-        # Incrementing the sparse matrix entries accordingly
-        for inp, lbl, w in zip(batch, labels, weights):
-            cooc_mat[inp, lbl] += (1.0 * w)
-        i += 1
-        if i % 10==0:
-            print("Sentence %d" % i)
-    return cooc_mat
-
-
-from collections import Counter, defaultdict
-import os
-from random import shuffle
-import tensorflow as tf
 
 
 class NotTrainedError(Exception):
@@ -124,7 +60,6 @@ class GloVeModelF:
             embed_out = tf.nn.embedding_lookup(self.context_embeddings, train_labels)
             embed_bias_in = tf.nn.embedding_lookup(self.center_bias, train_dataset)
             embed_bias_out = tf.nn.embedding_lookup(self.context_bias, train_labels)
-            print("I AM IN get_embeds, and the type is ", type(embed_in) )
             return embed_in, embed_out, embed_bias_in, embed_bias_out
 
     def get_loss(self, weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out):
@@ -168,35 +103,15 @@ class GloVeModelF:
                     tf.math.divide(x_ij_s, self.count_max),
                     self.scaling_factor))
 
-            with tf.GradientTape() as g:
-                embed_in, embed_out, embed_bias_in, embed_bias_out = self.get_embeds(train_dataset, train_labels)
-                loss = self.get_loss(weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out)
+        with tf.GradientTape() as g:
+            embed_in, embed_out, embed_bias_in, embed_bias_out = self.get_embeds(train_dataset, train_labels)
+            loss = self.get_loss(weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out)
 
-            gradients = g.gradient(loss, [embed_in, embed_out, embed_bias_in, embed_bias_out])
-            print("embed_in type:", type(embed_in))
-            print("gradients type:", type(gradients))
-            print("gradients len:", len(gradients))
-            print("$$$$$$$$$$$$$$$$$   CRASH HAPPENS IN NEXT LINE")
-
-            xx = zip(gradients, [embed_in, embed_out, embed_bias_in, embed_bias_out])
-            print(xx)
-            grads_and_vars = tuple(xx)
-            if not grads_and_vars:
-                print("NOT grads_and_vars")
-            filtered = []
-            vars_with_empty_grads = []
-            for grad, var in grads_and_vars:
-                if grad is None:
-                    print("grad is none for var=", var)
-                else:
-                    filtered.append((grad, var))
-            filtered = tuple(filtered)
-            print("filtered len is", len(filtered))
-            # print(filtered)
-            self.optimizer.apply_gradients(zip(gradients, [embed_in, embed_out, embed_bias_in, embed_bias_out]))
-            # self.optimizer.minimize  instead??
-            print("NEVER GET HERE")
-            return loss
+        gradients = g.gradient(loss, [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias])
+        self.optimizer.apply_gradients(zip(gradients, [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias]))
+        # Note that the loss returned above is an array with the same dimension as batch size. For tracking the losss,
+        # we will return the sum
+        return tf.math.reduce_sum(loss)
 
     def train(self, num_epochs, log_dir=None, summary_batch_interval=1000):
         batches = self.__prepare_batches()
@@ -209,8 +124,9 @@ class GloVeModelF:
                 if len(x_ij_s) != self.batch_size:
                     continue
                 current_loss = self.run_optimization(i_s, j_s, x_ij_s)
-                losses.append(current_loss)
-                print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss))
+                if batch_index % 50 == 0:
+                    losses.append(current_loss)
+                    print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss))
 
     def _batchify(self, *sequences):
         for i in range(0, len(sequences[0]), self.batch_size):
@@ -254,19 +170,14 @@ with open("/home/peter/PycharmProjects/N2V/xn2v/tmp/bbc-text.csv", 'r') as csvfi
 print("Number of sentences: %d" % len(sentences))
 print(sentences[0])
 
-vocab_size = 5000
-oov_tok = '<OOV>'
-max_length = 50
-tokenizer = Tokenizer(num_words=vocab_size, oov_token=oov_tok)
-tokenizer.fit_on_texts(sentences)
-word_index = tokenizer.word_index
-word_counts = tokenizer.word_counts
-reverse_dictionary = dict(map(reversed, word_index.items()))
-sequences = tokenizer.texts_to_sequences(sentences)
-
-cooc_mat = generate_cooc(sequences[0:20], vocab_size, 2)
-cooc_dict = cooc_mat.todok()
+from xn2v import TextCooccurrenceEncoder
+path = "/home/peter/data/n2v/treasure-island.txt"
+with open(path, 'r') as file:
+    tisland = file.read().replace('\n', '')
+vocab_size=25000
+tco = TextCooccurrenceEncoder(path, window_size=7, vocab_size=vocab_size)
+cooc_dict, word_counts, word_index, reverse_dictionary  = tco.build_dataset()
 
 batch_size = 10
-gf = GloVeModelF(co_oc_dict=cooc_dict, vocab_size=vocab_size, embedding_size=50, context_size=2)
+gf = GloVeModelF(co_oc_dict=cooc_dict, vocab_size=vocab_size, embedding_size=50, context_size=5)
 gf.train(num_epochs=5)
