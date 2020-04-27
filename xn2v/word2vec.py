@@ -3,6 +3,7 @@ import math
 import numpy as np
 import random
 import tensorflow as tf
+from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
 
 from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
@@ -437,8 +438,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
-        # self.batcher: CBOWListBatcher = CBOWListBatcher(data, skip_window, sentences_per_batch)
-
         # takes the input data and goes through each element
         # first, check each element is a list
         if any(isinstance(el, list) for el in self.data):
@@ -447,8 +446,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 if any(isinstance(item, int) for item in el):
                     self.list_of_lists: bool = True
                 else:
-                    self.list_of_lists = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
+        else:
+            self.list_of_lists = False
+
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -461,7 +462,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-        self.num_sentences: int = len(self.data)
 
         # do not display examples during training unless the user calls add_display_words (i.e. default is None)
         self.display = display
@@ -666,43 +666,55 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.display_words()
         n_epochs = 2
         data = self.data  #
-        if not isinstance(data, tf.Tensor):
-            raise TypeError("We were expecting a Tensor object!")
-        batch_size = self.batch_size
-        data_len = len(data)
-        # Note that we cannot fully digest all of the data in any one batch
-        # if the window length is K and the natch_len is N, then the last
-        # window that we get starts at position (N-K). Therefore, if we start
-        # the next window at position (N-K)+1, we will get all windows.
-        window_len = 1 + 2 * self.skip_window
-        shift_len = batch_size - window_len + 1
-        # we need to make sure that we do not shift outside the boundaries of self.data too
-        lastpos = data_len - 1  # index of the last word in data
+        n_epochs = 5
+        window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
         for epoch in range(1, n_epochs + 1):
-            data_index = 0
-            endpos = data_index + batch_size
-            while True:
-                if endpos > lastpos:
-                    break
-                step += 1
-                currentTensor = data[data_index:endpos]
-                if len(currentTensor) < window_len:
-                    break  # We are at the end
-                batch_x, batch_y = self.generate_batch_cbow(currentTensor)
-                # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
-                self.run_optimization(batch_x, batch_y)
-                # if step % display_step == 0 or step == 1:
-                if step % 10 == 0 or step == 1:
-                    loss = self.get_loss(self.cbow_embedding(batch_x), batch_y)
-                    print("step: %i, loss: %f" % (step, loss))
-                    loss_history.append(loss)
-                # evaluation
-                if self.display is not None and (step % self.eval_step == 0 or step == 1):
-                    self.display_words()
+            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
+                for sentence in self.data:
+                    # Sentence is a Tensor
+                    sentencelen = len(sentence)
+                    if sentencelen < window_len:
+                        continue
+                    batch_x, batch_y = self.generate_batch_cbow(sentence)
+                    current_loss = self.run_optimization(batch_x, batch_y)
+                    loss_history.append(current_loss)
+                    step += 1
+            else:
+                data = self.data  #
+                if not isinstance(data, tf.Tensor):
+                    raise TypeError("We were expecting a Tensor object!")
+                batch_size = self.batch_size
+                data_len = len(data)
+                # Note that we cannot fully digest all of the data in any one batch
+                # if the window length is K and the natch_len is N, then the last
+                # window that we get starts at position (N-K). Therefore, if we start
+                # the next window at position (N-K)+1, we will get all windows.
+                window_len = 1 + 2 * self.skip_window
+                shift_len = batch_size = window_len + 1
+                # we need to make sure that we do not shift outside the boundaries of self.data too
+                lastpos = data_len - 1  # index of the last word in data
+                data_index = 0
+                endpos = data_index + batch_size
+                while True:
+                    if endpos > lastpos:
+                        break
+                    currentTensor = data[data_index:endpos]
+                    if len(currentTensor) < window_len:
+                        break  # We are at the end
+                    batch_x, batch_y = self.next_batch(currentTensor)
+                    current_loss = self.run_optimization(batch_x, batch_y)
+                    if step == 0 or step % 100 == 0:
+                        print("loss, ", current_loss)
+                        loss_history.append(current_loss)
+                    data_index += shift_len
+                    endpos = data_index + batch_size
+                    endpos = min(endpos,
+                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                    # Evaluation.
+            return loss_history
 
-        return loss_history
 
     def trainOLD(self, display_step: int = 2000) -> None:
         """Trains a CBOW model.

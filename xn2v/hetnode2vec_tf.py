@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+import tensorflow as tf
 
 from collections import defaultdict
 from multiprocessing import Pool
@@ -81,7 +82,7 @@ class N2vGraph:
 
         return walk
 
-    def simulate_walks(self, num_walks: int, walk_length: int) -> list:
+    def simulate_walks(self, num_walks: int, walk_length: int) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
         Args:
             num_walks: number of individual walks to take
@@ -102,7 +103,7 @@ class N2vGraph:
                 walks.append(self.node2vec_walk(walk_length=walk_length,
                                                 start_node=node))
 
-        return walks
+        return tf.ragged.constant(walks)
 
     def get_alias_edge(self, edge):
         """Get the alias edge setup lists for a given edge.
