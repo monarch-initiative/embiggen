@@ -51,18 +51,3 @@ class TestCBOWconstruction(TestCase):
     #    # expected number of walks is num_walks times the number of nodes in the training graph
     #    expected_n_walks = self.num_walks * self.number_of_nodes_in_training
     #    self.assertEqual(expected_n_walks, len(self.walks))
-
-    def test_get_cbow_batch(self):
-
-        self.assertIsNotNone(self.cbow)
-
-        walk_count = 2
-        num_skips = 1
-        skip_window = 2
-        # Apr 26 Peter commented this out. We are no longer using this function
-        # The function can be deleted if we are OK with the refactor
-        # batch = self.cbow.next_batch_from_list_of_lists(walk_count=walk_count,
-        #                                                num_skips=num_skips,
-        #                                                skip_window=skip_window)
-
-        # self.assertIsNotNone(batch)
