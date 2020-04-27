@@ -3,17 +3,20 @@ import math
 import numpy as np
 import random
 import tensorflow as tf
+from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
+
 
 from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
 
 from xn2v import CBOWListBatcher
 from xn2v.utils import get_embedding, calculate_cosine_similarity
+from xn2v.utils.tf_utils import TFUtilities
+
 
 
 class Word2Vec:
     """Superclass of all of the word2vec family algorithms.
-
         Attributes:
             learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
             batch_size: The size of each "batch" or slice of the data to sample when training the model.
@@ -37,9 +40,9 @@ class Word2Vec:
 
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.num_steps = num_steps
+        self.n_steps = num_steps
         self.display_step = 2000
-        self.eval_step = 2000
+        self.eval_step = 100
         self.embedding_size = embedding_size
         self.max_vocabulary_size = max_vocabulary_size
         self.vocabulary_size: int = 0
@@ -60,14 +63,11 @@ class Word2Vec:
         important to note that display is a costly operation. Up to 16 nodes/words are permitted. If a user asks for
         more than 16, a random validation set of 'num' nodes/words, that includes common and uncommon nodes/words, is
         selected from a 'valid_window' of 50 nodes/words.
-
         Args:
             count: A list of tuples (key:word, value:int).
             num: An integer representing the number of words to sample.
-
         Returns:
             None.
-
         Raises:
             TypeError: If the user does not provide a list of display words.
         """
@@ -92,10 +92,8 @@ class Word2Vec:
     def calculate_vocabulary_size(self, data) -> None:
         """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
         or list of lists (i.e. from a collection of sentences or random walks).
-
         Args:
             data: A list or list of lists (if sentences or paths from node2vec).
-
         Returns:
             None.
         """
@@ -105,7 +103,9 @@ class Word2Vec:
             self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
             print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         else:
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+            # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+            self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(self.data) + 1)
+
             print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
 
         return None
@@ -137,9 +137,12 @@ class SkipGramWord2Vec(Word2Vec):
                 if any(isinstance(item, int) for item in el):
                     # graph version
                     self.list_of_lists: bool = True
+                    self.num_sentences: int = len(self.data)
                 else:
-                    self.list_of_lists = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
+        else:
+            self.list_of_lists = False
+
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -152,7 +155,6 @@ class SkipGramWord2Vec(Word2Vec):
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-        self.num_sentences: int = len(self.data)
 
         # do not display examples during training unless the user calls add_display_words (i.e. default is None)
         self.display = display
@@ -168,11 +170,9 @@ class SkipGramWord2Vec(Word2Vec):
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
-
         Args:
             x_embed: A Tensor with shape [batch_size, dim].
             y: An array containing the target classes with shape [batch_size, num_true].
-
         Returns:
             loss: The NCE losses.
         """
@@ -210,122 +210,16 @@ class SkipGramWord2Vec(Word2Vec):
     #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
     #
     #         return cosine_sim_op
-
-    def next_batch(self, data: List[Union[int, str]], batch_size: int, num_skips: int, skip_window: int) \
-            -> Tuple[np.ndarray, np.ndarray]:
-        """Generates a training batch for the skip-gram model.
-
-        Assumptions: All of the data is in one and only one list (for instance, the data might derive from a book).
-
-        Args:
-            data: A list of words or nodes.
-            batch_size: An integer specifying the size of the batch to generate.
-            num_skips: The number of data points to extract for each center node.
-            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
-                `[i - window_size, i + window_size+1]`.
-
-        Returns:
-            A list where the first item is a batch and the second item is the batch's labels.
-
-        Raises:
-            - ValueError: If the batch size is not evenly divisible by the number of skips.
-            - ValueError: If the number of skips is not <= twice the skip window length.
-        """
-
-        # check that batch_size is evenly divisible by num_skips and num_skips is less or equal to skip window size
-        if batch_size % num_skips != 0:
-            raise ValueError('The value of self.batch_size must be evenly divisible by the value of self.num_skips')
-        if num_skips > 2 * skip_window:
-            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
-
-        batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
-        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-
-        # get window size (words left and right + current one)
-        span = (2 * skip_window) + 1
-        buffer: collections.deque = collections.deque(maxlen=span)
-
-        if self.data_index + span > len(data):
-            self.data_index = 0
-
-        buffer.extend(data[self.data_index:self.data_index + span])
-        self.data_index += span
-        for i in range(batch_size // num_skips):
-            context_words = [w for w in range(span) if w != skip_window]
-            words_to_use = random.sample(context_words, num_skips)
-
-            for j, context_word in enumerate(words_to_use):
-                batch[i * num_skips + j] = buffer[skip_window]
-                labels[i * num_skips + j, 0] = buffer[context_word]
-
-            if self.data_index == len(data):
-                # when the end of the string is reached, reset to beginning
-                buffer.extend(data[0:span])
-                self.data_index = span
-            else:
-                buffer.append(data[self.data_index])
-
-                # move the sliding window 1 position to the right
-                self.data_index += 1
-
-        # backtrack a little bit to avoid skipping words in the end of a batch.
-        self.data_index = (self.data_index + len(data) - span) % len(data)
-
-        return batch, labels
-
-    def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int) -> \
-            Tuple[np.ndarray, np.ndarray]:
-        """Generate training batch for the skip-gram model.
-
-        Assumption: This assumes that all of the data is stored as a list of lists (e.g., node2vec).
-
-        Args:
-            walk_count: The number of walks (sublists or sentences) to ingest.
-            num_skips: The number of data points to extract for each center node.
-            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
-                `[i - window_size, i + window_size+1]`.
-
-        Returns:
-            A list where the first item us a batch and the second item is the batch's labels.
-
-        Raises:
-           ValueError: If the number of skips is not <= twice the skip window length.
-        """
-
-        if num_skips > 2 * skip_window:
-            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
-
-        # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
-        span = 2 * skip_window + 1
-        batch = np.ndarray(shape=(0,), dtype=np.int32)
-        labels = np.ndarray(shape=(0, 1), dtype=np.int32)
-
-        for i in range(walk_count):
-            # sentence can be one random walk
-            sentence = self.data[self.current_sentence]
-            batch_count = (len(sentence) - span) + 1
-
-            # get batch data
-            current_batch, current_labels = self.next_batch(sentence, batch_count, num_skips, skip_window)
-            batch = np.append(batch, current_batch)
-            labels = np.append(labels, current_labels, axis=0)
-
-            self.current_sentence += 1
-            if self.current_sentence == self.num_sentences:
-                self.current_sentence = 0
-
-        return batch, labels
-
-    def run_optimization(self, x: np.array, y: np.array) -> None:
+    
+    
+    def run_optimization(self, x: np.array, y: np.array) -> float:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
         calculated, the gradients are computed and the weights and biases are updated accordingly.
-
         Args:
             x: An array of integers to use as batch training data.
             y: An array of labels to use when evaluating loss for an epoch.
-
         Returns:
-            None.
+            The loss of the current optimization round.
         """
 
         with tf.device(self.device_type):
@@ -340,18 +234,84 @@ class SkipGramWord2Vec(Word2Vec):
             # update W and b following gradients
             self.optimizer.apply_gradients(zip(gradients, [self.embedding, self.nce_weights, self.nce_biases]))
 
-        return None
+        return loss
 
-    def train(self, display_step: int = 2000) -> None:
-        """Trains a SkipGram model.
+    def next_batch(self, sentence: tf.Tensor) -> \
+            Tuple[np.ndarray, np.ndarray]:
 
+        """Generate training batch for the skip-gram model.
+        Assumption: This assumes that dslist is a td.data.Dataset object that contains one sentence or (or list of
+        words
         Args:
-            display_step: An integer that is used to determine the number of steps to display when training the model.
+            sentence: A list of words to be used to create the batch
+            num_skips: The number of data points to extract for each center node.
+            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
+                       `[i - window_size, i + window_size+1]`.
+            Returns:
+                A list where the first item us a batch and the second item is the batch's labels.
+            Raises:
+                ValueError: If the number of skips is not <= twice the skip window length.
 
-        Returns:
-            None.
+            TODO -- should num_skips and skip_window be arguments or simply taken from self
+            within the method?
+            """
+        num_skips = self.num_skips
+        skip_window = self.skip_window
+        if num_skips > 2 * skip_window:
+            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
+        # TODO  -- We actually only need to check the above once in the Constructor?
+        # OR -- is there any situation where we will change this during training??
+        # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
+        span = 2 * skip_window + 1
+        # again, probably we can go: span = self.span
+        sentencelen = len(sentence)
+        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
+        batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
+        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
+        buffer: collections.deque = collections.deque(maxlen=span)
+        sentence = sentence.numpy()
+        # The following command fills up the Buffer but leaves out the last spot
+        # this allows us to always add the next word as the first thing we do in the
+        # following loop.
+        buffer.extend(sentence[0:span - 1])
+        data_index = span - 1
+        for i in range(batch_size // num_skips):
+            buffer.append(sentence[data_index])
+            data_index += 1  # move sliding window 1 spot to the right
+            context_words = [w for w in range(span) if w != skip_window]
+            words_to_use = random.sample(context_words, num_skips)
+
+            for j, context_word in enumerate(words_to_use):
+                batch[i * num_skips + j] = buffer[skip_window]
+                labels[i * num_skips + j, 0] = buffer[context_word]
+        return batch, labels
+
+    def display_words(self, x_test: np.array) -> None:
         """
+        This is intended for to give feedback on the shell about the progress of training.
+        It is not needed for the actual analysis.
+        :param x_test:
+        :return:
+        """
+        print("Evaluation...")
+        sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
+                                          self.embedding,
+                                          self.device_type).numpy()
+        print(sim[0])
+        for i in range(len(self.display_examples)):
+            top_k = 8  # number of nearest neighbors.
+            nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+            disp_example = self.id2word[self.display_examples[i]]
+            log_str = '"%s" nearest neighbors:' % disp_example
+            for k in range(top_k):
+                log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
+            print(log_str)
 
+    def train(self) -> None:
+        """
+        Trying out passing a simple Tensor to get_batch
+        :return:
+        """
         # words for testing; display_step = 2000; eval_step = 2000
         do_display = self.display_step is not None and len(self.display_examples) > 0
 
@@ -361,8 +321,71 @@ class SkipGramWord2Vec(Word2Vec):
 
         x_test = np.array(self.display_examples)
 
+        n_epochs = 5
+        window_len = 2 * self.skip_window + 1
+        step = 0
+        loss_history = []
+        for epoch in range(1, n_epochs + 1):
+            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
+                for sentence in self.data:
+                    # Sentence is a Tensor
+                    sentencelen = len(sentence)
+                    if sentencelen < window_len:
+                        continue
+                    batch_x, batch_y = self.next_batch(sentence)
+                    # Evaluation.
+                    if do_display and (step % self.eval_step == 0 or step == 0):
+                        self.display_words(x_test)
+                    step += 1
+                    self.run_optimization(batch_x, batch_y)
+            else:
+                data = self.data  #
+                if not isinstance(data, tf.Tensor):
+                    raise TypeError("We were expecting a Tensor object!")
+                batch_size = self.batch_size
+                data_len = len(data)
+                # Note that we cannot fully digest all of the data in any one batch
+                # if the window length is K and the natch_len is N, then the last
+                # window that we get starts at position (N-K). Therefore, if we start
+                # the next window at position (N-K)+1, we will get all windows.
+                window_len = 1 + 2 * (self.skip_window)
+                shift_len = batch_size = window_len + 1
+                # we need to make sure that we do not shift outside the boundaries of self.data too
+                lastpos = data_len - 1  # index of the last word in data
+                for epoch in range(1, n_epochs + 1):
+                    data_index = 0
+                    endpos = data_index + batch_size
+                    while True:
+                        if endpos > lastpos:
+                            break
+                        currentTensor = data[data_index:endpos]
+                        if len(currentTensor) < window_len:
+                            break  # We are at the end
+                        batch_x, batch_y = self.next_batch(currentTensor)
+                        current_loss = self.run_optimization(batch_x, batch_y)
+                        if step == 0 or step % 100 == 0:
+                            print("loss, ", current_loss)
+                            loss_history.append(current_loss)
+                        data_index += shift_len
+                        endpos = data_index + batch_size
+                        endpos = min(endpos,
+                                     lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                        # Evaluation.
+                        if do_display and (step % self.eval_step == 0 or step == 0):
+                            self.display_words(x_test)
+                        step += 1
+                        self.run_optimization(batch_x, batch_y)
+        return loss_history
+
+    def trainOLD(self) -> None:
+        """Trains a SkipGram model.
+
+        Returns:
+            None.
+        """
+
         # run training for the given number of steps.
-        with trange(1, self.num_steps + 1) as pbar:
+        with trange(1, self.n_steps + 1) as pbar:
             for step in pbar:
                 if self.list_of_lists:
                     walkcount = 2
@@ -376,29 +399,13 @@ class SkipGramWord2Vec(Word2Vec):
                     loss = self.nce_loss(get_embedding(batch_x, self.embedding, self.device_type), batch_y)
                     pbar.set_description("step: %i, loss: %f" % (step, loss))
 
-            # Evaluation.
-            if do_display and (step % self.eval_step == 0 or step == 1):
-                print("Evaluation...")
-                sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
-                                                  self.embedding,
-                                                  self.device_type).numpy()
-
-                print(sim[0])
-                for i in range(len(self.display_examples)):
-                    top_k = 8  # number of nearest neighbors.
-                    nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-                    disp_example = self.id2word[self.display_examples[i]]
-                    log_str = '"%s" nearest neighbors:' % disp_example
-                    for k in range(top_k):
-                        log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
-                    print(log_str)
 
         return None
 
 
+
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """Class to run word2vec using continuous bag of words (cbow).
-
     Attributes:
         word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
@@ -423,7 +430,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         num_sentences: An integer that stores the total number of sentences.
         softmax_weights: A variable that stores the classifier weights.
         softmax_biases: A variable that stores classifier biases.
-
     Raises:
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
@@ -436,13 +442,12 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
                          skip_window, num_skips, num_sampled, display, device_type)
 
+
         sentences_per_batch = 1
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
-        self.batcher: CBOWListBatcher = CBOWListBatcher(data, skip_window, sentences_per_batch)
-
         # takes the input data and goes through each element
         # first, check each element is a list
         if any(isinstance(el, list) for el in self.data):
@@ -451,8 +456,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 if any(isinstance(item, int) for item in el):
                     self.list_of_lists: bool = True
                 else:
-                    self.list_of_lists = False
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
+        else:
+            self.list_of_lists = False
+
+
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -465,7 +473,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-        self.num_sentences: int = len(self.data)
 
         # do not display examples during training unless the user calls add_display_words (i.e. default is None)
         self.display = display
@@ -491,13 +498,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
     def cbow_embedding(self, x):
         """The function performs embedding lookups for each column in the input (except the middle one) and then
         averages the them to produce a word vector. The dimension of x is (batchsize, 2*skip_window), e.g., (128,6).
-
         Note. x does not contain the middle word.
-
         Args:
             x: A batch-size long list of windows of words (sliding windows), for example:
                 [[ 2619 15572 15573 15575 15576 15577], [15572 15573 15574 15576 15577 15578], ...]
-
         Returns:
             mean_embeddings: An averaged word embedding vector.
 
@@ -525,11 +529,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
     def get_loss(self, mean_embeddings: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Computes the softmax loss, using a sample of the negative labels each time. The inputs are embeddings of the
         train words with this loss we optimize weights, biases, embeddings.
-
         Args:
             mean_embeddings: A Tensor with shape [batch_size, dim].
             y: An array containing the target classes with shape [batch_size, num_true].
-
         Returns:
             loss: The softmax losses.
         """
@@ -546,11 +548,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
-
         Args:
             x_embed: A Tensor with shape [batch_size, dim].
             y: An array containing the target classes with shape [batch_size, num_true].
-
         Returns:
             loss: The NCE losses.
         """
@@ -569,10 +569,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def evaluate(self, x_embed: tf.Tensor) -> tf.Tensor:
         """Computes the cosine similarity between a provided embedding and all other embedding vectors.
-
         Args:
             x_embed: A Tensor containing word embeddings.
-
         Returns:
             cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
         """
@@ -588,113 +586,46 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             return cosine_sim_op
 
-    def generate_batch_cbow(self, data: List[Union[int, str]], batch_size: int, window_size: int) ->\
-            Tuple[np.ndarray, np.ndarray]:
+
+    def generate_batch_cbow(self, sentence: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
-
         Args:
-            data: A list of words or nodes. TODO make class variable
-            batch_size:  An integer specifying the size of the batch to generate.
-            window_size: The size of sampling windows (technically half-window). The window of a word `w_i` will be
-                `[i - window_size, i + window_size+1]`.
-
+            sentence: A list of words to be used to create the batch
         Returns:
-            A list where the first item is a batch and the second item is the batch's labels.
+            A list whose first item is a batch and the second item is the batch's labels.
         """
-
         # span is the total size of the sliding window we look at [skip_window central_word skip_window]
-        span = 2 * window_size + 1
-
+        skip_window = self.skip_window
+        span = 2 * skip_window + 1
+        # again, probably we can go: span = self.span
+        sentencelen = len(sentence)
+        batch_size = (sentencelen - (2 * skip_window))
         # two numpy arrays to hold target (batch) and context words (labels). Batch has span-1=2*window_size columns
         batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int64)
-
+        sentence = sentence.numpy()
         # The buffer holds the data contained within the span and the deque essentially implements a sliding window
         buffer: collections.deque = collections.deque(maxlen=span)
-
-        # fill the buffer and update the data_index
-        for _ in range(span):
-            buffer.append(data[self.data_index])
-            self.data_index = (self.data_index + 1) % len(data)
-
-        # for each batch index, we iterate through span elements to fill in the columns of batch array
+        buffer.extend(sentence[0:span - 1])
+        data_index = span - 1
         for i in range(batch_size):
-            target = window_size  # target word at the center of the buffer
-            col_idx = 0
-
-            for j in range(span):
-                if j == span // 2:
-                    continue  # i.e., ignore the center word
-                batch[i, col_idx] = buffer[j]
-                col_idx += 1
-
-            labels[i, 0] = buffer[target]
-
-            # move the span by 1, i.e., sliding window, since buffer is deque with limited size
-            buffer.append(data[self.data_index])
-            self.data_index = (self.data_index + 1) % len(data)
-
-        return batch, labels
-
-    def next_batch_from_list_of_lists(self, walk_count: int, num_skips: int, skip_window: int) -> \
-            Tuple[np.ndarray, np.ndarray]:
-        """Generates training batch for the skip-gram model. This assumes that all of the data is in one and only one
-        list (for instance, the data might derive from a book). To get batches from a list of lists (e.g., node2vec),
-        use the 'next_batch_from_list_of_list' function.
-
-        Args:
-            walk_count: The number of walks (sublists or sentences) to ingest.
-            num_skips: The number of data points to extract for each center node.
-            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
-                `[i - window_size, i + window_size+1]`.
-
-        Returns:
-            A list where the first item us a batch and the second item is the batch's labels.
-
-        Raises:
-            ValueError: If the number of skips is not <= twice the skip window length.
-        """
-
-        if num_skips > 2 * skip_window:
-            raise ValueError('The value of self.num_skips must be <= twice the self.skip_window length')
-
-        # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
-        span = 2 * skip_window + 1
-        batch = np.ndarray(shape=(0,), dtype=np.int32)
-        labels = np.ndarray(shape=(0, 1), dtype=np.int64)
-
-        for _ in range(walk_count):
-            sentence = self.data[self.current_sentence]
-            self.current_sentence += 1
-            sentence_len = len(sentence)
-            batch_count = sentence_len - span + 1
-
-            if self.list_of_lists:
-                current_batch, current_labels = self.batcher.generate_batch()
-                # self.next_batch_from_list_of_lists(sentence, batch_count, num_skips)
-            else:
-                current_batch, current_labels = self.generate_batch_cbow(sentence, batch_count, num_skips)
-
-            batch = np.append(batch, current_batch)
-            labels = np.append(labels, current_labels, axis=0)
-
-            if self.current_sentence == self.num_sentences:
-                self.current_sentence = 0
-
+            buffer.append(sentence[data_index])
+            data_index += 1  # move sliding window 1 spot to the right
+            context_words = [w for w in range(span) if w != skip_window]
+            for j, context_word in enumerate(context_words):
+                batch[i, j] = buffer[context_word]
+            labels[i, 0] = buffer[skip_window]
         return batch, labels
 
     def run_optimization(self, x: np.array, y: np.array) -> None:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has
         been calculated, the gradients are computed and the weights and biases are updated accordingly.
-
         Args:
             x: An array of integers to use as batch training data.
             y: An array of labels to use when evaluating loss for an epoch.
-
         Returns:
             None.
         """
-
         with tf.device(self.device_type):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
@@ -707,31 +638,111 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # Update W and b following gradients
             self.optimizer.apply_gradients(
                 zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
-
             return None
+
+
+    def display_words(self) -> None:
+        for w in self.display_examples:
+            print("{}: id={}".format(self.id2word[w], w))
+        x_test = np.array(self.display_examples)
+        print('Evaluation...\n')
+        print("TODO -- fix me")
+        if 2+2!=5:
+            return
+        sim = calculate_cosine_similarity(self.cbow_embedding(x_test),
+                                          self.embedding,
+                                          self.device_type).numpy()
+
+        print(sim[0])
+
+        for i in range(len(self.display_examples)):
+            top_k = 8  # number of nearest neighbors.
+            nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+            disp_example = self.id2word[self.display_examples[i]]
+            log_str = '{} nearest neighbors:'.format(disp_example)
+
+            for k in range(top_k):
+                log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
+
+            print(log_str)
 
     def train(self, display_step: int = 2000) -> None:
         """Trains a CBOW model.
-
         Args:
             display_step: An integer that is used to determine the number of steps to display when training the model.
-
         Returns:
             None.
         """
+        # words for testing; display_step = 2000; eval_step = 2000
+        if display_step is not None and 1 == 3:
+            self.display_words()
+        n_epochs = 2
+        data = self.data  #
+        n_epochs = 5
+        window_len = 2 * self.skip_window + 1
+        step = 0
+        loss_history = []
+        for epoch in range(1, n_epochs + 1):
+            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
+                for sentence in self.data:
+                    # Sentence is a Tensor
+                    sentencelen = len(sentence)
+                    if sentencelen < window_len:
+                        continue
+                    batch_x, batch_y = self.generate_batch_cbow(sentence)
+                    current_loss = self.run_optimization(batch_x, batch_y)
+                    loss_history.append(current_loss)
+                    step += 1
+            else:
+                data = self.data  #
+                if not isinstance(data, tf.Tensor):
+                    raise TypeError("We were expecting a Tensor object!")
+                batch_size = self.batch_size
+                data_len = len(data)
+                # Note that we cannot fully digest all of the data in any one batch
+                # if the window length is K and the natch_len is N, then the last
+                # window that we get starts at position (N-K). Therefore, if we start
+                # the next window at position (N-K)+1, we will get all windows.
+                window_len = 1 + 2 * self.skip_window
+                shift_len = batch_size = window_len + 1
+                # we need to make sure that we do not shift outside the boundaries of self.data too
+                lastpos = data_len - 1  # index of the last word in data
+                data_index = 0
+                endpos = data_index + batch_size
+                while True:
+                    if endpos > lastpos:
+                        break
+                    currentTensor = data[data_index:endpos]
+                    if len(currentTensor) < window_len:
+                        break  # We are at the end
+                    batch_x, batch_y = self.next_batch(currentTensor)
+                    current_loss = self.run_optimization(batch_x, batch_y)
+                    if step == 0 or step % 100 == 0:
+                        print("loss, ", current_loss)
+                        loss_history.append(current_loss)
+                    data_index += shift_len
+                    endpos = data_index + batch_size
+                    endpos = min(endpos,
+                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                    # Evaluation.
+            return loss_history
 
+
+    def trainOLD(self, display_step: int = 2000) -> None:
+        """Trains a CBOW model.
+        Args:
+            display_step: An integer that is used to determine the number of steps to display when training the model.
+        Returns:
+            None.
+        """
         # words for testing; display_step = 2000; eval_step = 2000
         if display_step is not None:
-            for w in self.display_examples:
-                print("{}: id={}".format(self.id2word[w], w))
-
-        x_test = np.array(self.display_examples)
+            self.display_words()
 
         # run training for the given number of steps.
-        for step in range(1, self.num_steps + 1):
+        for step in range(1, self.n_steps + 1):
             batch_x, batch_y = self.batcher.generate_batch()
             # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
-
             self.run_optimization(batch_x, batch_y)
 
             # if step % display_step == 0 or step == 1:
@@ -741,23 +752,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             # evaluation
             if self.display is not None and (step % self.eval_step == 0 or step == 1):
-                print('Evaluation...\n')
-
-                sim = calculate_cosine_similarity(self.cbow_embedding(x_test),
-                                                  self.embedding,
-                                                  self.device_type).numpy()
-
-                print(sim[0])
-
-                for i in range(len(self.display_examples)):
-                    top_k = 8  # number of nearest neighbors.
-                    nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-                    disp_example = self.id2word[self.display_examples[i]]
-                    log_str = '{} nearest neighbors:'.format(disp_example)
-
-                    for k in range(top_k):
-                        log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
-
-                    print(log_str)
+                self.display_examples()
 
         return None

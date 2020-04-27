@@ -18,7 +18,10 @@ cover
 coverage.xml
 .coverage
 .coverage*
+karate.embedded
+.mypy_cache/*
 *.log
 
 # other
 .single_run
+

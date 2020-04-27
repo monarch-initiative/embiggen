@@ -16,16 +16,19 @@ class TestTextEncoderSentences(TestCase):
         self.reverse_dictionary = reverse_dictionary
 
     def testWordCounts(self):
-        wordcount = defaultdict(int)
+        wordcount = defaultdict()
+
         for item in self.count:
             wordcount[item[0]] = item[1]
+
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
-        self.assertEqual(0, wordcount['the'])  # Stopwords should have been removed
+        self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed
 
     def test_number_of_sentences(self):
-        # Our text has three sentences
+
+        # our text has three sentences
         self.assertEqual(3, len(self.data))
 
 
@@ -44,10 +47,12 @@ class TestTextEncoderEnBlock(TestCase):
         self.reverse_dictionary = reverse_dictionary
 
     def testWordCounts(self):
-        wordcount = defaultdict(int)
+        wordcount = defaultdict()
+
         for item in self.count:
             wordcount[item[0]] = item[1]
+
         self.assertEqual(1, wordcount['spiders'])
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
-        self.assertEqual(0, wordcount['the'])  # Stopwords should have been removed
+        self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed

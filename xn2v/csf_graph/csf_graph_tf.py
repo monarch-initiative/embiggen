@@ -1,8 +1,9 @@
 import numpy as np   # type: ignore
 import os.path
+import tensorflow as tf   # type: ignore
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Union
 
 from xn2v.csf_graph.edge import Edge
 
@@ -35,13 +36,12 @@ class CSFGraph:
             node and the value stored at each node's index is the total number of edges coming out of that node.
 
     Raises:
-        - TypeError: If the filepath attribute is empty.
-        - TypeError: If the filepath attribute must be type str.
-        - ValueError: If the file referenced by filepath cannot be found.
+        TypeError: If the filepath attribute is empty.
+        TypeError: If the filepath attribute must be type str.
+        ValueError: If the file referenced by filepath cannot be found.
     """
 
     def __init__(self, filepath: str) -> None:
-
         if filepath is None:
             raise TypeError('The filepath attribute cannot be empty.')
         if not isinstance(filepath, str):
@@ -50,12 +50,12 @@ class CSFGraph:
             raise ValueError('Could not find graph file {}'.format(filepath))
 
         # create variables to store node and edge information
-        nodes: Set[Union[int, str]] = set()
+        nodes: Set[str] = set()
         edges: Set[Edge] = set()
         self.edgetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
-        self.node_to_index_map:  Dict[str, int] = defaultdict(int)
-        self.index_to_node_map:  Dict[int, str] = defaultdict(str)
+        self.node_to_index_map: Dict[str, int] = defaultdict(int)
+        self.index_to_node_map: Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
         with open(filepath) as f:
@@ -88,12 +88,12 @@ class CSFGraph:
                 self.edgetype2count_dictionary[edge.get_edge_type_string()] += 1
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
-        node_list: List = sorted(nodes)
+        node_list = sorted(nodes)
 
         # create node data dictionaries
-        for i in range(len(node_list)):
-            self.node_to_index_map[node_list[i]] = i
-            self.index_to_node_map[i] = node_list[i]
+        for i in enumerate(node_list):
+            self.node_to_index_map[i[1]] = i[0]
+            self.index_to_node_map[i[0]] = i[1]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
         edge_list = sorted(edges)
@@ -102,7 +102,6 @@ class CSFGraph:
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
-        # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
         self.offset_to_edge_: np.ndarray = np.zeros(total_vertex_count + 1, dtype=np.int32)
 
         # create the graph - this done in three steps
@@ -114,16 +113,18 @@ class CSFGraph:
             index2edge_count[source_index] += 1
 
         # step 2: set the offset_to_edge_ according to the number of edges emanating from each source ids
-        self.offset_to_edge_[0], offset, i = 0, 0, 0
+        self.offset_to_edge_[0] = 0
+        offset: int = 0
+        counter = 0
 
         for n in node_list:
             node_type = n[0]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]  # n_edges can be zero here
-            i += 1
+            counter += 1
             offset += n_edges
-            self.offset_to_edge_[i] = offset
+            self.offset_to_edge_[counter] = offset
 
         # step 3: add the actual edges
         current_source_index = -1
@@ -164,7 +165,7 @@ class CSFGraph:
 
         return len(self.edge_to)
 
-    def weight(self, source: str, dest: str) -> Optional[Union[int, float]]:
+    def weight(self, source: str, dest: str) -> Optional[Union[float, int]]:
         """Takes user provided strings, representing node names for a source and destination node, and returns
         weights for each edge that exists between these nodes.
 
@@ -188,11 +189,11 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
             else:
-                pass
+                continue
 
         return None
 
-    def weight_from_ints(self, source_idx: int, dest_idx: int) -> Optional[Union[int, float]]:
+    def weight_from_ints(self, source_idx: int, dest_idx: int) -> Optional[Union[float, int]]:
         """Takes user provided integers, representing indices for a source and destination node, and returns
         weights for each edge that exists between these nodes.
 
@@ -211,7 +212,7 @@ class CSFGraph:
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
             else:
-                pass
+                continue
 
         return None
 
@@ -293,12 +294,13 @@ class CSFGraph:
         else:
             return False
 
-    def edges(self) -> List[Tuple[str, str]]:
+    def edges(self) -> Union[tf.data.Dataset, tf.RaggedTensor]:
         """Creates an edge list, where nodes are coded by their string names, for the graph.
 
         Returns:
-            edge_list: A list of tuples for all edges in the graph, where each tuple contains two strings that
-                represent the name of each node in an edge. For instance, ('gg1', 'gg2').
+            edge_list: A tf.Tensor of tuples (tf.data.Dataset if list of tuples of the same length OR a tf.RaggedTensor
+                if the list of tuples differ in length) for all edges in the graph, where each tuple contains two
+                strings that represent the name of each node in an edge. For instance, ('gg1', 'gg2').
         """
 
         edge_list = []
@@ -312,14 +314,21 @@ class CSFGraph:
                 tpl = (src, nbr)
                 edge_list.append(tpl)
 
-        return edge_list
+        # return edge lists as tensor flow a object
+        try:
+            tensor_data = tf.data.Dataset.from_tensor_slices(edge_list)
+        except ValueError:
+            tensor_data = tf.ragged.constant(edge_list)  # for nested lists of differing lengths
 
-    def edges_as_ints(self) -> List[Tuple[int, Any]]:
+        return tensor_data
+
+    def edges_as_ints(self) -> Union[tf.data.Dataset, tf.RaggedTensor]:
         """Creates an edge list, where nodes are coded by integers, for the graph.
 
         Returns:
-            edge_list: A list of tuples for all edges in the graph, where each tuple contains two integers that
-                represent each node in an edge. For instance, (2, 3).
+            edge_list: A tf.Tensor of tuples (tf.data.Dataset if list of tuples of the same length OR a tf.RaggedTensor
+                if the list of tuples differ in length) for all edges in the graph, where each tuple contains two
+                integers that represent each node in an edge. For instance, (2, 3).
         """
 
         edge_list = []
@@ -330,7 +339,13 @@ class CSFGraph:
                 tpl = (source_idx, nbr_idx)
                 edge_list.append(tpl)
 
-        return edge_list
+        # return edge lists as tensor flow a object
+        try:
+            tensor_data = tf.data.Dataset.from_tensor_slices(edge_list)
+        except ValueError:
+            tensor_data = tf.ragged.constant(edge_list)  # for nested lists of differing lengths
+
+        return tensor_data
 
     def get_node_to_index_map(self) -> Dict[str, int]:
         """Returns a dictionary of the nodes in the graph and their corresponding integers."""
@@ -384,11 +399,6 @@ class CSFGraph:
             print('edge count: {}'.format(self.edge_count()))
         else:
             for category, count in self.edgetype2count_dictionary.items():
-                print("%s - count: %d" % (category, count))
+                print('{} - count: {}'.format(category, count))
 
-    def node_degree(self, node):
-        """
-        :param node
-        :return: degree of node
-        """
-        return len(self.neighbors(node))
+        return None

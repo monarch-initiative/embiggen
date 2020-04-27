@@ -1,5 +1,8 @@
 import collections
-import numpy as np
+import numpy as np   # type: ignore
+
+from typing import List, Tuple, Union
+
 
 from typing import List, Tuple, Union
 
