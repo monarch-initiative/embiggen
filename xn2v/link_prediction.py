@@ -1,5 +1,6 @@
 import sys
 import numpy as np   # type: ignore
+from sklearn.calibration import CalibratedClassifierCV
 
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore
