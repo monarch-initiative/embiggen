@@ -31,6 +31,7 @@ class CSFGraph:
         self.edgetype2count_dictionary = defaultdict(int)
         self.nodetype2count_dictionary = defaultdict(int)
 
+        header_items = None
         with open(edge_file) as f:
             header = f.readline()
             header_items = header.strip().split('\t')
@@ -45,16 +46,13 @@ class CSFGraph:
                     logging.error('Legacy edge file should have 2 or 3 columns' +
                                   '(subject object weight)\n{}'.format(header))
                     raise ValueError
-
-        with open(edge_file) as f:
-            if not header_items:
-                header = f.readline()
-                header_items = header.strip().split('\t')
-
             if 'subject' not in header_items:
                 raise CSFGraphNoSubjectColumnError("Edge file should have a 'subject' column")
             if 'object' not in header_items:
                 raise CSFGraphNoObjectColumnError("Edge file should have an 'object' column")
+
+        with open(edge_file) as f:
+            header = f.readline()
             for line in f:
                 fields = line.rstrip('\n').split()
                 items = dict(zip(header_items, fields))
