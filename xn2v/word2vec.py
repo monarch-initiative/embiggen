@@ -5,12 +5,14 @@ import random
 import tensorflow as tf
 from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
 
+
 from tqdm import trange
 from typing import Dict, List, Optional, Tuple, Union
 
 from xn2v import CBOWListBatcher
 from xn2v.utils import get_embedding, calculate_cosine_similarity
 from xn2v.utils.tf_utils import TFUtilities
+
 
 
 class Word2Vec:
@@ -55,6 +57,7 @@ class Word2Vec:
     def add_display_words(self, count: list, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
         sample.
+
         If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
         that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm. It is
         important to note that display is a costly operation. Up to 16 nodes/words are permitted. If a user asks for
@@ -100,8 +103,9 @@ class Word2Vec:
             self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
             print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         else:
-            # self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+            # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
             self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(self.data) + 1)
+
             print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
 
         return None
@@ -138,6 +142,7 @@ class SkipGramWord2Vec(Word2Vec):
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
         else:
             self.list_of_lists = False
+
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -205,7 +210,8 @@ class SkipGramWord2Vec(Word2Vec):
     #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
     #
     #         return cosine_sim_op
-
+    
+    
     def run_optimization(self, x: np.array, y: np.array) -> float:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
         calculated, the gradients are computed and the weights and biases are updated accordingly.
@@ -274,6 +280,7 @@ class SkipGramWord2Vec(Word2Vec):
             data_index += 1  # move sliding window 1 spot to the right
             context_words = [w for w in range(span) if w != skip_window]
             words_to_use = random.sample(context_words, num_skips)
+
             for j, context_word in enumerate(words_to_use):
                 batch[i * num_skips + j] = buffer[skip_window]
                 labels[i * num_skips + j, 0] = buffer[context_word]
@@ -392,7 +399,9 @@ class SkipGramWord2Vec(Word2Vec):
                     loss = self.nce_loss(get_embedding(batch_x, self.embedding, self.device_type), batch_y)
                     pbar.set_description("step: %i, loss: %f" % (step, loss))
 
+
         return None
+
 
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
@@ -433,6 +442,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
                          skip_window, num_skips, num_sampled, display, device_type)
 
+
         sentences_per_batch = 1
         self.data = data
         self.word2id = worddictionary
@@ -449,6 +459,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
         else:
             self.list_of_lists = False
+
 
 
         # set vocabulary size
@@ -493,6 +504,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 [[ 2619 15572 15573 15575 15576 15577], [15572 15573 15574 15576 15577 15578], ...]
         Returns:
             mean_embeddings: An averaged word embedding vector.
+
         Raises:
             ValueError: If the shape of stacked_embeddings is not equal to twice the skip_window length.
         """
@@ -574,6 +586,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             return cosine_sim_op
 
+
     def generate_batch_cbow(self, sentence: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
         Args:
@@ -613,7 +626,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         Returns:
             None.
         """
-
         with tf.device(self.device_type):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
@@ -626,8 +638,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # Update W and b following gradients
             self.optimizer.apply_gradients(
                 zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
-
             return None
+
 
     def display_words(self) -> None:
         for w in self.display_examples:
@@ -731,7 +743,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         for step in range(1, self.n_steps + 1):
             batch_x, batch_y = self.batcher.generate_batch()
             # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
-
             self.run_optimization(batch_x, batch_y)
 
             # if step % display_step == 0 or step == 1:

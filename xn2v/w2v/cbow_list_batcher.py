@@ -4,6 +4,9 @@ import numpy as np   # type: ignore
 from typing import List, Tuple, Union
 
 
+from typing import List, Tuple, Union
+
+
 class CBOWListBatcher:
     """Encapsulate functionality for getting the next batch for Continuous Bag of Words (CBOW). The input is expected
     to be a list of lists of ints, such as we get from node2vec. This class is an implementation detail and should not

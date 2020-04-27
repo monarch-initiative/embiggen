@@ -94,6 +94,7 @@ class SkipGramBatcher:
                 self.data_index += 1  # i.e., move the sliding window 1 position to the right
 
         # Backtrack a little bit to avoid skipping words in the end of a batch.
+
         self.data_index = (self.data_index + len(self.data) - span) % len(self.data)
 
         return batch, labels

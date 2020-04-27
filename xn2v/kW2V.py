@@ -4,6 +4,8 @@
 ######
 ############################
 
+# pylint: skip-file
+
 import random
 import numpy as np   # type: ignore
 import tensorflow as tf   # type: ignore

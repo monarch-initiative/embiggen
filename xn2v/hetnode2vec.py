@@ -224,13 +224,18 @@ class N2vGraph:
             dst2count[nbrtype] += 1
             total_neighbors += 1
         total_non_own_probability = 0.0
+        num_types = 0
+        for n, count in dst2count.items():#count the number of types of edges from dst
+            if dst2count[n] != 0:
+                num_types += 1
+
         for n, count in dst2count.items():
             if n == dsttype:
                 # we need to count up the other types before we can calculate this!
                 continue
             else:
                 # owntype is going to a different node type
-                dst2prob[n] = float(self.gamma) / float(count)
+                dst2prob[n] = float(self.gamma) / (float(count) * num_types)# dividing by the num of type of edges
                 total_non_own_probability += dst2prob[n]
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
@@ -269,6 +274,7 @@ class N2vGraph:
         alias_nodes = {}
         for node in G.nodes():
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
+            #node_as_int = G.node_to_index_map[node]
             owntype = node[0]
             own2count = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
             own2prob = defaultdict(float)  # probs calculated from own2count
@@ -280,13 +286,18 @@ class N2vGraph:
                 own2count[nbrtype] += 1
                 total_neighbors += 1
             total_non_own_probability = 0.0
+            num_types = 0
+            for n, count in own2count.items():  # count the number of types of edges from dst
+                if own2count[n] != 0:
+                    num_types += 1
+
             for n, count in own2count.items():
                 if n == owntype:
                     # we need to count up the other types before we can calculate this!
                     continue
                 else:
                     # owntype is going to a different node type
-                    own2prob[n] = float(self.gamma) / float(count)
+                    own2prob[n] = float(self.gamma) / float(count) * num_types
                     total_non_own_probability += own2prob[n]
             if own2count[owntype] == 0:
                 own2prob[owntype] = 0
@@ -305,7 +316,10 @@ class N2vGraph:
             normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
-            alias_edges[edge] = self.get_alias_edge_xn2v(edge[0], edge[1])
+            #src_as_int = G.node_to_index_map[edge[0]]
+            #dst_as_int = G.node_to_index_map[edge[1]]
+            #alias_edges[(src_as_int, dst_as_int)] = self.get_alias_edge_xn2v(edge[0], edge[1])
+            alias_edges[(edge[0], edge[1])] = self.get_alias_edge_xn2v(edge[0], edge[1])
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes
