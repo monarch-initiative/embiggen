@@ -34,6 +34,23 @@ class CSFGraph:
         with open(edge_file) as f:
             header = f.readline()
             header_items = header.strip().split('\t')
+
+            if 'subject' not in header_items and 'object' not in header_items:
+                logging.warning("Didn't find subject or object in header - probably a legacy edge file")
+                if len(header_items) == 2:
+                    header_items = ['subject', 'object']
+                if len(header_items) == 3:
+                    header_items = ['subject', 'object', 'weight']
+                else:
+                    logging.error('Legacy edge file should have 2 or 3 columns' +
+                                  '(subject object weight)\n{}'.format(header))
+                    raise ValueError
+
+        with open(edge_file) as f:
+            if not header_items:
+                header = f.readline()
+                header_items = header.strip().split('\t')
+
             if 'subject' not in header_items:
                 raise CSFGraphNoSubjectColumnError("Edge file should have a 'subject' column")
             if 'object' not in header_items:
