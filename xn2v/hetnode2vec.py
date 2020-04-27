@@ -1,13 +1,13 @@
 import logging.handlers
 import logging
-import numpy as np
+import numpy as np  # type: ignore
 import os
 import random
 import sys
 import time
 from collections import defaultdict
 from multiprocessing import Pool
-from tqdm import tqdm, trange
+from tqdm import tqdm, trange  # type: ignore
 from logging import handlers
 
 log = logging.getLogger("xn2v.log")
@@ -276,8 +276,12 @@ class N2vGraph:
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
             #node_as_int = G.node_to_index_map[node]
             owntype = node[0]
-            own2count = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
-            own2prob = defaultdict(float)  # probs calculated from own2count
+
+            # counts for going from current node ("own") to nodes of a given type (g, p,d)
+            own2count = defaultdict(int)  # type: ignore
+
+            # probs calculated from own2count
+            own2prob = defaultdict(float)  # type: ignore
             total_neighbors = 0
             # G returns a sorted list of neighbors of node
             sorted_neighbors = G.neighbors(node)

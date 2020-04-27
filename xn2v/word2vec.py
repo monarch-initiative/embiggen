@@ -1,18 +1,16 @@
 import collections
 import math
-import numpy as np
+import numpy as np  # type: ignore
 import random
-import tensorflow as tf
-from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor
+import tensorflow as tf  # type: ignore
 
-
-from tqdm import trange
+# from tensorflow.python.ops.ragged.ragged_tensor import RaggedTensor  # type: ignore
+from tqdm import trange  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
 
-from xn2v import CBOWListBatcher
+# from xn2v import CBOWListBatcher
 from xn2v.utils import get_embedding, calculate_cosine_similarity
 from xn2v.utils.tf_utils import TFUtilities
-
 
 
 class Word2Vec:
@@ -51,7 +49,7 @@ class Word2Vec:
         self.num_skips = num_skips
         self.num_sampled = num_sampled
         self.display = display
-        self.display_examples = []
+        self.display_examples: List = []
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
 
     def add_display_words(self, count: list, num: int = 5) -> None:
@@ -104,7 +102,7 @@ class Word2Vec:
             print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         else:
             # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
-            self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(self.data) + 1)
+            self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
 
             print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
 
@@ -142,7 +140,6 @@ class SkipGramWord2Vec(Word2Vec):
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
         else:
             self.list_of_lists = False
-
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -210,8 +207,7 @@ class SkipGramWord2Vec(Word2Vec):
     #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
     #
     #         return cosine_sim_op
-    
-    
+
     def run_optimization(self, x: np.array, y: np.array) -> float:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
         calculated, the gradients are computed and the weights and biases are updated accordingly.
@@ -236,24 +232,20 @@ class SkipGramWord2Vec(Word2Vec):
 
         return loss
 
-    def next_batch(self, sentence: tf.Tensor) -> \
-            Tuple[np.ndarray, np.ndarray]:
-
+    def next_batch(self, sentence: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
         """Generate training batch for the skip-gram model.
-        Assumption: This assumes that dslist is a td.data.Dataset object that contains one sentence or (or list of
-        words
+
+        Assumption: This assumes that dslist is a td.data.Dataset object that contains one sentence or (or list of words
+
         Args:
             sentence: A list of words to be used to create the batch
-            num_skips: The number of data points to extract for each center node.
-            skip_window: The size of sampling windows (technically half-window). The window of a word `w_i` will be
-                       `[i - window_size, i + window_size+1]`.
-            Returns:
-                A list where the first item us a batch and the second item is the batch's labels.
-            Raises:
-                ValueError: If the number of skips is not <= twice the skip window length.
+        Returns:
+            A list where the first item us a batch and the second item is the batch's labels.
+        Raises:
+            ValueError: If the number of skips is not <= twice the skip window length.
 
-            TODO -- should num_skips and skip_window be arguments or simply taken from self
-            within the method?
+        TODO -- should num_skips and skip_window be arguments or simply taken from self
+        within the method?
             """
         num_skips = self.num_skips
         skip_window = self.skip_window
@@ -307,7 +299,7 @@ class SkipGramWord2Vec(Word2Vec):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
             print(log_str)
 
-    def train(self) -> None:
+    def train(self) -> List[float]:
         """
         Trying out passing a simple Tensor to get_batch
         :return:
@@ -342,13 +334,13 @@ class SkipGramWord2Vec(Word2Vec):
                 data = self.data  #
                 if not isinstance(data, tf.Tensor):
                     raise TypeError("We were expecting a Tensor object!")
-                batch_size = self.batch_size
+                # batch_size = self.batch_size
                 data_len = len(data)
                 # Note that we cannot fully digest all of the data in any one batch
                 # if the window length is K and the natch_len is N, then the last
                 # window that we get starts at position (N-K). Therefore, if we start
                 # the next window at position (N-K)+1, we will get all windows.
-                window_len = 1 + 2 * (self.skip_window)
+                window_len = 1 + 2 * self.skip_window
                 shift_len = batch_size = window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data
@@ -389,9 +381,9 @@ class SkipGramWord2Vec(Word2Vec):
             for step in pbar:
                 if self.list_of_lists:
                     walkcount = 2
-                    batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)
+                    batch_x, batch_y = self.next_batch_from_list_of_lists(walkcount, self.num_skips, self.skip_window)  # type: ignore
                 else:
-                    batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)
+                    batch_x, batch_y = self.next_batch(self.data, self.batch_size, self.num_skips, self.skip_window)  # type: ignore
                 self.run_optimization(batch_x, batch_y)
 
                 # if step % display_step == 0 or step == 1:
@@ -399,9 +391,7 @@ class SkipGramWord2Vec(Word2Vec):
                     loss = self.nce_loss(get_embedding(batch_x, self.embedding, self.device_type), batch_y)
                     pbar.set_description("step: %i, loss: %f" % (step, loss))
 
-
         return None
-
 
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
@@ -442,8 +432,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
                          skip_window, num_skips, num_sampled, display, device_type)
 
-
-        sentences_per_batch = 1
+        # sentences_per_batch = 1
         self.data = data
         self.word2id = worddictionary
         self.id2word = reverse_worddictionary
@@ -459,8 +448,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
         else:
             self.list_of_lists = False
-
-
 
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
@@ -586,7 +573,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             return cosine_sim_op
 
-
     def generate_batch_cbow(self, sentence: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
         Args:
@@ -640,16 +626,15 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
             return None
 
-
     def display_words(self) -> None:
         for w in self.display_examples:
             print("{}: id={}".format(self.id2word[w], w))
-        x_test = np.array(self.display_examples)
+        # x_test = np.array(self.display_examples)
         print('Evaluation...\n')
         print("TODO -- fix me")
-        if 2+2!=5:
+        if 2 + 2 != 5:
             return
-        sim = calculate_cosine_similarity(self.cbow_embedding(x_test),
+        sim = calculate_cosine_similarity(self.cbow_embedding(x_test),  # type: ignore
                                           self.embedding,
                                           self.device_type).numpy()
 
@@ -666,7 +651,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             print(log_str)
 
-    def train(self, display_step: int = 2000) -> None:
+        return None
+
+    def train(self, display_step: int = 2000) -> List[None]:  # type: ignore
         """Trains a CBOW model.
         Args:
             display_step: An integer that is used to determine the number of steps to display when training the model.
@@ -676,8 +663,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # words for testing; display_step = 2000; eval_step = 2000
         if display_step is not None and 1 == 3:
             self.display_words()
-        n_epochs = 2
-        data = self.data  #
+        # n_epochs = 2
+        # data = self.data  #
         n_epochs = 5
         window_len = 2 * self.skip_window + 1
         step = 0
@@ -690,7 +677,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     if sentencelen < window_len:
                         continue
                     batch_x, batch_y = self.generate_batch_cbow(sentence)
-                    current_loss = self.run_optimization(batch_x, batch_y)
+                    current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
                     step += 1
             else:
@@ -715,8 +702,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     currentTensor = data[data_index:endpos]
                     if len(currentTensor) < window_len:
                         break  # We are at the end
-                    batch_x, batch_y = self.next_batch(currentTensor)
-                    current_loss = self.run_optimization(batch_x, batch_y)
+                    batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
+                    current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
                         print("loss, ", current_loss)
                         loss_history.append(current_loss)
@@ -726,7 +713,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                  lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
             return loss_history
-
 
     def trainOLD(self, display_step: int = 2000) -> None:
         """Trains a CBOW model.
@@ -741,7 +727,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         # run training for the given number of steps.
         for step in range(1, self.n_steps + 1):
-            batch_x, batch_y = self.batcher.generate_batch()
+            batch_x, batch_y = self.batcher.generate_batch()  # type: ignore
             # self.generate_batch_cbow(self.data, self.batch_size, self.skip_window)
             self.run_optimization(batch_x, batch_y)
 
@@ -752,6 +738,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             # evaluation
             if self.display is not None and (step % self.eval_step == 0 or step == 1):
-                self.display_examples()
+                self.display_examples()  # type: ignore
 
         return None

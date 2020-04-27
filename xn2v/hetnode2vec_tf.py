@@ -5,7 +5,7 @@ import os
 import random
 import sys
 import time
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 from collections import defaultdict
 from multiprocessing import Pool

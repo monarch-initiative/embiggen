@@ -1,11 +1,11 @@
 import sys
-import numpy as np
-from sklearn import metrics
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.calibration import CalibratedClassifierCV
-from sklearn import svm
-from sklearn.metrics import roc_auc_score, average_precision_score
+import numpy as np  # type: ignore
+from sklearn import metrics  # type: ignore
+from sklearn.linear_model import LogisticRegression  # type: ignore
+from sklearn.ensemble import RandomForestClassifier  # type: ignore
+from sklearn.calibration import CalibratedClassifierCV  # type: ignore
+from sklearn import svm  # type: ignore
+from sklearn.metrics import roc_auc_score, average_precision_score  # type: ignore
 
 from xn2v.utils import load_embeddings
 

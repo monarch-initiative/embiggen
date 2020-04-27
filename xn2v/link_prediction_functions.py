@@ -4,8 +4,8 @@
 
 ###
 
-import numpy as np
-import sklearn
+import numpy as np  # type: ignore
+import sklearn  # type: ignore
 
 def DegreeProduct(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
