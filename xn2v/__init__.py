@@ -7,7 +7,7 @@
 
 """
 from .csf_graph import CSFGraph
-from .hetnode2vec import N2vGraph
+from .hetnode2vec_tf import N2vGraph
 from .kW2V import kWord2Vec
 from .link_prediction import LinkPrediction
 from .link_prediction_with_validation import LinkPredictionWithValidation
