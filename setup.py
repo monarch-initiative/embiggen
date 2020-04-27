@@ -39,6 +39,8 @@ setup(
         'silence_tensorflow',
         'sklearn',
         'tensorflow>=2.0',
+        'nltk',
+        'more_itertools',
         'tqdm'
     ],
     test_suite='nose.collector',

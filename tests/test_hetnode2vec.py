@@ -146,7 +146,6 @@ class TestHetGraph(TestCase):
     def testGraphNodeCounts(self):
         """
         #We expect 101 gene nodes, 20 disease nodes, and 30 protein nodes
-
         :return:
         """
         g = self.graph
@@ -181,6 +180,7 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(1.0, original_probs[0])
 
 
+
     def test_raw_probs_3(self):
         p = 1
         q = 1
@@ -192,7 +192,7 @@ class TestHetGraph(TestCase):
         self.assertEqual(len(j_alias), len(q_alias))
         # outgoing edges from p1: g1, p2, ..., p30
         self.assertEqual(30, len(j_alias))
-        # recreate the original probabilities.
+        # recreate the original probabilities. They should be a vector of length 1 with value 1.
         original_probs = calculate_total_probs(j_alias, q_alias)
         self.assertAlmostEqual(1.0 / 2, original_probs[0])
         self.assertAlmostEqual(1.0/58.0, original_probs[1])
@@ -283,7 +283,6 @@ class TestHetGraph(TestCase):
         self.assertAlmostEqual(3.0/ 76.0, original_probs[1])#prob from d1 to d3
         self.assertAlmostEqual(3.0 / 76.0, original_probs[10])#prob from d1 to d12
         self.assertAlmostEqual(1.0 / 4.0, original_probs[19])#prob from d1 to g1
-
 
 
 class TestHetGraph2(TestCase):

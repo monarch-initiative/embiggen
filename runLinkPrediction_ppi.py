@@ -4,8 +4,10 @@ from xn2v import N2vGraph
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
+import xn2v
 from xn2v.utils import write_embeddings
 import sys
+
 
 
 # import os
@@ -20,8 +22,8 @@ import sys
 
 
 def parse_args():
-    """
-    Parses arguments.
+    """Parses arguments.
+
     """
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
@@ -100,20 +102,22 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
     if w2v_model == "Skipgram":
-        model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
-                                 embedding_size=args.embedding_size, skip_window=args.skip_window)
+        model = SkipGramWord2Vec(walks,
+                                worddictionary=worddictionary,
+                                reverse_worddictionary=reverse_worddictionary,
+                                num_steps=args.num_steps)
     elif w2v_model == "CBOW":
-        model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
-                                             embedding_size=args.embedding_size, skip_window=args.skip_window)
+        model = ContinuousBagOfWordsWord2Vec(walks,
+                                             worddictionary=worddictionary,
+                                             reverse_worddictionary=reverse_worddictionary,
+                                             num_steps=args.num_steps)
     else:
-        print("[ERROR] enter Skipgram or CBOW")
-        sys.exit(1)
+        raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
 
     model.train(display_step=100)
 
     write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
+
 
 
 def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
