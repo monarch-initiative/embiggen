@@ -105,4 +105,13 @@ class TestCSFGraph(TestCase):
         made_up = ('z1', 'q123')
         self.assertFalse(made_up in edge_list)
 
+    def test_degree(self):
+        #test the degrees of nodes
+        node_1 = "g1"
+        node_2 = "p2"
+        node_3 = "d3"
+        self.assertEqual(5, self.g.node_degree(node_1))
+        self.assertEqual(4, self.g.node_degree(node_2))
+        self.assertEqual(3, self.g.node_degree(node_3))
+
         return None

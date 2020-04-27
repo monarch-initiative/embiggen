@@ -10,7 +10,6 @@ from tensorflow.keras.preprocessing.text import text_to_word_sequence, Tokenizer
 from typing import Any, Dict, List, Tuple
 
 
-
 class TextEncoder:
     """
     This class takes as input a file containing text that we want to encode as integers for Word2Vec. It cleanses the
@@ -265,7 +264,6 @@ class TextEncoder:
         # log.info('Sample data: {}', str(data[:10]))
         return data, count, dictionary, dict(zip(dictionary.values(), dictionary.keys()))
 
-
     def get_raw_text(self) -> str:
         """Reads in data from a file and returns the data as a single string.
 
@@ -335,13 +333,10 @@ class TextEncoder:
             ValueError: If the length of count_as_tuples does not match max_vocab_size.
         """
 
-    def build_dataset_with_keras(self, max_vocab_size=50000):
-
         text = self.get_raw_text()
         words = text_to_word_sequence(text, lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
-
 
         # initialize tokenizer
         tokenizer = Tokenizer(num_words=max_vocab_size + 1,

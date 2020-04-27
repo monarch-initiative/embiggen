@@ -1,7 +1,7 @@
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 import argparse
 import os
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # type: ignore
 
 from xn2v.text_encoder_tf import TextEncoder
 from xn2v import SkipGramWord2Vec
