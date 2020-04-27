@@ -1,9 +1,9 @@
-import numpy as np
+import numpy as np  # type: ignore
 import csv
 
 
-import tensorflow as tf
-from tensorflow.keras.preprocessing.text import Tokenizer
+import tensorflow as tf  # type: ignore
+from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
 from random import shuffle
 
 assert tf.__version__ >= "2.0"

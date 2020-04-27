@@ -1,6 +1,6 @@
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix  # type: ignore
 import collections
-import numpy as np
+import numpy as np  # type: ignore
 from xn2v import TextEncoder
 
 

@@ -20,6 +20,6 @@ from .word2vec import ContinuousBagOfWordsWord2Vec
 from .word2vec import SkipGramWord2Vec
 
 __all__ = [
-    "N2vGraph", "LinkPrediction", "link_prediction_with_validation","CSFGraph", "TextEncoder", "TextCooccurrenceEncoder",
+    "N2vGraph", "LinkPrediction", "LinkPredictionWithValidation", "CSFGraph", "TextEncoder", "TextCooccurrenceEncoder",
     "CBOWListBatcher", "kWord2Vec", "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
 ]
