@@ -58,6 +58,7 @@ class CSFGraph:
         if not os.path.exists(edge_file):
             raise ValueError('Could not find graph file {}'.format(edge_file))
 
+
         # create variables to store node and edge information
         nodes: Set[str] = set()
         edges: Set[Edge] = set()
