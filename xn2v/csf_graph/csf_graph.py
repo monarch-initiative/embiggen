@@ -63,9 +63,9 @@ class CSFGraph:
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.node_to_index_map:  Dict[str, int] = defaultdict(int)
         self.index_to_node_map:  Dict[int, str] = defaultdict(str)
-        self.nodetype_to_index_map:  Dict[str, list] = defaultdict(int)
+        self.nodetype_to_index_map:  Dict[str, list] = defaultdict(list)
         self.index_to_nodetype_map:  Dict[int, str] = defaultdict(str)
-        self.edgetype_to_index_map:  Dict[str, list] = defaultdict(int)
+        self.edgetype_to_index_map:  Dict[str, list] = defaultdict(list)
         self.index_to_edgetype_map:  Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
@@ -111,7 +111,7 @@ class CSFGraph:
         node_list: List = sorted(nodes)
         edge_list: List = sorted(edges)
 
-        # create node data dictionaries
+        # create edge data dictionaries
         for i in range(len(edge_list)):
             this_type = edge_list[i].edge_type
             if this_type not in self.edgetype_to_index_map:

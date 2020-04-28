@@ -47,8 +47,15 @@ class TestCSFGraph(TestCase):
     # check edgetype to index map
     def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
+        # default edgetype_to_index_map:
+        self.assertEqual(42,
+                         len(self.g.edgetype_to_index_map[self.default_edge_type]))
         self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
                               [self.default_edge_type])
+
+    def test_csfgraph_constructor_populates_edgetype_to_index_map(self):
+        g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+
 
     # check index to edgetype map
     def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
