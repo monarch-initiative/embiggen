@@ -45,9 +45,7 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_constructor_accepts_node_file(self):
         g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
 
-    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
-        g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
-
+    # check nodetype to index map
     def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.g.nodetype_to_index_map, dict)
 
