@@ -35,6 +35,10 @@ class CSFGraph:
             node from the sorted list of unique nodes in the graph.
         index_to_node_map: A dictionary where keys contain the integer index of each node from the sorted list of
             unique nodes in the graph and values contain node labels.
+        nodetype_to_index_map: A dictionary where keys contain node type and values contain the integer index of each
+            node from the sorted list of unique nodes in the graph.
+        index_to_nodetype_map: A dictionary where keys contain the integer index of each node from the sorted list of
+            unique nodes in the graph and values contain node types.
         edge_to: A numpy array with length the number of edges. Each index in the array contains the index of an edge,
             such that it can be used to look up the destination nodes that an edge in a given index points to.
         edge_weight: A numpy array with length the number of edges. Each item in the array represents an edge's index
