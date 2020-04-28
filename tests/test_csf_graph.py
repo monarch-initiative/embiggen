@@ -49,8 +49,17 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.g.nodetype_to_index_map, dict)
 
+    # check index to nodetype map
     def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
         self.assertIsInstance(self.g.index_to_nodetype_map, dict)
+
+    # check edgetype to index map
+    def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
+        self.assertIsInstance(self.g.edgetype_to_index_map, dict)
+
+    # check index to edgetype map
+    def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
+        self.assertIsInstance(self.g.index_to_edgetype_map, dict)
 
     def test_count_nodes_legacy_edge_file(self):
         g = CSFGraph(edge_file=self.legacy_edge_file)

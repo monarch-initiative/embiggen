@@ -27,6 +27,18 @@ class TestCSFGraph(TestCase):
 
         self.assertIsNotNone(self.graph.get_index_to_node_map())
 
+    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
+        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
+
+    def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
+        self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
+
+    def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
+        self.assertIsInstance(self.graph.edgetype_to_index_map, dict)
+
+    def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
+        self.assertIsInstance(self.graph.index_to_edgetype_map, dict)
+
     def test_count_nodes(self):
 
         # the graph in small_graph.txt has 11 nodes
@@ -82,12 +94,6 @@ class TestCSFGraph(TestCase):
         # the neighbors of g2 are g1, g3, p1, p2 and their indices are 3, 5, 7, 8
         nbrs = self.graph.neighbors_as_ints(g2_idx)
         self.assertEqual([3, 5, 7, 8], nbrs)
-
-    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
-        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
-
-    def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
-        self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
 
     def test_check_nodetype(self):
 
