@@ -217,35 +217,9 @@ class TestlinkPredictionScores_2(TestCase):
         self.assertAlmostEqual(1.0/np.log(102.0), score)
 
 class TestCosieSimilarity(TestCase):
-    """
-    Test the cosine similarity of two vectors. The first 3 tests calculate cos_sim between two vectors
-    without tensorflow. The last 3 tests use tensorflow library to calculate cos_sim.
-    """
-    def test_cos_sim_1(self):
-        X = np.array([1,2])
-        Y = np.array([3,4])
-        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
-        #<X,Y> = 1*3 + 2*4 = 11
-        #sqrt(<X,X>)= sqrt(1+4), sqrt(<Y,Y>)= sqrt(9+16)=5. Thus cos_sim= 11/ 5*sqrt(5)
-        self.assertEqual(11/(5*math.sqrt(5)), cos_sim)
-
-    def test_cos_sim_2(self):
-        X = np.array([1,2,0])
-        Y = np.array([3,4,1])
-        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
-        # <X,Y> = 1*3 + 2*4 + 0*1 = 11
-        # sqrt(<X,X>)= sqrt(1+4), sqrt(<Y,Y>)= sqrt(9+16+1)=sqrt(26). Thus cos_sim= 11/ sqrt(26)*sqrt(5)
-        self.assertEqual(11/(math.sqrt(26)*math.sqrt(5)), cos_sim)
-
-    def test_cos_sim_3(self):
-        X = np.array([1,0,0])
-        Y = np.array([3,4,0])
-        cos_sim = link_prediction_functions.cosine_similarity(X, Y)
-        # <X,Y> = 1*3 =3
-        # sqrt(<X,X>)= 1, sqrt(<Y,Y>)= sqrt(9+16)=5. Thus cos_sim= 3/5
-        self.assertEqual(3.0/5.0, cos_sim)
-
-
+    #
+    #Test the cosine similarity of two vectors using tensorflow.
+    #
     def test_cos_sim_tf_1(self):
         X = np.array([1,2])
         Y = np.array([3,4])
