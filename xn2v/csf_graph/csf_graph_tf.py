@@ -89,6 +89,10 @@ class CSFGraph:
                 items = dict(zip(header_info['header_items'], fields))
                 node_a = items[self.subject_column_name]
                 node_b = items[self.object_column_name]
+                if self.edge_label_column_name in items:
+                    edge_type = items[self.edge_label_column_name]
+                else:
+                    edge_type = self.default_edge_type
 
                 if self.weight_column_name not in items:
                     # no weight provided. Assign a default value
@@ -106,8 +110,8 @@ class CSFGraph:
                 nodes.add(node_b)
 
                 # process edges y initializing instances of each edge and it's inverse
-                edge = Edge(node_a, node_b, weight)
-                inverse_edge = Edge(node_b, node_a, weight)
+                edge = Edge(node_a, node_b, weight, edge_type)
+                inverse_edge = Edge(node_b, node_a, weight, edge_type)
                 edges.add(edge)
                 edges.add(inverse_edge)
 
@@ -116,6 +120,15 @@ class CSFGraph:
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list = sorted(nodes)
+        edge_list: List = sorted(edges)
+
+        # create edge data dictionaries
+        for i in range(len(edge_list)):
+            this_type = edge_list[i].edge_type
+            if this_type not in self.edgetype_to_index_map:
+                self.edgetype_to_index_map[this_type] = []
+            self.edgetype_to_index_map[this_type].append(i)
+            self.index_to_edgetype_map[i] = this_type
 
         # create node data dictionaries
         for i in enumerate(node_list):

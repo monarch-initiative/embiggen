@@ -10,8 +10,9 @@ class TestCSFGraph(TestCase):
 
     def setUp(self):
 
-        input_file = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
-        self.graph = CSFGraph(input_file)
+        edge_file = os.path.join(os.path.dirname(__file__),
+                                  'data', 'small_graph_edges.tsv')
+        self.graph = CSFGraph(edge_file)
 
         return None
 
@@ -35,15 +36,14 @@ class TestCSFGraph(TestCase):
 
     # check edgetype to index map
     def test_csfgraph_makes_edgetype_to_index_map(self):
-        self.assertIsInstance(self.g.edgetype_to_index_map, dict)
+        self.assertIsInstance(self.graph.edgetype_to_index_map, dict)
 
     def test_csfgraph_populates_edgetype_to_index_map(self):
-        self.assertIsInstance(self.g.edgetype_to_index_map, dict)
-        self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
+        self.assertCountEqual(self.graph.edgetype_to_index_map.keys(),
                               ['biolink:interacts_with',
                                'biolink:molecularly_interacts_with'])
-        self.assertEqual(40, len(self.g.edgetype_to_index_map['biolink:interacts_with']))
-        self.assertEqual(2, len(self.g.edgetype_to_index_map['biolink:molecularly_interacts_with']))
+        self.assertEqual(40, len(self.graph.edgetype_to_index_map['biolink:interacts_with']))
+        self.assertEqual(2, len(self.graph.edgetype_to_index_map['biolink:molecularly_interacts_with']))
 
     def test_csfgraph_makes_index_to_edgetype_map(self):
         self.assertIsInstance(self.graph.index_to_edgetype_map, dict)

@@ -49,7 +49,6 @@ class TestCSFGraph(TestCase):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
 
     def test_csfgraph_populates_edgetype_to_index_map(self):
-        self.assertIsInstance(self.g.edgetype_to_index_map, dict)
         self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
                               ['biolink:interacts_with',
                                'biolink:molecularly_interacts_with'])
