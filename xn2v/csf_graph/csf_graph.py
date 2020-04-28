@@ -49,10 +49,6 @@ class CSFGraph:
     """
 
     def __init__(self, edge_file: str, node_file: str = None, default_weight=1):
-        if edge_file is None:
-            raise TypeError('The filepath attribute cannot be empty.')
-        if not isinstance(edge_file, str):
-            raise TypeError('The filepath attribute must be type str')
         if not os.path.exists(edge_file):
             raise ValueError('Could not find edge file {}'.format(edge_file))
 
@@ -87,7 +83,6 @@ class CSFGraph:
                         logging.error("[ERROR] Could not parse weight field " +
                                       "(must be an integer): {}".format(
                                           items['weight']))
-
                 # add nodes
                 nodes.add(node_a)
                 nodes.add(node_b)

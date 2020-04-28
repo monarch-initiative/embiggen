@@ -51,10 +51,6 @@ class CSFGraph:
     """
 
     def __init__(self, edge_file: str, node_file: str = None, default_weight=1):
-        if edge_file is None:
-            raise TypeError('The filepath attribute cannot be empty.')
-        if not isinstance(edge_file, str):
-            raise TypeError('The filepath attribute must be type str')
         if not os.path.exists(edge_file):
             raise ValueError('Could not find graph file {}'.format(edge_file))
 
