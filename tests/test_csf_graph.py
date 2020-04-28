@@ -8,11 +8,18 @@ from xn2v.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
 class TestCSFGraph(TestCase):
     def setUp(self):
         data_dir = os.path.join(os.path.dirname( __file__), 'data')
+
+        # files for canonical test graph
+        self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        # legacy and non-standard test files
         self.legacy_edge_file = os.path.join(data_dir, 'small_graph_LEGACY.txt')
         self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
         self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
-        self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
-        self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        self.default_edge_type = 'biolink:Association'
+
         g = CSFGraph(edge_file=self.edge_file)
         self.g = g
         str(g)
@@ -40,6 +47,8 @@ class TestCSFGraph(TestCase):
     # check edgetype to index map
     def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
+        self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
+                              [self.default_edge_type])
 
     # check index to edgetype map
     def test_csfgraph_constructor_makes_index_to_edgetype_map(self):

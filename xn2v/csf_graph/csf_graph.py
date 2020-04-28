@@ -63,15 +63,15 @@ class CSFGraph:
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.node_to_index_map:  Dict[str, int] = defaultdict(int)
         self.index_to_node_map:  Dict[int, str] = defaultdict(str)
-        self.nodetype_to_index_map:  Dict[str, int] = defaultdict(int)
+        self.nodetype_to_index_map:  Dict[str, list] = defaultdict(int)
         self.index_to_nodetype_map:  Dict[int, str] = defaultdict(str)
-        self.edgetype_to_index_map:  Dict[str, int] = defaultdict(int)
+        self.edgetype_to_index_map:  Dict[str, list] = defaultdict(int)
         self.index_to_edgetype_map:  Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
         header_info = self.parse_header(edge_file)
         with open(edge_file) as f:
-            if not header_info['is_legacy']:
+            if not header_info['is_legacy']:  # legacy edge files don't have headers
                 _ = f.readline()  # throw away header
 
             for line in f:
@@ -79,6 +79,10 @@ class CSFGraph:
                 items = dict(zip(header_info['header_items'], fields))
                 node_a = items['subject']
                 node_b = items['object']
+                if 'edge_label' in items:
+                    edge_type = items['edge_label']
+                else:
+                    edge_type = 'biolink:Association'  # default association
 
                 if 'weight' not in items:
                     # no weight provided. Assign a default value
@@ -95,8 +99,8 @@ class CSFGraph:
                 nodes.add(node_b)
 
                 # process edges y initializing instances of each edge and it's inverse
-                edge = Edge(node_a, node_b, weight)
-                inverse_edge = Edge(node_b, node_a, weight)
+                edge = Edge(node_a, node_b, weight, edge_type)
+                inverse_edge = Edge(node_b, node_a, weight, edge_type)
                 edges.add(edge)
                 edges.add(inverse_edge)
 
@@ -105,6 +109,15 @@ class CSFGraph:
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list: List = sorted(nodes)
+        edge_list: List = sorted(edges)
+
+        # create node data dictionaries
+        for i in range(len(edge_list)):
+            this_type = edge_list[i].edge_type
+            if this_type not in self.edgetype_to_index_map:
+                self.edgetype_to_index_map[this_type] = []
+            self.edgetype_to_index_map[this_type].append(i)
+            self.index_to_edgetype_map[i] = this_type
 
         # create node data dictionaries
         for i in range(len(node_list)):
