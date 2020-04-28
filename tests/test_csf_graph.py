@@ -8,6 +8,7 @@ from xn2v.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
 class TestCSFGraph(TestCase):
     def setUp(self):
         data_dir = os.path.join(os.path.dirname( __file__), 'data')
+        self.legacy_edge_file = os.path.join(data_dir, 'small_graph_LEGACY.txt')
         self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
         self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
         self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
@@ -43,7 +44,15 @@ class TestCSFGraph(TestCase):
         g = CSFGraph(edge_file=self.edge_file)
 
     def test_csfgraph_constructor_accepts_node_file(self):
-        g = CSFGraph(edge_file=self.edge_file, node_file=self.edge_file)
+        g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+
+    def test_count_nodes_legacy_edge_file(self):
+        g = CSFGraph(edge_file=self.legacy_edge_file)
+        self.assertEqual(3, g.node_count())
+
+    def test_count_edges_legacy_edge_file(self):
+        g = CSFGraph(edge_file=self.legacy_edge_file)
+        self.assertEqual(6, g.edge_count())
 
     def test_count_nodes(self):
         # The graph in small_graph.txt has 11 nodes

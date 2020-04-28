@@ -1,6 +1,5 @@
 import logging
 import os.path
-from typing import Optional, IO
 
 import numpy as np
 from collections import defaultdict
@@ -33,11 +32,15 @@ class CSFGraph:
         self.edgetype2count_dictionary = defaultdict(int)
         self.nodetype2count_dictionary = defaultdict(int)
 
+        header_info = self.parse_header(edge_file)
+
         with open(edge_file) as f:
-            edge_header_items = self.parse_header(f)
+            if not header_info['is_legacy']:
+                _ = f.readline()  # throw away header
+
             for line in f:
                 fields = line.rstrip('\n').split()
-                items = dict(zip(edge_header_items, fields))
+                items = dict(zip(header_info['header_items'], fields))
                 nodeA = items['subject']
                 nodeB = items['object']
                 if 'weight' not in items:
@@ -117,28 +120,34 @@ class CSFGraph:
             self.edge_weight[j] = edge.weight
             j += 1
 
-    def parse_header(self, fh: IO) -> list:
-        header = fh.readline()
-        header_items = header.strip().split('\t')
+    def parse_header(self, edge_file: str) -> dict:
+        with open(edge_file, 'r') as fh:
+            header_info = {}
+            header_info['is_legacy'] = False
 
-        if 'subject' not in header_items and 'object' not in header_items:
-            logging.warning(
-                "Didn't find subject or object in header - probably a legacy edge file")
-            if len(header_items) == 2:
-                header_items = ['subject', 'object']
-            if len(header_items) == 3:
-                header_items = ['subject', 'object', 'weight']
-            else:
-                logging.error('Legacy edge file should have 2 or 3 columns' +
-                              '(subject object weight)\n{}'.format(header))
-                raise ValueError
-        if 'subject' not in header_items:
-            raise CSFGraphNoSubjectColumnError(
-                "Edge file should have a 'subject' column")
-        if 'object' not in header_items:
-            raise CSFGraphNoObjectColumnError(
-                "Edge file should have an 'object' column")
-        return header_items
+            header = fh.readline()
+            header_items = header.strip().split('\t')
+            header_info['header_items'] = header_items
+
+            if 'subject' not in header_items and 'object' not in header_items:
+                logging.warning(
+                    "Didn't find subject or object in header - probably a legacy edge file")
+                header_info['is_legacy'] = True
+                if len(header_items) == 2:
+                    header_info['header_items'] = ['subject', 'object']
+                elif len(header_items) == 3:
+                    header_info['header_items'] = ['subject', 'object', 'weight']
+                else:
+                    logging.error('Legacy edge file should have 2 or 3 columns' +
+                                  '(subject object [weight])\n{}'.format(header))
+                    raise ValueError
+            elif 'subject' not in header_items:
+                raise CSFGraphNoSubjectColumnError(
+                    "Edge file should have a 'subject' column")
+            elif 'object' not in header_items:
+                raise CSFGraphNoObjectColumnError(
+                    "Edge file should have an 'object' column")
+            return header_info
 
     def nodes(self):
         return list(self.node_to_index_map.keys())
