@@ -1,6 +1,6 @@
 import logging
 import os.path
-import numpy as np
+import numpy as np  # type: ignore
 from collections import defaultdict
 from typing import Optional, Any, Union, Set, Dict, List, Tuple
 
@@ -160,7 +160,7 @@ class CSFGraph:
 
     def parse_header(self, edge_file: str) -> dict:
         with open(edge_file, 'r') as fh:
-            header_info = {}
+            header_info: Dict[str, Union[list, bool]]
             header_info['is_legacy'] = False
 
             header = fh.readline()

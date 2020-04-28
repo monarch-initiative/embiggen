@@ -4,7 +4,7 @@ import os.path
 import tensorflow as tf   # type: ignore
 
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union, Any
 
 from xn2v.csf_graph.edge import Edge
 
@@ -163,7 +163,7 @@ class CSFGraph:
 
     def parse_header(self, edge_file: str) -> dict:
         with open(edge_file, 'r') as fh:
-            header_info = {}
+            header_info: Dict[str, Union[list, bool]]
             header_info['is_legacy'] = False
 
             header = fh.readline()
