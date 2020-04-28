@@ -66,9 +66,8 @@ class CSFGraph:
         self.edgetype_to_index_map:  Dict[str, int] = defaultdict(int)
         self.index_to_edgetype_map:  Dict[int, str] = defaultdict(str)
 
-        header_info = self.parse_header(edge_file)
-
         # read in and process edge data, creating a dictionary that stores edge information
+        header_info = self.parse_header(edge_file)
         with open(edge_file) as f:
             if not header_info['is_legacy']:
                 _ = f.readline()  # throw away header
