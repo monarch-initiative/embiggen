@@ -160,7 +160,7 @@ class CSFGraph:
 
     def parse_header(self, edge_file: str) -> dict:
         with open(edge_file, 'r') as fh:
-            header_info: Dict[str, Union[list, bool]]
+            header_info: Dict[str, Union[list, bool]] = {}
             header_info['is_legacy'] = False
 
             header = fh.readline()
