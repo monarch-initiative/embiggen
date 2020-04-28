@@ -59,6 +59,9 @@ class CSFGraph:
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.node_to_index_map:  Dict[str, int] = defaultdict(int)
         self.index_to_node_map:  Dict[int, str] = defaultdict(str)
+        self.nodetype_to_index_map:  Dict[str, int] = defaultdict(int)
+        self.index_to_nodetype_map:  Dict[int, str] = defaultdict(str)
+
 
         header_info = self.parse_header(edge_file)
 

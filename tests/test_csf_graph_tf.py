@@ -83,6 +83,12 @@ class TestCSFGraph(TestCase):
         nbrs = self.graph.neighbors_as_ints(g2_idx)
         self.assertEqual([3, 5, 7, 8], nbrs)
 
+    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
+        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
+
+    def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
+        self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
+
     def test_check_nodetype(self):
 
         self.assertTrue(self.graph.same_nodetype('g1', 'g2'))
