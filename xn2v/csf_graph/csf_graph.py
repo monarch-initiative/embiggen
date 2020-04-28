@@ -64,6 +64,7 @@ class CSFGraph:
         self.object_column_name = 'object'
         self.edge_label_column_name = 'edge_label'
         self.default_edge_type = 'biolink:Association'
+        self.weight_column_name = 'weight'
 
         self.edgetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
@@ -90,16 +91,16 @@ class CSFGraph:
                 else:
                     edge_type = self.default_edge_type
 
-                if 'weight' not in items:
+                if self.weight_column_name not in items:
                     # no weight provided. Assign a default value
                     weight = default_weight
                 else:
                     try:
-                        weight = float(items['weight'])
+                        weight = float(items[self.weight_column_name])
                     except ValueError as e:
                         logging.error("[ERROR] Could not parse weight field " +
                                       "(must be an integer): {}".format(
-                                          items['weight']))
+                                          items[self.weight_column_name]))
                 # add nodes
                 nodes.add(node_a)
                 nodes.add(node_b)
@@ -199,7 +200,7 @@ class CSFGraph:
                 elif len(header_items) == 3:
                     header_info['header_items'] = [self.subject_column_name,
                                                    self.object_column_name,
-                                                   'weight']
+                                                   self.weight_column_name]
                 else:
                     logging.error('Legacy edge file should have 2 or 3 columns' +
                                   '(node1 node2 [weight])\n{}'.format(header))
