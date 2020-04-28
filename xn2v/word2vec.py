@@ -31,11 +31,14 @@ class Word2Vec:
             display: An integer of the number of words to display.
         """
 
-    def __init__(self, learning_rate: float = 0.1, batch_size: int = 128,
+    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
+                 learning_rate: float = 0.1, batch_size: int = 128,
                  num_steps: int = 300000, embedding_size: int = 200, max_vocabulary_size: int = 50000,
                  min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
                  display: Optional[int] = None, device_type: str = 'cpu') -> None:
-
+        self.data = data
+        self.word2id = worddictionary
+        self.id2word = reverse_worddictionary
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.n_steps = num_steps
@@ -90,22 +93,25 @@ class Word2Vec:
     def calculate_vocabulary_size(self, data) -> None:
         """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
         or list of lists (i.e. from a collection of sentences or random walks).
+        The function checks that self.vocabulary size has not been set
         Args:
             data: A list or list of lists (if sentences or paths from node2vec).
         Returns:
             None.
         """
-
-        if any(isinstance(el, list) for el in data):
-            flat_list = [item for sublist in data for item in sublist]
-            self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
-            print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
-        else:
-            # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
-            self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
-
-            print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
-
+        if self.word2id is None and self.vocabulary_size == 0:
+            self.vocabulary_size = 0
+        elif self.vocabulary_size ==0:
+            self.vocabulary_size = len(self.word2id)
+        # Apr 28, changed by Peter (can be deleted)
+        #if any(isinstance(el, list) for el in data):
+        #    flat_list = [item for sublist in data for item in sublist]
+        #    self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
+        #    print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
+        #else:
+        ##    # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+        #    self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
+        # print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         return None
 
 
@@ -119,12 +125,13 @@ class SkipGramWord2Vec(Word2Vec):
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
-        super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
-                         skip_window, num_skips, num_sampled, display, device_type)
+        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
+                         learning_rate=learning_rate, batch_size=batch_size, num_steps=num_steps,
+                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
+                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
+                         num_sampled=num_sampled, display=display, device_type=device_type)
 
         self.data = data
-        self.word2id = worddictionary
-        self.id2word = reverse_worddictionary
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
 
         # takes the input data and goes through each element
@@ -429,13 +436,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
-        super().__init__(learning_rate, batch_size, num_steps, embedding_size, max_vocabulary_size, min_occurrence,
-                         skip_window, num_skips, num_sampled, display, device_type)
-
-        # sentences_per_batch = 1
-        self.data = data
-        self.word2id = worddictionary
-        self.id2word = reverse_worddictionary
+        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
+                         learning_rate=learning_rate, batch_size=batch_size, num_steps=num_steps,
+                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
+                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
+                         num_sampled=num_sampled, display=display, device_type=device_type)
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # takes the input data and goes through each element
         # first, check each element is a list
