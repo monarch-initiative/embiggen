@@ -4,9 +4,10 @@ import os
 import re
 import string
 
-from pandas.core.common import flatten
 from math import ceil
-from keras.preprocessing.text import text_to_word_sequence, Tokenizer
+from pandas.core.common import flatten  # type: ignore
+from tensorflow.keras.preprocessing.text import text_to_word_sequence, Tokenizer  # type: ignore
+from typing import Any, Dict, List, Tuple
 
 
 class TextEncoder:
@@ -23,25 +24,27 @@ class TextEncoder:
         stopwords: a set of stopwords. If nothing is passed by user a default list of stopwords is utilized.
 
     Raises:
-        If TypeErrors if the user does not pass a filename that is of type string and that resolves.
-
+        ValueError: If the filename is None.
+        TypeError: If the filename attribute is not a string.
+        TypeError: If the file referenced by filename could not be found.
     """
 
     def __init__(self, filename: str, stopwords: set = None):
 
         if filename is None:
-            raise TypeError("Need to pass filename to constructor")
-        if not isinstance(filename, str):
-            raise TypeError("File name arguments must be a string")
-        if not os.path.exists(filename):
-            raise TypeError("Could not find file: " + filename)
-        self.filename = filename
+            raise ValueError('filename cannot be None')
+        elif not isinstance(filename, str):
+            raise TypeError('filename must be a string')
+        elif not os.path.exists(filename):
+            raise TypeError('Could not find file referenced by filename: {}'.format(filename))
+        else:
+            self.filename = filename
 
-        self.stopwords = [{'the', 'a', 'an', 'another', 'for', 'an', 'nor', 'but', 'or', 'yet', 'so'}
-                          if stopwords is None else stopwords][0]
+        self.stopwords = {'the', 'a', 'an', 'another', 'for', 'an', 'nor', 'but', 'or', 'yet', 'so'} \
+            if stopwords is None else stopwords
 
     @staticmethod
-    def clean_text(text: str):
+    def clean_text(text: str) -> str:
         """Takes a text string and performs several tasks that are intended to clean the text including making the
         text lowercase, undoing contractions,
 
@@ -50,7 +53,6 @@ class TextEncoder:
 
         Returns:
             A cleansed version of the input text.
-
         """
 
         # ensure text is lower case
@@ -83,13 +85,12 @@ class TextEncoder:
 
         return ' '.join(text.split(" "))
 
-    def read_databz2(self):
+    def read_databz2(self) -> List[str]:
         """ Extracts the first file enclosed in a zip (bz2) file as a list of words and pre-processes it using the
         nltk python library.
 
         Returns:
             A list of words.
-
         """
 
         # NOTE NEED TO CONVERT TO SENTENCE WISE EXTRACTION
@@ -108,13 +109,12 @@ class TextEncoder:
 
         return data
 
-    def __read_data(self):
+    def __read_data(self) -> List[str]:
         """Extract the first file enclosed in a zip file as a list of words and pre-processes it using the nltk
         python library.
 
         Returns:
             A list of cleaned words.
-
         """
 
         data = []
@@ -128,7 +128,7 @@ class TextEncoder:
 
         return data
 
-    def __read_data_in_sentences(self):
+    def __read_data_in_sentences(self) -> List[List[str]]:
         """
         Extract the first file enclosed in a zip file as a list of words and pre-processes it using the nltk python
         library.
@@ -147,8 +147,6 @@ class TextEncoder:
 
         for sent in sentences:
             sent = self.clean_text(sent)
-
-            # tokenizes a string to a list of words
             words = sent.split()
             keep_words = []
 
@@ -163,7 +161,7 @@ class TextEncoder:
 
         return data
 
-    def build_dataset(self):
+    def build_dataset(self) -> Tuple[List, List, Dict[Any, Any], Dict[Any, Any]]:
         """Builds a dataset by traversing over a input text and compiling a list of the most commonly occurring words.
 
         Returns:
@@ -172,6 +170,8 @@ class TextEncoder:
             dictionary: A dictionary where the keys are words and the values are the word id.
             reversed dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
 
+        Raises:
+            ValueError: If the length of the dictionary does not match vocabulary_size.
         """
 
         count = [['UNK', -1]]
@@ -179,8 +179,8 @@ class TextEncoder:
         vocabulary_size = min(50000, len(set(words)))
 
         # gets the vocabulary_size of most common words, all the other words will be replaced with UNK token
-        count.extend(collections.Counter(words).most_common(vocabulary_size - 1))
-        dictionary = dict()
+        count += [list(x) for x in collections.Counter(words).most_common(vocabulary_size - 1)]
+        dictionary: Dict = dict()
 
         # create an ID for each word from current length of the dictionary
         for word, _ in count:
@@ -192,7 +192,6 @@ class TextEncoder:
         for word in words:
             if word in dictionary:
                 index = dictionary[word]
-
             else:
                 index = 0  # dictionary['UNK']
                 unk_count = unk_count + 1
@@ -203,11 +202,12 @@ class TextEncoder:
         count[0][1] = unk_count
 
         # make sure the dictionary is of size of the vocabulary
-        assert len(dictionary) == vocabulary_size
+        if len(dictionary) != vocabulary_size:
+            raise ValueError('The length of the dictionary does not match vocabulary_size.')
 
         return data, count, dictionary, dict(zip(dictionary.values(), dictionary.keys()))
 
-    def build_dataset_in_sentences(self):
+    def build_dataset_in_sentences(self) -> Tuple[List, List, Dict, Dict]:
         """ Creates a dataset for word2vec that consists of all of the sentences from the original text with the
         words encoded as integers. The list is created by first getting only the vocabulary_size of the most common
         words. All the other words will be replaced with an UNK token.
@@ -218,16 +218,17 @@ class TextEncoder:
             dictionary: A dictionary where the keys are words and the values are the word id.
             reversed dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
 
+        ValueError: If the length of the dictionary does not match vocabulary_size.
         """
+
         sentences = self.__read_data_in_sentences()
         count = [['UNK', -1]]
         flat_list_of_words = [item for sublist in sentences for item in sublist]
         vocabulary_size = min(50000, len(set(flat_list_of_words)))
 
-        # a counter container stores elements as dictionary keys and their counts are stored as dictionary values.
-        # Extend appends a list. We append 49,999 to get 50,000
-        count.extend(collections.Counter(flat_list_of_words).most_common(vocabulary_size - 1))
-        dictionary = dict()
+        # a counter container stores elements as dict keys and their counts are stored as values
+        count += [list(x) for x in collections.Counter(flat_list_of_words).most_common(vocabulary_size - 1)]
+        dictionary: Dict = dict()
 
         # create an ID for each word by giving the current length of the dictionary
         for word, _ in count:
@@ -242,7 +243,6 @@ class TextEncoder:
             for word in sen:
                 if word in dictionary:
                     index = dictionary[word]
-
                 else:
                     index = 0  # dictionary['UNK']
                     unk_count = unk_count + 1
@@ -253,73 +253,122 @@ class TextEncoder:
         # update the count variable with the number of UNK occurrences
         count[0][1] = unk_count
 
-        # Make sure the dictionary is of size of the vocabulary
-        assert len(dictionary) == vocabulary_size
+        # make sure the dictionary is of size of the vocabulary
+        if len(dictionary) != vocabulary_size:
+            raise ValueError('The length of the dictionary does not match vocabulary_size.')
 
-        # Hint to reduce memory
+        # reduce memory
         del sentences
 
         # log.info('Most common words (+UNK) {}', str(count[:5)])
         # log.info('Sample data: {}', str(data[:10]))
         return data, count, dictionary, dict(zip(dictionary.values(), dictionary.keys()))
 
-    def build_dataset_with_keras(self, max_vocab_size=50000):
+    def get_raw_text(self) -> str:
+        """Reads in data from a file and returns the data as a single string.
+
+        Returns:
+            text: A string of text from the read in file.
+        """
+
+        text = open(self.filename).read()
+
+        return text
+
+    def parse_file_into_sentences(self) -> List[str]:
+        """Reads data from a file and returns the data as a list of sentences.
+
+        Returns:
+            sentences: A list of strings which represent sentences.
+        """
+
+        sentences = []
+
+        with open(self.filename) as file:
+            print('Reading data from {filename}'.format(filename=self.filename))
+
+            for line in file:
+                # calling clean_text since Keras does not undo contractions
+                cleaned_line = self.clean_text(line)
+
+                # removing stopwords since Keras does not support removing a defined set of words
+                cleaned_lines = ' '.join(self.remove_stopwords(cleaned_line.split(' ')))
+
+                sentences.append(cleaned_lines)
+
+        return sentences
+
+    def remove_stopwords(self, words: List[str]) -> List[str]:
+        """Removes words form a list of words if the word occurs in a list of stop words.
+
+        Args:
+            words: A list of words.
+
+        Returns:
+            A list of words with stop words removed.
+        """
+
+        filtered_words = []
+        filtered_words.extend([word for word in words if word not in self.stopwords])
+
+        return filtered_words
+
+    def build_dataset_with_keras(self, max_vocab_size=50000) -> Tuple[List, List, Dict, Dict]:
+        """A TensorFlow implementation of the text-encoder functionality.
+
+        Note. The Tokenizer method is initialized with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th
+        index for padding sequences, the index for  'UNK' will be 1st index max_vocab_size + 1 because Keras reserves
+        the 0th index.
+
+        Args:
+            max_vocab_size: An integer specifying the maximum vocabulary size.
+
+        Returns:
+            flatted_sequences: A list of the most commonly occurring word indices.
+            count_as_tuples: A list of tuples, the first item is a word and the second is the word frequency.
+            dictionary: A dictionary where the keys are words and the values are the word id.
+            reverse_dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
+
+        Raises:
+            ValueError: If the length of count_as_tuples does not match max_vocab_size.
+        """
+
         text = self.get_raw_text()
         words = text_to_word_sequence(text, lower=True, filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         words = self.remove_stopwords(words)
         max_vocab_size = min(max_vocab_size, len(set(words)))
-        # initialize Tokenizer with 'UNK' as the out-of-vocabulary token.
-        # Since Keras reserves the 0th index for padding sequences, the index for 'UNK'
-        # will be 1st index
-        # max_vocab_size + 1 because Keras reserves the 0th index
+
+        # initialize tokenizer
         tokenizer = Tokenizer(num_words=max_vocab_size + 1,
-                              oov_token='UNK',
-                              lower=True,
-                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
+                              filters='\'!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n',
+                              lower=True, oov_token=['UNK'][0])
+
+        # apply tokenizer to process text
 
         sentences = self.parse_file_into_sentences()
         tokenizer.fit_on_texts(sentences)
         sequences = tokenizer.texts_to_sequences(sentences)
-        # for downstream compatibility
-        flatted_sequences = list(flatten(sequences))
+        flatted_sequences = list(flatten(sequences))  # for downstream compatibility
         count = tokenizer.word_counts
-        # for downstream compatibility
-        filtered_count = {}
-        dictionary = {}
+        filtered_count, dictionary = {}, {}  # for downstream compatibility
+
         for k, v in tokenizer.word_index.items():
             if v <= max_vocab_size:
                 if k == 'UNK':
                     filtered_count['UNK'] = 0
                     dictionary['UNK'] = 1
                     continue
+
                 filtered_count[k] = count[k]
                 dictionary[k] = v
             else:
                 filtered_count['UNK'] += 1
+
         reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))
         # for downstream compatibility
-        count_as_tuples = list(zip(list(filtered_count.keys()), list(filtered_count.values())))
-        assert max_vocab_size == len(count_as_tuples)
-        return flatted_sequences, count_as_tuples, dictionary, reverse_dictionary
+        count_as_list = [list(x) for x in list(zip(list(filtered_count.keys()), list(filtered_count.values())))]
 
-    def get_raw_text(self):
-        text = open(self.filename).read()
-        return text
-
-    def parse_file_into_sentences(self):
-        sentences = []
-
-        with open(self.filename) as file:
-            print('Reading data from {filename}'.format(filename=self.filename))
-            for line in file:
-                # calling clean_text since Keras does not undo contractions
-                cleaned_line = self.clean_text(line)
-                # removing stopwords since Keras does not support removing a defined set of words
-                cleaned_line = self.remove_stopwords(cleaned_line.split(' '))
-                sentences.append(' '.join(cleaned_line))
-        return sentences
-
-    def remove_stopwords(self, words):
-        filtered_words = []
-        filtered_words.extend([word for word in words if word not in self.stopwords])
-        return filtered_words
+        if max_vocab_size != len(count_as_list):
+            raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
+        else:
+            return flatted_sequences, count_as_list, dictionary, reverse_dictionary

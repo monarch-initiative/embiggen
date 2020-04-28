@@ -42,7 +42,7 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
     print(training_graph)
     training_graph.print_edge_type_distribution()
 
-    hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    hetgraph = xn2v.hetnode2vec_tf.N2vGraph(training_graph, p, q, gamma, use_gamma)
     walks = hetgraph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()
     reverse_worddictionary = training_graph.get_index_to_node_map()

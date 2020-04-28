@@ -7,18 +7,16 @@ Embedding Utility Functions.
 Manipulates or Processes Embeddings
 * get_embedding
 * calculates_cosine_similarity
-
 Reads and Writes Embedding Data
 * write_embeddings
 * load_embeddings
-
 """
 
 # import needed libraries
-import numpy as np
+import numpy as np  # type: ignore
 import os
 import os.path
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 from typing import Dict, List, Union
 
@@ -35,10 +33,8 @@ def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Var
         x: A integer representing a node or word index.
         embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
         device: A string that indicates whether to run computations on (default=cpu).
-
     Returns:
-        embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension).
-
+        embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension)
     Raises:
         ValueError: If the embedding variable is None.
     """
@@ -55,12 +51,10 @@ def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Var
 def calculate_cosine_similarity(x_embed: tf.Tensor, embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu') \
         -> Union[np.ndarray, tf.Tensor]:
     """Computes the cosine similarity between a provided embedding and all other embedding vectors.
-
         Args:
             x_embed: A Tensor containing word embeddings.
             embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
             device: A string that indicates whether to run computations on (default=cpu).
-
         Returns:
             cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
         """
@@ -90,10 +84,8 @@ def write_embeddings(out_file: str, embedding: Union[np.ndarray, tf.Variable], r
         reverse_worddictionary: A dictionary where the keys are integers and values are the nodes represented by the
             integers.
         device: A string that indicates whether to run computations on (default=cpu).
-
     Returns:
         None.
-
     Raises:
         - ValueError: If the embedding attribute contains no data.
         - ValueError: If the node id to integer dictionary contains no data.
@@ -115,9 +107,8 @@ def write_embeddings(out_file: str, embedding: Union[np.ndarray, tf.Variable], r
     return None
 
 
-def load_embeddings(file_name: str) -> Dict[Union[str, int], List[float]]:
+def load_embeddings(file_name: str) -> Dict[str, List[float]]:
     """Reads in embedding data from a file.
-
     Returns:
         embedding_data: A dictionary where keys are nodes and values are embedding vectors (i.e. list of floats).
 

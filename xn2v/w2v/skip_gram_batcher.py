@@ -1,5 +1,5 @@
 import collections
-import numpy as np
+import numpy as np   # type: ignore
 import random
 
 from typing import List, Tuple, Union
@@ -93,7 +93,8 @@ class SkipGramBatcher:
                 buffer.append(self.data[self.data_index])
                 self.data_index += 1  # i.e., move the sliding window 1 position to the right
 
-        # backtrack a little bit to avoid skipping words in the end of a batch.
+        # Backtrack a little bit to avoid skipping words in the end of a batch.
+
         self.data_index = (self.data_index + len(self.data) - span) % len(self.data)
 
         return batch, labels
