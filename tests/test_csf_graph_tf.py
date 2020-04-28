@@ -27,17 +27,17 @@ class TestCSFGraph(TestCase):
 
         self.assertIsNotNone(self.graph.get_index_to_node_map())
 
-    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
+    def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
 
-    def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
+    def test_csfgraph_makes_index_to_nodetype_map(self):
         self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
 
     # check edgetype to index map
-    def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
+    def test_csfgraph_makes_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
 
-    def test_csfgraph_constructor_populates_edgetype_to_index_map(self):
+    def test_csfgraph_populates_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
         self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
                               ['biolink:interacts_with',
@@ -45,7 +45,7 @@ class TestCSFGraph(TestCase):
         self.assertEqual(40, len(self.g.edgetype_to_index_map['biolink:interacts_with']))
         self.assertEqual(2, len(self.g.edgetype_to_index_map['biolink:molecularly_interacts_with']))
 
-    def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
+    def test_csfgraph_makes_index_to_edgetype_map(self):
         self.assertIsInstance(self.graph.index_to_edgetype_map, dict)
 
     def test_count_nodes(self):

@@ -37,18 +37,18 @@ class TestCSFGraph(TestCase):
         self.assertIsNotNone(self.g.get_index_to_node_map())
 
     # check nodetype to index map
-    def test_csfgraph_constructor_makes_nodetype_to_index_map(self):
+    def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.g.nodetype_to_index_map, dict)
 
     # check index to nodetype map
-    def test_csfgraph_constructor_makes_index_to_nodetype_map(self):
+    def test_csfgraph_makes_index_to_nodetype_map(self):
         self.assertIsInstance(self.g.index_to_nodetype_map, dict)
 
     # edgetype to index map
-    def test_csfgraph_constructor_makes_edgetype_to_index_map(self):
+    def test_csfgraph_makes_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
 
-    def test_csfgraph_constructor_populates_edgetype_to_index_map(self):
+    def test_csfgraph_populates_edgetype_to_index_map(self):
         self.assertIsInstance(self.g.edgetype_to_index_map, dict)
         self.assertCountEqual(self.g.edgetype_to_index_map.keys(),
                               ['biolink:interacts_with',
@@ -60,20 +60,20 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
         self.assertIsInstance(self.g.index_to_edgetype_map, dict)
 
-    def test_csfgraph_constructor_requires_arg(self):
+    def test_csfgraph_requires_arg(self):
         with self.assertRaises(Exception) as context:
             CSFGraph()  # missing edge arg
             self.assertTrue(str('missing' in context.exception))
 
-    def test_csfgraph_constructor_check_for_subject_columns(self):
+    def test_csfgraph_checks_for_subject_columns(self):
         with self.assertRaises(CSFGraphNoSubjectColumnError) as context:
             CSFGraph(edge_file=self.tsv_no_subject)  # file doesn't have subject col
 
-    def test_csfgraph_constructor_check_for_object_column(self):
+    def test_csfgraph_checks_for_object_column(self):
         with self.assertRaises(CSFGraphNoObjectColumnError) as context:
             CSFGraph(edge_file=self.tsv_no_object)  # file doesn't have object col
 
-    def test_csfgraph_constructor_accepts_edge_file(self):
+    def test_csfgraph_accepts_edge_file(self):
         g = CSFGraph(edge_file=self.edge_file)
 
     def test_csfgraph_constructor_accepts_node_file(self):
