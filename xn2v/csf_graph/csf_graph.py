@@ -128,12 +128,12 @@ class CSFGraph:
         total_vertex_count = len(node_list)
 
         # create edge type dictionaries
-        for i in range(len(edge_list)):
-            this_type = edge_list[i].edge_type
+        for i in range(len(edge_list)):  # type: ignore
+            this_type = edge_list[i].edge_type  # type: ignore
             if this_type not in self.edgetype_to_index_map:
                 self.edgetype_to_index_map[this_type] = []
-            self.edgetype_to_index_map[this_type].append(i)
-            self.index_to_edgetype_map[i] = this_type
+            self.edgetype_to_index_map[this_type].append(i)  # type: ignore
+            self.index_to_edgetype_map[i] = this_type  # type: ignore
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
