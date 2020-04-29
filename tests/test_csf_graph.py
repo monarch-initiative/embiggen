@@ -59,6 +59,12 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_constructor_makes_index_to_edgetype_map(self):
         self.assertIsInstance(self.g.index_to_edgetype_map, dict)
 
+    def test_csfgraph_populates_index_to_edgetype_map(self):
+        self.assertEqual(42, len(self.g.index_to_edgetype_map))
+        self.assertEqual(self.g.index_to_edgetype_map[0], 'biolink:interacts_with')
+        self.assertEqual(self.g.index_to_edgetype_map[34], 'biolink:molecularly_interacts_with')
+        self.assertEqual(self.g.index_to_edgetype_map[40], 'biolink:molecularly_interacts_with')
+
     def test_csfgraph_requires_arg(self):
         with self.assertRaises(Exception) as context:
             CSFGraph()  # missing edge arg

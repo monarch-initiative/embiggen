@@ -48,6 +48,12 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_makes_index_to_edgetype_map(self):
         self.assertIsInstance(self.graph.index_to_edgetype_map, dict)
 
+    def test_csfgraph_populates_index_to_edgetype_map(self):
+        self.assertEqual(42, len(self.graph.index_to_edgetype_map))
+        self.assertEqual(self.graph.index_to_edgetype_map[0], 'biolink:interacts_with')
+        self.assertEqual(self.graph.index_to_edgetype_map[34], 'biolink:molecularly_interacts_with')
+        self.assertEqual(self.graph.index_to_edgetype_map[40], 'biolink:molecularly_interacts_with')
+
     def test_count_nodes(self):
 
         # the graph in small_graph.txt has 11 nodes

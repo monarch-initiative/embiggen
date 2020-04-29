@@ -116,15 +116,6 @@ class CSFGraph:
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list: List = sorted(nodes)
-        edge_list: List = sorted(edges)
-
-        # create edge data dictionaries
-        for i in range(len(edge_list)):
-            this_type = edge_list[i].edge_type
-            if this_type not in self.edgetype_to_index_map:
-                self.edgetype_to_index_map[this_type] = []
-            self.edgetype_to_index_map[this_type].append(i)
-            self.index_to_edgetype_map[i] = this_type
 
         # create node data dictionaries
         for i in range(len(node_list)):
@@ -132,9 +123,17 @@ class CSFGraph:
             self.index_to_node_map[i] = node_list[i]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
-        edge_list = sorted(edges)
+        edge_list: List = sorted(edges)
         total_edge_count = len(edge_list)
         total_vertex_count = len(node_list)
+
+        # create edge type dictionaries
+        for i in range(len(edge_list)):
+            this_type = edge_list[i].edge_type
+            if this_type not in self.edgetype_to_index_map:
+                self.edgetype_to_index_map[this_type] = []
+            self.edgetype_to_index_map[this_type].append(i)
+            self.index_to_edgetype_map[i] = this_type
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)

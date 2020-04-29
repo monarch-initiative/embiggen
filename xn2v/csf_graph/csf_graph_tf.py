@@ -6,6 +6,8 @@ import tensorflow as tf   # type: ignore
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Union, Any
 
+from mypy.checker import cast
+
 from xn2v.csf_graph.edge import Edge
 
 
@@ -73,9 +75,9 @@ class CSFGraph:
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.node_to_index_map: Dict[str, int] = defaultdict(int)
         self.index_to_node_map: Dict[int, str] = defaultdict(str)
-        self.nodetype_to_index_map:  Dict[str, int] = defaultdict(int)
+        self.nodetype_to_index_map:  Dict[str, list] = defaultdict(list)
         self.index_to_nodetype_map:  Dict[int, str] = defaultdict(str)
-        self.edgetype_to_index_map:  Dict[str, int] = defaultdict(int)
+        self.edgetype_to_index_map:  Dict[str, list] = defaultdict(list)
         self.index_to_edgetype_map:  Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
@@ -120,15 +122,6 @@ class CSFGraph:
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list = sorted(nodes)
-        edge_list: List = sorted(edges)
-
-        # create edge data dictionaries
-        for i in range(len(edge_list)):
-            this_type = edge_list[i].edge_type
-            if this_type not in self.edgetype_to_index_map:
-                self.edgetype_to_index_map[this_type] = []
-            self.edgetype_to_index_map[this_type].append(i)
-            self.index_to_edgetype_map[i] = this_type
 
         # create node data dictionaries
         for i in enumerate(node_list):
@@ -136,9 +129,17 @@ class CSFGraph:
             self.index_to_node_map[i[0]] = i[1]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
-        edge_list = sorted(edges)
+        edge_list: List = sorted(edges)
         total_edge_count = len(edge_list)
         total_vertex_count = len(node_list)
+
+        # create edge data dictionaries
+        for i in range(len(edge_list)):  # type: ignore
+            this_type = edge_list[i].edge_type   # type: ignore
+            if this_type not in self.edgetype_to_index_map:
+                self.edgetype_to_index_map[this_type] = []
+            self.edgetype_to_index_map[this_type].append(i)
+            self.index_to_edgetype_map[i] = this_type   # type: ignore
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
