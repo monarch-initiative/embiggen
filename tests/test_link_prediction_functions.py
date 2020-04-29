@@ -99,7 +99,7 @@ class TestlinkPredictionScores_1(TestCase):
 class TestlinkPredictionScores_2(TestCase):
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(
-            __file__), 'data', 'small_het_graph.txt')
+            __file__), 'data', 'small_het_graph_edges.tsv')
         g = CSFGraph(inputfile)
         self.g = g
         str(g)

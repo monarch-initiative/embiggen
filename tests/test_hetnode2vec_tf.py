@@ -131,8 +131,12 @@ class TestGraph(TestCase):
 class TestHetGraph(TestCase):
 
     def setUp(self):
-        inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(inputfile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+        edge_file = os.path.join(data_dir, 'small_het_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_het_graph_nodes.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')
@@ -291,8 +295,13 @@ class TestHetGraph(TestCase):
 class TestHetGraph2(TestCase):
 
     def setUp(self):
-        infile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(infile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+        edge_file = os.path.join(data_dir, 'small_het_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_het_graph_nodes.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
+
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')
