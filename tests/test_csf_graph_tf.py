@@ -2,7 +2,8 @@ import os.path
 
 from unittest import TestCase
 
-from xn2v.csf_graph.csf_graph_tf import CSFGraph
+from xn2v.csf_graph.csf_graph_tf import CSFGraph, CSFGraphNoSubjectColumnError, \
+    CSFGraphNoObjectColumnError
 from tests.utils.utils import gets_tensor_length, searches_tensor
 
 
@@ -15,6 +16,9 @@ class TestCSFGraph(TestCase):
         self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
 
         # # legacy and non-standard test files
+        self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
+        self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
+        self.legacy_edge_file = os.path.join(data_dir, 'small_graph_LEGACY.txt')
         self.node_file_missing_nodes = os.path.join(data_dir, 'small_graph_nodes_MISSING_NODES.tsv')
 
         self.graph = CSFGraph(self.edge_file)
@@ -32,6 +36,18 @@ class TestCSFGraph(TestCase):
     def test_get_index_to_node_map(self):
 
         self.assertIsNotNone(self.graph.get_index_to_node_map())
+
+    def test_count_nodes_legacy_edge_file(self):
+        g = CSFGraph(edge_file=self.legacy_edge_file)
+        self.assertEqual(3, g.node_count())
+
+    def test_csfgraph_checks_for_subject_columns(self):
+        with self.assertRaises(CSFGraphNoSubjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_subject)  # file doesn't have subject col
+
+    def test_csfgraph_checks_for_object_column(self):
+        with self.assertRaises(CSFGraphNoObjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_object)  # file doesn't have object col
 
     def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.graph.nodetype_to_index_map, dict)

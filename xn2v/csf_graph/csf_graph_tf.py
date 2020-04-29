@@ -4,9 +4,7 @@ import os.path
 import tensorflow as tf   # type: ignore
 
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Union, Any
-
-from mypy.checker import cast
+from typing import Dict, List, Optional, Set, Union
 
 from xn2v.csf_graph.edge import Edge
 
