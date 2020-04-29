@@ -17,8 +17,7 @@ class TestCSFGraph(TestCase):
         self.legacy_edge_file = os.path.join(data_dir, 'small_graph_LEGACY.txt')
         self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
         self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
-
-        self.default_edge_type = 'biolink:Association'
+        self.node_file_missing_nodes = os.path.join(data_dir, 'small_graph_nodes_MISSING_NODES.tsv')
 
         g = CSFGraph(edge_file=self.edge_file)
         self.g = g
@@ -40,9 +39,31 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.g.nodetype_to_index_map, dict)
 
+    def test_csfgraph_assigns_default_nodetype_to_nodetype_to_index_map(self):
+        self.assertIsInstance(self.g.nodetype_to_index_map, dict)
+        self.assertEqual(self.g.nodetype_to_index_map[self.g.default_node_type],
+                         list(range(self.g.node_count())))
+
+    def test_csfgraph_populates_nodetype_to_index_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(het_g.nodetype_to_index_map['biolink:Disease'], [0, 1, 2])
+
     # check index to nodetype map
     def test_csfgraph_makes_index_to_nodetype_map(self):
         self.assertIsInstance(self.g.index_to_nodetype_map, dict)
+
+    def test_csfgraph_populates_index_to_nodetype_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(11, len(het_g.index_to_nodetype_map))
+        self.assertEqual(het_g.index_to_nodetype_map[0], 'biolink:Disease')
+
+    def test_csfgraph_assigns_default_node_type_to_index_to_nodetype_map(self):
+        self.assertEqual(self.g.index_to_nodetype_map[0], self.g.default_node_type)
+
+    def test_csfgraph_tolerates_missing_node_info(self):
+        het_g = CSFGraph(edge_file=self.edge_file,
+                         node_file=self.node_file_missing_nodes)
+        self.assertEqual(het_g.index_to_nodetype_map[2], het_g.default_node_type)
 
     # edgetype to index map
     def test_csfgraph_makes_edgetype_to_index_map(self):
