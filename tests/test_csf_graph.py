@@ -35,6 +35,17 @@ class TestCSFGraph(TestCase):
     def test_get_index_to_node_map(self):
         self.assertIsNotNone(self.g.get_index_to_node_map())
 
+    def test_edgetype2count_dictionary(self):
+        self.assertIsInstance(self.g.edgetype2count_dictionary, dict)
+        self.assertEqual(self.g.edgetype2count_dictionary['biolink:molecularly_interacts_with'], 1)
+        self.assertEqual(self.g.edgetype2count_dictionary['biolink:interacts_with'], 20)
+
+    def test_nodetype2count_dictionary(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertIsInstance(self.g.nodetype2count_dictionary, dict)
+        self.assertEqual(self.g.nodetype2count_dictionary['biolink:NamedThing'], 11)
+        self.assertEqual(het_g.nodetype2count_dictionary['biolink:Disease'], 3)
+
     # check nodetype to index map
     def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.g.nodetype_to_index_map, dict)

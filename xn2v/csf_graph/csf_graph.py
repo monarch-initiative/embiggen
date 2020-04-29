@@ -115,7 +115,7 @@ class CSFGraph:
                 edges.add(inverse_edge)
 
                 # add the string representation of the edge to dictionary
-                self.edgetype2count_dictionary[edge.get_edge_type_string()] += 1
+                self.edgetype2count_dictionary[edge_type] += 1
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list: List = sorted(nodes)
@@ -164,7 +164,7 @@ class CSFGraph:
         self.offset_to_edge_[0], offset, i = 0, 0, 0
 
         for n in node_list:
-            node_type = n[0]
+            node_type = self.index_to_nodetype_map[self.node_to_index_map[n]]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]  # n_edges can be zero here

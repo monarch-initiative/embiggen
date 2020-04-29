@@ -168,7 +168,7 @@ class CSFGraph:
         counter = 0
 
         for n in node_list:
-            node_type = n[0]
+            node_type = self.index_to_nodetype_map[self.node_to_index_map[n]]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]  # n_edges can be zero here

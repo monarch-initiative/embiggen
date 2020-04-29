@@ -37,6 +37,17 @@ class TestCSFGraph(TestCase):
 
         self.assertIsNotNone(self.graph.get_index_to_node_map())
 
+    def test_edgetype2count_dictionary(self):
+        self.assertIsInstance(self.graph.edgetype2count_dictionary, dict)
+        self.assertEqual(self.graph.edgetype2count_dictionary['biolink:molecularly_interacts_with'], 1)
+        self.assertEqual(self.graph.edgetype2count_dictionary['biolink:interacts_with'], 20)
+
+    def test_nodetype2count_dictionary(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertIsInstance(self.graph.nodetype2count_dictionary, dict)
+        self.assertEqual(self.graph.nodetype2count_dictionary['biolink:NamedThing'], 11)
+        self.assertEqual(het_g.nodetype2count_dictionary['biolink:Disease'], 3)
+
     def test_count_nodes_legacy_edge_file(self):
         g = CSFGraph(edge_file=self.legacy_edge_file)
         self.assertEqual(3, g.node_count())
