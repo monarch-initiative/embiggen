@@ -262,7 +262,7 @@ class N2vGraph:
         return self.__alias_setup(normalized_probs)
 
     def _node_id_to_node_type(self, id: str) -> str:
-        """Given a node id, return node type using self.g.
+        """Given a node id, return node type using self.g.index_to_nodetype_map
 
         :param id: node id
         :return: node type
