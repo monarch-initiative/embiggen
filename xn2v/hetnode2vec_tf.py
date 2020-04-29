@@ -214,7 +214,7 @@ class N2vGraph:
         q = self.q
         # log.info("source node:{}".format(src))
         # log.info("destination node:{}".format(dst))
-        dsttype = dst[0]
+        dsttype = self._node_id_to_node_type(dst)
         # counts for going from current node ("dst") to nodes of a given type (g, p,d)
         dst2count = defaultdict(int)
         dst2prob = defaultdict(float)  # probs calculated from own2count
@@ -222,7 +222,7 @@ class N2vGraph:
         # No need to explicitly sort, g returns a sorted list
         sorted_neighbors = g.neighbors(dst)
         for nbr in sorted_neighbors:
-            nbrtype = nbr[0]
+            nbrtype = self._node_id_to_node_type(nbr)
             dst2count[nbrtype] += 1
             total_neighbors += 1
         total_non_own_probability = 0.0
@@ -247,7 +247,7 @@ class N2vGraph:
         unnormalized_probs = np.zeros(total_neighbors)
         i = 0
         for dst_nbr in sorted_neighbors:
-            nbrtype = dst_nbr[0]
+            nbrtype = self._node_id_to_node_type(dst_nbr)
             prob = dst2prob[nbrtype]
             edge_weight = g.weight(dst, dst_nbr)
             if dst_nbr == src:
@@ -260,6 +260,14 @@ class N2vGraph:
         norm_const = sum(unnormalized_probs)
         normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return self.__alias_setup(normalized_probs)
+
+    def _node_id_to_node_type(self, id: str) -> str:
+        """Given a node id, return node type using self.g.
+
+        :param id: node id
+        :return: node type
+        """
+        return self.g.index_to_nodetype_map[self.g.node_to_index_map[id]]
 
     def __preprocess_transition_probs_xn2v(self) -> None:
         """Preprocessing of transition probabilities for guiding the random walks. This version uses gamma to
@@ -277,14 +285,14 @@ class N2vGraph:
         for node in G.nodes():
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
             # node_as_int = G.node_to_index_map[node]
-            owntype = node[0]
+            owntype = self._node_id_to_node_type(node)
             own2count: dict = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
             own2prob: dict = defaultdict(float)  # probs calculated from own2count
             total_neighbors = 0
             # G returns a sorted list of neighbors of node
             sorted_neighbors = G.neighbors(node)
             for nbr in sorted_neighbors:
-                nbrtype = nbr[0]
+                nbrtype = self._node_id_to_node_type(nbr)
                 own2count[nbrtype] += 1
                 total_neighbors += 1
             total_non_own_probability = 0.0
@@ -309,7 +317,7 @@ class N2vGraph:
             unnormalized_probs = np.zeros(total_neighbors)
             i = 0
             for nbr in sorted_neighbors:
-                nbrtype = nbr[0]
+                nbrtype = self._node_id_to_node_type(nbr)
                 prob = own2prob[nbrtype]
                 unnormalized_probs[i] = prob * G.weight(node, nbr)
                 i += 1

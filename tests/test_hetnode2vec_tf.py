@@ -9,8 +9,11 @@ from tests.utils.utils import calculate_total_probs
 class TestGraph(TestCase):
 
     def setUp(self):
-        inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
-        g = CSFGraph(inputfile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
 
     def test_raw_probs_simple_graph_1(self):
