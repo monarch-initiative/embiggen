@@ -125,7 +125,7 @@ class CSFGraph:
         node_list = sorted(nodes)
 
         # read in nodes tsv with node type info (in category col by default)
-        id_to_nodetype: Dict[str, str] = \
+        id_to_nodetype: Optional[Dict[str, str]] = \
             self.read_nodetype_from_node_tsv(node_file=node_file,
                                              id_col=self.node_id_col_name,
                                              cat_col=self.node_type_col_name)
@@ -195,7 +195,8 @@ class CSFGraph:
             self.edge_weight[j] = edge.weight
             j += 1
 
-    def assign_node_type(self, i: int, node_id: str, id_to_nodetype: dict) -> None:
+    def assign_node_type(self, i: int, node_id: str,
+                         id_to_nodetype: Optional[Dict[str, str]]) -> None:
         """Assign a node type for this node using entry in id_to_nodetype, or
         assign default node type if there is no entry
 
@@ -212,7 +213,7 @@ class CSFGraph:
             self.nodetype_to_index_map[id_to_nodetype[node_id]].append(i)
 
     def read_nodetype_from_node_tsv(self,
-                                    node_file: str,
+                                    node_file: Optional[str],
                                     id_col: str,
                                     cat_col: str) -> Optional[Dict[str, str]]:
         if not node_file:
