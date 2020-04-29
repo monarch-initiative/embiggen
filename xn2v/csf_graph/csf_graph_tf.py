@@ -68,7 +68,10 @@ class CSFGraph:
         self.subject_column_name = 'subject'
         self.object_column_name = 'object'
         self.edge_label_column_name = 'edge_label'
+        self.node_id_col_name = 'id'
+        self.node_type_col_name = 'category'
         self.default_edge_type = 'biolink:Association'
+        self.default_node_type = 'biolink:NamedThing'
         self.weight_column_name = 'weight'
 
         self.edgetype2count_dictionary: Dict[str, int] = defaultdict(int)
@@ -123,8 +126,16 @@ class CSFGraph:
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list = sorted(nodes)
 
+        # read in nodes tsv with node type info (in category col by default)
+        id_to_nodetype: Dict[str, str] = \
+            self.read_nodetype_from_node_tsv(node_file=node_file,
+                                             id_col=self.node_id_col_name,
+                                             cat_col=self.node_type_col_name)
+
         # create node data dictionaries
         for i in enumerate(node_list):
+            self.assign_node_type(i[0], node_list[i[0]], id_to_nodetype)
+
             self.node_to_index_map[i[1]] = i[0]
             self.index_to_node_map[i[0]] = i[1]
 
@@ -185,6 +196,39 @@ class CSFGraph:
             self.edge_to[j] = dest_index
             self.edge_weight[j] = edge.weight
             j += 1
+
+    def assign_node_type(self, i: int, node_id: str, id_to_nodetype: dict) -> None:
+        """Assign a node type for this node using entry in id_to_nodetype, or
+        assign default node type if there is no entry
+
+        :param i: index of this node
+        :param node_id: id for this node (e.g. g1, NCBIGene:12345)
+        :param id_to_nodetype: map of node ids to node types, produced by self.read_nodetype_from_node_tsv
+        :return: None
+        """
+        if not id_to_nodetype or node_id not in id_to_nodetype:
+            self.index_to_nodetype_map[i] = self.default_node_type
+            self.nodetype_to_index_map[self.default_node_type].append(i)
+        else:
+            self.index_to_nodetype_map[i] = id_to_nodetype[node_id]
+            self.nodetype_to_index_map[id_to_nodetype[node_id]].append(i)
+
+    def read_nodetype_from_node_tsv(self,
+                                    node_file: str,
+                                    id_col: str,
+                                    cat_col: str) -> Optional[Dict[str, str]]:
+        if not node_file:
+            return None  # no node file - assign all nodes the default node type elsewhere
+
+        node_type_info: dict = defaultdict(str)
+        with open(node_file, 'r') as fh:
+            header = fh.readline()
+            header_items: list = header.rstrip('\n').split()
+            for line in fh:
+                fields = line.rstrip('\n').split()
+                items = dict(zip(header_items, fields))
+                node_type_info[items[id_col]] = items[cat_col]
+        return node_type_info
 
     def parse_header(self, edge_file: str) -> dict:
         with open(edge_file, 'r') as fh:

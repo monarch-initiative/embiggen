@@ -9,10 +9,15 @@ from tests.utils.utils import gets_tensor_length, searches_tensor
 class TestCSFGraph(TestCase):
 
     def setUp(self):
+        data_dir = os.path.join(os.path.dirname( __file__), 'data')
 
-        edge_file = os.path.join(os.path.dirname(__file__),
-                                  'data', 'small_graph_edges.tsv')
-        self.graph = CSFGraph(edge_file)
+        self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        # # legacy and non-standard test files
+        self.node_file_missing_nodes = os.path.join(data_dir, 'small_graph_nodes_MISSING_NODES.tsv')
+
+        self.graph = CSFGraph(self.edge_file)
 
         return None
 
@@ -31,8 +36,30 @@ class TestCSFGraph(TestCase):
     def test_csfgraph_makes_nodetype_to_index_map(self):
         self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
 
+    def test_csfgraph_assigns_default_nodetype_to_nodetype_to_index_map(self):
+        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
+        self.assertEqual(self.graph.nodetype_to_index_map[self.graph.default_node_type],
+                         list(range(self.graph.node_count())))
+
+    def test_csfgraph_populates_nodetype_to_index_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(het_g.nodetype_to_index_map['biolink:Disease'], [0, 1, 2])
+
     def test_csfgraph_makes_index_to_nodetype_map(self):
         self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
+
+    def test_csfgraph_populates_index_to_nodetype_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(11, len(het_g.index_to_nodetype_map))
+        self.assertEqual(het_g.index_to_nodetype_map[0], 'biolink:Disease')
+
+    def test_csfgraph_assigns_default_node_type_to_index_to_nodetype_map(self):
+        self.assertEqual(self.graph.index_to_nodetype_map[0], self.graph.default_node_type)
+
+    def test_csfgraph_tolerates_missing_node_info(self):
+        het_g = CSFGraph(edge_file=self.edge_file,
+                         node_file=self.node_file_missing_nodes)
+        self.assertEqual(het_g.index_to_nodetype_map[2], het_g.default_node_type)
 
     # check edgetype to index map
     def test_csfgraph_makes_edgetype_to_index_map(self):
