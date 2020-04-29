@@ -221,10 +221,7 @@ class CSFGraph:
             for line in fh:
                 fields = line.rstrip('\n').split()
                 items = dict(zip(header_items, fields))
-                try:
-                    node_type_info[items[id_col]] = items[cat_col]
-                except:
-                    foo = 1
+                node_type_info[items[id_col]] = items[cat_col]
         return node_type_info
 
 
