@@ -55,6 +55,26 @@ class Word2Vec:
         self.display_examples: List = []
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
 
+        # takes the input data and goes through each element
+        # first, check each element is a list
+        # if any(isinstance(el, list) for el in self.data):
+        if isinstance(self.data, tf.RaggedTensor):
+            self.list_of_lists = True
+            # for el in self.data:
+            #    # then, check each element of the list is integer
+            #    if any(isinstance(item, int) for item in el):
+            # graph version
+            #        self.list_of_lists: bool = True
+            #        self.num_sentences: int = len(self.data)
+            #    else:
+            #        raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
+        elif isinstance(self.data, tf.Tensor):
+            self.list_of_lists = False
+        else:
+            print("NEIGHTHER RAGGED NORE TENSOR")
+            print("Type of data: ", type(self.data))
+            raise TypeError("NEIGHTHER RAGGED NORE TENSOR")
+
     def add_display_words(self, count: list, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
         sample.
@@ -133,21 +153,6 @@ class SkipGramWord2Vec(Word2Vec):
 
         self.data = data
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
-
-        # takes the input data and goes through each element
-        # first, check each element is a list
-        if any(isinstance(el, list) for el in self.data):
-            for el in self.data:
-                # then, check each element of the list is integer
-                if any(isinstance(item, int) for item in el):
-                    # graph version
-                    self.list_of_lists: bool = True
-                    self.num_sentences: int = len(self.data)
-                else:
-                    raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
-        else:
-            self.list_of_lists = False
-
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
 
@@ -442,18 +447,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                          min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
                          num_sampled=num_sampled, display=display, device_type=device_type)
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
-        # takes the input data and goes through each element
-        # first, check each element is a list
-        if any(isinstance(el, list) for el in self.data):
-            for el in self.data:
-                # then, check each element of the list is integer
-                if any(isinstance(item, int) for item in el):
-                    self.list_of_lists: bool = True
-                else:
-                    raise TypeError('self.data must contain a list of walks where each walk is a sequence of integers.')
-        else:
-            self.list_of_lists = False
-
         # set vocabulary size
         self.calculate_vocabulary_size(self.data)
 
