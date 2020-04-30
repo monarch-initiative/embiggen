@@ -16,6 +16,9 @@ class TestGraph(TestCase):
         edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
         node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
 
+        edge_file = os.path.join(data_dir, 'small_graph_edges_DIFF_IDS.tsv')
+        node_file = os.path.join(data_dir, 'small_graph_nodes_DIFF_IDS.tsv')
+
         g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
 
@@ -29,11 +32,11 @@ class TestGraph(TestCase):
         ('probabilities_g1_to_g2',  # comment
          'g1', 'g2',                # src and dst nodes
          1, 1, 1,                   # p, q and gamma, respectively
-         ['g1', 'g3', 'p1', 'p2'],  # expected neighbors of dst node, sorted alphabetically
+         ['UniprotKB:1234', 'g1', 'g3', 'p2'], # expected neighbors of dst (order must match probs below)
          [                          # expected probabilities for each neighbor, with calculations:
+             1.0/3.0, # prob from g2 to p1: ((1/2)/2)*20 = 5 --> 5/7.5 = 1/3 (weight of edge:20)
              0.25,     # prob from g2 to g1: (1-1/2)/2 = 1/4
              0.25,     # prob from g2 to g3: (1-1/2)/2 = 1/4
-             1.0/3.0,  # prob from g2 to p1: ((1/2)/2)*20 = 5 --> 5/7.5 = 1/3 (weight of edge:20)
              1.0/6.0   # prob from g2 to p2: ((1/2)/2)*10 = 2.5 --> 2.5/7.5 = 1/6 (weight of edge:10)
          ]),
         ('probabilities_g1_to_g4',
@@ -49,17 +52,17 @@ class TestGraph(TestCase):
         ('probabilities_g2_to_p2',
          'g2', 'p2',
          1, 1, 1,
-         ['g2', 'p1', 'p3', 'p4'],
+         ['g2', 'UniprotKB:1234', 'p3', 'p4'],
          [
              1.0/2.0,  # prob from p2 to g2: 1/2
-             1.0/6.0,  # prob from p2 to p1: (1-1/2)/3 = 1/6
+             1.0/6.0,  # prob from p2 to 'UniprotKB:1234': (1-1/2)/3 = 1/6
              1.0/6.0,  # prob from p2 to p3: (1-1/2)/3 = 1/6
              1.0/6.0   # prob from p2 to p4: (1-1/2)/3 = 1/6
          ]),
         ('probabilities_g2_to_p2_gamma_1_8ths',
          'g2', 'p2',
          1, 1, 1.0/8.0,
-         ['g2', 'p1', 'p3', 'p4'],
+         ['g2', 'UniprotKB:1234', 'p3', 'p4'],
          [
               1.0/16.0,   # prob from g4 to d2: gamma/3 = 1/24
               15.0/48.0,  # prob from g4 to g1: (1- 2*gamma/3)/2 = 11/24
@@ -89,27 +92,29 @@ class TestGraph(TestCase):
     ])
     def test_raw_probs_simple_graph1(self,
                                      comment,
-                                     src,
-                                     dst,
-                                     p,
-                                     q,
-                                     gamma,
-                                     expected_sorted_nbrs,
+                                     src, dst,  # src and dst nodes
+                                     p, q, gamma,  # p, q, gamma hyperparameters
+                                     expected_neighbors,
                                      expected_probs,
                                      ):
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
         self.assertEqual(4, len(j_alias))
-        original_probs = calculate_total_probs(j_alias, q_alias)
-
         sorted_neighbors = self.graph.neighbors(dst)
-        self.assertCountEqual(expected_sorted_nbrs, sorted_neighbors,
+
+        actual_probs = calculate_total_probs(j_alias, q_alias)
+        actual_probs_dict = dict(zip(sorted_neighbors, actual_probs))
+
+        self.assertEqual(len(expected_probs), len(actual_probs),
+                         "Probability list isn't the expected length")
+        self.assertCountEqual(expected_neighbors, sorted_neighbors,
                               "Didn't get expected neighbors")
-        self.assertEqual(expected_sorted_nbrs, sorted_neighbors)
-        self.assertEqual(len(expected_probs), len(original_probs))
-        for i in range(len(expected_probs)):
-            self.assertAlmostEquals(expected_probs[i], original_probs[i])
+
+        expected_probs_dict = dict(zip(expected_neighbors, expected_probs))
+
+        for key in expected_probs_dict.keys():
+            self.assertAlmostEqual(expected_probs_dict[key], actual_probs_dict[key])
 
 
 class TestHetGraph(TestCase):
