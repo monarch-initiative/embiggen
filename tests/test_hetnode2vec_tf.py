@@ -10,8 +10,14 @@ class TestGraph(TestCase):
 
     def setUp(self):
         data_dir = os.path.join(os.path.dirname(__file__), 'data')
-        edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
-        node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        # these pass the tests okay
+        # edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        # node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        # edges and nodes with ids where nodetype doesn't match first char of id
+        edge_file = os.path.join(data_dir, 'small_graph_edges_DIFF_IDS.tsv')
+        node_file = os.path.join(data_dir, 'small_graph_nodes_DIFF_IDS.tsv')
 
         g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
