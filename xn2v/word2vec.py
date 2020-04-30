@@ -71,9 +71,9 @@ class Word2Vec:
         elif isinstance(self.data, tf.Tensor):
             self.list_of_lists = False
         else:
-            print("NEIGHTHER RAGGED NORE TENSOR")
+            print("NEITHER RAGGED NOR TENSOR")
             print("Type of data: ", type(self.data))
-            raise TypeError("NEIGHTHER RAGGED NORE TENSOR")
+            raise TypeError("NEITHER RAGGED NOR TENSOR")
 
     def add_display_words(self, count: list, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full

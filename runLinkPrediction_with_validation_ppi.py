@@ -94,11 +94,11 @@ def parse_args():
                         help="Type of graph which is either homogen for homogeneous graph or heterogen for "
                              "heterogeneous graph")
 
-    parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
+    parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model. It can be either Skipgram or CBOW")
 
-    parser.add_argument('--num_steps', type=int, default=100000,
-                        help='number of steps for GD.  Default is 100000.')
+    parser.add_argument('--num_steps', type=int, default=150000,
+                        help='number of steps for GD.  Default is 150000.')
 
     return parser.parse_args()
 
@@ -147,8 +147,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
     lp.predict_links()
     lp.output_classifier_results()
     lp.output_edge_node_information()
-    lp.predicted_ppi_links()
-    lp.predicted_ppi_non_links()
+    #lp.predicted_ppi_links()
+    #lp.predicted_ppi_non_links()
 
 
 def read_graphs():
