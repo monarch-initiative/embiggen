@@ -325,11 +325,11 @@ class SkipGramWord2Vec(Word2Vec):
 
         x_test = np.array(self.display_examples)
 
-        n_epochs = 5
+        n_epochs = 25
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for epoch in range(1, n_epochs + 1):
+        for epoch in trange(1, n_epochs + 1):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -622,7 +622,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             # Update W and b following gradients
             self.optimizer.apply_gradients(
                 zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
-            return None
+            return tf.reduce_sum(loss)
 
     def display_words(self) -> None:
         for w in self.display_examples:
@@ -663,11 +663,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.display_words()
         # n_epochs = 2
         # data = self.data  #
-        n_epochs = 5
+        n_epochs = 25
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for epoch in range(1, n_epochs + 1):
+        for epoch in trange(1, n_epochs + 1):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -689,7 +689,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 # window that we get starts at position (N-K). Therefore, if we start
                 # the next window at position (N-K)+1, we will get all windows.
                 window_len = 1 + 2 * self.skip_window
-                shift_len = batch_size = window_len + 1
+                shift_len = batch_size - window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data
                 data_index = 0

@@ -129,9 +129,11 @@ class LinkPrediction(object):
 
         # Predicted edge scores: probability of being of class "1" (real edge)
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
+        train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
         # fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
+        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the auc score
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
     def predicted_ppi_links(self):
@@ -178,6 +180,7 @@ class LinkPrediction(object):
         print('Sensitivity : {}'.format(sensitivity))
         print("F1-score : {}".format(f1_score))
         print("node2vec Test ROC score: {} ".format(str(self.test_roc)))
+        print("node2vec Train ROC score: {} ".format(str(self.train_roc)))
         print("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
