@@ -677,6 +677,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     batch_x, batch_y = self.generate_batch_cbow(sentence)
                     current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
+                    if step % 100 == 0:
+                        print("loss, ", current_loss)
                     step += 1
             else:
                 data = self.data  #
@@ -694,9 +696,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 lastpos = data_len - 1  # index of the last word in data
                 data_index = 0
                 endpos = data_index + batch_size
-                while True:
-                    if endpos > lastpos:
-                        break
+                while endpos <= lastpos:
                     currentTensor = data[data_index:endpos]
                     if len(currentTensor) < window_len:
                         break  # We are at the end
