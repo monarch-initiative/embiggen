@@ -122,6 +122,10 @@ class LinkPredictionWithValidation:
 
         edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
 
+
+        self.train_predictions = edge_classifier.predict(self.train_edge_embs)
+        self.train_confusion_matrix = metrics.confusion_matrix(self.train_edge_labels, self.train_predictions)
+
         self.validation_predictions = edge_classifier.predict(self.valid_edge_embs)
         self.validation_confusion_matrix = metrics.confusion_matrix(self.valid_edge_labels, self.validation_predictions)
 
@@ -129,10 +133,13 @@ class LinkPredictionWithValidation:
         self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.test_predictions)
 
         # Predicted edge scores: probability of being of class "1" (real edge)
+        train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
         validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
         # fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
+        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the auc score of validation
+        self.train_average_precision = average_precision_score(self.train_edge_labels, train_preds)
         self.valid_roc = roc_auc_score(self.valid_edge_labels, validation_preds)  # get the auc score of validation
         self.valid_average_precision = average_precision_score(self.valid_edge_labels, validation_preds)
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score of test
@@ -175,6 +182,25 @@ class LinkPredictionWithValidation:
         test_roc: AUC score
         test_average_precision: Average precision
          """
+        train_conf_matrix = self.train_confusion_matrix
+        total = sum(sum(train_conf_matrix))
+        train_accuracy = (train_conf_matrix[0, 0] + train_conf_matrix[1, 1]) / total
+        train_specificity = train_conf_matrix[0, 0] / (train_conf_matrix[0, 0] + train_conf_matrix[0, 1])
+        train_sensitivity = train_conf_matrix[1, 1] / (train_conf_matrix[1, 0] + train_conf_matrix[1, 1])
+        train_f1_score = (2.0 * train_conf_matrix[1, 1]) / (
+                    2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
+        # f1-score =2 * TP / (2 * TP + FP + FN)
+
+        print("predictions for training set:")
+        print("predictions (training): {}".format(str(self.train_predictions)))
+        print("confusion matrix (training): {}".format(str(train_conf_matrix)))
+        print('Accuracy (validation) : {}'.format(train_accuracy))
+        print('Specificity (validation): {}'.format(train_specificity))
+        print('Sensitivity (validation): {}'.format(train_sensitivity))
+        print('F1-score (validation): {}'.format(train_f1_score))
+        print("node2vec Test ROC score (training): {} ".format(str(self.train_roc)))
+        print("node2vec Test AP score (training): {} ".format(str(self.train_average_precision)))
+
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
         valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
