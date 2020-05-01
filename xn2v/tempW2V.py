@@ -61,7 +61,7 @@ def test_walk():
     nodedictionary = csf.get_node_to_index_map()
     reverse_nodedictionary = csf.get_index_to_node_map()
     n2v = N2vGraph(csf, p=1, q=1, gamma=1, doxn2v=False)
-    walks = n2v.simulate_walks(num_walks=10, walk_length=100)
+    walks = n2v.simulate_walks(num_walks=2, walk_length=50)
     print(type(walks))
     print(walks[0:10])
     sgw2v = SkipGramWord2Vec(data=walks,
@@ -93,9 +93,9 @@ def test_cbow():
     loss = sgw2v.train()
     plot_loss(loss)
 
-if cbow:
+if False and cbow:
     test_cbow()
-elif args.w is not None:
+elif walk:
     test_walk()
 else:
     test_skipgram()

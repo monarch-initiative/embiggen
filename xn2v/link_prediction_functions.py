@@ -5,15 +5,14 @@
 ###
 
 import numpy as np  # type: ignore
-import sklearn  # type: ignore
-
+import tensorflow as tf
 def DegreeProduct(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
     nodes given the structure of the graph.
     :param graph: CSFgraph  object
     :param node_1: one node of graph
     :param node_2: one node of a graph
-    :return: Degree Productscore of the nodes
+    :return: Degree Product score of the nodes
     '''
 
     score = (graph.node_degree(node_1) * graph.node_degree(node_2))
@@ -107,10 +106,11 @@ def AdamicAdar(graph, node_1, node_2):
     #return sorted_ind, valid_words
 
 
-def cosine_similarity(emb_1,emb_2):
-    #cosin_similarity of two vectors X and Y = <X,Y> / ||X||||Y|| where <X,Y> is the dot product
-    #and ||X|| is sqrt(<X,X>)
-    nominator = np.dot(emb_1,emb_2)
-    denominator = np.sqrt(emb_1.dot(emb_1)) * np.sqrt(emb_2.dot(emb_2))
-    similarity_score = nominator / denominator
-    return similarity_score
+
+def cosine_similarity_tf(emb1, emb2):
+    # cosin_similarity of two vectors X and Y with tensorflow:
+    # cosine similarity = <X,Y> / ||X||||Y|| where <X,Y> is the dot product and ||X|| is sqrt(<X,X>)
+    m = tf.keras.metrics.CosineSimilarity(name='cosine_similarity', dtype=None, axis=-1)
+    m.update_state(emb1, emb2)
+    return m.result().numpy()
+
