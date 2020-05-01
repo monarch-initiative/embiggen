@@ -285,9 +285,11 @@ class N2vGraph:
         for node in G.nodes():
             # ASSUMPTION. The type of the node is encoded by its first character, e.g., g42 is a gene
             # node_as_int = G.node_to_index_map[node]
+
             owntype = self._node_id_to_node_type(node)
             own2count: dict = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
             own2prob: dict = defaultdict(float)  # probs calculated from own2count
+
             total_neighbors = 0
             # G returns a sorted list of neighbors of node
             sorted_neighbors = G.neighbors(node)

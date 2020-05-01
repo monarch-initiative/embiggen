@@ -114,7 +114,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     else:
         raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
 
-    #model.train(display_step=100)
+    model.train()
 
     write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
 
