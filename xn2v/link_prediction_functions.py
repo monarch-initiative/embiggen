@@ -5,7 +5,7 @@
 ###
 
 import numpy as np  # type: ignore
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 def DegreeProduct(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
     nodes given the structure of the graph.
