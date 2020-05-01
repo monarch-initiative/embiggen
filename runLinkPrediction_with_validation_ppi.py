@@ -123,7 +123,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
         print("[ERROR] enter Skipgram or CBOW")
         sys.exit(1)
 
-    #model.train(display_step=100)
+    model.train()
 
     write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
 
