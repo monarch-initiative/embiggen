@@ -138,7 +138,7 @@ class LinkPredictionWithValidation:
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
         # fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
-        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the auc score of validation
+        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the auc score of training
         self.train_average_precision = average_precision_score(self.train_edge_labels, train_preds)
         self.valid_roc = roc_auc_score(self.valid_edge_labels, validation_preds)  # get the auc score of validation
         self.valid_average_precision = average_precision_score(self.valid_edge_labels, validation_preds)

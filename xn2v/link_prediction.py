@@ -51,12 +51,16 @@ class LinkPrediction(object):
         self.train_edge_embs = []
         self.train_edge_labels = []
         self.test_edge_labels = []
-        self.tes_edge_embs = []
+        self.train_edge_embs = []
         self.classifier = classifier
         self.graph_type = graph_type
-        self.test_edge_embs = None
-        self.predictions = None
-        self.confusion_matrix = None
+        self.test_edge_embs = []
+        self.train_predictions = []
+        self.test_predictions = []
+        self.train_confusion_matrix = []
+        self.test_confusion_matrix = []
+        self.train_roc = None
+        self.train_average_precision = None
         self.test_roc = None
         self.test_average_precision = None
 
@@ -124,17 +128,22 @@ class LinkPrediction(object):
 
         edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
 
-        self.predictions = edge_classifier.predict(self.test_edge_embs)
-        self.confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.predictions)
+        self.train_predictions = edge_classifier.predict(self.train_edge_embs)
+        self.train_confusion_matrix = metrics.confusion_matrix(self.train_edge_labels, self.train_predictions)
+
+        self.test_predictions = edge_classifier.predict(self.test_edge_embs)
+        self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.test_predictions)
 
         # Predicted edge scores: probability of being of class "1" (real edge)
-        test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
         train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
+        test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
         # fpr, tpr, _ = roc_curve(self.test_edge_labels, test_preds)
 
-        self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the auc score
-        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the auc score
+        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the training auc score
+        self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the test auc score
+        self.train_average_precision = average_precision_score(self.train_edge_labels, train_preds)
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
+
 
     def predicted_ppi_links(self):
         """
@@ -142,7 +151,7 @@ class LinkPrediction(object):
         """
         print("positive test edges and their prediction:")
         for i in range(len(self.pos_test_edges)):
-            print(self.pos_test_edges[i], self.predictions[i])
+            print(self.pos_test_edges[i], self.test_predictions[i])
 
     def predicted_ppi_non_links(self):
         """
@@ -151,7 +160,7 @@ class LinkPrediction(object):
         print("negative test edges and their prediction:")
 
         for i in range(len(self.neg_test_edges)):
-            print(self.neg_test_edges[i], self.predictions[i + len(self.pos_test_edges)])
+            print(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)])
 
     def output_classifier_results(self):
         """
@@ -162,26 +171,47 @@ class LinkPrediction(object):
             predictions: prediction results of the logistic regression
             confusion_matrix:  confusion_matrix[0, 0]: True negatives, confusion_matrix[0, 1]: False positives,
             confusion_matrix[1, 1]: True positives and confusion_matrix[1, 0]: False negatives
-            test_roc: AUC score
-            test_average_precision: Average precision
+            train_roc, test_roc: AUC score
+            train_average_precision, test_average_precision: Average precision
          """
-        confusion_matrix = self.confusion_matrix
-        total = sum(sum(confusion_matrix))
-        accuracy = (confusion_matrix[0, 0] + confusion_matrix[1, 1]) * 1.0 / total
-        specificity = confusion_matrix[0, 0] * 1.0 / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) * 1.0
-        sensitivity = confusion_matrix[1, 1] * 1.0 / (confusion_matrix[1, 0] + confusion_matrix[1, 1]) * 1.0
-        f1_score = (2.0 * confusion_matrix[1, 1]) / (
-                    2.0 * confusion_matrix[1, 1] + confusion_matrix[0, 1] + confusion_matrix[1, 0])
+
+        train_conf_matrix = self.train_confusion_matrix
+        total = sum(sum(train_conf_matrix))
+        train_accuracy = (train_conf_matrix[0, 0] + train_conf_matrix[1, 1]) / total
+        train_specificity = train_conf_matrix[0, 0] / (train_conf_matrix[0, 0] + train_conf_matrix[0, 1])
+        train_sensitivity = train_conf_matrix[1, 1] / (train_conf_matrix[1, 0] + train_conf_matrix[1, 1])
+        train_f1_score = (2.0 * train_conf_matrix[1, 1]) / (
+                2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
         # f1-score =2 * TP / (2 * TP + FP + FN)
+
+        print("predictions for training set:")
+        #print("predictions (training): {}".format(str(self.train_predictions)))
+        print("confusion matrix (training): {}".format(str(train_conf_matrix)))
+        print('Accuracy (validation) : {}'.format(train_accuracy))
+        print('Specificity (validation): {}'.format(train_specificity))
+        print('Sensitivity (validation): {}'.format(train_sensitivity))
+        print('F1-score (validation): {}'.format(train_f1_score))
+        print("node2vec Train ROC score (training): {} ".format(str(self.train_roc)))
+        print("node2vec Train AP score (training): {} ".format(str(self.train_average_precision)))
+
+        test_confusion_matrix = self.test_confusion_matrix
+        total = sum(sum(test_confusion_matrix))
+        test_accuracy = (test_confusion_matrix[0, 0] + test_confusion_matrix[1, 1]) * 1.0 / total
+        test_specificity = test_confusion_matrix[0, 0] * 1.0 / (test_confusion_matrix[0, 0] + test_confusion_matrix[0, 1]) * 1.0
+        test_sensitivity = test_confusion_matrix[1, 1] * 1.0 / (test_confusion_matrix[1, 0] + test_confusion_matrix[1, 1]) * 1.0
+        test_f1_score = (2.0 * test_confusion_matrix[1, 1]) / (
+                    2.0 * test_confusion_matrix[1, 1] + test_confusion_matrix[0, 1] + test_confusion_matrix[1, 0])
+        # f1-score =2 * TP / (2 * TP + FP + FN)
+
         # print("predictions: {}".format(str(self.predictions)))
-        print("confusion matrix: {}".format(str(confusion_matrix)))
-        print('Accuracy : {}'.format(accuracy))
-        print('Specificity : {}'.format(specificity))
-        print('Sensitivity : {}'.format(sensitivity))
-        print("F1-score : {}".format(f1_score))
-        print("node2vec Test ROC score: {} ".format(str(self.test_roc)))
-        print("node2vec Train ROC score: {} ".format(str(self.train_roc)))
-        print("node2vec Test AP score: {} ".format(str(self.test_average_precision)))
+        print("predictions for test set:")
+        print("confusion matrix (test): {}".format(str(test_confusion_matrix)))
+        print('Accuracy (test): {}'.format(test_accuracy))
+        print('Specificity (test): {}'.format(test_specificity))
+        print('Sensitivity (test): {}'.format(test_sensitivity))
+        print("F1-score (test): {}".format(test_f1_score))
+        print("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
+        print("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
         """
