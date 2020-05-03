@@ -1,10 +1,11 @@
 from scipy.sparse import lil_matrix  # type: ignore
 import collections
 import numpy as np  # type: ignore
+import tensorflow as tf
 from xn2v import TextEncoder
 
 
-class TextCooccurrenceEncoder:
+class CooccurrenceEncoder:
     """This class takes as input a text or a series or texts (sentences) and generates
     a coocurrence matrix using the list of list (lil) matrix from scipy. It returns
     a dictionary of co-occurences whose key is a tuple (w1,w2) and whose value is the
@@ -13,23 +14,36 @@ class TextCooccurrenceEncoder:
 
     def __init__(self, input, window_size, vocab_size, batch_size=128):
         """
-
+        If you are starting with text, first call
+        data, count, dictionary, reverse_dict = encoder.build_dataset()
+        and then pass 'data' as the input parameter for this constructor
         :param window_size: Size of the window surrounding the center word (the total size is two times this)
         """
         self.window_size = window_size
         self.num_samples_per_centerword = 2 * window_size  # number of samples per center word
         self.vocab_size = vocab_size
         self.batch_size = batch_size
-        if isinstance(input, list):
+        if isinstance(input, tf.RaggedTensor):
             self.is_list = True
-        else:
+        elif isinstance(input, tf.Tensor):
             self.is_list = False
-        encoder = TextEncoder(input)
-        data, count, dictionary, reverse_dict = encoder.build_dataset()
-        self.data = data
-        self.count = count
-        self.dictionary = dictionary
-        self.reverse_dict = reverse_dict
+        else:
+            raise TypeError("'input' had type {} but we expected a Tensor or RaggedTensor.".format(type(input)))
+        self.data = input
+
+
+    @classmethod
+    def from_walks(cls, walks, n_nodes):
+        """Generate a co-occurence matrix from a collection of walks from
+        a random walk.
+        Args:
+            walks: An array of integers to use as batch training data.
+            n_nodes: Total count of nodes (vertices) in the graph
+        Returns:
+            None.
+        """
+        print("Generating coocurrence matrix from walks: ", type(walks), "number of nodes ", n_nodes)
+
 
     def _generate_batch_from_sentence(self, sentence):
         """Generate a batch of co-occurence counts for this sentence
@@ -144,4 +158,4 @@ class TextCooccurrenceEncoder:
         else:
             cooc_mat = self._generate_coor_from_single_string()
         cooc_dict = cooc_mat.todok()
-        return cooc_dict, self.count, self.dictionary, self.reverse_dict
+        return cooc_dict
