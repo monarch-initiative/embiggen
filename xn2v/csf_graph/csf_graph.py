@@ -1,10 +1,18 @@
-import numpy as np   # type: ignore
+import logging
 import os.path
-
+import numpy as np  # type: ignore
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Optional, Any, Union, Set, Dict, List, Tuple
 
 from xn2v.csf_graph.edge import Edge
+
+
+class CSFGraphNoSubjectColumnError(Exception):
+    pass
+
+
+class CSFGraphNoObjectColumnError(Exception):
+    pass
 
 
 class CSFGraph:
@@ -27,6 +35,10 @@ class CSFGraph:
             node from the sorted list of unique nodes in the graph.
         index_to_node_map: A dictionary where keys contain the integer index of each node from the sorted list of
             unique nodes in the graph and values contain node labels.
+        nodetype_to_index_map: A dictionary where keys contain node type and values contain the integer index of each
+            node from the sorted list of unique nodes in the graph.
+        index_to_nodetype_map: A dictionary where keys contain the integer index of each node from the sorted list of
+            unique nodes in the graph and values contain node types.
         edge_to: A numpy array with length the number of edges. Each index in the array contains the index of an edge,
             such that it can be used to look up the destination nodes that an edge in a given index points to.
         edge_weight: A numpy array with length the number of edges. Each item in the array represents an edge's index
@@ -40,65 +52,100 @@ class CSFGraph:
         - ValueError: If the file referenced by filepath cannot be found.
     """
 
-    def __init__(self, filepath: str) -> None:
-
-        if filepath is None:
-            raise TypeError('The filepath attribute cannot be empty.')
-        if not isinstance(filepath, str):
-            raise TypeError('The filepath attribute must be type str')
-        if not os.path.exists(filepath):
-            raise ValueError('Could not find graph file {}'.format(filepath))
+    def __init__(self, edge_file: str, node_file: str = None, default_weight=1):
+        if not os.path.exists(edge_file):
+            raise ValueError('Could not find edge file {}'.format(edge_file))
 
         # create variables to store node and edge information
         nodes: Set[Union[int, str]] = set()
         edges: Set[Edge] = set()
+
+        self.subject_column_name = 'subject'
+        self.object_column_name = 'object'
+        self.edge_label_column_name = 'edge_label'
+        self.node_id_col_name = 'id'
+        self.node_type_col_name = 'category'
+        self.default_edge_type = 'biolink:Association'
+        self.default_node_type = 'biolink:NamedThing'
+        self.weight_column_name = 'weight'
+
         self.edgetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.nodetype2count_dictionary: Dict[str, int] = defaultdict(int)
         self.node_to_index_map:  Dict[str, int] = defaultdict(int)
         self.index_to_node_map:  Dict[int, str] = defaultdict(str)
+        self.nodetype_to_index_map:  Dict[str, list] = defaultdict(list)
+        self.index_to_nodetype_map:  Dict[int, str] = defaultdict(str)
+        self.edgetype_to_index_map:  Dict[str, list] = defaultdict(list)
+        self.index_to_edgetype_map:  Dict[int, str] = defaultdict(str)
 
         # read in and process edge data, creating a dictionary that stores edge information
-        with open(filepath) as f:
+        header_info = self.parse_header(edge_file)
+        with open(edge_file) as f:
+            if not header_info['is_legacy']:  # legacy edge files don't have headers
+                _ = f.readline()  # throw away header
+
             for line in f:
                 fields = line.rstrip('\n').split()
-                node_a = fields[0]
-                node_b = fields[1]
+                items = dict(zip(header_info['header_items'], fields))
+                node_a = items[self.subject_column_name]
+                node_b = items[self.object_column_name]
+                if self.edge_label_column_name in items:
+                    edge_type = items[self.edge_label_column_name]
+                else:
+                    edge_type = self.default_edge_type
 
-                if len(fields) == 2:
-                    # if no weight provided, assign a default value of 1.0
-                    weight = 1.0
+                if self.weight_column_name not in items:
+                    # no weight provided. Assign a default value
+                    weight = default_weight
                 else:
                     try:
-                        weight = float(fields[2])
-                    except ValueError:
-                        print('ERROR: Could not parse weight field (must be an integer): {}'.format(fields[2]))
-                        continue
-
+                        weight = float(items[self.weight_column_name])
+                    except ValueError as e:
+                        logging.error("[ERROR] Could not parse weight field " +
+                                      "(must be an integer): {}".format(
+                                          items[self.weight_column_name]))
                 # add nodes
                 nodes.add(node_a)
                 nodes.add(node_b)
 
                 # process edges y initializing instances of each edge and it's inverse
-                edge = Edge(node_a, node_b, weight)
-                inverse_edge = Edge(node_b, node_a, weight)
+                edge = Edge(node_a, node_b, weight, edge_type)
+                inverse_edge = Edge(node_b, node_a, weight, edge_type)
                 edges.add(edge)
                 edges.add(inverse_edge)
 
                 # add the string representation of the edge to dictionary
-                self.edgetype2count_dictionary[edge.get_edge_type_string()] += 1
+                self.edgetype2count_dictionary[edge_type] += 1
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
         node_list: List = sorted(nodes)
 
+        # read in nodes tsv with node type info (in category col by default)
+        id_to_nodetype: Optional[Dict[str, str]] = \
+            self.read_nodetype_from_node_tsv(node_file=node_file,
+                                             id_col=self.node_id_col_name,
+                                             cat_col=self.node_type_col_name)
+
         # create node data dictionaries
         for i in range(len(node_list)):
+            # assign node type
+            self.assign_node_type(i, node_list[i], id_to_nodetype)
+
             self.node_to_index_map[node_list[i]] = i
             self.index_to_node_map[i] = node_list[i]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
-        edge_list = sorted(edges)
+        edge_list: List = sorted(edges)
         total_edge_count = len(edge_list)
         total_vertex_count = len(node_list)
+
+        # create edge type dictionaries
+        for i in range(len(edge_list)):  # type: ignore
+            this_type = edge_list[i].edge_type  # type: ignore
+            if this_type not in self.edgetype_to_index_map:
+                self.edgetype_to_index_map[this_type] = []
+            self.edgetype_to_index_map[this_type].append(i)  # type: ignore
+            self.index_to_edgetype_map[i] = this_type  # type: ignore
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
@@ -117,7 +164,7 @@ class CSFGraph:
         self.offset_to_edge_[0], offset, i = 0, 0, 0
 
         for n in node_list:
-            node_type = n[0]
+            node_type = self.index_to_nodetype_map[self.node_to_index_map[n]]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
             n_edges = index2edge_count[source_index]  # n_edges can be zero here
@@ -144,9 +191,76 @@ class CSFGraph:
             self.edge_weight[j] = edge.weight
             j += 1
 
+    def assign_node_type(self, i: int, node_id: str,
+                         id_to_nodetype: Optional[Dict[str, str]]) -> None:
+        """Assign a node type for this node using entry in id_to_nodetype, or
+        assign default node type if there is no entry
+
+        :param i: index of this node
+        :param node_id: id for this node (e.g. g1, NCBIGene:12345)
+        :param id_to_nodetype: map of node ids to node types, produced by self.read_nodetype_from_node_tsv
+        :return: None
+        """
+        if not id_to_nodetype or node_id not in id_to_nodetype:
+            self.index_to_nodetype_map[i] = self.default_node_type
+            self.nodetype_to_index_map[self.default_node_type].append(i)
+        else:
+            self.index_to_nodetype_map[i] = id_to_nodetype[node_id]
+            self.nodetype_to_index_map[id_to_nodetype[node_id]].append(i)
+
+    def read_nodetype_from_node_tsv(self,
+                                    node_file: Optional[str],
+                                    id_col: str,
+                                    cat_col: str) -> Optional[Dict[str, str]]:
+        if not node_file:
+            return None  # no node file - assign all nodes the default node type elsewhere
+
+        node_type_info: dict = defaultdict(str)
+        with open(node_file, 'r') as fh:
+            header = fh.readline()
+            header_items: list = header.rstrip('\n').split()
+            for line in fh:
+                fields = line.rstrip('\n').split()
+                items = dict(zip(header_items, fields))
+                node_type_info[items[id_col]] = items[cat_col]
+        return node_type_info
+
+
+    def parse_header(self, edge_file: str) -> dict:
+        with open(edge_file, 'r') as fh:
+            header_info: Dict[str, Union[list, bool]] = {}
+            header_info['is_legacy'] = False
+
+            header = fh.readline()
+            header_items = header.strip().split('\t')
+            header_info['header_items'] = header_items
+
+            if self.subject_column_name not in header_items and \
+                    self.object_column_name not in header_items:
+                logging.warning(
+                    "Didn't find subject or object in header - probably a legacy edge file")
+                header_info['is_legacy'] = True
+                if len(header_items) == 2:
+                    header_info['header_items'] = [self.subject_column_name,
+                                                   self.object_column_name]
+                elif len(header_items) == 3:
+                    header_info['header_items'] = [self.subject_column_name,
+                                                   self.object_column_name,
+                                                   self.weight_column_name]
+                else:
+                    logging.error('Legacy edge file should have 2 or 3 columns' +
+                                  '(node1 node2 [weight])\n{}'.format(header))
+                    raise ValueError
+            elif self.subject_column_name not in header_items:
+                raise CSFGraphNoSubjectColumnError(
+                    "Edge file should have a {} column", self.subject_column_name)
+            elif self.object_column_name not in header_items:
+                raise CSFGraphNoObjectColumnError(
+                    "Edge file should have an {} column", self.object_column_name)
+            return header_info
+
     def nodes(self) -> List[str]:
         """Returns a list of graph nodes."""
-
         return list(self.node_to_index_map.keys())
 
     def nodes_as_integers(self) -> List[int]:

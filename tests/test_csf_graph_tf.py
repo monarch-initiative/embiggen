@@ -2,16 +2,26 @@ import os.path
 
 from unittest import TestCase
 
-from xn2v.csf_graph.csf_graph_tf import CSFGraph
+from xn2v.csf_graph.csf_graph_tf import CSFGraph, CSFGraphNoSubjectColumnError, \
+    CSFGraphNoObjectColumnError
 from tests.utils.utils import gets_tensor_length, searches_tensor
 
 
 class TestCSFGraph(TestCase):
 
     def setUp(self):
+        data_dir = os.path.join(os.path.dirname( __file__), 'data')
 
-        input_file = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
-        self.graph = CSFGraph(input_file)
+        self.edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        self.node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        # # legacy and non-standard test files
+        self.tsv_no_subject = os.path.join(data_dir, 'small_graph_edges_NO_SUBJECT.tsv')
+        self.tsv_no_object = os.path.join(data_dir, 'small_graph_edges_NO_OBJECT.tsv')
+        self.legacy_edge_file = os.path.join(data_dir, 'small_graph_LEGACY.txt')
+        self.node_file_missing_nodes = os.path.join(data_dir, 'small_graph_nodes_MISSING_NODES.tsv')
+
+        self.graph = CSFGraph(self.edge_file)
 
         return None
 
@@ -26,6 +36,77 @@ class TestCSFGraph(TestCase):
     def test_get_index_to_node_map(self):
 
         self.assertIsNotNone(self.graph.get_index_to_node_map())
+
+    def test_edgetype2count_dictionary(self):
+        self.assertIsInstance(self.graph.edgetype2count_dictionary, dict)
+        self.assertEqual(self.graph.edgetype2count_dictionary['biolink:molecularly_interacts_with'], 1)
+        self.assertEqual(self.graph.edgetype2count_dictionary['biolink:interacts_with'], 20)
+
+    def test_nodetype2count_dictionary(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertIsInstance(self.graph.nodetype2count_dictionary, dict)
+        self.assertEqual(self.graph.nodetype2count_dictionary['biolink:NamedThing'], 11)
+        self.assertEqual(het_g.nodetype2count_dictionary['biolink:Disease'], 3)
+
+    def test_count_nodes_legacy_edge_file(self):
+        g = CSFGraph(edge_file=self.legacy_edge_file)
+        self.assertEqual(3, g.node_count())
+
+    def test_csfgraph_checks_for_subject_columns(self):
+        with self.assertRaises(CSFGraphNoSubjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_subject)  # file doesn't have subject col
+
+    def test_csfgraph_checks_for_object_column(self):
+        with self.assertRaises(CSFGraphNoObjectColumnError) as context:
+            CSFGraph(edge_file=self.tsv_no_object)  # file doesn't have object col
+
+    def test_csfgraph_makes_nodetype_to_index_map(self):
+        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
+
+    def test_csfgraph_assigns_default_nodetype_to_nodetype_to_index_map(self):
+        self.assertIsInstance(self.graph.nodetype_to_index_map, dict)
+        self.assertEqual(self.graph.nodetype_to_index_map[self.graph.default_node_type],
+                         list(range(self.graph.node_count())))
+
+    def test_csfgraph_populates_nodetype_to_index_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(het_g.nodetype_to_index_map['biolink:Disease'], [0, 1, 2])
+
+    def test_csfgraph_makes_index_to_nodetype_map(self):
+        self.assertIsInstance(self.graph.index_to_nodetype_map, dict)
+
+    def test_csfgraph_populates_index_to_nodetype_map(self):
+        het_g = CSFGraph(edge_file=self.edge_file, node_file=self.node_file)
+        self.assertEqual(11, len(het_g.index_to_nodetype_map))
+        self.assertEqual(het_g.index_to_nodetype_map[0], 'biolink:Disease')
+
+    def test_csfgraph_assigns_default_node_type_to_index_to_nodetype_map(self):
+        self.assertEqual(self.graph.index_to_nodetype_map[0], self.graph.default_node_type)
+
+    def test_csfgraph_tolerates_missing_node_info(self):
+        het_g = CSFGraph(edge_file=self.edge_file,
+                         node_file=self.node_file_missing_nodes)
+        self.assertEqual(het_g.index_to_nodetype_map[2], het_g.default_node_type)
+
+    # check edgetype to index map
+    def test_csfgraph_makes_edgetype_to_index_map(self):
+        self.assertIsInstance(self.graph.edgetype_to_index_map, dict)
+
+    def test_csfgraph_populates_edgetype_to_index_map(self):
+        self.assertCountEqual(self.graph.edgetype_to_index_map.keys(),
+                              ['biolink:interacts_with',
+                               'biolink:molecularly_interacts_with'])
+        self.assertEqual(40, len(self.graph.edgetype_to_index_map['biolink:interacts_with']))
+        self.assertEqual(2, len(self.graph.edgetype_to_index_map['biolink:molecularly_interacts_with']))
+
+    def test_csfgraph_makes_index_to_edgetype_map(self):
+        self.assertIsInstance(self.graph.index_to_edgetype_map, dict)
+
+    def test_csfgraph_populates_index_to_edgetype_map(self):
+        self.assertEqual(42, len(self.graph.index_to_edgetype_map))
+        self.assertEqual(self.graph.index_to_edgetype_map[0], 'biolink:interacts_with')
+        self.assertEqual(self.graph.index_to_edgetype_map[34], 'biolink:molecularly_interacts_with')
+        self.assertEqual(self.graph.index_to_edgetype_map[40], 'biolink:molecularly_interacts_with')
 
     def test_count_nodes(self):
 

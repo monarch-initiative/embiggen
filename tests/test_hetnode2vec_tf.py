@@ -4,132 +4,128 @@ import os.path
 from xn2v import CSFGraph
 from xn2v.hetnode2vec import N2vGraph
 from tests.utils.utils import calculate_total_probs
+from parameterized import parameterized
 
 
 class TestGraph(TestCase):
 
     def setUp(self):
-        inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_graph.txt')
-        g = CSFGraph(inputfile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+        # these pass the tests okay
+        edge_file = os.path.join(data_dir, 'small_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_graph_nodes.tsv')
+
+        edge_file = os.path.join(data_dir, 'small_graph_edges_DIFF_IDS.tsv')
+        node_file = os.path.join(data_dir, 'small_graph_nodes_DIFF_IDS.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
 
-    def test_raw_probs_simple_graph_1(self):
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma,doxn2v=True)
-        #src = self.graph.get_node_index('g1')
-        #dst = self.graph.get_node_index('g2')
-        src = 'g1'
-        dst = 'g2'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # there are 4 outgoing edges from g2: g1, g3, p1, p2
-        self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be 0.25, 0.25, 0.3333, 0.1666
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(0.25, original_probs[0])#prob from g2 to g1: (1-1/2)/2 = 1/4
-        self.assertAlmostEqual(0.25, original_probs[1])#prob from g2 to g3: (1-1/2)/2 = 1/4
-        self.assertAlmostEqual(1.0/3.0, original_probs[2])#prob from g2 to p1: ((1/2)/2)*20 = 5 --> 5/7.5 = 1/3 (weight of edge:20)
-        self.assertAlmostEqual(1.0/6.0, original_probs[3])#prob from g2 to p2: ((1/2)/2)*10 = 2.5 --> 2.5/7.5 = 1/6 (weight of edge:10)
-
-    def test_raw_probs_simple_graph_2(self):
-        p = 1
-        q = 1
-        gamma = 1
+    """ 
+    The following are parameterized tests for transition probabilities of the
+    small_graph_edges/nodes.tsv files. Given src node, dst node, and p, q and gamma
+    parameters, it tests that the correct (sorted) neighbors are returned for the 
+    dst nodes, and that each of the neighbors has the correct probability. 
+    """
+    @parameterized.expand([
+        ('probabilities_g1_to_g2',  # comment
+         'g1', 'g2',                # src and dst nodes
+         1, 1, 1,                   # p, q and gamma, respectively
+         ['UniprotKB:1234', 'g1', 'g3', 'p2'], # expected neighbors of dst (order must match probs below)
+         [                          # expected probabilities for each neighbor, with calculations:
+             1.0/3.0, # prob from g2 to p1: ((1/2)/2)*20 = 5 --> 5/7.5 = 1/3 (weight of edge:20)
+             0.25,     # prob from g2 to g1: (1-1/2)/2 = 1/4
+             0.25,     # prob from g2 to g3: (1-1/2)/2 = 1/4
+             1.0/6.0   # prob from g2 to p2: ((1/2)/2)*10 = 2.5 --> 2.5/7.5 = 1/6 (weight of edge:10)
+         ]),
+        ('probabilities_g1_to_g4',
+         'g1', 'g4',
+         1, 1, 1,
+         ['d2', 'g1', 'g3', 'p4'],
+         [
+             1.0/3.0,  # prob from g4 to d2: gamma/number of node types of neighbors of g4 = 1/3
+             1.0/6.0,  # prob from g4 to g1: (1-2/3)/2 = 1/6
+             1.0/6.0,  # prob from g4 to g3: (1-2/3)/2 = 1/6
+             1.0/3.0  # prob from g4 to p4: 1/3
+         ]),
+        ('probabilities_g2_to_p2',
+         'g2', 'p2',
+         1, 1, 1,
+         ['g2', 'UniprotKB:1234', 'p3', 'p4'],
+         [
+             1.0/2.0,  # prob from p2 to g2: 1/2
+             1.0/6.0,  # prob from p2 to 'UniprotKB:1234': (1-1/2)/3 = 1/6
+             1.0/6.0,  # prob from p2 to p3: (1-1/2)/3 = 1/6
+             1.0/6.0   # prob from p2 to p4: (1-1/2)/3 = 1/6
+         ]),
+        ('probabilities_g2_to_p2_gamma_1_8ths',
+         'g2', 'p2',
+         1, 1, 1.0/8.0,
+         ['g2', 'UniprotKB:1234', 'p3', 'p4'],
+         [
+              1.0/16.0,   # prob from g4 to d2: gamma/3 = 1/24
+              15.0/48.0,  # prob from g4 to g1: (1- 2*gamma/3)/2 = 11/24
+              15.0/48.0,  # prob from g4 to g3: (1- 2*gamma/3)/2 = 11/24
+              15.0/48.0  # prob from g4 to p4: gamma/3 = 1/24
+         ]),
+        ('probabilities_g1_to_g4_gamma_1_8ths',
+         'g1', 'g4',
+         1, 1, 1.0/8.0,
+         ['d2', 'g1', 'g3', 'p4'],
+         [
+             1.0/24.0,   # prob from g4 to d2: gamma/3 = 1/24
+             11.0/24.0,  # prob from g4 to g1: (1- 2*gamma/3)/2 = 11/24
+             11.0/24.0,  # prob from g4 to g3: (1- 2*gamma/3)/2 = 11/24
+             1.0/24.0    # prob from g4 to p4: gamma/3 = 1/24
+         ]),
+        ('probabilities_g1_to_g4_gamma_7_8ths',
+         'g1', 'g4',
+         1, 1, 7.0/8.0,
+         ['d2', 'g1', 'g3', 'p4'],
+         [
+              7.0/24.0,   # prob from g4 to d2: gamma/3 = 7/24
+              10.0/48.0,  # prob from g4 to g1: (1-2gamma/3)/2 = 10/48
+              10.0/48.0,  # prob from g4 to g3: (1-2gamma/3)/2 = 10/48
+              7.0/24.0    # prob from g4 to p4: gamma/3 = 7/24
+         ]),
+    ])
+    def test_raw_probs_simple_graph1(self,
+                                     comment,
+                                     src, dst,  # src and dst nodes
+                                     p, q, gamma,  # p, q, gamma hyperparameters
+                                     expected_neighbors,
+                                     expected_probs,
+                                     ):
         g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        src = 'g1'
-        dst = 'g4'
         [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
         self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from g4: d2, g1, g3, p4
         self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0/3.0, original_probs[0])#prob from g4 to d2: gamma/number of node types of neighbors of g4
-        # = 1/3
-        self.assertAlmostEqual(1.0/6.0, original_probs[1])# prob from g4 to g1: (1-2/3)/2 = 1/6
-        self.assertAlmostEqual(1.0/6.0, original_probs[2])#prob from g4 to g3: (1-2/3)/2 = 1/6
-        self.assertAlmostEqual(1.0/3.0, original_probs[3])#prob from g4 to p4: 1/3
+        sorted_neighbors = self.graph.neighbors(dst)
 
-    def test_raw_probs_simple_graph_3(self):
-        p = 1
-        q = 1
-        gamma = 1
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        src = 'g2'
-        dst = 'p2'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from p2: g1, p1, p3, p4
-        self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 2.0, original_probs[0]) #prob from p2 to g1: 1/2
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[1]) #prob from p2 to p1: (1-1/2)/3 = 1/6
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[2])#prob from p2 to p3: (1-1/2)/3 = 1/6
-        self.assertAlmostEqual(1.0 / 6.0, original_probs[3])#prob from p2 to p4: (1-1/2)/3 = 1/6
+        actual_probs = calculate_total_probs(j_alias, q_alias)
+        actual_probs_dict = dict(zip(sorted_neighbors, actual_probs))
 
-    def test_raw_probs_simple_graph_4(self):
-        p = 1
-        q = 1
-        gamma = 1.0/8.0
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        src = 'g2'
-        dst = 'p2'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from p2: g1, p1, p3, p4
-        self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 16.0, original_probs[0]) #prob from p2 to g1: gamma/2 = (1/8)/2 = 1/16
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[1])#prob from p2 to p1: (1-gamma/2)/3 = (15/16)/3 = 15/48
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[2])#prob from p2 to p3: (1-gamma/2)/3 = (15/16)/3 = 15/48
-        self.assertAlmostEqual(15.0 / 48.0, original_probs[3])#prob from p2 to p4: (1-gamma/2)/3 = (15/16)/3 = 15/48
+        self.assertEqual(len(expected_probs), len(actual_probs),
+                         "Probability list isn't the expected length")
+        self.assertCountEqual(expected_neighbors, sorted_neighbors,
+                              "Didn't get expected neighbors")
 
-    def test_raw_probs_simple_graph_5(self):
-        p = 1
-        q = 1
-        gamma = 1.0 / 8.0
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        src = 'g1'
-        dst = 'g4'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from g4: d2, g1, g3, p4
-        self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(1.0 / 24.0, original_probs[0])#prob from g4 to d2: gamma/3 = 1/24
-        self.assertAlmostEqual(11.0 / 24.0, original_probs[1])#prob from g4 to g1: (1- 2*gamma/3)/2 = 11/24
-        self.assertAlmostEqual(11.0 / 24.0, original_probs[2])#prob from g4 to g3: (1- 2*gamma/3)/2 = 11/24
-        self.assertAlmostEqual(1.0 / 24.0, original_probs[3])#prob from g4 to p4: gamma/3 = 1/24
+        expected_probs_dict = dict(zip(expected_neighbors, expected_probs))
 
-    def test_raw_probs_simple_graph_6(self):
-        p = 1
-        q = 1
-        gamma = 7.0 / 8.0
-        g = N2vGraph(self.graph, p, q, gamma, doxn2v=True)
-        src = 'g1'
-        dst = 'g4'
-        [j_alias, q_alias] = g.get_alias_edge_xn2v(src, dst)
-        self.assertEqual(len(j_alias), len(q_alias))
-        # outgoing edges from g4: d2, g1, g3, p4
-        self.assertEqual(4, len(j_alias))
-        # recreate the original probabilities. They should be a vector of length 4.
-        original_probs = calculate_total_probs(j_alias, q_alias)
-        self.assertAlmostEqual(7.0 / 24.0, original_probs[0]) #prob from g4 to d2: gamma/3 = 7/24
-        self.assertAlmostEqual(10.0 / 48.0, original_probs[1])#prob from g4 to g1: (1-2gamma/3)/2 = 10/48
-        self.assertAlmostEqual(10.0 / 48.0, original_probs[2])#prob from g4 to g3: (1-2gamma/3)/2 = 10/48
-        self.assertAlmostEqual(7.0 / 24.0, original_probs[3])#prob from g4 to p4: gamma/3 = 7/24
+        for key in expected_probs_dict.keys():
+            self.assertAlmostEqual(expected_probs_dict[key], actual_probs_dict[key])
 
 
 class TestHetGraph(TestCase):
 
     def setUp(self):
-        inputfile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(inputfile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+        edge_file = os.path.join(data_dir, 'small_het_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_het_graph_nodes.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')
@@ -288,8 +284,13 @@ class TestHetGraph(TestCase):
 class TestHetGraph2(TestCase):
 
     def setUp(self):
-        infile = os.path.join(os.path.dirname(__file__), 'data', 'small_het_graph.txt')
-        g = CSFGraph(infile)
+        data_dir = os.path.join(os.path.dirname(__file__), 'data')
+
+        edge_file = os.path.join(data_dir, 'small_het_graph_edges.tsv')
+        node_file = os.path.join(data_dir, 'small_het_graph_nodes.tsv')
+
+        g = CSFGraph(edge_file=edge_file, node_file=node_file)
+
         self.graph = g
         self.nodes = g.nodes()
         self.g1index = self.__get_index('g1')

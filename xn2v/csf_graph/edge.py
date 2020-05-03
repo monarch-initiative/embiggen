@@ -5,32 +5,31 @@ class Edge:
     Attributes:
         node_a: A string containing a node (e.g. "g1").
         node_b: A string containing a node (e.g. "g2").
+        edge_type: A string specifying edge type, preferably an association from the
+        biolink model - either biolink:Association, or one of it's children. See here:
+        https://biolink.github.io/biolink-model/docs/Association.html
         weight: A float representing an edge weight.
     """
 
-    def __init__(self, n_a: str, n_b: str, w: float):
+    def __init__(self, n_a: str, n_b: str,  w: float, e_t: str='biolink:Association'):
         self.node_a: str = n_a
         self.node_b: str = n_b
         self.weight: float = w
+        self.edge_type: str = e_t
 
     def get_edge_type_string(self):
-        """Extracts the first character from an input string. The goal of this method is to help with summarizing the
+        """Retrieves the edge type. The goal of this method is to help with summarizing the
         output of the graph, by providing a way to show how many homogeneous and how many heterogeneous edges there are.
 
         Assumptions:
-            - Nodes types are coded using the first characters of the node string. For instance, g1-g3 would
-              we coded as 'gg' and 'g1-p45' would be coded as 'gp'.
             - The nodes are from an undirected graph. This matters because each representative node character is sorted
               alphabetically.
 
         Returns:
-            edge_type: A string containing the first character from each nodes (e.g. node_a="g1" and node_b="g2" -->
-                "gg"). Note that the node characters are sorted alphabetically prior to being joined.
+            edge_type: A string containing the edge type
         """
 
-        edge_type = ''.join(sorted([self.node_a[0], self.node_b[0]]))
-
-        return edge_type
+        return self.edge_type
 
     def __hash__(self):
         """Generates a hash from a tuple containing two node strings. For example: ('g1', 'g2) is hashed.
