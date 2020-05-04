@@ -1,7 +1,6 @@
 import numpy as np  # type: ignore
 import csv
 
-
 import tensorflow as tf  # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
 from random import shuffle
@@ -17,9 +16,10 @@ class NotFitToCorpusError(Exception):
     pass
 
 
-class GloVeModelF:
+class GloVeModel:
     def __init__(self, co_oc_dict, vocab_size, embedding_size, context_size, min_occurrences=1,
-                 scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05):
+                 scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05,
+                 num_epochs=5):
         self.co_oc_dict = co_oc_dict
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
@@ -34,6 +34,7 @@ class GloVeModelF:
         self.cooccurrence_cap = cooccurrence_cap
         self.batch_size = batch_size
         self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
         self.epsilon = 0.0001
         self.center_embeddings = tf.Variable(
             tf.random.uniform([vocab_size, embedding_size], -1.0, 1.0), name='center.embeddings')
@@ -48,6 +49,7 @@ class GloVeModelF:
         self.scaling_factor = tf.constant([self.scaling_factor], dtype=tf.float32,
                                           name="scaling_factor")
         self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
+        self.embedding = None  # This variable will be initialized by the train() method
 
     def get_embeds(self, train_dataset, train_labels):
         """
@@ -107,17 +109,19 @@ class GloVeModelF:
             embed_in, embed_out, embed_bias_in, embed_bias_out = self.get_embeds(train_dataset, train_labels)
             loss = self.get_loss(weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out)
 
-        gradients = g.gradient(loss, [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias])
-        self.optimizer.apply_gradients(zip(gradients, [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias]))
+        gradients = g.gradient(loss,
+                               [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias])
+        self.optimizer.apply_gradients(
+            zip(gradients, [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias]))
         # Note that the loss returned above is an array with the same dimension as batch size. For tracking the losss,
         # we will return the sum
         return tf.math.reduce_sum(loss)
 
-    def train(self, num_epochs, log_dir=None, summary_batch_interval=1000):
+    def train(self, log_dir=None, summary_batch_interval=1000):
         batches = self.__prepare_batches()
         total_steps = 0
         losses = []
-        for epoch in range(num_epochs):
+        for epoch in range(self.num_epochs):
             shuffle(batches)
             for batch_index, batch in enumerate(batches):
                 i_s, j_s, x_ij_s = batch
@@ -126,7 +130,9 @@ class GloVeModelF:
                 current_loss = self.run_optimization(i_s, j_s, x_ij_s)
                 if batch_index % 50 == 0:
                     losses.append(current_loss)
-                    print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss))
+                    print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss.numpy()))
+        # The final embeddings are defined to be the mean of the center and context embeddings.
+        self.embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
 
     def _batchify(self, *sequences):
         for i in range(0, len(sequences[0]), self.batch_size):
@@ -140,44 +146,3 @@ class GloVeModelF:
                          for word_ids, count in self.co_oc_dict.items()]
         i_indices, j_indices, counts = zip(*cooccurrences)
         return list(self._batchify(i_indices, j_indices, counts))
-
-
-## For testing purposes, run it here
-
-sentences = []
-stopwords = ["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at",
-             "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "could", "did", "do",
-             "does", "doing", "down", "during", "each", "few", "for", "from", "further", "had", "has", "have", "having",
-             "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how",
-             "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "it", "it's", "its", "itself",
-             "let's", "me", "more", "most", "my", "myself", "nor", "of", "on", "once", "only", "or", "other", "ought",
-             "our", "ours", "ourselves", "out", "over", "own", "same", "she", "she'd", "she'll", "she's", "should",
-             "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then",
-             "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through",
-             "to", "too", "under", "until", "up", "very", "was", "we", "we'd", "we'll", "we're", "we've", "were",
-             "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why",
-             "why's", "with", "would", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself",
-             "yourselves"]
-with open("/home/peter/PycharmProjects/N2V/xn2v/tmp/bbc-text.csv", 'r') as csvfile:
-    reader = csv.reader(csvfile, delimiter=',')
-    next(reader)
-    for row in reader:
-        sentence = row[1]
-        for word in stopwords:
-            token = " " + word + " "
-            sentence = sentence.replace(token, " ")
-        sentences.append(sentence)
-print("Number of sentences: %d" % len(sentences))
-print(sentences[0])
-
-from xn2v import TextCooccurrenceEncoder
-path = "/home/peter/data/n2v/treasure-island.txt"
-with open(path, 'r') as file:
-    tisland = file.read().replace('\n', '')
-vocab_size=25000
-tco = TextCooccurrenceEncoder(path, window_size=7, vocab_size=vocab_size)
-cooc_dict, word_counts, word_index, reverse_dictionary  = tco.build_dataset()
-
-batch_size = 10
-gf = GloVeModelF(co_oc_dict=cooc_dict, vocab_size=vocab_size, embedding_size=50, context_size=5)
-gf.train(num_epochs=5)
