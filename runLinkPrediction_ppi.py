@@ -83,7 +83,7 @@ def parse_args():
     parser.add_argument('--type', nargs='?', default='homogen',
                         help="Type of graph (homogen/heterogen)")
 
-    parser.add_argument('--w2v-model', nargs='?', default='Skipgram',
+    parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
 
     parser.add_argument('--num_steps', type=int, default=100000,
