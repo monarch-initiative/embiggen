@@ -1,6 +1,7 @@
 import argparse
-from xn2v import CSFGraph
+from xn2v import CSFGraph, CooccurrenceEncoder
 from xn2v import N2vGraph
+from xn2v.glove import GloVeModel
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPredictionWithValidation
@@ -111,17 +112,24 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
-    if w2v_model == "Skipgram":
-        model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
-                                 embedding_size=args.embedding_size, skip_window=args.skip_window)
-    elif w2v_model == "CBOW":
-        model = ContinuousBagOfWordsWord2Vec(walks, worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_steps=args.num_steps,
-                                             embedding_size=args.embedding_size, skip_window=args.skip_window)
+    if w2v_model.lower() == "skipgram":
+        model = SkipGramWord2Vec(walks,
+                                 worddictionary=worddictionary,
+                                 reverse_worddictionary=reverse_worddictionary,
+                                 num_steps=args.num_steps)
+    elif w2v_model.lower() == "cbow":
+        model = ContinuousBagOfWordsWord2Vec(walks,
+                                             worddictionary=worddictionary,
+                                             reverse_worddictionary=reverse_worddictionary,
+                                             num_steps=args.num_steps)
+    elif w2v_model.lower() == "glove":
+        print("GloVe analysis ")
+        n_nodes = pos_train_graph.node_count()
+        cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
+        cooc_dict = cencoder.build_dataset()
+        model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=50, context_size=2, num_epochs=5)
     else:
-        print("[ERROR] enter Skipgram or CBOW")
-        sys.exit(1)
+        raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
 
     model.train()
 
@@ -147,8 +155,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
     lp.predict_links()
     lp.output_classifier_results()
     lp.output_edge_node_information()
-    lp.predicted_ppi_links()
-    lp.predicted_ppi_non_links()
+    #lp.predicted_ppi_links()
+    #lp.predicted_ppi_non_links()
 
 
 def read_graphs():

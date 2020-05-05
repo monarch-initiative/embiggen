@@ -138,7 +138,7 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     lp.prepare_labels_test_training()
     lp.predict_links()
     lp.output_classifier_results()
-    lp.output_edge_node_information()
+    #lp.output_edge_node_information()
     # lp.predicted_ppi_links()
     # lp.predicted_ppi_non_links()
 
@@ -165,8 +165,7 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print(
-        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}, skip_window={}, dimension={}"
+    print( "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}, skip_window={}, dimension={}"
             .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps, args.skip_window,
                     args.embedding_size))
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
