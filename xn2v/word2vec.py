@@ -441,7 +441,7 @@ class SkipGramWord2Vec(Word2Vec):
 
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """
-    Class to run word2vec using skip grams
+    Class to run word2vec using CBOW
     """
 
     def __init__(self,
