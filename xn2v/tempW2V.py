@@ -3,7 +3,7 @@ import argparse
 import os
 import matplotlib.pyplot as plt  # type: ignore
 
-from xn2v.text_encoder_tf import TextEncoder
+from xn2v.text_encoder import TextEncoder
 from xn2v import SkipGramWord2Vec
 from xn2v import ContinuousBagOfWordsWord2Vec
 from xn2v.csf_graph.csf_graph import CSFGraph
