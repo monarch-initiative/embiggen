@@ -9,7 +9,7 @@ import tensorflow as tf  # type: ignore
 
 from collections import defaultdict
 from multiprocessing import Pool
-from typing import Dict
+from typing import Dict, Tuple
 
 log = logging.getLogger("xn2v.log")
 
@@ -45,6 +45,7 @@ class N2vGraph:
         self.p = p
         self.q = q
         self.gamma = gamma
+        self.random_walks_map: Dict[Tuple, tf.RaggedTensor] = {}
 
         if doxn2v:
             self.__preprocess_transition_probs_xn2v()
@@ -82,28 +83,33 @@ class N2vGraph:
 
         return walk
 
-    def simulate_walks(self, num_walks: int, walk_length: int) -> tf.RaggedTensor:
+    def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
         Args:
             num_walks: number of individual walks to take
             walk_length: length of one walk (number of nodes)
+            use_cache: whether or not to use random walks that are cached for the given num_walks and walk_length
         Returns:
             walks: A list of nodes, where each list constitutes a random walk.
         """
+        key = (num_walks, walk_length)
+        if use_cache and key in self.random_walks_map:
+            walks_tensor = self.random_walks_map[key]
+        else:
+            g = self.g
+            walks = []
+            nodes = g.nodes_as_integers()  # this is a list
+            log.info('Walk iteration:')
 
-        g = self.g
-        walks = []
-        nodes = g.nodes_as_integers()  # this is a list
-        log.info('Walk iteration:')
+            for walk_iter in range(1, num_walks+1):
+                print("{}/{}".format(walk_iter, num_walks))
+                random.shuffle(nodes)
+                for node in nodes:
+                    walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
+            walks_tensor = tf.ragged.constant(walks)
+            self.random_walks_map[key] = walks_tensor
 
-        for walk_iter in range(1, num_walks+1):
-            print("{}/{}".format(walk_iter, num_walks))
-            random.shuffle(nodes)
-            for node in nodes:
-                walks.append(self.node2vec_walk(walk_length=walk_length,
-                                                start_node=node))
-
-        return tf.ragged.constant(walks)
+        return walks_tensor
 
     def get_alias_edge(self, edge):
         """Get the alias edge setup lists for a given edge.
@@ -427,4 +433,3 @@ class N2vGraph:
         """
 
         return 'Graph'
-
