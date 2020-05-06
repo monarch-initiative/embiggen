@@ -10,7 +10,7 @@ from sklearn.metrics import roc_auc_score, average_precision_score  # type: igno
 from xn2v.utils import load_embeddings
 
 
-# import logging
+import logging
 # import os
 
 
@@ -95,14 +95,15 @@ class LinkPredictionWithValidation:
         self.test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
         # Create test-set edge labels: 1 = true edge, 0 = false edge
         self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
-        print('get test edge labels')
+        logging.info("get test edge labels")
 
-        print("[INFO]: Training edges (positive): {}".format(len(pos_train_edge_embs)))
-        print("[INFO]: Training edges (negative): {}".format(len(neg_train_edge_embs)))
-        print("[INFO]: Validation edges (positive): {}".format(len(pos_valid_edge_embs)))
-        print("[INFO]: Validation edges (negative): {}".format(len(neg_valid_edge_embs)))
-        print("[INFO]: Test edges (positive): {}".format(len(pos_test_edge_embs)))
-        print("[INFO]: Test edges (negative): {}".format(len(neg_test_edge_embs)))
+        logging.info("Training edges (positive): {}".format(len(pos_train_edge_embs)))
+        logging.info("Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        logging.info("Validation edges (positive): {}".format(len(pos_valid_edge_embs)))
+        logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)))
+        logging.info("Test edges (positive): {}".format(len(pos_test_edge_embs)))
+        logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)))
+
 
     def predict_links(self):
         """
@@ -150,27 +151,27 @@ class LinkPredictionWithValidation:
         :return: positive test/validation edges and their prediction, 1: predicted correctly, 0: otherwise
         """
 
-        print("positive validation edges and their prediction:")
+        logging.info("positive validation edges and their prediction:")
         for i in range(len(self.pos_valid_edges)):
-            print(self.pos_valid_edges[i], self.validation_predictions[i])
+            logging.info("edge {} prediction {}".format(self.pos_valid_edges[i], self.validation_predictions[i]))
 
-        print("positive test edges and their prediction:")
+        logging.info("positive test edges and their prediction:")
         for i in range(len(self.pos_test_edges)):
-            print(self.pos_test_edges[i], self.test_predictions[i])
+            logging.info("edge {} prediction {}".format(self.pos_test_edges[i], self.test_predictions[i]))
 
     def predicted_ppi_non_links(self):
         """
         :return: negative test edges (non-edges) and their prediction, 0: predicted correctly, 1: otherwise
         """
-        print("negative validation edges and their prediction:")
+        logging.info("negative validation edges and their prediction:")
 
         for i in range(len(self.neg_valid_edges)):
-            print(self.neg_valid_edges[i], self.validation_predictions[i + len(self.pos_valid_edges)])
+            logging.info("edge {} prediction {}".format(self.neg_valid_edges[i], self.validation_predictions[i + len(self.pos_valid_edges)]))
 
-        print("negative test edges and their prediction:")
+        logging.info("negative test edges and their prediction:")
 
         for i in range(len(self.neg_test_edges)):
-            print(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)])
+            logging.info("edge {} prediction {}".format(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)]))
 
     def output_classifier_results(self):
         """
@@ -191,15 +192,15 @@ class LinkPredictionWithValidation:
                     2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
         # f1-score =2 * TP / (2 * TP + FP + FN)
 
-        print("predictions for training set:")
-        print("predictions (training): {}".format(str(self.train_predictions)))
-        print("confusion matrix (training): {}".format(str(train_conf_matrix)))
-        print('Accuracy (validation) : {}'.format(train_accuracy))
-        print('Specificity (validation): {}'.format(train_specificity))
-        print('Sensitivity (validation): {}'.format(train_sensitivity))
-        print('F1-score (validation): {}'.format(train_f1_score))
-        print("node2vec Test ROC score (training): {} ".format(str(self.train_roc)))
-        print("node2vec Test AP score (training): {} ".format(str(self.train_average_precision)))
+        logging.info("predictions for training set:")
+        logging.info("predictions (training): {}".format(str(self.train_predictions)))
+        logging.info("confusion matrix (training): {}".format(str(train_conf_matrix)))
+        logging.info('Accuracy (validation) : {}'.format(train_accuracy))
+        logging.info('Specificity (validation): {}'.format(train_specificity))
+        logging.info('Sensitivity (validation): {}'.format(train_sensitivity))
+        logging.info('F1-score (validation): {}'.format(train_f1_score))
+        logging.info("node2vec Test ROC score (training): {} ".format(str(self.train_roc)))
+        logging.info("node2vec Test AP score (training): {} ".format(str(self.train_average_precision)))
 
         valid_conf_matrix = self.validation_confusion_matrix
         total = sum(sum(valid_conf_matrix))
@@ -209,16 +210,16 @@ class LinkPredictionWithValidation:
         valid_f1_score = (2.0 * valid_conf_matrix[1,1]) / (2.0 * valid_conf_matrix[1,1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
         #f1-score =2 * TP / (2 * TP + FP + FN)
 
-        print("predictions for validation set:")
-        print("predictions (validation): {}".format(str(self.validation_predictions)))
-        print("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
-        print('Accuracy (validation) : {}'.format(valid_accuracy))
-        print('Specificity (validation): {}'.format(valid_specificity))
-        print('Sensitivity (validation): {}'.format(valid_sensitivity))
-        print('F1-score (validation): {}'.format(valid_f1_score))
+        logging.info("predictions for validation set:")
+        logging.info("predictions (validation): {}".format(str(self.validation_predictions)))
+        logging.info("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
+        logging.info('Accuracy (validation) : {}'.format(valid_accuracy))
+        logging.info('Specificity (validation): {}'.format(valid_specificity))
+        logging.info('Sensitivity (validation): {}'.format(valid_sensitivity))
+        logging.info('F1-score (validation): {}'.format(valid_f1_score))
 
-        print("node2vec Test ROC score (validation): {} ".format(str(self.valid_roc)))
-        print("node2vec Test AP score (validation): {} ".format(str(self.valid_average_precision)))
+        logging.info("node2vec Test ROC score (validation): {} ".format(str(self.valid_roc)))
+        logging.info("node2vec Test AP score (validation): {} ".format(str(self.valid_average_precision)))
 
         test_conf_matrix = self.test_confusion_matrix
         total = sum(sum(test_conf_matrix))
@@ -227,15 +228,15 @@ class LinkPredictionWithValidation:
         test_sensitivity = test_conf_matrix[1,1] / (test_conf_matrix[1,0] + test_conf_matrix[1,1])
         test_f1_score = (2.0 * test_conf_matrix[1,1]) / (2.0 * test_conf_matrix[1,1] + test_conf_matrix[0, 1] + test_conf_matrix[1, 0])
 
-        print("predictions for test set:")
-        print("predictions (test): {}".format(str(self.test_predictions)))
-        print("confusion matrix (test): {}".format(str(test_conf_matrix)))
-        print('Accuracy (test): {}'.format(test_accuracy))
-        print('Specificity (test): {}'.format(test_specificity))
-        print('Sensitivity (test): {}'.format(test_sensitivity))
-        print('F1-score (test): {}'.format(test_f1_score))
-        print("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
-        print("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
+        logging.info("predictions for test set:")
+        logging.info("predictions (test): {}".format(str(self.test_predictions)))
+        logging.info("confusion matrix (test): {}".format(str(test_conf_matrix)))
+        logging.info('Accuracy (test): {}'.format(test_accuracy))
+        logging.info('Specificity (test): {}'.format(test_specificity))
+        logging.info('Sensitivity (test): {}'.format(test_sensitivity))
+        logging.info('F1-score (test): {}'.format(test_f1_score))
+        logging.info("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
+        logging.info("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
         """
@@ -274,7 +275,7 @@ class LinkPredictionWithValidation:
                 # belong to each edge
                 edge_emb = np.power((emb1 - emb2), 2)
             else:
-                print("[ERROR]You need to enter hadamard, average, weightedL1, weightedL2")
+                logging.error("Enter hadamard, average, weightedL1, weightedL2")
                 sys.exit(1)
             embs.append(edge_emb)
         embs = np.array(embs)
@@ -300,9 +301,9 @@ class LinkPredictionWithValidation:
                 nodes.add(edge[0])
                 nodes.add(edge[1])
 
-            print("##### edge/node diagnostics for {} #####".format(group))
-            print("{}: number of  edges : {}".format(group, num_edges))
-            print("{}: number of nodes : {}".format(group, len(nodes)))
+            logging.info("##### edge/node diagnostics for {} #####".format(group))
+            logging.info("{}: number of  edges : {}".format(group, num_edges))
+            logging.info("{}: number of nodes : {}".format(group, len(nodes)))
 
         else:
             num_gene_gene = 0
@@ -340,14 +341,14 @@ class LinkPredictionWithValidation:
                     num_prot += 1
                 elif node.startswith("d"):
                     num_dis += 1
-            print("##### edge/node diagnostics for {} #####".format(group))
-            print("[INFO]{}: number of gene-gene edges : {}".format(group, num_gene_gene))
-            print("[INFO]{}: number of gene-dis edges : {}".format(group, num_gene_dis))
-            print("[INFO]{}: number of gene-prot edges : {}".format(group, num_gene_prot))
-            print("[INFO]{}: number of prot_prot edges : {}".format(group, num_prot_prot))
-            print("[INFO]{}: number of prot_dis edges : {}".format(group, num_prot_dis))
-            print("[INFO]{}: number of dis_dis edges : {}".format(group, num_dis_dis))
-            print("[INFO]{}: number of gene nodes : {}".format(group, num_gene))
-            print("[INFO]{}: number of protein nodes : {}".format(group, num_prot))
-            print("[INFO]{}: number of disease nodes : {}".format(group, num_dis))
-            print("##########")
+            logging.info("##### edge/node diagnostics for {} #####".format(group))
+            logging.info("{}: number of gene-gene edges : {}".format(group, num_gene_gene))
+            logging.info("{}: number of gene-dis edges : {}".format(group, num_gene_dis))
+            logging.info("{}: number of gene-prot edges : {}".format(group, num_gene_prot))
+            logging.info("{}: number of prot_prot edges : {}".format(group, num_prot_prot))
+            logging.info("{}: number of prot_dis edges : {}".format(group, num_prot_dis))
+            logging.info("{}: number of dis_dis edges : {}".format(group, num_dis_dis))
+            logging.info("{}: number of gene nodes : {}".format(group, num_gene))
+            logging.info("{}: number of protein nodes : {}".format(group, num_prot))
+            logging.info("{}: number of disease nodes : {}".format(group, num_dis))
+            logging.info("##########")

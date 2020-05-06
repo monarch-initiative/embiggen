@@ -5,20 +5,18 @@ from xn2v.glove import GloVeModel
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
-import xn2v
 from xn2v.utils import write_embeddings, serialize, deserialize
-import sys
 
 
-# import os
-# import logging
+import os
+import logging
 #
-# handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-# formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-# handler.setFormatter(formatter)
-# log = logging.getLogger()
-# log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-# log.addHandler(handler)
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+handler.setFormatter(formatter)
+log = logging.getLogger()
+log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+log.addHandler(handler)
 
 
 def parse_args():
@@ -58,7 +56,7 @@ def parse_args():
     parser.add_argument('--skip_window', type=int, default=3,
                         help='Context size for optimization. Default is 3.')
 
-    parser.add_argument('--epochs', default=1, type=int,
+    parser.add_argument('--num_epochs', default=1, type=int,
                         help='Number of training epochs')
 
     parser.add_argument('--workers', type=int, default=8,
@@ -80,14 +78,11 @@ def parse_args():
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF or SVM")
 
-    parser.add_argument('--type', nargs='?', default='homogen',
+    parser.add_argument('--graph_type', nargs='?', default='homogen',
                         help="Type of graph (homogen/heterogen)")
 
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
-
-    parser.add_argument('--num_steps', type=int, default=100000,
-                        help='number of steps for GD.  Default is 100000.')
 
     parser.add_argument('--random_walks', type=str,
                         help='Use a cached version of random walks. \
@@ -116,21 +111,20 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     if w2v_model.lower() == "skipgram":
         model = SkipGramWord2Vec(walks,
                                  worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary,
-                                 num_steps=args.num_steps)
+                                 reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "cbow":
         model = ContinuousBagOfWordsWord2Vec(walks,
                                              worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary,
-                                             num_steps=args.num_steps)
+                                             reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "glove":
         print("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()
         cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
         cooc_dict = cencoder.build_dataset()
-        model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=50, context_size=2, num_epochs=5)
+        model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=args.embedding_size,
+                           context_size=args.skip_window, num_epochs=args.num_epochs)
     else:
-        raise ValueError('w2v_model must be "CBOW" or "SkipGram"')
+        raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
 
     model.train()
 
@@ -146,7 +140,7 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     :return: Metrics of logistic regression as the results of link prediction
     """
     lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                        args.embed_graph, args.edge_embed_method, args.classifier, args.type)
+                        args.embed_graph, args.edge_embed_method, args.classifier, args.graph_type)
 
     lp.prepare_labels_test_training()
     lp.predict_links()
@@ -178,9 +172,11 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print( "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_steps={}, skip_window={}, dimension={}"
-            .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_steps, args.skip_window,
-                    args.embedding_size))
+    print(
+        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_epochs={}, skip_window(or context size)={}, dimension={}"
+        .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_epochs, args.skip_window,
+                args.embedding_size))
+
     pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
     if args.use_cache_random_walks and args.random_walks:
         # restore post_train_g from cache
