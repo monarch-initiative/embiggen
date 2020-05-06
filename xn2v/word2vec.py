@@ -325,7 +325,7 @@ class SkipGramWord2Vec(Word2Vec):
 
         x_test = np.array(self.display_examples)
 
-        n_epochs = 2
+        n_epochs = 1
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []

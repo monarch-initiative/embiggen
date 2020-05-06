@@ -10,7 +10,7 @@ from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from xn2v.utils import load_embeddings
 
-
+import logging
 
 # handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
 # formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
@@ -81,7 +81,7 @@ class LinkPrediction(object):
                 n_lines += 1
         f.close()
         self.map_node_vector = map_node_vector
-        print("[INFO]Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
+        logging.info("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
     def prepare_labels_test_training(self):
@@ -103,12 +103,12 @@ class LinkPrediction(object):
         self.test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
         # Create test-set edge labels: 1 = true edge, 0 = false edge
         self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
-        print('get test edge labels')
+        logging.info("get test edge labels")
 
-        print("[INFO]: Total edges of training graph: {}".format(len(self.pos_train_edges)))
-        print("[INFO]: Training edges (negative): {}".format(len(neg_train_edge_embs)))
-        print("[INFO]: Test edges (positive): {}".format(len(self.pos_test_edges)))
-        print("[INFO]: Test edges (negative): {}".format(len(neg_test_edge_embs)))
+        logging.info("Total edges of training graph: {}".format(len(self.pos_train_edges)))
+        logging.info("Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        logging.info("Test edges (positive): {}".format(len(self.pos_test_edges)))
+        logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)))
 
     def predict_links(self):
         """
@@ -149,18 +149,19 @@ class LinkPrediction(object):
         """
         :return: positive test edges and their prediction, 1: predicted correctly, 0: otherwise
         """
-        print("positive test edges and their prediction:")
+        logging.info("positive test edges and their prediction:")
         for i in range(len(self.pos_test_edges)):
-            print(self.pos_test_edges[i], self.test_predictions[i])
+            logging.info("edge {} prediction {}".format(self.pos_test_edges[i], self.test_predictions[i]))
 
     def predicted_ppi_non_links(self):
         """
         :return: negative test edges (non-edges) and their prediction, 0: predicted correctly, 1: otherwise
         """
-        print("negative test edges and their prediction:")
+        logging.info("negative test edges and their prediction:")
 
         for i in range(len(self.neg_test_edges)):
-            print(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)])
+            logging.info("edge {} prediction {}".format(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)]))
+
 
     def output_classifier_results(self):
         """
@@ -184,15 +185,15 @@ class LinkPrediction(object):
                 2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
         # f1-score =2 * TP / (2 * TP + FP + FN)
 
-        print("predictions for training set:")
+        logging.info("predictions for training set:")
         #print("predictions (training): {}".format(str(self.train_predictions)))
-        print("confusion matrix (training): {}".format(str(train_conf_matrix)))
-        print('Accuracy (training) : {}'.format(train_accuracy))
-        print('Specificity (training): {}'.format(train_specificity))
-        print('Sensitivity (training): {}'.format(train_sensitivity))
-        print('F1-score (training): {}'.format(train_f1_score))
-        print("node2vec Train ROC score (training): {} ".format(str(self.train_roc)))
-        print("node2vec Train AP score (training): {} ".format(str(self.train_average_precision)))
+        logging.info("confusion matrix (training): {}".format(str(train_conf_matrix)))
+        logging.info('Accuracy (training) : {}'.format(train_accuracy))
+        logging.info('Specificity (training): {}'.format(train_specificity))
+        logging.info('Sensitivity (training): {}'.format(train_sensitivity))
+        logging.info('F1-score (training): {}'.format(train_f1_score))
+        logging.info("node2vec Train ROC score (training): {} ".format(str(self.train_roc)))
+        logging.info("node2vec Train AP score (training): {} ".format(str(self.train_average_precision)))
 
         test_confusion_matrix = self.test_confusion_matrix
         total = sum(sum(test_confusion_matrix))
@@ -204,14 +205,14 @@ class LinkPrediction(object):
         # f1-score =2 * TP / (2 * TP + FP + FN)
 
         # print("predictions: {}".format(str(self.predictions)))
-        print("predictions for test set:")
-        print("confusion matrix (test): {}".format(str(test_confusion_matrix)))
-        print('Accuracy (test): {}'.format(test_accuracy))
-        print('Specificity (test): {}'.format(test_specificity))
-        print('Sensitivity (test): {}'.format(test_sensitivity))
-        print("F1-score (test): {}".format(test_f1_score))
-        print("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
-        print("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
+        logging.info("predictions for test set:")
+        logging.info("confusion matrix (test): {}".format(str(test_confusion_matrix)))
+        logging.info('Accuracy (test): {}'.format(test_accuracy))
+        logging.info('Specificity (test): {}'.format(test_specificity))
+        logging.info('Sensitivity (test): {}'.format(test_sensitivity))
+        logging.info("F1-score (test): {}".format(test_f1_score))
+        logging.info("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
+        logging.info("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
         """
@@ -251,7 +252,7 @@ class LinkPrediction(object):
                 # belong to each edge
                 edge_emb = np.power((emb1 - emb2), 2)
             else:
-                print("[ERROR]You need to enter hadamard, average, weightedL1, weightedL2")
+                logging.error("Enter hadamard, average, weightedL1, weightedL2")
                 sys.exit(1)
             embs.append(edge_emb)
         embs = np.array(embs)
@@ -276,9 +277,9 @@ class LinkPrediction(object):
                 nodes.add(edge[0])
                 nodes.add(edge[1])
 
-            print("##### edge/node diagnostics for {} #####".format(group))
-            print("{}: number of  edges : {}".format(group, num_edges))
-            print("{}: number of nodes : {}".format(group, len(nodes)))
+            logging.info("##### edge/node diagnostics for {} #####".format(group))
+            logging.info("{}: number of  edges : {}".format(group, num_edges))
+            logging.info("{}: number of nodes : {}".format(group, len(nodes)))
 
         else:
             num_gene_gene = 0
@@ -316,14 +317,14 @@ class LinkPrediction(object):
                     num_prot += 1
                 elif node.startswith("d"):
                     num_dis += 1
-            print("##### edge/node diagnostics for {} #####".format(group))
-            print("[INFO]{}: number of gene-gene edges : {}".format(group, num_gene_gene))
-            print("[INFO]{}: number of gene-dis edges : {}".format(group, num_gene_dis))
-            print("[INFO]{}: number of gene-prot edges : {}".format(group, num_gene_prot))
-            print("[INFO]{}: number of prot_prot edges : {}".format(group, num_prot_prot))
-            print("[INFO]{}: number of prot_dis edges : {}".format(group, num_prot_dis))
-            print("[INFO]{}: number of dis_dis edges : {}".format(group, num_dis_dis))
-            print("[INFO]{}: number of gene nodes : {}".format(group, num_gene))
-            print("[INFO]{}: number of protein nodes : {}".format(group, num_prot))
-            print("[INFO]{}: number of disease nodes : {}".format(group, num_dis))
-            print("##########")
+            logging.info("##### edge/node diagnostics for {} #####".format(group))
+            logging.info("[INFO]{}: number of gene-gene edges : {}".format(group, num_gene_gene))
+            logging.info("[INFO]{}: number of gene-dis edges : {}".format(group, num_gene_dis))
+            logging.info("[INFO]{}: number of gene-prot edges : {}".format(group, num_gene_prot))
+            logging.info("[INFO]{}: number of prot_prot edges : {}".format(group, num_prot_prot))
+            logging.info("[INFO]{}: number of prot_dis edges : {}".format(group, num_prot_dis))
+            logging.info("[INFO]{}: number of dis_dis edges : {}".format(group, num_dis_dis))
+            logging.info("[INFO]{}: number of gene nodes : {}".format(group, num_gene))
+            logging.info("[INFO]{}: number of protein nodes : {}".format(group, num_prot))
+            logging.info("[INFO]{}: number of disease nodes : {}".format(group, num_dis))
+            logging.info("##########")
