@@ -11,7 +11,7 @@ from .hetnode2vec import N2vGraph
 from .kW2V import kWord2Vec
 from .link_prediction import LinkPrediction
 from .link_prediction_with_validation import LinkPredictionWithValidation
-from .text_encoder import TextEncoder
+from .text_encoder_tf import TextEncoder
 from .utils.tf_utils import TFUtilities
 from .coocurrence_encoder import CooccurrenceEncoder
 from .w2v.cbow_list_batcher import CBOWListBatcher
