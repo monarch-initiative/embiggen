@@ -5,12 +5,10 @@ from xn2v.glove import GloVeModel
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPrediction
-import xn2v
 from xn2v.utils import write_embeddings, serialize, deserialize
-import sys
 
 
-# import os
+import os
 # import logging
 #
 # handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
