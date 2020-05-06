@@ -37,7 +37,7 @@ class TestEmbeddingUtils(unittest.TestCase):
         self.model = ContinuousBagOfWordsWord2Vec(walks,
                                                   worddictionary=worddictionary,
                                                   reverse_worddictionary=self.reverse_worddictionary,
-                                                  num_steps=100)
+                                                  num_epochs=2)
 
         # create temporary directory to write data to
         self.temp_dir_loc = os.path.abspath(self.data_dir + '/temp')

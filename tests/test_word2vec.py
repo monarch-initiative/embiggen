@@ -36,7 +36,7 @@ class TestCBOWconstruction(TestCase):
         self.cbow = ContinuousBagOfWordsWord2Vec(self.walks,
                                                  worddictionary=worddictionary,
                                                  reverse_worddictionary=reverse_worddictionary,
-                                                 num_steps=100)
+                                                 num_epochs=2)
 
         self.cbow.train()
 
