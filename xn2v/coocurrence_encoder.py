@@ -1,7 +1,7 @@
 from scipy.sparse import lil_matrix  # type: ignore
 import collections
 import numpy as np  # type: ignore
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 # from xn2v import TextEncoder
 
 
