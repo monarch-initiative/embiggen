@@ -37,6 +37,7 @@ setup(
         'keras',
         'numpy>=1.16.4',
         'pandas',
+        'parameterized',
         'silence_tensorflow',
         'sklearn',
         'tensorflow>=2.0',
