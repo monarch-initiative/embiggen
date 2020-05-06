@@ -2,7 +2,7 @@ from scipy.sparse import lil_matrix  # type: ignore
 import collections
 import numpy as np  # type: ignore
 import tensorflow as tf
-from xn2v import TextEncoder
+# from xn2v import TextEncoder
 
 
 class CooccurrenceEncoder:
