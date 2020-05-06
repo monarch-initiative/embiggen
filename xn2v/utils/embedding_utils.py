@@ -13,12 +13,14 @@ Reads and Writes Embedding Data
 """
 
 # import needed libraries
+import pickle
+
 import numpy as np  # type: ignore
 import os
 import os.path
 import tensorflow as tf  # type: ignore
 
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any
 
 
 # TODO: consider updating writes_embeddings to not require id2word when writing embedding data
@@ -138,3 +140,36 @@ def load_embeddings(file_name: str) -> Dict[str, List[float]]:
         print('Finished ingesting {} lines (vectors) from {}'.format(n_lines, file_name))
 
     return embedding_data
+
+
+def serialize(obj: Any, filename: str) -> None:
+    """Serialize an object into a pickle and store into a file.
+
+    Args:
+        obj: The object to serialize
+        filename: The filename to write the pickle to
+
+    """
+    try:
+        FH = open(filename, 'wb')
+        pickle.dump(obj, FH)
+    except FileNotFoundError:
+        print(f"File {filename} not found")
+
+
+def deserialize(filename: str) -> Any:
+    """Deserialize an object from a pickle.
+
+    Args:
+        filename: The filename to read the pickle from
+
+    Returns:
+        The object
+
+    """
+    try:
+        FH = open(filename, 'rb')
+        obj = pickle.load(FH)
+        return obj
+    except FileNotFoundError:
+        print(f"File {filename} not found")

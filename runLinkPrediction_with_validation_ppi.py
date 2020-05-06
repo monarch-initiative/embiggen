@@ -5,7 +5,7 @@ from xn2v.glove import GloVeModel
 from xn2v.word2vec import SkipGramWord2Vec
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 from xn2v import LinkPredictionWithValidation
-from xn2v.utils import write_embeddings
+from xn2v.utils import write_embeddings, deserialize, serialize
 import sys
 
 
@@ -101,6 +101,19 @@ def parse_args():
     parser.add_argument('--num_steps', type=int, default=150000,
                         help='number of steps for GD.  Default is 150000.')
 
+    parser.add_argument('--random_walks', type=str,
+                        help='Use a cached version of random walks. \
+                        (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
+
+    parser.add_argument('--cache_random_walks', action='store_true',
+                        help='Cache the random walks generated from pos_train CsfGraph. \
+                        (--random_walks argument must be defined)')
+
+    parser.add_argument('--use_cache_random_walks', action='store_true',
+                        help='Use the cached version of random walks. \
+                        (--random_walks argument must be defined)\
+                        (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
+
     return parser.parse_args()
 
 
@@ -189,8 +202,21 @@ def main(args):
           .format(args.p,args.q,args.classifier, args.useGamma,args.w2v_model, args.num_steps, args.skip_window,
                   args.embedding_size))
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
-    pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
-    walks = pos_train_g.simulate_walks(args.num_walks, args.walk_length)
+    if args.use_cache_random_walks and args.random_walks:
+        # restore post_train_g from cache
+        print(f"Restore random walks from {args.random_walks}")
+        pos_train_g = deserialize(args.random_walks)
+    else:
+        # generate pos_train_g and simulate walks
+        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
+
+    pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cache_random_walks)
+
+    if args.cache_random_walks and args.random_walks:
+        print(f"Caching random walks to {args.random_walks}")
+        serialize(pos_train_g, args.random_walks)
+
+    walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
     learn_embeddings(walks, pos_train_graph, args.w2v_model)
     linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
 
