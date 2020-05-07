@@ -7,6 +7,7 @@ from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from xn2v.utils import load_embeddings
 import numpy as np  # type: ignore
+from .neural_networks import MLP, FFNN
 
 import logging
 
@@ -31,8 +32,8 @@ class LinkPrediction(object):
         embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
         edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or
             "weightedL2"
-        classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
-            or "SVM" for support vector machine
+        :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest,
+            "SVM" for support vector machine, "MLP" for a multi-layer perceptron, "FFNN" for a feed forward neural network.
          useValid:
     """
 
@@ -49,8 +50,8 @@ class LinkPrediction(object):
         :param embedded_train_graph_path: The file produced by word2vec with the nodes embedded as vectors
         :param edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or
             "weightedL2"
-        :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
-            or "SVM" for support vector machine
+        :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest,
+            "SVM" for support vector machine, "MLP" for a multi-layer perceptron, "FFNN" for a feed forward neural network.
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -152,6 +153,10 @@ class LinkPrediction(object):
             edge_classifier = LogisticRegression()
         elif self.classifier == "RF":
             edge_classifier = RandomForestClassifier()
+        elif self.classifier == "MLP":
+            edge_classifier = MLP()
+        elif self.classifier == "FFNN":
+            edge_classifier = FFNN()
         else:
             # implement linear SVM.
             model_svc = svm.LinearSVC()

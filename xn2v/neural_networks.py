@@ -228,14 +228,14 @@ class MultiModalFFNN(NeuralNetwork):
         output_train: Union[List, np.ndarray],
         left_input_test: Union[List, np.ndarray] = None,
         right_input_test: Union[List, np.ndarray] = None,
-        output_test: Union[List, np.ndarray]=None
+        output_test: Union[List, np.ndarray] = None
     ) -> pd.DataFrame:
         # Converting input values to the format
         # to be used for a multi-modal model.
         train = (
             {
-                "left_input":left_input_train,
-                "right_input":right_input_train
+                "left_input": left_input_train,
+                "right_input": right_input_train
             },
             output_train
         )
@@ -243,12 +243,12 @@ class MultiModalFFNN(NeuralNetwork):
         if all(d is not None for d in (left_input_test, right_input_test, output_test)):
             test = (
                 {
-                    "left_input":left_input_test,
-                    "right_input":right_input_test
+                    "left_input": left_input_test,
+                    "right_input": right_input_test
                 },
                 output_test
             )
         else:
             test = None
-        
+
         return super().fit(train, test)
