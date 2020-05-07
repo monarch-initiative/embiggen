@@ -1,14 +1,12 @@
 import sys
-import numpy as np   # type: ignore
 from sklearn.calibration import CalibratedClassifierCV  # type:ignore
-
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore
-from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from sklearn.ensemble import RandomForestClassifier   # type: ignore
 from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from xn2v.utils import load_embeddings
+import numpy as np  # type: ignore
 
 import logging
 
@@ -33,11 +31,10 @@ class LinkPrediction(object):
             "weightedL2"
         classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
             or "SVM" for support vector machine
-        graph_type: It can be "homogen" for homogeneous graph or "heterogen" for heterogeneous graph
     """
 
     def __init__(self, pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                 embedded_train_graph_path, edge_embedding_method, classifier, graph_type):
+                 embedded_train_graph_path, edge_embedding_method, classifier):
 
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -53,7 +50,6 @@ class LinkPrediction(object):
         self.test_edge_labels = []
         self.train_edge_embs = []
         self.classifier = classifier
-        self.graph_type = graph_type
         self.test_edge_embs = []
         self.train_predictions = []
         self.test_predictions = []
@@ -269,62 +265,14 @@ class LinkPrediction(object):
         :param group:
         :return:
         """
-        if self.graph_type == "homogen":
-            num_edges = 0
-            nodes = set()
-            for edge in edge_list:
-                num_edges += 1
-                nodes.add(edge[0])
-                nodes.add(edge[1])
+        num_edges = 0
+        nodes = set()
+        for edge in edge_list:
+            num_edges += 1
+            nodes.add(edge[0])
+            nodes.add(edge[1])
 
-            logging.info("##### edge/node diagnostics for {} #####".format(group))
-            logging.info("{}: number of  edges : {}".format(group, num_edges))
-            logging.info("{}: number of nodes : {}".format(group, len(nodes)))
+        logging.info("##### edge/node diagnostics for {} #####".format(group))
+        logging.info("{}: number of  edges : {}".format(group, num_edges))
+        logging.info("{}: number of nodes : {}".format(group, len(nodes)))
 
-        else:
-            num_gene_gene = 0
-            num_gene_dis = 0
-            num_gene_prot = 0
-            num_prot_prot = 0
-            num_prot_dis = 0
-            num_dis_dis = 0
-            num_gene = 0
-            num_prot = 0
-            num_dis = 0
-            nodes = set()
-            for edge in edge_list:
-                if edge[0].startswith("g") and edge[1].startswith("g"):
-                    num_gene_gene += 1
-                elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
-                      (edge[0].startswith("d") and edge[1].startswith("g"))):
-                    num_gene_dis += 1
-                elif ((edge[0].startswith("g") and edge[1].startswith("p")) or
-                      (edge[0].startswith("p") and edge[1].startswith("g"))):
-                    num_gene_prot += 1
-                elif edge[0].startswith("p") and edge[1].startswith("p"):
-                    num_prot_prot += 1
-                elif (edge[0].startswith("p") and edge[1].startswith("d")) or (
-                        edge[0].startswith("d") and edge[1].startswith("p")):
-                    num_prot_dis += 1
-                elif edge[0].startswith("d") and edge[1].startswith("d"):
-                    num_dis_dis += 1
-                nodes.add(edge[0])
-                nodes.add(edge[1])
-            for node in nodes:
-                if node.startswith("g"):
-                    num_gene += 1
-                elif node.startswith("p"):
-                    num_prot += 1
-                elif node.startswith("d"):
-                    num_dis += 1
-            logging.info("##### edge/node diagnostics for {} #####".format(group))
-            logging.info("[INFO]{}: number of gene-gene edges : {}".format(group, num_gene_gene))
-            logging.info("[INFO]{}: number of gene-dis edges : {}".format(group, num_gene_dis))
-            logging.info("[INFO]{}: number of gene-prot edges : {}".format(group, num_gene_prot))
-            logging.info("[INFO]{}: number of prot_prot edges : {}".format(group, num_prot_prot))
-            logging.info("[INFO]{}: number of prot_dis edges : {}".format(group, num_prot_dis))
-            logging.info("[INFO]{}: number of dis_dis edges : {}".format(group, num_dis_dis))
-            logging.info("[INFO]{}: number of gene nodes : {}".format(group, num_gene))
-            logging.info("[INFO]{}: number of protein nodes : {}".format(group, num_prot))
-            logging.info("[INFO]{}: number of disease nodes : {}".format(group, num_dis))
-            logging.info("##########")

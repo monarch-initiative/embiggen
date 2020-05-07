@@ -91,10 +91,6 @@ def parse_args():
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF or SVM")
 
-    parser.add_argument('--graph_type', nargs='?', default='homogen',
-                        help="Type of graph which is either homogen for homogeneous graph or heterogen for "
-                             "heterogeneous graph")
-
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model. It can be either Skipgram or CBOW")
 
@@ -158,8 +154,7 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
     """
     lp = LinkPredictionWithValidation(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph,
                                       neg_valid_graph,
-                                      neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier,
-                                      args.graph_type)
+                                      neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier)
 
     lp.prepare_training_validation_test_labels()
     lp.predict_links()

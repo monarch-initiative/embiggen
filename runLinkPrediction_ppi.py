@@ -78,9 +78,6 @@ def parse_args():
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF or SVM")
 
-    parser.add_argument('--graph_type', nargs='?', default='homogen',
-                        help="Type of graph (homogen/heterogen)")
-
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
 
@@ -102,7 +99,7 @@ def parse_args():
 
 def learn_embeddings(walks, pos_train_graph, w2v_model):
     """
-    Learn embeddings by optimizing the Skipgram or CBOW objective using SGD.
+    Learn embeddings by optimizing the Glove, Skipgram or CBOW objective using SGD.
     """
 
     worddictionary = pos_train_graph.get_node_to_index_map()
@@ -140,7 +137,7 @@ def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
     :return: Metrics of logistic regression as the results of link prediction
     """
     lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                        args.embed_graph, args.edge_embed_method, args.classifier, args.graph_type)
+                        args.embed_graph, args.edge_embed_method, args.classifier)
 
     lp.prepare_labels_test_training()
     lp.predict_links()

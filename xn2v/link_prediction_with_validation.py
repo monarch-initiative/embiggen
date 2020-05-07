@@ -24,7 +24,7 @@ import logging
 class LinkPredictionWithValidation:
     def __init__(self, pos_train_graph, pos_validation_graph, pos_test_graph, neg_train_graph, neg_validation_graph,
                  neg_test_graph,
-                 embedded_train_graph_path, edge_embedding_method, classifier, graph_type):
+                 embedded_train_graph_path, edge_embedding_method, classifier):
         """
         Set up for predicting links from results of node2vec analysis
         :param pos_train_graph: The training graph
@@ -39,7 +39,6 @@ class LinkPredictionWithValidation:
         :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
             or "SVM" for support
         vector machine
-        :param graph_type : It can be "homogen" for homogeneous graph or "heterogen" for heterogeneous graph
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -60,7 +59,6 @@ class LinkPredictionWithValidation:
         self.test_edge_labels = []
         self.valid_edge_labels = []
         self.classifier = classifier
-        self.graph_type = graph_type
         self.validation_predictions = []
         self.test_predictions = []
         self.test_confusion_matrix = []
@@ -293,62 +291,13 @@ class LinkPredictionWithValidation:
         :param group:
         :return:
         """
-        if self.graph_type == "homogen":
-            num_edges = 0
-            nodes = set()
-            for edge in edge_list:
-                num_edges += 1
-                nodes.add(edge[0])
-                nodes.add(edge[1])
+        num_edges = 0
+        nodes = set()
+        for edge in edge_list:
+            num_edges += 1
+            nodes.add(edge[0])
+            nodes.add(edge[1])
 
-            logging.info("##### edge/node diagnostics for {} #####".format(group))
-            logging.info("{}: number of  edges : {}".format(group, num_edges))
-            logging.info("{}: number of nodes : {}".format(group, len(nodes)))
-
-        else:
-            num_gene_gene = 0
-            num_gene_dis = 0
-            num_gene_prot = 0
-            num_prot_prot = 0
-            num_prot_dis = 0
-            num_dis_dis = 0
-            num_gene = 0
-            num_prot = 0
-            num_dis = 0
-            nodes = set()
-            for edge in edge_list:
-                if edge[0].startswith("g") and edge[1].startswith("g"):
-                    num_gene_gene += 1
-                elif ((edge[0].startswith("g") and edge[1].startswith("d")) or
-                      (edge[0].startswith("d") and edge[1].startswith("g"))):
-                    num_gene_dis += 1
-                elif ((edge[0].startswith("g") and edge[1].startswith("p")) or
-                      (edge[0].startswith("p") and edge[1].startswith("g"))):
-                    num_gene_prot += 1
-                elif edge[0].startswith("p") and edge[1].startswith("p"):
-                    num_prot_prot += 1
-                elif (edge[0].startswith("p") and edge[1].startswith("d")) or (
-                        edge[0].startswith("d") and edge[1].startswith("p")):
-                    num_prot_dis += 1
-                elif edge[0].startswith("d") and edge[1].startswith("d"):
-                    num_dis_dis += 1
-                nodes.add(edge[0])
-                nodes.add(edge[1])
-            for node in nodes:
-                if node.startswith("g"):
-                    num_gene += 1
-                elif node.startswith("p"):
-                    num_prot += 1
-                elif node.startswith("d"):
-                    num_dis += 1
-            logging.info("##### edge/node diagnostics for {} #####".format(group))
-            logging.info("{}: number of gene-gene edges : {}".format(group, num_gene_gene))
-            logging.info("{}: number of gene-dis edges : {}".format(group, num_gene_dis))
-            logging.info("{}: number of gene-prot edges : {}".format(group, num_gene_prot))
-            logging.info("{}: number of prot_prot edges : {}".format(group, num_prot_prot))
-            logging.info("{}: number of prot_dis edges : {}".format(group, num_prot_dis))
-            logging.info("{}: number of dis_dis edges : {}".format(group, num_dis_dis))
-            logging.info("{}: number of gene nodes : {}".format(group, num_gene))
-            logging.info("{}: number of protein nodes : {}".format(group, num_prot))
-            logging.info("{}: number of disease nodes : {}".format(group, num_dis))
-            logging.info("##########")
+        logging.info("##### edge/node diagnostics for {} #####".format(group))
+        logging.info("{}: number of  edges : {}".format(group, num_edges))
+        logging.info("{}: number of nodes : {}".format(group, len(nodes)))
