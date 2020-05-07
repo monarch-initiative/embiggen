@@ -1,7 +1,7 @@
-from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer
-from tensorflow.keras.callbacks import EarlyStopping
-from tensorflow.keras.metrics import AUC
+from tensorflow.keras.models import Sequential, Model  # type: ignore
+from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer  # type: ignore
+from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
+from tensorflow.keras.metrics import AUC  # type: ignore
 import pandas as pd
 import numpy as np
 from typing import Tuple, Dict, List, Union
