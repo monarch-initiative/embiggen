@@ -8,7 +8,6 @@
 """
 from .csf_graph import CSFGraph
 from .hetnode2vec import N2vGraph
-from .kW2V import kWord2Vec
 from .link_prediction import LinkPrediction
 from .link_prediction_with_validation import LinkPredictionWithValidation
 from .text_encoder import TextEncoder
@@ -21,5 +20,5 @@ from .word2vec import SkipGramWord2Vec
 
 __all__ = [
     "N2vGraph", "LinkPrediction", "LinkPredictionWithValidation", "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
-    "CBOWListBatcher", "kWord2Vec", "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
+    "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
 ]

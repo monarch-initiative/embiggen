@@ -2,7 +2,7 @@ import os.path
 
 from unittest import TestCase
 
-from xn2v.csf_graph.csf_graph_tf import CSFGraph
+from xn2v.csf_graph.csf_graph import CSFGraph
 from tests.utils.utils import gets_tensor_length, searches_tensor
 
 
