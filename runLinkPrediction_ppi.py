@@ -25,16 +25,28 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description="Run link Prediction.")
 
-    parser.add_argument('--pos_train', nargs='?', default='tests/data/ppismall/pos_train_edges',
+    parser.add_argument('--pos_train', nargs='?',
+                        default='tests/data/ppismall_with_validation/pos_train_edges_max_comp_graph',
                         help='Input positive training edges path')
 
-    parser.add_argument('--pos_test', nargs='?', default='tests/data/ppismall/pos_test_edges',
+    parser.add_argument('--pos_valid', nargs='?',
+                        default='tests/data/ppismall_with_validation/pos_validation_edges_max_comp_graph',
+                        help='Input positive validation edges path')
+
+    parser.add_argument('--pos_test', nargs='?',
+                        default='tests/data/ppismall_with_validation/pos_test_edges_max_comp_graph',
                         help='Input positive test edges path')
 
-    parser.add_argument('--neg_train', nargs='?', default='tests/data/ppismall/neg_train_edges',
+    parser.add_argument('--neg_train', nargs='?',
+                        default='tests/data/ppismall_with_validation/neg_train_edges_max_comp_graph',
                         help='Input negative training edges path')
 
-    parser.add_argument('--neg_test', nargs='?', default='tests/data/ppismall/neg_test_edges',
+    parser.add_argument('--neg_valid', nargs='?',
+                        default='tests/data/ppismall_with_validation/neg_validation_edges_max_comp_graph',
+                        help='Input negative validation edges path')
+
+    parser.add_argument('--neg_test', nargs='?',
+                        default='tests/data/ppismall_with_validation/neg_test_edges_max_comp_graph',
                         help='Input negative test edges path')
 
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
@@ -81,7 +93,7 @@ def parse_args():
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
 
-    parser.add_argument('--useValidation', dest='useValidation', action='store_false',
+    parser.add_argument('--useValidation', dest='useValidation', action='store_true',
                         help="True if validation edges are provided,"
                              "False if there are only training and test edges.")
 
@@ -93,7 +105,7 @@ def parse_args():
                         help='Cache the random walks generated from pos_train CsfGraph. \
                         (--random_walks argument must be defined)')
 
-    parser.add_argument('--use_cache_random_walks', action='store_true',
+    parser.add_argument('--use_cached_random_walks', action='store_true',
                         help='Use the cached version of random walks. \
                         (--random_walks argument must be defined)\
                         (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
@@ -143,7 +155,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
     :return: Metrics of logistic regression as the results of link prediction
     """
     lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph,
-                                      neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier, args.useValidation)
+                                      neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier,
+                                      args.useValidation)
 
     lp.prepare_edge_labels()
     lp.predict_links()
@@ -177,12 +190,14 @@ def main(args):
     :return: Result of link prediction
     """
     print(
-        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_epochs={}, skip_window(or context size)={}, dimension={}"
-        .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_epochs, args.skip_window,
-                args.embedding_size))
+        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_epochs={}, "
+        "skip_window (context size)={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
+                                                                            args.useGamma, args.w2v_model, args.num_epochs,
+                                                                            args.skip_window, args.embedding_size,
+                                                                            args.useValidation))
 
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
-    if args.use_cache_random_walks and args.random_walks:
+    if args.use_cached_random_walks and args.random_walks:
         # restore post_train_g from cache
         print(f"Restore random walks from {args.random_walks}")
         pos_train_g = deserialize(args.random_walks)
@@ -190,7 +205,7 @@ def main(args):
         # generate pos_train_g and simulate walks
         pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
 
-    pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cache_random_walks)
+    pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
 
     if args.cache_random_walks and args.random_walks:
         print(f"Caching random walks to {args.random_walks}")
