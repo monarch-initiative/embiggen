@@ -23,8 +23,7 @@ import logging
 
 class LinkPredictionWithValidation:
     def __init__(self, pos_train_graph, pos_validation_graph, pos_test_graph, neg_train_graph, neg_validation_graph,
-                 neg_test_graph,
-                 embedded_train_graph_path, edge_embedding_method, classifier):
+                 neg_test_graph, embedded_train_graph_path, edge_embedding_method, classifier):
         """
         Set up for predicting links from results of node2vec analysis
         :param pos_train_graph: The training graph
@@ -37,8 +36,7 @@ class LinkPredictionWithValidation:
         :param edge_embedding_method: The method to embed edges. It can be "hadamard", "average", "weightedL1" or
             "weightedL2"
         :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
-            or "SVM" for support
-        vector machine
+            or "SVM" for support vector machine
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()

@@ -81,6 +81,10 @@ def parse_args():
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
 
+    parser.add_argument('--useValidation', dest='useValidation', action='store_false',
+                        help="True if validation edges are provided,"
+                             "False if there are only training and test edges.")
+
     parser.add_argument('--random_walks', type=str,
                         help='Use a cached version of random walks. \
                         (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
@@ -128,24 +132,25 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
 
 
-def linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph):
+def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph):
     """
     :param pos_train_graph: positive training graph
+    :param pos_valid_graph: positive validation graph
     :param pos_test_graph: positive test graph
     :param neg_train_graph: negative training graph
+    :param neg_valid_graph: negative validation graph
     :param neg_test_graph: negative test graph
     :return: Metrics of logistic regression as the results of link prediction
     """
-    lp = LinkPrediction(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph,
-                        args.embed_graph, args.edge_embed_method, args.classifier)
+    lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph,
+                                      neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier, args.useValidation)
 
-    lp.prepare_labels_test_training()
+    lp.prepare_edge_labels()
     lp.predict_links()
     lp.output_classifier_results()
     #lp.output_edge_node_information()
-    # lp.predicted_ppi_links()
-    # lp.predicted_ppi_non_links()
-
+    #lp.predicted_ppi_links()
+    #lp.predicted_ppi_non_links()
 
 def read_graphs():
     """
@@ -154,10 +159,12 @@ def read_graphs():
     """
 
     pos_train_graph = CSFGraph(args.pos_train)
+    pos_valid_graph = CSFGraph(args.pos_valid)
     pos_test_graph = CSFGraph(args.pos_test)
     neg_train_graph = CSFGraph(args.neg_train)
+    neg_valid_graph = CSFGraph(args.neg_valid)
     neg_test_graph = CSFGraph(args.neg_test)
-    return pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph
+    return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
 
 
 def main(args):
@@ -174,7 +181,7 @@ def main(args):
         .format(args.p, args.q, args.classifier, args.useGamma, args.w2v_model, args.num_epochs, args.skip_window,
                 args.embedding_size))
 
-    pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph = read_graphs()
+    pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
     if args.use_cache_random_walks and args.random_walks:
         # restore post_train_g from cache
         print(f"Restore random walks from {args.random_walks}")
@@ -191,7 +198,7 @@ def main(args):
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
     learn_embeddings(walks, pos_train_graph, args.w2v_model)
-    linkpred(pos_train_graph, pos_test_graph, neg_train_graph, neg_test_graph)
+    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
 
 
 if __name__ == "__main__":
