@@ -235,7 +235,7 @@ class MultiModalFFNN(NeuralNetwork):
         train = (
             {
                 "left_input":left_input_train,
-                "left_input":right_input_train
+                "right_input":right_input_train
             },
             output_train
         )
@@ -244,7 +244,7 @@ class MultiModalFFNN(NeuralNetwork):
             test = (
                 {
                     "left_input":left_input_test,
-                    "left_input":right_input_test
+                    "right_input":right_input_test
                 },
                 output_test
             )
