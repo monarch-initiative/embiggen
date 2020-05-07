@@ -88,7 +88,7 @@ def parse_args():
                                                                                   "False if the graph is homogeneous.")
     parser.set_defaults(useGamma=False)
     parser.add_argument('--classifier', nargs='?', default='LR',
-                        help="Binary classifier for link prediction, it should be either LR, RF or SVM")
+                        help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
 
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
@@ -167,8 +167,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
 
 def read_graphs():
     """
-    Reads pos_train, pos_test, neg_train and neg_test edges with CSFGraph
-    :return: pos_train, pos_test, neg_train and neg_test graphs in CSFGraph format
+    Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
+    :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
     """
 
     pos_train_graph = CSFGraph(args.pos_train)

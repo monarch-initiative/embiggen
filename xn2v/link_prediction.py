@@ -33,11 +33,13 @@ class LinkPrediction(object):
             "weightedL2"
         classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
             or "SVM" for support vector machine
-         useValid:
+         use_valid: if True, link prediction is done on train,validation and test sets. If False, link prediction is done on
+         train and test sets.
+
     """
 
     def __init__(self, pos_train_graph, pos_validation_graph, pos_test_graph, neg_train_graph, neg_validation_graph,
-                 neg_test_graph, embedded_train_graph_path, edge_embedding_method, classifier, useValid):
+                 neg_test_graph, embedded_train_graph_path, edge_embedding_method, classifier, use_valid):
         """
         Set up for predicting links from results of node2vec analysis
         :param pos_train_graph: The training graph
@@ -51,6 +53,8 @@ class LinkPrediction(object):
             "weightedL2"
         :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest
             or "SVM" for support vector machine
+        :param use_valid: if True, link prediction is done on train,validation and test sets. If False, link prediction is done on
+         train and test sets.
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -71,16 +75,21 @@ class LinkPrediction(object):
         self.test_edge_labels = []
         self.valid_edge_labels = []
         self.classifier = classifier
+        self.train_predictions = []
         self.validation_predictions = []
         self.test_predictions = []
+        self.train_confusion_matrix = []
         self.test_confusion_matrix = []
         self.validation_confusion_matrix = []
         self.valid_edge_embs = None
+        self.train_roc = None
         self.valid_roc = None
+        self.train_average_precision = None
         self.valid_average_precision = None
         self.test_roc = None
         self.test_average_precision = None
-        self.useValidation = useValid
+        self.use_validation = use_valid
+
 
     def read_embeddings(self):
         """
@@ -100,7 +109,6 @@ class LinkPrediction(object):
         f.close()
         self.map_node_vector = map_node_vector
         logging.info("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
-
 
     def prepare_edge_labels(self):
 
@@ -122,7 +130,7 @@ class LinkPrediction(object):
         # Create test-set edge labels: 1 = true edge, 0 = false edge
         self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
 
-        if self.useValidation:
+        if self.use_validation:
             # Validation-set edge embeddings, labels
             pos_valid_edge_embs = self.transform(edge_list=self.pos_valid_edges, node2vector_map=self.map_node_vector)
             neg_valid_edge_embs = self.transform(edge_list=self.neg_valid_edges, node2vector_map=self.map_node_vector)
@@ -137,7 +145,7 @@ class LinkPrediction(object):
         logging.info("Test edges (positive): {}".format(len(self.pos_test_edges)))
         logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)))
 
-        if self.useValidation:
+        if self.use_validation:
             logging.info("Validation edges (positive): {}".format(len(pos_valid_edge_embs)))
             logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)))
 
@@ -165,7 +173,7 @@ class LinkPrediction(object):
         self.test_predictions = edge_classifier.predict(self.test_edge_embs)
         self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.test_predictions)
 
-        if self.useValidation:
+        if self.use_validation:
             self.validation_predictions = edge_classifier.predict(self.valid_edge_embs)
             self.validation_confusion_matrix = metrics.confusion_matrix(self.valid_edge_labels,self.validation_predictions)
 
@@ -173,7 +181,7 @@ class LinkPrediction(object):
         train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
         test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
 
-        if self.useValidation:
+        if self.use_validation:
             validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
 
         self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the training auc score
@@ -181,7 +189,7 @@ class LinkPrediction(object):
         self.train_average_precision = average_precision_score(self.train_edge_labels, train_preds)
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
-        if self.useValidation:
+        if self.use_validation:
             self.valid_roc = roc_auc_score(self.valid_edge_labels, validation_preds)  # get the auc score of validation
             self.valid_average_precision = average_precision_score(self.valid_edge_labels, validation_preds)
 
@@ -194,7 +202,7 @@ class LinkPrediction(object):
         for i in range(len(self.pos_test_edges)):
             logging.info("edge {} prediction {}".format(self.pos_test_edges[i], self.test_predictions[i]))
 
-        if self.useValidation:
+        if self.use_validation:
             logging.info("positive validation edges and their prediction:")
             for i in range(len(self.pos_valid_edges)):
                 logging.info("edge {} prediction {}".format(self.pos_valid_edges[i], self.validation_predictions[i]))
@@ -209,7 +217,7 @@ class LinkPrediction(object):
         for i in range(len(self.neg_test_edges)):
             logging.info("edge {} prediction {}".format(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)]))
 
-        if self.useValidation:
+        if self.use_validation:
             logging.info("negative validation edges and their prediction:")
 
             for i in range(len(self.neg_valid_edges)):
@@ -248,8 +256,7 @@ class LinkPrediction(object):
         logging.info("node2vec Train ROC score (training): {} ".format(str(self.train_roc)))
         logging.info("node2vec Train AP score (training): {} ".format(str(self.train_average_precision)))
 
-
-        if self.useValidation:
+        if self.use_validation:
             valid_conf_matrix = self.validation_confusion_matrix
             total = sum(sum(valid_conf_matrix))
             valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
@@ -335,7 +342,7 @@ class LinkPrediction(object):
     def output_edge_node_information(self):
         self.edge_node_information(self.pos_train_edges, "positive_training")
         self.edge_node_information(self.pos_test_edges, "positive_test")
-        if self.useValidation:
+        if self.use_validation:
             self.edge_node_information(self.pos_valid_edges, "positive_validation")
 
     def edge_node_information(self, edge_list, group):
