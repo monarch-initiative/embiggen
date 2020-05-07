@@ -43,7 +43,9 @@ setup(
         'tensorflow>=2.0',
         'nltk',
         'more_itertools',
-        'tqdm'
+        'tqdm',
+        "environments_utils",
+        "keras_tqdm"
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
