@@ -80,13 +80,6 @@ def parse_args():
     parser.add_argument('--q', type=float, default=1,
                         help='node2vec q hyperparameter. Default is 1.')
 
-    parser.add_argument('--gamma', type=float, default=1,
-                        help='hyperparameter for jumping from one network to another network '
-                             'in heterogeneous graphs. Default is 1.')
-
-    parser.add_argument('--useGamma', dest='useGamma', action='store_false', help="True if the graph is heterogeneous, "
-                                                                                  "False if the graph is homogeneous.")
-    parser.set_defaults(useGamma=False)
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
 
@@ -190,9 +183,9 @@ def main(args):
     :return: Result of link prediction
     """
     print(
-        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_epochs={}, "
+        "[INFO]: p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
         "skip_window (context size)={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
-                                                                            args.useGamma, args.w2v_model, args.num_epochs,
+                                                                            args.w2v_model, args.num_epochs,
                                                                             args.skip_window, args.embedding_size,
                                                                             args.useValidation))
 
@@ -203,7 +196,7 @@ def main(args):
         pos_train_g = deserialize(args.random_walks)
     else:
         # generate pos_train_g and simulate walks
-        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
+        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
 
     pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
 

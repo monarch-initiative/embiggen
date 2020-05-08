@@ -3,7 +3,7 @@ import os.path
 from unittest import TestCase
 
 from xn2v import CSFGraph
-from xn2v.hetnode2vec import N2vGraph
+from xn2v.random_walk_generator import N2vGraph
 from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
 
 
