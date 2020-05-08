@@ -258,3 +258,35 @@ class MultiModalFFNN(NeuralNetwork):
             test_y = None
 
         return self.fit(train_x, train_y, test_x, test_y)
+
+    def predict_proba_multi_modal(
+        self,
+        source_input: Union[List, np.ndarray],
+        destination_input: Union[List, np.ndarray],
+        output: Union[List, np.ndarray]
+    ):
+        predictions = self._model.predict_proba(
+            {
+                "source_input": source_input,
+                "destination_input": destination_input
+            },
+            output
+        )
+        return np.hstack([
+            1-predictions,
+            predictions
+        ])
+
+    def predict_multi_modal(
+        self,
+        source_input: Union[List, np.ndarray],
+        destination_input: Union[List, np.ndarray],
+        output: Union[List, np.ndarray]
+    ):
+        return self._model.predict(
+            {
+                "source_input": source_input,
+                "destination_input": destination_input
+            },
+            output
+        ).round().astype(int)
