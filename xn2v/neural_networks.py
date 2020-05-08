@@ -2,11 +2,11 @@ from tensorflow.keras.models import Sequential, Model  # type: ignore
 from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.metrics import AUC  # type: ignore
-import pandas as pd
-import numpy as np
-from typing import Tuple, Dict, List, Union
-from keras_tqdm import TQDMCallback, TQDMNotebookCallback
-from environments_utils import is_notebook
+import pandas as pd  # type: ignore
+import numpy as np  # type: ignore
+from typing import Tuple, Dict, List, Union, Optional
+from keras_tqdm import TQDMCallback, TQDMNotebookCallback  # type: ignore
+from environments_utils import is_notebook  # type: ignore
 
 
 class NeuralNetwork:
@@ -241,14 +241,14 @@ class MultiModalFFNN(NeuralNetwork):
     ) -> pd.DataFrame:
         # Converting input values to the format
         # to be used for a multi-modal model.
-        train_x = {
+        train_x: Optional[Dict] = {
                 "source_input": source_input_train,
                 "destination_input": destination_input_train
             }
         train_y = output_train
 
         if all(d is not None for d in (source_input_test, destination_input_test, output_test)):
-            test_x = {
+            test_x: Optional[Dict] = {
                 "source_input": source_input_test,
                 "destination_input": destination_input_test
             }
