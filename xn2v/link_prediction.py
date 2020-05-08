@@ -144,8 +144,13 @@ class LinkPrediction(object):
 
     def predict_links(self):
         """
-        Train  classifier on train-set edge embeddings. Classifier is LR:logistic regression or RF:random forest
-        or SVM:support vector machine. All classifiers work using default parameters.
+        Train  classifier on train-set edge embeddings. Classifier is one of:
+        LR: logistic regression
+        RF: random forest
+        SVM: support vector machine
+        MLP: multilayer perceptron
+        FFNN: feed-forward neural network
+        All classifiers work using default parameters.
         :return:
         """
 
@@ -159,6 +164,7 @@ class LinkPrediction(object):
             edge_classifier = FFNN((self.train_edge_embs.shape[-1],))
         else:
             # implement linear SVM.
+            logging.info("Using SVM (default) classifier for link prediction")
             model_svc = svm.LinearSVC()
             edge_classifier = CalibratedClassifierCV(model_svc)
 
