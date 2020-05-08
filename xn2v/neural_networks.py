@@ -62,7 +62,7 @@ class NeuralNetwork:
         )
 
     def predict_proba(self, *args, **kwargs):
-        predictions = self._model.predict_proba(*args, **kwargs)
+        predictions = self._model.predict(*args, **kwargs)
         return np.hstack([
             1-predictions,
             predictions
