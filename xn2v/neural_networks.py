@@ -264,7 +264,7 @@ class MultiModalFFNN(NeuralNetwork):
         source_input: Union[List, np.ndarray],
         destination_input: Union[List, np.ndarray]
     ):
-        predictions = self._model.predict_proba(
+        predictions = super().predict_proba(
             {
                 "source_input": source_input,
                 "destination_input": destination_input
@@ -280,7 +280,7 @@ class MultiModalFFNN(NeuralNetwork):
         source_input: Union[List, np.ndarray],
         destination_input: Union[List, np.ndarray]
     ):
-        return self._model.predict(
+        return super().predict(
             {
                 "source_input": source_input,
                 "destination_input": destination_input
