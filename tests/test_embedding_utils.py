@@ -30,7 +30,7 @@ class TestEmbeddingUtils(unittest.TestCase):
         self.reverse_worddictionary = training_graph.get_index_to_node_map()
 
         # generate random walks
-        n2v_graph = N2vGraph(training_graph, 1, 1, 1, False)
+        n2v_graph = N2vGraph(training_graph, 1, 1)
         walks = n2v_graph.simulate_walks(5, 10)
 
         # learn embeddings
