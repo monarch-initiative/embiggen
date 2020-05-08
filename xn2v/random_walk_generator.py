@@ -9,7 +9,7 @@ import tensorflow as tf  # type: ignore
 from multiprocessing import Pool
 from typing import Dict, Tuple
 
-from tqdm import trange
+from tqdm import trange  # type: ignore
 
 log = logging.getLogger("xn2v.log")
 
