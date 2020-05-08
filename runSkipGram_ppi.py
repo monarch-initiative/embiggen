@@ -15,7 +15,7 @@ p = 1
 q = 1
 gamma = 1
 useGamma = False
-graph = xn2v.hetnode2vec.N2vGraph(g, p, q, gamma, useGamma)
+graph = xn2v.random_walk_generator.N2vGraph(g, p, q, gamma, useGamma)
 
 walk_length = 80
 num_walks = 10
