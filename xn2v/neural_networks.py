@@ -199,16 +199,16 @@ class MultiModalFFNN(NeuralNetwork):
 
     def _build_model(self) -> Model:
         # Creating the two inputs
-        left_input = Input(self._input_shape, name="left_input")
-        right_input = Input(self._input_shape, name="right_input")
+        source_input = Input(self._input_shape, name="source_input")
+        destination_input = Input(self._input_shape, name="destination_input")
 
-        # Build the left module
-        left_module = self._sub_module(left_input)
-        # Build the right module
-        right_module = self._sub_module(right_input)
+        # Build the source module
+        source_module = self._sub_module(source_input)
+        # Build the destination module
+        destination_module = self._sub_module(destination_input)
 
         # Concatenating the two modules
-        middle = Concatenate()([left_module, right_module])
+        middle = Concatenate()([source_module, destination_module])
 
         # Creating the concatenation module
         hidden = Dropout(0.3)(middle)
@@ -228,29 +228,29 @@ class MultiModalFFNN(NeuralNetwork):
         head = Dense(1, activation="sigmoid")(hidden)
 
         # Building the multi-modal model.
-        return Model(inputs=[left_input, right_input], outputs=head)
+        return Model(inputs=[source_input, destination_input], outputs=head)
 
     def fit_multi_modal(
         self,
-        left_input_train: Union[List, np.ndarray],
-        right_input_train: Union[List, np.ndarray],
+        source_input_train: Union[List, np.ndarray],
+        destination_input_train: Union[List, np.ndarray],
         output_train: Union[List, np.ndarray],
-        left_input_test: Union[List, np.ndarray] = None,
-        right_input_test: Union[List, np.ndarray] = None,
+        source_input_test: Union[List, np.ndarray] = None,
+        destination_input_test: Union[List, np.ndarray] = None,
         output_test: Union[List, np.ndarray] = None
     ) -> pd.DataFrame:
         # Converting input values to the format
         # to be used for a multi-modal model.
         train_x = {
-                "left_input": left_input_train,
-                "right_input": right_input_train
+                "source_input": source_input_train,
+                "destination_input": destination_input_train
             }
         train_y = output_train
 
-        if all(d is not None for d in (left_input_test, right_input_test, output_test)):
+        if all(d is not None for d in (source_input_test, destination_input_test, output_test)):
             test_x = {
-                "left_input": left_input_test,
-                "right_input": right_input_test
+                "source_input": source_input_test,
+                "destination_input": destination_input_test
             }
             test_y = output_test
         else:
