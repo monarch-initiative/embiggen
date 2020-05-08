@@ -11,8 +11,8 @@ import numpy as np  # type: ignore
 from .neural_networks import MLP, FFNN
 
 
-#import os
-#import logging
+import os
+import logging
 
 #handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
 #formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
