@@ -42,7 +42,7 @@ def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
     print(training_graph)
     training_graph.print_edge_type_distribution()
 
-    hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q, gamma, use_gamma)
     walks = hetgraph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()
     reverse_worddictionary = training_graph.get_index_to_node_map()
@@ -110,7 +110,7 @@ def disease_link_prediction(positive_training_file,
 def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
                     walk_length, num_walks):
     training_graph = CSFGraph(training_file)
-    hetgraph = xn2v.hetnode2vec.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q, gamma, use_gamma)
 
     walks = hetgraph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()

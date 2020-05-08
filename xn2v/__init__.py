@@ -7,7 +7,7 @@
 
 """
 from .csf_graph import CSFGraph
-from .hetnode2vec import N2vGraph
+from .random_walk_generator import N2vGraph
 from .link_prediction import LinkPrediction
 from .text_encoder import TextEncoder
 from .utils.tf_utils import TFUtilities

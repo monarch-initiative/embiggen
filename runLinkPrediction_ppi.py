@@ -10,7 +10,7 @@ from xn2v.utils import write_embeddings, serialize, deserialize
 
 import os
 import logging
-#
+
 handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
@@ -80,15 +80,8 @@ def parse_args():
     parser.add_argument('--q', type=float, default=1,
                         help='node2vec q hyperparameter. Default is 1.')
 
-    parser.add_argument('--gamma', type=float, default=1,
-                        help='hyperparameter for jumping from one network to another network '
-                             'in heterogeneous graphs. Default is 1.')
-
-    parser.add_argument('--useGamma', dest='useGamma', action='store_false', help="True if the graph is heterogeneous, "
-                                                                                  "False if the graph is homogeneous.")
-    parser.set_defaults(useGamma=False)
     parser.add_argument('--classifier', nargs='?', default='LR',
-                        help="Binary classifier for link prediction, it should be either LR, RF or SVM")
+                        help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
 
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
@@ -130,7 +123,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                                              worddictionary=worddictionary,
                                              reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "glove":
-        print("GloVe analysis ")
+        logging.info("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()
         cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
         cooc_dict = cencoder.build_dataset()
@@ -167,8 +160,8 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
 
 def read_graphs():
     """
-    Reads pos_train, pos_test, neg_train and neg_test edges with CSFGraph
-    :return: pos_train, pos_test, neg_train and neg_test graphs in CSFGraph format
+    Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
+    :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
     """
 
     pos_train_graph = CSFGraph(args.pos_train)
@@ -189,26 +182,26 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print(
-        "[INFO]: p={}, q={}, classifier= {}, useGamma={}, word2vec_model={}, num_epochs={}, "
+    logging.info(
+        " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
         "skip_window (context size)={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
-                                                                            args.useGamma, args.w2v_model, args.num_epochs,
+                                                                            args.w2v_model, args.num_epochs,
                                                                             args.skip_window, args.embedding_size,
                                                                             args.useValidation))
 
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
     if args.use_cached_random_walks and args.random_walks:
         # restore post_train_g from cache
-        print(f"Restore random walks from {args.random_walks}")
+        logging.info(f"Restore random walks from {args.random_walks}")
         pos_train_g = deserialize(args.random_walks)
     else:
         # generate pos_train_g and simulate walks
-        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q, args.gamma, args.useGamma)
+        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
 
     pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
 
     if args.cache_random_walks and args.random_walks:
-        print(f"Caching random walks to {args.random_walks}")
+        logging.info(f"Caching random walks to {args.random_walks}")
         serialize(pos_train_g, args.random_walks)
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
