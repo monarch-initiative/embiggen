@@ -222,7 +222,7 @@ class LinkPrediction(object):
         elif self.classifier == "FFNN":
             edge_classifier = FFNN((self.train_edge_embs.shape[-1],))
         elif self.classifier == "MultiModalFFNN":
-            edge_classifier = MultiModalFFNN((self.train_node_embs.shape[-1],))
+            edge_classifier = MultiModalFFNN((self.train_src_embs.shape[-1],))
         else:
             # implement linear SVM.
             logging.info("Using SVM (default) classifier for link prediction")
