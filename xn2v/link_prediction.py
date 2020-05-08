@@ -236,33 +236,26 @@ class LinkPrediction(object):
                                             self.train_labels)
             self.train_predictions = edge_classifier.predict_multi_modal(
                                             self.train_src_embs,
-                                            self.train_dst_embs,
-                                            self.train_labels)
+                                            self.train_dst_embs)
             self.test_predictions = edge_classifier.predict_multi_modal(
                                             self.test_src_embs,
-                                            self.test_dst_embs,
-                                            self.test_labels)
-
+                                            self.test_dst_embs)
             if self.use_validation:
                 self.validation_predictions = edge_classifier.predict_multi_modal(
                                             self.valid_src_embs,
-                                            self.valid_dst_embs,
-                                            self.valid_labels)
+                                            self.valid_dst_embs)
             # Predicted edge scores: probability of being of class "1" (real edge)
             train_preds = edge_classifier.predict_proba_multi_modal(
                                             self.train_src_embs,
-                                            self.train_dst_embs,
-                                            self.train_labels)[:, 1]
+                                            self.train_dst_embs)[:, 1]
             test_preds = edge_classifier.predict_proba_multi_modal(
                                             self.test_src_embs,
-                                            self.test_dst_embs,
-                                            self.test_labels)[:, 1]
+                                            self.test_dst_embs)[:, 1]
 
             if self.use_validation:
                 validation_preds = edge_classifier.predict_proba_multi_modal(
                                             self.valid_src_embs,
-                                            self.valid_dst_embs,
-                                            self.valid_labels)[:, 1]
+                                            self.valid_dst_embs)[:, 1]
 
         else:
             edge_classifier.fit(self.train_edge_embs, self.train_labels)
