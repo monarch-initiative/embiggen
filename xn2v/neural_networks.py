@@ -4,7 +4,7 @@ from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.metrics import AUC  # type: ignore
 import pandas as pd
 import numpy as np
-from typing import Tuple, Dict, List, Union
+from typing import Tuple, Dict, List, Union, Optional
 from keras_tqdm import TQDMCallback, TQDMNotebookCallback
 from environments_utils import is_notebook
 
@@ -241,14 +241,14 @@ class MultiModalFFNN(NeuralNetwork):
     ) -> pd.DataFrame:
         # Converting input values to the format
         # to be used for a multi-modal model.
-        train_x = {
+        train_x: Optional[Dict] = {
                 "left_input": left_input_train,
                 "right_input": right_input_train
             }
         train_y = output_train
 
         if all(d is not None for d in (left_input_test, right_input_test, output_test)):
-            test_x = {
+            test_x: Optional[Dict] = {
                 "left_input": left_input_test,
                 "right_input": right_input_test
             }
