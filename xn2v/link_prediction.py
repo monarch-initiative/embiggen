@@ -230,7 +230,9 @@ class LinkPrediction(object):
             edge_classifier = CalibratedClassifierCV(model_svc)
 
         if self.classifier == "MultiModalFFNN":
-            pass
+            edge_classifier.fit_multi_modal(self.train_src_embs,
+                                            self.train_dst_embs,
+                                            self.train_labels)
         else:
             edge_classifier.fit(self.train_edge_embs, self.train_labels)
 
