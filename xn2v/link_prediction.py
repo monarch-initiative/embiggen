@@ -214,7 +214,10 @@ class LinkPrediction(object):
             model_svc = svm.LinearSVC()
             edge_classifier = CalibratedClassifierCV(model_svc)
 
-        edge_classifier.fit(self.train_edge_embs, self.train_labels)
+        if self.classifier == "MultiModalFFNN":
+            pass
+        else:
+            edge_classifier.fit(self.train_edge_embs, self.train_labels)
 
         self.train_predictions = edge_classifier.predict(self.train_edge_embs)
         self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels, self.train_predictions)
