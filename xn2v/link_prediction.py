@@ -230,28 +230,60 @@ class LinkPrediction(object):
             edge_classifier = CalibratedClassifierCV(model_svc)
 
         if self.classifier == "MultiModalFFNN":
+            # multimodalFFNN fits and predicts with different args from the other NNs
             edge_classifier.fit_multi_modal(self.train_src_embs,
                                             self.train_dst_embs,
                                             self.train_labels)
+            self.train_predictions = edge_classifier.predict_multi_modal(
+                                            self.train_src_embs,
+                                            self.train_dst_embs,
+                                            self.train_labels)
+            self.test_predictions = edge_classifier.predict_multi_modal(
+                                            self.test_src_embs,
+                                            self.test_dst_embs,
+                                            self.test_labels)
+
+            if self.use_validation:
+                self.validation_predictions = edge_classifier.predict_multi_modal(
+                                            self.valid_src_embs,
+                                            self.valid_dst_embs,
+                                            self.valid_labels)
+            # Predicted edge scores: probability of being of class "1" (real edge)
+            train_preds = edge_classifier.predict_proba_multi_modal(
+                                            self.train_src_embs,
+                                            self.train_dst_embs,
+                                            self.train_labels)[:, 1]
+            test_preds = edge_classifier.predict_proba_multi_modal(
+                                            self.test_src_embs,
+                                            self.test_dst_embs,
+                                            self.test_labels)[:, 1]
+
+            if self.use_validation:
+                validation_preds = edge_classifier.predict_proba_multi_modal(
+                                            self.valid_src_embs,
+                                            self.valid_dst_embs,
+                                            self.valid_labels)[:, 1]
+
         else:
             edge_classifier.fit(self.train_edge_embs, self.train_labels)
+            self.train_predictions = edge_classifier.predict(self.train_edge_embs)
+            self.test_predictions = edge_classifier.predict(self.test_edge_embs)
 
-        self.train_predictions = edge_classifier.predict(self.train_edge_embs)
-        self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels, self.train_predictions)
+            if self.use_validation:
+                self.validation_predictions =\
+                    edge_classifier.predict(self.valid_edge_embs)
 
-        self.test_predictions = edge_classifier.predict(self.test_edge_embs)
-        self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.test_predictions)
+            # Predicted edge scores: probability of being of class "1" (real edge)
+            train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
+            test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
 
-        if self.use_validation:
-            self.validation_predictions = edge_classifier.predict(self.valid_edge_embs)
-            self.validation_confusion_matrix = metrics.confusion_matrix(self.valid_edge_labels,self.validation_predictions)
+            if self.use_validation:
+                validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
 
-        # Predicted edge scores: probability of being of class "1" (real edge)
-        train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
-        test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
-
-        if self.use_validation:
-            validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
+        self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels,
+                                                               self.train_predictions)
+        self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels,
+                                                              self.test_predictions)
 
         self.train_roc = roc_auc_score(self.train_labels, train_preds)  # get the training auc score
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the test auc score
@@ -259,6 +291,8 @@ class LinkPrediction(object):
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
         if self.use_validation:
+            self.validation_confusion_matrix = metrics.confusion_matrix(
+                self.valid_edge_labels, self.validation_predictions)
             self.valid_roc = roc_auc_score(self.valid_edge_labels, validation_preds)  # get the auc score of validation
             self.valid_average_precision = average_precision_score(self.valid_edge_labels, validation_preds)
 
