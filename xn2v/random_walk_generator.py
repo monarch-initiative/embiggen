@@ -9,6 +9,8 @@ import tensorflow as tf  # type: ignore
 from multiprocessing import Pool
 from typing import Dict, Tuple
 
+from tqdm import trange  # type: ignore
+
 log = logging.getLogger("xn2v.log")
 
 handler = logging.handlers.WatchedFileHandler(
@@ -90,10 +92,8 @@ class N2vGraph:
             g = self.g
             walks = []
             nodes = g.nodes_as_integers()  # this is a list
-            log.info('Walk iteration:')
 
-            for walk_iter in range(1, num_walks+1):
-                print("{}/{}".format(walk_iter, num_walks))
+            for _ in trange(num_walks, desc='Walk iteration'):
                 random.shuffle(nodes)
                 for node in nodes:
                     walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
