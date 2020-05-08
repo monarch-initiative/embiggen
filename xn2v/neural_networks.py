@@ -69,8 +69,10 @@ class NeuralNetwork:
 
     def fit(
         self,
-        train: Tuple[Union[Dict, List, np.ndarray]],
-        test: Tuple[Union[Dict, List, np.ndarray]] = None
+        train_x: Union[Dict, List, np.ndarray],
+        train_y: Union[Dict, List, np.ndarray],
+        test_x: Union[Dict, List, np.ndarray] = None,
+        test_y: Union[Dict, List, np.ndarray] = None
     ) -> pd.DataFrame:
         """Fit the model using given training parameters.
 
@@ -96,13 +98,16 @@ class NeuralNetwork:
         ---------------------------
         The training history as a pandas dataframe.
         """
+        test = None
+        if all(d is not None for d in (test_x, test_y)):
+            test = (test_x, test_y)
         if test is None and self._monitor.startswith("val_"):
             raise ValueError(
                 "No test set was given, "
                 "but a validation metric was required for the early stopping."
             )
         return pd.DataFrame(self._model.fit(
-            *train,
+            train_x, train_y,
             epochs=self._max_epochs,
             batch_size=self._batch_size,
             validation=test,
@@ -221,7 +226,7 @@ class MultiModalFFNN(NeuralNetwork):
         # Building the multi-modal model.
         return Model(inputs=[left_input, right_input], outputs=head)
 
-    def fit(
+    def fit_multi_modal(
         self,
         left_input_train: Union[List, np.ndarray],
         right_input_train: Union[List, np.ndarray],
@@ -232,23 +237,20 @@ class MultiModalFFNN(NeuralNetwork):
     ) -> pd.DataFrame:
         # Converting input values to the format
         # to be used for a multi-modal model.
-        train = (
-            {
+        train_x = {
                 "left_input": left_input_train,
                 "right_input": right_input_train
-            },
-            output_train
-        )
+            }
+        train_y = output_train
 
         if all(d is not None for d in (left_input_test, right_input_test, output_test)):
-            test = (
-                {
-                    "left_input": left_input_test,
-                    "right_input": right_input_test
-                },
-                output_test
-            )
+            test_x = {
+                "left_input": left_input_test,
+                "right_input": right_input_test
+            }
+            test_y = output_test
         else:
-            test = None
+            test_x = None
+            test_y = None
 
-        return super().fit(train, test)
+        return self.fit(train_x, train_y, test_x, test_y)
