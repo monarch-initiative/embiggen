@@ -10,7 +10,7 @@ from xn2v.utils import write_embeddings, serialize, deserialize
 
 import os
 import logging
-#
+
 handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
@@ -123,7 +123,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                                              worddictionary=worddictionary,
                                              reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "glove":
-        print("GloVe analysis ")
+        logging.info("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()
         cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
         cooc_dict = cencoder.build_dataset()
@@ -182,8 +182,8 @@ def main(args):
     :param args: parameters of node2vec and link prediction
     :return: Result of link prediction
     """
-    print(
-        "[INFO]: p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
+    logging.info(
+        " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
         "skip_window (context size)={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
                                                                             args.w2v_model, args.num_epochs,
                                                                             args.skip_window, args.embedding_size,
@@ -192,7 +192,7 @@ def main(args):
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
     if args.use_cached_random_walks and args.random_walks:
         # restore post_train_g from cache
-        print(f"Restore random walks from {args.random_walks}")
+        logging.info(f"Restore random walks from {args.random_walks}")
         pos_train_g = deserialize(args.random_walks)
     else:
         # generate pos_train_g and simulate walks
@@ -201,7 +201,7 @@ def main(args):
     pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
 
     if args.cache_random_walks and args.random_walks:
-        print(f"Caching random walks to {args.random_walks}")
+        logging.info(f"Caching random walks to {args.random_walks}")
         serialize(pos_train_g, args.random_walks)
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]

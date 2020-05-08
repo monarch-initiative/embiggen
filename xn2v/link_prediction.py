@@ -7,15 +7,15 @@ from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from xn2v.utils import load_embeddings
 import numpy as np  # type: ignore
-
+import os
 import logging
 
-# handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-# formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-# handler.setFormatter(formatter)
-# log = logging.getLogger()
-# log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-# log.addHandler(handler)
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+handler.setFormatter(formatter)
+log = logging.getLogger()
+log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+log.addHandler(handler)
 
 class LinkPrediction(object):
     """
@@ -253,8 +253,8 @@ class LinkPrediction(object):
         logging.info('Specificity (training): {}'.format(train_specificity))
         logging.info('Sensitivity (training): {}'.format(train_sensitivity))
         logging.info('F1-score (training): {}'.format(train_f1_score))
-        logging.info("node2vec Train ROC score (training): {} ".format(str(self.train_roc)))
-        logging.info("node2vec Train AP score (training): {} ".format(str(self.train_average_precision)))
+        logging.info("ROC score (training): {} ".format(str(self.train_roc)))
+        logging.info("AP score (training): {} ".format(str(self.train_average_precision)))
 
         if self.use_validation:
             valid_conf_matrix = self.validation_confusion_matrix
@@ -273,8 +273,8 @@ class LinkPrediction(object):
             logging.info('Specificity (validation): {}'.format(valid_specificity))
             logging.info('Sensitivity (validation): {}'.format(valid_sensitivity))
             logging.info('F1-score (validation): {}'.format(valid_f1_score))
-            logging.info("node2vec Test ROC score (validation): {} ".format(str(self.valid_roc)))
-            logging.info("node2vec Test AP score (validation): {} ".format(str(self.valid_average_precision)))
+            logging.info("ROC score (validation): {} ".format(str(self.valid_roc)))
+            logging.info("AP score (validation): {} ".format(str(self.valid_average_precision)))
 
         test_confusion_matrix = self.test_confusion_matrix
         total = sum(sum(test_confusion_matrix))
@@ -292,8 +292,8 @@ class LinkPrediction(object):
         logging.info('Specificity (test): {}'.format(test_specificity))
         logging.info('Sensitivity (test): {}'.format(test_sensitivity))
         logging.info("F1-score (test): {}".format(test_f1_score))
-        logging.info("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
-        logging.info("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
+        logging.info("ROC score (test): {} ".format(str(self.test_roc)))
+        logging.info("AP score (test): {} ".format(str(self.test_average_precision)))
 
     def transform(self, edge_list, node2vector_map):
         """
