@@ -21,10 +21,9 @@ class TestCBOWconstruction(TestCase):
         worddictionary = training_graph.get_node_to_index_map()
         reverse_worddictionary = training_graph.get_index_to_node_map()
         # initialize n2v object
-        p, q, gamma = 1, 1, 1
-        use_gamma = False
+        p, q = 1, 1
         self.number_of_nodes_in_training = training_graph.node_count()
-        self.n2v_graph = N2vGraph(csf_graph=training_graph, p=p, q=q, gamma=gamma, doxn2v=use_gamma)
+        self.n2v_graph = N2vGraph(csf_graph=training_graph, p=p, q=q)
 
         # generate random walks
         self.walk_length = 10
