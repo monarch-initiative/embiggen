@@ -1,4 +1,6 @@
 import sys
+from typing import List, Tuple
+
 from sklearn.calibration import CalibratedClassifierCV  # type:ignore
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore
@@ -7,7 +9,7 @@ from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
 from xn2v.utils import load_embeddings
 import numpy as np  # type: ignore
-from .neural_networks import MLP, FFNN
+from .neural_networks import MLP, FFNN, MultiModalFFNN
 
 import logging
 
@@ -68,7 +70,7 @@ class LinkPrediction(object):
         self.train_edge_embs = []
         self.valid_edges_embs = []
         self.test_edge_embs = []
-        self.train_edge_labels = []
+        self.train_labels = []
         self.test_edge_labels = []
         self.valid_edge_labels = []
         self.classifier = classifier
@@ -103,35 +105,76 @@ class LinkPrediction(object):
         logging.info("Finished ingesting {} lines (vectors) from {}".format(n_lines, self.embedded_train_graph))
 
 
-    def prepare_edge_labels(self):
+    def prepare_edge_and_node_labels(self):
 
         """
+        Prepare these instance variables for training, testing, and validation:
+        self.train_edge_embs - embeddings for training edges
+        self.train_edge_labels - 1 for positive, 0 for negative
+
+        self.test_edge_embs - embeddings for test edges
+        self.test_edge_labels - 1 for positive, 0 for negative
+
+        self.valid_edge_embs - embeddings for validation edges
+        self.valid_edge_labels - 1 for positive, 0 for negative
+
         label positive edge embeddings with 1 and negative edge embeddings with 0.
+        also for each edge, label node embeddings with 1 and
         :return:
         """
-        pos_train_edge_embs = self.transform(edge_list=self.pos_train_edges, node2vector_map=self.map_node_vector)
-        neg_train_edge_embs = self.transform(edge_list=self.neg_train_edges, node2vector_map=self.map_node_vector)
-        # print(len(true_train_edge_embs),len(false_train_edge_embs))
+        pos_train = self.create_edge_embeddings(edge_list=self.pos_train_edges,
+                                                node2vector_map=self.map_node_vector)
+        pos_train_src_embs, pos_train_dst_embs, pos_train_edge_embs = pos_train
+
+        neg_train = self.create_edge_embeddings(edge_list=self.neg_train_edges,
+                                                node2vector_map=self.map_node_vector)
+        neg_train_src_embs, neg_train_dst_embs, neg_train_edge_embs = neg_train
+
+        self.train_src_embs = np.concatenate([pos_train_src_embs, neg_train_src_embs])
+        self.train_dst_embs = np.concatenate([pos_train_dst_embs, neg_train_dst_embs])
         self.train_edge_embs = np.concatenate([pos_train_edge_embs, neg_train_edge_embs])
         # Create train-set edge labels: 1 = true edge, 0 = false edge
-        self.train_edge_labels = np.concatenate([np.ones(len(pos_train_edge_embs)), np.zeros(len(neg_train_edge_embs))])
+        self.train_labels = np.concatenate([np.ones(len(pos_train_edge_embs)),
+                                            np.zeros(len(neg_train_edge_embs))])
 
         # Test-set edge embeddings, labels
-        pos_test_edge_embs = self.transform(edge_list=self.pos_test_edges, node2vector_map=self.map_node_vector)
-        neg_test_edge_embs = self.transform(edge_list=self.neg_test_edges, node2vector_map=self.map_node_vector)
+        pos_test = self.create_edge_embeddings(edge_list=self.pos_test_edges,
+                                               node2vector_map=self.map_node_vector)
+        pos_test_src_embs, pos_test_dst_embs, pos_test_edge_embs = pos_test
+
+        neg_test = self.create_edge_embeddings(edge_list=self.neg_test_edges,
+                                               node2vector_map=self.map_node_vector)
+        neg_test_src_embs, neg_test_dst_embs, neg_test_edge_embs = neg_test
+
+        self.test_src_embs = np.concatenate([pos_test_src_embs, neg_test_src_embs])
+        self.test_dst_embs = np.concatenate([pos_test_dst_embs, neg_test_dst_embs])
         self.test_edge_embs = np.concatenate([pos_test_edge_embs, neg_test_edge_embs])
+
         # Create test-set edge labels: 1 = true edge, 0 = false edge
-        self.test_edge_labels = np.concatenate([np.ones(len(pos_test_edge_embs)), np.zeros(len(neg_test_edge_embs))])
+        self.test_labels = np.concatenate([np.ones(len(pos_test_edge_embs)),
+                                           np.zeros(len(neg_test_edge_embs))])
 
         if self.useValidation:
             # Validation-set edge embeddings, labels
-            pos_valid_edge_embs = self.transform(edge_list=self.pos_valid_edges, node2vector_map=self.map_node_vector)
-            neg_valid_edge_embs = self.transform(edge_list=self.neg_valid_edges, node2vector_map=self.map_node_vector)
-            self.valid_edge_embs = np.concatenate([pos_valid_edge_embs, neg_valid_edge_embs])
-            # Create validation-set edge labels: 1 = true edge, 0 = false edge
-            self.valid_edge_labels = np.concatenate([np.ones(len(pos_valid_edge_embs)), np.zeros(len(neg_valid_edge_embs))])
+            pos_valid = self.create_edge_embeddings(edge_list=self.pos_valid_edges,
+                                                    node2vector_map=self.map_node_vector)
+            pos_valid_src_embs, pos_valid_dst_embs, pos_valid_edge_embs = pos_valid
 
-        logging.info("get test edge labels")
+            neg_valid = self.create_edge_embeddings(edge_list=self.neg_valid_edges,
+                                                    node2vector_map=self.map_node_vector)
+            neg_valid_src_embs, neg_valid_dst_embs, neg_valid_edge_embs = neg_valid
+
+            self.valid_src_embs = np.concatenate([pos_valid_src_embs,
+                                                  neg_valid_src_embs])
+            self.valid_dst_embs = np.concatenate([pos_valid_dst_embs,
+                                                  neg_valid_dst_embs])
+            self.valid_edge_embs = np.concatenate([pos_valid_edge_embs,
+                                                   neg_valid_edge_embs])
+            # Create validation-set edge labels: 1 = true edge, 0 = false edge
+            self.valid_labels = np.concatenate([np.ones(len(pos_valid_edge_embs)),
+                                                np.zeros(len(neg_valid_edge_embs))])
+
+        logging.info("get test labels")
         logging.info("Training edges (positive): {}".format(len(self.pos_train_edges)))
         logging.info("Training edges (negative): {}".format(len(neg_train_edge_embs)))
 
@@ -150,6 +193,7 @@ class LinkPrediction(object):
         SVM: support vector machine
         MLP: multilayer perceptron
         FFNN: feed-forward neural network
+        MMFFNN: multi-modal feed-forward neural network
         All classifiers work using default parameters.
         :return:
         """
@@ -162,16 +206,18 @@ class LinkPrediction(object):
             edge_classifier = MLP((self.train_edge_embs.shape[-1],))
         elif self.classifier == "FFNN":
             edge_classifier = FFNN((self.train_edge_embs.shape[-1],))
+        elif self.classifier == "MultiModalFFNN":
+            edge_classifier = MultiModalFFNN((self.train_node_embs.shape[-1],))
         else:
             # implement linear SVM.
             logging.info("Using SVM (default) classifier for link prediction")
             model_svc = svm.LinearSVC()
             edge_classifier = CalibratedClassifierCV(model_svc)
 
-        edge_classifier.fit(self.train_edge_embs, self.train_edge_labels)
+        edge_classifier.fit(self.train_edge_embs, self.train_labels)
 
         self.train_predictions = edge_classifier.predict(self.train_edge_embs)
-        self.train_confusion_matrix = metrics.confusion_matrix(self.train_edge_labels, self.train_predictions)
+        self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels, self.train_predictions)
 
         self.test_predictions = edge_classifier.predict(self.test_edge_embs)
         self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels, self.test_predictions)
@@ -187,9 +233,9 @@ class LinkPrediction(object):
         if self.useValidation:
             validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
 
-        self.train_roc = roc_auc_score(self.train_edge_labels, train_preds)  # get the training auc score
+        self.train_roc = roc_auc_score(self.train_labels, train_preds)  # get the training auc score
         self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the test auc score
-        self.train_average_precision = average_precision_score(self.train_edge_labels, train_preds)
+        self.train_average_precision = average_precision_score(self.train_labels, train_preds)
         self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
 
         if self.useValidation:
@@ -299,7 +345,8 @@ class LinkPrediction(object):
         logging.info("node2vec Test ROC score (test): {} ".format(str(self.test_roc)))
         logging.info("node2vec Test AP score (test): {} ".format(str(self.test_average_precision)))
 
-    def transform(self, edge_list, node2vector_map):
+    def create_edge_embeddings(self, edge_list, node2vector_map) -> \
+            Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         This method finds embedding for edges of the graph. There are 4 ways to calculate edge embedding: Hadamard,
         Average, Weighted L1 and Weighted L2
@@ -307,9 +354,11 @@ class LinkPrediction(object):
         :param edge_list:
         :param node2vector_map: key:node, value: embedded vector
         # :param size_limit: Maximum number of edges that are embedded
-        :return: list of embedded edges
+        :return: list of embeddings for src, dst and edge itself
         """
-        embs = []
+        src_embs: List[List[float]] = []
+        dst_embs: List[List[float]] = []
+        edge_embs: List[List[float]] = []
         edge_embedding_method = self.edge_embedding_method
         for edge in edge_list:
             node1 = edge[0]
@@ -339,9 +388,13 @@ class LinkPrediction(object):
             else:
                 logging.error("Enter hadamard, average, weightedL1, weightedL2")
                 sys.exit(1)
-            embs.append(edge_emb)
-        embs = np.array(embs)
-        return embs
+            src_embs.append(emb1)
+            dst_embs.append(emb2)
+            edge_embs.append(edge_emb)
+        src_embs = np.array(src_embs)
+        dst_embs = np.array(dst_embs)
+        edge_embs = np.array(edge_embs)
+        return src_embs, dst_embs, edge_embs
 
     def output_edge_node_information(self):
         self.edge_node_information(self.pos_train_edges, "positive_training")

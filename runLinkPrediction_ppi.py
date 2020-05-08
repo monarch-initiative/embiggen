@@ -158,7 +158,7 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
                                       neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier,
                                       args.useValidation)
 
-    lp.prepare_edge_labels()
+    lp.prepare_edge_and_node_labels()
     lp.predict_links()
     lp.output_classifier_results()
     #lp.output_edge_node_information()
