@@ -110,7 +110,7 @@ class NeuralNetwork:
             train_x, train_y,
             epochs=self._max_epochs,
             batch_size=self._batch_size,
-            validation=test,
+            validation_data=test,
             verbose=False,
             shuffle=True,
             callbacks=[
