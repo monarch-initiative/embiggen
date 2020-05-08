@@ -2,11 +2,11 @@ from tensorflow.keras.models import Sequential, Model  # type: ignore
 from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.metrics import AUC  # type: ignore
-import pandas as pd
-import numpy as np
+import pandas as pd  # type: ignore
+import numpy as np  # type: ignore
 from typing import Tuple, Dict, List, Union, Optional
-from keras_tqdm import TQDMCallback, TQDMNotebookCallback
-from environments_utils import is_notebook
+from keras_tqdm import TQDMCallback, TQDMNotebookCallback  # type: ignore
+from environments_utils import is_notebook  # type: ignore
 
 
 class NeuralNetwork:
