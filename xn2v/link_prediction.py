@@ -76,7 +76,7 @@ class LinkPrediction(object):
         self.valid_edges_embs = []
         self.test_edge_embs = []
         self.train_labels = []
-        self.test_edge_labels = []
+        self.test_labels = []
         self.valid_edge_labels = []
         self.classifier = classifier
         self.train_predictions = []
@@ -275,19 +275,19 @@ class LinkPrediction(object):
 
         self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels,
                                                                self.train_predictions)
-        self.test_confusion_matrix = metrics.confusion_matrix(self.test_edge_labels,
+        self.test_confusion_matrix = metrics.confusion_matrix(self.test_labels,
                                                               self.test_predictions)
 
         self.train_roc = roc_auc_score(self.train_labels, train_preds)  # get the training auc score
-        self.test_roc = roc_auc_score(self.test_edge_labels, test_preds)  # get the test auc score
+        self.test_roc = roc_auc_score(self.test_labels, test_preds)  # get the test auc score
         self.train_average_precision = average_precision_score(self.train_labels, train_preds)
-        self.test_average_precision = average_precision_score(self.test_edge_labels, test_preds)
+        self.test_average_precision = average_precision_score(self.test_labels, test_preds)
 
         if self.use_validation:
             self.validation_confusion_matrix = metrics.confusion_matrix(
-                self.valid_edge_labels, self.validation_predictions)
-            self.valid_roc = roc_auc_score(self.valid_edge_labels, validation_preds)  # get the auc score of validation
-            self.valid_average_precision = average_precision_score(self.valid_edge_labels, validation_preds)
+                self.valid_labels, self.validation_predictions)
+            self.valid_roc = roc_auc_score(self.valid_labels, validation_preds)  # get the auc score of validation
+            self.valid_average_precision = average_precision_score(self.valid_labels, validation_preds)
 
 
     def predicted_ppi_links(self):
