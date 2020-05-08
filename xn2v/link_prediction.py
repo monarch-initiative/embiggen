@@ -10,12 +10,12 @@ import numpy as np  # type: ignore
 import os
 import logging
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-handler.setFormatter(formatter)
-log = logging.getLogger()
-log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-log.addHandler(handler)
+#handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+#formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+#handler.setFormatter(formatter)
+#log = logging.getLogger()
+#log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+#log.addHandler(handler)
 
 class LinkPrediction(object):
     """
