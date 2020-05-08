@@ -154,9 +154,9 @@ class LinkPrediction(object):
         elif self.classifier == "RF":
             edge_classifier = RandomForestClassifier()
         elif self.classifier == "MLP":
-            edge_classifier = MLP(self.train_edge_embs.shape)
+            edge_classifier = MLP((self.train_edge_embs.shape[-1],))
         elif self.classifier == "FFNN":
-            edge_classifier = FFNN(self.train_edge_embs.shape)
+            edge_classifier = FFNN((self.train_edge_embs.shape[-1],))
         else:
             # implement linear SVM.
             model_svc = svm.LinearSVC()

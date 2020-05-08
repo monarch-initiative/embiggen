@@ -57,15 +57,19 @@ class NeuralNetwork:
             metrics=[
                 "accuracy",
                 AUC(curve="ROC", name="auroc"),
-                AUC(curve="PR", name="auroc")
+                AUC(curve="PR", name="auprc")
             ]
         )
 
     def predict_proba(self, *args, **kwargs):
-        return self._model.predict_proba(*args, **kwargs)
+        predictions = self._model.predict_proba(*args, **kwargs)
+        return np.hstack([
+            1-predictions,
+            predictions
+        ])
 
     def predict(self, *args, **kwargs):
-        return self._model.predict(*args, **kwargs)
+        return self._model.predict(*args, **kwargs).round().astype(int)
 
     def fit(
         self,
