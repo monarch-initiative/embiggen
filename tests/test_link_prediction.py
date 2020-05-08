@@ -1,12 +1,7 @@
 import os
 import unittest
-from tempfile import gettempdir
-
 from parameterized import parameterized
-
-from runLinkPrediction_ppi import learn_embeddings
-from xn2v import LinkPrediction, CSFGraph, N2vGraph
-
+from xn2v import LinkPrediction, CSFGraph
 
 class TestLinkPrediction(unittest.TestCase):
     def setUp(self) -> None:
