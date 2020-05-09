@@ -94,7 +94,6 @@ def disease_link_prediction(positive_training_file,
     lp.output_Logistic_Reg_results()
 
 
-
 @cli.command()
 @click.option("training_file", "-t", type=click.Path(exists=True), required=True,
               default="tests/data/karate.train")
