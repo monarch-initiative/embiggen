@@ -15,52 +15,42 @@ from xn2v.utils import write_embeddings
 @click.group()
 def cli():
     pass
-
-@cli.command()
-@click.option("training_file", "-t", type=click.Path(exists=True), required=True)
-@click.option("output_file", "-o", default='disease.embedded')
-@click.option("p", "-p", type=int, default=1)
-@click.option("q", "-q", type=int, default=1)
-@click.option("gamma", "-g", type=int, default=1)
-@click.option("use_gamma", "-u", is_flag=True, default=False)
-@click.option("walk_length", "-w", type=int, default=80)
-@click.option("num_walks", "-n", type=int, default=25)
-@click.option("dimensions", "-d", type=int, default=128)
-@click.option("window_size", "-w", type=int, default=10)
-@click.option("workers", "-r", type=int, default=8)
-@click.option("num_steps", "-s", type=int, default=100000)
-@click.option("display_step", "-d", type=int, default=1000)
-def disease_gene_embeddings(training_file, output_file, p, q, gamma, use_gamma,
-                            walk_length, num_walks, dimensions, window_size, workers,
-                            num_steps, display_step):
-    """
-    Generate disease gene embeddings
-    """
-    logging.basicConfig(level=logging.INFO)
-    print("Reading training file %s" % training_file)
-    training_graph = CSFGraph(training_file)
-    print(training_graph)
-    training_graph.print_edge_type_distribution()
-
-    hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q, gamma, use_gamma)
-    walks = hetgraph.simulate_walks(num_walks, walk_length)
-    worddictionary = training_graph.get_node_to_index_map()
-    reverse_worddictionary = training_graph.get_index_to_node_map()
-
-    numberwalks = []
-    for w in walks:
-        nwalk = []
-        for node in w:
-            i = worddictionary[node]
-            nwalk.append(i)
-        numberwalks.append(nwalk)
-
-    model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary,
-                             num_steps=num_steps)
-    model.train(display_step=display_step)
-
-    write_embeddings(output_file, model.embedding, reverse_worddictionary)
+#comment out hetrogenous graph embedding
+# @cli.command()
+# @click.option("training_file", "-t", type=click.Path(exists=True), required=True)
+# @click.option("output_file", "-o", default='disease.embedded')
+# @click.option("p", "-p", type=int, default=1)
+# @click.option("q", "-q", type=int, default=1)
+# @click.option("walk_length", "-w", type=int, default=80)
+# @click.option("num_walks", "-n", type=int, default=25)
+# @click.option("dimensions", "-d", type=int, default=128)
+# @click.option("window_size", "-w", type=int, default=10)
+# @click.option("workers", "-r", type=int, default=8)
+# @click.option("num_epochs", "-s", type=int, default=1)
+# def disease_gene_embeddings(training_file, output_file, p, q,
+#                             walk_length, num_walks, dimensions, window_size, workers,
+#                             num_epochs):
+#     """
+#     Generate disease gene embeddings
+#     """
+#     logging.basicConfig(level=logging.INFO)
+#     print("Reading training file %s" % training_file)
+#     training_graph = CSFGraph(training_file)
+#     print(training_graph)
+#     training_graph.print_edge_type_distribution()
+#
+#     hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q)
+#     walks = hetgraph.simulate_walks(num_walks, walk_length)
+#     worddictionary = training_graph.get_node_to_index_map()
+#     reverse_worddictionary = training_graph.get_index_to_node_map()
+#
+#
+#     model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
+#                              reverse_worddictionary=reverse_worddictionary,
+#                              num_epochs=num_epochs)
+#     model.train()
+#
+#     write_embeddings(output_file, model.embedding, reverse_worddictionary)
 
 @cli.command()
 
@@ -91,7 +81,6 @@ def disease_link_prediction(positive_training_file,
                         embedded_graph,
                         edge_embedding_method=edge_embedding_method)
     lp.predict_links()
-    lp.output_Logistic_Reg_results()
 
 
 @cli.command()
@@ -102,45 +91,29 @@ def disease_link_prediction(positive_training_file,
 @click.option("output_file", "-o", default='karate.output')
 @click.option("p", "-p", type=int, default=1)
 @click.option("q", "-q", type=int, default=1)
-@click.option("gamma", "-g", type=int, default=1)
-@click.option("use_gamma", "-u", is_flag=True, default=False)
 @click.option("walk_length", "-w", type=int, default=80)
-@click.option("num_walks", "-n", type=int, default=25)
-def karate_test(training_file, test_file, output_file, p, q, gamma, use_gamma,
-                    walk_length, num_walks):
+@click.option("num_epochs", "-n", type=int, default=1)
+def karate_test(training_file, test_file, output_file, p, q,
+                    walk_length, num_walks,num_epochs):
     training_graph = CSFGraph(training_file)
-    hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q, gamma, use_gamma)
+    graph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q)
 
-    walks = hetgraph.simulate_walks(num_walks, walk_length)
+    walks = graph.simulate_walks(num_walks, walk_length)
     worddictionary = training_graph.get_node_to_index_map()
     reverse_worddictionary = training_graph.get_index_to_node_map()
-
-    numberwalks = []
-    for w in walks:
-        nwalk = []
-        for node in w:
-            i = worddictionary[node]
-            nwalk.append(i)
-        numberwalks.append(nwalk)
-
-    model = SkipGramWord2Vec(numberwalks, worddictionary=worddictionary,
+    model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
                              reverse_worddictionary=reverse_worddictionary,
-                             num_steps=1000)
-    model.train(display_step=100)
+                             num_epochs=num_epochs)
+    model.train()
     output_filenname = 'karate.embedded'
 
     write_embeddings(output_filenname, model.embedding, reverse_worddictionary)
 
     test_graph = CSFGraph(test_file)
     path_to_embedded_graph = output_filenname
-    parameters = {'edge_embedding_method': "hadamard",
-                  'portion_false_edges': 1}
 
-    lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph,
-                        params=parameters)#TODO:modify this part to work with new link prediction
 
-    lp.predict_links()
-    lp.output_Logistic_Reg_results()
+    lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph)#TODO:parameters of LinkPrediction
 
 @cli.command()
 @click.option("test_url", "-t", default="https://www.gutenberg.org/files/98/98-0.txt")
@@ -169,7 +142,7 @@ def w2v(test_url, algorithm):
         model = SkipGramWord2Vec(data, worddictionary=dictionary,
                                  reverse_worddictionary=reverse_dictionary)
     model.add_display_words(count)
-    model.train(display_step=1000)
+    model.train()
 
 
 if __name__ == "__main__":
