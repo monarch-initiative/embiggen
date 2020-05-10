@@ -2,7 +2,8 @@ from unittest import TestCase
 
 import os.path
 from xn2v import CSFGraph
-from xn2v.random_walk_generator import N2vGraph
+#from xn2v.random_walk_generator import N2vGraph
+from xn2v.hetnode2vec import N2vGraph
 from tests.utils.utils import calculate_total_probs
 from parameterized import parameterized
 
@@ -447,9 +448,11 @@ class TestGraphCache(TestCase):
         """
         p = 1
         q = 1
+        gamma =1
+        useGamma = False
         num_walks = 10
         walk_length = 1
-        g = N2vGraph(self.graph, p, q)
+        g = N2vGraph(self.graph, p, q, gamma, useGamma)
         g.simulate_walks(num_walks, walk_length)
         assert len(g.random_walks_map) > 0
 
@@ -463,9 +466,10 @@ class TestGraphCache(TestCase):
         p = 1
         q = 1
         gamma = 1
+        useGamma = False
         num_walks = 10
         walk_length = 1
-        g = N2vGraph(self.graph, p, q)
+        g = N2vGraph(self.graph, p, q, gamma, useGamma)
         walks1 = g.simulate_walks(num_walks, walk_length)
         walks2 = g.simulate_walks(num_walks, walk_length, use_cache=True)
         # Expected: walks2 should be retrieved from cache since use_cache is True
@@ -482,9 +486,10 @@ class TestGraphCache(TestCase):
         p = 1
         q = 1
         gamma = 1
+        useGamma = False
         num_walks = 10
         walk_length = 1
-        g = N2vGraph(self.graph, p, q)
+        g = N2vGraph(self.graph, p, q, gamma, useGamma)
         walks1 = g.simulate_walks(num_walks, walk_length)
         serialize(g, 'N2vGraph.pkl')
 
