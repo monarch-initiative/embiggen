@@ -1,6 +1,5 @@
 import sys
 from typing import List, Tuple
-
 from sklearn.calibration import CalibratedClassifierCV  # type:ignore
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore

@@ -31,7 +31,7 @@ def parse_args():
 
     parser.add_argument('--pos_valid', nargs='?',
                         default='tests/data/ppismall_with_validation/pos_validation_edges_max_comp_graph',
-                        help='Input positive validation edges path')
+                       help='Input positive validation edges path')
 
     parser.add_argument('--pos_test', nargs='?',
                         default='tests/data/ppismall_with_validation/pos_test_edges_max_comp_graph',
