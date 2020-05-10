@@ -25,7 +25,7 @@ q = 1
 walk_length = 80
 num_walks = 10
 
-embed_graph = "pos_train.embedded" #the embedded graph
+embed_graph = "pos_train_karate.embedded" #the embedded graph
 edge_embed_method = "hadamard" #edge embedding method
 classifier = "RF"# Random Forest:binary classifier in the link prediction
 useValidation = True #Validation sets are
