@@ -35,7 +35,7 @@ setup(
     install_requires=[
         'click',
         'keras',
-	      'setuptools>=42.0.0',
+	    'setuptools>=42.0.0',
         'numpy>=1.16.4',
         'pandas',
         'parameterized',
@@ -46,7 +46,7 @@ setup(
         'more_itertools',
         'tqdm',
         "environments_utils",
-        "keras_tqdm"
+        "keras_tqdm",
         'tensorflow>=2.0.0',
         'click'
     ],
