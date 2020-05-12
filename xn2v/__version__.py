@@ -1,2 +1,2 @@
-"""Current version of package xn2v"""
-__version__ = "0.1.0"
+"""Current version of package embiggen"""
+__version__ = "0.5.0"
