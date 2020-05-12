@@ -1,16 +1,28 @@
+# distribution/packaging/environments
+\.DS_Store
+.idea/
+__pycache__
+/__pycache__/*
+**/__pycache__/*
+.mypy*
+\.vscode/
+.vscode
+
+# data
+karate.embedded
 twocities.txt
 unmapped_proteins.txt
-coverage.xml
-**/__pycache__/*
-.coverage
-\.vscode/
-\.DS_Store
-__pycache__
-.notipy.json
+
+# testing/logging
 cover
-.single_run
-.vscode
-*.log
-*/__pycache__/*
+coverage.xml
+.coverage
 .coverage*
 karate.embedded
+.mypy_cache/*
+*.log
+
+# other
+.single_run
+
+embedded_graph.embedded

@@ -12,7 +12,9 @@ test_deps = [
     'nose',
     "nose-cov",
     "validate_version_code",
-    "silence_tensorflow"
+    "pylint",
+    "silence_tensorflow",
+    "parameterized"
 ]
 
 extras = {
@@ -31,10 +33,20 @@ setup(
     license='BSD3',
     packages=['xn2v'],
     install_requires=[
-	'setuptools>=42.0.0',
+        'click',
+        'keras',
+	      'setuptools>=42.0.0',
         'numpy>=1.16.4',
         'pandas',
+        'parameterized',
+        'silence_tensorflow',
         'sklearn',
+        'tensorflow>=2.0',
+        'nltk',
+        'more_itertools',
+        'tqdm',
+        "environments_utils",
+        "keras_tqdm"
         'tensorflow>=2.0.0',
         'click'
     ],
