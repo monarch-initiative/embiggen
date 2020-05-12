@@ -1,6 +1,5 @@
 import sys
 from typing import List, Tuple
-
 from sklearn.calibration import CalibratedClassifierCV  # type:ignore
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore
@@ -190,15 +189,15 @@ class LinkPrediction(object):
                                                 np.zeros(len(neg_valid_edge_embs))])
 
         logging.info("get test labels")
-        logging.info("Training edges (positive): {}".format(len(self.pos_train_edges)))
-        logging.info("Training edges (negative): {}".format(len(neg_train_edge_embs)))
+        logging.info("Training edges (positive): {}".format(len(self.pos_train_edges)/2))
+        logging.info("Training edges (negative): {}".format(len(neg_train_edge_embs)/2))
 
-        logging.info("Test edges (positive): {}".format(len(self.pos_test_edges)))
-        logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)))
+        logging.info("Test edges (positive): {}".format(len(self.pos_test_edges)/2))
+        logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)/2))
 
         if self.use_validation:
-            logging.info("Validation edges (positive): {}".format(len(pos_valid_edge_embs)))
-            logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)))
+            logging.info("Validation edges (positive): {}".format(len(pos_valid_edge_embs)/2))
+            logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)/2))
 
     def predict_links(self):
         """
@@ -363,7 +362,7 @@ class LinkPrediction(object):
             # f1-score =2 * TP / (2 * TP + FP + FN)
 
             logging.info("predictions for validation set:")
-            logging.info("predictions (validation): {}".format(str(self.validation_predictions)))
+            #logging.info("predictions (validation): {}".format(str(self.validation_predictions)))
             logging.info("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
             logging.info('Accuracy (validation) : {}'.format(valid_accuracy))
             logging.info('Specificity (validation): {}'.format(valid_specificity))

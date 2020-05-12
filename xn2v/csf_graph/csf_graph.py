@@ -225,7 +225,6 @@ class CSFGraph:
                 node_type_info[items[id_col]] = items[cat_col]
         return node_type_info
 
-
     def parse_header(self, edge_file: str) -> dict:
         with open(edge_file, 'r') as fh:
             header_info: Dict[str, Union[list, bool]] = {}
