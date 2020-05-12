@@ -35,6 +35,7 @@ setup(
     install_requires=[
         'click',
         'keras',
+	      'setuptools>=42.0.0',
         'numpy>=1.16.4',
         'pandas',
         'parameterized',
@@ -46,6 +47,8 @@ setup(
         'tqdm',
         "environments_utils",
         "keras_tqdm"
+        'tensorflow>=2.0.0',
+        'click'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
