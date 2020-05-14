@@ -110,7 +110,7 @@ class Word2Vec:
         if self.word2id is None and self.vocabulary_size == 0:
             self.vocabulary_size = 0
         elif self.vocabulary_size ==0:
-            self.vocabulary_size = len(self.word2id)
+            self.vocabulary_size = len(self.word2id)+1
         # Apr 28, changed by Peter (can be deleted)
         # if any(isinstance(el, list) for el in data):
         #    flat_list = [item for sublist in data for item in sublist]
