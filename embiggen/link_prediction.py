@@ -6,7 +6,7 @@ from sklearn import metrics   # type: ignore
 from sklearn.ensemble import RandomForestClassifier   # type: ignore
 from sklearn import svm   # type: ignore
 from sklearn.metrics import roc_auc_score, average_precision_score   # type: ignore
-from xn2v.utils import load_embeddings
+from embiggen.utils import load_embeddings
 import numpy as np  # type: ignore
 from .neural_networks import MLP, FFNN, MultiModalFFNN
 

@@ -1,11 +1,11 @@
 import argparse
-from xn2v import CSFGraph, CooccurrenceEncoder
-from xn2v import N2vGraph
-from xn2v.glove import GloVeModel
-from xn2v.word2vec import SkipGramWord2Vec
-from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
-from xn2v import LinkPrediction
-from xn2v.utils import write_embeddings, serialize, deserialize
+from embiggen import CSFGraph, CooccurrenceEncoder
+from embiggen import N2vGraph
+from embiggen.glove import GloVeModel
+from embiggen.word2vec import SkipGramWord2Vec
+from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
+from embiggen import LinkPrediction
+from embiggen.utils import write_embeddings, serialize, deserialize
 
 
 import os

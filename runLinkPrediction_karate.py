@@ -1,8 +1,8 @@
-import xn2v
-from xn2v import CSFGraph
-from xn2v.word2vec import SkipGramWord2Vec
-from xn2v.utils import write_embeddings
-from xn2v import LinkPrediction
+import embiggen
+from embiggen import CSFGraph
+from embiggen.word2vec import SkipGramWord2Vec
+from embiggen.utils import write_embeddings
+from embiggen import LinkPrediction
 import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 pos_train_file = os.path.join(current_dir, 'tests/data/karate/pos_train_edges')
@@ -32,7 +32,7 @@ useValidation = True #Validation sets are
 num_epochs = 2
 
 #Graph (node) embeding using SkipGram as the word2vec model, with 2 epochs.
-graph = xn2v.random_walk_generator.N2vGraph(pos_train_graph, p, q)
+graph = embiggen.random_walk_generator.N2vGraph(pos_train_graph, p, q)
 walks = graph.simulate_walks(num_walks, walk_length)
 worddictionary = pos_train_graph.get_node_to_index_map()
 reverse_worddictionary = pos_train_graph.get_index_to_node_map()

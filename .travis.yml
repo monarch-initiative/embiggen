@@ -27,12 +27,12 @@ after_script:
 script:
 - rm -rf .coverage
 - coverage erase
-- nosetests --with-coverage --cover-package=xn2v --cover-xml
+- nosetests --with-coverage --cover-package=embiggen --cover-xml
 - coverage combine --append || true
 - coverage report
 - coverage xml
-- pylint --errors-only --exit-zero xn2v
-- mypy --strict-optional xn2v
+- pylint --errors-only --exit-zero embiggen
+- mypy --strict-optional embiggen
 - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
 after_success:
   - coveralls

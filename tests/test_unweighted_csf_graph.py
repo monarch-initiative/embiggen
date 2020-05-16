@@ -2,7 +2,7 @@ import os.path
 
 from unittest import TestCase
 
-from xn2v import CSFGraph
+from embiggen import CSFGraph
 
 
 class TestCSFGraph(TestCase):

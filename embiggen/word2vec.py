@@ -7,7 +7,7 @@ import tensorflow as tf  # type: ignore
 from tqdm import trange  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
 
-from xn2v.utils import get_embedding, calculate_cosine_similarity
+from embiggen.utils import get_embedding, calculate_cosine_similarity
 
 
 class Word2Vec:

@@ -6,10 +6,10 @@ import unittest
 
 from typing import Dict, List
 
-from xn2v import CSFGraph
-from xn2v import N2vGraph
-from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
-from xn2v.utils import get_embedding, write_embeddings, load_embeddings
+from embiggen import CSFGraph
+from embiggen import N2vGraph
+from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
+from embiggen.utils import get_embedding, write_embeddings, load_embeddings
 
 # TODO: add test for calculates_cosine_similarity in utils/embedding_utils
 
