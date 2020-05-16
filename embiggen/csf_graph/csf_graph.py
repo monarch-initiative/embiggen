@@ -4,7 +4,7 @@ import numpy as np  # type: ignore
 from collections import defaultdict
 from typing import Optional, Any, Union, Set, Dict, List, Tuple
 
-from xn2v.csf_graph.edge import Edge
+from embiggen.csf_graph.edge import Edge
 
 
 class CSFGraphNoSubjectColumnError(Exception):
