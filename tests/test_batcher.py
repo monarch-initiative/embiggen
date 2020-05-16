@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from xn2v import CBOWListBatcher
-from xn2v import SkipGramBatcher
+from embiggen import CBOWListBatcher
+from embiggen import SkipGramBatcher
 
 
 class TestCBOWListBatcher(TestCase):

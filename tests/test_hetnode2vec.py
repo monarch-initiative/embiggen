@@ -1,13 +1,13 @@
 from unittest import TestCase
 
 import os.path
-from xn2v import CSFGraph
-#from xn2v.random_walk_generator import N2vGraph
-from xn2v.hetnode2vec import N2vGraph
+from embiggen import CSFGraph
+#from embiggen.random_walk_generator import N2vGraph
+from embiggen.hetnode2vec import N2vGraph
 from tests.utils.utils import calculate_total_probs
 from parameterized import parameterized
 
-from xn2v.utils import serialize, deserialize
+from embiggen.utils import serialize, deserialize
 
 
 class TestGraph(TestCase):

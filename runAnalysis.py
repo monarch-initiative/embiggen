@@ -6,11 +6,11 @@ from urllib.request import urlopen
 import click as click
 from click import get_os_args
 
-import xn2v
-from xn2v import CSFGraph
-from xn2v.word2vec import SkipGramWord2Vec
-from xn2v import LinkPrediction
-from xn2v.utils import write_embeddings
+import embiggen
+from embiggen import CSFGraph
+from embiggen.word2vec import SkipGramWord2Vec
+from embiggen import LinkPrediction
+from embiggen.utils import write_embeddings
 
 @click.group()
 def cli():
@@ -39,7 +39,7 @@ def cli():
 #     print(training_graph)
 #     training_graph.print_edge_type_distribution()
 #
-#     hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q)
+#     hetgraph = embiggen.random_walk_generator.N2vGraph(training_graph, p, q)
 #     walks = hetgraph.simulate_walks(num_walks, walk_length)
 #     worddictionary = training_graph.get_node_to_index_map()
 #     reverse_worddictionary = training_graph.get_index_to_node_map()
@@ -114,7 +114,7 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
     neg_valid_graph = CSFGraph(neg_valid_file)
     neg_test_graph = CSFGraph(neg_test_file)
     # Graph (node) embeding using SkipGram as the word2vec model, with 2 epochs.
-    graph = xn2v.random_walk_generator.N2vGraph(pos_train_graph, p, q)
+    graph = embiggen.random_walk_generator.N2vGraph(pos_train_graph, p, q)
     walks = graph.simulate_walks(num_walks, walk_length)
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
@@ -149,12 +149,12 @@ def w2v(test_url, algorithm, num_epochs,output_file):
         fh = open(local_file, 'w')
         fh.write(content)
 
-    encoder = xn2v.text_encoder.TextEncoder(local_file)
+    encoder = embiggen.text_encoder.TextEncoder(local_file)
     data, count, dictionary, reverse_dictionary = encoder.build_dataset()
     #print("Extracted a dataset with %d words" % len(data))
     if algorithm == 'cbow':
         logging.warning('Using cbow')
-        model = xn2v.word2vec.ContinuousBagOfWordsWord2Vec(
+        model = embiggen.word2vec.ContinuousBagOfWordsWord2Vec(
                                 data, worddictionary=dictionary,
                                 reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
     else:

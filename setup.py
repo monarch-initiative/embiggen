@@ -22,8 +22,8 @@ extras = {
 }
 
 setup(
-    name='xn2v',
-    version='0.1.0',
+    name='embiggen',
+    version='0.6.0',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
     url='https://github.com/monarch-initiative/N2V',
@@ -31,11 +31,11 @@ setup(
     author='Vida Ravanmehr, Peter Robinson',
     author_email='vida.ravanmehr@jax.org, peter.robinson@jax.org',
     license='BSD3',
-    packages=['xn2v'],
+    packages=['embiggen'],
     install_requires=[
         'click',
         'keras',
-	    'setuptools>=42.0.0',
+        'setuptools>=42.0.0',
         'numpy>=1.16.4',
         'pandas',
         'parameterized',

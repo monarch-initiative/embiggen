@@ -1,7 +1,7 @@
 import os
 import unittest
 from parameterized import parameterized
-from xn2v import LinkPrediction, CSFGraph
+from embiggen import LinkPrediction, CSFGraph
 
 class TestLinkPrediction(unittest.TestCase):
     def setUp(self) -> None:

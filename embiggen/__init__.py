@@ -1,5 +1,5 @@
-""" N2V: A python library for node2vec family algorithms
-.. module:: xn2v
+""" embiggen: A python library for node2vec family algorithms
+.. module:: embiggen
    :platform: Unix, Windows
    :synopsis: node2vec family algorithms
 
@@ -18,6 +18,6 @@ from .word2vec import ContinuousBagOfWordsWord2Vec
 from .word2vec import SkipGramWord2Vec
 
 __all__ = [
-    "N2vGraph", "LinkPrediction" , "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
+    "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
     "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
 ]
