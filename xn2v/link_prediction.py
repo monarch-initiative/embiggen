@@ -288,7 +288,6 @@ class LinkPrediction(object):
             self.valid_roc = roc_auc_score(self.valid_labels, validation_preds)  # get the auc score of validation
             self.valid_average_precision = average_precision_score(self.valid_labels, validation_preds)
 
-
     def predicted_ppi_links(self):
         """
         :return: positive test edges and their prediction, 1: predicted correctly, 0: otherwise
