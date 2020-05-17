@@ -101,7 +101,7 @@ class CSFGraph:
                     try:
                         weight = float(items[self.weight_column_name])
                     except ValueError as e:
-                        logging.error("[ERROR] Could not parse weight field " +
+                        logging.error(" Could not parse weight field " +
                                       "(must be an integer): {}".format(
                                           items[self.weight_column_name]))
                 # add nodes
@@ -491,13 +491,13 @@ class CSFGraph:
         """
 
         for n, count in self.nodetype2count_dictionary.items():
-            print('node type {} - count: {}'.format(n, count))
+            logging.info('node type {} - count: {}'.format(n, count))
 
         if len(self.edgetype2count_dictionary) < 2:
-            print('edge count: {}'.format(self.edge_count()))
+            logging.info('edge count: {}'.format(self.edge_count()))
         else:
             for category, count in self.edgetype2count_dictionary.items():
-                print("%s - count: %d" % (category, count))
+                logging.info("%s - count: %d" % (category, count))
 
     def node_degree(self, node):
         """

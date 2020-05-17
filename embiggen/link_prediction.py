@@ -11,13 +11,13 @@ import numpy as np  # type: ignore
 from .neural_networks import MLP, FFNN, MultiModalFFNN
 
 import logging
-
+#import os
 #handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
-#formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
-#handler.setFormatter(formatter)
-#log = logging.getLogger()
-#log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
-#log.addHandler(handler)
+# formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+# handler.setFormatter(formatter)
+# log = logging.getLogger()
+# log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+# log.addHandler(handler)
 
 class LinkPrediction(object):
     """
@@ -92,7 +92,6 @@ class LinkPrediction(object):
         self.test_roc = None
         self.test_average_precision = None
         self.use_validation = use_valid
-
 
     def read_embeddings(self):
         """
@@ -196,7 +195,7 @@ class LinkPrediction(object):
         logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)/2))
 
         if self.use_validation:
-            logging.info("Validation edges (positive): {}".format(len(pos_valid_edge_embs)/2))
+            logging.info("Validation edges (positive): {}".format(len(self.pos_valid_edges)/2))
             logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)/2))
 
     def predict_links(self):

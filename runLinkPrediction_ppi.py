@@ -6,17 +6,17 @@ from embiggen.word2vec import SkipGramWord2Vec
 from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
 from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings, serialize, deserialize
-
-
 import os
 import logging
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","embiggen"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
-log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+log.setLevel(os.environ.get("LOGLEVEL", "INFO"))
 log.addHandler(handler)
+
+
 
 
 def parse_args():
@@ -115,10 +115,12 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
     if w2v_model.lower() == "skipgram":
+        logging.info("SkipGram analysis ")
         model = SkipGramWord2Vec(walks,
                                  worddictionary=worddictionary,
                                  reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "cbow":
+        logging.info("CBOW analysis ")
         model = ContinuousBagOfWordsWord2Vec(walks,
                                              worddictionary=worddictionary,
                                              reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
