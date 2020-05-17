@@ -62,7 +62,7 @@ class Word2Vec:
             self.list_of_lists = False
         else:
             logging.info("NEITHER RAGGED NOR TENSOR")
-            logging.info("Type of data: ".format(type(self.data)))
+            logging.info("Type of data:{} ".format(type(self.data)))
             raise TypeError("NEITHER RAGGED NOR TENSOR")
 
     def add_display_words(self, count: list, num: int = 5) -> None:
@@ -357,7 +357,7 @@ class SkipGramWord2Vec(Word2Vec):
                         batch_x, batch_y = self.next_batch(currentTensor)
                         current_loss = self.run_optimization(batch_x, batch_y)
                         if step == 0 or step % 100 == 0:
-                            logging.info("loss ".format(current_loss))
+                            logging.info("loss {}".format(current_loss))
                             loss_history.append(current_loss)
                         data_index += shift_len
                         endpos = data_index + batch_size
@@ -643,7 +643,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
                     if step % 100 == 0:
-                        logging.info("loss ".format(current_loss))
+                        logging.info("loss {} ".format(current_loss))
                     step += 1
             else:
                 data = self.data  #
@@ -668,7 +668,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
                     current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
-                        logging.info("loss ".format(current_loss))
+                        logging.info("loss {}".format(current_loss))
                         loss_history.append(current_loss)
                     data_index += shift_len
                     endpos = data_index + batch_size
