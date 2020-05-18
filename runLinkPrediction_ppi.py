@@ -9,14 +9,12 @@ from embiggen.utils import write_embeddings, serialize, deserialize
 import os
 import logging
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","embiggen"))
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","link_prediction.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
 log.setLevel(os.environ.get("LOGLEVEL", "INFO"))
 log.addHandler(handler)
-
-
 
 
 def parse_args():
