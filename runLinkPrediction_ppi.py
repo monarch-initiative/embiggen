@@ -8,6 +8,7 @@ from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings, serialize, deserialize
 import os
 import logging
+import time
 
 handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","link_prediction.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
@@ -167,6 +168,7 @@ def read_graphs():
     Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
     :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
     """
+    start = time.time()
 
     pos_train_graph = CSFGraph(args.pos_train)
     pos_valid_graph = CSFGraph(args.pos_valid)
@@ -174,6 +176,9 @@ def read_graphs():
     neg_train_graph = CSFGraph(args.neg_train)
     neg_valid_graph = CSFGraph(args.neg_valid)
     neg_test_graph = CSFGraph(args.neg_test)
+    end = time.time()
+    logging.info("reading input edge lists files: {} seconds".format(end-start))
+
     return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
 
 
@@ -201,17 +206,26 @@ def main(args):
     else:
         # generate pos_train_g and simulate walks
         pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
-
+    start = time.time()
     pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
+    end = time.time()
+    logging.info("simulating walks: {} seconds".format(end - start))
 
     if args.cache_random_walks and args.random_walks:
         logging.info(f"Caching random walks to {args.random_walks}")
         serialize(pos_train_g, args.random_walks)
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
-    learn_embeddings(walks, pos_train_graph, args.w2v_model)
-    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
 
+    start = time.time()
+    learn_embeddings(walks, pos_train_graph, args.w2v_model)
+    end = time.time()
+    logging.info(" learning: {} seconds ".format(end-start))
+
+    start = time.time()
+    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
+    end = time.time()
+    logging.info("link prediction: {} seconds".format(end-start))
 
 if __name__ == "__main__":
     args = parse_args()
