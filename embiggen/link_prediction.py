@@ -36,13 +36,13 @@ class LinkPrediction(object):
         classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest,
             "SVM" for support vector machine, "MLP" for a multi-layer perceptron, "FFNN" for a feed forward neural network.
 
-         use_valid: if True, link prediction is done on train,validation and test sets. If False, link prediction is done on
-         train and test sets.
+         skip_valid: if True, link prediction is done on train and test sets. If False, link prediction is done on
+         train, validation and test sets.
 
     """
 
     def __init__(self, pos_train_graph, pos_validation_graph, pos_test_graph, neg_train_graph, neg_validation_graph,
-                 neg_test_graph, embedded_train_graph_path, edge_embedding_method, classifier, use_valid):
+                 neg_test_graph, embedded_train_graph_path, edge_embedding_method, classifier, skip_valid, output):
         """
         Set up for predicting links from results of node2vec analysis
         :param pos_train_graph: The training graph
@@ -56,8 +56,9 @@ class LinkPrediction(object):
             "weightedL2"
         :param classifier: classification method. It can be either "LR" for logistic regression, "RF" for random forest,
             "SVM" for support vector machine, "MLP" for a multi-layer perceptron, "FFNN" for a feed forward neural network.
-        :param use_valid: if True, link prediction is done on train,validation and test sets. If False, link prediction is done on
-         train and test sets.
+        :param skip_valid: if True, link prediction is done on train and test sets. If False, link prediction is done on
+         train, validation and test sets.
+        :param output: output file for the results of link prediction
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -91,7 +92,8 @@ class LinkPrediction(object):
         self.valid_average_precision = None
         self.test_roc = None
         self.test_average_precision = None
-        self.use_validation = use_valid
+        self.skip_validation = skip_valid
+        self.output = output
 
     def read_embeddings(self):
         """
@@ -166,8 +168,7 @@ class LinkPrediction(object):
         # Create test-set edge labels: 1 = true edge, 0 = false edge
         self.test_labels = np.concatenate([np.ones(len(pos_test_edge_embs)),
                                            np.zeros(len(neg_test_edge_embs))])
-
-        if self.use_validation:
+        if not self.skip_validation:
             # Validation-set edge embeddings, labels
             pos_valid = self.create_edge_embeddings(edge_list=self.pos_valid_edges,
                                                     node2vector_map=self.map_node_vector)
@@ -194,7 +195,7 @@ class LinkPrediction(object):
         logging.info("Test edges (positive): {}".format(len(self.pos_test_edges)/2))
         logging.info("Test edges (negative): {}".format(len(neg_test_edge_embs)/2))
 
-        if self.use_validation:
+        if not self.skip_validation:
             logging.info("Validation edges (positive): {}".format(len(self.pos_valid_edges)/2))
             logging.info("Validation edges (negative): {}".format(len(neg_valid_edge_embs)/2))
 
@@ -238,7 +239,7 @@ class LinkPrediction(object):
             self.test_predictions = edge_classifier.predict_multi_modal(
                                             self.test_src_embs,
                                             self.test_dst_embs)
-            if self.use_validation:
+            if not self.skip_validation:
                 self.validation_predictions = edge_classifier.predict_multi_modal(
                                             self.valid_src_embs,
                                             self.valid_dst_embs)
@@ -250,7 +251,7 @@ class LinkPrediction(object):
                                             self.test_src_embs,
                                             self.test_dst_embs)[:, 1]
 
-            if self.use_validation:
+            if not self.skip_validation:
                 validation_preds = edge_classifier.predict_proba_multi_modal(
                                             self.valid_src_embs,
                                             self.valid_dst_embs)[:, 1]
@@ -260,7 +261,7 @@ class LinkPrediction(object):
             self.train_predictions = edge_classifier.predict(self.train_edge_embs)
             self.test_predictions = edge_classifier.predict(self.test_edge_embs)
 
-            if self.use_validation:
+            if not self.skip_validation:
                 self.validation_predictions =\
                     edge_classifier.predict(self.valid_edge_embs)
 
@@ -268,7 +269,7 @@ class LinkPrediction(object):
             train_preds = edge_classifier.predict_proba(self.train_edge_embs)[:, 1]
             test_preds = edge_classifier.predict_proba(self.test_edge_embs)[:, 1]
 
-            if self.use_validation:
+            if not self.skip_validation:
                 validation_preds = edge_classifier.predict_proba(self.valid_edge_embs)[:, 1]
 
         self.train_confusion_matrix = metrics.confusion_matrix(self.train_labels,
@@ -281,7 +282,7 @@ class LinkPrediction(object):
         self.train_average_precision = average_precision_score(self.train_labels, train_preds)
         self.test_average_precision = average_precision_score(self.test_labels, test_preds)
 
-        if self.use_validation:
+        if not self.skip_validation:
             self.validation_confusion_matrix = metrics.confusion_matrix(
                 self.valid_labels, self.validation_predictions)
             self.valid_roc = roc_auc_score(self.valid_labels, validation_preds)  # get the auc score of validation
@@ -295,11 +296,10 @@ class LinkPrediction(object):
         for i in range(len(self.pos_test_edges)):
             logging.info("edge {} prediction {}".format(self.pos_test_edges[i], self.test_predictions[i]))
 
-        if self.use_validation:
+        if not self.skip_validation:
             logging.info("positive validation edges and their prediction:")
             for i in range(len(self.pos_valid_edges)):
                 logging.info("edge {} prediction {}".format(self.pos_valid_edges[i], self.validation_predictions[i]))
-
 
     def predicted_ppi_non_links(self):
         """
@@ -310,7 +310,7 @@ class LinkPrediction(object):
         for i in range(len(self.neg_test_edges)):
             logging.info("edge {} prediction {}".format(self.neg_test_edges[i], self.test_predictions[i + len(self.pos_test_edges)]))
 
-        if self.use_validation:
+        if not self.skip_validation:
             logging.info("negative validation edges and their prediction:")
 
             for i in range(len(self.neg_valid_edges)):
@@ -339,54 +339,50 @@ class LinkPrediction(object):
                 2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
         # f1-score =2 * TP / (2 * TP + FP + FN)
 
-        logging.info("predictions for training set:")
-        #print("predictions (training): {}".format(str(self.train_predictions)))
-        logging.info("confusion matrix (training): {}".format(str(train_conf_matrix)))
-        logging.info('Accuracy (training) : {}'.format(train_accuracy))
-        logging.info('Specificity (training): {}'.format(train_specificity))
-        logging.info('Sensitivity (training): {}'.format(train_sensitivity))
-        logging.info('F1-score (training): {}'.format(train_f1_score))
-        logging.info("ROC score (training): {} ".format(str(self.train_roc)))
-        logging.info("AP score (training): {} ".format(str(self.train_average_precision)))
+        with open(self.output, 'w') as f:
+            f.write("confusion matrix.training: {}\n".format(str(train_conf_matrix)))
+            f.write('Accuracy.training: {}\n'.format(train_accuracy))
+            f.write('Specificity.training: {}\n'.format(train_specificity))
+            f.write('Sensitivity.training: {}\n'.format(train_sensitivity))
+            f.write('F1-score.training: {}\n'.format(train_f1_score))
+            f.write("ROC score.training: {}\n ".format(str(self.train_roc)))
+            f.write("AP score.training: {}\n".format(str(self.train_average_precision)))
 
-        if self.use_validation:
-            valid_conf_matrix = self.validation_confusion_matrix
-            total = sum(sum(valid_conf_matrix))
-            valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
-            valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
-            valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
-            valid_f1_score = (2.0 * valid_conf_matrix[1, 1]) / (
-                        2.0 * valid_conf_matrix[1, 1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
+            if not self.skip_validation:
+                valid_conf_matrix = self.validation_confusion_matrix
+                total = sum(sum(valid_conf_matrix))
+                valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
+                valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+                valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+                valid_f1_score = (2.0 * valid_conf_matrix[1, 1]) / (
+                            2.0 * valid_conf_matrix[1, 1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
+                # f1-score =2 * TP / (2 * TP + FP + FN)
+
+                f.write("confusion matrix.validation: {}\n".format(str(valid_conf_matrix)))
+                f.write('Accuracy.validation : {}\n'.format(valid_accuracy))
+                f.write('Specificity.validation: {}\n'.format(valid_specificity))
+                f.write('Sensitivity.validation: {}\n'.format(valid_sensitivity))
+                f.write('F1-score.validation: {}\n'.format(valid_f1_score))
+                f.write("ROC score.validation: {}\n ".format(str(self.valid_roc)))
+                f.write("AP score.validation: {}\n".format(str(self.valid_average_precision)))
+
+            test_confusion_matrix = self.test_confusion_matrix
+            total = sum(sum(test_confusion_matrix))
+            test_accuracy = (test_confusion_matrix[0, 0] + test_confusion_matrix[1, 1]) * 1.0 / total
+            test_specificity = test_confusion_matrix[0, 0] * 1.0 / (test_confusion_matrix[0, 0] + test_confusion_matrix[0, 1]) * 1.0
+            test_sensitivity = test_confusion_matrix[1, 1] * 1.0 / (test_confusion_matrix[1, 0] + test_confusion_matrix[1, 1]) * 1.0
+            test_f1_score = (2.0 * test_confusion_matrix[1, 1]) / (
+                        2.0 * test_confusion_matrix[1, 1] + test_confusion_matrix[0, 1] + test_confusion_matrix[1, 0])
             # f1-score =2 * TP / (2 * TP + FP + FN)
 
-            logging.info("predictions for validation set:")
-            #logging.info("predictions (validation): {}".format(str(self.validation_predictions)))
-            logging.info("confusion matrix (validation): {}".format(str(valid_conf_matrix)))
-            logging.info('Accuracy (validation) : {}'.format(valid_accuracy))
-            logging.info('Specificity (validation): {}'.format(valid_specificity))
-            logging.info('Sensitivity (validation): {}'.format(valid_sensitivity))
-            logging.info('F1-score (validation): {}'.format(valid_f1_score))
-            logging.info("ROC score (validation): {} ".format(str(self.valid_roc)))
-            logging.info("AP score (validation): {} ".format(str(self.valid_average_precision)))
-
-        test_confusion_matrix = self.test_confusion_matrix
-        total = sum(sum(test_confusion_matrix))
-        test_accuracy = (test_confusion_matrix[0, 0] + test_confusion_matrix[1, 1]) * 1.0 / total
-        test_specificity = test_confusion_matrix[0, 0] * 1.0 / (test_confusion_matrix[0, 0] + test_confusion_matrix[0, 1]) * 1.0
-        test_sensitivity = test_confusion_matrix[1, 1] * 1.0 / (test_confusion_matrix[1, 0] + test_confusion_matrix[1, 1]) * 1.0
-        test_f1_score = (2.0 * test_confusion_matrix[1, 1]) / (
-                    2.0 * test_confusion_matrix[1, 1] + test_confusion_matrix[0, 1] + test_confusion_matrix[1, 0])
-        # f1-score =2 * TP / (2 * TP + FP + FN)
-
-        # print("predictions: {}".format(str(self.predictions)))
-        logging.info("predictions for test set:")
-        logging.info("confusion matrix (test): {}".format(str(test_confusion_matrix)))
-        logging.info('Accuracy (test): {}'.format(test_accuracy))
-        logging.info('Specificity (test): {}'.format(test_specificity))
-        logging.info('Sensitivity (test): {}'.format(test_sensitivity))
-        logging.info("F1-score (test): {}".format(test_f1_score))
-        logging.info("ROC score (test): {} ".format(str(self.test_roc)))
-        logging.info("AP score (test): {} ".format(str(self.test_average_precision)))
+            f.write("confusion matrix.test: {}\n".format(str(test_confusion_matrix)))
+            f.write('Accuracy.test: {}\n'.format(test_accuracy))
+            f.write('Specificity.test: {}\n'.format(test_specificity))
+            f.write('Sensitivity.test: {}\n'.format(test_sensitivity))
+            f.write("F1-score.test: {}\n".format(test_f1_score))
+            f.write("ROC score.test: {}\n ".format(str(self.test_roc)))
+            f.write("AP score.test: {} \n".format(str(self.test_average_precision)))
+        f.close()
 
     def create_edge_embeddings(self, edge_list, node2vector_map) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -442,7 +438,7 @@ class LinkPrediction(object):
     def output_edge_node_information(self):
         self.edge_node_information(self.pos_train_edges, "positive_training")
         self.edge_node_information(self.pos_test_edges, "positive_test")
-        if self.use_validation:
+        if (not self.skip_validation):
             self.edge_node_information(self.pos_valid_edges, "positive_validation")
 
     def edge_node_information(self, edge_list, group):

@@ -83,19 +83,20 @@ def cli():
 
 
 @cli.command()
-@click.option("pos_train_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("pos_train_file", "-pt", type=click.Path(exists=True), required=True,
               default='tests/data/karate/pos_train_edges')
-@click.option("pos_valid_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("pos_valid_file", "-pv", type=click.Path(exists=True), required=True,
               default='tests/data/karate/pos_validation_edges')
-@click.option("pos_test_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("pos_test_file", "-pte", type=click.Path(exists=True), required=True,
               default='tests/data/karate/pos_test_edges')
-@click.option("neg_train_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("neg_train_file", "-nt", type=click.Path(exists=True), required=True,
               default='tests/data/karate/neg_train_edges')
-@click.option("neg_valid_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("neg_valid_file", "-nv", type=click.Path(exists=True), required=True,
               default='tests/data/karate/neg_validation_edges')
-@click.option("neg_test_file", "-t", type=click.Path(exists=True), required=True,
+@click.option("neg_test_file", "-nte", type=click.Path(exists=True), required=True,
               default='tests/data/karate/neg_test_edges')
-@click.option("output_file", "-o", default='pos_train_karate.embedded')
+@click.option("embed_graph", "-e", default='pos_train_karate.embedded')
+@click.option("output", "-o", default='output.results')
 @click.option("p", "-p", type=int, default=1)
 @click.option("q", "-q", type=int, default=1)
 @click.option("walk_length", "-w", type=int, default=80)
@@ -103,10 +104,10 @@ def cli():
 @click.option("num_epochs", "-n", type=int, default=1)
 @click.option("classifier", "-classifier", default='LR')
 @click.option("edge_embed_method", "-edge_embed_method", default='hadamard')
-@click.option("useValidation", "-useValidation", default='True')
+@click.option("skipValidation", "-skipValidation", default=False)
 
-def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, neg_valid_file, neg_test_file, output_file, p, q,
-                    walk_length, num_walks,num_epochs, classifier, edge_embed_method, useValidation):
+def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, neg_valid_file, neg_test_file, embed_graph, p, q,
+                    walk_length, num_walks,num_epochs, classifier, edge_embed_method, skipValidation, output):
     pos_train_graph = CSFGraph(pos_train_file)
     pos_valid_graph = CSFGraph(pos_valid_file)
     pos_test_graph = CSFGraph(pos_test_file)
@@ -121,12 +122,12 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
     model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                              num_epochs=num_epochs)
     model.train()
-    write_embeddings(output_file, model.embedding, reverse_worddictionary)
+    write_embeddings(embed_graph, model.embedding, reverse_worddictionary)
 
     # Link prediction on the pos/neg train/valid/test sets using RF classifier
     lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph,
                         neg_test_graph,
-                        output_file, edge_embed_method, classifier, useValidation)
+                        embed_graph, edge_embed_method, classifier, skipValidation, output)
     lp.prepare_edge_and_node_labels()
     lp.predict_links()
     lp.output_classifier_results()
@@ -137,10 +138,10 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
               type=click.Choice(["skipgram", "cbow"], case_sensitive=False),
               default="skipgram")
 @click.option("num_epochs", "-n", type=int, default=1)
-@click.option("output_file", "-o", default='book.embedded')
+@click.option("embed_text", "-e", default='book.embedded')
 
 
-def w2v(test_url, algorithm, num_epochs,output_file):
+def w2v(test_url, algorithm, num_epochs, embed_text):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:
@@ -163,8 +164,7 @@ def w2v(test_url, algorithm, num_epochs,output_file):
                                  reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
     model.add_display_words(count)
     model.train()
-    write_embeddings(output_file, model.embedding, reverse_dictionary)
-
+    write_embeddings(embed_text, model.embedding, reverse_dictionary)
 
 
 if __name__ == "__main__":
