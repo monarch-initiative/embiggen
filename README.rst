@@ -1,26 +1,21 @@
-Extended Node2Vec
+embiggen: Embeddding Generator
 =========================================================================================
 |travis| |sonar_quality| |sonar_maintainability| |codacy|
 |code_climate_maintainability|
 
-Implementation of node2vec with several word2vec family algorithms
-
-The paper node2vec: Scalable Feature Learning for Networks
-introduced a method for mapping the nodes of a graph to a low-dimensional
-space of features that maximizes the likelihood of preserving
-network neighborhoods of nodes.
-An approach to generating random walks that resemble either
-BFS or DFS traversals was presented.
-The random walks generate "sentences" that together can
-be regarded as a corpus of text that can be used to generate
-embeddings with the word2vec algorithm.
+embiggen is a Python 3 package that implements several
+`word2vec <https://arxiv.org/abs/1301.3781>`_ and
+`node2vec <https://arxiv.org/abs/1607.00653>`_ family algorithms.
 
 This package allows users to perform node2vec analysis
 using several different word2vec family algorithms.
 
-Setting up xn2v
------------------------------------
-To do. We will submit N2V to PyPI as soon as the code is a bit more mature.
+Setting up embiggen
+-------------------
+To do a local install, enter the following command from the main embiggen folder.
+.. code:: bash
+
+    pip install --user embiggen
 
 Unit testing
 -----------------------------------
