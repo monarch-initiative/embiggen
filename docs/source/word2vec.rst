@@ -19,4 +19,47 @@ set of `Hillary Clinton's emails <https://www.kaggle.com/kaggle/hillary-clinton-
 which we found to be a relatively small dataset that gives interesting results.
 
 
+Running the code
+~~~~~~~~~~~~~~~~
+The following script shows how to run the Skip Gram on the Email dataset and create word embeddings.
+
+We first import the relevant classes from embiggen. ::
+
+    import embiggen
+    from embiggen import SkipGramWord2Vec
+    from embiggen import TextEncoder
+
+TextEncoder
+^^^^^^^^^^^
+
+The ``TextEncoder`` class is a convenience class that can be used to transform text
+datasets into integer representations that are used for embedding. Assuming you are
+using the Email dataset from above, find the file called ``Emails.csv`` and adjust
+the path of the following command accordingly. ::
+
+    emails = '/../../../Emails.csv'
+    encoder = embiggen.text_encoder.TextEncoder(emails)
+    tensor_data, count_list, dictionary, reverse_dictionary = encoder.build_dataset()
+
+Training the model
+^^^^^^^^^^^^^^^^^^
+
+The following commands train the model. See the API for the full range of parameters and
+options. ::
+    model = SkipGramWord2Vec(tensor_data,
+                             worddictionary=dictionary,
+                             reverse_worddictionary=reverse_dictionary,
+                             num_epochs=5)
+    # model.add_display_words(2:50:10) TODO
+    model.train()
+
+Writing the embeddings
+^^^^^^^^^^^^^^^^^^^^^^
+
+The following code writes the embeddings to file. ::
+
+    embedding_file = 'embedded-emails.txt'
+    write_embeddings(embedding_file, model.embedding, reverse_dictionary)
+
+
 
