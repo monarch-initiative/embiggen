@@ -5,6 +5,10 @@ Welcome to embiggens's documentation!
 =====================================
 embiggen provides implementations of word2vec and node2vec family algorithms.
 
+We are working on a PyPI package. For now, install embiggen locally using. ::
+
+   pip install --user embiggen
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
