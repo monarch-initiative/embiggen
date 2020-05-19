@@ -1,7 +1,7 @@
 from unittest import TestCase
 import os.path
-from xn2v import CSFGraph
-from xn2v import link_prediction_functions
+from embiggen import CSFGraph
+from embiggen import link_prediction_functions
 import numpy as np
 import math
 

@@ -1,7 +1,7 @@
 from unittest import TestCase
 import os.path
-from xn2v import CSFGraph
-from xn2v.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
+from embiggen import CSFGraph
+from embiggen.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
     CSFGraphNoObjectColumnError
 
 

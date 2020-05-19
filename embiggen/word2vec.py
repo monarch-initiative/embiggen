@@ -7,7 +7,8 @@ import tensorflow as tf  # type: ignore
 from tqdm import trange  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
 
-from xn2v.utils import get_embedding, calculate_cosine_similarity
+from embiggen.utils import get_embedding, calculate_cosine_similarity
+import logging
 
 
 class Word2Vec:
@@ -60,8 +61,8 @@ class Word2Vec:
         elif isinstance(self.data, tf.Tensor):
             self.list_of_lists = False
         else:
-            print("NEITHER RAGGED NOR TENSOR")
-            print("Type of data: ", type(self.data))
+            logging.info("NEITHER RAGGED NOR TENSOR")
+            logging.info("Type of data:{} ".format(type(self.data)))
             raise TypeError("NEITHER RAGGED NOR TENSOR")
 
     def add_display_words(self, count: list, num: int = 5) -> None:
@@ -87,7 +88,7 @@ class Word2Vec:
             raise TypeError('self.display requires a list of tuples with key:word, value:int (count)')
 
         if num > 16:
-            print('WARNING: maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
+            logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
             num = 16
 
         # pick a random validation set of 'num' words to sample
@@ -110,7 +111,7 @@ class Word2Vec:
         if self.word2id is None and self.vocabulary_size == 0:
             self.vocabulary_size = 0
         elif self.vocabulary_size ==0:
-            self.vocabulary_size = len(self.word2id)
+            self.vocabulary_size = len(self.word2id)+1
         # Apr 28, changed by Peter (can be deleted)
         # if any(isinstance(el, list) for el in data):
         #    flat_list = [item for sublist in data for item in sublist]
@@ -286,11 +287,11 @@ class SkipGramWord2Vec(Word2Vec):
         :param x_test:
         :return:
         """
-        print("Evaluation...")
+        logging.info("Evaluation...")
         sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
                                           self.embedding,
                                           self.device_type).numpy()
-        print(sim[0])
+        #print(sim[0])
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
             nearest = (-sim[i, :]).argsort()[1:top_k + 1]
@@ -298,7 +299,7 @@ class SkipGramWord2Vec(Word2Vec):
             log_str = '"%s" nearest neighbors:' % disp_example
             for k in range(top_k):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
-            print(log_str)
+            #print(log_str)
 
     def train(self) -> List[float]:
         """
@@ -310,7 +311,7 @@ class SkipGramWord2Vec(Word2Vec):
 
         if do_display:
             for w in self.display_examples:
-                print('{word}: id={index}'.format(word=self.id2word[w], index=w))
+                logging.info('{word}: id={index}'.format(word=self.id2word[w], index=w))
 
         x_test = np.array(self.display_examples)
 
@@ -356,7 +357,7 @@ class SkipGramWord2Vec(Word2Vec):
                         batch_x, batch_y = self.next_batch(currentTensor)
                         current_loss = self.run_optimization(batch_x, batch_y)
                         if step == 0 or step % 100 == 0:
-                            print("loss, ", current_loss)
+                            logging.info("loss {}".format(current_loss))
                             loss_history.append(current_loss)
                         data_index += shift_len
                         endpos = data_index + batch_size
@@ -592,9 +593,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def display_words(self) -> None:
         for w in self.display_examples:
-            print("{}: id={}".format(self.id2word[w], w))
+            logging.info("{}: id={}".format(self.id2word[w], w))
         # x_test = np.array(self.display_examples)
-        print('Evaluation...\n')
+        logging.info('Evaluation...\n')
         print("TODO -- fix me")
         if 2 + 2 != 5:
             return
@@ -602,7 +603,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                           self.embedding,
                                           self.device_type).numpy()
 
-        print(sim[0])
+        #print(sim[0])
 
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
@@ -613,7 +614,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             for k in range(top_k):
                 log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
 
-            print(log_str)
+            #print(log_str)
 
         return None
 
@@ -642,7 +643,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
                     if step % 100 == 0:
-                        print("loss, ", current_loss)
+                        logging.info("loss {} ".format(current_loss))
                     step += 1
             else:
                 data = self.data  #
@@ -667,7 +668,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
                     current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
-                        print("loss, ", current_loss)
+                        logging.info("loss {}".format(current_loss))
                         loss_history.append(current_loss)
                     data_index += shift_len
                     endpos = data_index + batch_size

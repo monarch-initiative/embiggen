@@ -6,11 +6,11 @@ from urllib.request import urlopen
 import click as click
 from click import get_os_args
 
-import xn2v
-from xn2v import CSFGraph
-from xn2v.word2vec import SkipGramWord2Vec
-from xn2v import LinkPrediction
-from xn2v.utils import write_embeddings
+import embiggen
+from embiggen import CSFGraph
+from embiggen.word2vec import SkipGramWord2Vec
+from embiggen import LinkPrediction
+from embiggen.utils import write_embeddings
 
 @click.group()
 def cli():
@@ -39,7 +39,7 @@ def cli():
 #     print(training_graph)
 #     training_graph.print_edge_type_distribution()
 #
-#     hetgraph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q)
+#     hetgraph = embiggen.random_walk_generator.N2vGraph(training_graph, p, q)
 #     walks = hetgraph.simulate_walks(num_walks, walk_length)
 #     worddictionary = training_graph.get_node_to_index_map()
 #     reverse_worddictionary = training_graph.get_index_to_node_map()
@@ -52,75 +52,96 @@ def cli():
 #
 #     write_embeddings(output_file, model.embedding, reverse_worddictionary)
 
+# @cli.command()
+# @click.option("positive_training_file", "-r", type=click.Path(exists=True), required=True)
+# @click.option("positive_test_file", "-t", type=click.Path(exists=True), required=True)
+# @click.option("negative_test_file",  type=click.Path(exists=True), required=True)
+# @click.option("negative_training_file", "-r", type=click.Path(exists=True), required=True)
+# @click.option("embedded_graph", "-e", type=click.Path(exists=True), required=True)
+# @click.option("edge_embedding_method", "-m", default="hadamard")
+# def disease_link_prediction(positive_training_file,
+#                             positive_test_file,
+#                             negative_training_file,
+#                             negative_test_file,
+#                             embedded_graph,
+#                             edge_embedding_method):
+#     """
+#     Predict disease links
+#     """
+#
+#     training_graph = CSFGraph(positive_training_file)
+#     test_graph = CSFGraph(positive_test_file)
+#     negative_training_graph = CSFGraph(negative_training_file)
+#     negative_test_graph = CSFGraph(negative_test_file)
+#     lp = LinkPrediction(training_graph,
+#                         test_graph,
+#                         negative_training_graph,
+#                         negative_test_graph,
+#                         embedded_graph,
+#                         edge_embedding_method=edge_embedding_method)
+#     lp.predict_links()
+
+
 @cli.command()
-
-@click.option("positive_training_file", "-r", type=click.Path(exists=True), required=True)
-@click.option("positive_test_file", "-t", type=click.Path(exists=True), required=True)
-@click.option("negative_test_file",  type=click.Path(exists=True), required=True)
-@click.option("negative_training_file", "-r", type=click.Path(exists=True), required=True)
-@click.option("embedded_graph", "-e", type=click.Path(exists=True), required=True)
-@click.option("edge_embedding_method", "-m", default="hadamard")
-def disease_link_prediction(positive_training_file,
-                            positive_test_file,
-                            negative_training_file,
-                            negative_test_file,
-                            embedded_graph,
-                            edge_embedding_method):
-    """
-    Predict disease links
-    """
-
-    training_graph = CSFGraph(positive_training_file)
-    test_graph = CSFGraph(positive_test_file)
-    negative_training_graph = CSFGraph(negative_training_file)
-    negative_test_graph = CSFGraph(negative_test_file)
-    lp = LinkPrediction(training_graph,
-                        test_graph,
-                        negative_training_graph,
-                        negative_test_graph,
-                        embedded_graph,
-                        edge_embedding_method=edge_embedding_method)
-    lp.predict_links()
-
-
-@cli.command()
-@click.option("training_file", "-t", type=click.Path(exists=True), required=True,
-              default="tests/data/karate.train")
-@click.option("test_file", "-t", type=click.Path(exists=True), required=True,
-              default="tests/data/karate.test")
-@click.option("output_file", "-o", default='karate.output')
+@click.option("pos_train_file", "-pt", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/pos_train_edges')
+@click.option("pos_valid_file", "-pv", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/pos_validation_edges')
+@click.option("pos_test_file", "-pte", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/pos_test_edges')
+@click.option("neg_train_file", "-nt", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/neg_train_edges')
+@click.option("neg_valid_file", "-nv", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/neg_validation_edges')
+@click.option("neg_test_file", "-nte", type=click.Path(exists=True), required=True,
+              default='tests/data/karate/neg_test_edges')
+@click.option("embed_graph", "-e", default='pos_train_karate.embedded')
+@click.option("output", "-o", default='output.results')
 @click.option("p", "-p", type=int, default=1)
 @click.option("q", "-q", type=int, default=1)
 @click.option("walk_length", "-w", type=int, default=80)
+@click.option("num_walks", "-nw", type=int, default=10)
 @click.option("num_epochs", "-n", type=int, default=1)
-def karate_test(training_file, test_file, output_file, p, q,
-                    walk_length, num_walks,num_epochs):
-    training_graph = CSFGraph(training_file)
-    graph = xn2v.random_walk_generator.N2vGraph(training_graph, p, q)
+@click.option("classifier", "-classifier", default='LR')
+@click.option("edge_embed_method", "-edge_embed_method", default='hadamard')
+@click.option("skipValidation", "-skipValidation", default=False)
 
+def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, neg_valid_file, neg_test_file, embed_graph, p, q,
+                    walk_length, num_walks,num_epochs, classifier, edge_embed_method, skipValidation, output):
+    pos_train_graph = CSFGraph(pos_train_file)
+    pos_valid_graph = CSFGraph(pos_valid_file)
+    pos_test_graph = CSFGraph(pos_test_file)
+    neg_train_graph = CSFGraph(neg_train_file)
+    neg_valid_graph = CSFGraph(neg_valid_file)
+    neg_test_graph = CSFGraph(neg_test_file)
+    # Graph (node) embeding using SkipGram as the word2vec model, with 2 epochs.
+    graph = embiggen.random_walk_generator.N2vGraph(pos_train_graph, p, q)
     walks = graph.simulate_walks(num_walks, walk_length)
-    worddictionary = training_graph.get_node_to_index_map()
-    reverse_worddictionary = training_graph.get_index_to_node_map()
-    model = SkipGramWord2Vec(walks, worddictionary=worddictionary,
-                             reverse_worddictionary=reverse_worddictionary,
+    worddictionary = pos_train_graph.get_node_to_index_map()
+    reverse_worddictionary = pos_train_graph.get_index_to_node_map()
+    model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                              num_epochs=num_epochs)
     model.train()
-    output_filenname = 'karate.embedded'
+    write_embeddings(embed_graph, model.embedding, reverse_worddictionary)
 
-    write_embeddings(output_filenname, model.embedding, reverse_worddictionary)
-
-    test_graph = CSFGraph(test_file)
-    path_to_embedded_graph = output_filenname
-
-
-    lp = LinkPrediction(training_graph, test_graph, path_to_embedded_graph)#TODO:parameters of LinkPrediction
+    # Link prediction on the pos/neg train/valid/test sets using RF classifier
+    lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph,
+                        neg_test_graph,
+                        embed_graph, edge_embed_method, classifier, skipValidation, output)
+    lp.prepare_edge_and_node_labels()
+    lp.predict_links()
+    lp.output_classifier_results()
 
 @cli.command()
 @click.option("test_url", "-t", default="https://www.gutenberg.org/files/98/98-0.txt")
 @click.option('--algorithm',
               type=click.Choice(["skipgram", "cbow"], case_sensitive=False),
               default="skipgram")
-def w2v(test_url, algorithm):
+@click.option("num_epochs", "-n", type=int, default=1)
+@click.option("embed_text", "-e", default='book.embedded')
+
+
+def w2v(test_url, algorithm, num_epochs, embed_text):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:
@@ -129,20 +150,21 @@ def w2v(test_url, algorithm):
         fh = open(local_file, 'w')
         fh.write(content)
 
-    encoder = xn2v.text_encoder.TextEncoder(local_file)
+    encoder = embiggen.text_encoder.TextEncoder(local_file)
     data, count, dictionary, reverse_dictionary = encoder.build_dataset()
-    print("Extracted a dataset with %d words" % len(data))
+    #print("Extracted a dataset with %d words" % len(data))
     if algorithm == 'cbow':
         logging.warning('Using cbow')
-        model = xn2v.word2vec.ContinuousBagOfWordsWord2Vec(
+        model = embiggen.word2vec.ContinuousBagOfWordsWord2Vec(
                                 data, worddictionary=dictionary,
-                                reverse_worddictionary=reverse_dictionary)
+                                reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
     else:
         logging.warning('Using skipgram')
         model = SkipGramWord2Vec(data, worddictionary=dictionary,
-                                 reverse_worddictionary=reverse_dictionary)
+                                 reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
     model.add_display_words(count)
     model.train()
+    write_embeddings(embed_text, model.embedding, reverse_dictionary)
 
 
 if __name__ == "__main__":

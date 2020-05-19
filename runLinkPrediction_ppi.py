@@ -1,21 +1,20 @@
 import argparse
-from xn2v import CSFGraph, CooccurrenceEncoder
-from xn2v import N2vGraph
-from xn2v.glove import GloVeModel
-from xn2v.word2vec import SkipGramWord2Vec
-from xn2v.word2vec import ContinuousBagOfWordsWord2Vec
-from xn2v import LinkPrediction
-from xn2v.utils import write_embeddings, serialize, deserialize
-
-
+from embiggen import CSFGraph, CooccurrenceEncoder
+from embiggen import N2vGraph
+from embiggen.glove import GloVeModel
+from embiggen.word2vec import SkipGramWord2Vec
+from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
+from embiggen import LinkPrediction
+from embiggen.utils import write_embeddings, serialize, deserialize
 import os
 import logging
+import time
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "link_prediction.log"))
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","link_prediction.log"))
 formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
-log.setLevel(os.environ.get("LOGLEVEL", "DEBUG"))
+log.setLevel(os.environ.get("LOGLEVEL", "INFO"))
 log.addHandler(handler)
 
 
@@ -49,6 +48,10 @@ def parse_args():
                         default='tests/data/ppismall_with_validation/neg_test_edges_max_comp_graph',
                         help='Input negative test edges path')
 
+    parser.add_argument('--output', nargs='?',
+                        default='output_results',
+                        help='path to the output file which contains results of link prediction')
+
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
                         help='Embeddings path of the positive training graph')
 
@@ -65,7 +68,7 @@ def parse_args():
     parser.add_argument('--num-walks', type=int, default=10,
                         help='Number of walks per source. Default is 10.')
 
-    parser.add_argument('--skip_window', type=int, default=3,
+    parser.add_argument('--context_window', type=int, default=3,
                         help='Context size for optimization. Default is 3.')
 
     parser.add_argument('--num_epochs', default=1, type=int,
@@ -86,9 +89,9 @@ def parse_args():
     parser.add_argument('--w2v_model', nargs='?', default='Skipgram',
                         help="word2vec model (Skipgram, CBOW, GloVe)")
 
-    parser.add_argument('--useValidation', dest='useValidation', action='store_true',
-                        help="True if validation edges are provided,"
-                             "False if there are only training and test edges.")
+    parser.add_argument('--skipValidation', dest='skipValidation', action='store_true',
+                        help="Boolean specifying presence of validation sets or not. Default is validation sets are provided.")
+    parser.set_defaults(skipValidation=False)
 
     parser.add_argument('--random_walks', type=str,
                         help='Use a cached version of random walks. \
@@ -115,10 +118,12 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
 
     if w2v_model.lower() == "skipgram":
+        logging.info("SkipGram analysis ")
         model = SkipGramWord2Vec(walks,
                                  worddictionary=worddictionary,
                                  reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
     elif w2v_model.lower() == "cbow":
+        logging.info("CBOW analysis ")
         model = ContinuousBagOfWordsWord2Vec(walks,
                                              worddictionary=worddictionary,
                                              reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
@@ -128,7 +133,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
         cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
         cooc_dict = cencoder.build_dataset()
         model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=args.embedding_size,
-                           context_size=args.skip_window, num_epochs=args.num_epochs)
+                           context_size=args.context_window, num_epochs=args.num_epochs)
     else:
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
 
@@ -149,7 +154,7 @@ def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, 
     """
     lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph,
                                       neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier,
-                                      args.useValidation)
+                                      args.skipValidation, args.output)
 
     lp.prepare_edge_and_node_labels()
     lp.predict_links()
@@ -163,6 +168,7 @@ def read_graphs():
     Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
     :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
     """
+    start = time.time()
 
     pos_train_graph = CSFGraph(args.pos_train)
     pos_valid_graph = CSFGraph(args.pos_valid)
@@ -170,6 +176,9 @@ def read_graphs():
     neg_train_graph = CSFGraph(args.neg_train)
     neg_valid_graph = CSFGraph(args.neg_valid)
     neg_test_graph = CSFGraph(args.neg_test)
+    end = time.time()
+    logging.info("reading input edge lists files: {} seconds".format(end-start))
+
     return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
 
 
@@ -184,10 +193,10 @@ def main(args):
     """
     logging.info(
         " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
-        "skip_window (context size)={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
+        "context_window ={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
                                                                             args.w2v_model, args.num_epochs,
-                                                                            args.skip_window, args.embedding_size,
-                                                                            args.useValidation))
+                                                                            args.context_window, args.embedding_size,
+                                                                            args.skipValidation))
 
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
     if args.use_cached_random_walks and args.random_walks:
@@ -197,17 +206,26 @@ def main(args):
     else:
         # generate pos_train_g and simulate walks
         pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
-
+    start = time.time()
     pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
+    end = time.time()
+    logging.info("simulating walks: {} seconds".format(end - start))
 
     if args.cache_random_walks and args.random_walks:
         logging.info(f"Caching random walks to {args.random_walks}")
         serialize(pos_train_g, args.random_walks)
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
-    learn_embeddings(walks, pos_train_graph, args.w2v_model)
-    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
 
+    start = time.time()
+    learn_embeddings(walks, pos_train_graph, args.w2v_model)
+    end = time.time()
+    logging.info(" learning: {} seconds ".format(end-start))
+
+    start = time.time()
+    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
+    end = time.time()
+    logging.info("link prediction: {} seconds".format(end-start))
 
 if __name__ == "__main__":
     args = parse_args()

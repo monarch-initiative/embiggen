@@ -8,7 +8,7 @@ g1 g4 10
 """
 
 
-fh = open("data/small_hetrogenous_graph_gene_disease.train", "w")#The generated file needs to be moved to xn2v/data for link prediction
+fh = open("data/small_hetrogenous_graph_gene_disease.train", "w")#The generated file needs to be moved to embiggen/data for link prediction
 
 #g1 is connected to g2, g3 ,..., g500
 #g2 is connected to g3, g4, ..., g500

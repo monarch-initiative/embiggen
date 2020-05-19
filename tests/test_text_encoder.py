@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from unittest import TestCase
 
-from xn2v.text_encoder import TextEncoder  # update once refactor is complete
+from embiggen.text_encoder import TextEncoder  # update once refactor is complete
 from tests.utils.utils import gets_tensor_length
 
 
