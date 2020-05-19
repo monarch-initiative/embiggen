@@ -15,6 +15,7 @@ We are working on a PyPI package. For now, install embiggen locally using. ::
 
    running
    code
+   word2vec
 
 embiggen API
 ============

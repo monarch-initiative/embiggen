@@ -1,5 +1,6 @@
-xn2v
-====
-.. automodule:: xn2v
+embiggen
+========
+
+.. automodule:: embiggen
     :members:
     :imported-members:
