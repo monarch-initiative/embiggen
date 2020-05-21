@@ -47,9 +47,6 @@ class N2vGraph:
         self.num_processes = num_processes if num_processes != -1 else cpu_count()
         self.__preprocess_transition_probs()
 
-    def _multiproc_node2vec_walk(self, kwargs):
-        return self.node2vec_walk(**kwargs)
-
     def node2vec_walk(self, walk_length: int, start_node) -> list:
         """ Simulate a random walk starting from start node.
         Args:
@@ -65,7 +62,8 @@ class N2vGraph:
 
         while len(walk) < walk_length:
             cur = walk[-1]
-            cur_nbrs = g.neighbors_as_ints(cur)  # g returns a sorted list of neighbors
+            # g returns a sorted list of neighbors
+            cur_nbrs = g.neighbors_as_ints(cur)
 
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
@@ -81,6 +79,12 @@ class N2vGraph:
 
         return walk
 
+    def _multiproc_node2vec_walk(self, kwargs):
+        return [
+            self.node2vec_walk(**kwargs, start_node=node)
+            for node in np.random.permutation(self.g.nodes_as_integers())
+        ]
+
     def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
         Args:
@@ -94,20 +98,20 @@ class N2vGraph:
         if use_cache and key in self.random_walks_map:
             walks_tensor = self.random_walks_map[key]
         else:
-            g = self.g
-            walks = []
-            nodes = g.nodes_as_integers()  # this is a list
-
-            with Pool(self.num_processes) as pool:
-                walks = list(tqdm(pool.imap_unordered(self._multiproc_node2vec_walk,
-                                                      [dict(walk_length=walk_length,
-                                                            start_node=this_node)
-                                                       for _ in range(num_walks)
-                                                       for this_node in
-                                                       np.random.permutation(nodes)]),
-                                  total=len(nodes) * num_walks,
-                                  desc='Performing walks in parallel'))
-                walks_tensor = tf.ragged.constant(walks)
+            with Pool(min(self.num_processes, num_walks)) as pool:
+                walks_tensor = tf.ragged.constant(sum(tqdm(
+                    pool.imap_unordered(
+                        self._multiproc_node2vec_walk,
+                        [
+                            dict(walk_length=walk_length)
+                            for _ in range(num_walks)
+                        ]
+                    ),
+                    total=num_walks,
+                    desc='Performing walks'
+                ), []))
+                pool.close()
+                pool.join()
                 self.random_walks_map[key] = walks_tensor
 
         return walks_tensor
@@ -140,7 +144,8 @@ class N2vGraph:
                 unnormalized_probs.append(edge_weight / q)
 
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
 
         return [edge, self.__alias_setup(normalized_probs)]
 
