@@ -2,12 +2,12 @@ import logging.handlers
 import logging
 import numpy as np    # type: ignore
 import os
-import random
 import sys
 import tensorflow as tf  # type: ignore
 
 from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple
+import time
 
 from tqdm import trange, tqdm  # type: ignore
 
@@ -181,7 +181,7 @@ class N2vGraph:
 
         alias_nodes = {}
         num_nodes = len(g.nodes_as_integers())  # for progress updates
-
+        start = time.time()
         with Pool(processes=self.num_processes) as pool:
             for i, [orig_node, alias_node] in enumerate(
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
@@ -190,6 +190,8 @@ class N2vGraph:
                                  format(100 * i / num_nodes))
             pool.close()
             pool.join()
+        end = time.time()
+        logging.info("making alias nodes:{} seconds".format(end-start))
 
         sys.stderr.write("\rDone making alias nodes.\n")
 
@@ -199,7 +201,7 @@ class N2vGraph:
         # between any two nodes.  We do not need to create any additional edges for the
         # random walk as in the Stanford implementation
         num_edges = len(g.edges())  # for progress updates
-
+        start = time.time()
         with Pool(processes=self.num_processes) as pool:
             for i, [orig_edge, alias_edge] in enumerate(
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
@@ -209,7 +211,8 @@ class N2vGraph:
             pool.close()
             pool.join()
         sys.stderr.write("\rDone making alias edges.\n")
-
+        end = time.time()
+        logging.info("making alias edges:{} seconds".format(end-start))
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
 
