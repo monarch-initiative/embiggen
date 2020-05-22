@@ -26,3 +26,5 @@ karate.embedded
 .single_run
 
 embedded_graph.embedded
+N2vGraph.pkl
+output

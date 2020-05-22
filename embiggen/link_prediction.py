@@ -230,9 +230,14 @@ class LinkPrediction(object):
 
         if self.classifier == "MultiModalFFNN":
             # multimodalFFNN fits and predicts with different args from the other NNs
-            edge_classifier.fit_multi_modal(self.train_src_embs,
-                                            self.train_dst_embs,
-                                            self.train_labels)
+            edge_classifier.fit_multi_modal(
+                self.train_src_embs,
+                self.train_dst_embs,
+                self.train_labels,
+                self.test_src_embs,
+                self.test_dst_embs,
+                self.test_labels
+            )
             self.train_predictions = edge_classifier.predict_multi_modal(
                                             self.train_src_embs,
                                             self.train_dst_embs)
@@ -257,7 +262,15 @@ class LinkPrediction(object):
                                             self.valid_dst_embs)[:, 1]
 
         else:
-            edge_classifier.fit(self.train_edge_embs, self.train_labels)
+            if self.classifier in ("MLP", "FFNN"):
+                edge_classifier.fit(
+                    self.train_edge_embs,
+                    self.train_labels,
+                    self.test_edge_embs,
+                    self.test_labels
+                )
+            else:
+                edge_classifier.fit(self.train_edge_embs, self.train_labels)
             self.train_predictions = edge_classifier.predict(self.train_edge_embs)
             self.test_predictions = edge_classifier.predict(self.test_edge_embs)
 
