@@ -5,8 +5,6 @@ from tensorflow.keras.metrics import AUC  # type: ignore
 import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
 from typing import Tuple, Dict, List, Union, Optional
-from keras_tqdm import TQDMCallback, TQDMNotebookCallback  # type: ignore
-from environments_utils import is_notebook  # type: ignore
 
 
 class NeuralNetwork:
@@ -119,9 +117,6 @@ class NeuralNetwork:
             shuffle=True,
             callbacks=[
                 EarlyStopping(self._monitor, patience=self._patience),
-                # We show the correct kind of callback depending if this
-                # is running in a CLI or jupyter notebook-like environment.
-                TQDMNotebookCallback() if is_notebook() else TQDMCallback()
             ]
         ).history)
 

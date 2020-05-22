@@ -32,7 +32,9 @@ class TestLinkPrediction(unittest.TestCase):
                             self.test_embeddings,
                             'hadamard',
                             classifier=classifier_name,
-                            use_valid=True)
+                            skip_valid=True,
+                            output="output"
+                            )
 
         lp.prepare_edge_and_node_labels()
         lp.predict_links()

@@ -1,8 +1,5 @@
-import numpy as np  # type: ignore
 import csv
-
 import tensorflow as tf  # type: ignore
-from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
 from random import shuffle
 
 assert tf.__version__ >= "2.0"
@@ -117,9 +114,8 @@ class GloVeModel:
         # we will return the sum
         return tf.math.reduce_sum(loss)
 
-    def train(self, log_dir=None, summary_batch_interval=1000):
+    def train(self, log_dir=None):
         batches = self.__prepare_batches()
-        total_steps = 0
         losses = []
         for epoch in range(self.num_epochs):
             shuffle(batches)

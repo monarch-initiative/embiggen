@@ -318,7 +318,7 @@ class SkipGramWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for epoch in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -345,7 +345,7 @@ class SkipGramWord2Vec(Word2Vec):
                 shift_len = batch_size = window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data
-                for epoch in range(1, self.n_epochs + 1):
+                for _ in range(1, self.n_epochs + 1):
                     data_index = 0
                     endpos = data_index + batch_size
                     while True:
@@ -632,7 +632,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for epoch in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor

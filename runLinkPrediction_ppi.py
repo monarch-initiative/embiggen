@@ -202,7 +202,11 @@ def main(args):
     if args.use_cached_random_walks and args.random_walks:
         # restore post_train_g from cache
         logging.info(f"Restore random walks from {args.random_walks}")
+        start = time.time()
         pos_train_g = deserialize(args.random_walks)
+        end = time.time()
+        logging.info(" de-serializing: {} seconds ".format(end - start))
+
     else:
         # generate pos_train_g and simulate walks
         pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
@@ -213,7 +217,10 @@ def main(args):
 
     if args.cache_random_walks and args.random_walks:
         logging.info(f"Caching random walks to {args.random_walks}")
+        start = time.time()
         serialize(pos_train_g, args.random_walks)
+        end = time.time()
+        logging.info(" serializing: {} seconds ".format(end - start))
 
     walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
 
