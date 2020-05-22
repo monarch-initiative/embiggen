@@ -6,14 +6,14 @@ from embiggen import LinkPrediction, CSFGraph
 class TestLinkPrediction(unittest.TestCase):
     def setUp(self) -> None:
 
-        self.file_dir = 'data/ppismall_with_validation/'
-        self.pos_train_graph = CSFGraph(os.path.join(self.file_dir, 'pos_train_edges_max_comp_graph'))
-        self.pos_valid_graph = CSFGraph(os.path.join(self.file_dir, 'pos_validation_edges_max_comp_graph'))
-        self.pos_test_graph = CSFGraph(os.path.join(self.file_dir, 'pos_test_edges_max_comp_graph'))
-        self.neg_train_graph = CSFGraph(os.path.join(self.file_dir, 'neg_train_edges_max_comp_graph'))
-        self.neg_valid_graph = CSFGraph(os.path.join(self.file_dir, 'neg_validation_edges_max_comp_graph'))
-        self.neg_test_graph = CSFGraph(os.path.join(self.file_dir, 'neg_test_edges_max_comp_graph'))
-        self.test_embeddings = os.path.join(self.file_dir, 'test.embeddings')
+        file_dir = 'data/ppismall_with_validation/'
+        self.pos_train_graph = CSFGraph(os.path.join(file_dir, 'pos_train_edges_max_comp_graph'))
+        self.pos_valid_graph = CSFGraph(os.path.join(file_dir, 'pos_validation_edges_max_comp_graph'))
+        self.pos_test_graph = CSFGraph(os.path.join(file_dir, 'pos_test_edges_max_comp_graph'))
+        self.neg_train_graph = CSFGraph(os.path.join(file_dir, 'neg_train_edges_max_comp_graph'))
+        self.neg_valid_graph = CSFGraph(os.path.join(file_dir, 'neg_validation_edges_max_comp_graph'))
+        self.neg_test_graph = CSFGraph(os.path.join(file_dir, 'neg_test_edges_max_comp_graph'))
+        self.test_embeddings = os.path.join(file_dir, 'test.embeddings')
 
     @parameterized.expand([
                             ("LR",),
