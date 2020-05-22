@@ -67,22 +67,21 @@ class N2vGraph:
 
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
-                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0],
-                                                         alias_nodes[cur][1])])
+                    alias = alias_nodes[cur]
                 else:
                     prev = walk[-2]
-                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0],
-                                                   alias_edges[(prev, cur)][1])]
-                    walk.append(nxt)
+                    alias = alias_edges[(prev, cur)]
+                walk.append(cur_nbrs[self.alias_draw(*alias)])
             else:
                 break
 
         return walk
 
-    def _multiproc_node2vec_walk(self, kwargs):
+    def _multiproc_node2vec_walk(self, args):
+        nodes, walk_length = args
         return [
-            self.node2vec_walk(**kwargs, start_node=node)
-            for node in np.random.permutation(self.g.nodes_as_integers())
+            self.node2vec_walk(walk_length, node)
+            for node in np.random.permutation(nodes)
         ]
 
     def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
@@ -98,14 +97,15 @@ class N2vGraph:
         if use_cache and key in self.random_walks_map:
             walks_tensor = self.random_walks_map[key]
         else:
+            nodes = self.g.nodes_as_integers()
             with Pool(min(self.num_processes, num_walks)) as pool:
                 walks_tensor = tf.ragged.constant(sum(tqdm(
                     pool.imap_unordered(
                         self._multiproc_node2vec_walk,
-                        [
-                            dict(walk_length=walk_length)
+                        (
+                            (nodes, walk_length)
                             for _ in range(num_walks)
-                        ]
+                        )
                     ),
                     total=num_walks,
                     desc='Performing walks'

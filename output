@@ -1,16 +1,16 @@
-confusion matrix.training: [[2408  665]
- [ 887 3253]]
-Accuracy.training: 0.7848329405240538
-Specificity.training: 0.7835990888382688
-Sensitivity.training: 0.7857487922705314
-F1-score.training: 0.8073963762720278
-ROC score.training: 0.1458610211110954
- AP score.training: 0.39450571742335644
-confusion matrix.test: [[651 168]
- [175 713]]
-Accuracy.test: 0.799062683069713
-Specificity.test: 0.7948717948717948
-Sensitivity.test: 0.8029279279279279
-F1-score.test: 0.8061051441492368
-ROC score.test: 0.13264638264638265
- AP score.test: 0.34321529756823693 
+confusion matrix.training: [[2129  944]
+ [1078 3062]]
+Accuracy.training: 0.71967281297657
+Specificity.training: 0.6928083306215425
+Sensitivity.training: 0.7396135265700483
+F1-score.training: 0.7517800147311564
+ROC score.training: 0.20647634610940543
+ AP score.training: 0.4210640068193473
+confusion matrix.test: [[543 276]
+ [204 684]]
+Accuracy.test: 0.718804920913884
+Specificity.test: 0.663003663003663
+Sensitivity.test: 0.7702702702702703
+F1-score.test: 0.7402597402597403
+ROC score.test: 0.204504642004642
+ AP score.test: 0.37130838608844646 
