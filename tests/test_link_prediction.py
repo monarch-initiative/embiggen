@@ -5,7 +5,8 @@ from embiggen import LinkPrediction, CSFGraph
 
 class TestLinkPrediction(unittest.TestCase):
     def setUp(self) -> None:
-        self.file_dir = 'tests/data/ppismall_with_validation/'
+
+        self.file_dir = 'data/ppismall_with_validation/'
         self.pos_train_graph = CSFGraph(os.path.join(self.file_dir, 'pos_train_edges_max_comp_graph'))
         self.pos_valid_graph = CSFGraph(os.path.join(self.file_dir, 'pos_validation_edges_max_comp_graph'))
         self.pos_test_graph = CSFGraph(os.path.join(self.file_dir, 'pos_test_edges_max_comp_graph'))
