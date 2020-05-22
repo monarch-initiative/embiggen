@@ -188,6 +188,8 @@ class N2vGraph:
                 alias_nodes[orig_node] = alias_node
                 sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
                                  format(100 * i / num_nodes))
+            pool.close()
+            pool.join()
 
         sys.stderr.write("\rDone making alias nodes.\n")
 
@@ -204,6 +206,8 @@ class N2vGraph:
                 alias_edges[orig_edge] = alias_edge
                 sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
                                  format(100 * i / num_edges))
+            pool.close()
+            pool.join()
         sys.stderr.write("\rDone making alias edges.\n")
 
         self.alias_nodes = alias_nodes
