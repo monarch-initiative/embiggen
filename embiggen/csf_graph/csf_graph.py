@@ -148,9 +148,11 @@ class CSFGraph:
             self.index_to_edgetype_map[i] = this_type  # type: ignore
 
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
-        self.edge_weight: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
+        self.edge_weight: np.ndarray = np.zeros(
+            total_edge_count, dtype=np.int32)
         # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
-        self.offset_to_edge_: np.ndarray = np.zeros(total_vertex_count + 1, dtype=np.int32)
+        self.offset_to_edge_: np.ndarray = np.zeros(
+            total_vertex_count + 1, dtype=np.int32)
 
         # create the graph - this done in three steps
         # step 1: count # of edges emanating from each source id
@@ -167,7 +169,8 @@ class CSFGraph:
             node_type = self.index_to_nodetype_map[self.node_to_index_map[n]]
             self.nodetype2count_dictionary[node_type] += 1
             source_index = self.node_to_index_map[n]
-            n_edges = index2edge_count[source_index]  # n_edges can be zero here
+            # n_edges can be zero here
+            n_edges = index2edge_count[source_index]
             i += 1
             offset += n_edges
             self.offset_to_edge_[i] = offset
@@ -185,7 +188,8 @@ class CSFGraph:
                 current_source_index = source_index
                 offset = 0  # start a new block
             else:
-                offset += 1  # go to next index (for a new destination of the previous source)
+                # go to next index (for a new destination of the previous source)
+                offset += 1
 
             self.edge_to[j] = dest_index
             self.edge_weight[j] = edge.weight
@@ -357,13 +361,10 @@ class CSFGraph:
             neighbors_ints: A list of indices of neighbors for a source node.
         """
 
-        neighbors_ints = []
-
-        for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
-            nbr = self.edge_to[i]
-            neighbors_ints.append(nbr)
-
-        return neighbors_ints
+        return [
+            self.edge_to[i]
+            for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1])
+        ]
 
     def has_edge(self, src: str, dest: str) -> bool:
         """Checks if an edge exists between src and dest node.
@@ -464,7 +465,8 @@ class CSFGraph:
         """
 
         if node not in self.node_to_index_map:
-            raise ValueError('Could not find {} in self.node_to_index_map'.format(node))
+            raise ValueError(
+                'Could not find {} in self.node_to_index_map'.format(node))
         else:
             return self.node_to_index_map.get(node)
 

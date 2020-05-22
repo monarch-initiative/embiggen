@@ -56,24 +56,36 @@ class N2vGraph:
             walk: A list of nodes, where each list constitutes a random walk.
         """
         g = self.g
-        alias_nodes = self.alias_nodes
-        alias_edges = self.alias_edges
-        walk = [start_node]
+        nodes = self.alias_nodes
+        edges = self.alias_edges
+
+
+        walk = [
+            start_node, # Initial node
+        ]
+
+        # First iteration
+        cur_nbrs = g.neighbors_as_ints(start_node)
+
+        if len(cur_nbrs)>0:
+            current = cur_nbrs[self.alias_draw(*nodes[start_node])]
+            previous = start_node
+            walk.append(current)
+        else:
+            return walk
 
         while len(walk) < walk_length:
-            cur = walk[-1]
             # g returns a sorted list of neighbors
-            cur_nbrs = g.neighbors_as_ints(cur)
+            cur_nbrs = g.neighbors_as_ints(current)
 
             if len(cur_nbrs) > 0:
-                if len(walk) == 1:
-                    alias = alias_nodes[cur]
-                else:
-                    prev = walk[-2]
-                    alias = alias_edges[(prev, cur)]
-                walk.append(cur_nbrs[self.alias_draw(*alias)])
-            else:
-                break
+                new_current = cur_nbrs[self.alias_draw(*edges[(previous, current)])]
+                previous = current
+                current = new_current
+                walk.append(current)
+                continue
+
+            break
 
         return walk
 
