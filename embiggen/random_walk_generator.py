@@ -9,7 +9,7 @@ from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple
 import time
 
-from tqdm import trange, tqdm  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 log = logging.getLogger("embiggen.log")
 
