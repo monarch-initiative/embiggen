@@ -166,7 +166,6 @@ def w2v(test_url, algorithm, num_epochs, embed_text):
     model.train()
     write_embeddings(embed_text, model.embedding, reverse_dictionary)
 
-
 if __name__ == "__main__":
     try:
         cli()

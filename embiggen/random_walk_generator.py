@@ -2,14 +2,14 @@ import logging.handlers
 import logging
 import numpy as np    # type: ignore
 import os
-import random
 import sys
 import tensorflow as tf  # type: ignore
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple
+import time
 
-from tqdm import trange  # type: ignore
+from tqdm import tqdm  # type: ignore
 
 log = logging.getLogger("embiggen.log")
 
@@ -35,14 +35,16 @@ class N2vGraph:
         two directed edges to represent each undirected edge.
         p: return parameter
         q: in-out parameter
+        num_processes:
     """
 
-    def __init__(self, csf_graph, p, q) -> None:
+    def __init__(self, csf_graph, p, q, num_processes: int = -1) -> None:
 
         self.g = csf_graph
         self.p = p
         self.q = q
         self.random_walks_map: Dict[Tuple, tf.RaggedTensor] = {}
+        self.num_processes = num_processes if num_processes != -1 else cpu_count()
         self.__preprocess_transition_probs()
 
     def node2vec_walk(self, walk_length: int, start_node) -> list:
@@ -54,27 +56,45 @@ class N2vGraph:
             walk: A list of nodes, where each list constitutes a random walk.
         """
         g = self.g
-        alias_nodes = self.alias_nodes
-        alias_edges = self.alias_edges
-        walk = [start_node]
+        nodes = self.alias_nodes
+        edges = self.alias_edges
+
+
+        walk = [
+            start_node, # Initial node
+        ]
+
+        # First iteration
+        cur_nbrs = g.neighbors_as_ints(start_node)
+
+        if len(cur_nbrs)>0:
+            current = cur_nbrs[self.alias_draw(*nodes[start_node])]
+            previous = start_node
+            walk.append(current)
+        else:
+            return walk
 
         while len(walk) < walk_length:
-            cur = walk[-1]
-            cur_nbrs = g.neighbors_as_ints(cur)  # g returns a sorted list of neighbors
+            # g returns a sorted list of neighbors
+            cur_nbrs = g.neighbors_as_ints(current)
 
             if len(cur_nbrs) > 0:
-                if len(walk) == 1:
-                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0],
-                                                         alias_nodes[cur][1])])
-                else:
-                    prev = walk[-2]
-                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0],
-                                                   alias_edges[(prev, cur)][1])]
-                    walk.append(nxt)
-            else:
-                break
+                new_current = cur_nbrs[self.alias_draw(*edges[(previous, current)])]
+                previous = current
+                current = new_current
+                walk.append(current)
+                continue
+
+            break
 
         return walk
+
+    def _multiproc_node2vec_walk(self, args):
+        nodes, walk_length = args
+        return [
+            self.node2vec_walk(walk_length, node)
+            for node in np.random.permutation(nodes)
+        ]
 
     def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
@@ -89,16 +109,22 @@ class N2vGraph:
         if use_cache and key in self.random_walks_map:
             walks_tensor = self.random_walks_map[key]
         else:
-            g = self.g
-            walks = []
-            nodes = g.nodes_as_integers()  # this is a list
-
-            for _ in trange(num_walks, desc='Walk iteration'):
-                random.shuffle(nodes)
-                for node in nodes:
-                    walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
-            walks_tensor = tf.ragged.constant(walks)
-            self.random_walks_map[key] = walks_tensor
+            nodes = self.g.nodes_as_integers()
+            with Pool(min(self.num_processes, num_walks)) as pool:
+                walks_tensor = tf.ragged.constant(sum(tqdm(
+                    pool.imap_unordered(
+                        self._multiproc_node2vec_walk,
+                        (
+                            (nodes, walk_length)
+                            for _ in range(num_walks)
+                        )
+                    ),
+                    total=num_walks,
+                    desc='Performing walks'
+                ), []))
+                pool.close()
+                pool.join()
+                self.random_walks_map[key] = walks_tensor
 
         return walks_tensor
 
@@ -130,7 +156,8 @@ class N2vGraph:
                 unnormalized_probs.append(edge_weight / q)
 
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
 
         return [edge, self.__alias_setup(normalized_probs)]
 
@@ -153,7 +180,7 @@ class N2vGraph:
 
         return [node, self.__alias_setup(normalized_probs)]
 
-    def __preprocess_transition_probs(self, num_processes=8) -> None:
+    def __preprocess_transition_probs(self) -> None:
         """Preprocessing of transition probabilities for guiding the random walks.
 
         Args:
@@ -166,13 +193,17 @@ class N2vGraph:
 
         alias_nodes = {}
         num_nodes = len(g.nodes_as_integers())  # for progress updates
-
-        with Pool(processes=num_processes) as pool:
+        start = time.time()
+        with Pool(processes=self.num_processes) as pool:
             for i, [orig_node, alias_node] in enumerate(
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
                 sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
                                  format(100 * i / num_nodes))
+            pool.close()
+            pool.join()
+        end = time.time()
+        logging.info("making alias nodes:{} seconds".format(end-start))
 
         sys.stderr.write("\rDone making alias nodes.\n")
 
@@ -182,15 +213,18 @@ class N2vGraph:
         # between any two nodes.  We do not need to create any additional edges for the
         # random walk as in the Stanford implementation
         num_edges = len(g.edges())  # for progress updates
-
-        with Pool(processes=num_processes) as pool:
+        start = time.time()
+        with Pool(processes=self.num_processes) as pool:
             for i, [orig_edge, alias_edge] in enumerate(
                     pool.imap_unordered(self.get_alias_edge, g.edges_as_ints())):
                 alias_edges[orig_edge] = alias_edge
                 sys.stderr.write('\rmaking alias edges ({:03.1f}% done)'.
                                  format(100 * i / num_edges))
+            pool.close()
+            pool.join()
         sys.stderr.write("\rDone making alias edges.\n")
-
+        end = time.time()
+        logging.info("making alias edges:{} seconds".format(end-start))
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
 
