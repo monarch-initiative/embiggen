@@ -2,6 +2,7 @@ import nltk  # type: ignore
 import os
 import tensorflow as tf  # type: ignore
 import re
+import csv
 
 from collections import Counter
 from more_itertools import unique_everseen  # type: ignore
@@ -180,4 +181,85 @@ class TextEncoder:
             else:
                 tensor_data = tf.convert_to_tensor(sequences) # should now be a 1D tensor
 
+        return tensor_data, count_list, dictionary, reverse_dictionary
+
+    def build_dataset_from_csv(self,
+                               payload_index,
+                               delimiter='\t',
+                               max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
+        """A TensorFlow implementation of the text-encoder functionality.
+
+        Note. The Tokenizer method is initialized with 'UNK' as the out-of-vocabulary token. Keras reserves the 0th
+        index for padding sequences, the index for 'UNK' will be 1st index max_vocab_size + 1 because Keras reserves
+        the 0th index.
+
+        Args:
+            payload_index: number of the column with the texts
+            max_vocab: An integer specifying the maximum vocabulary size.
+
+        Returns:
+            tensor_data: A tf.Tensor (tf.data.Dataset if a single span of text or list of sentences of the same length
+                OR a tf.RaggedTensor if the list of sentences differ in length) the first  item is a word and
+                the second is the word frequency.
+            count_list: A list of tuples, the first item is a word and the second is the word frequency.
+            dictionary: A dictionary where the keys are words and the values are the word id.
+            reverse_dictionary: A dictionary that is the reverse of the dictionary object mentioned above.
+
+        Raises:
+            ValueError: If the length of count_as_tuples does not match max_vocab_size.
+        """
+
+        # read in data
+        # text = self.process_input_text()
+        sentences = []
+        if not isinstance(payload_index, int):
+            raise TypeError("Payload parameter must be an integer index")
+        with open(self.filename) as f:
+            csvreader = csv.reader(f, delimiter=delimiter)
+            for row in csvreader:
+                if len(row) < payload_index + 1:
+                    print("[WARNING] Skipping line with too few fields: " + delimiter.join(row))
+                    continue
+                cleantext = self.clean_text(row[payload_index]).split()
+                sentences.append(cleantext)
+
+        word_count = len(set([word for sentence in sentences for word in sentence]))
+        max_vocab = min(max_vocab, word_count) + 1
+        tokenizer = Tokenizer(num_words=max_vocab, filters='', oov_token=['UNK'][0])
+        tokenizer.fit_on_texts(sentences)
+        word_index_list = tokenizer.word_index.items()
+        sequences = tokenizer.texts_to_sequences(sentences)
+
+        # apply tokenizer to unprocessed words
+
+        flattened_sequences = list(flatten(sequences))  # for downstream compatibility
+        count = Counter(flattened_sequences)
+        filtered_count, dictionary = {}, {}  # for downstream compatibility
+
+        for k, v in word_index_list:
+            if v <= max_vocab:
+                if k == 'UNK':
+                    filtered_count['UNK'] = 0
+                    dictionary['UNK'] = 1
+                else:
+                    filtered_count[k] = count[v - 1]
+                    dictionary[k] = v
+            else:
+                filtered_count['UNK'] += 1
+
+        reverse_dictionary = dict(zip(dictionary.values(), dictionary.keys()))  # for downstream compatibility
+        count_list = [list(x) for x in list(zip(list(filtered_count.keys()), list(filtered_count.values())))]
+
+        if max_vocab != len(count_list):
+            raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
+        else:
+            # try:
+            #    tensor_data = tf.data.Dataset.from_tensor_slices(sequences)
+            # except ValueError:
+            #    tensor_data = tf.ragged.constant(sequences)  # for nested lists of differing lengths
+            if isinstance(sequences, list):
+                tensor_data = tf.ragged.constant(sequences)
+            else:
+                ## ToDo  _-CHECK ME!
+                raise TypeError("We were expecting sequences to be a list")
         return tensor_data, count_list, dictionary, reverse_dictionary

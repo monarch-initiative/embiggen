@@ -67,3 +67,29 @@ class TestTextEncoderEnBlock(TestCase):
         self.assertEqual(2, wordcount['twig'])
         self.assertEqual(2, wordcount['blade'])
         self.assertEqual(None, wordcount.get('the'))  # Stopwords should have been removed
+
+
+class TestCsvTextEncoder(TestCase):
+    """Test version of text encoder that extracts/converts words to integers and returns a tf.data.Dataset if list of
+        sentences are the same length OR a tf.RaggedTensor if the list of sentences differ in length.
+        """
+
+    def setUp(self):
+        # read in data
+        infile = os.path.join(os.path.dirname(__file__), 'data', 'pubmed20n1015excerpt.txt')
+
+        # run text encoder
+        encoder = TextEncoder(filename=infile, data_type='sentences')
+        self.data, self.count, self.dictionary, self.reverse_dictionary = encoder.build_dataset_from_csv(payload_index=2)
+
+    def testParseSuccess(self):
+        self.assertIsNotNone(self.data)
+
+    def testCsvParserIngestedTenLines(self):
+        expected_number_of_rows = 10
+        i = 0
+        # self.assertTrue(isinstance(self.data, tf.Tensor))
+        for _ in self.data:
+            i += 1
+        self.assertEqual(expected_number_of_rows, i)
+
