@@ -9,6 +9,7 @@ from sklearn.metrics import roc_auc_score, average_precision_score   # type: ign
 from embiggen.utils import load_embeddings
 import numpy as np  # type: ignore
 from .neural_networks import MLP, FFNN, MultiModalFFNN
+import csv
 
 import logging
 #import os
@@ -339,50 +340,43 @@ class LinkPrediction(object):
                 2.0 * train_conf_matrix[1, 1] + train_conf_matrix[0, 1] + train_conf_matrix[1, 0])
         # f1-score =2 * TP / (2 * TP + FP + FN)
 
-        with open(self.output, 'w') as f:
-            f.write("confusion matrix.training: {}\n".format(str(train_conf_matrix)))
-            f.write('Accuracy.training: {}\n'.format(train_accuracy))
-            f.write('Specificity.training: {}\n'.format(train_specificity))
-            f.write('Sensitivity.training: {}\n'.format(train_sensitivity))
-            f.write('F1-score.training: {}\n'.format(train_f1_score))
-            f.write("ROC score.training: {}\n ".format(str(self.train_roc)))
-            f.write("AP score.training: {}\n".format(str(self.train_average_precision)))
+        logging.info("confusion matrix.training: {}\n".format(str(train_conf_matrix)))
 
-            if not self.skip_validation:
-                valid_conf_matrix = self.validation_confusion_matrix
-                total = sum(sum(valid_conf_matrix))
-                valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
-                valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
-                valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
-                valid_f1_score = (2.0 * valid_conf_matrix[1, 1]) / (
+        if not self.skip_validation:
+            valid_conf_matrix = self.validation_confusion_matrix
+            total = sum(sum(valid_conf_matrix))
+            valid_accuracy = (valid_conf_matrix[0, 0] + valid_conf_matrix[1, 1]) / total
+            valid_specificity = valid_conf_matrix[0, 0] / (valid_conf_matrix[0, 0] + valid_conf_matrix[0, 1])
+            valid_sensitivity = valid_conf_matrix[1, 1] / (valid_conf_matrix[1, 0] + valid_conf_matrix[1, 1])
+            valid_f1_score = (2.0 * valid_conf_matrix[1, 1]) / (
                             2.0 * valid_conf_matrix[1, 1] + valid_conf_matrix[0, 1] + valid_conf_matrix[1, 0])
-                # f1-score =2 * TP / (2 * TP + FP + FN)
-
-                f.write("confusion matrix.validation: {}\n".format(str(valid_conf_matrix)))
-                f.write('Accuracy.validation : {}\n'.format(valid_accuracy))
-                f.write('Specificity.validation: {}\n'.format(valid_specificity))
-                f.write('Sensitivity.validation: {}\n'.format(valid_sensitivity))
-                f.write('F1-score.validation: {}\n'.format(valid_f1_score))
-                f.write("ROC score.validation: {}\n ".format(str(self.valid_roc)))
-                f.write("AP score.validation: {}\n".format(str(self.valid_average_precision)))
-
-            test_confusion_matrix = self.test_confusion_matrix
-            total = sum(sum(test_confusion_matrix))
-            test_accuracy = (test_confusion_matrix[0, 0] + test_confusion_matrix[1, 1]) * 1.0 / total
-            test_specificity = test_confusion_matrix[0, 0] * 1.0 / (test_confusion_matrix[0, 0] + test_confusion_matrix[0, 1]) * 1.0
-            test_sensitivity = test_confusion_matrix[1, 1] * 1.0 / (test_confusion_matrix[1, 0] + test_confusion_matrix[1, 1]) * 1.0
-            test_f1_score = (2.0 * test_confusion_matrix[1, 1]) / (
-                        2.0 * test_confusion_matrix[1, 1] + test_confusion_matrix[0, 1] + test_confusion_matrix[1, 0])
             # f1-score =2 * TP / (2 * TP + FP + FN)
 
-            f.write("confusion matrix.test: {}\n".format(str(test_confusion_matrix)))
-            f.write('Accuracy.test: {}\n'.format(test_accuracy))
-            f.write('Specificity.test: {}\n'.format(test_specificity))
-            f.write('Sensitivity.test: {}\n'.format(test_sensitivity))
-            f.write("F1-score.test: {}\n".format(test_f1_score))
-            f.write("ROC score.test: {}\n ".format(str(self.test_roc)))
-            f.write("AP score.test: {} \n".format(str(self.test_average_precision)))
-        f.close()
+        test_confusion_matrix = self.test_confusion_matrix
+        total = sum(sum(test_confusion_matrix))
+        test_accuracy = (test_confusion_matrix[0, 0] + test_confusion_matrix[1, 1]) * 1.0 / total
+        test_specificity = test_confusion_matrix[0, 0] * 1.0 / (test_confusion_matrix[0, 0] + test_confusion_matrix[0, 1]) * 1.0
+        test_sensitivity = test_confusion_matrix[1, 1] * 1.0 / (test_confusion_matrix[1, 0] + test_confusion_matrix[1, 1]) * 1.0
+        test_f1_score = (2.0 * test_confusion_matrix[1, 1]) / (
+                        2.0 * test_confusion_matrix[1, 1] + test_confusion_matrix[0, 1] + test_confusion_matrix[1, 0])
+        # f1-score =2 * TP / (2 * TP + FP + FN)
+
+        logging.info("confusion matrix.training: {}\n".format(str(train_conf_matrix)))
+        logging.info("confusion matrix.test: {}\n".format(str(test_confusion_matrix)))
+        if not self.skip_validation:
+            logging.info("confusion matrix.validation: {}\n".format(str(valid_conf_matrix)))
+
+        with open(self.output, mode='w') as csv_file:
+            fieldnames = ['set', 'AUC-score', 'Sensitivity', 'Specificity', 'Accuracy', 'F1-score', 'Average-precision']
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames, delimiter=' ')
+
+            writer.writeheader()
+            writer.writerow({'set': "training",'AUC-score': self.train_roc, 'Sensitivity':train_sensitivity, 'Specificity': train_specificity, 'Accuracy': train_accuracy, "F1-score": train_f1_score, "Average-precision": self.train_average_precision})
+
+            writer.writerow({'set': "test", 'AUC-score': self.test_roc, 'Sensitivity': test_sensitivity,
+                             'Specificity': test_specificity, 'Accuracy': test_accuracy, "F1-score": test_f1_score,"Average-precision": self.test_average_precision})
+            if not self.skip_validation:
+                writer.writerow({'set': "validation",'AUC-score': self.valid_roc, 'Sensitivity':valid_sensitivity,'Specificity': valid_specificity, 'Accuracy': valid_accuracy, "F1-score": valid_f1_score, "Average-precision": self.valid_average_precision})
 
     def create_edge_embeddings(self, edge_list, node2vector_map) -> \
             Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -406,23 +400,19 @@ class LinkPrediction(object):
             emb2 = node2vector_map[node2]
             if edge_embedding_method == "hadamard":
                 # Perform a Hadamard transform on the node embeddings.
-                # This is a dot product of the node embedding for the two nodes that
-                # belong to each edge
+                # This is a hadamard product of the node embedding for the two nodes
                 edge_emb = np.multiply(emb1, emb2)
             elif edge_embedding_method == "average":
                 # Perform a Average transform on the node embeddings.
-                # This is a elementwise average of the node embedding for the two nodes that
-                # belong to each edge
+                # This is a elementwise average of the node embedding for the two nodes
                 edge_emb = np.add(emb1, emb2) / 2
             elif edge_embedding_method == "weightedL1":
                 # Perform weightedL1 transform on the node embeddings.
-                # WeightedL1 calculates the absolute value of difference of each element of the two nodes that
-                # belong to each edge
+                # WeightedL1 calculates the absolute value of difference of each element of the two nodes
                 edge_emb = abs(emb1 - emb2)
             elif edge_embedding_method == "weightedL2":
                 # Perform weightedL2 transform on the node embeddings.
-                # WeightedL2 calculates the square of difference of each element of the two nodes that
-                # belong to each edge
+                # WeightedL2 calculates the square of difference of each element of the two nodes
                 edge_emb = np.power((emb1 - emb2), 2)
             else:
                 logging.error("Enter hadamard, average, weightedL1, weightedL2")
