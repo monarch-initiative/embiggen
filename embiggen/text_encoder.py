@@ -1,4 +1,4 @@
-import nltk  # type: ignore
+import nltk  # type: ignore  # pylint: disable=import-error
 import os
 import pandas as pd  # type: ignore
 import re
@@ -7,7 +7,7 @@ import tensorflow as tf  # type: ignore
 from collections import Counter
 from more_itertools import unique_everseen  # type: ignore
 from pandas.core.common import flatten  # type: ignore
-from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
+from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore  # pylint: disable=import-error
 from typing import Dict, List, Optional, Tuple, Union
 
 
