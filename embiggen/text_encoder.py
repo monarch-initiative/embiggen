@@ -131,15 +131,18 @@ class TextEncoder:
         print('Reading {file} and processing it as {data_type}'.format(file=self.filename, data_type=self.data_type))
 
         if self.data_type == 'words':
-            word_data = open(self.filename).read()
+            with open(self.filename, 'r') as input_file:
+                word_data = input_file.read()
+            input_file.close()
             return self.clean_text(word_data).split()
         else:
             if self.payload_index:
                 data = pd.read_csv(self.filename, sep=self.delimiter, header=self.header)
                 sentence_data = list(data[list(data).index(self.payload_index)])
             else:
-                sentence_data = open(self.filename).readlines()
-
+                with open(self.filename, 'r') as input_file:
+                    sentence_data = input_file.readlines()
+                input_file.close()
             return [self.clean_text(sent) for sent in sentence_data]
 
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
