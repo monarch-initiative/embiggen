@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from .csf_graph import CSFGraph
 import numpy as np
 
@@ -38,7 +38,7 @@ class N2ETransformer:
         self._method = N2ETransformer.methods[method]
         self._embedding = embedding
 
-    def transform(self, G: CSFGraph) -> np.ndarray:
+    def transform_edges(self, G: CSFGraph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters
@@ -54,3 +54,20 @@ class N2ETransformer:
             self._method(self._embedding[source], self._embedding[sink])
             for source, sink in G.edges()
         ])
+
+    def transform_nodes(self, G: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
+        """Return nodes from given graph.
+
+        Parameters
+        ---------------------
+        G: CSFGraph,
+            The graph whose nodes are to be embedded.
+
+        Returns
+        ---------------------
+        The embedded edges.
+        """
+        return np.array([
+            (self._embedding[source], self._embedding[sink])
+            for source, sink in G.edges()
+        ]).T

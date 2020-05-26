@@ -26,7 +26,23 @@ class GraphPartitionTransfomer:
         """
         self._transformer = N2ETransformer(embedding, method=method)
 
-    def transform(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[np.ndarray]:
+    def _get_labels(self, positive: np.ndarray, negative: np.ndarray) -> np.ndarray:
+        """Return training labels for given graph partitions.
+
+        Parameters
+        ----------------------
+        positive: np.ndarray,
+            The positive partition of the graph.
+        negative: np.ndarray,
+            The negative partition of the graph.
+
+        Returns
+        ----------------------
+        Labels from the partitions.
+        """
+        return np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
+
+    def transform_edges(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
@@ -40,13 +56,37 @@ class GraphPartitionTransfomer:
         ----------------------
         Tuple of X and y to be used for training.
         """
-        positive_embedding = self._transformer.transform(positive)
-        negative_embedding = self._transformer.transform(negative)
+        positive_embedding = self._transformer.transform_edges(positive)
+        negative_embedding = self._transformer.transform_edges(negative)
 
         return (
             np.concatenate([positive_embedding, negative_embedding]),
-            np.concatenate([
-                np.ones(len(positive_embedding)),
-                np.zeros(len(negative_embedding))
-            ])
+            self._get_labels(positive_embedding, negative_embedding)
+        )
+
+    def transform_nodes(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
+        """Return X and y data for training.
+
+        Parameters
+        ----------------------
+        positive: CSFGraph,
+            The positive partition of the Graph.
+        negative: CSFGraph,
+            The negative partition of the Graph.
+
+        Returns
+        ----------------------
+        Tuple of X and y to be used for training.
+        """
+        positive_sink, positive_source = self._transformer.transform_nodes(
+            positive
+        )
+        negative_sink, negative_source = self._transformer.transform_nodes(
+            negative
+        )
+
+        return (
+            np.concatenate([positive_source, negative_source]),
+            np.concatenate([positive_sink, negative_sink]),
+            self._get_labels(positive_sink, negative_sink)
         )
