@@ -1,16 +1,25 @@
 import argparse
 from embiggen import CSFGraph, CooccurrenceEncoder
-from embiggen import N2vGraph
+from embiggen import N2vGraph, GraphPartitionTransfomer
 from embiggen.glove import GloVeModel
 from embiggen.word2vec import SkipGramWord2Vec
 from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
 from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings, serialize, deserialize
+from embiggen.neural_networks import MLP, FFNN
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, accuracy_score
 from cache_decorator import Cache
+from sanitize_ml_labels import sanitize_ml_labels
+from deflate_dict import deflate
 import tensorflow as tf
+import numpy as np
+import pandas as pd
 import os
 import logging
 import time
+from typing import Dict
 
 handler = logging.handlers.WatchedFileHandler(
     os.environ.get("LOGFILE", "link_prediction.log"))
@@ -53,13 +62,13 @@ def parse_args():
                         help='Input negative test edges path')
 
     parser.add_argument('--output', nargs='?',
-                        default='output_results',
+                        default='output_results.csv',
                         help='path to the output file which contains results of link prediction')
 
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
                         help='Embeddings path of the positive training graph')
 
-    parser.add_argumenedge_embed_method', nargs='?', default='hadamard',
+    parser.add_argument('edge_embed_method', nargs='?', default='hadamard',
                         help='Embeddings embedding method of the positive training graph. '
                              'It can be hadamard, weightedL1, weightedL2 or average')
 
@@ -113,7 +122,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_model(
+def get_embedding_model(
     walks: tf.RaggedTensor,
     pos_train: CSFGraph,
     w2v_model: str,
@@ -121,7 +130,7 @@ def get_model(
     context_window: int,
     num_epochs: int
 ):
-    """Return selected model.
+    """Return selected embedding model.
 
     Parameters
     --------------------
@@ -134,7 +143,7 @@ def get_model(
 
     Returns
     ---------------------
-    Return the selected model.
+    Return the selected embedding model.
     """
 
     worddictionary = pos_train.get_node_to_index_map()
@@ -162,43 +171,6 @@ def get_model(
     return GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=embedding_size,
                       context_size=context_window, num_epochs=num_epochs)
 
-    # model.train()
-
-    # write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
-
-
-def linkpred(
-    pos_train: CSFGraph,
-    pos_valid: CSFGraph,
-    pos_test: CSFGraph,
-    neg_train: CSFGraph,
-    neg_valid: CSFGraph,
-    neg_test: CSFGraph,
-    embedding,
-    edge_embed_method:str,
-    classifier:str,
-    skipValidation:bool
-):
-    """
-    :param pos_train: positive training graphs
-    :param pos_valid: positive validation graphs
-    :param pos_test: positive test graphs
-    :param neg_train: negative training graphs
-    :param neg_valid: negative validation graphs
-    :param neg_test: negative test graphs
-    :return: Metrics of logistic regression as the results of link prediction
-    """
-    lp = LinkPrediction(pos_train, pos_valid, pos_test, neg_train,
-                        neg_valid, neg_test, embedding, edge_embed_method, classifier,
-                        skipValidation)
-
-    lp.prepare_edge_and_node_labels()
-    lp.predict_links()
-    lp.get_classifier_results()
-    # lp.output_edge_node_information()
-    # lp.predicted_ppi_links()
-    # lp.predicted_ppi_non_links()
-
 
 def read_graphs(pos_train: str, pos_valid: str, pos_test: str, neg_train: str, neg_valid: str, neg_test: str):
     """
@@ -220,6 +192,43 @@ def read_graphs(pos_train: str, pos_valid: str, pos_test: str, neg_train: str, n
     return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
 
 
+def get_classifier_model(classifier: str, **kwargs: Dict):
+    """Return choen classifier model.
+
+    Parameters
+    ------------------
+    classifier:str,
+        Chosen classifier model. Can either be:
+            - LR for LogisticRegression
+            - RF for RandomForestClassifier
+            - MLP for Multi-Layer Perceptron
+            - FFNN for Feed Forward Neural Network
+    **kwargs:Dict,
+        Keyword arguments to be passed to the constructor of the model.
+
+    Raises
+    ------------------
+    ValueError,
+        When given classifier model is not supported.
+
+    Returns
+    ------------------
+    An instance of the selected model.
+    """
+    if classifier == "LR":
+        return LogisticRegression(**kwargs)
+    if classifier == "RF":
+        return RandomForestClassifier(**kwargs)
+    if classifier == "MLP":
+        return MLP(**kwargs)
+    if classifier == "FFNN":
+        return FFNN(**kwargs)
+
+    raise ValueError(
+        "Given classifier model {} is not supported.".format(classifier)
+    )
+
+
 @Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
 def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_length: int) -> tf.RaggedTensor:
     """Return a new N2vGraph trained on the provided graph.
@@ -238,6 +247,32 @@ def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_l
     """
     random_walker = N2vGraph(graph, p, q)
     return random_walker.simulate_walks(num_walks, walk_length)
+
+
+def performance_report(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
+    """Return performance report for given predictions and ground truths.
+
+    Parameters
+    ------------------------
+    y_true: np.ndarray,
+        The ground truth labels.
+    y_pred: np.ndarray,
+        The labels predicted by the classifier.
+
+    Returns
+    ------------------------
+    Dictionary with the performance metrics, including AUROC, AUPRC, F1 Score,
+    and accuracy.
+    """
+    metrics = roc_auc_score, average_precision_score, f1_score
+    report = {
+        sanitize_ml_labels(metric.__name__): metric(y_true, y_pred)
+        for metric in metrics
+    }
+    report[sanitize_ml_labels(accuracy_score.__name__)] = accuracy_score(
+        y_true, np.round(y_pred).astype(int)
+    )
+    return report
 
 
 def main(args):
@@ -262,22 +297,48 @@ def main(args):
 
     walks = get_random_walks(pos_train, args.p, args.q,
                              args.num_walks, args.walk_length)
-    model = get_model(walks, pos_train, args.w2v_model,
-                      args.embedding_size, args.context_window, args.num_epochs)
+    model = get_embedding_model(walks, pos_train, args.w2v_model,
+                                args.embedding_size, args.context_window, args.num_epochs)
     start = time.time()
     model.train()
     end = time.time()
     logging.info(" learning: {} seconds ".format(end-start))
 
-    write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
+    transformer = GraphPartitionTransfomer(
+        model.embedding, method=args.edge_embed_method)
 
-    start = time.time()
-    linkpred(pos_train, pos_valid, pos_test,
-             neg_train, neg_valid, neg_test)
-    end = time.time()
-    logging.info("link prediction: {} seconds".format(end-start))
+    X_train, y_train = transformer.transform_edges(pos_train, neg_train)
+    X_test, y_test = transformer.transform_edges(pos_test, neg_test)
+    X_valid, y_valid = transformer.transform_edges(pos_valid, neg_valid)
+
+    classifier_model = get_classifier_model(
+        args.classifier,
+        **(
+            dict(input_shape=X_train.shape[1])
+            if args.classifier in ("MLP", "FFNN")
+            else {}
+        )
+    )
+
+    classifier_model.fit(X_train, y_train)
+
+    y_train_pred = classifier_model.predict(X_train)
+    y_test_pred = classifier_model.predict(X_test)
+    y_valid_pred = classifier_model.predict(X_valid)
+
+    report = deflate(dict(
+        train=performance_report(y_train, y_train_pred),
+        test=performance_report(y_test, y_test_pred),
+        valid=performance_report(y_valid, y_valid_pred),
+    ))
+
+    return pd.DataFrame({
+        k: [v]
+        for k, v in report.items()
+    })
 
 
 if __name__ == "__main__":
     args = parse_args()
-    main(args)
+    report = main(args)
+    report.to_csv(args.output)

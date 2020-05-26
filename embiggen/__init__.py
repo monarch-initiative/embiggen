@@ -16,8 +16,10 @@ from .w2v.cbow_list_batcher import CBOWListBatcher
 from .w2v.skip_gram_batcher import SkipGramBatcher
 from .word2vec import ContinuousBagOfWordsWord2Vec
 from .word2vec import SkipGramWord2Vec
+from .graph_partition_transformer import GraphPartitionTransfomer
 
 __all__ = [
     "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
-    "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher"
+    "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher",
+    "GraphPartitionTransfomer"
 ]
