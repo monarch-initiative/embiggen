@@ -345,29 +345,29 @@ class SkipGramWord2Vec(Word2Vec):
                 shift_len = batch_size = window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data
-                for _ in range(1, self.n_epochs + 1):
-                    data_index = 0
+
+                data_index = 0
+                endpos = data_index + batch_size
+                while True:
+                    if endpos > lastpos:
+                        break
+                    currentTensor = data[data_index:endpos]
+                    if len(currentTensor) < window_len:
+                        break  # We are at the end
+                    batch_x, batch_y = self.next_batch(currentTensor)
+                    current_loss = self.run_optimization(batch_x, batch_y)
+                    if step == 0 or step % 100 == 0:
+                        logging.info("loss {}".format(current_loss))
+                        loss_history.append(current_loss)
+                    data_index += shift_len
                     endpos = data_index + batch_size
-                    while True:
-                        if endpos > lastpos:
-                            break
-                        currentTensor = data[data_index:endpos]
-                        if len(currentTensor) < window_len:
-                            break  # We are at the end
-                        batch_x, batch_y = self.next_batch(currentTensor)
-                        current_loss = self.run_optimization(batch_x, batch_y)
-                        if step == 0 or step % 100 == 0:
-                            logging.info("loss {}".format(current_loss))
-                            loss_history.append(current_loss)
-                        data_index += shift_len
-                        endpos = data_index + batch_size
-                        endpos = min(endpos,
-                                     lastpos)  # takes care of last part of data. Maybe we should just ignore though
-                        # Evaluation.
-                        if do_display and (step % self.eval_step == 0 or step == 0):
-                            self.display_words(x_test)
-                        step += 1
-                        self.run_optimization(batch_x, batch_y)
+                    endpos = min(endpos,
+                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                    # Evaluation.
+                    if do_display and (step % self.eval_step == 0 or step == 0):
+                        self.display_words(x_test)
+                    step += 1
+                    self.run_optimization(batch_x, batch_y)
         return loss_history
 
 
