@@ -4,7 +4,6 @@ from embiggen import N2vGraph, GraphPartitionTransfomer
 from embiggen.glove import GloVeModel
 from embiggen.word2vec import SkipGramWord2Vec
 from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
-from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings, serialize, deserialize
 from embiggen.neural_networks import MLP, FFNN
 from sklearn.ensemble import RandomForestClassifier
