@@ -13,6 +13,7 @@ using several different word2vec family algorithms.
 Setting up embiggen
 -------------------
 To do a local install, enter the following command from the main embiggen folder.
+
 .. code:: bash
 
     pip install --user embiggen
