@@ -217,10 +217,10 @@ def main(args):
     else:
         # generate pos_train_g and simulate walks
         pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
-    start = time.time()
-    pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
-    end = time.time()
-    logging.info("simulating walks: {} seconds".format(end - start))
+        start = time.time()
+        pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
+        end = time.time()
+        logging.info("simulating walks: {} seconds".format(end - start))
 
     if args.cache_random_walks and args.random_walks:
         logging.info(f"Caching random walks to {args.random_walks}")
