@@ -1,5 +1,5 @@
 import sys
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from sklearn.calibration import CalibratedClassifierCV  # type:ignore
 from sklearn.linear_model import LogisticRegression   # type: ignore
 from sklearn import metrics   # type: ignore
@@ -58,7 +58,6 @@ class LinkPrediction(object):
             "SVM" for support vector machine, "MLP" for a multi-layer perceptron, "FFNN" for a feed forward neural network.
         :param skip_valid: if True, link prediction is done on train and test sets. If False, link prediction is done on
          train, validation and test sets.
-        :param output: output file for the results of link prediction
         """
         self.pos_train_edges = pos_train_graph.edges()
         self.pos_test_edges = pos_test_graph.edges()
@@ -93,7 +92,6 @@ class LinkPrediction(object):
         self.test_roc = None
         self.test_average_precision = None
         self.skip_validation = skip_valid
-        self.output = output
 
     def read_embeddings(self):
         """
@@ -317,10 +315,15 @@ class LinkPrediction(object):
                 logging.info("edge {} prediction {}".format(self.neg_valid_edges[i],
                                                             self.validation_predictions[i + len(self.pos_valid_edges)]))
 
-    def output_classifier_results(self):
-        """
-        The method prints some metrics of the performance of the logistic regression classifier. including accuracy,
-        specificity and sensitivity
+    def get_classifier_results(self)->Dict:
+        """Return metrics relative to the performance of the model.
+
+        The metrics considered are:
+            - accuracy
+            - auroc
+            - auprc
+            - f1 score
+            - 
 
         Attributes used in method:
             predictions: prediction results of the logistic regression

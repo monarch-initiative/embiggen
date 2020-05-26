@@ -96,36 +96,29 @@ class N2vGraph:
             for node in np.random.permutation(nodes)
         ]
 
-    def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
+    def simulate_walks(self, num_walks: int, walk_length: int) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
         Args:
             num_walks: number of individual walks to take
             walk_length: length of one walk (number of nodes)
-            use_cache: whether or not to use random walks that are cached for the given num_walks and walk_length
         Returns:
             walks: A list of nodes, where each list constitutes a random walk.
         """
-        key = (num_walks, walk_length)
-        if use_cache and key in self.random_walks_map:
-            walks_tensor = self.random_walks_map[key]
-        else:
-            nodes = self.g.nodes_as_integers()
-            with Pool(min(self.num_processes, num_walks)) as pool:
-                walks_tensor = tf.ragged.constant(sum(tqdm(
-                    pool.imap_unordered(
-                        self._multiproc_node2vec_walk,
-                        (
-                            (nodes, walk_length)
-                            for _ in range(num_walks)
-                        )
-                    ),
-                    total=num_walks,
-                    desc='Performing walks'
-                ), []))
-                pool.close()
-                pool.join()
-                self.random_walks_map[key] = walks_tensor
-
+        nodes = self.g.nodes_as_integers()
+        with Pool(min(self.num_processes, num_walks)) as pool:
+            walks_tensor = tf.ragged.constant(sum(tqdm(
+                pool.imap_unordered(
+                    self._multiproc_node2vec_walk,
+                    (
+                        (nodes, walk_length)
+                        for _ in range(num_walks)
+                    )
+                ),
+                total=num_walks,
+                desc='Performing walks'
+            ), []))
+            pool.close()
+            pool.join()
         return walks_tensor
 
     def get_alias_edge(self, edge):

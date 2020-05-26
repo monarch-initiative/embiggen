@@ -6,12 +6,16 @@ from embiggen.word2vec import SkipGramWord2Vec
 from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
 from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings, serialize, deserialize
+from cache_decorator import Cache
+import tensorflow as tf
 import os
 import logging
 import time
 
-handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE","link_prediction.log"))
-formatter = logging.Formatter('%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
+handler = logging.handlers.WatchedFileHandler(
+    os.environ.get("LOGFILE", "link_prediction.log"))
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s -%(filename)s:%(lineno)d - %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger()
 log.setLevel(os.environ.get("LOGLEVEL", "INFO"))
@@ -30,7 +34,7 @@ def parse_args():
 
     parser.add_argument('--pos_valid', nargs='?',
                         default='tests/data/ppismall_with_validation/pos_validation_edges_max_comp_graph',
-                       help='Input positive validation edges path')
+                        help='Input positive validation edges path')
 
     parser.add_argument('--pos_test', nargs='?',
                         default='tests/data/ppismall_with_validation/pos_test_edges_max_comp_graph',
@@ -55,7 +59,7 @@ def parse_args():
     parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
                         help='Embeddings path of the positive training graph')
 
-    parser.add_argument('--edge_embed_method', nargs='?', default='hadamard',
+    parser.add_argumenedge_embed_method', nargs='?', default='hadamard',
                         help='Embeddings embedding method of the positive training graph. '
                              'It can be hadamard, weightedL1, weightedL2 or average')
 
@@ -109,77 +113,131 @@ def parse_args():
     return parser.parse_args()
 
 
-def learn_embeddings(walks, pos_train_graph, w2v_model):
-    """
-    Learn embeddings by optimizing the Glove, Skipgram or CBOW objective using SGD.
+def get_model(
+    walks: tf.RaggedTensor,
+    pos_train: CSFGraph,
+    w2v_model: str,
+    embedding_size: int,
+    context_window: int,
+    num_epochs: int
+):
+    """Return selected model.
+
+    Parameters
+    --------------------
+    walks: tf.RaggedTensor,
+    pos_train: CSFGraph,
+    w2v_model: str,
+    embedding_size: int,
+    context_window: int,
+    num_epochs: int,
+
+    Returns
+    ---------------------
+    Return the selected model.
     """
 
-    worddictionary = pos_train_graph.get_node_to_index_map()
-    reverse_worddictionary = pos_train_graph.get_index_to_node_map()
+    worddictionary = pos_train.get_node_to_index_map()
+    reverse_worddictionary = pos_train.get_index_to_node_map()
 
-    if w2v_model.lower() == "skipgram":
-        logging.info("SkipGram analysis ")
-        model = SkipGramWord2Vec(walks,
-                                 worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
-    elif w2v_model.lower() == "cbow":
-        logging.info("CBOW analysis ")
-        model = ContinuousBagOfWordsWord2Vec(walks,
-                                             worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
-    elif w2v_model.lower() == "glove":
-        logging.info("GloVe analysis ")
-        n_nodes = pos_train_graph.node_count()
-        cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
-        cooc_dict = cencoder.build_dataset()
-        model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=args.embedding_size,
-                           context_size=args.context_window, num_epochs=args.num_epochs)
-    else:
+    w2v_model = w2v_model.lower()
+
+    if w2v_model not in ("skipgram", "cbow", "glove"):
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
 
-    model.train()
+    if w2v_model == "skipgram":
+        logging.info("SkipGram analysis ")
+        return SkipGramWord2Vec(walks,
+                                worddictionary=worddictionary,
+                                reverse_worddictionary=reverse_worddictionary, num_epochs=num_epochs)
+    if w2v_model == "cbow":
+        logging.info("CBOW analysis ")
+        return ContinuousBagOfWordsWord2Vec(walks,
+                                            worddictionary=worddictionary,
+                                            reverse_worddictionary=reverse_worddictionary, num_epochs=num_epochs)
+    logging.info("GloVe analysis ")
+    n_nodes = pos_train.node_count()
+    cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
+    cooc_dict = cencoder.build_dataset()
+    return GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=embedding_size,
+                      context_size=context_window, num_epochs=num_epochs)
 
-    write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
+    # model.train()
+
+    # write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
 
 
-def linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph):
+def linkpred(
+    pos_train: CSFGraph,
+    pos_valid: CSFGraph,
+    pos_test: CSFGraph,
+    neg_train: CSFGraph,
+    neg_valid: CSFGraph,
+    neg_test: CSFGraph,
+    embedding,
+    edge_embed_method:str,
+    classifier:str,
+    skipValidation:bool
+):
     """
-    :param pos_train_graph: positive training graph
-    :param pos_valid_graph: positive validation graph
-    :param pos_test_graph: positive test graph
-    :param neg_train_graph: negative training graph
-    :param neg_valid_graph: negative validation graph
-    :param neg_test_graph: negative test graph
+    :param pos_train: positive training graphs
+    :param pos_valid: positive validation graphs
+    :param pos_test: positive test graphs
+    :param neg_train: negative training graphs
+    :param neg_valid: negative validation graphs
+    :param neg_test: negative test graphs
     :return: Metrics of logistic regression as the results of link prediction
     """
-    lp = LinkPrediction(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph,
-                                      neg_valid_graph, neg_test_graph, args.embed_graph, args.edge_embed_method, args.classifier,
-                                      args.skipValidation, args.output)
+    lp = LinkPrediction(pos_train, pos_valid, pos_test, neg_train,
+                        neg_valid, neg_test, embedding, edge_embed_method, classifier,
+                        skipValidation)
 
     lp.prepare_edge_and_node_labels()
     lp.predict_links()
-    lp.output_classifier_results()
-    #lp.output_edge_node_information()
-    #lp.predicted_ppi_links()
-    #lp.predicted_ppi_non_links()
+    lp.get_classifier_results()
+    # lp.output_edge_node_information()
+    # lp.predicted_ppi_links()
+    # lp.predicted_ppi_non_links()
 
-def read_graphs():
+
+def read_graphs(pos_train: str, pos_valid: str, pos_test: str, neg_train: str, neg_valid: str, neg_test: str):
     """
     Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
     :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
     """
     start = time.time()
 
-    pos_train_graph = CSFGraph(args.pos_train)
-    pos_valid_graph = CSFGraph(args.pos_valid)
-    pos_test_graph = CSFGraph(args.pos_test)
-    neg_train_graph = CSFGraph(args.neg_train)
-    neg_valid_graph = CSFGraph(args.neg_valid)
-    neg_test_graph = CSFGraph(args.neg_test)
+    pos_train_graph = CSFGraph(pos_train)
+    pos_valid_graph = CSFGraph(pos_valid)
+    pos_test_graph = CSFGraph(pos_test)
+    neg_train_graph = CSFGraph(neg_train)
+    neg_valid_graph = CSFGraph(neg_valid)
+    neg_test_graph = CSFGraph(neg_test)
     end = time.time()
-    logging.info("reading input edge lists files: {} seconds".format(end-start))
+    logging.info(
+        "reading input edge lists files: {} seconds".format(end-start))
 
     return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
+
+
+@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
+def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_length: int) -> tf.RaggedTensor:
+    """Return a new N2vGraph trained on the provided graph.
+
+    Parameters
+    -------------------
+    graph: CSFGraph,
+    p: float,
+    q: float,
+    num_walks: int,
+    walk_length: int
+
+    Returns
+    -------------------
+    Return tf.RaggedTensor containing the random walks.
+    """
+    random_walker = N2vGraph(graph, p, q)
+    return random_walker.simulate_walks(num_walks, walk_length)
 
 
 def main(args):
@@ -194,45 +252,31 @@ def main(args):
     logging.info(
         " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
         "context_window ={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
-                                                                            args.w2v_model, args.num_epochs,
-                                                                            args.context_window, args.embedding_size,
-                                                                            args.skipValidation))
+                                                                 args.w2v_model, args.num_epochs,
+                                                                 args.context_window, args.embedding_size,
+                                                                 args.skipValidation))
 
-    pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
-    if args.use_cached_random_walks and args.random_walks:
-        # restore post_train_g from cache
-        logging.info(f"Restore random walks from {args.random_walks}")
-        start = time.time()
-        pos_train_g = deserialize(args.random_walks)
-        end = time.time()
-        logging.info(" de-serializing: {} seconds ".format(end - start))
+    pos_train, pos_valid, pos_test, neg_train, neg_valid, neg_test = read_graphs(
+        args.pos_train, args.pos_valid, args.pos_test, args.neg_train, args.neg_valid, args.neg_test
+    )
 
-    else:
-        # generate pos_train_g and simulate walks
-        pos_train_g = N2vGraph(pos_train_graph, args.p, args.q)
+    walks = get_random_walks(pos_train, args.p, args.q,
+                             args.num_walks, args.walk_length)
+    model = get_model(walks, pos_train, args.w2v_model,
+                      args.embedding_size, args.context_window, args.num_epochs)
     start = time.time()
-    pos_train_g.simulate_walks(args.num_walks, args.walk_length, args.use_cached_random_walks)
-    end = time.time()
-    logging.info("simulating walks: {} seconds".format(end - start))
-
-    if args.cache_random_walks and args.random_walks:
-        logging.info(f"Caching random walks to {args.random_walks}")
-        start = time.time()
-        serialize(pos_train_g, args.random_walks)
-        end = time.time()
-        logging.info(" serializing: {} seconds ".format(end - start))
-
-    walks = pos_train_g.random_walks_map[(args.num_walks, args.walk_length)]
-
-    start = time.time()
-    learn_embeddings(walks, pos_train_graph, args.w2v_model)
+    model.train()
     end = time.time()
     logging.info(" learning: {} seconds ".format(end-start))
 
+    write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)
+
     start = time.time()
-    linkpred(pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph)
+    linkpred(pos_train, pos_valid, pos_test,
+             neg_train, neg_valid, neg_test)
     end = time.time()
     logging.info("link prediction: {} seconds".format(end-start))
+
 
 if __name__ == "__main__":
     args = parse_args()

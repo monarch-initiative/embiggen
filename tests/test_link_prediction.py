@@ -41,7 +41,7 @@ class TestLinkPrediction(unittest.TestCase):
 
         lp.prepare_edge_and_node_labels()
         lp.predict_links()
-        lp.output_classifier_results()
+        lp.get_classifier_results()
 
 
 if __name__ == '__main__':

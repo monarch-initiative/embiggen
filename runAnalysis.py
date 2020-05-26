@@ -130,7 +130,7 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
                         embed_graph, edge_embed_method, classifier, skipValidation, output)
     lp.prepare_edge_and_node_labels()
     lp.predict_links()
-    lp.output_classifier_results()
+    lp.get_classifier_results()
 
 @cli.command()
 @click.option("test_url", "-t", default="https://www.gutenberg.org/files/98/98-0.txt")

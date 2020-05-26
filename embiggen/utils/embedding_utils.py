@@ -43,11 +43,8 @@ def get_embedding(x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Var
 
     if embedding is None:
         raise ValueError('No embedding data found (i.e. embedding is None)')
-    else:
-        with tf.device(device):
-            embedding = tf.nn.embedding_lookup(embedding, x)
-
-            return embedding
+    with tf.device(device):
+        return tf.nn.embedding_lookup(embedding, x)
 
 
 def calculate_cosine_similarity(x_embed: tf.Tensor, embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu') \
@@ -63,12 +60,15 @@ def calculate_cosine_similarity(x_embed: tf.Tensor, embedding: Union[np.ndarray,
 
     with tf.device(device):
         x_embed_cast = tf.cast(x_embed, tf.float32)
-        x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
-        x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(embedding), 1, keepdims=True), tf.float32)
+        x_embed_norm = x_embed_cast / \
+            tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
+        x_embed_sqrt = tf.sqrt(tf.reduce_sum(
+            tf.square(embedding), 1, keepdims=True), tf.float32)
         embedding_norm = embedding / x_embed_sqrt
 
         # calculate cosine similarity
-        cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
+        cosine_sim_op = tf.matmul(
+            x_embed_norm, embedding_norm, transpose_b=True)
 
         return cosine_sim_op
 
@@ -95,16 +95,17 @@ def write_embeddings(out_file: str, embedding: Union[np.ndarray, tf.Variable], r
 
     if embedding is None:
         raise ValueError('No embedding data found (i.e. embedding is None)')
-    elif reverse_worddictionary is None:
-        raise ValueError('No node to integer word mapping dictionary data found (i.e. reverse_worddictionary is None)')
-    else:
-        with tf.device(device):
-            with open(out_file, 'w') as write_location:
-                for x in sorted(list(reverse_worddictionary.keys())):
-                    embed = get_embedding(x, embedding).numpy()
-                    word = reverse_worddictionary[x]
-                    write_location.write('{word} {embedding}\n'.format(word=word, embedding=' '.join(map(str, embed))))
-            write_location.close()
+    if reverse_worddictionary is None:
+        raise ValueError(
+            'No node to integer word mapping dictionary data found (i.e. reverse_worddictionary is None)')
+    with tf.device(device):
+        with open(out_file, 'w') as write_location:
+            for x in sorted(list(reverse_worddictionary.keys())):
+                embed = get_embedding(x, embedding).numpy()
+                word = reverse_worddictionary[x]
+                write_location.write('{word} {embedding}\n'.format(
+                    word=word, embedding=' '.join(map(str, embed))))
+        write_location.close()
 
     return None
 
@@ -122,22 +123,22 @@ def load_embeddings(file_name: str) -> Dict[str, List[float]]:
 
     if file_name is None:
         raise ValueError('file_name must not contain a valid filepath')
-    elif not os.path.exists(file_name):
+    if not os.path.exists(file_name):
         raise IOError('The {} file does not exist!'.format(file_name))
-    elif os.stat(file_name).st_size == 0:
+    if os.stat(file_name).st_size == 0:
         raise TypeError('The input file: {} is empty'.format(file_name))
-    else:
-        n_lines, embedding_data = 0, {}
+    n_lines, embedding_data = 0, {}
 
-        with open(file_name, 'r') as input_file:
-            for line in input_file:
-                fields = line.split(' ')
-                embedding_vector = [float(i) for i in fields[1:]]
-                embedding_data.update({fields[0]: embedding_vector})
-                n_lines += 1
-        input_file.close()
+    with open(file_name, 'r') as input_file:
+        for line in input_file:
+            fields = line.split(' ')
+            embedding_vector = [float(i) for i in fields[1:]]
+            embedding_data.update({fields[0]: embedding_vector})
+            n_lines += 1
+    input_file.close()
 
-        print('Finished ingesting {} lines (vectors) from {}'.format(n_lines, file_name))
+    print('Finished ingesting {} lines (vectors) from {}'.format(
+        n_lines, file_name))
 
     return embedding_data
 
