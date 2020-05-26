@@ -1,7 +1,7 @@
-from tensorflow.keras.models import Sequential, Model  # type: ignore
-from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer  # type: ignore
-from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
-from tensorflow.keras.metrics import AUC  # type: ignore
+from tensorflow.keras.models import Sequential, Model  # type: ignore  # pylint: disable=import-error
+from tensorflow.keras.layers import Dense, Input, Dropout, BatchNormalization, Activation, Concatenate, Layer  # type: ignore  # pylint: disable=import-error
+from tensorflow.keras.callbacks import EarlyStopping  # type: ignore  # pylint: disable=import-error
+from tensorflow.keras.metrics import AUC  # type: ignore  # pylint: disable=import-error
 import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
 from typing import Tuple, Dict, List, Union, Optional
