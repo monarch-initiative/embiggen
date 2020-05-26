@@ -23,16 +23,16 @@ class Word2Vec:
             max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
             vocabulary_size: An integer storing the total number of unique words in the vocabulary.
             min_occurrence: Minimum number of times a word needs to appear to be included (default=1).
-            skip_window: How many words to consider left and right.
+            context_window: How many words to consider left and right.
             num_skips: How many times to reuse an input to generate a label.
             num_sampled: Number of negative examples to sample (default=7).
             display: An integer of the number of words to display.
         """
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                  learning_rate: float = 0.1, batch_size: int = 128,
-                  num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
-                 min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
+                 learning_rate: float = 0.1, batch_size: int = 128,
+                 num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
+                 min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
                  display: Optional[int] = None, device_type: str = 'cpu') -> None:
         self.data = data
         self.word2id = worddictionary
@@ -46,7 +46,7 @@ class Word2Vec:
         self.max_vocabulary_size = max_vocabulary_size
         self.vocabulary_size: int = 0
         self.min_occurrence = min_occurrence
-        self.skip_window = skip_window
+        self.context_window = context_window
         self.num_skips = num_skips
         self.num_sampled = num_sampled
         self.display = display
@@ -131,13 +131,13 @@ class SkipGramWord2Vec(Word2Vec):
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
                  learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
+                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
         super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                          learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
                          embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
+                         min_occurrence=min_occurrence, context_window=context_window, num_skips=num_skips,
                          num_sampled=num_sampled, display=display, device_type=device_type)
 
         self.data = data
@@ -246,20 +246,20 @@ class SkipGramWord2Vec(Word2Vec):
         Raises:
             ValueError: If the number of skips is not <= twice the skip window length.
 
-        TODO -- should num_skips and skip_window be arguments or simply taken from self
+        TODO -- should num_skips and context_window be arguments or simply taken from self
         within the method?
             """
         num_skips = self.num_skips
-        skip_window = self.skip_window
-        if num_skips > 2 * skip_window:
-            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
+        context_window = self.context_window
+        if num_skips > 2 * context_window:
+            raise ValueError('The value of self.num_skips must be <= twice the length of self.context_window')
         # TODO  -- We actually only need to check the above once in the Constructor?
         # OR -- is there any situation where we will change this during training??
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
-        span = 2 * skip_window + 1
+        span = 2 * context_window + 1
         # again, probably we can go: span = self.span
         sentencelen = len(sentence)
-        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
+        batch_size = ((sentencelen - (2 * context_window)) * num_skips)
         batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
         buffer: collections.deque = collections.deque(maxlen=span)
@@ -272,11 +272,11 @@ class SkipGramWord2Vec(Word2Vec):
         for i in range(batch_size // num_skips):
             buffer.append(sentence[data_index])
             data_index += 1  # move sliding window 1 spot to the right
-            context_words = [w for w in range(span) if w != skip_window]
+            context_words = [w for w in range(span) if w != context_window]
             words_to_use = random.sample(context_words, num_skips)
 
             for j, context_word in enumerate(words_to_use):
-                batch[i * num_skips + j] = buffer[skip_window]
+                batch[i * num_skips + j] = buffer[context_window]
                 labels[i * num_skips + j, 0] = buffer[context_word]
         return batch, labels
 
@@ -315,7 +315,7 @@ class SkipGramWord2Vec(Word2Vec):
 
         x_test = np.array(self.display_examples)
 
-        window_len = 2 * self.skip_window + 1
+        window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
         for _ in trange(1, self.n_epochs + 1):
@@ -341,7 +341,7 @@ class SkipGramWord2Vec(Word2Vec):
                 # if the window length is K and the natch_len is N, then the last
                 # window that we get starts at position (N-K). Therefore, if we start
                 # the next window at position (N-K)+1, we will get all windows.
-                window_len = 1 + 2 * self.skip_window
+                window_len = 1 + 2 * self.context_window
                 shift_len = batch_size = window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data
@@ -385,7 +385,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
         min_occurrence: Minimum number of times a word needs to appear to be included (default=2).
-        skip_window: How many words to consider left and right.
+        context_window: How many words to consider left and right.
         num_skips: How many times to reuse an input to generate a label.
         num_sampled: Number of negative examples to sample (default=7).
         display: An integer of the number of words to display.
@@ -404,13 +404,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
                  learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
+                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2,
                  num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
         super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                          learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
                          embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
+                         min_occurrence=min_occurrence, context_window=context_window, num_skips=num_skips,
                          num_sampled=num_sampled, display=display, device_type=device_type)
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # set vocabulary size
@@ -449,7 +449,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
     def cbow_embedding(self, x):
         """The function performs embedding lookups for each column in the input (except the middle one) and then
-        averages the them to produce a word vector. The dimension of x is (batchsize, 2*skip_window), e.g., (128,6).
+        averages the them to produce a word vector. The dimension of x is (batchsize, 2*context_window), e.g., (128,6).
         Note. x does not contain the middle word.
         Args:
             x: A batch-size long list of windows of words (sliding windows), for example:
@@ -458,12 +458,12 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             mean_embeddings: An averaged word embedding vector.
 
         Raises:
-            ValueError: If the shape of stacked_embeddings is not equal to twice the skip_window length.
+            ValueError: If the shape of stacked_embeddings is not equal to twice the context_window length.
         """
 
         stacked_embeddings = None
-        # print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
-        for i in range(2 * self.skip_window):
+        # print('Defining %d embedding lookups representing each word in the context' % (2 * self.context_window))
+        for i in range(2 * self.context_window):
             embedding_i = get_embedding(x[:, i], self.embedding)
             x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
 
@@ -473,7 +473,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 stacked_embedding_value = [stacked_embeddings, tf.reshape(embedding_i, [x_size, y_size, 1])]
                 stacked_embeddings = tf.concat(axis=2, values=stacked_embedding_value)
 
-        assert stacked_embeddings.get_shape().as_list()[2] == 2 * self.skip_window
+        assert stacked_embeddings.get_shape().as_list()[2] == 2 * self.context_window
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
 
         return mean_embeddings
@@ -545,12 +545,12 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         Returns:
             A list whose first item is a batch and the second item is the batch's labels.
         """
-        # span is the total size of the sliding window we look at [skip_window central_word skip_window]
-        skip_window = self.skip_window
-        span = 2 * skip_window + 1
+        # span is the total size of the sliding window we look at [context_window central_word context_window]
+        context_window = self.context_window
+        span = 2 * context_window + 1
         # again, probably we can go: span = self.span
         sentencelen = len(sentence)
-        batch_size = (sentencelen - (2 * skip_window))
+        batch_size = (sentencelen - (2 * context_window))
         # two numpy arrays to hold target (batch) and context words (labels). Batch has span-1=2*window_size columns
         batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int64)
@@ -562,10 +562,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         for i in range(batch_size):
             buffer.append(sentence[data_index])
             data_index += 1  # move sliding window 1 spot to the right
-            context_words = [w for w in range(span) if w != skip_window]
+            context_words = [w for w in range(span) if w != context_window]
             for j, context_word in enumerate(context_words):
                 batch[i, j] = buffer[context_word]
-            labels[i, 0] = buffer[skip_window]
+            labels[i, 0] = buffer[context_window]
         return batch, labels
 
     def run_optimization(self, x: np.array, y: np.array) -> None:
@@ -629,7 +629,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         if display_step is not None and 1 == 3:
             self.display_words()
         # data = self.data  #
-        window_len = 2 * self.skip_window + 1
+        window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
         for _ in trange(1, self.n_epochs + 1):
@@ -655,7 +655,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 # if the window length is K and the natch_len is N, then the last
                 # window that we get starts at position (N-K). Therefore, if we start
                 # the next window at position (N-K)+1, we will get all windows.
-                window_len = 1 + 2 * self.skip_window
+                window_len = 1 + 2 * self.context_window
                 shift_len = batch_size - window_len + 1
                 # we need to make sure that we do not shift outside the boundaries of self.data too
                 lastpos = data_len - 1  # index of the last word in data

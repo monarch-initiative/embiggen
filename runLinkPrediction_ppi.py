@@ -83,6 +83,9 @@ def parse_args():
     parser.add_argument('--q', type=float, default=1,
                         help='node2vec q hyperparameter. Default is 1.')
 
+    parser.add_argument('--learning_rate', type=float, default=0.1,
+                        help='learning rate for GD. Default is 0.1.')
+
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
 
@@ -121,12 +124,16 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
         logging.info("SkipGram analysis ")
         model = SkipGramWord2Vec(walks,
                                  worddictionary=worddictionary,
-                                 reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
+                                 reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs,
+                                 learning_rate= args.learning_rate,
+                                 embedding_size=args.embedding_size, context_window=args.context_window)
     elif w2v_model.lower() == "cbow":
         logging.info("CBOW analysis ")
         model = ContinuousBagOfWordsWord2Vec(walks,
                                              worddictionary=worddictionary,
-                                             reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs)
+                                             reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs,
+                                             learning_rate= args.learning_rate,
+                                             embedding_size=args.embedding_size, context_window=args.context_window)
     elif w2v_model.lower() == "glove":
         logging.info("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()

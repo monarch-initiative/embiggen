@@ -103,11 +103,15 @@ def cli():
 @click.option("num_walks", "-nw", type=int, default=10)
 @click.option("num_epochs", "-n", type=int, default=1)
 @click.option("classifier", "-classifier", default='LR')
+@click.option("learning_rate", "-r", type=float, default=0.1)
+@click.option("embedding_size", "-s", type=int, default=200)
+@click.option("context_window", "-cw", type=int, default=3)
 @click.option("edge_embed_method", "-edge_embed_method", default='hadamard')
 @click.option("skipValidation", "-skipValidation", default=False)
 
-def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, neg_valid_file, neg_test_file, embed_graph, p, q,
-                    walk_length, num_walks,num_epochs, classifier, edge_embed_method, skipValidation, output):
+def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, neg_valid_file, neg_test_file,
+                embed_graph, p, q, walk_length, num_walks,num_epochs, classifier, edge_embed_method,
+                skipValidation, output, embedding_size, learning_rate, context_window):
     pos_train_graph = CSFGraph(pos_train_file)
     pos_valid_graph = CSFGraph(pos_valid_file)
     pos_test_graph = CSFGraph(pos_test_file)
@@ -120,7 +124,8 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
     worddictionary = pos_train_graph.get_node_to_index_map()
     reverse_worddictionary = pos_train_graph.get_index_to_node_map()
     model = SkipGramWord2Vec(walks, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
-                             num_epochs=num_epochs)
+                             num_epochs=num_epochs, learning_rate= learning_rate,
+                             embedding_size=embedding_size, context_window=context_window)
     model.train()
     write_embeddings(embed_graph, model.embedding, reverse_worddictionary)
 
@@ -139,9 +144,12 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
               default="skipgram")
 @click.option("num_epochs", "-n", type=int, default=1)
 @click.option("embed_text", "-e", default='book.embedded')
+@click.option("learning_rate", "-r", type=float, default=0.1)
+@click.option("embedding_size", "-s", type=int, default=200)
+@click.option("context_window", "-cw", type=int, default=3)
 
 
-def w2v(test_url, algorithm, num_epochs, embed_text):
+def w2v(test_url, algorithm, num_epochs, embed_text, learning_rate, context_window,embedding_size):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:
@@ -157,11 +165,13 @@ def w2v(test_url, algorithm, num_epochs, embed_text):
         logging.warning('Using cbow')
         model = embiggen.word2vec.ContinuousBagOfWordsWord2Vec(
                                 data, worddictionary=dictionary,
-                                reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
+                                reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs,learning_rate= learning_rate,
+                                 embedding_size=embedding_size, context_window=context_window)
     else:
         logging.warning('Using skipgram')
         model = SkipGramWord2Vec(data, worddictionary=dictionary,
-                                 reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs)
+                                 reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs,learning_rate= learning_rate,
+                                 embedding_size=embedding_size, context_window=context_window)
     model.add_display_words(count)
     model.train()
     write_embeddings(embed_text, model.embedding, reverse_dictionary)
