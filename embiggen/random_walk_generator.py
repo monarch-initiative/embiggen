@@ -4,7 +4,7 @@ import numpy as np    # type: ignore
 import os
 import sys
 import tensorflow as tf  # type: ignore
-
+from .csf_graph import CSFGraph
 from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple
 import time
@@ -38,8 +38,7 @@ class N2vGraph:
         num_processes:
     """
 
-    def __init__(self, csf_graph, p, q, num_processes: int = -1) -> None:
-
+    def __init__(self, csf_graph: CSFGraph, p: float, q: float, num_processes: int = -1) -> None:
         self.g = csf_graph
         self.p = p
         self.q = q
@@ -59,15 +58,14 @@ class N2vGraph:
         nodes = self.alias_nodes
         edges = self.alias_edges
 
-
         walk = [
-            start_node, # Initial node
+            start_node,  # Initial node
         ]
 
         # First iteration
         cur_nbrs = g.neighbors_as_ints(start_node)
 
-        if len(cur_nbrs)>0:
+        if len(cur_nbrs) > 0:
             current = cur_nbrs[self.alias_draw(*nodes[start_node])]
             previous = start_node
             walk.append(current)
@@ -79,7 +77,8 @@ class N2vGraph:
             cur_nbrs = g.neighbors_as_ints(current)
 
             if len(cur_nbrs) > 0:
-                new_current = cur_nbrs[self.alias_draw(*edges[(previous, current)])]
+                new_current = cur_nbrs[self.alias_draw(
+                    *edges[(previous, current)])]
                 previous = current
                 current = new_current
                 walk.append(current)
