@@ -41,14 +41,16 @@ setup(
         'parameterized',
         'silence_tensorflow',
         'sklearn',
-        'tensorflow>=2.0',
         'nltk',
         'more_itertools',
         'tqdm',
         "environments_utils",
         "keras_tqdm",
         'tensorflow>=2.0.0',
-        'click'
+        'click',
+        'sanitize_ml_labels',
+        'deflate_dict',
+        'cache_decorator'
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
