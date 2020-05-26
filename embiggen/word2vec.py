@@ -30,8 +30,8 @@ class Word2Vec:
         """
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                  learning_rate: float = 0.1, batch_size: int = 128,
-                  num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
+                 learning_rate: float = 0.1, batch_size: int = 128,
+                 num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
                  min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
                  display: Optional[int] = None, device_type: str = 'cpu') -> None:
         self.data = data
@@ -42,6 +42,7 @@ class Word2Vec:
         self.n_epochs = num_epochs
         self.display_step = 2000
         self.eval_step = 100
+        self._embedding = None
         self.embedding_size = embedding_size
         self.max_vocabulary_size = max_vocabulary_size
         self.vocabulary_size: int = 0
@@ -85,10 +86,12 @@ class Word2Vec:
 
         if not isinstance(count, list):
             self.display = None
-            raise TypeError('self.display requires a list of tuples with key:word, value:int (count)')
+            raise TypeError(
+                'self.display requires a list of tuples with key:word, value:int (count)')
 
         if num > 16:
-            logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
+            logging.warning(
+                'maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
             num = 16
 
         # pick a random validation set of 'num' words to sample
@@ -96,7 +99,8 @@ class Word2Vec:
         valid_examples = np.array(random.sample(range(2, valid_window), num))
 
         # sample less common words - choose 'num' points randomly from the first 'valid_window' after element 1000
-        self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
+        self.display_examples = np.append(valid_examples, random.sample(
+            range(1000, 1000 + valid_window), num), axis=0)
 
         return None
 
@@ -110,7 +114,7 @@ class Word2Vec:
         """
         if self.word2id is None and self.vocabulary_size == 0:
             self.vocabulary_size = 0
-        elif self.vocabulary_size ==0:
+        elif self.vocabulary_size == 0:
             self.vocabulary_size = len(self.word2id)+1
         # Apr 28, changed by Peter (can be deleted)
         # if any(isinstance(el, list) for el in data):
@@ -118,10 +122,14 @@ class Word2Vec:
         #    self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
         #    print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         # else:
-        ##    # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
+        # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
         #    self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
         # print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         return None
+
+    @property
+    def embedding(self) -> Dict[str, List[float]]:
+        """Return the embedding obtained from the model."""
 
 
 class SkipGramWord2Vec(Word2Vec):
@@ -150,7 +158,8 @@ class SkipGramWord2Vec(Word2Vec):
         if self.num_sampled > self.vocabulary_size:
             self.num_sampled = int(self.vocabulary_size / 2)
 
-        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
+        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
+            learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
 
@@ -161,11 +170,14 @@ class SkipGramWord2Vec(Word2Vec):
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self.embedding: tf.Variable = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            self._embedding: tf.Variable = tf.Variable(
+                tf.random.normal([self.vocabulary_size, embedding_size]))
 
             # construct the variables for the NCE loss
-            self.nce_weights: tf.Variable = tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
-            self.nce_biases: tf.Variable = tf.Variable(tf.zeros([self.vocabulary_size]))
+            self.nce_weights: tf.Variable = tf.Variable(
+                tf.random.normal([self.vocabulary_size, embedding_size]))
+            self.nce_biases: tf.Variable = tf.Variable(
+                tf.zeros([self.vocabulary_size]))
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
@@ -202,8 +214,8 @@ class SkipGramWord2Vec(Word2Vec):
     #     with tf.device(self.device_type):
     #         x_embed_cast = tf.cast(x_embed, tf.float32)
     #         x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
-    #         x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-    #         embedding_norm = self.embedding / x_embed_sqrt
+    #         x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self._embedding), 1, keepdims=True), tf.float32)
+    #         embedding_norm = self._embedding / x_embed_sqrt
     #
     #         # calculate cosine similarity
     #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
@@ -223,14 +235,16 @@ class SkipGramWord2Vec(Word2Vec):
         with tf.device(self.device_type):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
-                embedding = get_embedding(x, self.embedding, self.device_type)
+                embedding = get_embedding(x, self._embedding, self.device_type)
                 loss = self.nce_loss(embedding, y)
 
             # compute gradients
-            gradients = g.gradient(loss, [self.embedding, self.nce_weights, self.nce_biases])
+            gradients = g.gradient(
+                loss, [self._embedding, self.nce_weights, self.nce_biases])
 
             # update W and b following gradients
-            self.optimizer.apply_gradients(zip(gradients, [self.embedding, self.nce_weights, self.nce_biases]))
+            self.optimizer.apply_gradients(
+                zip(gradients, [self._embedding, self.nce_weights, self.nce_biases]))
 
         return loss
 
@@ -252,7 +266,8 @@ class SkipGramWord2Vec(Word2Vec):
         num_skips = self.num_skips
         skip_window = self.skip_window
         if num_skips > 2 * skip_window:
-            raise ValueError('The value of self.num_skips must be <= twice the length of self.skip_window')
+            raise ValueError(
+                'The value of self.num_skips must be <= twice the length of self.skip_window')
         # TODO  -- We actually only need to check the above once in the Constructor?
         # OR -- is there any situation where we will change this during training??
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
@@ -288,10 +303,10 @@ class SkipGramWord2Vec(Word2Vec):
         :return:
         """
         logging.info("Evaluation...")
-        sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
-                                          self.embedding,
+        sim = calculate_cosine_similarity(get_embedding(x_test, self._embedding, self.device_type),
+                                          self._embedding,
                                           self.device_type).numpy()
-        #print(sim[0])
+        # print(sim[0])
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
             nearest = (-sim[i, :]).argsort()[1:top_k + 1]
@@ -299,7 +314,7 @@ class SkipGramWord2Vec(Word2Vec):
             log_str = '"%s" nearest neighbors:' % disp_example
             for k in range(top_k):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
-            #print(log_str)
+            # print(log_str)
 
     def train(self) -> List[float]:
         """
@@ -307,11 +322,13 @@ class SkipGramWord2Vec(Word2Vec):
         :return:
         """
         # words for testing; display_step = 2000; eval_step = 2000
-        do_display = self.display_step is not None and len(self.display_examples) > 0
+        do_display = self.display_step is not None and len(
+            self.display_examples) > 0
 
         if do_display:
             for w in self.display_examples:
-                logging.info('{word}: id={index}'.format(word=self.id2word[w], index=w))
+                logging.info('{word}: id={index}'.format(
+                    word=self.id2word[w], index=w))
 
         x_test = np.array(self.display_examples)
 
@@ -371,7 +388,6 @@ class SkipGramWord2Vec(Word2Vec):
         return loss_history
 
 
-
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """Class to run word2vec using continuous bag of words (cbow).
     Attributes:
@@ -421,7 +437,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         if self.num_sampled > self.vocabulary_size:
             self.num_sampled = int(self.vocabulary_size / 2)
 
-        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
+        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
+            learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
 
@@ -432,8 +449,9 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self.embedding: tf.Variable = tf.Variable(
-                tf.random.uniform([self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
+            self._embedding: tf.Variable = tf.Variable(
+                tf.random.uniform(
+                    [self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
             )
 
             # should we initialize with uniform or normal?
@@ -441,11 +459,14 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
             # construct the variables for the softmax loss
             tf_distribution = tf.random.truncated_normal([self.vocabulary_size, embedding_size],
-                                                         stddev=0.5 / math.sqrt(embedding_size),
+                                                         stddev=0.5 /
+                                                         math.sqrt(
+                                                             embedding_size),
                                                          dtype=tf.float32)
             # get weights and biases
             self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
-            self.softmax_biases = tf.Variable(tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
+            self.softmax_biases = tf.Variable(
+                tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
     def cbow_embedding(self, x):
         """The function performs embedding lookups for each column in the input (except the middle one) and then
@@ -464,16 +485,21 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         stacked_embeddings = None
         # print('Defining %d embedding lookups representing each word in the context' % (2 * self.skip_window))
         for i in range(2 * self.skip_window):
-            embedding_i = get_embedding(x[:, i], self.embedding)
-            x_size, y_size = embedding_i.get_shape().as_list()  # added ',_' -- is this correct?
+            embedding_i = get_embedding(x[:, i], self._embedding)
+            # added ',_' -- is this correct?
+            x_size, y_size = embedding_i.get_shape().as_list()
 
             if stacked_embeddings is None:
-                stacked_embeddings = tf.reshape(embedding_i, [x_size, y_size, 1])
+                stacked_embeddings = tf.reshape(
+                    embedding_i, [x_size, y_size, 1])
             else:
-                stacked_embedding_value = [stacked_embeddings, tf.reshape(embedding_i, [x_size, y_size, 1])]
-                stacked_embeddings = tf.concat(axis=2, values=stacked_embedding_value)
+                stacked_embedding_value = [stacked_embeddings, tf.reshape(
+                    embedding_i, [x_size, y_size, 1])]
+                stacked_embeddings = tf.concat(
+                    axis=2, values=stacked_embedding_value)
 
-        assert stacked_embeddings.get_shape().as_list()[2] == 2 * self.skip_window
+        assert stacked_embeddings.get_shape().as_list()[
+            2] == 2 * self.skip_window
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
 
         return mean_embeddings
@@ -530,11 +556,13 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         with tf.device(self.device_type):
             x_embed = tf.cast(x_embed, tf.float32)
             x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
-            x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self.embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self.embedding / x_embed_sqrt
+            x_embed_sqrt = tf.sqrt(tf.reduce_sum(
+                tf.square(self._embedding), 1, keepdims=True), tf.float32)
+            embedding_norm = self._embedding / x_embed_sqrt
 
             # calculate cosine similarity
-            cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
+            cosine_sim_op = tf.matmul(
+                x_embed_norm, embedding_norm, transpose_b=True)
 
             return cosine_sim_op
 
@@ -584,11 +612,12 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 loss = self.nce_loss(emb, y)
 
             # compute gradients
-            gradients = g.gradient(loss, [self.embedding, self.softmax_weights, self.softmax_biases])
+            gradients = g.gradient(
+                loss, [self._embedding, self.softmax_weights, self.softmax_biases])
 
             # Update W and b following gradients
             self.optimizer.apply_gradients(
-                zip(gradients, [self.embedding, self.softmax_weights, self.softmax_biases]))
+                zip(gradients, [self._embedding, self.softmax_weights, self.softmax_biases]))
             return tf.reduce_sum(loss)
 
     def display_words(self) -> None:
@@ -600,10 +629,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         if 2 + 2 != 5:
             return
         sim = calculate_cosine_similarity(self.cbow_embedding(x_test),  # type: ignore
-                                          self.embedding,
+                                          self._embedding,
                                           self.device_type).numpy()
 
-        #print(sim[0])
+        # print(sim[0])
 
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
@@ -614,7 +643,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             for k in range(top_k):
                 log_str = '{} {},'.format(log_str, self.id2word[nearest[k]])
 
-            #print(log_str)
+            # print(log_str)
 
         return None
 
@@ -640,7 +669,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     if sentencelen < window_len:
                         continue
                     batch_x, batch_y = self.generate_batch_cbow(sentence)
-                    current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
+                    current_loss = self.run_optimization(
+                        batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
                     if step % 100 == 0:
                         logging.info("loss {} ".format(current_loss))
@@ -665,8 +695,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     currentTensor = data[data_index:endpos]
                     if len(currentTensor) < window_len:
                         break  # We are at the end
-                    batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
-                    current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
+                    batch_x, batch_y = self.next_batch(
+                        currentTensor)  # type: ignore
+                    current_loss = self.run_optimization(
+                        batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
                         logging.info("loss {}".format(current_loss))
                         loss_history.append(current_loss)
