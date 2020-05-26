@@ -12,7 +12,7 @@ class NeuralNetwork:
         self,
         max_epochs: int = 1000,
         batch_size: int = 64,
-        monitor: str = "auprc",
+        monitor: str = "val_auprc",
         patience: int = 10,
     ):
         """Instantiate a new NeuralNetwork.
