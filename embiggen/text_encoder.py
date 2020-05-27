@@ -35,12 +35,12 @@ class TextEncoder:
 
         if filename is None:
             raise ValueError('filename cannot be None')
-        elif not isinstance(filename, str):
+        if not isinstance(filename, str):
             raise TypeError('filename must be a string')
-        elif not os.path.exists(filename):
+        if not os.path.exists(filename):
             raise IOError('Could not find file referenced by filename: {}'.format(filename))
-        else:
-            self.filename = filename
+
+        self.filename = filename
 
         self.data_type = data_type if data_type else 'sentences'
 
