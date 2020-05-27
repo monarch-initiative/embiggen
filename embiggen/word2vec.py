@@ -18,7 +18,6 @@ class Word2Vec:
             learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
             batch_size: The size of each "batch" or slice of the data to sample when training the model.
             num_epochs: The number of epochs to run when training the model.
-            display_step: An integer that is used to determine the number of steps to display.
             eval_step: This attribute stores the total number of iterations to run during training.
             embedding_size: Dimension of embedded vectors.
             max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
@@ -41,7 +40,6 @@ class Word2Vec:
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.n_epochs = num_epochs
-        self.display_step = 2000
         self.eval_step = 100
         self._embedding = None
         self.embedding_size = embedding_size
@@ -327,15 +325,6 @@ class SkipGramWord2Vec(Word2Vec):
         Trying out passing a simple Tensor to get_batch
         :return:
         """
-        # words for testing; display_step = 2000; eval_step = 2000
-        do_display = self.display_step is not None and len(
-            self.display_examples) > 0
-
-        if do_display:
-            for w in self.display_examples:
-                logging.info('{word}: id={index}'.format(
-                    word=self.id2word[w], index=w))
-
         x_test = np.array(self.display_examples)
 
         window_len = 2 * self.skip_window + 1
@@ -651,17 +640,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return None
 
-    def train(self, display_step: int = 2000) -> List[None]:  # type: ignore
+    def train(self) -> List[None]:  # type: ignore
         """Trains a CBOW model.
-        Args:
-            display_step: An integer that is used to determine the number of steps to display when training the model.
         Returns:
             None.
         """
-        # words for testing; display_step = 2000; eval_step = 2000
-        if display_step is not None and 1 == 3:
-            self.display_words()
-        # data = self.data  #
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
