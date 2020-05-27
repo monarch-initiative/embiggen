@@ -46,21 +46,9 @@ class TestEmbeddingUtils(unittest.TestCase):
 
         return None
 
-    def tests_get_embedding(self):
-        """Tests the gets_embedding method."""
-
-        # check function fails when
-        self.assertRaises(ValueError, get_embedding, 0, None)
-
-        # check that data is returned and that the data is a tensor
-        self.assertIsInstance(get_embedding(
-            0, self.model.embedding), tf.Tensor)
-
-        return None
-
     def tests_save_embedding(self):
         """Tests the writes_embeddings method."""
-        path = f"{self.temp_dir_loc}/sample_embedding_data.txt"
+        path = f"{self.temp_dir_loc}/sample_embedding_data.csv"
         self.model.save(path)
         self.assertTrue(os.path.exists(path))
 
