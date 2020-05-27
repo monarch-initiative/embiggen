@@ -119,8 +119,12 @@ class Word2Vec:
         return None
 
     @property
-    def embedding(self) -> Dict[str, List[float]]:
+    def embedding(self) -> Dict[str, np.ndarray]:
         """Return the embedding obtained from the model."""
+        return {
+            word: tf.nn.embedding_lookup(self.embedding, key).numpy()
+            for key, word in sorted(list(self.id2word.items()))
+        }
 
 
 class SkipGramWord2Vec(Word2Vec):
