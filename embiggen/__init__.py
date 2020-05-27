@@ -8,7 +8,6 @@
 """
 from .csf_graph import CSFGraph
 from .random_walk_generator import N2vGraph
-from .link_prediction import LinkPrediction
 from .text_encoder import TextEncoder
 from .utils.tf_utils import TFUtilities
 from .coocurrence_encoder import CooccurrenceEncoder
@@ -19,7 +18,7 @@ from .word2vec import SkipGramWord2Vec
 from .graph_partition_transformer import GraphPartitionTransfomer
 
 __all__ = [
-    "N2vGraph", "LinkPrediction", "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
+    "N2vGraph", "CSFGraph", "TextEncoder", "CooccurrenceEncoder",
     "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher",
     "GraphPartitionTransfomer"
 ]

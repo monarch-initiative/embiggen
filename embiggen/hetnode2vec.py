@@ -344,7 +344,6 @@ class N2vGraph:
         endtime = time.time()
         duration = endtime - starttime
         log.info("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
-        print("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
 
         return None
 
