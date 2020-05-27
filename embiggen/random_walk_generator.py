@@ -42,7 +42,6 @@ class N2vGraph:
         self.g = csf_graph
         self.p = p
         self.q = q
-        self.random_walks_map: Dict[Tuple, tf.RaggedTensor] = {}
         self.num_processes = num_processes if num_processes != -1 else cpu_count()
         self.__preprocess_transition_probs()
 
