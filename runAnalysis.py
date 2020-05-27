@@ -9,7 +9,6 @@ from click import get_os_args
 import embiggen
 from embiggen import CSFGraph
 from embiggen.word2vec import SkipGramWord2Vec
-from embiggen import LinkPrediction
 from embiggen.utils import write_embeddings
 
 @click.group()
