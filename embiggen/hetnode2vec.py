@@ -284,7 +284,6 @@ class N2vGraph:
         Returns:
             None.
         """
-        starttime = time.time()
         G = self.g
         alias_edges = {}
         alias_nodes = {}
@@ -341,9 +340,6 @@ class N2vGraph:
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes
-        endtime = time.time()
-        duration = endtime - starttime
-        log.info("Setup alias probabilities for graph in {:.2f} seconds.".format(duration))
 
         return None
 
