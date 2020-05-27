@@ -1,7 +1,7 @@
 import collections
 import math
 import numpy as np  # type: ignore
-import pandas as pd
+import pandas as pd # type: ignore
 import random
 import tensorflow as tf  # type: ignore
 
@@ -602,14 +602,12 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             labels[i, 0] = buffer[skip_window]
         return batch, labels
 
-    def run_optimization(self, x: np.array, y: np.array) -> None:
+    def run_optimization(self, x: np.array, y: np.array):
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has
         been calculated, the gradients are computed and the weights and biases are updated accordingly.
         Args:
             x: An array of integers to use as batch training data.
             y: An array of labels to use when evaluating loss for an epoch.
-        Returns:
-            None.
         """
         with tf.device(self.device_type):
             # wrap computation inside a GradientTape for automatic differentiation
