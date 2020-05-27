@@ -1,6 +1,7 @@
 import collections
 import math
 import numpy as np  # type: ignore
+import pandas as pd
 import random
 import tensorflow as tf  # type: ignore
 
@@ -125,6 +126,16 @@ class Word2Vec:
             word: tf.nn.embedding_lookup(self.embedding, key).numpy()
             for key, word in sorted(list(self.id2word.items()))
         }
+
+    def save(self, path: str):
+        """Save the computed embedding to the given file.
+
+        Parameters
+        -------------------
+        path: str,
+            Path where to save the embedding.
+        """
+        pd.DataFrame(self.embedding).to_csv(path)
 
 
 class SkipGramWord2Vec(Word2Vec):
