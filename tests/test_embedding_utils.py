@@ -22,7 +22,8 @@ class TestEmbeddingUtils(unittest.TestCase):
         # read in sample data
         current_directory = os.path.dirname(__file__)
         self.data_dir = os.path.join(current_directory, 'data')
-        pos_train = os.path.abspath(self.data_dir + '/ppismall/pos_train_edges')
+        pos_train = os.path.abspath(
+            self.data_dir + '/ppismall/pos_train_edges')
 
         # read data into graph
         training_graph = CSFGraph(pos_train)
@@ -52,40 +53,16 @@ class TestEmbeddingUtils(unittest.TestCase):
         self.assertRaises(ValueError, get_embedding, 0, None)
 
         # check that data is returned and that the data is a tensor
-        self.assertIsInstance(get_embedding(0, self.model.embedding), tf.Tensor)
+        self.assertIsInstance(get_embedding(
+            0, self.model.embedding), tf.Tensor)
 
         return None
 
-    def tests_write_embeddings(self):
+    def tests_save_embedding(self):
         """Tests the writes_embeddings method."""
-
-        # check that data is written
-        write_embeddings(self.temp_dir_loc + '/sample_embedding_data.txt',
-                         self.model.embedding,
-                         self.reverse_worddictionary)
-
-        self.assertTrue(os.path.exists(self.temp_dir_loc + '/sample_embedding_data.txt'))
-
-        return None
-
-    def tests_load_embeddings(self):
-        """tests the load_embeddings method."""
-
-        # write out embedding data
-        write_embeddings(self.temp_dir_loc + '/sample_embedding_data.txt',
-                         self.model.embedding,
-                         self.reverse_worddictionary)
-
-        # read in embeddings
-        embedding_map = load_embeddings(self.temp_dir_loc + '/sample_embedding_data.txt')
-
-        # make sure embeddings are read in as a dictionary
-        self.assertIsInstance(embedding_map, Dict)
-
-        # make sure that the embedding value is a list of floats
-        sample_entry = embedding_map[list(embedding_map.keys())[0]]
-        self.assertIsInstance(sample_entry, List)
-        self.assertIsInstance(sample_entry[0], float)
+        path = f"{self.temp_dir_loc}/sample_embedding_data.txt"
+        self.model.save(path)
+        self.assertTrue(os.path.exists(path))
 
     def tearDown(self):
 
