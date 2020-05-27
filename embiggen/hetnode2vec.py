@@ -6,6 +6,7 @@ import random
 import sys
 import time
 import tensorflow as tf  # type: ignore
+from tqdm.auto import trange
 
 from collections import defaultdict
 from multiprocessing import Pool
@@ -96,8 +97,7 @@ class N2vGraph:
         nodes = g.nodes_as_integers()  # this is a list
         log.info('Walk iteration:')
 
-        for walk_iter in range(1, num_walks+1):
-            print("{}/{}".format(walk_iter, num_walks))
+        for _ in trange(num_walks):
             random.shuffle(nodes)
             for node in nodes:
                 walks.append(self.node2vec_walk(
