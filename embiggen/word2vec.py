@@ -374,8 +374,6 @@ class SkipGramWord2Vec(Word2Vec):
                         endpos = min(endpos,
                                      lastpos)  # takes care of last part of data. Maybe we should just ignore though
                         # Evaluation.
-                        if do_display and (step % self.eval_step == 0 or step == 0):
-                            self.display_words(x_test)
                         step += 1
                         self.run_optimization(batch_x, batch_y)
         return loss_history
