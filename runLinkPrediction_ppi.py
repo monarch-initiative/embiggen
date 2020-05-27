@@ -112,12 +112,7 @@ def parse_args():
     parser.add_argument('--cache_random_walks', action='store_true',
                         help='Cache the random walks generated from pos_train CsfGraph. \
                         (--random_walks argument must be defined)')
-
-    parser.add_argument('--use_cached_random_walks', action='store_true',
-                        help='Use the cached version of random walks. \
-                        (--random_walks argument must be defined)\
-                        (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
-
+                        
     return parser.parse_args()
 
 

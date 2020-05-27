@@ -45,7 +45,6 @@ class N2vGraph:
         self.p = p
         self.q = q
         self.gamma = gamma
-        self.random_walks_map: Dict[Tuple, tf.RaggedTensor] = {}
 
         if doxn2v:
             self.__preprocess_transition_probs_xn2v()
@@ -67,7 +66,8 @@ class N2vGraph:
 
         while len(walk) < walk_length:
             cur = walk[-1]
-            cur_nbrs = g.neighbors_as_ints(cur)  # g returns a sorted list of neighbors
+            # g returns a sorted list of neighbors
+            cur_nbrs = g.neighbors_as_ints(cur)
 
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
@@ -83,33 +83,26 @@ class N2vGraph:
 
         return walk
 
-    def simulate_walks(self, num_walks: int, walk_length: int, use_cache=False) -> tf.RaggedTensor:
+    def simulate_walks(self, num_walks: int, walk_length: int) -> tf.RaggedTensor:
         """Repeatedly simulate random walks from each node.
         Args:
             num_walks: number of individual walks to take
             walk_length: length of one walk (number of nodes)
-            use_cache: whether or not to use random walks that are cached for the given num_walks and walk_length
         Returns:
             walks: A list of nodes, where each list constitutes a random walk.
         """
-        key = (num_walks, walk_length)
-        if use_cache and key in self.random_walks_map:
-            walks_tensor = self.random_walks_map[key]
-        else:
-            g = self.g
-            walks = []
-            nodes = g.nodes_as_integers()  # this is a list
-            log.info('Walk iteration:')
+        g = self.g
+        walks = []
+        nodes = g.nodes_as_integers()  # this is a list
+        log.info('Walk iteration:')
 
-            for walk_iter in range(1, num_walks+1):
-                print("{}/{}".format(walk_iter, num_walks))
-                random.shuffle(nodes)
-                for node in nodes:
-                    walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
-            walks_tensor = tf.ragged.constant(walks)
-            self.random_walks_map[key] = walks_tensor
-
-        return walks_tensor
+        for walk_iter in range(1, num_walks+1):
+            print("{}/{}".format(walk_iter, num_walks))
+            random.shuffle(nodes)
+            for node in nodes:
+                walks.append(self.node2vec_walk(
+                    walk_length=walk_length, start_node=node))
+        return tf.ragged.constant(walks)
 
     def get_alias_edge(self, edge):
         """Get the alias edge setup lists for a given edge.
@@ -139,7 +132,8 @@ class N2vGraph:
                 unnormalized_probs.append(edge_weight / q)
 
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
 
         return [edge, self.__alias_setup(normalized_probs)]
 
@@ -243,12 +237,14 @@ class N2vGraph:
                 continue
             else:
                 # owntype is going to a different node type
-                dst2prob[n] = float(self.gamma) / (float(count) * num_types)  # dividing by the num of type of edges
+                # dividing by the num of type of edges
+                dst2prob[n] = float(self.gamma) / (float(count) * num_types)
                 total_non_own_probability += dst2prob[n]
         if dst2count[dsttype] == 0:
             dst2prob[dsttype] = 0
         else:
-            dst2prob[dsttype] = (1 - total_non_own_probability) / float(dst2count[dsttype])
+            dst2prob[dsttype] = (
+                1 - total_non_own_probability) / float(dst2count[dsttype])
         # Now assign the final unnormalized probs
         unnormalized_probs = np.zeros(total_neighbors)
         i = 0
@@ -264,7 +260,8 @@ class N2vGraph:
                 unnormalized_probs[i] = prob * edge_weight / q
             i += 1
         norm_const = sum(unnormalized_probs)
-        normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+        normalized_probs = [
+            float(u_prob) / norm_const for u_prob in unnormalized_probs]
         return self.__alias_setup(normalized_probs)
 
     def _node_id_to_node_type(self, id: str) -> str:
@@ -292,8 +289,10 @@ class N2vGraph:
             # node_as_int = G.node_to_index_map[node]
 
             owntype = self._node_id_to_node_type(node)
-            own2count: dict = defaultdict(int)  # counts for going from current node ("own") to nodes of a given type (g, p,d)
-            own2prob: dict = defaultdict(float)  # probs calculated from own2count
+            # counts for going from current node ("own") to nodes of a given type (g, p,d)
+            own2count: dict = defaultdict(int)
+            # probs calculated from own2count
+            own2prob: dict = defaultdict(float)
 
             total_neighbors = 0
             # G returns a sorted list of neighbors of node
@@ -319,7 +318,8 @@ class N2vGraph:
             if own2count[owntype] == 0:
                 own2prob[owntype] = 0
             else:
-                own2prob[owntype] = (1 - total_non_own_probability) / float(own2count[owntype])
+                own2prob[owntype] = (
+                    1 - total_non_own_probability) / float(own2count[owntype])
             # Now assign the final unnormalized probs
             unnormalized_probs = np.zeros(total_neighbors)
             i = 0
@@ -330,13 +330,15 @@ class N2vGraph:
                 i += 1
             norm_const = sum(unnormalized_probs)
             # log.info("norm_const {}".format(norm_const))
-            normalized_probs = [float(u_prob) / norm_const for u_prob in unnormalized_probs]
+            normalized_probs = [
+                float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
         for edge in G.edges():
             # src_as_int = G.node_to_index_map[edge[0]]
             # dst_as_int = G.node_to_index_map[edge[1]]
             # alias_edges[(src_as_int, dst_as_int)] = self.get_alias_edge_xn2v(edge[0], edge[1])
-            alias_edges[(edge[0], edge[1])] = self.get_alias_edge_xn2v(edge[0], edge[1])
+            alias_edges[(edge[0], edge[1])] = self.get_alias_edge_xn2v(
+                edge[0], edge[1])
 
         self.alias_edges = alias_edges
         self.alias_nodes = alias_nodes
