@@ -116,15 +116,6 @@ class Word2Vec:
             self.vocabulary_size = 0
         elif self.vocabulary_size == 0:
             self.vocabulary_size = len(self.word2id)+1
-        # Apr 28, changed by Peter (can be deleted)
-        # if any(isinstance(el, list) for el in data):
-        #    flat_list = [item for sublist in data for item in sublist]
-        #    self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
-        #    print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
-        # else:
-        # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
-        #    self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
-        # print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         return None
 
     @property
