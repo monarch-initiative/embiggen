@@ -339,8 +339,6 @@ class SkipGramWord2Vec(Word2Vec):
                         continue
                     batch_x, batch_y = self.next_batch(sentence)
                     # Evaluation.
-                    if do_display and (step % self.eval_step == 0 or step == 0):
-                        self.display_words(x_test)
                     step += 1
                     self.run_optimization(batch_x, batch_y)
             else:
