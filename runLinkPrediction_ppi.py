@@ -319,8 +319,10 @@ def main(args):
         )
     )
 
-    # TODO: add X_test and y_test for the early stopping
-    classifier_model.fit(X_train, y_train)
+    if args.classifier in ("MLP", "FFNN"):
+        classifier_model.fit(X_train, y_train, X_test, y_test)
+    else:
+        classifier_model.fit(X_train, y_train)
 
     y_train_pred = classifier_model.predict(X_train)
     y_test_pred = classifier_model.predict(X_test)
