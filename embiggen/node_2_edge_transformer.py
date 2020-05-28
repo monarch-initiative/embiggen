@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple
 from .csf_graph import CSFGraph
-import numpy as np
+import numpy as np  # type: ignore
 
 
 class N2ETransformer:

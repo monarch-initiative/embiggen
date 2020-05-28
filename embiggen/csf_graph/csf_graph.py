@@ -3,7 +3,7 @@ import os.path
 import numpy as np  # type: ignore
 from collections import defaultdict
 from typing import Optional, Any, Union, Set, Dict, List, Tuple
-from dict_hash import Hashable, sha256
+from dict_hash import Hashable, sha256  # type: ignore
 from embiggen.csf_graph.edge import Edge
 
 
@@ -511,5 +511,5 @@ class CSFGraph(Hashable):
     def consistent_hash(self)->str:
         """Return consistent hash of the CSFGraph object."""
         return sha256({
-            
+
         })
