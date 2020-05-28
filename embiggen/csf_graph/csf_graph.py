@@ -3,7 +3,7 @@ import os.path
 import numpy as np  # type: ignore
 from collections import defaultdict
 from typing import Optional, Any, Union, Set, Dict, List, Tuple
-
+from dict_hash import Hashable, sha256
 from embiggen.csf_graph.edge import Edge
 
 
@@ -15,7 +15,7 @@ class CSFGraphNoObjectColumnError(Exception):
     pass
 
 
-class CSFGraph:
+class CSFGraph(Hashable):
     """Class converts data in to a compressed storage format graph.
 
     A file of data that is assumed to contain rows of graph edges, where each edge is a space-delimited string
@@ -507,3 +507,9 @@ class CSFGraph:
         :return: degree of node
         """
         return len(self.neighbors(node))
+
+    def consistent_hash(self)->str:
+        """Return consistent hash of the CSFGraph object."""
+        return sha256({
+            
+        })
