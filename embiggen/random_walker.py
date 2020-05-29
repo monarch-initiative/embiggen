@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
 from multiprocessing import cpu_count, Pool
-from typing import List
+from typing import List, Tuple
 from .graph import ProbabilisticGraph
 from tqdm.auto import tqdm
 
@@ -19,9 +19,8 @@ class RandomWalker:
             Number of processes to use. Use a number lower or equal to 0 to
             use all available processes. Default is -1.
         """
-        self._workers = workers if workers <= 0 else cpu_count()
+        self._workers = workers if workers > 0 else cpu_count()
 
-    @njit
     def _walk(self,
               graph: ProbabilisticGraph,
               walk_length: int,
@@ -52,11 +51,7 @@ class RandomWalker:
             )
         return walk
 
-    @njit
-    def _graph_walk(self,
-                    graph: ProbabilisticGraph,
-                    walk_length: int
-                    ) -> List[np.array]:
+    def _graph_walk(self, job: Tuple) -> List[np.array]:
         """Generate a random walk for each node in the graph.
 
         Parameters
@@ -71,6 +66,7 @@ class RandomWalker:
         -------
         A list of arrays of (walk_length + 1) nodes.
         """
+        graph, walk_length = job
         return [
             self._walk(graph, walk_length, node)
             for node in graph.nodes_indices
@@ -97,7 +93,7 @@ class RandomWalker:
         """
         # TODO There is no need for the tensor to be rugged.
         with Pool(min(self._workers, num_walks)) as pool:
-            walks_tensor = tf.ragged.constant(np.fromiter(tqdm(
+            walks_tensor = tf.ragged.constant(sum(tqdm(
                 pool.imap_unordered(
                     self._graph_walk,
                     (
@@ -107,7 +103,7 @@ class RandomWalker:
                 ),
                 total=num_walks,
                 desc='Performing walks'
-            ), dtype=np.float))
+            ), []))
             pool.close()
             pool.join()
         return walks_tensor

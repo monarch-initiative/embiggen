@@ -67,6 +67,4 @@ class TestRandomWalker(TestCase):
             desc="Testing on non-legacy",
             disable= not self._verbose
         ):
-            graph=self._factory.read_csv(path, p=1, q=1)
-            print(self._walker.walk(graph, 10, 5))
-            
+            graph=self._factory.read_csv(path, p=10, q=10)

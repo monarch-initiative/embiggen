@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 from .graph import Graph
 from .probabilistic_graph_utils import alias_draw, alias_setup
 
-
 class ProbabilisticGraph(Graph):
 
     def __init__(self, p: float, q: float, workers: int = -1, verbose: bool = True, **kwargs: Dict):
@@ -136,12 +135,6 @@ class ProbabilisticGraph(Graph):
         The index of a random adiacent node to node.
         """
         _, dst = edge
-        try:
-            return self._neighbours[dst][
-                alias_draw(*self._neighbours_edges_alias[self._edges[tuple(edge)]])
-            ]
-        except Exception as e:
-            print(self._edges_number)
-            print(edge)
-            print(self._edges[tuple(edge)])
-            raise e
+        return self._neighbours[dst][
+            alias_draw(*self._neighbours_edges_alias[self._edges[tuple(edge)]])
+        ]
