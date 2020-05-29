@@ -1,4 +1,3 @@
-import pandas as pd
 from typing import List, Union, Tuple, Dict
 import numpy as np
 
@@ -70,6 +69,7 @@ class Graph:
         if nodes is None:
             nodes = np.unique(edges)
         self._nodes_number = len(nodes)
+        self._nodes_indices = np.arange(self._nodes_number)
 
         if isinstance(node_types, List) and len(node_types) != self._nodes_number:
             raise ValueError(
@@ -82,7 +82,7 @@ class Graph:
         #   "node_1_id": 0,
         #   "node_2_id": 1
         # }
-        self._nodes = dict(zip(nodes, range(self._nodes_number)))
+        self._nodes = dict(zip(nodes, self._nodes_indices))
 
         # Creating mapping of edges and integer ID.
         # The map looks like the following:
@@ -136,59 +136,11 @@ class Graph:
         self._neighbours_weights = list(neighbours_weights_generator)
 
     @property
+    def nodes_indices(self) -> int:
+        """Return the number of nodes in the graph."""
+        return self._nodes_indices
+
+    @property
     def nodes_number(self) -> int:
         """Return the number of nodes in the graph."""
         return self._nodes_number
-
-    @staticmethod
-    def read_csv(
-        edge_path: str,
-        node_path: str = None,
-        edge_sep: str = "\t",
-        node_sep: str = "\t",
-        edge_has_header: bool = True,
-        start_nodes_column: str = "subject",
-        end_nodes_column: str = "object",
-        weights_column: str = "weight",
-        **kwargs: Dict
-    ):
-        """Return new instance of graph based on given files.
-
-        Parameters
-        -----------------------
-        edge_path: str,
-            Path to the edges file.
-        node_path: str = None,
-            Path to the nodes file.
-        edge_sep: str = "\t",
-            Separator to use for the edges file.
-        node_sep: str = "\t",
-            Separator to use for the nodes file.
-        edge_has_header: bool = True,
-            Whetever to edge files has a header or not.
-        start_nodes_column: str = "subject",
-            Column to use for the starting nodes. When no header is available,
-            use the numeric index curresponding to the column.
-        end_nodes_column: str = "object",
-            Column to use for the ending nodes. When no header is available,
-            use the numeric index curresponding to the column.
-        **kwargs: Dict,
-            Additional keyword arguments to pass to the instantiation of a new
-            graph object.
-
-        Returns
-        ----------------------
-        """
-        edges = pd.read_csv(
-            edge_path,
-            sep=edge_sep,
-            header=([0] if edge_has_header else None)
-        )
-        return Graph(
-            edges=edges[[start_nodes_column, end_nodes_column]].values,
-            **(
-                dict(weights=edges[weights_column].values)
-                if weights_column in edges.columns else {}
-            ),
-            **kwargs
-        )

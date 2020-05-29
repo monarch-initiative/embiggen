@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from .csf_graph import CSFGraph
+from .graph import Graph
 from .node_2_edge_transformer import N2ETransformer
 import numpy as np  # type: ignore
 
@@ -42,14 +42,14 @@ class GraphPartitionTransfomer:
         """
         return np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
 
-    def transform_edges(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform_edges(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
         ----------------------
-        positive: CSFGraph,
+        positive: Graph,
             The positive partition of the Graph.
-        negative: CSFGraph,
+        negative: Graph,
             The negative partition of the Graph.
 
         Returns
@@ -64,15 +64,15 @@ class GraphPartitionTransfomer:
             self._get_labels(positive_embedding, negative_embedding)
         )
 
-    def transform_nodes(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[
+    def transform_nodes(self, positive: Graph, negative: Graph) -> Tuple[
         np.ndarray, np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
         ----------------------
-        positive: CSFGraph,
+        positive: Graph,
             The positive partition of the Graph.
-        negative: CSFGraph,
+        negative: Graph,
             The negative partition of the Graph.
 
         Returns

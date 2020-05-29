@@ -93,7 +93,7 @@ class RandomWalker:
         """
         return [
             self._walk(graph, walk_length, node)
-            for node in range(graph.nodes_number)
+            for node in range(graph.nodes_indices)
         ]
 
     def walk(self,

@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from .csf_graph import CSFGraph
+from .graph import Graph
 import numpy as np  # type: ignore
 
 
@@ -38,12 +38,12 @@ class N2ETransformer:
         self._method = N2ETransformer.methods[method]
         self._embedding = embedding
 
-    def transform_edges(self, G: CSFGraph) -> np.ndarray:
+    def transform_edges(self, G: Graph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters
         ---------------------
-        G: CSFGraph,
+        G: Graph,
             The graph whose nodes are to be embedded.
 
         Returns
@@ -56,12 +56,12 @@ class N2ETransformer:
             dtype=np.float
         )
 
-    def transform_nodes(self, G: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform_nodes(self, G: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return nodes from given graph.
 
         Parameters
         ---------------------
-        G: CSFGraph,
+        G: Graph,
             The graph whose nodes are to be embedded.
 
         Returns

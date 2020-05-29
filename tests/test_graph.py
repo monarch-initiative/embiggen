@@ -1,4 +1,4 @@
-from embiggen import Graph
+from embiggen.graph import Graph, GraphFactory
 from unittest import TestCase
 import pytest
 import numpy as np
@@ -55,32 +55,34 @@ class TestGraph(TestCase):
             ]
         ]
 
+        self._factory = GraphFactory(Graph)
+
     def test_setup_from_dataframe(self):
-        graph = Graph.read_csv('tests/data/unweighted_small_graph.txt')
-        assert graph.nodes_number > 0
+        graph = self._factory.read_csv('tests/data/unweighted_small_graph.txt')
+        assert len(graph.nodes_indices) > 0
 
         # Testing illegal weights arguments
         with pytest.raises(ValueError):
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 'tests/data/unweighted_small_graph.txt',
                 weights=0
             )
         with pytest.raises(ValueError):
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 'tests/data/unweighted_small_graph.txt',
                 weights=[0]
             )
 
         # Testing illegal edge types parameter
         with pytest.raises(ValueError):
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 'tests/data/unweighted_small_graph.txt',
                 edge_types=[0]
             )
 
         # Testing illegal node types parameter
         with pytest.raises(ValueError):
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 'tests/data/unweighted_small_graph.txt',
                 node_types=[0]
             )
@@ -88,7 +90,7 @@ class TestGraph(TestCase):
     def test_normalize_graph(self):
         """Testing that the normalization process actually works."""
         for path in self._paths:
-            graph = Graph.read_csv(path, normalize_weights=True)
+            graph = self._factory.read_csv(path, normalize_weights=True)
             assert all(
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
@@ -97,7 +99,7 @@ class TestGraph(TestCase):
     def test_not_normalize_graph(self):
         """Testing that the normalization process actually works."""
         for path in self._paths:
-            graph = Graph.read_csv(path, normalize_weights=False)
+            graph = self._factory.read_csv(path, normalize_weights=False)
             assert not all(
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
@@ -106,7 +108,7 @@ class TestGraph(TestCase):
     def test_normalize_graph_legacy(self):
         """Testing that the normalization process actually works."""
         for path in self._legacy_paths:
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 path,
                 normalize_weights=True,
                 edge_has_header=False,
@@ -118,9 +120,9 @@ class TestGraph(TestCase):
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
             )
-        
+
         for path in self._legacy_space_paths:
-            graph = Graph.read_csv(
+            graph = self._factory.read_csv(
                 path,
                 edge_sep=" ",
                 normalize_weights=True,
@@ -133,10 +135,10 @@ class TestGraph(TestCase):
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
             )
-    
+
     def test_setup_from_custom_dataframe(self):
         # TODO: integrate all other remaining columns
-        graph = Graph.read_csv(
+        graph = self._factory.read_csv(
             "tests/data/small_9606.protein.actions.txt",
             normalize_weights=False,
             start_nodes_column="item_id_a",
@@ -147,7 +149,7 @@ class TestGraph(TestCase):
             np.isclose(neighbours_weights.sum(), 1)
             for neighbours_weights in graph._neighbours_weights
         )
-        graph = Graph.read_csv(
+        graph = self._factory.read_csv(
             "tests/data/small_9606.protein.actions.txt",
             normalize_weights=True,
             start_nodes_column="item_id_a",
