@@ -95,6 +95,14 @@ class TestGraph(TestCase):
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
             )
+            assert all(
+                graph.has_edge(edge)
+                for edge in graph.edges_indices
+            )
+            assert all(
+                not graph.has_edge((-src-1, -dst-1))
+                for src, dst in graph.edges_indices
+            )
 
     def test_not_normalize_graph(self):
         """Testing that the normalization process actually works."""
@@ -103,6 +111,14 @@ class TestGraph(TestCase):
             assert not all(
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
+            )
+            assert all(
+                graph.has_edge(edge)
+                for edge in graph.edges_indices
+            )
+            assert all(
+                not graph.has_edge((-src-1, -dst-1))
+                for src, dst in graph.edges_indices
             )
 
     def test_normalize_graph_legacy(self):
@@ -116,9 +132,19 @@ class TestGraph(TestCase):
                 end_nodes_column=1,
                 weights_column=2
             )
+            assert len(graph.edges_indices) == graph.edges_number
+            assert len(graph.nodes_indices) == graph.nodes_number
             assert all(
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
+            )
+            assert all(
+                graph.has_edge(edge)
+                for edge in graph.edges_indices
+            )
+            assert all(
+                not graph.has_edge((-src-1, -dst-1))
+                for src, dst in graph.edges_indices
             )
 
         for path in self._legacy_space_paths:
@@ -134,6 +160,14 @@ class TestGraph(TestCase):
             assert all(
                 np.isclose(neighbours_weights.sum(), 1)
                 for neighbours_weights in graph._neighbours_weights
+            )
+            assert all(
+                graph.has_edge(edge)
+                for edge in graph.edges_indices
+            )
+            assert all(
+                not graph.has_edge((-src-1, -dst-1))
+                for src, dst in graph.edges_indices
             )
 
     def test_setup_from_custom_dataframe(self):

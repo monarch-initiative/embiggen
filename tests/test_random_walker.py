@@ -58,7 +58,7 @@ class TestRandomWalker(TestCase):
 
         self._verbose = False
         self._factory = GraphFactory(ProbabilisticGraph, verbose=False)
-        self._walker = RandomWalker(1,1)
+        self._walker = RandomWalker()
 
     def test_random_walk(self):
         """Testing that the normalization process actually works."""
@@ -67,6 +67,6 @@ class TestRandomWalker(TestCase):
             desc="Testing on non-legacy",
             disable= not self._verbose
         ):
-            graph=self._factory.read_csv(path)
+            graph=self._factory.read_csv(path, p=1, q=1)
             print(self._walker.walk(graph, 10, 5))
             

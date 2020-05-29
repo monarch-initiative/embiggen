@@ -50,9 +50,8 @@ class Graph:
         ---------------------
         New instance of graph.
         """
-        self._edges_number = len(edges)
         constant_weight = not isinstance(weights, (List, np.ndarray))
-        if not constant_weight and len(weights) != self._edges_number:
+        if not constant_weight and len(weights) != len(edges):
             raise ValueError(
                 "Given weights number does not match given edges number."
             )
@@ -60,7 +59,7 @@ class Graph:
             raise ValueError(
                 "Given constant weight is zero."
             )
-        if isinstance(edge_types, List) and len(edge_types) != self._edges_number:
+        if isinstance(edge_types, List) and len(edge_types) != len(edges):
             raise ValueError(
                 "Given edge types number does not match given edge number."
             )
@@ -100,9 +99,12 @@ class Graph:
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
+
         for i, (start, end) in enumerate(edges):
-            start, end = sorted((self._nodes[start], self._nodes[end]))
-            self._edges[(start, end)] = i
+            start, end = self._nodes[start], self._nodes[end]
+            self._edges[(start, end)] = i*2
+            self._edges[(end, start)] = i*2+1
+
             # We populate the list of the neighbours for both end of the edge.
             neighbours[start].append(end)
             neighbours[end].append(start)
@@ -110,6 +112,10 @@ class Graph:
             weight = weights if constant_weight else weights[i]
             neighbours_weights[start].append(weight)
             neighbours_weights[end].append(weight)
+
+        # Compute edges
+        self._edges_indices = np.array(list(self._edges.keys()), np.int64)
+        self._edges_number = len(self._edges_indices)
 
         # We prepare the generator to transform the lists of neighbours and
         # of weights in numpy arrays. We use generator to avoid iterating
@@ -141,6 +147,11 @@ class Graph:
         return self._nodes_indices
 
     @property
+    def edges_indices(self) -> int:
+        """Return the number of edges in the graph."""
+        return self._edges_indices
+
+    @property
     def nodes_number(self) -> int:
         """Return the number of nodes in the graph."""
         return self._nodes_number
@@ -162,4 +173,4 @@ class Graph:
         ------------------
         Boolean representing if edge is present in graph.
         """
-        return sorted(edge) in self._edges
+        return tuple(edge) in self._edges

@@ -13,6 +13,10 @@ class TestGraph(TestCase):
             'tests/data/small_het_graph_edges.tsv',
             'tests/data/small_graph.txt',
         ]
+        self._legacy_space_paths = [
+            "tests/data/karate.train",
+            "tests/data/karate.test",
+        ]
         self._legacy_paths = [
             "tests/data/small_graph_LEGACY.txt",
             "tests/data/small_g2d_test.txt",
@@ -53,7 +57,14 @@ class TestGraph(TestCase):
         ]
 
         self._verbose = True
-        self._factory = GraphFactory(ProbabilisticGraph, verbose=False)
+        self._factory = GraphFactory(ProbabilisticGraph, verbose=False, q=1, p=1)
+
+    def test_argument_validation(self):
+        path = self._paths[0]
+        with pytest.raises(ValueError):
+            GraphFactory(ProbabilisticGraph, verbose=False, p=0.5, q= -1).read_csv(path)
+        with pytest.raises(ValueError):
+            GraphFactory(ProbabilisticGraph, verbose=False, p= -1, q=0.5).read_csv(path)
 
     def test_non_legacy(self):
         """Testing that the normalization process actually works."""
@@ -64,7 +75,7 @@ class TestGraph(TestCase):
         ):
             graph=self._factory.read_csv(path)
             for i in graph.nodes_indices:
-                assert graph.extract_random_neighbour(
+                assert graph.extract_random_node_neighbour(
                     i) in graph._neighbours[i]
 
 
@@ -83,8 +94,10 @@ class TestGraph(TestCase):
                 weights_column=2
             )
             for i in graph.nodes_indices:
-                assert graph.extract_random_neighbour(
+                assert graph.extract_random_node_neighbour(
                     i) in graph._neighbours[i]
+
+
 
     def test_setup_from_custom_dataframe(self):
         # TODO: integrate all other remaining columns
@@ -95,5 +108,5 @@ class TestGraph(TestCase):
             weights_column="score"
         )
         for i in graph.nodes_indices:
-            assert graph.extract_random_neighbour(
+            assert graph.extract_random_node_neighbour(
                 i) in graph._neighbours[i]

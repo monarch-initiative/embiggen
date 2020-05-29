@@ -44,10 +44,12 @@ class RandomWalker:
         An array of (walk_length + 1) nodes.
         """
         walk = np.zeros(walk_length + 1)
-        for index in range(walk_length):
-            walk[index] = start_node
-            start_node = graph.extract_random_neighbour(start_node)
-        walk[index + 1] = start_node
+        walk[0] = start_node
+        walk[1] = graph.extract_random_node_neighbour(start_node)
+        for index in range(2, walk_length + 1):
+            walk[index] = graph.extract_random_edge_neighbour(
+                (walk[index-2], walk[index-1])
+            )
         return walk
 
     @njit
@@ -105,7 +107,7 @@ class RandomWalker:
                 ),
                 total=num_walks,
                 desc='Performing walks'
-            )))
+            ), dtype=np.float))
             pool.close()
             pool.join()
         return walks_tensor
