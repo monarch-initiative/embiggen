@@ -57,36 +57,39 @@ class TestGraph(TestCase):
         ]
 
         self._verbose = True
-        self._factory = GraphFactory(ProbabilisticGraph, verbose=False, q=1, p=1)
+        self._factory = GraphFactory(
+            ProbabilisticGraph, verbose=False, q=1, p=1)
 
     def test_argument_validation(self):
         path = self._paths[0]
         with pytest.raises(ValueError):
-            GraphFactory(ProbabilisticGraph, verbose=False, p=0.5, q= -1).read_csv(path)
+            GraphFactory(ProbabilisticGraph, verbose=False,
+                         p=0.5, q=-1).read_csv(path)
         with pytest.raises(ValueError):
-            GraphFactory(ProbabilisticGraph, verbose=False, p= -1, q=0.5).read_csv(path)
+            GraphFactory(ProbabilisticGraph, verbose=False,
+                         p=-1, q=0.5).read_csv(path)
 
     def test_non_legacy(self):
         """Testing that the normalization process actually works."""
         for path in tqdm(
             self._paths,
             desc="Testing on non-legacy",
-            disable= not self._verbose
+            disable=not self._verbose
         ):
-            graph=self._factory.read_csv(path)
+            graph = self._factory.read_csv(path)
             for i in graph.nodes_indices:
-                assert graph.extract_random_node_neighbour(
-                    i) in graph._neighbours[i]
-
+                assert graph.extract_random_node_neighbour(i) in graph._neighbours[i]
+            for edge in graph.edges_indices:
+                assert graph.extract_random_edge_neighbour(edge) in graph._neighbours[edge[1]]
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
         for path in tqdm(
             self._legacy_paths,
             desc="Testing on legacy",
-            disable= not self._verbose
+            disable=not self._verbose
         ):
-            graph=self._factory.read_csv(
+            graph = self._factory.read_csv(
                 path,
                 edge_has_header=False,
                 start_nodes_column=0,
@@ -96,12 +99,12 @@ class TestGraph(TestCase):
             for i in graph.nodes_indices:
                 assert graph.extract_random_node_neighbour(
                     i) in graph._neighbours[i]
-
-
+            for edge in graph.edges_indices:
+                assert graph.extract_random_edge_neighbour(edge) in graph._neighbours[edge[1]]
 
     def test_setup_from_custom_dataframe(self):
         # TODO: integrate all other remaining columns
-        graph=self._factory.read_csv(
+        graph = self._factory.read_csv(
             "tests/data/small_9606.protein.actions.txt",
             start_nodes_column="item_id_a",
             end_nodes_column="item_id_b",
@@ -110,3 +113,11 @@ class TestGraph(TestCase):
         for i in graph.nodes_indices:
             assert graph.extract_random_node_neighbour(
                 i) in graph._neighbours[i]
+        for edge in graph.edges_indices:
+            assert graph.extract_random_edge_neighbour(edge) in graph._neighbours[edge[1]]
+
+
+if __name__ == "__main__":
+    t = TestGraph()
+    t.setUp()
+    t.test_legacy()

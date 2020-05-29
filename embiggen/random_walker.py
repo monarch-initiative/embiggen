@@ -43,7 +43,7 @@ class RandomWalker:
         -------
         An array of (walk_length + 1) nodes.
         """
-        walk = np.zeros(walk_length + 1)
+        walk = np.zeros(walk_length + 1, dtype=np.int64)
         walk[0] = start_node
         walk[1] = graph.extract_random_node_neighbour(start_node)
         for index in range(2, walk_length + 1):
@@ -78,8 +78,8 @@ class RandomWalker:
 
     def walk(self,
              graph: ProbabilisticGraph,
-             walk_length:
-             int, num_walks: int
+             walk_length: int,
+             num_walks: int
              ) -> tf.RaggedTensor:
         """Return a list of graph walks
 

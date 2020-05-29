@@ -52,6 +52,10 @@ class GraphFactory:
             sep=edge_sep,
             header=([0] if edge_has_header else None)
         )
+
+        # Dropping duplicated edges
+        edges = edges.drop_duplicates([start_nodes_column, end_nodes_column])
+
         return self._product_class(
             edges=edges[[start_nodes_column, end_nodes_column]].values,
             **(

@@ -99,19 +99,22 @@ class Graph:
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
-
-        for i, (start, end) in enumerate(edges):
+        i = 0
+        for j, (start, end) in enumerate(edges):
             start, end = self._nodes[start], self._nodes[end]
-            self._edges[(start, end)] = i*2
-            self._edges[(end, start)] = i*2+1
+            weight = weights if constant_weight else weights[j]
+            if not self.has_edge((start, end)):
+                self._edges[(start, end)] = i
+                neighbours[start].append(end)
+                neighbours_weights[start].append(weight)
+                i+=1
 
-            # We populate the list of the neighbours for both end of the edge.
-            neighbours[start].append(end)
-            neighbours[end].append(start)
-            # We populate the list of the neighbours's weights for both sides.
-            weight = weights if constant_weight else weights[i]
-            neighbours_weights[start].append(weight)
-            neighbours_weights[end].append(weight)
+            if not self.has_edge((end, start)):
+                self._edges[(end, start)] = i
+                neighbours[end].append(start)
+                neighbours_weights[end].append(weight)
+                i+=1
+            
 
         # Compute edges
         self._edges_indices = np.array(list(self._edges.keys()), np.int64)
@@ -173,4 +176,4 @@ class Graph:
         ------------------
         Boolean representing if edge is present in graph.
         """
-        return tuple(edge) in self._edges
+        return edge in self._edges

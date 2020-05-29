@@ -1,11 +1,10 @@
 from multiprocessing import Pool, cpu_count
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 from numba import njit
 
 from tqdm.auto import tqdm
-from typing import Tuple
 
 from .graph import Graph
 from .probabilistic_graph_utils import alias_draw, alias_setup
@@ -91,8 +90,9 @@ class ProbabilisticGraph(Graph):
         Weighted probabilities
         """
         src, dst = edge
-        
-        probs = np.fromiter((
+
+        probs = np.fromiter(
+            (
                 self._neighbours_weights[dst][index]
                 if self.has_edge((neighbour, src)) else
                 self._neighbours_weights[dst][index] / self._p
@@ -121,7 +121,7 @@ class ProbabilisticGraph(Graph):
         """
         return self._neighbours[node][alias_draw(*self._neighbours_nodes_alias[node])]
 
-    def extract_random_edge_neighbour(self, edge: int) -> int:
+    def extract_random_edge_neighbour(self, edge: Tuple[int, int]) -> int:
         """Return a random adiacent node to the one associated to node.
         The Random is extracted by using the normalized weights of the edges
         as probability distribution. 
@@ -136,6 +136,12 @@ class ProbabilisticGraph(Graph):
         The index of a random adiacent node to node.
         """
         _, dst = edge
-        return self._neighbours[dst][
-            alias_draw(*self._neighbours_edges_alias[self._edges[edge]])
-        ]
+        try:
+            return self._neighbours[dst][
+                alias_draw(*self._neighbours_edges_alias[self._edges[tuple(edge)]])
+            ]
+        except Exception as e:
+            print(self._edges_number)
+            print(edge)
+            print(self._edges[tuple(edge)])
+            raise e
