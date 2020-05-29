@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 from .csf_graph import CSFGraph
 from .node_2_edge_transformer import N2ETransformer
-import numpy as np
+import numpy as np  # type: ignore
 
 
 class GraphPartitionTransfomer:
@@ -64,7 +64,8 @@ class GraphPartitionTransfomer:
             self._get_labels(positive_embedding, negative_embedding)
         )
 
-    def transform_nodes(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform_nodes(self, positive: CSFGraph, negative: CSFGraph) -> Tuple[
+        np.ndarray, np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters

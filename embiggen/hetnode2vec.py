@@ -6,7 +6,7 @@ import random
 import sys
 import time
 import tensorflow as tf  # type: ignore
-from tqdm.auto import trange
+from tqdm.auto import trange  # type: ignore
 
 from collections import defaultdict
 from multiprocessing import Pool
