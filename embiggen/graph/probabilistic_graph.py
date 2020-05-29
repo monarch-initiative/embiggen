@@ -1,9 +1,14 @@
-from multiprocessing import cpu_count, Pool
-from .graph import Graph
+from multiprocessing import Pool, cpu_count
 from typing import Dict
-from .probabilistic_graph_utils import alias_setup, alias_draw
+
+import numpy as np
 from numba import njit
+
 from tqdm.auto import tqdm
+from typing import Tuple
+
+from .graph import Graph
+from .probabilistic_graph_utils import alias_draw, alias_setup
 
 
 class ProbabilisticGraph(Graph):
@@ -63,34 +68,40 @@ class ProbabilisticGraph(Graph):
             self._neighbours_edges_alias = list(tqdm(
                 pool.imap(
                     self._weighted_alias_setup,
-                    self.edges.keys()
+                    self._edges.keys()
                 ),
-                total=self.nodes_number,
+                total=self.edges_number,
                 disable=not verbose,
                 desc="Computing edge neighbours aliases"
             ))
-            
+
             pool.close()
             pool.join()
 
-    def _weighted_alias_setup(self, edge):
+    def _weighted_alias_setup(self, edge: Tuple[int, int]) -> np.ndarray:
+        """Return weighted probabilities for given edge.
+
+        Parameters
+        -----------------
+        edge: Tuple[int, int],
+            Edge for which to compute the probabilities.
+
+        Returns
+        -----------------
+        Weighted probabilities
+        """
         src, dst = edge
 
-        probs = [
-            self._neighbours_weights[dst, neighbour]
+        probs = np.fromiter(
+            self._neighbours_weights[dst][neighbour]
             if self.has_edge((neighbour, src)) else
-            self._neighbours_weights[dst, neighbour] / self._p
+            self._neighbours_weights[dst][neighbour] / self._p
             if neighbour == src else
-            self._neighbours_weights[dst, neighbour] / self._q
+            self._neighbours_weights[dst][neighbour] / self._q
             for neighbour in self._neighbours[dst]
-        ]
+        )
 
-        tot = sum(probs)
-        return alias_setup([
-            x / tot
-            for x in probs
-        ])
-
+        return alias_setup(probs/probs.sum())
 
     def extract_random_neighbour(self, node: int) -> int:
         """Return a random adiacent node to the one associated to node.

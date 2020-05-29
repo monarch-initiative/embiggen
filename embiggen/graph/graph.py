@@ -145,6 +145,11 @@ class Graph:
         """Return the number of nodes in the graph."""
         return self._nodes_number
 
+    @property
+    def edges_number(self) -> int:
+        """Return the number of edges in the graph."""
+        return self._edges_number
+
     def has_edge(self, edge: Tuple[int, int]) -> bool:
         """Return boolean representing if given edge exists in graph.
 
