@@ -140,7 +140,8 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
         cencoder = CooccurrenceEncoder(walks, window_size=2, vocab_size=n_nodes)
         cooc_dict = cencoder.build_dataset()
         model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=args.embedding_size,
-                           context_size=args.context_window, num_epochs=args.num_epochs)
+                           context_size=args.context_window, num_epochs=args.num_epochs,
+                           learning_rate=args.learning_rate)
     else:
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
 

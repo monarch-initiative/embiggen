@@ -14,9 +14,9 @@ class NotFitToCorpusError(Exception):
 
 
 class GloVeModel:
-    def __init__(self, co_oc_dict, vocab_size, embedding_size, context_size, min_occurrences=1,
-                 scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05,
-                 num_epochs=5):
+    def __init__(self, co_oc_dict, vocab_size, embedding_size: int = 200, context_size: int = 3, min_occurrences=1,
+                 scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate: float = 0.05,
+                 num_epochs: int = 5):
         self.co_oc_dict = co_oc_dict
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size
