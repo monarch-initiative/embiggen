@@ -200,7 +200,7 @@ def main(args):
     """
     logging.info(
         " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
-        "context_window ={}, dimension={}, Validation={}".format(args.p, args.q, args.classifier,
+        "context_window ={}, dimension={}, skipValidation={}".format(args.p, args.q, args.classifier,
                                                                             args.w2v_model, args.num_epochs,
                                                                             args.context_window, args.embedding_size,
                                                                             args.skipValidation))
