@@ -223,7 +223,7 @@ def get_classifier_model(classifier: str, **kwargs: Dict):
     )
 
 
-@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
+#@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
 def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_length: int) -> tf.RaggedTensor:
     """Return a new N2vGraph trained on the provided graph.
 
