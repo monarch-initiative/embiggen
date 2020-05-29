@@ -64,26 +64,23 @@ class N2vGraph:
         # First iteration
         cur_nbrs = g.neighbors_as_ints(start_node)
 
-        if len(cur_nbrs) > 0:
-            current = cur_nbrs[self.alias_draw(*nodes[start_node])]
-            previous = start_node
-            walk.append(current)
-        else:
+        if len(cur_nbrs) <= 0:
             return walk
+
+        current = cur_nbrs[self.alias_draw(*nodes[start_node])]
+        previous = start_node
+        walk.append(current)
 
         while len(walk) < walk_length:
             # g returns a sorted list of neighbors
             cur_nbrs = g.neighbors_as_ints(current)
 
-            if len(cur_nbrs) > 0:
-                new_current = cur_nbrs[self.alias_draw(
-                    *edges[(previous, current)])]
-                previous = current
-                current = new_current
-                walk.append(current)
-                continue
-
-            break
+            if len(cur_nbrs) <= 0:
+                break
+            new_current = cur_nbrs[self.alias_draw(*edges[(previous, current)])]
+            previous = current
+            current = new_current
+            walk.append(current)
 
         return walk
 
@@ -103,7 +100,7 @@ class N2vGraph:
             walks: A list of nodes, where each list constitutes a random walk.
         """
         nodes = self.g.nodes_as_integers()
-        with Pool(min(self.num_processes, num_walks)) as pool:
+        with Pool(max(1, min(self.num_processes, num_walks))) as pool:
             walks_tensor = tf.ragged.constant(sum(tqdm(
                 pool.imap_unordered(
                     self._multiproc_node2vec_walk,
@@ -189,8 +186,6 @@ class N2vGraph:
             for i, [orig_node, alias_node] in enumerate(
                     pool.imap_unordered(self._get_alias_node, g.nodes_as_integers())):
                 alias_nodes[orig_node] = alias_node
-                sys.stderr.write('\rmaking alias nodes ({:03.1f}% done)'.
-                                 format(100 * i / num_nodes))
             pool.close()
             pool.join()
         end = time.time()

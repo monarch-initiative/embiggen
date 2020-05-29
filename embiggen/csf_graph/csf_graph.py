@@ -53,13 +53,23 @@ class CSFGraph(Hashable):
     """
 
     def __init__(self, edge_file: str, node_file: str = None, default_weight=1):
+        # If the provided file does not exists we raise a proper exception.
         if not os.path.exists(edge_file):
             raise ValueError('Could not find edge file {}'.format(edge_file))
+        
+        # TODO: maybe load graph using pandas
+        # TODO: use pandas backup header when header is not present in file.
+        # TODO: add default weight column when no weight is present in the file.
+        # TODO: add default label column when no one is present
+        #       such a label would be used on etherogeneus graphs.
+        # TODO: the graph has to be bi-directional (non-oriented)
+        # TODO: load the informations relative to the nodes for etherogeneous
+        #       graphs.
 
         # create variables to store node and edge information
         nodes: Set[Union[int, str]] = set()
         edges: Set[Edge] = set()
-
+        
         self.subject_column_name = 'subject'
         self.object_column_name = 'object'
         self.edge_label_column_name = 'edge_label'
@@ -118,7 +128,7 @@ class CSFGraph(Hashable):
                 self.edgetype2count_dictionary[edge_type] += 1
 
         # convert node sets to numpy arrays, sorted alphabetically on on their source element
-        node_list: List = sorted(nodes)
+        self.node_list: List = sorted(nodes)
 
         # read in nodes tsv with node type info (in category col by default)
         id_to_nodetype: Optional[Dict[str, str]] = \
@@ -127,23 +137,23 @@ class CSFGraph(Hashable):
                                              cat_col=self.node_type_col_name)
 
         # create node data dictionaries
-        for i in range(len(node_list)):
+        for i, node in enumerate(self.node_list):
             # assign node type
-            self.assign_node_type(i, node_list[i], id_to_nodetype)
+            self.assign_node_type(i, node, id_to_nodetype)
 
-            self.node_to_index_map[node_list[i]] = i
-            self.index_to_node_map[i] = node_list[i]
+            self.node_to_index_map[node] = i
+            self.index_to_node_map[i] = self.node_list[i]
 
         # initialize edge arrays - convert edge sets to numpy arrays, sorted alphabetically on on their source element
-        edge_list: List = sorted(edges)
-        total_edge_count = len(edge_list)
-        total_vertex_count = len(node_list)
+        self.edge_list: List = sorted(edges)
+        total_edge_count = len(self.edge_list)
+        total_vertex_count = len(self.node_list)
 
         # create edge type dictionaries
-        for i in range(len(edge_list)):  # type: ignore
-            this_type = edge_list[i].edge_type  # type: ignore
-            if this_type not in self.edgetype_to_index_map:
-                self.edgetype_to_index_map[this_type] = []
+        for i, edge in enumerate(self.edge_list):  # type: ignore
+            this_type = edge.edge_type  # type: ignore
+            self.edgetype_to_index_map.setdefault(this_type, [])
+            # dumb double mapping
             self.edgetype_to_index_map[this_type].append(i)  # type: ignore
             self.index_to_edgetype_map[i] = this_type  # type: ignore
 
@@ -151,52 +161,38 @@ class CSFGraph(Hashable):
         self.edge_weight: np.ndarray = np.zeros(
             total_edge_count, dtype=np.int32)
         # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
+        # offset_to_edge_[i] is the sum of the number of neighbours of the first i nodes
         self.offset_to_edge_: np.ndarray = np.zeros(
             total_vertex_count + 1, dtype=np.int32)
 
         # create the graph - this done in three steps
         # step 1: count # of edges emanating from each source id
-        index2edge_count: Dict[int, int] = defaultdict(int)
+        n_neighbours: Dict[int, int] = defaultdict(int)
 
-        for edge in edge_list:
-            source_index = self.node_to_index_map[edge.node_a]
-            index2edge_count[source_index] += 1
+        for edge in self.edge_list:
+            source = self.node_to_index_map[edge.node_a]
+            n_neighbours[source] += 1
 
         # step 2: set the offset_to_edge_ according to the number of edges emanating from each source ids
-        self.offset_to_edge_[0], offset, i = 0, 0, 0
-
-        for n in node_list:
+        for i, n in enumerate(self.node_list, start=1):
+            # Get node type
             node_type = self.index_to_nodetype_map[self.node_to_index_map[n]]
+            # fucking counts the node types
             self.nodetype2count_dictionary[node_type] += 1
-            source_index = self.node_to_index_map[n]
+
+            node_index = self.node_to_index_map[n]
             # n_edges can be zero here
-            n_edges = index2edge_count[source_index]
-            i += 1
-            offset += n_edges
-            self.offset_to_edge_[i] = offset
+            self.offset_to_edge_[i] = self.offset_to_edge_[i - 1] + n_neighbours[node_index]
 
         # step 3: add the actual edges
-        current_source_index = -1
-        j, offset = 0, 0
 
         # use the offset variable to keep track of how many edges we have already entered for a given source index
-        for edge in edge_list:
-            source_index = self.node_to_index_map[edge.node_a]
-            dest_index = self.node_to_index_map[edge.node_b]
-
-            if source_index != current_source_index:
-                current_source_index = source_index
-                offset = 0  # start a new block
-            else:
-                # go to next index (for a new destination of the previous source)
-                offset += 1
-
-            self.edge_to[j] = dest_index
+        for j, edge in enumerate(self.edge_list):
+            self.edge_to[j] = self.node_to_index_map[edge.node_b]
             self.edge_weight[j] = edge.weight
-            j += 1
 
     def assign_node_type(self, i: int, node_id: str,
-                         id_to_nodetype: Optional[Dict[str, str]]) -> None:
+                            id_to_nodetype: Optional[Dict[str, str]]) -> None:
         """Assign a node type for this node using entry in id_to_nodetype, or
         assign default node type if there is no entry
 
@@ -206,11 +202,12 @@ class CSFGraph(Hashable):
         :return: None
         """
         if not id_to_nodetype or node_id not in id_to_nodetype:
-            self.index_to_nodetype_map[i] = self.default_node_type
-            self.nodetype_to_index_map[self.default_node_type].append(i)
+            node_type = self.default_node_type
         else:
-            self.index_to_nodetype_map[i] = id_to_nodetype[node_id]
-            self.nodetype_to_index_map[id_to_nodetype[node_id]].append(i)
+            node_type = id_to_nodetype[node_id]
+
+        self.index_to_nodetype_map[i] = node_type
+        self.nodetype_to_index_map[node_type].append(i)
 
     def read_nodetype_from_node_tsv(self,
                                     node_file: Optional[str],
@@ -264,22 +261,22 @@ class CSFGraph(Hashable):
 
     def nodes(self) -> List[str]:
         """Returns a list of graph nodes."""
-        return list(self.node_to_index_map.keys())
+        return self.node_list
 
     def nodes_as_integers(self) -> List[int]:
         """Returns a list of integers representing the location of each node from the alphabetically-sorted list."""
 
-        return list(self.index_to_node_map.keys())
+        return list(range(len(self.node_list)))
 
     def node_count(self) -> int:
         """Returns an integer that contains the total number of unique nodes in the graph"""
 
-        return len(self.node_to_index_map)
+        return len(self.node_list)
 
     def edge_count(self) -> int:
         """Returns an integer that contains the total number of unique edges in the graph"""
 
-        return len(self.edge_to)
+        return len(self.edge_list)
 
     def weight(self, source: str, dest: str) -> Optional[Union[int, float]]:
         """Takes user provided strings, representing node names for a source and destination node, and returns
@@ -299,15 +296,7 @@ class CSFGraph(Hashable):
         # get indices for each user-provided node string
         source_idx = self.node_to_index_map[source]
         dest_idx = self.node_to_index_map[dest]
-
-        # get edge weights for nodes
-        for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
-            if dest_idx == self.edge_to[i]:
-                return self.edge_weight[i]
-            else:
-                pass
-
-        return None
+        return self.weight_from_ints(soruce_idx, dest_idx)
 
     def weight_from_ints(self, source_idx: int, dest_idx: int) -> Optional[Union[int, float]]:
         """Takes user provided integers, representing indices for a source and destination node, and returns
@@ -323,7 +312,6 @@ class CSFGraph(Hashable):
         Returns:
             The weight of the edge that exists between the source and destination nodes.
         """
-
         for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
             if dest_idx == self.edge_to[i]:
                 return self.edge_weight[i]
@@ -415,18 +403,7 @@ class CSFGraph(Hashable):
                 represent the name of each node in an edge. For instance, ('gg1', 'gg2').
         """
 
-        edge_list = []
-
-        for source_idx in range(len(self.offset_to_edge_) - 1):
-            src = self.index_to_node_map[source_idx]
-
-            for j in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
-                nbr_idx = self.edge_to[j]
-                nbr = self.index_to_node_map[nbr_idx]
-                tpl = (src, nbr)
-                edge_list.append(tpl)
-
-        return edge_list
+        return self.edge_list
 
     def edges_as_ints(self) -> List[Tuple[int, Any]]:
         """Creates an edge list, where nodes are coded by integers, for the graph.
@@ -435,16 +412,7 @@ class CSFGraph(Hashable):
             edge_list: A list of tuples for all edges in the graph, where each tuple contains two integers that
                 represent each node in an edge. For instance, (2, 3).
         """
-
-        edge_list = []
-
-        for source_idx in range(len(self.offset_to_edge_) - 1):
-            for j in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
-                nbr_idx = self.edge_to[j]
-                tpl = (source_idx, nbr_idx)
-                edge_list.append(tpl)
-
-        return edge_list
+        return list(range(len(self.edge_list)))
 
     def get_node_to_index_map(self) -> Dict[str, int]:
         """Returns a dictionary of the nodes in the graph and their corresponding integers."""
@@ -511,5 +479,5 @@ class CSFGraph(Hashable):
     def consistent_hash(self)->str:
         """Return consistent hash of the CSFGraph object."""
         return sha256({
-            
+
         })

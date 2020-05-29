@@ -4,13 +4,13 @@ from runLinkPrediction_ppi import read_graphs, get_random_walks
 
 
 space = {
-    "p": (0.5, 1.0), # (float)
-    "q": (0.5, 1.0), # (float)
-    "num_walks": (10, 100), # (int) This should be dependant on the graph size.
-    "walk_length": (5, 100), # (int)
-    "embedding_size": (10, 1000), # (int)
-    "context_window": (1, 5), # (int)
-    "num_epochs": (1, 5) # (int)
+    "p": (0.1, 10.0),  # (float)
+    "q": (0.1, 10.0),  # (float)
+    "num_walks": (1, 20),  # (int) This should be dependant on the graph size.
+    "walk_length": (32, 256),  # (int)
+    "embedding_size": (8, 512),  # (int)
+    "context_window": (1, 5),  # (int)
+    "num_epochs": (1, 4)  # (int)
 }
 
 config = dict(

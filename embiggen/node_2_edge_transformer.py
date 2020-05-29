@@ -50,10 +50,11 @@ class N2ETransformer:
         ---------------------
         The embedded edges.
         """
-        return np.array([
-            self._method(self._embedding[source], self._embedding[sink])
-            for source, sink in G.edges()
-        ])
+        return np.fromiter(
+            (self._method(self._embedding[source], self._embedding[sink])
+            for source, sink in G.edges()),
+            dtype=np.float
+        )
 
     def transform_nodes(self, G: CSFGraph) -> Tuple[np.ndarray, np.ndarray]:
         """Return nodes from given graph.
@@ -67,7 +68,8 @@ class N2ETransformer:
         ---------------------
         The embedded edges.
         """
-        return np.array([
-            (self._embedding[source], self._embedding[sink])
-            for source, sink in G.edges()
-        ]).T
+        return np.fromiter(
+            ((self._embedding[source], self._embedding[sink])
+            for source, sink in G.edges()),
+            dtype=np.float
+        ).T

@@ -223,7 +223,7 @@ def get_classifier_model(classifier: str, **kwargs: Dict):
     )
 
 
-@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
+#@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
 def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_length: int) -> tf.RaggedTensor:
     """Return a new N2vGraph trained on the provided graph.
 
@@ -258,6 +258,7 @@ def performance_report(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, floa
     Dictionary with the performance metrics, including AUROC, AUPRC, F1 Score,
     and accuracy.
     """
+    # TODO: add confusion matrix
     metrics = roc_auc_score, average_precision_score, f1_score
     report = {
         sanitize_ml_labels(metric.__name__): metric(y_true, y_pred)
