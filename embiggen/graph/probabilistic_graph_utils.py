@@ -2,7 +2,6 @@ import numpy as np
 from numba import njit
 from typing import Tuple
 
-
 @njit
 def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Compute utility lists for non-uniform sampling from discrete distributions.

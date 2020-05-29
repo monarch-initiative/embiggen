@@ -1,46 +1,24 @@
 import numpy as np
 from numba import njit
 from multiprocessing import cpu_count, Pool
+from typing import List
+from .graph import ProbabilisticGraph
+from tqdm.auto import tqdm
 
-from .csf_graph import ProbabilisticGraph
+import tensorflow as tf
 
 
 class RandomWalker:
 
-    def __init__(self, p: float, q: float, workers: int = -1):
+    def __init__(self, workers: int = -1):
         """Create new RandomWalker object.
 
         Parameters
         -----------------------
-        p: float,
-            Return parameter.
-            # TODO: better specify the effect, impact and valid ranges of this
-            # parameter.
-        q: float,
-            In-out parameter
-            # TODO: better specify the effect, impact and valid ranges of this
-            # parameter.
         workers: int = -1
             Number of processes to use. Use a number lower or equal to 0 to
             use all available processes. Default is -1.
-
-        Raises
-        -----------------------
-        ValueError,
-            If given parameter p is not a strictly positive number.
-        ValueError,
-            If given parameter q is not a strictly positive number.
         """
-        if not isinstance(p, float) or p <= 0:
-            raise ValueError(
-                "Given parameter p is not a stricly positive number."
-            )
-        if not isinstance(q, float) or q <= 0:
-            raise ValueError(
-                "Given parameter q is not a stricly positive number."
-            )
-        self._p = p
-        self._q = q
         self._workers = workers if workers <= 0 else cpu_count()
 
     @njit
@@ -93,7 +71,7 @@ class RandomWalker:
         """
         return [
             self._walk(graph, walk_length, node)
-            for node in range(graph.nodes_indices)
+            for node in graph.nodes_indices
         ]
 
     def walk(self,
@@ -116,8 +94,8 @@ class RandomWalker:
         (num_walks, graph.nodes_number, walk_length)
         """
         # TODO There is no need for the tensor to be rugged.
-        with Pool(min(self.num_processes, num_walks)) as pool:
-            walks_tensor = tf.ragged.constant(sum(tqdm(
+        with Pool(min(self._workers, num_walks)) as pool:
+            walks_tensor = tf.ragged.constant(np.fromiter(tqdm(
                 pool.imap_unordered(
                     self._graph_walk,
                     (
@@ -127,7 +105,7 @@ class RandomWalker:
                 ),
                 total=num_walks,
                 desc='Performing walks'
-            ), []))
+            )))
             pool.close()
             pool.join()
         return walks_tensor

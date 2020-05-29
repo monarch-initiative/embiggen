@@ -144,3 +144,17 @@ class Graph:
     def nodes_number(self) -> int:
         """Return the number of nodes in the graph."""
         return self._nodes_number
+
+    def has_edge(self, edge: Tuple[int, int]) -> bool:
+        """Return boolean representing if given edge exists in graph.
+
+        Parameters
+        ------------------
+        edge: Tuple[int, int],
+            The edge to check for.
+
+        Returns
+        ------------------
+        Boolean representing if edge is present in graph.
+        """
+        return sorted(edge) in self._edges

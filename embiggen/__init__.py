@@ -7,6 +7,7 @@
 
 """
 from .graph import ProbabilisticGraph
+from .random_walker import RandomWalker
 from .text_encoder import TextEncoder
 from .utils.tf_utils import TFUtilities
 from .coocurrence_encoder import CooccurrenceEncoder
