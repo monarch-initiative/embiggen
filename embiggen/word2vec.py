@@ -25,14 +25,14 @@ class Word2Vec:
             min_occurrence: Minimum number of times a word needs to appear to be included (default=1).
             context_window: How many words to consider left and right.
             num_skips: How many times to reuse an input to generate a label.
-            num_sampled: Number of negative examples to sample (default=7).
+            num_neg_samples: Number of negative examples to sample (default=7).
             display: An integer of the number of words to display.
         """
 
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
                  learning_rate: float = 0.1, batch_size: int = 128,
                  num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
-                 min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
+                 min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2, num_neg_samples: int = 7,
                  display: Optional[int] = None, device_type: str = 'cpu') -> None:
         self.data = data
         self.word2id = worddictionary
@@ -48,7 +48,7 @@ class Word2Vec:
         self.min_occurrence = min_occurrence
         self.context_window = context_window
         self.num_skips = num_skips
-        self.num_sampled = num_sampled
+        self.num_neg_samples = num_neg_samples
         self.display = display
         self.display_examples: List = []
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
@@ -132,23 +132,23 @@ class SkipGramWord2Vec(Word2Vec):
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
                  learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+                 num_neg_samples: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
         super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                          learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
                          embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
                          min_occurrence=min_occurrence, context_window=context_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
+                         num_neg_samples=num_neg_samples, display=display, device_type=device_type)
 
         self.data = data
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # set vocabulary size
         self.calculate_vocabulary_size()
 
-        # with toy exs the # of nodes might be lower than the default value of num_sampled of 7. num_sampled needs to
-        # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
-        if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = int(self.vocabulary_size / 2)
+        # with toy exs the # of nodes might be lower than the default value of num_neg_samples of 7. num_neg_samples needs to
+        # be less than the # of exs (num_neg_samples is the # of negative samples that get evaluated per positive ex)
+        if self.num_neg_samples > self.vocabulary_size:
+            self.num_neg_samples = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
@@ -183,7 +183,7 @@ class SkipGramWord2Vec(Word2Vec):
                                                  biases=self.nce_biases,
                                                  labels=y,
                                                  inputs=x_embed,
-                                                 num_sampled=self.num_sampled,
+                                                 num_sampled=self.num_neg_samples,
                                                  num_classes=self.vocabulary_size)
                                   )
 
@@ -387,7 +387,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         min_occurrence: Minimum number of times a word needs to appear to be included (default=2).
         context_window: How many words to consider left and right.
         num_skips: How many times to reuse an input to generate a label.
-        num_sampled: Number of negative examples to sample (default=7).
+        num_neg_samples: Number of negative examples to sample (default=7).
         display: An integer of the number of words to display.
         embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
         batcher: A list of CBOW data for training; the first item is a batch and the second item is the batch labels.
@@ -405,21 +405,21 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
     def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
                  learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
                  max_vocabulary_size: int = 50000, min_occurrence: int = 1, context_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+                 num_neg_samples: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
 
         super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
                          learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
                          embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
                          min_occurrence=min_occurrence, context_window=context_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
+                         num_neg_samples=num_neg_samples, display=display, device_type=device_type)
         self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # set vocabulary size
         self.calculate_vocabulary_size()
 
-        # with toy exs the # of nodes might be lower than the default value of num_sampled of 7. num_sampled needs to
-        # be less than the # of exs (num_sampled is the # of negative samples that get evaluated per positive ex)
-        if self.num_sampled > self.vocabulary_size:
-            self.num_sampled = int(self.vocabulary_size / 2)
+        # with toy exs the # of nodes might be lower than the default value of num_neg_samples of 7. num_neg_samples needs to
+        # be less than the # of exs (num_neg_samples is the # of negative samples that get evaluated per positive ex)
+        if self.num_neg_samples > self.vocabulary_size:
+            self.num_neg_samples = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(learning_rate)
         self.data_index: int = 0
@@ -493,7 +493,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                                          biases=self.softmax_biases,
                                                          inputs=mean_embeddings,
                                                          labels=y,
-                                                         num_sampled=self.num_sampled,
+                                                         num_sampled=self.num_neg_samples,
                                                          num_classes=self.vocabulary_size))
 
         return loss
@@ -514,7 +514,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                                                  biases=self.softmax_biases,
                                                  labels=y,
                                                  inputs=x_embed,
-                                                 num_sampled=self.num_sampled,
+                                                 num_sampled=self.num_neg_samples,
                                                  num_classes=self.vocabulary_size))
 
             return loss
