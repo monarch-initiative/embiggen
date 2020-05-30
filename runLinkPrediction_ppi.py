@@ -71,6 +71,9 @@ def parse_args():
     parser.add_argument('--context_window', type=int, default=3,
                         help='Context size for optimization. Default is 3.')
 
+    parser.add_argument('--num_skips', type=int, default=2,
+                        help='Default is 2.')
+
     parser.add_argument('--num_epochs', default=1, type=int,
                         help='Number of training epochs')
 
@@ -126,14 +129,16 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                                  worddictionary=worddictionary,
                                  reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs,
                                  learning_rate= args.learning_rate,
-                                 embedding_size=args.embedding_size, context_window=args.context_window)
+                                 embedding_size=args.embedding_size, context_window=args.context_window,
+                                 num_skips=args.num_skips)
     elif w2v_model.lower() == "cbow":
         logging.info("CBOW analysis ")
         model = ContinuousBagOfWordsWord2Vec(walks,
                                              worddictionary=worddictionary,
                                              reverse_worddictionary=reverse_worddictionary, num_epochs=args.num_epochs,
                                              learning_rate= args.learning_rate,
-                                             embedding_size=args.embedding_size, context_window=args.context_window)
+                                             embedding_size=args.embedding_size, context_window=args.context_window,
+                                             num_skips=args.num_skips)
     elif w2v_model.lower() == "glove":
         logging.info("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()
@@ -201,10 +206,12 @@ def main(args):
     """
     logging.info(
         " p={}, q={}, classifier= {}, word2vec_model={}, num_epochs={}, "
-        "context_window ={}, dimension={}, skipValidation={}".format(args.p, args.q, args.classifier,
+        "context_window ={}, dimension={}, skipValidation={}, num_skips={}, learning_rate={}".
+                                                                            format(args.p, args.q, args.classifier,
                                                                             args.w2v_model, args.num_epochs,
                                                                             args.context_window, args.embedding_size,
-                                                                            args.skipValidation))
+                                                                            args.skipValidation, args.num_skips,
+                                                                            args.learning_rate))
 
     pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph = read_graphs()
     if args.use_cached_random_walks and args.random_walks:
