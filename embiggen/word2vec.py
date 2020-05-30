@@ -253,6 +253,9 @@ class SkipGramWord2Vec(Word2Vec):
         context_window = self.context_window
         if num_skips > 2 * context_window:
             raise ValueError('The value of self.num_skips must be <= twice the length of self.context_window')
+
+        if num_skips < 1:
+            raise ValueError('The value of num_skips must be at least 1')
         # TODO  -- We actually only need to check the above once in the Constructor?
         # OR -- is there any situation where we will change this during training??
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
