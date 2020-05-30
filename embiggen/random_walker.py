@@ -3,22 +3,26 @@ from numba import njit
 from multiprocessing import cpu_count, Pool
 from typing import List, Tuple
 from .graph import ProbabilisticGraph
-from tqdm.auto import tqdm
+from tqdm.auto import tqdm, trange
 
 import tensorflow as tf
 
 
 class RandomWalker:
 
-    def __init__(self, workers: int = -1):
+    def __init__(self, verbose: bool = True, workers: int = -1):
         """Create new RandomWalker object.
 
         Parameters
         -----------------------
+        verbose: bool = True,
+            Wethever to show or not the loading bar.
+            By default True.
         workers: int = -1
             Number of processes to use. Use a number lower or equal to 0 to
             use all available processes. Default is -1.
         """
+        self._verbose = verbose
         self._workers = workers if workers > 0 else cpu_count()
 
     def _walk(self,
@@ -42,16 +46,16 @@ class RandomWalker:
         -------
         An array of (walk_length + 1) nodes.
         """
-        walk = np.zeros(walk_length + 1, dtype=np.int64)
-        walk[0] = start_node
-        walk[1] = graph.extract_random_node_neighbour(start_node)
-        for index in range(2, walk_length + 1):
-            walk[index] = graph.extract_random_edge_neighbour(
-                (walk[index-2], walk[index-1])
-            )
+        walk = np.empty(walk_length, dtype=np.int64)
+        walk[0] = prev = start_node
+        walk[1] = curr = graph.extract_random_node_neighbour(start_node)
+        for index in range(2, walk_length):
+            walk[index] = tmp = graph.extract_random_edge_neighbour(prev, curr)
+            prev = curr
+            curr = tmp
         return walk
 
-    def _graph_walk(self, job: Tuple) -> List[np.array]:
+    def _graph_walk(self, walks: np.ndarray, graph: ProbabilisticGraph, walk_length: int) -> List[np.array]:
         """Generate a random walk for each node in the graph.
 
         Parameters
@@ -66,11 +70,15 @@ class RandomWalker:
         -------
         A list of arrays of (walk_length + 1) nodes.
         """
-        graph, walk_length = job
-        return [
-            self._walk(graph, walk_length, node)
-            for node in graph.nodes_indices
-        ]
+        for walk, start_node in zip(walks, graph.nodes_indices):
+            walk[0] = prev = start_node
+            walk[1] = curr = graph.extract_random_node_neighbour(start_node)
+            for index in range(2, walk_length):
+                walk[index] = tmp = graph.extract_random_edge_neighbour(
+                    prev, curr
+                )
+                prev = curr
+                curr = tmp
 
     def walk(self,
              graph: ProbabilisticGraph,
@@ -91,19 +99,12 @@ class RandomWalker:
         A Ragged tensor of n graph walks with shape:
         (num_walks, graph.nodes_number, walk_length)
         """
-        # TODO There is no need for the tensor to be rugged.
-        with Pool(min(self._workers, num_walks)) as pool:
-            walks_tensor = tf.ragged.constant(sum(tqdm(
-                pool.imap_unordered(
-                    self._graph_walk,
-                    (
-                        (graph, walk_length)
-                        for _ in range(num_walks)
-                    )
-                ),
-                total=num_walks,
-                desc='Performing walks'
-            ), []))
-            pool.close()
-            pool.join()
-        return walks_tensor
+        all_walks = np.empty((
+            graph.nodes_number*num_walks,
+            walk_length
+        ), dtype=np.int64)
+
+        for i in trange(num_walks, disable=not self._verbose):
+            walks = all_walks[i*graph.nodes_number:(i+1)*graph.nodes_number]
+            self._graph_walk(walks, graph, walk_length)
+        return tf.constant(all_walks)

@@ -59,6 +59,10 @@ class Graph:
             raise ValueError(
                 "Given constant weight is zero."
             )
+        if (weights == 0).all():
+            raise ValueError(
+                "Given weights are all zeros!"
+            )
         if isinstance(edge_types, List) and len(edge_types) != len(edges):
             raise ValueError(
                 "Given edge types number does not match given edge number."

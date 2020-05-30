@@ -2,6 +2,7 @@ import numpy as np
 from numba import njit
 from typing import Tuple
 
+
 @njit
 def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Compute utility lists for non-uniform sampling from discrete distributions.
@@ -75,3 +76,38 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
         # most probable case and fastest
         return index
     return j[index]
+
+
+def new_alias_draw(samples_number: int = 2**14):
+    samples = np.random.uniform(size=samples_number)
+    last = samples[0]
+    i = 1
+
+    @njit
+    def wrapped(j: np.ndarray, q: np.ndarray) -> int:
+        """Draw sample from a non-uniform discrete distribution using alias sampling.
+
+        Parameters
+        ----------
+        j:np.ndarray,
+            The mapping to the less probable binary outcome,
+        q: np.ndarray
+            Uniform distribution over binary outcomes
+
+        Returns:
+            index:int 
+                index of random sample from non-uniform discrete distribution
+        """
+        nonlocal i, last
+        # extract a random index for the mixture
+        index = int(samples[i-1] * len(q))
+        new = samples[i]
+        i = (i+1) & (samples_number-1)
+        last = new
+        # do the Bernulli trial
+        if new < q[index]:
+            # most probable case and fastest
+            return index
+        return j[index]
+
+    return wrapped

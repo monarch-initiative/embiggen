@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 from tqdm.auto import tqdm
 
+
 class TestRandomWalker(TestCase):
 
     def setUp(self):
@@ -56,15 +57,32 @@ class TestRandomWalker(TestCase):
             ]
         ]
 
-        self._verbose = False
+        self._verbose = True
         self._factory = GraphFactory(ProbabilisticGraph, verbose=False)
-        self._walker = RandomWalker()
+        self._walker = RandomWalker(verbose=False)
 
     def test_random_walk(self):
-        """Testing that the normalization process actually works."""
         for path in tqdm(
             self._paths,
             desc="Testing on non-legacy",
-            disable= not self._verbose
+            disable=not self._verbose
         ):
-            graph=self._factory.read_csv(path, p=10, q=10)
+            graph = self._factory.read_csv(path, p=10, q=10)
+            self._walker.walk(graph, 10, 5)
+
+    def test_random_walk_on_legacy(self):
+        for path in tqdm(
+            self._legacy_paths,
+            desc="Testing on non-legacy",
+            disable=not self._verbose
+        ):
+            graph = self._factory.read_csv(
+                path,
+                edge_has_header=False,
+                start_nodes_column=0,
+                end_nodes_column=1,
+                weights_column=2,
+                p=10,
+                q=10
+            )
+            self._walker.walk(graph, 10, 5)

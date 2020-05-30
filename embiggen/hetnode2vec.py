@@ -72,13 +72,12 @@ class N2vGraph:
 
             if len(cur_nbrs) > 0:
                 if len(walk) == 1:
-                    walk.append(cur_nbrs[self.alias_draw(alias_nodes[cur][0],
-                                                         alias_nodes[cur][1])])
+                    walk.append(cur_nbrs[self.alias_draw(*alias_nodes[cur])])
                 else:
                     prev = walk[-2]
-                    nxt = cur_nbrs[self.alias_draw(alias_edges[(prev, cur)][0],
-                                                   alias_edges[(prev, cur)][1])]
-                    walk.append(nxt)
+                    walk.append(
+                        cur_nbrs[self.alias_draw(*alias_edges[(prev, cur)])]
+                    )
             else:
                 break
 

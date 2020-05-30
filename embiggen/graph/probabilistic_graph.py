@@ -1,13 +1,13 @@
-from multiprocessing import Pool, cpu_count
 from typing import Dict, Tuple
 
 import numpy as np
-from numba import njit
+from numba import njit, jit
 
 from tqdm.auto import tqdm
 
 from .graph import Graph
-from .probabilistic_graph_utils import alias_draw, alias_setup
+from .probabilistic_graph_utils import alias_draw, alias_setup, new_alias_draw
+
 
 class ProbabilisticGraph(Graph):
 
@@ -24,9 +24,6 @@ class ProbabilisticGraph(Graph):
             In-out parameter
             # TODO: better specify the effect, impact and valid ranges of this
             # parameter.
-        workers: int = -1
-            Number of processes to use. Use a number lower or equal to 0 to
-            use all available processes. Default is -1.
         verbose: bool = True,
             Wethever to show or not the loading bar.
         **kwargs: Dict,
@@ -50,33 +47,22 @@ class ProbabilisticGraph(Graph):
             )
         self._p = p
         self._q = q
-        workers = workers if workers > 0 else cpu_count()
+        self._new_alias_draw = new_alias_draw()
 
-        with Pool(min(workers, self.nodes_number)) as pool:
-            self._neighbours_nodes_alias = list(tqdm(
-                pool.imap(
-                    alias_setup,
-                    self._neighbours_weights
-                ),
-                total=self.nodes_number,
-                disable=not verbose,
-                desc="Computing node neighbours aliases"
-            ))
+        self._neighbours_nodes_alias = [
+            alias_setup(neighbours_weights)
+            for neighbours_weights in self._neighbours_weights
+        ]
 
-            self._neighbours_edges_alias = list(tqdm(
-                pool.imap(
-                    self._weighted_alias_setup,
-                    self._edges.keys()
-                ),
-                total=self.edges_number,
-                disable=not verbose,
-                desc="Computing edge neighbours aliases"
-            ))
+        self._neighbours_edges_alias = [
+            {
+                neighbour: self._weighted_alias_setup(src, neighbour)
+                for neighbour in self._neighbours[src]
+            }
+            for src in self.nodes_indices
+        ]
 
-            pool.close()
-            pool.join()
-
-    def _weighted_alias_setup(self, edge: Tuple[int, int]) -> np.ndarray:
+    def _weighted_alias_setup(self, src: int, dst: int) -> np.ndarray:
         """Return weighted probabilities for given edge.
 
         Parameters
@@ -88,21 +74,23 @@ class ProbabilisticGraph(Graph):
         -----------------
         Weighted probabilities
         """
-        src, dst = edge
 
-        probs = np.fromiter(
-            (
-                self._neighbours_weights[dst][index]
-                if self.has_edge((neighbour, src)) else
-                self._neighbours_weights[dst][index] / self._p
-                if neighbour == src else
-                self._neighbours_weights[dst][index] / self._q
-                for index, neighbour in enumerate(self._neighbours[dst])
-            ),
-            dtype=np.int64
-        )
+        total = 0
+        neighbours = self._neighbours[dst]
+        probs = np.empty(self.nodes_number)
 
-        return alias_setup(probs/probs.sum())
+        for index, neighbour in enumerate(neighbours):
+            weight = self._neighbours_weights[dst][index]
+            if self.has_edge((neighbour, src)):
+                pass
+            elif neighbour == src:
+                weight = weight / self._p
+            else:
+                weight = weight / self._q
+            total += weight
+            probs[index] = weight
+
+        return alias_setup(probs/total)
 
     def extract_random_node_neighbour(self, node: int) -> int:
         """Return a random adiacent node to the one associated to node.
@@ -118,9 +106,9 @@ class ProbabilisticGraph(Graph):
         -------
         The index of a random adiacent node to node.
         """
-        return self._neighbours[node][alias_draw(*self._neighbours_nodes_alias[node])]
+        return self._neighbours[node][self._new_alias_draw(*self._neighbours_nodes_alias[node])]
 
-    def extract_random_edge_neighbour(self, edge: Tuple[int, int]) -> int:
+    def extract_random_edge_neighbour(self, src: int, dst: int) -> int:
         """Return a random adiacent node to the one associated to node.
         The Random is extracted by using the normalized weights of the edges
         as probability distribution. 
@@ -134,7 +122,4 @@ class ProbabilisticGraph(Graph):
         -------
         The index of a random adiacent node to node.
         """
-        _, dst = edge
-        return self._neighbours[dst][
-            alias_draw(*self._neighbours_edges_alias[self._edges[tuple(edge)]])
-        ]
+        return self._neighbours[dst][self._new_alias_draw(*self._neighbours_edges_alias[src][dst])]
