@@ -190,6 +190,32 @@ class Graph:
             j, q = alias_setup(probs/total)
             self._edges_alias.append((edge_neighbours, j, q))
 
+    @property
+    def nodes_number(self)->int:
+        """Return the total number of nodes in the graph.
+        
+        Returns
+        -------
+        The total number of nodes in the graph.
+        """
+        return len(self._nodes_alias)
+
+    def get_edge_id(self, src: int, dst: int) -> int:
+        """Return the numeric id for the curresponding edge.
+
+        Parameters
+        ----------
+        src: int,
+            The start node of the edge
+        dst: int,
+            The end node of the edge
+
+        Returns
+        -----------------
+        Edge numeric ID.
+        """
+        return self._edges[src, dst]
+
     def has_edge(self, edge: Tuple[int, int]) -> bool:
         """Return boolean representing if given edge exists in graph.
 

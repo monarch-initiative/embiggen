@@ -1,20 +1,19 @@
-from typing import Dict, Type
+from typing import Dict
 import pandas as pd
 import numpy as np
 from numba import typed, types
+from .graph import Graph
 
 
 class GraphFactory:
 
     def __init__(
         self,
-        product_class: Type,
         default_weight: int = 1,
         default_directed: bool = False,
         default_node_type: str = 'biolink:NamedThing',
         **kwargs: Dict
     ):
-        self._product_class = product_class
         self._default_directed = default_directed
         self._default_weight = default_weight
         self._default_node_type = default_node_type
@@ -67,10 +66,11 @@ class GraphFactory:
         )
 
         # Dropping duplicated edges
-        graph_df = graph_df.drop_duplicates([start_nodes_column, end_nodes_column])
+        graph_df = graph_df.drop_duplicates(
+            [start_nodes_column, end_nodes_column])
 
         edges = graph_df[[start_nodes_column,
-                             end_nodes_column]].values.astype(str)
+                          end_nodes_column]].values.astype(str)
         numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
 
         for start, end in edges:
@@ -99,18 +99,18 @@ class GraphFactory:
             numba_weights.append(weight)
 
         # Similarly to what done for the weights, we have to resolve the very
-        # same issue also for the 
+        # same issue also for the
         numba_directed = typed.List.empty_list(types.boolean)
         for _ in range(len(numba_edges)):
             numba_directed.append(self._default_directed)
-        
+
         # Yet again we need to convert the node types to a list that is types
         # and numba compatible.
         numba_nodes_type = typed.List.empty_list(types.string)
         for _ in range(len(numba_edges)):
             numba_nodes_type.append(self._default_node_type)
-            
-        return self._product_class(
+
+        return Graph(
             edges=numba_edges,
             weights=numba_weights,
             nodes=numba_nodes,

@@ -1,4 +1,4 @@
-from embiggen.graph import GraphFactory, ProbabilisticGraph
+from embiggen.graph import GraphFactory
 from embiggen import RandomWalker
 from unittest import TestCase
 import pytest
@@ -58,7 +58,7 @@ class TestRandomWalker(TestCase):
         ]
 
         self._verbose = True
-        self._factory = GraphFactory(ProbabilisticGraph, verbose=False)
+        self._factory = GraphFactory()
         self._walker = RandomWalker(verbose=False)
 
     def test_random_walk(self):
@@ -67,7 +67,7 @@ class TestRandomWalker(TestCase):
             desc="Testing on non-legacy",
             disable=not self._verbose
         ):
-            graph = self._factory.read_csv(path, p=10, q=10)
+            graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
             self._walker.walk(graph, 10, 5)
 
     def test_random_walk_on_legacy(self):
@@ -82,7 +82,7 @@ class TestRandomWalker(TestCase):
                 start_nodes_column=0,
                 end_nodes_column=1,
                 weights_column=2,
-                p=10,
-                q=10
+                return_weight=10,
+                explore_weight=10
             )
             self._walker.walk(graph, 10, 5)

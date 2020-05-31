@@ -56,7 +56,7 @@ class TestGraph(TestCase):
             ]
         ]
 
-        self._factory = GraphFactory(Graph)
+        self._factory = GraphFactory()
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
