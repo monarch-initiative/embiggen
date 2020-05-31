@@ -312,7 +312,7 @@ class N2vGraph:
                     continue
                 else:
                     # owntype is going to a different node type
-                    own2prob[n] = float(self.gamma) / float(count) * num_types
+                    own2prob[n] = float(self.gamma) / (float(count) * num_types)
                     total_non_own_probability += own2prob[n]
             if own2count[owntype] == 0:
                 own2prob[owntype] = 0
