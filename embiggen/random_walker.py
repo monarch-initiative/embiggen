@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 from multiprocessing import cpu_count, Pool
 from typing import List, Tuple
-from .graph import ProbabilisticGraph
+from .graph import Graph
 from tqdm.auto import tqdm, trange
 
 import tensorflow as tf
@@ -25,42 +25,12 @@ class RandomWalker:
         self._verbose = verbose
         self._workers = workers if workers > 0 else cpu_count()
 
-    def _walk(self,
-              graph: ProbabilisticGraph,
-              walk_length: int,
-              start_node: int
-              ) -> np.array:
-        """Do a random walk of length walk_length starting from start_node.
-
-        Parameters
-        ----------
-        graph:ProbabilisticGraph
-            The graph on which the random walk will be done.
-        walk_length:int
-            The length of the walk in edges traversed. The result will be
-            an array of (walk_length + 1) nodes.
-        start_node:int
-            From which node the random walk will start.
-
-        Returns
-        -------
-        An array of (walk_length + 1) nodes.
-        """
-        walk = np.empty(walk_length, dtype=np.int64)
-        walk[0] = prev = start_node
-        walk[1] = curr = graph.extract_random_node_neighbour(start_node)
-        for index in range(2, walk_length):
-            walk[index] = tmp = graph.extract_random_edge_neighbour(prev, curr)
-            prev = curr
-            curr = tmp
-        return walk
-
-    def _graph_walk(self, walks: np.ndarray, graph: ProbabilisticGraph, walk_length: int) -> List[np.array]:
+    def _graph_walk(self, walks: np.ndarray, graph: Graph, walk_length: int) -> List[np.array]:
         """Generate a random walk for each node in the graph.
 
         Parameters
         ----------
-        graph:ProbabilisticGraph
+        graph:Graph
             The graph on which the random walks will be done.
         walk_length:int
             The length of the walks in edges traversed. The result will be
@@ -73,6 +43,7 @@ class RandomWalker:
         for walk, start_node in zip(walks, graph.nodes_indices):
             walk[0] = prev = start_node
             walk[1] = curr = graph.extract_random_node_neighbour(start_node)
+            i = hash_edges[prev, curr]
             for index in range(2, walk_length):
                 walk[index] = tmp = graph.extract_random_edge_neighbour(
                     prev, curr
@@ -80,8 +51,13 @@ class RandomWalker:
                 prev = curr
                 curr = tmp
 
+        for start_node in graph.nodes_indices:
+            edge = fucntion(start_node)
+            for index in range(walk_length):
+                walk[indexe] = edge = graph.extract_from(edge)
+
     def walk(self,
-             graph: ProbabilisticGraph,
+             graph: Graph,
              walk_length: int,
              num_walks: int
              ) -> tf.RaggedTensor:
@@ -89,7 +65,7 @@ class RandomWalker:
 
         Parameters
         ----------
-        graph:ProbabilisticGraph
+        graph:Graph
             The graph on which the random walks will be done.
         walk_length:int
             The length of the walks in edges traversed.

@@ -26,32 +26,37 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         and the second is the uniform distribution over binary outcomes
     """
 
-    # find the values bigger and smaller than 1/k
-    # this is done this way to have better numerical accuracy
-    q = probabilities * probabilities.size
-    smaller_mask = q < 1.0
-    smaller = list(np.where(smaller_mask)[0])
-    larger = list(np.where(~smaller_mask)[0])
+    K = len(probabilities)
+    q = np.zeros(K)
+    J = np.zeros(K, dtype=np.int64)
 
-    # j is the mapping of the opposite event in the Bernulli trias
-    j = np.zeros_like(probabilities, dtype=np.int64)
-    # Converge to the equivalente binary mixture
-    while smaller and larger:
+    # Sort the data into the outcomes with probabilities
+    # that are larger and smaller than 1/K.
+    smaller = []
+    larger = []
+    for kk, prob in enumerate(probabilities):
+        q[kk] = K*prob
+        if q[kk] < 1.0:
+            smaller.append(kk)
+        else:
+            larger.append(kk)
+
+    # Loop though and create little binary mixtures that
+    # appropriately allocate the larger outcomes over the
+    # overall uniform mixture.
+    while len(smaller) > 0 and len(larger) > 0:
         small = smaller.pop()
         large = larger.pop()
 
-        # salva il mapping del evento opposto
-        j[small] = large
-
-        # this is equibalent but has better numerical accuracy
-        # q[larArgsge] = q[large] - (1.0 - q[small])
-        q[large] = (q[large] + q[small]) - 1.0
+        J[small] = large
+        q[large] = q[large] - (1.0 - q[small])
 
         if q[large] < 1.0:
             smaller.append(large)
         else:
             larger.append(large)
-    return (j, q)
+
+    return J, q
 
 
 @njit
@@ -78,36 +83,36 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
     return j[index]
 
 
-def new_alias_draw(samples_number: int = 2**14):
-    samples = np.random.uniform(size=samples_number)
-    last = samples[0]
-    i = 1
+# def new_alias_draw(samples_number: int = 2**14):
+#     samples = np.random.uniform(size=samples_number)
+#     last = samples[0]
+#     i = 1
 
-    @njit
-    def wrapped(j: np.ndarray, q: np.ndarray) -> int:
-        """Draw sample from a non-uniform discrete distribution using alias sampling.
+#     @njit
+#     def wrapped(j: np.ndarray, q: np.ndarray) -> int:
+#         """Draw sample from a non-uniform discrete distribution using alias sampling.
 
-        Parameters
-        ----------
-        j:np.ndarray,
-            The mapping to the less probable binary outcome,
-        q: np.ndarray
-            Uniform distribution over binary outcomes
+#         Parameters
+#         ----------
+#         j:np.ndarray,
+#             The mapping to the less probable binary outcome,
+#         q: np.ndarray
+#             Uniform distribution over binary outcomes
 
-        Returns:
-            index:int 
-                index of random sample from non-uniform discrete distribution
-        """
-        nonlocal i, last
-        # extract a random index for the mixture
-        index = int(samples[i-1] * len(q))
-        new = samples[i]
-        i = (i+1) & (samples_number-1)
-        last = new
-        # do the Bernulli trial
-        if new < q[index]:
-            # most probable case and fastest
-            return index
-        return j[index]
+#         Returns:
+#             index:int
+#                 index of random sample from non-uniform discrete distribution
+#         """
+#         nonlocal i, last
+#         # extract a random index for the mixture
+#         index = int(samples[i-1] * len(q))
+#         new = samples[i]
+#         i = (i+1) & (samples_number-1)
+#         last = new
+#         # do the Bernulli trial
+#         if new < q[index]:
+#             # most probable case and fastest
+#             return index
+#         return j[index]
 
-    return wrapped
+#     return wrapped

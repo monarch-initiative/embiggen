@@ -6,7 +6,7 @@
 .. moduleauthor:: Vida Ravanmehr <vida.ravanmehr@jax.org>, Peter N Robinson <peter.robinson@jax.org>
 
 """
-from .graph import ProbabilisticGraph
+from .graph import Graph
 from .random_walker import RandomWalker
 from .text_encoder import TextEncoder
 from .utils.tf_utils import TFUtilities
@@ -18,7 +18,7 @@ from .word2vec import SkipGramWord2Vec
 from .graph_partition_transformer import GraphPartitionTransfomer
 
 __all__ = [
-    "ProbabilisticGraph", "TextEncoder", "CooccurrenceEncoder",
+    "Graph", "TextEncoder", "CooccurrenceEncoder",
     "CBOWListBatcher",  "ContinuousBagOfWordsWord2Vec", "SkipGramWord2Vec", "SkipGramBatcher",
     "GraphPartitionTransfomer"
 ]
