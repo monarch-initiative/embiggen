@@ -44,13 +44,13 @@ class Graph:
             The node types for each source and sink.
         directed: List[bool],
             The edges directions for each source and sink.
-        return_weight : float in (0, inf],
+        return_weight : float in (0, inf),
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
-        explore_weight : float in (0, inf],
+        explore_weight : float in (0, inf),
             Weight on the probability of visitng a neighbor node
             to the one we're coming from in the random walk
             Having this higher tends the walks to be
@@ -170,14 +170,23 @@ class Graph:
             total = 0
             probs = np.empty(len(edge_neighbours))
             for index, neighbour in enumerate(edge_neighbours):
+                # We get the weight for the edge from the destination to
+                # the neighbour.
                 weight = neighbours_weights[dst][index]
+                # If the neigbour matches with the source, hence this is
+                # a backward loop like the following:
+                # SRC -> DST
+                #  ▲     /
+                #   \___/
+                #
+                # We weight the edge weight with the given return weight.
                 if neighbour == src:
                     weight = weight * return_weight
-                elif (neighbour, src) in self._edges:
-                    # weight = weight
-                    pass
-                else:
+                # If the backward loop does not exist, we multiply the weight
+                # of the edge by the weight for moving forward and explore more.
+                elif (neighbour, src) not in self._edges:
                     weight = weight * explore_weight
+                # Then we store these results into the probability vector.
                 total += weight
                 probs[index] = weight
 
