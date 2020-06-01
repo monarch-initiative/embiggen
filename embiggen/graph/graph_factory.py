@@ -98,8 +98,6 @@ class GraphFactory:
             header=([0] if edge_has_header else None)
         )
 
-        print(graph_df.columns)
-
         # Dropping duplicated edges
         graph_df = graph_df.drop_duplicates(
             [start_nodes_column, end_nodes_column])

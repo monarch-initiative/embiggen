@@ -92,7 +92,6 @@ class TestGraph(TestCase):
                     edge) in graph._edges_alias[edge][0]
 
     def test_setup_from_custom_dataframe(self):
-        # TODO: integrate all other remaining columns
         graph = self._factory.read_csv(
             "tests/data/small_9606.protein.actions.txt",
             start_nodes_column="item_id_a",
