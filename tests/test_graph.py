@@ -194,7 +194,7 @@ class TestGraph(TestCase):
             disable=False
         ):
             for factory in (self._factory, self._directed_factory):
-                graph = self._factory.read_csv(
+                graph = factory.read_csv(
                     path,
                     edge_has_header=False,
                     start_nodes_column=0,
@@ -204,6 +204,7 @@ class TestGraph(TestCase):
                     explore_weight=10
                 )
                 assert all(
-                    len(neighbours) == len(j) == len(q) > 0
+                    len(neighbours) == len(j) == len(q) and (
+                        graph.has_traps or len(q) > 0)
                     for (neighbours, j, q) in graph._nodes_alias
                 )
