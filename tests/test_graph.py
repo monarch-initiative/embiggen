@@ -103,12 +103,14 @@ class TestGraph(TestCase):
             disable=False
         ):
             graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
-            walks = graph.random_walk(10, 5)
-            for walk in walks:
-                assert all(
-                    (src, dst) in graph._edges
-                    for src, dst in zip(walk[:-1], walk[1:])
-                )
+            all_walks = graph.random_walk(10, 5)
+            assert all_walks.shape == (10, graph.nodes_number, 5)
+            assert all(
+                edge in graph._edges
+                for walks in all_walks
+                for walk in walks
+                for edge in zip(walk[:-1], walk[1:])
+            )
 
     def test_random_walk_on_legacy(self):
         for path in tqdm(
@@ -125,9 +127,11 @@ class TestGraph(TestCase):
                 return_weight=10,
                 explore_weight=10
             )
-            walks = graph.random_walk(10, 5)
-            for walk in walks:
-                assert all(
-                    (src, dst) in graph._edges
-                    for src, dst in zip(walk[:-1], walk[1:])
-                )
+            all_walks = graph.random_walk(10, 5)
+            assert all_walks.shape == (10, graph.nodes_number, 5)
+            assert all(
+                edge in graph._edges
+                for walks in all_walks
+                for walk in walks
+                for edge in zip(walk[:-1], walk[1:])
+            )

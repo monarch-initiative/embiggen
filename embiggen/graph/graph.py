@@ -34,27 +34,23 @@ class Graph:
 
         Parameters
         ---------------------
-        edges: Union[List[Tuple[str, str]], np.ndarray],
+        edges: List[Tuple[str, str]],
             List of edges of the graph.
         nodes: List[str],
-            List of the nodes of the graph. By default, the list is obtained
-            from the given list of edges.
-        weights: Union[List[float], float] = 1,
-            Either the weights for each source and sink or the default weight
-            to use. By default, the weight is 1.
-        node_types: Union[List[str], str] = 'biolink:NamedThing',
-            Either the node types for each source and sink or the default node
-            type to use. By default, the node type is 'biolink:NamedThing'.
-        directed: Union[List[bool], bool] = False,
-            Either the edges directions for each source and sink or the default
-            edge direction to use. By default, the edges are not directed.
-        return_weight : float in (0, inf]
+            List of the nodes of the graph.
+        weights: List[float],
+            The weights for each source and sink.
+        node_types: List[str],
+            The node types for each source and sink.
+        directed: List[bool],
+            The edges directions for each source and sink.
+        return_weight : float in (0, inf],
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
-        explore_weight : float in (0, inf]
+        explore_weight : float in (0, inf],
             Weight on the probability of visitng a neighbor node
             to the one we're coming from in the random walk
             Having this higher tends the walks to be
@@ -89,7 +85,7 @@ class Graph:
         #   (0, 2): 1
         # }
         # This is a class variable and not a method variable because it is
-        # also used within the has_edge method.
+        # also used for the counter translation.
         self._edges = typed.Dict.empty(*kv_ty)
 
         # Each node has a list of neighbours.
@@ -109,13 +105,14 @@ class Graph:
         i = 0
         for k, (start_name, end_name) in enumerate(edges):
             src, dst = nodes_mapping[start_name], nodes_mapping[end_name]
-            if not self.has_edge((src, dst)):
+            if (src, dst) not in self._edges:
                 self._edges[(src, dst)] = i
                 nodes_neighbours[src].append(dst)
                 neighbours_weights[src].append(weights[k])
                 i += 1
-
-            if not (directed[k] or self.has_edge((dst, src))):
+            # If the edge is not-directed we add the inverse to be able to
+            # convert undirected graph to a directed one.
+            if not directed[k] and (dst, src) not in self._edges:
                 self._edges[(dst, src)] = i
                 nodes_neighbours[dst].append(src)
                 neighbours_weights[dst].append(weights[k])
@@ -157,9 +154,7 @@ class Graph:
         self._nodes_alias = typed.List.empty_list(triple_list)
         for node_neighbours, neighbour_weights in zip(nodes_neighbours, neighbours_weights):
             j, q = alias_setup(neighbour_weights)
-            self._nodes_alias.append((
-                node_neighbours, j, q
-            ))
+            self._nodes_alias.append((node_neighbours, j, q))
 
         # Creating struct saving all the data relative to the edges.
         # This structure is composed by a list of three values:
@@ -176,10 +171,11 @@ class Graph:
             probs = np.empty(len(edge_neighbours))
             for index, neighbour in enumerate(edge_neighbours):
                 weight = neighbours_weights[dst][index]
-                if self.has_edge((neighbour, src)):
-                    pass
-                elif neighbour == src:
+                if neighbour == src:
                     weight = weight * return_weight
+                elif (neighbour, src) in self._edges:
+                    # weight = weight
+                    pass
                 else:
                     weight = weight * explore_weight
                 total += weight
@@ -228,20 +224,6 @@ class Graph:
         """
         return self._edges_indices[edge][1]
 
-    def has_edge(self, edge: Tuple[int, int]) -> bool:
-        """Return boolean representing if given edge exists in graph.
-
-        Parameters
-        ------------------
-        edge: Tuple[int, int],
-            The edge to check for.
-
-        Returns
-        ------------------
-        Boolean representing if edge is present in graph.
-        """
-        return edge in self._edges
-
     def extract_random_node_neighbour(self, node: int) -> int:
         """Return a random adiacent node to the one associated to node.
         The Random is extracted by using the normalized weights of the edges
@@ -276,57 +258,55 @@ class Graph:
         neighbours, j, q = self._edges_alias[edge]
         return neighbours[alias_draw(j, q)]
 
-    def random_walk(self, walk_length: int = 100, num_walks: int = 100) -> np.ndarray:
+    def random_walk(self, number: int = 100, length: int = 100) -> np.ndarray:
         """Return random walks on graph.
 
         Parameters
         ---------------------
-        walk_length: int = 100,
-            Length of the walks to execute.
-        num_walks: int = 100,
+        number: int = 100,
             Number of walks to execute.
+        length: int = 100,
+            Length of the walks to execute.
 
         Returns
         ----------------------
         Numpy array with the walks.
         """
-        return random_walk(self, walk_length, num_walks)
+        return random_walk(self, number, length)
 
 
 # This function is out of the class because otherwise we would not be able
 # to activate the parallel=True flag.
 @njit(parallel=True)
-def random_walk(graph: Graph, walk_length: int, num_walks: int) -> np.ndarray:
+def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
     """Return a list of graph walks
 
     Parameters
     ----------
     graph:Graph
         The graph on which the random walks will be done.
-    walk_length:int
+    number: int,
+        Number of walks to execute.
+    length:int,
         The length of the walks in edges traversed.
 
     Returns
     -------
-    A Ragged tensor of n graph walks with shape:
-    (num_walks, graph.nodes_number, walk_length)
+    Numpy array with all the walks.
     """
-    all_walks = np.empty((
-        graph.nodes_number*num_walks,
-        walk_length
-    ), dtype=np.int64)
+    all_walks = np.empty((number, graph.nodes_number, length), dtype=np.int64)
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(num_walks):  # pylint: disable=not-an-iterable
-        for start_node in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
-            walk = all_walks[i*graph.nodes_number+start_node]
+    for i in prange(number):  # pylint: disable=not-an-iterable
+        for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+            walk = all_walks[i][src]
             # TODO: if the todo below is green-lighted also the following
             # two lines have to be rewritten to only include node IDs.
-            walk[0] = src = start_node
-            walk[1] = dst = graph.extract_random_node_neighbour(start_node)
+            walk[0] = src
+            walk[1] = dst = graph.extract_random_node_neighbour(src)
             edge = graph.get_edge_id(src, dst)
-            for index in range(2, walk_length):
+            for index in range(2, length):
                 edge = graph.extract_random_edge_neighbour(edge)
                 # TODO: the following line might not be needed at all!
                 walk[index] = graph.get_edge_destination(edge)
