@@ -59,7 +59,7 @@ class Embiggen:
         graph: Graph,
         walks_number: int = 100,
         walks_length: int = 100,
-        embedding_model: str = "skipgram",
+        embedding_model: str = "cbow",
         epochs: int = 10,
         embedding_size: int = 200,
         context_window: int = 3,

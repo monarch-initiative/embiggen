@@ -1,7 +1,7 @@
 import collections
 import math
 import numpy as np  # type: ignore
-import pandas as pd # type: ignore
+import pandas as pd  # type: ignore
 import random
 import tensorflow as tf  # type: ignore
 
@@ -195,13 +195,14 @@ class SkipGramWord2Vec(Word2Vec):
         with tf.device(self.device_type):
             y = tf.cast(y, tf.int64)
 
-            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.nce_weights,
-                                                 biases=self.nce_biases,
-                                                 labels=y,
-                                                 inputs=x_embed,
-                                                 num_sampled=self.num_sampled,
-                                                 num_classes=self.vocabulary_size)
-                                  )
+            loss = tf.reduce_mean(tf.nn.nce_loss(
+                weights=self.nce_weights,
+                biases=self.nce_biases,
+                labels=y,
+                inputs=x_embed,
+                num_sampled=self.num_sampled,
+                num_classes=self.vocabulary_size
+            ))
 
             return loss
 
@@ -260,13 +261,13 @@ class SkipGramWord2Vec(Word2Vec):
         Args:
             sentence: A list of words to be used to create the batch
         Returns:
-            A list where the first item us a batch and the second item is the batch's labels.
+            A list where the first item is a batch and the second item is the batch's labels.
         Raises:
             ValueError: If the number of skips is not <= twice the skip window length.
 
         TODO -- should num_skips and skip_window be arguments or simply taken from self
         within the method?
-            """
+        """
         num_skips = self.num_skips
         skip_window = self.skip_window
         if num_skips > 2 * skip_window:
@@ -278,11 +279,16 @@ class SkipGramWord2Vec(Word2Vec):
         span = 2 * skip_window + 1
         # again, probably we can go: span = self.span
         sentencelen = len(sentence)
-        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
-        batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
-        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-        buffer: collections.deque = collections.deque(maxlen=span)
         sentence = sentence.numpy()
+        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
+        batch = np.empty(
+            shape=(batch_size,),
+            dtype=np.int32
+        )
+        labels = np.empty(
+            shape=(batch_size, 1),
+            dtype=np.int32)
+        buffer: collections.deque = collections.deque(maxlen=span)
         # The following command fills up the Buffer but leaves out the last spot
         # this allows us to always add the next word as the first thing we do in the
         # following loop.
@@ -325,8 +331,6 @@ class SkipGramWord2Vec(Word2Vec):
         Trying out passing a simple Tensor to get_batch
         :return:
         """
-        x_test = np.array(self.display_examples)
-
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []

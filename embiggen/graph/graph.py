@@ -520,6 +520,27 @@ class Graph(Hashable):
         """
         return self._graph.neighbors(node)
 
+    @property
+    def edges(self)->Dict:
+        """Return edges of given node.
+
+        Parameters
+        ---------------------
+        node: int,
+            The node whose neigbours are to be identified.
+
+        Returns
+        ---------------------
+        Dictionary of edges.
+        """
+        return [
+            (
+                self._graph._nodes_reverse_mapping[src],
+                self._graph._nodes_reverse_mapping[dst]
+            )
+            for src, dst in self._graph._edges_indices
+        ]
+
     def degree(self, node: int) -> int:
         """Return degree of given node.
 
