@@ -41,7 +41,7 @@ def parse_argument_json(path: str, parser: argparse.ArgumentParser):
     for group, arguments in args_settings.items():
         # Create the group
         groups_settings = parser.add_argument_group(group)
-        for argument_name, description in arguments.items():
+        for _, description in arguments.items():
             # Concretize the type
             if "type" in description.keys():
                 description["type"] = cast_type(description["type"])

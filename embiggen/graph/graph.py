@@ -428,6 +428,7 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
 # Class to wrapp the NumbaGraph code  #
 #######################################
 
+
 class Graph(Hashable):
     def __init__(self, *args, **kwargs):
         """Create new instance of Graph."""
