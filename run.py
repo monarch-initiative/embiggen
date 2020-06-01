@@ -19,77 +19,51 @@ from typing import Dict, List
 import compress_json
 
 
+def get_current_dir() -> str:
+    """Return the path to the folder of THIS file"""
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def cast_type(string: str):
+    """Concretize the types from string to real types"""
+    return {
+        "bool": bool,
+        "int": int,
+        "float": float,
+        "str": str
+    }[string.lower().strip()]
+
+
+def parse_argument_json(path: str, parser: argparse.ArgumentParser):
+    """Load the json and create the arguments"""
+    args_settings = compress_json.load(path)
+
+    for group, arguments in args_settings.items():
+        # Create the group
+        groups_settings = parser.add_argument_group(group)
+        for argument_name, description in arguments.items():
+            # Concretize the type
+            if "type" in description.keys():
+                description["type"] = cast_type(description["type"])
+            # Copy the settings to avoid mutation related problems
+            settings = description.copy()
+            # Split positional arguments from kwargs
+            positional = []
+            if "long" in settings.keys():
+                positional.append(settings.pop("long"))
+            if "short" in settings.keys():
+                positional.append(settings.pop("short"))
+            # Add the argument to the group
+            groups_settings.add_argument(*positional, **settings)
+
+
 def parse_args():
     """Parses arguments.
 
     """
     parser = argparse.ArgumentParser(description="Run link Prediction.")
-
-    parser.add_argument('--pos_train', nargs='?',
-                        default='tests/data/ppismall_with_validation/pos_train_edges_max_comp_graph',
-                        help='Input positive training edges path')
-
-    parser.add_argument('--pos_valid', nargs='?',
-                        default='tests/data/ppismall_with_validation/pos_validation_edges_max_comp_graph',
-                        help='Input positive validation edges path')
-
-    parser.add_argument('--pos_test', nargs='?',
-                        default='tests/data/ppismall_with_validation/pos_test_edges_max_comp_graph',
-                        help='Input positive test edges path')
-
-    parser.add_argument('--neg_train', nargs='?',
-                        default='tests/data/ppismall_with_validation/neg_train_edges_max_comp_graph',
-                        help='Input negative training edges path')
-
-    parser.add_argument('--neg_valid', nargs='?',
-                        default='tests/data/ppismall_with_validation/neg_validation_edges_max_comp_graph',
-                        help='Input negative validation edges path')
-
-    parser.add_argument('--neg_test', nargs='?',
-                        default='tests/data/ppismall_with_validation/neg_test_edges_max_comp_graph',
-                        help='Input negative test edges path')
-
-    parser.add_argument('--output_file', nargs='?',
-                        default='output_results.json',
-                        help='path to the output file which contains results of link prediction')
-
-    parser.add_argument('--embed_graph', nargs='?', default='embedded_graph.embedded',
-                        help='Embeddings path of the positive training graph')
-
-    parser.add_argument('edges_embedding_method', nargs='?', default='hadamard',
-                        help='Embeddings embedding method of the positive training graph. '
-                             'It can be hadamard, weightedL1, weightedL2 or average')
-
-    parser.add_argument('--embedding_size', type=int, default=200,
-                        help='Number of dimensions which is size of the embedded vectors. Default is 200.')
-
-    parser.add_argument('--walks_length', type=int, default=80,
-                        help='Length of walk per source. Default is 80.')
-
-    parser.add_argument('--walks_number', type=int, default=10,
-                        help='Number of walks per source. Default is 10.')
-
-    parser.add_argument('--context_window', type=int, default=3,
-                        help='Context size for optimization. Default is 3.')
-
-    parser.add_argument('--epochs', default=1, type=int,
-                        help='Number of training epochs')
-
-    parser.add_argument('--workers', type=int, default=8,
-                        help='Number of parallel workers. Default is 8.')
-
-    parser.add_argument('--p', type=float, default=1,
-                        help='node2vec p hyperparameter. Default is 1.')
-
-    parser.add_argument('--q', type=float, default=1,
-                        help='node2vec q hyperparameter. Default is 1.')
-
-    parser.add_argument('--classifier', nargs='?', default='LR',
-                        help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
-
-    parser.add_argument('--embedding_model', nargs='?', default='Skipgram',
-                        help="word2vec model (Skipgram, CBOW, GloVe)")
-
+    path = os.path.join(get_current_dir(), "cli_arguments.json")
+    parse_argument_json(path, parser)
     return parser.parse_args()
 
 
@@ -226,7 +200,7 @@ def main(args):
     classifier_model = get_classifier_model(
         args.classifier,
         **(
-            dict(input_shape=X_train.shape[1])
+            dict(input_shape=X_train[:].shape[1])
             if args.classifier in ("MLP", "FFNN")
             else {}
         )

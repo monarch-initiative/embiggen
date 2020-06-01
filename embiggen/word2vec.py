@@ -29,7 +29,7 @@ class Word2Vec:
             display: An integer of the number of words to display.
         """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
+    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: List[str],
                  learning_rate: float = 0.1, batch_size: int = 128,
                  num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
                  min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
@@ -122,7 +122,7 @@ class Word2Vec:
         """Return the embedding obtained from the model."""
         return {
             word: tf.nn.embedding_lookup(self._embedding, key).numpy()
-            for key, word in sorted(list(self.id2word.items()))
+            for key, word in enumerate(self.id2word)
         }
 
     def save(self, path: str):
@@ -133,7 +133,7 @@ class Word2Vec:
         path: str,
             Path where to save the embedding.
         """
-        pd.DataFrame(self.embedding).to_csv(path)
+        pd.DataFrame(self.embedding).T.to_csv(path)
 
 
 class SkipGramWord2Vec(Word2Vec):

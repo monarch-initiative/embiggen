@@ -42,7 +42,7 @@ class GraphPartitionTransfomer:
         """
         return np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
 
-    def transform_edges(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
@@ -56,8 +56,8 @@ class GraphPartitionTransfomer:
         ----------------------
         Tuple of X and y to be used for training.
         """
-        positive_embedding = self._transformer.transform_edges(positive)
-        negative_embedding = self._transformer.transform_edges(negative)
+        positive_embedding = self._transformer.transform(positive)
+        negative_embedding = self._transformer.transform(negative)
 
         return (
             np.concatenate([positive_embedding, negative_embedding]),

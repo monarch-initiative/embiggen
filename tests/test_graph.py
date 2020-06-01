@@ -66,12 +66,13 @@ class TestGraph(TestCase):
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(path)
-                for i in range(len(graph._nodes_alias)):
-                    assert graph.is_node_trap(i) or graph.extract_random_node_neighbour(
-                        i) in graph._nodes_alias[i][0]
-                for edge in range(len(graph._edges_alias)):
-                    assert graph.is_edge_trap(edge) or graph.extract_random_edge_neighbour(
-                        edge) in graph._edges_alias[edge][0]
+                subgraph = graph._graph
+                for i in range(len(subgraph._nodes_alias)):
+                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i) in subgraph._nodes_alias[i][0]
+                for edge in range(len(subgraph._edges_alias)):
+                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0]
 
     def test_unrastered_graph(self):
         for path in tqdm(
@@ -97,12 +98,13 @@ class TestGraph(TestCase):
                     end_nodes_column=1,
                     weights_column=2
                 )
-                for i in range(len(graph._nodes_alias)):
-                    assert graph.is_node_trap(i) or graph.extract_random_node_neighbour(
-                        i) in graph._nodes_alias[i][0]
-                for edge in range(len(graph._edges_alias)):
-                    assert graph.is_edge_trap(edge) or graph.extract_random_edge_neighbour(
-                        edge) in graph._edges_alias[edge][0]
+                subgraph = graph._graph
+                for i in range(len(subgraph._nodes_alias)):
+                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i) in subgraph._nodes_alias[i][0]
+                for edge in range(len(subgraph._edges_alias)):
+                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0]
 
     def test_setup_from_custom_dataframe(self):
         graph = self._factory.read_csv(
@@ -122,19 +124,20 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
-                all_walks = graph.random_walk(10, 5)
+                all_walks = graph.random_walk(10, 5).numpy()
+                subgraph = graph._graph
                 assert all(
-                    edge in graph._edges
+                    edge in subgraph._edges
                     for walks in all_walks
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
                 )
-                assert len(all_walks) == 10
+                assert all_walks.shape[0] == subgraph.nodes_number
                 assert all(
-                    len(walks) == graph.nodes_number
+                    walks.shape[0] == 10
                     for walks in all_walks
                 )
-                if graph.has_traps:
+                if subgraph.has_traps:
                     assert all(
                         1 <= len(walk) <= 5
                         for walks in all_walks
@@ -164,20 +167,21 @@ class TestGraph(TestCase):
                     explore_weight=10
                 )
                 all_walks = graph.random_walk(10, 5)
-                assert len(all_walks) == 10
+                subgraph = graph._graph
+                assert all_walks.shape[0] ==subgraph.nodes_number
                 assert all(
-                    len(walks) == graph.nodes_number
+                    walks.shape[0] == 10
                     for walks in all_walks
                 )
-                if graph.has_traps:
+                if subgraph.has_traps:
                     assert all(
-                        1 <= len(walk) <= 5
+                        1 <= walk.shape[0] <= 5
                         for walks in all_walks
                         for walk in walks
                     )
                 else:
                     assert all(
-                        len(walk) == 5
+                        walk.shape[0] == 5
                         for walks in all_walks
                         for walk in walks
                     )
@@ -191,10 +195,11 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
+                subgraph = graph._graph
                 assert all(
                     len(neighbours) == len(j) == len(q) and (
-                        graph.has_traps or len(q) > 0)
-                    for (neighbours, j, q) in graph._nodes_alias
+                        subgraph.has_traps or len(q) > 0)
+                    for (neighbours, j, q) in subgraph._nodes_alias
                 )
 
     def test_alias_shape_on_legacy(self):
@@ -213,8 +218,9 @@ class TestGraph(TestCase):
                     return_weight=10,
                     explore_weight=10
                 )
+                subgraph = graph._graph
                 assert all(
                     len(neighbours) == len(j) == len(q) and (
-                        graph.has_traps or len(q) > 0)
-                    for (neighbours, j, q) in graph._nodes_alias
+                        subgraph.has_traps or len(q) > 0)
+                    for (neighbours, j, q) in subgraph._nodes_alias
                 )

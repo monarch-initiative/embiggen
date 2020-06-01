@@ -2,7 +2,8 @@ from typing import List, Union, Tuple, Dict
 import numpy as np
 from numba import jitclass, typed, types, njit, prange
 from .alias_method import alias_draw, alias_setup
-
+import tensorflow as tf
+from dict_hash import sha256, Hashable
 
 # key and value types
 keys_tuple = types.UniTuple(types.int64, 2)
@@ -16,11 +17,13 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_edges', types.DictType(*kv_ty)),
     ('_edges_indices', types.ListType(keys_tuple)),
     ('_nodes_alias', types.ListType(triple_list)),
+    ('_nodes_mapping', types.DictType(types.string, types.int64)),
+    ('_nodes_reverse_mapping', types.ListType(types.string)),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
-    ('random_walk_preprocessing', types.boolean)
+    ('random_walk_preprocessing', types.boolean),
 ])
-class Graph:
+class NumbaGraph:
 
     def __init__(
         self,
@@ -80,9 +83,12 @@ class Graph:
         # }
         # This is only a method variable and not a class variable because
         # it is only used during the constractor.
-        nodes_mapping = typed.Dict.empty(types.string, types.int64)
+        # TODO: how should we handle singleton nodes?
+        self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
+        self._nodes_reverse_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
-            nodes_mapping[node] = i
+            self._nodes_mapping[node] = i
+            self._nodes_reverse_mapping.append(node)
 
         # Creating mapping of edges and integer ID.
         # The map looks like the following:
@@ -111,7 +117,7 @@ class Graph:
         # of the graph parsing proceedure.
         i = 0
         for k, (start_name, end_name) in enumerate(edges):
-            src, dst = nodes_mapping[start_name], nodes_mapping[end_name]
+            src, dst = self._nodes_mapping[start_name], self._nodes_mapping[end_name]
             if (src, dst) not in self._edges:
                 self._edges[(src, dst)] = i
                 i += 1
@@ -333,41 +339,16 @@ class Graph:
         neighbours, j, q = self._edges_alias[edge]
         return neighbours[alias_draw(j, q)]
 
-    def random_walk(self, number: int = 100, length: int = 100) -> np.ndarray:
-        """Return random walks on graph.
-
-        Parameters
-        ---------------------
-        number: int = 100,
-            Number of walks to execute.
-        length: int = 100,
-            Length of the walks to execute.
-    
-        Raises
-        -------------
-        ValueError,
-            If the given graph was not properly setup for random walk.
-
-        Returns
-        ----------------------
-        Numpy array with the walks.
-        """
-        if not self.random_walk_preprocessing:
-            raise ValueError("Given graph was not properly setup for random walk.")
-        if self.has_traps:
-            return random_walk_with_traps(self, number, length)
-        return random_walk(self, number, length)
-
 
 # This function is out of the class because otherwise we would not be able
 # to activate the parallel=True flag.
 @njit(parallel=True)
-def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
+def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
     """Return a list of graph walks
 
     Parameters
     ----------
-    graph:Graph
+    graph: NumbaGraph,
         The graph on which the random walks will be done.
     number: int,
         Number of walks to execute.
@@ -378,24 +359,19 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
     -------
     Numpy array with all the walks containing the numeric IDs of nodes.
     """
-    # TODO: talk about tradeoff of using either a list of lists
     # or alternatively a numpy array.
-    all_walks = [[[0]*length for _ in range(graph.nodes_number)]
-                 for _ in range(number)]
+    all_walks = np.empty((graph.nodes_number, number, length), dtype=np.int64)
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
-            walk = all_walks[i][src]
-            # TODO: if the todo below is green-lighted also the following
-            # two lines have to be rewritten to only include node IDs.
+    for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+        for i in prange(number):  # pylint: disable=not-an-iterable
+            walk = all_walks[src][i]
             walk[0] = src
             walk[1] = dst = graph.extract_random_node_neighbour(src)
             edge = graph.get_edge_id(src, dst)
             for index in range(2, length):
                 edge = graph.extract_random_edge_neighbour(edge)
-                # TODO: the following line might not be needed at all!
                 walk[index] = graph.get_edge_destination(edge)
     return all_walks
 
@@ -405,12 +381,12 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
 # In this random walk we take into account the possibility of encountering
 # traps within the execution of the code.
 @njit(parallel=True)
-def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[List[int]]]:
+def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[List[List[int]]]:
     """Return a list of graph walks
 
     Parameters
     ----------
-    graph:Graph
+    graph: NumbaGraph,
         The graph on which the random walks will be done.
     number: int,
         Number of walks to execute.
@@ -421,16 +397,14 @@ def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[
     -------
     List of list of walks containing the numeric IDs of nodes.
     """
-    all_walks = [[[0] for _ in range(graph.nodes_number)]
-                 for _ in range(number)]
+    nodes_number = graph.nodes_number
+    all_walks = [[[0] for _ in range(number)] for _ in range(nodes_number)]
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
-            walk = all_walks[i][src]
-            # TODO: if the todo below is green-lighted also the following
-            # two lines have to be rewritten to only include node IDs.
+    for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+        for i in prange(number):  # pylint: disable=not-an-iterable
+            walk = all_walks[src][i]
             walk[0] = src
             # Check if the current node has neighbours
             if graph.is_node_trap(src):
@@ -446,7 +420,69 @@ def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[
                 if graph.is_node_trap(dst):
                     break
                 edge = graph.extract_random_edge_neighbour(edge)
-                # TODO: the following line might not be needed at all!
                 dst = graph.get_edge_destination(edge)
                 walk.append(dst)
     return all_walks
+
+#######################################
+# Class to wrapp the NumbaGraph code  #
+#######################################
+
+class Graph(Hashable):
+    def __init__(self, *args, **kwargs):
+        """Create new instance of Graph."""
+        self._graph = NumbaGraph(*args, **kwargs)
+
+    def random_walk(self, number: int, length: int) -> tf.Tensor:
+        """Return a list of graph walks
+
+        Parameters
+        ----------
+        number: int,
+            Number of walks to execute.
+        length:int,
+            The length of the walks in edges traversed.
+
+        Returns
+        -------
+        Tensor with walks containing the numeric IDs of nodes.
+        """
+        if not self._graph.random_walk_preprocessing:
+            raise ValueError(
+                "Given graph was not properly setup for random walk.")
+        if self._graph.has_traps:
+            return tf.ragged.constant(random_walk_with_traps(self._graph, number, length))
+        return tf.constant(random_walk(self._graph, number, length))
+
+    @property
+    def worddictionary(self) -> Dict:
+        """Return mapping for nodes to numeric node ID."""
+        return self._graph._nodes_mapping
+
+    @property
+    def reverse_worddictionary(self) -> List:
+        """Return mapping for numeric nodes ID to nodes."""
+        return self._graph._nodes_reverse_mapping
+
+    @property
+    def nodes_number(self) -> int:
+        """Return the total number of nodes in the graph.
+
+        Returns
+        -------
+        The total number of nodes in the graph.
+        """
+        return self._graph.nodes_number
+
+    def consistent_hash(self) -> str:
+        """Return hash for the current instance of the graph."""
+        return sha256({
+            "random_walk_preprocessing": self._graph.random_walk_preprocessing,
+            "has_traps": self._graph.has_traps,
+            "edges": self._graph._edges,
+            "edges_indices": self._graph._edges_indices,
+            "nodes_alias": self._graph._nodes_alias,
+            "nodes_mapping": self._graph._nodes_mapping,
+            "nodes_reverse_mapping": self._graph._nodes_reverse_mapping,
+            "edges_alias": self._graph._edges_alias,
+        })

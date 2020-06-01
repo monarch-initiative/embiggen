@@ -38,7 +38,7 @@ class N2ETransformer:
         self._method = N2ETransformer.methods[method]
         self._embedding = embedding
 
-    def transform_edges(self, G: Graph) -> np.ndarray:
+    def transform(self, G: Graph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters
