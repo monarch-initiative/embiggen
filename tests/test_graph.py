@@ -143,33 +143,34 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2,
-                return_weight=10,
-                explore_weight=10
-            )
-            all_walks = graph.random_walk(10, 5)
-            assert len(all_walks) == 10
-            assert all(
-                len(walks) == graph.nodes_number
-                for walks in all_walks
-            )
-            if graph.has_traps:
-                assert all(
-                    1 <= len(walk) <= 5
-                    for walks in all_walks
-                    for walk in walks
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2,
+                    return_weight=10,
+                    explore_weight=10
                 )
-            else:
+                all_walks = graph.random_walk(10, 5)
+                assert len(all_walks) == 10
                 assert all(
-                    len(walk) == 5
+                    len(walks) == graph.nodes_number
                     for walks in all_walks
-                    for walk in walks
                 )
+                if graph.has_traps:
+                    assert all(
+                        1 <= len(walk) <= 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
+                else:
+                    assert all(
+                        len(walk) == 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
 
     def test_alias_shape(self):
         for path in tqdm(
