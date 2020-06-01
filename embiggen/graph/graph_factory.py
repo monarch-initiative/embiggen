@@ -28,7 +28,7 @@ class GraphFactory:
         edge_has_header: bool = True,
         start_nodes_column: str = "subject",
         end_nodes_column: str = "object",
-        node_type_column: str = "category",
+        nodes_type_column: str = "category",
         weights_column: str = "weight",
         **kwargs: Dict
     ):
@@ -51,6 +51,12 @@ class GraphFactory:
             use the numeric index curresponding to the column.
         end_nodes_column: str = "object",
             Column to use for the ending nodes. When no header is available,
+            use the numeric index curresponding to the column.
+        nodes_type_column: str = "category",
+            Column to use for the nodes type. When no header is available,
+            use the numeric index curresponding to the column.
+        weights_column: str = "weight",
+            Column to use for the edges weight. When no header is available,
             use the numeric index curresponding to the column.
         **kwargs: Dict,
             Additional keyword arguments to pass to the instantiation of a new
@@ -106,9 +112,21 @@ class GraphFactory:
 
         # Yet again we need to convert the node types to a list that is types
         # and numba compatible.
-        numba_nodes_type = typed.List.empty_list(types.string)
-        for _ in range(len(numba_edges)):
-            numba_nodes_type.append(self._default_node_type)
+
+        nodes_type = (
+            # If provided, we use the list from the dataframe.
+            graph_df[nodes_type_column].values.tolist()
+            # Otherwise if the column is not available.
+            if nodes_type_column in graph_df.columns
+            # We use the default weight.
+            else [self._default_node_type]*len(numba_edges)
+        )
+
+        unique_nodes_type = np.unique(nodes_type).tolist()
+
+        numba_nodes_type = typed.List.empty_list(types.int64)
+        for node_type in nodes_type:
+            numba_nodes_type.append(unique_nodes_type.index(node_type))
 
         return Graph(
             edges=numba_edges,

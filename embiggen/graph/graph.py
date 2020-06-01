@@ -25,7 +25,7 @@ class Graph:
         edges: List[Tuple[str, str]],
         weights: Union[List],
         nodes: List[str],
-        nodes_type: List[str],
+        nodes_type: List[int],
         directed: List[bool],
         return_weight: float = 1,
         explore_weight: float = 1
@@ -40,7 +40,7 @@ class Graph:
             List of the nodes of the graph.
         weights: List[float],
             The weights for each source and sink.
-        node_types: List[str],
+        node_types: List[int],
             The node types for each source and sink.
         directed: List[bool],
             The edges directions for each source and sink.
