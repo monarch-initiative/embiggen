@@ -135,3 +135,34 @@ class TestGraph(TestCase):
                 for walk in walks
                 for edge in zip(walk[:-1], walk[1:])
             )
+
+    def test_alias_shape(self):
+        for path in tqdm(
+            self._paths,
+            desc="Testing on non-legacy",
+            disable=False
+        ):
+            graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
+            assert all(
+                len(neighbours) == len(j) == len(q) > 0
+                for (neighbours, j, q) in graph._nodes_alias
+            )
+    def test_alias_shape_on_legacy(self):
+        for path in tqdm(
+            self._legacy_paths,
+            desc="Testing on non-legacy",
+            disable=False
+        ):
+            graph = self._factory.read_csv(
+                path,
+                edge_has_header=False,
+                start_nodes_column=0,
+                end_nodes_column=1,
+                weights_column=2,
+                return_weight=10,
+                explore_weight=10
+            )
+            assert all(
+                len(neighbours) == len(j) == len(q) > 0
+                for (neighbours, j, q) in graph._nodes_alias
+            )
