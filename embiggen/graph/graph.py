@@ -203,8 +203,8 @@ class Graph:
         # to create a random walk with variable length, hence a list of lists.
 
         self.has_traps = False
-        for node in nodes:
-            if self.is_node_trap(node):
+        for src in range(nodes_number):
+            if self.is_node_trap(src):
                 self.has_traps = True
                 break
 
@@ -348,7 +348,8 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
     -------
     Numpy array with all the walks containing the numeric IDs of nodes.
     """
-    all_walks = np.empty((number, graph.nodes_number, length), dtype=np.int64)
+    all_walks = [[[-1]*length for _ in range(graph.nodes_number)]
+                 for _ in range(number)]
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
@@ -388,7 +389,7 @@ def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[
     -------
     List of list of walks containing the numeric IDs of nodes.
     """
-    all_walks = [[[] for _ in range(graph.nodes_number)]
+    all_walks = [[[0] for _ in range(graph.nodes_number)]
                  for _ in range(number)]
 
     # We can use prange to parallelize the walks and the iterations on the
@@ -398,7 +399,7 @@ def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[
             walk = all_walks[i][src]
             # TODO: if the todo below is green-lighted also the following
             # two lines have to be rewritten to only include node IDs.
-            walk.append(src)
+            walk[0] = src
             # Check if the current node has neighbours
             if graph.is_node_trap(src):
                 # If the node has no neighbours and is therefore a trap,
