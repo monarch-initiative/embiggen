@@ -50,7 +50,8 @@ setup(
         'click',
         'sanitize_ml_labels',
         'deflate_dict',
-        'cache_decorator'
+        'cache_decorator',
+        "numba"
     ],
     test_suite='nose.collector',
     tests_require=test_deps,
