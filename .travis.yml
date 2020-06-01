@@ -26,7 +26,7 @@ after_script:
 script:
 - rm -rf .coverage
 - coverage erase
-- nosetests --with-coverage --cover-package=embiggen --cover-xml
+- pytest -s --cov=embiggen --cov-report xml:coverage.xml
 - coverage combine --append || true
 - coverage report
 - coverage xml
