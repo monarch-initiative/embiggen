@@ -682,8 +682,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     currentTensor = data[data_index:endpos]
                     if len(currentTensor) < window_len:
                         break  # We are at the end
-                    batch_x, batch_y = self.next_batch(
-                        currentTensor)  # type: ignore
+                    batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
@@ -694,4 +693,4 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     endpos = min(endpos,
                                  lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
-            return loss_history
+        return loss_history

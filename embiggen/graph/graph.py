@@ -439,13 +439,13 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
             walk = all_walks[src][i]
             walk[0] = src
             # Check if the current node has neighbors
-            if graph.is_node_trap(src):
+            if graph.is_node_trap(walk[0]):
                 # If the node has no neighbors and is therefore a trap,
                 # we need to interrupt the walk as we cannot proceed further.
                 continue
-            dst = graph.extract_random_node_neighbour(src)
+            dst = graph.extract_random_node_neighbour(walk[0])
             walk.append(dst)
-            edge = graph.get_edge_id(src, dst)
+            edge = graph.get_edge_id(walk[0], dst)
             for _ in range(2, length):
                 # If the previous destination was a trap, we need to stop the
                 # loop.
