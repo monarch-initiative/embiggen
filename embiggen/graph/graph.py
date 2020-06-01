@@ -17,6 +17,7 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_edges_indices', types.ListType(keys_tuple)),
     ('_nodes_alias', types.ListType(triple_list)),
     ('_edges_alias', types.ListType(triple_list)),
+    ('has_traps', types.boolean)
 ])
 class Graph:
 
@@ -117,6 +118,19 @@ class Graph:
                 nodes_neighbours[dst].append(src)
                 neighbours_weights[dst].append(weights[k])
                 i += 1
+        
+        # To verify if this graph has some walker traps, meaning some nodes
+        # that do not have any neighbours, we have to iterate on the list of
+        # neighbours and to check if at least a node has no neighbours.
+        # If such a condition is met, we cannot anymore do the simple random
+        # walk assuming that all the walks have the same length, but we need
+        # to create a random walk with variable length, hence a list of lists.
+
+        self.has_traps = False
+        for node_neighbours in nodes_neighbours:
+            if len(node_neighbours) == 0:
+                self.has_traps = True
+                break
 
         # Compute edges
         self._edges_indices = typed.List.empty_list(keys_tuple)
