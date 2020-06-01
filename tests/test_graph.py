@@ -57,19 +57,21 @@ class TestGraph(TestCase):
         ]
 
         self._factory = GraphFactory()
+        self._directed_factory = GraphFactory(default_directed=True)
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
             self._paths,
             desc="Testing on non-legacy"
         ):
-            graph = self._factory.read_csv(path)
-            for i in range(len(graph._nodes_alias)):
-                assert graph.extract_random_node_neighbour(
-                    i) in graph._nodes_alias[i][0]
-            for edge in range(len(graph._edges_alias)):
-                assert graph.extract_random_edge_neighbour(
-                    edge) in graph._edges_alias[edge][0]
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(path)
+                for i in range(len(graph._nodes_alias)):
+                    assert graph.is_node_trap(i) or graph.extract_random_node_neighbour(
+                        i) in graph._nodes_alias[i][0]
+                for edge in range(len(graph._edges_alias)):
+                    assert graph.is_edge_trap(edge) or graph.extract_random_edge_neighbour(
+                        edge) in graph._edges_alias[edge][0]
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
@@ -77,19 +79,20 @@ class TestGraph(TestCase):
             self._legacy_paths,
             desc="Testing on legacy"
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2
-            )
-            for i in range(len(graph._nodes_alias)):
-                assert graph.extract_random_node_neighbour(
-                    i) in graph._nodes_alias[i][0]
-            for edge in range(len(graph._edges_alias)):
-                assert graph.extract_random_edge_neighbour(
-                    edge) in graph._edges_alias[edge][0]
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2
+                )
+                for i in range(len(graph._nodes_alias)):
+                    assert graph.is_node_trap(i) or graph.extract_random_node_neighbour(
+                        i) in graph._nodes_alias[i][0]
+                for edge in range(len(graph._edges_alias)):
+                    assert graph.is_edge_trap(edge) or graph.extract_random_edge_neighbour(
+                        edge) in graph._edges_alias[edge][0]
 
     def test_setup_from_custom_dataframe(self):
         graph = self._factory.read_csv(
