@@ -108,33 +108,34 @@ class TestGraph(TestCase):
             self._paths,
             desc="Testing on non-legacy",
             disable=False
-        ):
-            graph = self._factory.read_csv(
-                path, return_weight=10, explore_weight=10)
-            all_walks = graph.random_walk(10, 5)
-            assert all(
-                edge in graph._edges
-                for walks in all_walks
-                for walk in walks
-                for edge in zip(walk[:-1], walk[1:])
-            )
-            assert len(all_walks) == 10
-            assert all(
-                len(walks) == graph.nodes_number
-                for walks in all_walks
-            )
-            if graph.has_traps:
+        ):  
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path, return_weight=10, explore_weight=10)
+                all_walks = graph.random_walk(10, 5)
                 assert all(
-                    1 <= len(walk) <= 5
+                    edge in graph._edges
                     for walks in all_walks
                     for walk in walks
+                    for edge in zip(walk[:-1], walk[1:])
                 )
-            else:
+                assert len(all_walks) == 10
                 assert all(
-                    len(walk) == 5
+                    len(walks) == graph.nodes_number
                     for walks in all_walks
-                    for walk in walks
                 )
+                if graph.has_traps:
+                    assert all(
+                        1 <= len(walk) <= 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
+                else:
+                    assert all(
+                        len(walk) == 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
 
     def test_random_walk_on_legacy(self):
         for path in tqdm(
