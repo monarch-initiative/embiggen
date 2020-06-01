@@ -1,10 +1,10 @@
 import numpy as np
 from numba import njit
-from typing import Tuple
+from typing import Tuple, List
 
 
 @njit
-def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def alias_setup(probabilities: List) -> Tuple[List, List]:
     """Compute utility lists for non-uniform sampling from discrete distributions.
     Refer to:
     https://lips.cs.princeton.edu/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
@@ -14,13 +14,13 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     Parameters
     ----------
-    probabilities:np.ndarray
+    probabilities:List
         The normalized probabilities, e.g., [0.4 0.28 0.32], for
         transition to each neighbor.
 
     Returns
     -------
-    parameters:Tuple[np.ndarray, np.ndarray]
+    parameters:Tuple[List, List]
         Tuple of the parameters needed for the extraction. 
         The first argument is the mapping to the less probable binary outcome,
         and the second is the uniform distribution over binary outcomes
@@ -81,38 +81,3 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
         # most probable case and fastest
         return index
     return j[index]
-
-
-# def new_alias_draw(samples_number: int = 2**14):
-#     samples = np.random.uniform(size=samples_number)
-#     last = samples[0]
-#     i = 1
-
-#     @njit
-#     def wrapped(j: np.ndarray, q: np.ndarray) -> int:
-#         """Draw sample from a non-uniform discrete distribution using alias sampling.
-
-#         Parameters
-#         ----------
-#         j:np.ndarray,
-#             The mapping to the less probable binary outcome,
-#         q: np.ndarray
-#             Uniform distribution over binary outcomes
-
-#         Returns:
-#             index:int
-#                 index of random sample from non-uniform discrete distribution
-#         """
-#         nonlocal i, last
-#         # extract a random index for the mixture
-#         index = int(samples[i-1] * len(q))
-#         new = samples[i]
-#         i = (i+1) & (samples_number-1)
-#         last = new
-#         # do the Bernulli trial
-#         if new < q[index]:
-#             # most probable case and fastest
-#             return index
-#         return j[index]
-
-#     return wrapped

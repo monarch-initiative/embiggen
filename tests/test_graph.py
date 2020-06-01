@@ -95,3 +95,39 @@ class TestGraph(TestCase):
     #         end_nodes_column="item_id_b",
     #         weights_column="score"
     #     )
+
+    def test_random_walk(self):
+        for path in tqdm(
+            self._paths,
+            desc="Testing on non-legacy",
+            disable=False
+        ):
+            graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
+            walks = graph.random_walk(10, 5)
+            for walk in walks:
+                assert all(
+                    (src, dst) in graph._edges
+                    for src, dst in zip(walk[:-1], walk[1:])
+                )
+
+    def test_random_walk_on_legacy(self):
+        for path in tqdm(
+            self._legacy_paths,
+            desc="Testing on non-legacy",
+            disable=False
+        ):
+            graph = self._factory.read_csv(
+                path,
+                edge_has_header=False,
+                start_nodes_column=0,
+                end_nodes_column=1,
+                weights_column=2,
+                return_weight=10,
+                explore_weight=10
+            )
+            walks = graph.random_walk(10, 5)
+            for walk in walks:
+                assert all(
+                    (src, dst) in graph._edges
+                    for src, dst in zip(walk[:-1], walk[1:])
+                )
