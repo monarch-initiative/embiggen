@@ -85,7 +85,7 @@ class Embiggen:
             raise ValueError(
                 "Given embedding model must be 'cbow', 'skipgram' or 'glove'")
 
-        walks = graph.random_walks(number=walks_number, length=walks_length)
+        walks = graph.random_walk(number=walks_number, length=walks_length)
 
         self._model = self._get_embedding_model(
             graph, walks,

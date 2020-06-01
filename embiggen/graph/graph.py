@@ -101,16 +101,16 @@ class NumbaGraph:
         self._edges = typed.Dict.empty(*kv_ty)
 
         if self.random_walk_preprocessing:
-            # Each node has a list of neighbours.
+            # Each node has a list of neighbors.
             # These lists are initialized as empty.
-            nodes_neighbours = typed.List.empty_list(integer_list)
-            # Each node has a list of neighbours weights.
+            nodes_neighbors = typed.List.empty_list(integer_list)
+            # Each node has a list of neighbors weights.
             # These lists are initialized as empty, if a weight
-            neighbours_weights = typed.List.empty_list(float_list)
+            neighbors_weights = typed.List.empty_list(float_list)
 
             for _ in range(nodes_number):
-                nodes_neighbours.append(typed.List.empty_list(types.int64))
-                neighbours_weights.append(typed.List.empty_list(types.float64))
+                nodes_neighbors.append(typed.List.empty_list(types.int64))
+                neighbors_weights.append(typed.List.empty_list(types.float64))
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
@@ -122,16 +122,16 @@ class NumbaGraph:
                 self._edges[(src, dst)] = i
                 i += 1
                 if self.random_walk_preprocessing:
-                    nodes_neighbours[src].append(dst)
-                    neighbours_weights[src].append(weights[k])
+                    nodes_neighbors[src].append(dst)
+                    neighbors_weights[src].append(weights[k])
             # If the edge is not-directed we add the inverse to be able to
             # convert undirected graph to a directed one.
             if not directed[k] and (dst, src) not in self._edges:
                 self._edges[(dst, src)] = i
                 i += 1
                 if self.random_walk_preprocessing:
-                    nodes_neighbours[dst].append(src)
-                    neighbours_weights[dst].append(weights[k])
+                    nodes_neighbors[dst].append(src)
+                    neighbors_weights[dst].append(weights[k])
 
         # Compute edges
         self._edges_indices = typed.List.empty_list(keys_tuple)
@@ -141,64 +141,64 @@ class NumbaGraph:
         if not self.random_walk_preprocessing:
             return
 
-        # Compute edges neighbours to avoid having to make a double search
+        # Compute edges neighbors to avoid having to make a double search
         # or a dictionary: this enables us to do everything after this
         # preprocessing step using purely numba.
-        edges_neighbours = typed.List.empty_list(integer_list)
+        edges_neighbors = typed.List.empty_list(integer_list)
         for _ in range(len(self._edges)):
-            edges_neighbours.append(typed.List.empty_list(types.int64))
-        # Since we construct the dual graph, we need the neighbours of the edges
+            edges_neighbors.append(typed.List.empty_list(types.int64))
+        # Since we construct the dual graph, we need the neighbors of the edges
         # Therefore if we have a graph like
         # A -> B --> C
         #        \-> D
         # it would became:
         # AB --> BC.
         #    \-> BD
-        # So the neighbours of each edge (start, end) are all the
+        # So the neighbors of each edge (start, end) are all the
         # edges in the form (end, neigh) where neigh is any neighbour of end.
-        for (_, dst), edge_neighbours in zip(self._edges_indices, edges_neighbours):
-            for neigh in nodes_neighbours[dst]:
-                edge_neighbours.append(self._edges[dst, neigh])
+        for (_, dst), edge_neighbors in zip(self._edges_indices, edges_neighbors):
+            for neigh in nodes_neighbors[dst]:
+                edge_neighbors.append(self._edges[dst, neigh])
 
         # Creating struct saving all the data relative to the nodes.
         # This structure is composed by a list of three values:
         #
-        # - The node neighbours
+        # - The node neighbors
         # - The vector of indices of minor probabilities events
-        # - The vector of probabilities for the extraction of the neighbours
+        # - The vector of probabilities for the extraction of the neighbors
         #
         # A very similar struct is also used for the edges.
         #
         self._nodes_alias = typed.List.empty_list(triple_list)
-        for node_neighbours, neighbour_weights in zip(nodes_neighbours, neighbours_weights):
+        for node_neighbors, neighbour_weights in zip(nodes_neighbors, neighbors_weights):
             probs = np.zeros(len(neighbour_weights))
             for i, weight in enumerate(neighbour_weights):
                 probs[i] = weight
             # Do not call the alias setup if the node is a trap.
-            # Because that node will have no neighbours and thus the necessity
+            # Because that node will have no neighbors and thus the necessity
             # of setupping the alias method to efficently extract the neighbour.
             if len(neighbour_weights):
                 j, q = alias_setup(probs/probs.sum())
             else:
                 j, q = np.zeros(0, dtype=np.int64), np.zeros(0)
-            self._nodes_alias.append((node_neighbours, j, q))
+            self._nodes_alias.append((node_neighbors, j, q))
 
         # Creating struct saving all the data relative to the edges.
         # This structure is composed by a list of three values:
         #
-        # - The edges neighbours
+        # - The edges neighbors
         # - The vector of indices of minor probabilities events
-        # - The vector of probabilities for the extraction of the neighbours
+        # - The vector of probabilities for the extraction of the neighbors
         #
         # A very similar struct is also used for the nodes.
         #
         self._edges_alias = typed.List.empty_list(triple_list)
-        for (src, dst), edge_neighbours in zip(self._edges_indices, edges_neighbours):
-            probs = np.zeros(len(edge_neighbours))
-            for index, neighbour in enumerate(edge_neighbours):
+        for (src, dst), edge_neighbors in zip(self._edges_indices, edges_neighbors):
+            probs = np.zeros(len(edge_neighbors))
+            for index, neighbour in enumerate(edge_neighbors):
                 # We get the weight for the edge from the destination to
                 # the neighbour.
-                weight = neighbours_weights[dst][index]
+                weight = neighbors_weights[dst][index]
                 # If the neigbour matches with the source, hence this is
                 # a backward loop like the following:
                 # SRC -> DST
@@ -215,18 +215,18 @@ class NumbaGraph:
                 # Then we store these results into the probability vector.
                 probs[index] = weight
             # Do not call the alias setup if the edge is a trap.
-            # Because that edge will have no neighbours and thus the necessity
+            # Because that edge will have no neighbors and thus the necessity
             # of setupping the alias method to efficently extract the neighbour.
-            if len(edge_neighbours):
+            if len(edge_neighbors):
                 j, q = alias_setup(probs/probs.sum())
             else:
                 j, q = np.zeros(0, dtype=np.int64), np.zeros(0)
 
-            self._edges_alias.append((edge_neighbours, j, q))
+            self._edges_alias.append((edge_neighbors, j, q))
 
         # To verify if this graph has some walker traps, meaning some nodes
-        # that do not have any neighbours, we have to iterate on the list of
-        # neighbours and to check if at least a node has no neighbours.
+        # that do not have any neighbors, we have to iterate on the list of
+        # neighbors and to check if at least a node has no neighbors.
         # If such a condition is met, we cannot anymore do the simple random
         # walk assuming that all the walks have the same length, but we need
         # to create a random walk with variable length, hence a list of lists.
@@ -305,6 +305,37 @@ class NumbaGraph:
         """
         return self._edges_indices[edge][1]
 
+    def neighbors(self, node: str) -> List:
+        """Return neighbors of given node.
+
+        Parameters
+        ---------------------
+        node: str,
+            The node whose neigbours are to be identified.
+
+        Returns
+        ---------------------
+        List of neigbours of given node.
+        """
+        return [
+            self._nodes_reverse_mapping[neighbor]
+            for neighbor in self._nodes_alias[self._nodes_mapping[node]][0]
+        ]
+
+    def degree(self, node: str) -> int:
+        """Return degree of given node.
+
+        Parameters
+        ---------------------
+        node: str,
+            The node whose neigbours are to be identified.
+
+        Returns
+        ---------------------
+        Number of neighbors of given node.
+        """
+        return len(self.neighbors(node))
+
     def extract_random_node_neighbour(self, node: int) -> int:
         """Return a random adiacent node to the one associated to node.
         The Random is extracted by using the normalized weights of the edges
@@ -319,8 +350,8 @@ class NumbaGraph:
         -------
         The index of a random adiacent node to node.
         """
-        neighbours, j, q = self._nodes_alias[node]
-        return neighbours[alias_draw(j, q)]
+        neighbors, j, q = self._nodes_alias[node]
+        return neighbors[alias_draw(j, q)]
 
     def extract_random_edge_neighbour(self, edge: int) -> int:
         """Return a random adiacent edge to the one associated to edge.
@@ -336,8 +367,8 @@ class NumbaGraph:
         -------
         The index of a random adiacent edge to edge.
         """
-        neighbours, j, q = self._edges_alias[edge]
-        return neighbours[alias_draw(j, q)]
+        neighbors, j, q = self._edges_alias[edge]
+        return neighbors[alias_draw(j, q)]
 
 
 # This function is out of the class because otherwise we would not be able
@@ -406,9 +437,9 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
         for i in prange(number):  # pylint: disable=not-an-iterable
             walk = all_walks[src][i]
             walk[0] = src
-            # Check if the current node has neighbours
+            # Check if the current node has neighbors
             if graph.is_node_trap(src):
-                # If the node has no neighbours and is therefore a trap,
+                # If the node has no neighbors and is therefore a trap,
                 # we need to interrupt the walk as we cannot proceed further.
                 continue
             dst = graph.extract_random_node_neighbour(src)
@@ -474,6 +505,34 @@ class Graph(Hashable):
         The total number of nodes in the graph.
         """
         return self._graph.nodes_number
+
+    def neighbors(self, node: int) -> List:
+        """Return neighbors of given node.
+
+        Parameters
+        ---------------------
+        node: int,
+            The node whose neigbours are to be identified.
+
+        Returns
+        ---------------------
+        List of neigbours of given node.
+        """
+        return self._graph.neighbors(node)
+
+    def degree(self, node: int) -> int:
+        """Return degree of given node.
+
+        Parameters
+        ---------------------
+        node: int,
+            The node whose neigbours are to be identified.
+
+        Returns
+        ---------------------
+        Number of neighbors of given node.
+        """
+        return self._graph.degree(node)
 
     def consistent_hash(self) -> str:
         """Return hash for the current instance of the graph."""

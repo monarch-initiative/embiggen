@@ -197,9 +197,9 @@ class TestGraph(TestCase):
                     path, return_weight=10, explore_weight=10)
                 subgraph = graph._graph
                 assert all(
-                    len(neighbours) == len(j) == len(q) and (
+                    len(neighbors) == len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
-                    for (neighbours, j, q) in subgraph._nodes_alias
+                    for (neighbors, j, q) in subgraph._nodes_alias
                 )
 
     def test_alias_shape_on_legacy(self):
@@ -220,7 +220,7 @@ class TestGraph(TestCase):
                 )
                 subgraph = graph._graph
                 assert all(
-                    len(neighbours) == len(j) == len(q) and (
+                    len(neighbors) == len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
-                    for (neighbours, j, q) in subgraph._nodes_alias
+                    for (neighbors, j, q) in subgraph._nodes_alias
                 )

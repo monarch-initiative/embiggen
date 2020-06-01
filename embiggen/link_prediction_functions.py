@@ -6,24 +6,24 @@
 
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
+from .graph import Graph
+
 def DegreeProduct(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
     nodes given the structure of the graph.
-    :param graph: CSFgraph  object
+    :param graph: Graph  object
     :param node_1: one node of graph
     :param node_2: one node of a graph
     :return: Degree Product score of the nodes
     '''
 
-    score = (graph.node_degree(node_1) * graph.node_degree(node_2))
-
-    return score
+    return graph.degree(node_1) * graph.degree(node_2)
 
 
 def CommonNeighbors(graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Common Neighbors for these nodes given the
     structure of the graph.
-    :param graph: CSFgraph object
+    :param graph: Graph object
     :param node_1: one node of graph
     :param node_2: one node of a graph
     :return: Common Neighbors score of the nodes
@@ -93,7 +93,7 @@ def AdamicAdar(graph, node_1, node_2):
         n_intersection = node_1_neighbors.intersection(node_2_neighbors)
 
         for c in n_intersection:
-            score += 1/np.log(graph.node_degree(c))
+            score += 1/np.log(graph.degree(c))
     return score
 
 
