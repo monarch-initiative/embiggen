@@ -9,8 +9,8 @@ def readme():
 test_deps = [
     "codacy-coverage",
     "coveralls",
-    'nose',
-    "nose-cov",
+    'pytest',
+    "pytest-cov",
     "validate_version_code",
     "pylint",
     "silence_tensorflow",
