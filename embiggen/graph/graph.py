@@ -153,7 +153,10 @@ class Graph:
         #
         self._nodes_alias = typed.List.empty_list(triple_list)
         for node_neighbours, neighbour_weights in zip(nodes_neighbours, neighbours_weights):
-            j, q = alias_setup(neighbour_weights)
+            probs = np.empty(len(neighbour_weights))
+            for i, weight in enumerate(neighbour_weights):
+                probs[i] = weight
+            j, q = alias_setup(probs/probs.sum())
             self._nodes_alias.append((node_neighbours, j, q))
 
         # Creating struct saving all the data relative to the edges.
@@ -167,7 +170,6 @@ class Graph:
         #
         self._edges_alias = typed.List.empty_list(triple_list)
         for (src, dst), edge_neighbours in zip(self._edges_indices, edges_neighbours):
-            total = 0
             probs = np.empty(len(edge_neighbours))
             for index, neighbour in enumerate(edge_neighbours):
                 # We get the weight for the edge from the destination to
@@ -187,10 +189,9 @@ class Graph:
                 elif (neighbour, src) not in self._edges:
                     weight = weight * explore_weight
                 # Then we store these results into the probability vector.
-                total += weight
                 probs[index] = weight
 
-            j, q = alias_setup(probs/total)
+            j, q = alias_setup(probs/probs.sum())
             self._edges_alias.append((edge_neighbours, j, q))
 
     @property
