@@ -1,10 +1,10 @@
 from typing import List, Union, Tuple, Dict
 import numpy as np
-from numba import jitclass, typed, types
+from numba import jitclass, typed, types, njit, prange
 from .probabilistic_graph_utils import alias_draw, alias_setup
 
-# key and value types
 
+# key and value types
 kv_ty = (types.UniTuple(types.int64, 2), types.int64)
 integer_list = types.ListType(types.int64)
 float_list = types.ListType(types.float64)
@@ -191,9 +191,9 @@ class Graph:
             self._edges_alias.append((edge_neighbours, j, q))
 
     @property
-    def nodes_number(self)->int:
+    def nodes_number(self) -> int:
         """Return the total number of nodes in the graph.
-        
+
         Returns
         -------
         The total number of nodes in the graph.
@@ -215,6 +215,20 @@ class Graph:
         Edge numeric ID.
         """
         return self._edges[src, dst]
+
+    def get_edge_destination(self, edge: int) -> int:
+        """Return the endpoint of the given edge ID.
+
+        Parameters
+        ----------
+        edge: int,
+            The id of the edge.
+
+        Returns
+        -----------------
+        Return destination id of given edge.
+        """
+        return self._edges_indices[edge][1]
 
     def has_edge(self, edge: Tuple[int, int]) -> bool:
         """Return boolean representing if given edge exists in graph.
@@ -263,3 +277,56 @@ class Graph:
         """
         neighbours, j, q = self._edges_alias[edge]
         return neighbours[alias_draw(j, q)]
+
+    def random_walk(self, walk_length: int = 100, num_walks: int = 100) -> np.ndarray:
+        """Return random walks on graph.
+
+        Parameters
+        ---------------------
+        walk_length: int = 100,
+            Length of the walks to execute.
+        num_walks: int = 100,
+            Number of walks to execute.
+
+        Returns
+        ----------------------
+        Numpy array with the walks.
+        """
+        return random_walk(self, walk_length, num_walks)
+
+
+@njit(parallel=True)
+def random_walk(graph: "Graph", walk_length: int, num_walks: int) -> np.ndarray:
+    """Return a list of graph walks
+
+    Parameters
+    ----------
+    graph:Graph
+        The graph on which the random walks will be done.
+    walk_length:int
+        The length of the walks in edges traversed.
+
+    Returns
+    -------
+    A Ragged tensor of n graph walks with shape:
+    (num_walks, graph.nodes_number, walk_length)
+    """
+    all_walks = np.empty((
+        graph.nodes_number*num_walks,
+        walk_length
+    ), dtype=np.int64)
+
+    for i in prange(num_walks):
+        for start_node in prange(graph.nodes_number):
+            k = i*graph.nodes_number+start_node
+            # TODO: if the todo below is green-lighted also the following
+            # two lines have to be rewritten to only include node IDs.
+            all_walks[k][0] = src = start_node
+            all_walks[k][1] = dst = graph.extract_random_node_neighbour(
+                start_node)
+            edge = graph.get_edge_id(src, dst)
+            for index in range(2, walk_length):
+                edge = graph.extract_random_edge_neighbour(edge)
+                # TODO: the following line might not be needed at all!
+                all_walks[k][index] = graph.get_edge_destination(edge)
+    return all_walks
