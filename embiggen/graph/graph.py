@@ -360,7 +360,9 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
     -------
     Numpy array with all the walks containing the numeric IDs of nodes.
     """
-    all_walks = [[[-1]*length for _ in range(graph.nodes_number)]
+    # TODO: talk about tradeoff of using either a list of lists
+    # or alternatively a numpy array.
+    all_walks = [[[0]*length for _ in range(graph.nodes_number)]
                  for _ in range(number)]
 
     # We can use prange to parallelize the walks and the iterations on the
