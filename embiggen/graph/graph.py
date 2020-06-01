@@ -400,8 +400,8 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
         for i in prange(number):  # pylint: disable=not-an-iterable
             walk = all_walks[src][i]
             walk[0] = src
-            walk[1] = dst = graph.extract_random_node_neighbour(src)
-            edge = graph.get_edge_id(src, dst)
+            walk[1] = dst = graph.extract_random_node_neighbour(walk[0])
+            edge = graph.get_edge_id(walk[0], dst)
             for index in range(2, length):
                 edge = graph.extract_random_edge_neighbour(edge)
                 walk[index] = graph.get_edge_destination(edge)
