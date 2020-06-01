@@ -147,6 +147,7 @@ class TestGraph(TestCase):
                 len(neighbours) == len(j) == len(q) > 0
                 for (neighbours, j, q) in graph._nodes_alias
             )
+
     def test_alias_shape_on_legacy(self):
         for path in tqdm(
             self._legacy_paths,
@@ -165,4 +166,25 @@ class TestGraph(TestCase):
             assert all(
                 len(neighbours) == len(j) == len(q) > 0
                 for (neighbours, j, q) in graph._nodes_alias
+            )
+    def test_traps_result_on_legacy(self):
+        for path in tqdm(
+            self._legacy_paths,
+            desc="Testing on non-legacy",
+            disable=False
+        ):
+            graph = self._factory.read_csv(
+                path,
+                edge_has_header=False,
+                start_nodes_column=0,
+                end_nodes_column=1,
+                weights_column=2,
+                return_weight=10,
+                explore_weight=10
+            )
+            all_walks = graph.random_walk(10, 5)
+            assert all(
+                1 <= len(walk) <= 5
+                for walks in all_walks
+                for walk in walks
             )

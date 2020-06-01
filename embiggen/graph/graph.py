@@ -118,19 +118,6 @@ class Graph:
                 nodes_neighbours[dst].append(src)
                 neighbours_weights[dst].append(weights[k])
                 i += 1
-        
-        # To verify if this graph has some walker traps, meaning some nodes
-        # that do not have any neighbours, we have to iterate on the list of
-        # neighbours and to check if at least a node has no neighbours.
-        # If such a condition is met, we cannot anymore do the simple random
-        # walk assuming that all the walks have the same length, but we need
-        # to create a random walk with variable length, hence a list of lists.
-
-        self.has_traps = False
-        for node_neighbours in nodes_neighbours:
-            if len(node_neighbours) == 0:
-                self.has_traps = True
-                break
 
         # Compute edges
         self._edges_indices = typed.List.empty_list(keys_tuple)
@@ -208,6 +195,19 @@ class Graph:
             j, q = alias_setup(probs/probs.sum())
             self._edges_alias.append((edge_neighbours, j, q))
 
+        # To verify if this graph has some walker traps, meaning some nodes
+        # that do not have any neighbours, we have to iterate on the list of
+        # neighbours and to check if at least a node has no neighbours.
+        # If such a condition is met, we cannot anymore do the simple random
+        # walk assuming that all the walks have the same length, but we need
+        # to create a random walk with variable length, hence a list of lists.
+
+        self.has_traps = False
+        for node in nodes:
+            if self.is_node_trap(node):
+                self.has_traps = True
+                break
+
     @property
     def nodes_number(self) -> int:
         """Return the total number of nodes in the graph.
@@ -217,6 +217,34 @@ class Graph:
         The total number of nodes in the graph.
         """
         return len(self._nodes_alias)
+
+    def is_node_trap(self, node: int) -> bool:
+        """Return boolean representing if node is a dead end.
+
+        Parameters
+        ----------
+        node: int,
+            Node numeric ID.
+
+        Returns
+        -----------------
+        Boolean True if node is a trap.
+        """
+        return len(self._nodes_alias[node][0]) == 0
+
+    def is_edge_trap(self, edge: int) -> bool:
+        """Return boolean representing if edge is a dead end.
+
+        Parameters
+        ----------
+        edge: int,
+            Edge numeric ID.
+
+        Returns
+        -----------------
+        Boolean True if edge is a trap.
+        """
+        return len(self._edges_alias[edge][0]) == 0
 
     def get_edge_id(self, src: int, dst: int) -> int:
         """Return the numeric id for the curresponding edge.
@@ -296,6 +324,8 @@ class Graph:
         ----------------------
         Numpy array with the walks.
         """
+        if self.has_traps:
+            return random_walk_with_traps(self, number, length)
         return random_walk(self, number, length)
 
 
@@ -316,7 +346,7 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
 
     Returns
     -------
-    Numpy array with all the walks.
+    Numpy array with all the walks containing the numeric IDs of nodes.
     """
     all_walks = np.empty((number, graph.nodes_number, length), dtype=np.int64)
 
@@ -334,4 +364,56 @@ def random_walk(graph: Graph, number: int, length: int) -> np.ndarray:
                 edge = graph.extract_random_edge_neighbour(edge)
                 # TODO: the following line might not be needed at all!
                 walk[index] = graph.get_edge_destination(edge)
+    return all_walks
+
+
+# This function is out of the class because otherwise we would not be able
+# to activate the parallel=True flag.
+# In this random walk we take into account the possibility of encountering
+# traps within the execution of the code.
+@njit(parallel=True)
+def random_walk_with_traps(graph: Graph, number: int, length: int) -> List[List[List[int]]]:
+    """Return a list of graph walks
+
+    Parameters
+    ----------
+    graph:Graph
+        The graph on which the random walks will be done.
+    number: int,
+        Number of walks to execute.
+    length:int,
+        The length of the walks in edges traversed.
+
+    Returns
+    -------
+    List of list of walks containing the numeric IDs of nodes.
+    """
+    all_walks = [[[] for _ in range(graph.nodes_number)]
+                 for _ in range(number)]
+
+    # We can use prange to parallelize the walks and the iterations on the
+    # graph nodes.
+    for i in prange(number):  # pylint: disable=not-an-iterable
+        for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+            walk = all_walks[i][src]
+            # TODO: if the todo below is green-lighted also the following
+            # two lines have to be rewritten to only include node IDs.
+            walk.append(src)
+            # Check if the current node has neighbours
+            if graph.is_node_trap(src):
+                # If the node has no neighbours and is therefore a trap,
+                # we need to interrupt the walk as we cannot proceed further.
+                continue
+            dst = graph.extract_random_node_neighbour(src)
+            walk.append(dst)
+            edge = graph.get_edge_id(src, dst)
+            for _ in range(2, length):
+                # If the previous destination was a trap, we need to stop the
+                # loop.
+                if graph.is_node_trap(dst):
+                    break
+                edge = graph.extract_random_edge_neighbour(edge)
+                # TODO: the following line might not be needed at all!
+                dst = graph.get_edge_destination(edge)
+                walk.append(dst)
     return all_walks
