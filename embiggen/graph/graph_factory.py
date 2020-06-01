@@ -171,5 +171,5 @@ class GraphFactory:
             nodes=numba_nodes,
             nodes_type=numba_nodes_type,
             directed=numba_directed,
-            ** kwargs
+            **kwargs
         )

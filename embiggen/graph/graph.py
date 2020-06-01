@@ -17,7 +17,8 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_edges_indices', types.ListType(keys_tuple)),
     ('_nodes_alias', types.ListType(triple_list)),
     ('_edges_alias', types.ListType(triple_list)),
-    ('has_traps', types.boolean)
+    ('has_traps', types.boolean),
+    ('random_walk_preprocessing', types.boolean)
 ])
 class Graph:
 
@@ -29,7 +30,8 @@ class Graph:
         nodes_type: List[int],
         directed: List[bool],
         return_weight: float = 1,
-        explore_weight: float = 1
+        explore_weight: float = 1,
+        random_walk_preprocessing: bool = True
     ):
         """Crate a new instance of a undirected graph with given edges.
 
@@ -59,12 +61,15 @@ class Graph:
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
+        random_walk_preprocessing: bool = True,
+            Wethever to encode the graph to run afterwards a random walk.
 
         Returns
         ---------------------
         New instance of graph.
         """
 
+        self.random_walk_preprocessing = random_walk_preprocessing
         nodes_number = len(nodes)
 
         # Creating mapping of nodes and integer ID.
@@ -89,16 +94,17 @@ class Graph:
         # also used for the counter translation.
         self._edges = typed.Dict.empty(*kv_ty)
 
-        # Each node has a list of neighbours.
-        # These lists are initialized as empty.
-        nodes_neighbours = typed.List.empty_list(integer_list)
-        # Each node has a list of neighbours weights.
-        # These lists are initialized as empty, if a weight
-        neighbours_weights = typed.List.empty_list(float_list)
+        if self.random_walk_preprocessing:
+            # Each node has a list of neighbours.
+            # These lists are initialized as empty.
+            nodes_neighbours = typed.List.empty_list(integer_list)
+            # Each node has a list of neighbours weights.
+            # These lists are initialized as empty, if a weight
+            neighbours_weights = typed.List.empty_list(float_list)
 
-        for _ in range(nodes_number):
-            nodes_neighbours.append(typed.List.empty_list(types.int64))
-            neighbours_weights.append(typed.List.empty_list(types.float64))
+            for _ in range(nodes_number):
+                nodes_neighbours.append(typed.List.empty_list(types.int64))
+                neighbours_weights.append(typed.List.empty_list(types.float64))
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
@@ -108,21 +114,26 @@ class Graph:
             src, dst = nodes_mapping[start_name], nodes_mapping[end_name]
             if (src, dst) not in self._edges:
                 self._edges[(src, dst)] = i
-                nodes_neighbours[src].append(dst)
-                neighbours_weights[src].append(weights[k])
                 i += 1
+                if self.random_walk_preprocessing:
+                    nodes_neighbours[src].append(dst)
+                    neighbours_weights[src].append(weights[k])
             # If the edge is not-directed we add the inverse to be able to
             # convert undirected graph to a directed one.
             if not directed[k] and (dst, src) not in self._edges:
                 self._edges[(dst, src)] = i
-                nodes_neighbours[dst].append(src)
-                neighbours_weights[dst].append(weights[k])
                 i += 1
+                if self.random_walk_preprocessing:
+                    nodes_neighbours[dst].append(src)
+                    neighbours_weights[dst].append(weights[k])
 
         # Compute edges
         self._edges_indices = typed.List.empty_list(keys_tuple)
         for edge in self._edges:
             self._edges_indices.append(edge)
+
+        if not self.random_walk_preprocessing:
+            return
 
         # Compute edges neighbours to avoid having to make a double search
         # or a dictionary: this enables us to do everything after this
@@ -204,7 +215,7 @@ class Graph:
                 j, q = alias_setup(probs/probs.sum())
             else:
                 j, q = np.zeros(0, dtype=np.int64), np.zeros(0)
-            
+
             self._edges_alias.append((edge_neighbours, j, q))
 
         # To verify if this graph has some walker traps, meaning some nodes
@@ -331,11 +342,18 @@ class Graph:
             Number of walks to execute.
         length: int = 100,
             Length of the walks to execute.
+    
+        Raises
+        -------------
+        ValueError,
+            If the given graph was not properly setup for random walk.
 
         Returns
         ----------------------
         Numpy array with the walks.
         """
+        if not self.random_walk_preprocessing:
+            raise ValueError("Given graph was not properly setup for random walk.")
         if self.has_traps:
             return random_walk_with_traps(self, number, length)
         return random_walk(self, number, length)

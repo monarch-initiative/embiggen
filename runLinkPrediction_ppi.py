@@ -1,6 +1,5 @@
 import argparse
-from embiggen import CSFGraph, CooccurrenceEncoder
-from embiggen import N2vGraph, GraphPartitionTransfomer
+from embiggen import Graph, CooccurrenceEncoder, GraphPartitionTransfomer, GraphFactory
 from embiggen.glove import GloVeModel
 from embiggen.word2vec import SkipGramWord2Vec
 from embiggen.word2vec import ContinuousBagOfWordsWord2Vec
@@ -18,7 +17,8 @@ import pandas as pd
 import os
 import logging
 import time
-from typing import Dict
+from tqdm.auto import tqdm
+from typing import Dict, List
 
 handler = logging.handlers.WatchedFileHandler(
     os.environ.get("LOGFILE", "link_prediction.log"))
@@ -110,15 +110,15 @@ def parse_args():
                         (Note: This assumes that --pos_train is the same as the one used to build the cached version)')
 
     parser.add_argument('--cache_random_walks', action='store_true',
-                        help='Cache the random walks generated from pos_train CsfGraph. \
+                        help='Cache the random walks generated from pos_train Graph. \
                         (--random_walks argument must be defined)')
-                        
+
     return parser.parse_args()
 
 
 def get_embedding_model(
     walks: tf.RaggedTensor,
-    pos_train: CSFGraph,
+    pos_train: Graph,
     w2v_model: str,
     embedding_size: int,
     context_window: int,
@@ -129,7 +129,7 @@ def get_embedding_model(
     Parameters
     --------------------
     walks: tf.RaggedTensor,
-    pos_train: CSFGraph,
+    pos_train: Graph,
     w2v_model: str,
     embedding_size: int,
     context_window: int,
@@ -166,24 +166,23 @@ def get_embedding_model(
                       context_size=context_window, num_epochs=num_epochs)
 
 
-def read_graphs(pos_train: str, pos_valid: str, pos_test: str, neg_train: str, neg_valid: str, neg_test: str):
+def read_graphs(*paths: List[str], **kwargs):
     """
-    Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with CSFGraph
-    :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in CSFGraph format
+    Reads pos_train, pos_vslid, pos_test, neg_train train_valid and neg_test edges with Graph
+    :return: pos_train, pos_valid, pos_test, neg_train, neg_valid and neg_test graphs in Graph format
     """
-    start = time.time()
 
-    pos_train_graph = CSFGraph(pos_train)
-    pos_valid_graph = CSFGraph(pos_valid)
-    pos_test_graph = CSFGraph(pos_test)
-    neg_train_graph = CSFGraph(neg_train)
-    neg_valid_graph = CSFGraph(neg_valid)
-    neg_test_graph = CSFGraph(neg_test)
-    end = time.time()
-    logging.info(
-        "reading input edge lists files: {} seconds".format(end-start))
-
-    return pos_train_graph, pos_valid_graph, pos_test_graph, neg_train_graph, neg_valid_graph, neg_test_graph
+    factory = GraphFactory()
+    return [
+        factory.read_csv(
+            path,
+            edge_has_header=False,
+            start_nodes_column=0,
+            end_nodes_column=1,
+            weights_column=2
+        )
+        for path in tqdm(paths, desc="Loading graphs")
+    ]
 
 
 def get_classifier_model(classifier: str, **kwargs: Dict):
@@ -223,26 +222,6 @@ def get_classifier_model(classifier: str, **kwargs: Dict):
     )
 
 
-#@Cache("embiggen_cache/{function_name}/{_hash}.pkl.gz")
-def get_random_walks(graph: CSFGraph, p: float, q: float, num_walks: int, walk_length: int) -> tf.RaggedTensor:
-    """Return a new N2vGraph trained on the provided graph.
-
-    Parameters
-    -------------------
-    graph: CSFGraph,
-    p: float,
-    q: float,
-    num_walks: int,
-    walk_length: int
-
-    Returns
-    -------------------
-    Return tf.RaggedTensor containing the random walks.
-    """
-    random_walker = N2vGraph(graph, p, q)
-    return random_walker.simulate_walks(num_walks, walk_length)
-
-
 def performance_report(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     """Return performance report for given predictions and ground truths.
 
@@ -273,7 +252,7 @@ def performance_report(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, floa
 def main(args):
     """
     The input files are positive training, positive test, negative training and negative test edges. The code
-    reads the files and create graphs in CSFGraph format. Then, the positive training graph is embedded.
+    reads the files and create graphs in Graph format. Then, the positive training graph is embedded.
     Finally, link prediction is performed.
 
     :param args: parameters of node2vec and link prediction
@@ -286,8 +265,15 @@ def main(args):
                                                                  args.context_window, args.embedding_size,
                                                                  args.skipValidation))
 
-    pos_train, pos_valid, pos_test, neg_train, neg_valid, neg_test = read_graphs(
-        args.pos_train, args.pos_valid, args.pos_test, args.neg_train, args.neg_valid, args.neg_test
+    pos_train, pos_valid, pos_test = read_graphs(
+        args.pos_train,
+        args.pos_valid,
+        args.pos_test
+    )
+    neg_train, neg_valid, neg_test = read_graphs(
+        args.neg_train,
+        args.neg_valid,
+        args.neg_test
     )
 
     walks = get_random_walks(pos_train, args.p, args.q,

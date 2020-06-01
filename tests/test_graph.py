@@ -73,6 +73,16 @@ class TestGraph(TestCase):
                     assert graph.is_edge_trap(edge) or graph.extract_random_edge_neighbour(
                         edge) in graph._edges_alias[edge][0]
 
+    def test_unrastered_graph(self):
+        for path in tqdm(
+            self._paths,
+            desc="Testing on non-legacy"
+        ):
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(path, random_walk_preprocessing=False)
+                with pytest.raises(ValueError):
+                    graph.random_walk(1, 1)
+
     def test_legacy(self):
         """Testing that the normalization process actually works."""
         for path in tqdm(
