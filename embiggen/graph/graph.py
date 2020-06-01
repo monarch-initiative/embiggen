@@ -1,6 +1,7 @@
 from typing import List, Union, Tuple, Dict
 import numpy as np
-from numba import jitclass, typed, types, njit, prange
+from numba.experimental import jitclass
+from numba import typed, types, njit, prange
 from .alias_method import alias_draw, alias_setup
 import tensorflow as tf
 from dict_hash import sha256, Hashable
