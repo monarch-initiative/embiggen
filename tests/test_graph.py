@@ -108,7 +108,7 @@ class TestGraph(TestCase):
             self._paths,
             desc="Testing on non-legacy",
             disable=False
-        ):  
+        ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
@@ -178,12 +178,14 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(
-                path, return_weight=10, explore_weight=10)
-            assert all(
-                len(neighbours) == len(j) == len(q) > 0
-                for (neighbours, j, q) in graph._nodes_alias
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path, return_weight=10, explore_weight=10)
+                assert all(
+                    len(neighbours) == len(j) == len(q) and (
+                        graph.has_traps or len(q) > 0)
+                    for (neighbours, j, q) in graph._nodes_alias
+                )
 
     def test_alias_shape_on_legacy(self):
         for path in tqdm(
@@ -191,16 +193,17 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2,
-                return_weight=10,
-                explore_weight=10
-            )
-            assert all(
-                len(neighbours) == len(j) == len(q) > 0
-                for (neighbours, j, q) in graph._nodes_alias
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = self._factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2,
+                    return_weight=10,
+                    explore_weight=10
+                )
+                assert all(
+                    len(neighbours) == len(j) == len(q) > 0
+                    for (neighbours, j, q) in graph._nodes_alias
+                )
