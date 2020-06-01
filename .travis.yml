@@ -15,7 +15,6 @@ before_install:
 - pip uninstall -y numpy
 - pip install numpy --upgrade
 - pip install --upgrade mypy
-- pip install tensorflow==2.0
 install:
 - pip install .[test]
 before_script:
