@@ -1,4 +1,4 @@
-import logging.handlers
+eck import logging.handlers
 import logging
 import numpy as np    # type: ignore
 import os
@@ -188,13 +188,14 @@ class N2vGraph:
                     # node_type is going to a different node type
                     # TODO: I don't think this is a probability
                     # TODO: which one of the two formulas is the actual right one?
-                    neighbours_count_per_types_prob[neighbour_type] = float(self.gamma) / float(count) * num_types
+                    neighbours_count_per_types_prob[neighbour_type] = self.gamma / (count * num_types)
                     total_non_own_probability += neighbours_count_per_types_prob[neighbour_type]
 
             if neighbours_count_per_types[node_type] == 0:
                 neighbours_count_per_types_prob[node_type] = 0
             else:
                 # Probability of remaining type
+                # TODO: total_non_own_probability is not a value from 0 to 1!!!
                 neighbours_count_per_types_prob[node_type] = (
                     1 - total_non_own_probability) / float(neighbours_count_per_types[node_type])
             # Now assign the final unnormalized probs
@@ -210,6 +211,7 @@ class N2vGraph:
             normalized_probs = [
                 float(u_prob) / norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = self.__alias_setup(normalized_probs)
+            
         for edge in G.edges():
             # src_as_int = G.node_to_index_map[edge[0]]
             # dst_as_int = G.node_to_index_map[edge[1]]

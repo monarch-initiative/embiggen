@@ -26,9 +26,11 @@ class Graph:
         weights: Union[List],
         nodes: List[str],
         nodes_type: List[int],
+        nodes_types_number: int,
         directed: List[bool],
         return_weight: float = 1,
-        explore_weight: float = 1
+        explore_weight: float = 1,
+        jump_weight: float = 1
     ):
         """Crate a new instance of a undirected graph with given edges.
 
@@ -40,8 +42,11 @@ class Graph:
             List of the nodes of the graph.
         weights: List[float],
             The weights for each source and sink.
+        TODO: check where to put the s in the names of variables
         node_types: List[int],
             The node types for each source and sink.
+        nodes_types_number: int,
+            Number of unique node types.
         directed: List[bool],
             The edges directions for each source and sink.
         return_weight : float in (0, inf),
@@ -51,13 +56,16 @@ class Graph:
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
         explore_weight : float in (0, inf),
-            Weight on the probability of visitng a neighbor node
+            Weight on the probability of visiting a neighbor node
             to the one we're coming from in the random walk
             Having this higher tends the walks to be
             more like a Depth-First Search.
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
+        jump_weight : float in (0, inf),
+            Weight on the probability of visiting a neighbor node
+            that has a different node type than the current node.
 
         Returns
         ---------------------
@@ -153,7 +161,21 @@ class Graph:
         #
         self._nodes_alias = typed.List.empty_list(triple_list)
         for node_neighbours, neighbour_weights in zip(nodes_neighbours, neighbours_weights):
+            # Allocate a vector with the length of the possible types
+            types_count = np.zeros(nodes_types_number, dtype=np.int64)
+            # A variable for the unique types
+            unique_types = 0
+            # Then we iterate on the vector of the available neighbours
+            for neighbour in node_neighbours:
+                # And we count the number of neighbours for each given type.
+                if types_count[nodes_type[neighbour]] == 0:
+                    unique_types += 1
+                types_count[nodes_type[neighbour]] += 1
+
+            types_count = jump_weight / (types_count*unique_types)
+
             probs = np.empty(len(neighbour_weights))
+
             for i, weight in enumerate(neighbour_weights):
                 probs[i] = weight
             j, q = alias_setup(probs/probs.sum())
