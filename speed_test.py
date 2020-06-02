@@ -4,6 +4,13 @@ from embiggen import Graph, GraphFactory
 import compress_json
 import json
 
+factory = GraphFactory(default_directed=True)
+graph = factory.read_csv(
+    "tests/data/first_walk_test_edges.tsv",
+    "tests/data/first_walk_test_nodes.tsv",
+)
+graph.random_walk(number=1, length=1)
+
 start = time()
 factory = GraphFactory(default_directed=True)
 graph = factory.read_csv(

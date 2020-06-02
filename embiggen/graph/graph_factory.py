@@ -116,10 +116,9 @@ class GraphFactory:
             start_nodes_column, end_nodes_column
         ])
 
-        edges = edges_df[[start_nodes_column,
-                          end_nodes_column]].values.astype(str)
-
-        numba_nodes = typed.List.empty_list(types.string)
+        edges = edges_df[[
+            start_nodes_column, end_nodes_column
+        ]].values.astype(str)
 
         if node_path is not None:
             nodes_df = pd.read_csv(
@@ -129,101 +128,83 @@ class GraphFactory:
                 low_memory=False
             )
             nodes = nodes_df[nodes_columns].values.astype(str)
-            for node in nodes:
-                numba_nodes.append(node)
         else:
-            for node in np.unique(edges):
-                numba_nodes.append(node)
+            nodes = np.unique(edges)
 
         # TODO! Add an exception for when there are more nodes in the edges than in the nodes.
 
-        numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
-        for start, end in edges:
-            numba_edges.append((start, end))
-
-        # Since numba is going to discontinue the support to the reflected list
-        # we are going to convert the weights list into a numba list.
         weights = (
             # If provided, we use the list from the dataframe.
-            edges_df[weights_column].fillna(self._default_weight).values.tolist()
+            edges_df[weights_column].fillna(
+                self._default_weight).values
             # Otherwise if the column is not available.
             if weights_column in edges_df.columns
             # We use the default weight.
-            else [self._default_weight]*len(numba_edges)
+            else np.array([self._default_weight]*len(edges))
         )
-
-        numba_weights = typed.List.empty_list(types.float64)
-        for weight in weights:
-            numba_weights.append(weight)
-
-        # Similarly to what done for the weights, we have to resolve the very
-        # same issue also for the
 
         directed_edges = (
             # If provided, we use the list from the dataframe.
-            edges_df[directed_column].fillna(self._default_directed).values.tolist()
+            edges_df[directed_column].fillna(
+                self._default_directed).values.astype(bool)
             # Otherwise if the column is not available.
             if directed_column in edges_df.columns
             # We use the default weight.
-            else [self._default_directed]*len(numba_edges)
+            else np.array([self._default_directed]*len(edges))
         )
-
-        numba_directed = typed.List.empty_list(types.boolean)
-        for directed_edge in directed_edges:
-            numba_directed.append(directed_edge)
-
-        # We need to convert the node types to a list that numba compatible.
 
         node_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[node_types_column].fillna(self._default_node_type).values.tolist()
+            nodes_df[node_types_column].fillna(
+                self._default_node_type).values.astype(str)
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
                 node_types_column in nodes_df.columns
             )
             # We use the default weight.
-            else [self._default_node_type]*len(numba_nodes)
+            else [self._default_node_type]*len(nodes)
         )
 
         unique_node_types = {
             node_type: i
-            for i, node_type in enumerate(np.unique(node_types).tolist())
+            for i, node_type in enumerate(np.unique(node_types))
         }
 
-        numba_node_types = typed.List.empty_list(types.int64)
-        for node_type in node_types:
-            numba_node_types.append(unique_node_types[node_type])
+        numba_node_types = np.empty(len(node_types), dtype=np.int64)
+        for i, node_type in enumerate(node_types):
+            numba_node_types[i] = unique_node_types[node_type]
 
         # We need to convert the edge types to a list that is numba compatible.
 
         edge_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[edge_types_column].fillna(self._default_edge_type).values.tolist()
+            nodes_df[edge_types_column].fillna(
+                self._default_edge_type).values.tolist()
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
                 edge_types_column in nodes_df.columns
             )
             # We use the default weight.
-            else [self._default_edge_type]*len(numba_edges)
+            else [self._default_edge_type]*len(edges)
         )
 
         unique_edge_types = {
             edge_type: i
-            for i, edge_type in enumerate(np.unique(edge_types).tolist())
+            for i, edge_type in enumerate(np.unique(edge_types))
         }
 
-        numba_edge_types = typed.List.empty_list(types.int64)
-        for edge_type in edge_types:
-            numba_edge_types.append(unique_edge_types[edge_type])
+        numba_edge_types = np.empty(len(edge_types), dtype=np.int64)
+        for i, edge_type in enumerate(edge_types):
+            numba_edge_types[i] = unique_edge_types[edge_type]
 
         return Graph(
-            edges=numba_edges,
-            weights=numba_weights,
-            nodes=numba_nodes,
+            edges=edges,
+            weights=weights,
+            nodes=nodes,
             node_types=numba_node_types,
             edge_types=numba_edge_types,
-            directed=numba_directed,
+            directed=directed_edges,
             **kwargs
         )
