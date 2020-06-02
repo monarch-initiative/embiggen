@@ -2,6 +2,7 @@ from time import time
 from humanize import naturaldelta
 from embiggen import Graph, GraphFactory
 import compress_json
+import json
 
 start = time()
 factory = GraphFactory(default_directed=True)
@@ -28,6 +29,6 @@ response = {
     "random_walk_human_time": naturaldelta(total_walk_time)
 }
 
-print(response)
+print(json.dumps(response, indent=4))
 
-compress_json.dump(response, "time_required.json")
+compress_json.dump(response, "time_required.json", json_kwargs={"indent"=4})
