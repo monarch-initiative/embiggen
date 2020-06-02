@@ -20,7 +20,7 @@ class TestEmbiggen(TestCase):
             "tests/data/small_graph_nodes.tsv",
             return_weight=10,
             explore_weight=10,
-            change_type_weight=10
+            change_node_type_weight=10
         ))
 
         # For homogeneous test
@@ -41,7 +41,7 @@ class TestEmbiggen(TestCase):
         #     "tests/data/small_graph_nodes.tsv",
         #     return_weight=10,
         #     explore_weight=10,
-        #     change_type_weight=10
+        #     change_node_type_weight=10
         # ))
 
         # For homogeneous directed test

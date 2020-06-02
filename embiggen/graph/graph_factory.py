@@ -12,6 +12,7 @@ class GraphFactory:
         default_weight: int = 1,
         default_directed: bool = False,
         default_node_type: str = 'biolink:NamedThing',
+        default_edge_type: str = 'biolink:Association',
         **kwargs: Dict
     ):
         """Create new GraphFactory object.
@@ -30,6 +31,8 @@ class GraphFactory:
             given. By default, the edges are considered not directed.
         default_node_type: str = 'biolink:NamedThing',
             The default type for the nodes when no node type column is given.
+        default_edge_type: str = 'biolink:Association',
+            The default type for the edges when no edge type column is given.
         **kwargs: Dict
             The kwargs to pass directly to the constructor of the Graph.
 
@@ -40,6 +43,7 @@ class GraphFactory:
         self._default_directed = default_directed
         self._default_weight = default_weight
         self._default_node_type = default_node_type
+        self._default_edge_type = default_edge_type
         self._kwargs = kwargs
 
     def read_csv(
@@ -53,6 +57,7 @@ class GraphFactory:
         start_nodes_column: str = "subject",
         end_nodes_column: str = "object",
         node_types_column: str = "category",
+        edge_types_column: str = "edge_label",
         directed_column: str = "is_directed",
         weights_column: str = "weight",
         nodes_columns: str = "id",
@@ -163,8 +168,7 @@ class GraphFactory:
         for directed_edge in directed_edges:
             numba_directed.append(directed_edge)
 
-        # Yet again we need to convert the node types to a list that is types
-        # and numba compatible.
+        # We need to convert the node types to a list that numba compatible.
 
         node_types = (
             # If provided, we use the list from the dataframe.
@@ -187,11 +191,35 @@ class GraphFactory:
         for node_type in node_types:
             numba_node_types.append(unique_node_types[node_type])
 
+        # We need to convert the edge types to a list that is numba compatible.
+
+        edge_types = (
+            # If provided, we use the list from the dataframe.
+            nodes_df[edge_types_column].values.tolist()
+            # Otherwise if the column is not available.
+            if (
+                node_path is not None and
+                edge_types_column in nodes_df.columns
+            )
+            # We use the default weight.
+            else [self._default_edge_type]*len(numba_edges)
+        )
+
+        unique_edge_types = {
+            node_type: i
+            for i, node_type in enumerate(np.unique(edge_types).tolist())
+        }
+
+        numba_edge_types = typed.List.empty_list(types.int64)
+        for node_type in edge_types:
+            numba_edge_types.append(unique_edge_types[node_type])
+
         return Graph(
             edges=numba_edges,
             weights=numba_weights,
             nodes=numba_nodes,
             node_types=numba_node_types,
+            edge_types=numba_edge_types,
             directed=numba_directed,
             **kwargs
         )

@@ -69,7 +69,7 @@ class TestGraph(TestCase):
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
                     assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i) in subgraph._nodes_alias[i][0]
+                        i)[0] in subgraph._nodes_alias[i][0]
                 for edge in range(len(subgraph._edges_alias)):
                     assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0]
@@ -105,7 +105,7 @@ class TestGraph(TestCase):
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
                     assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i) in subgraph._nodes_alias[i][0]
+                        i)[0] in subgraph._nodes_alias[i][0]
                 for edge in range(len(subgraph._edges_alias)):
                     assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0]
@@ -131,7 +131,7 @@ class TestGraph(TestCase):
                 all_walks = graph.random_walk(10, 5).numpy()
                 subgraph = graph._graph
                 assert all(
-                    edge in subgraph._edges
+                    edge in subgraph._grouped_edge_types
                     for walks in all_walks
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
