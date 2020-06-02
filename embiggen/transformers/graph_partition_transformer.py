@@ -1,12 +1,12 @@
 from typing import Dict, List, Tuple
-from .graph import Graph
-from .node_2_edge_transformer import N2ETransformer
+from ..graph import Graph
+from .node_2_edge_transformer import Node2EdgeTransformer
 import numpy as np  # type: ignore
 
 
 class GraphPartitionTransfomer:
 
-    def __init__(self, embedding: Dict[str, List[float]], method: str = "hadamard"):
+    def __init__(self, method: str = "hadamard"):
         """Create a new GraphPartitionTransfomer object.
 
         It transforms a tuple formed of the positive partition of edges
@@ -15,16 +15,29 @@ class GraphPartitionTransfomer:
 
         Parameters
         ----------------------
-        embedding: Dict[str, List[float]],
-            Dictionary containing the nodes embedding.
         method: str = "hadamard",
             Method to use to transform the nodes embedding to edges.
+
+        Raises
+        ----------------------
+        ValueError,
+            If the given embedding method is not supported.
 
         Returns
         ----------------------
         A new GraphPartitionTransfomer object.
         """
-        self._transformer = N2ETransformer(embedding, method=method)
+        self._transformer = Node2EdgeTransformer(method=method)
+
+    def fit(self,  embedding: np.ndarray):
+        """Fit the GraphPartitionTransfomer model.
+
+        Parameters
+        ----------------------
+        embedding: np.ndarray,
+            Nodes embedding.
+        """
+        self._transformer.fit(embedding)
 
     def _get_labels(self, positive: np.ndarray, negative: np.ndarray) -> np.ndarray:
         """Return training labels for given graph partitions.
@@ -52,10 +65,16 @@ class GraphPartitionTransfomer:
         negative: Graph,
             The negative partition of the Graph.
 
+        Raises
+        --------------------
+        ValueError,
+            If model has not been fitted.
+
         Returns
         ----------------------
         Tuple of X and y to be used for training.
         """
+
         positive_embedding = self._transformer.transform(positive)
         negative_embedding = self._transformer.transform(negative)
 
@@ -65,7 +84,7 @@ class GraphPartitionTransfomer:
         )
 
     def transform_nodes(self, positive: Graph, negative: Graph) -> Tuple[
-        np.ndarray, np.ndarray, np.ndarray]:
+            np.ndarray, np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters

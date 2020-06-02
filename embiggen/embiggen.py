@@ -3,16 +3,29 @@ import tensorflow as tf  # type: ignore
 from .word2vec import SkipGramWord2Vec, ContinuousBagOfWordsWord2Vec
 from .glove import GloVeModel
 from .coocurrence_encoder import CooccurrenceEncoder
-from .graph_partition_transformer import GraphPartitionTransfomer
+from .transformers import GraphPartitionTransfomer
 from typing import Dict, Tuple
 import numpy as np  # type: ignore
 
 
 class Embiggen:
 
-    def __init__(self):
+    def __init__(self, embedding_method: str = "hadamard"):
+        """Returns new instance of Embiggen.
+
+        Parameters
+        ----------------------
+        method: str = "hadamard",
+            Method to use to transform the nodes embedding to edges.
+
+        Raises
+        ----------------------
+        ValueError,
+            If the given embedding method is not supported.
+        """
         # TODO: a very long docstring showing the possible usages of Embiggen.
-        self._model = None
+        self._model = None  # TODO! move the constructor of the model here!
+        self._transformer = GraphPartitionTransfomer(method=embedding_method)
 
     def _get_embedding_model(
         self,
@@ -63,8 +76,7 @@ class Embiggen:
         epochs: int = 10,
         embedding_size: int = 200,
         context_window: int = 3,
-        window_size: int = 2,
-        edges_embedding_method: str = "hadamard"
+        window_size: int = 2
     ):
         """Fit model using given graph.
 
@@ -87,6 +99,7 @@ class Embiggen:
 
         walks = graph.random_walk(number=walks_number, length=walks_length)
 
+        # TODO! move this constructor to the constructor of the class.
         self._model = self._get_embedding_model(
             graph, walks,
             embedding_model=embedding_model,
@@ -96,12 +109,11 @@ class Embiggen:
             window_size=window_size
         )
 
+        # TODO! this train method must receive the arguments that we don't need
+        # to pass to the constructor of the model.
         self._model.train()
 
-        self._transformer = GraphPartitionTransfomer(
-            self.embedding,
-            method=edges_embedding_method
-        )
+        self._transformer.fit(self.embedding)
 
     def transform(self, positives: Graph, negatives: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return tuple of embedded positives and negatives graph partitions.
@@ -150,27 +162,35 @@ class Embiggen:
         ---------------------
         Computed embedding.
         """
-
-        if self._model is None:
-            raise ValueError("Model is not yet fitted!")
-
         return self._model.embedding
 
     def save_embedding(self, path: str):
         """Save the computed embedding to the given file.
+
+        Parameters
+        -------------------
+        path: str,
+            Path where to save the embedding.
 
         Raises
         ---------------------
         ValueError,
             If the model is not yet fitted.
 
+        """
+        self._model.save_embedding(path)
+
+    def load_embedding(self, path: str):
+        """Load the embedding at the given path.
+
         Parameters
         -------------------
         path: str,
-            Path where to save the embedding.
+            Path from where to load the embedding.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the give path does not exists.
         """
-
-        if self._model is None:
-            raise ValueError("Model is not yet fitted!")
-
-        self._model.save(path)
+        self._model.load_embedding(path)

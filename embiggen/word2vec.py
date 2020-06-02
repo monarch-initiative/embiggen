@@ -7,8 +7,8 @@ import tensorflow as tf  # type: ignore
 
 from tqdm import trange  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
-
-from embiggen.utils import get_embedding, calculate_cosine_similarity
+import os
+from .utils import get_embedding, calculate_cosine_similarity
 import logging
 
 
@@ -119,21 +119,60 @@ class Word2Vec:
 
     @property
     def embedding(self) -> np.ndarray:
-        """Return the embedding obtained from the model."""
+        """Return the embedding obtained from the model.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the model is not yet fitted.
+        """
+        if self._embedding is None:
+            raise ValueError("Model is not yet fitted!")
         return self._embedding.numpy()
 
-    def save(self, path: str):
+    def save_embedding(self, path: str):
         """Save the computed embedding to the given file.
 
         Parameters
         -------------------
         path: str,
             Path where to save the embedding.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the model is not yet fitted.
         """
+        if self._embedding is None:
+            raise ValueError("Model is not yet fitted!")
         pd.DataFrame({
             word: tf.nn.embedding_lookup(self._embedding, key).numpy()
             for key, word in enumerate(self.id2word)
         }).T.to_csv(path, header=False)
+
+    def load_embedding(self, path: str):
+        """Save the computed embedding to the given file.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the give path does not exists.
+
+        Parameters
+        -------------------
+        path: str,
+            Path where to save the embedding.
+        """
+        if not os.path.exists(path):
+            raise ValueError(
+                "Embedding file at path {} does not exists.".format(path)
+            )
+        embedding = pd.read_csv(path, header=None, index_col=0)
+        nodes_mapping = [
+            self.word2id[node_name]
+            for node_name in embedding.index.values.astype(str)
+        ]
+        self._embedding = embedding.values[nodes_mapping]
 
 
 class SkipGramWord2Vec(Word2Vec):
@@ -313,6 +352,8 @@ class SkipGramWord2Vec(Word2Vec):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
             # print(log_str)
 
+    # TODO! this train method must receive the arguments that we don't need
+    # TODO! most likely this method should be renames to 'fit'
     def train(self) -> List[float]:
         """
         Trying out passing a simple Tensor to get_batch
@@ -616,6 +657,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return None
 
+    # TODO! this train method must receive the arguments that we don't need
+    # TODO! most likely this method should be renames to 'fit'
     def train(self) -> List[None]:  # type: ignore
         """Trains a CBOW model.
         Returns:
