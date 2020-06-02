@@ -1,1 +1,8 @@
-{"required_time": 10.435519933700562, "human_time": "10 seconds"}
+{
+    "required_time": 10.233459949493408,
+    "human_time": "10 seconds",
+    "building_graph_required_time": 8.876297950744629,
+    "building_graph_required_human_time": "8 seconds",
+    "random_walk_time": 1.357163906097412,
+    "random_walk_human_time": "a second"
+}

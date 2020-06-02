@@ -104,10 +104,26 @@ class GraphFactory:
         Returns
         ----------------------
         """
+        tmp_edges_df = pd.read_csv(
+            edge_path,
+            sep=node_sep,
+            header=("infer" if edge_file_has_header else None)
+        )
         edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
-            header=([0] if edge_file_has_header else None),
+            usecols=[
+                column
+                for column in (
+                    start_nodes_column,
+                    end_nodes_column,
+                    edge_types_column,
+                    weights_column,
+                    directed_column
+                )
+                if column is not None and column in tmp_edges_df.columns
+            ],
+            header=("infer" if edge_file_has_header else None),
             low_memory=False
         )
 
@@ -121,10 +137,23 @@ class GraphFactory:
         ]].values.astype(str)
 
         if node_path is not None:
+            tmp_nodes_df = pd.read_csv(
+                node_path,
+                sep=node_sep,
+                header=("infer" if node_file_has_header else None)
+            )
             nodes_df = pd.read_csv(
                 node_path,
                 sep=node_sep,
-                header=([0] if node_file_has_header else None),
+                usecols=[
+                    column
+                    for column in (
+                        nodes_columns,
+                        node_types_column
+                    )
+                    if column is not None and column in tmp_nodes_df.columns
+                ],
+                header=("infer" if node_file_has_header else None),
                 low_memory=False
             )
             nodes = nodes_df[nodes_columns].values.astype(str)

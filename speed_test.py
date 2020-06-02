@@ -4,13 +4,6 @@ from embiggen import Graph, GraphFactory
 import compress_json
 import json
 
-factory = GraphFactory(default_directed=True)
-graph = factory.read_csv(
-    "tests/data/first_walk_test_edges.tsv",
-    "tests/data/first_walk_test_nodes.tsv",
-)
-graph.random_walk(number=1, length=1)
-
 start = time()
 factory = GraphFactory(default_directed=True)
 graph = factory.read_csv(
@@ -38,4 +31,4 @@ response = {
 
 print(json.dumps(response, indent=4))
 
-compress_json.dump(response, "time_required.json", json_kwargs={"indent":4})
+compress_json.dump(response, "time_required.json", json_kwargs={"indent": 4})

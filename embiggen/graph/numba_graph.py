@@ -146,8 +146,8 @@ class NumbaGraph:
         # of the graph parsing proceedure.
         i = 0
         for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
-            src, dst = self._nodes_mapping[str(
-                start_name)], self._nodes_mapping[str(end_name)]
+            src = self._nodes_mapping[str(start_name)]
+            dst = self._nodes_mapping[str(end_name)]
             if (src, dst, edge_type) not in self._edges:
                 self._edges[(src, dst, edge_type)] = i
                 i += 1
