@@ -12,7 +12,8 @@ class TestEmbiggen(TestCase):
         self.graphs = []
 
         factory = GraphFactory()
-        directed_factory = GraphFactory(default_directed=True)
+        # TODO! Uncomment for testing for the ragged tensors!
+        #directed_factory = GraphFactory(default_directed=True)
         # For heterogeneous test
         self.graphs.append(factory.read_csv(
             "tests/data/small_graph_edges.tsv",
