@@ -197,7 +197,7 @@ class GraphFactory:
 
         edge_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[edge_types_column].values.tolist()
+            nodes_df[edge_types_column].fillna("NaN").values.tolist()
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
@@ -206,6 +206,8 @@ class GraphFactory:
             # We use the default weight.
             else [self._default_edge_type]*len(numba_edges)
         )
+
+
 
         unique_edge_types = {
             node_type: i
