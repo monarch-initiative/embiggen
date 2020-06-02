@@ -101,8 +101,6 @@ class NumbaGraph:
         #   "node_1_id": 0,
         #   "node_2_id": 1
         # }
-        # This is only a method variable and not a class variable because
-        # it is only used during the constractor.
         self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
         self._nodes_reverse_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
@@ -115,8 +113,6 @@ class NumbaGraph:
         #   (0, 1): 0,
         #   (0, 2): 1
         # }
-        # This is a class variable and not a method variable because it is
-        # also used for the counter translation.
         self._edges = typed.Dict.empty(*kv_ty)
 
         if self.random_walk_preprocessing:
@@ -145,6 +141,7 @@ class NumbaGraph:
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
         i = 0
+        print(self._nodes_mapping)
         for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
             src = self._nodes_mapping[str(start_name)]
             dst = self._nodes_mapping[str(end_name)]
