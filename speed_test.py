@@ -8,14 +8,20 @@ factory = GraphFactory(default_directed=True)
 graph = factory.read_csv(
     "tests/data/first_walk_test_edges.tsv",
     "tests/data/first_walk_test_nodes.tsv",
-    
 )
+completed_graph = time() - start
+start_walk = time()
 graph.random_walk(number=10, length=80)
 delta = time() - start
+total_walk_time = time() - start_walk
 
 response = {
     "required_time": delta,
-    "human_time": naturaldelta(delta)
+    "human_time": naturaldelta(delta),
+    "building_graph_required_time": completed_graph,
+    "building_graph_required_human_time": naturaldelta(completed_graph),
+    "random_walk_time": total_walk_time,
+    "random_walk_human_time": naturaldelta(total_walk_time)
 }
 
 print(response)
