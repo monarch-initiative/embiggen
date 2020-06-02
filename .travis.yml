@@ -16,6 +16,7 @@ before_install:
 - pip install numpy --upgrade
 - pip install --upgrade mypy
 - pip install --upgrade pytest
+- pip install tensorflow>=2.0.0
 install:
 - pip install .[test]
 before_script:
