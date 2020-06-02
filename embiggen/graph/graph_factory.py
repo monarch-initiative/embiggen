@@ -209,16 +209,14 @@ class GraphFactory:
             else [self._default_edge_type]*len(numba_edges)
         )
 
-
-
         unique_edge_types = {
-            node_type: i
-            for i, node_type in enumerate(np.unique(edge_types).tolist())
+            edge_type: i
+            for i, edge_type in enumerate(np.unique(edge_types).tolist())
         }
 
         numba_edge_types = typed.List.empty_list(types.int64)
-        for node_type in edge_types:
-            numba_edge_types.append(unique_edge_types[node_type])
+        for edge_type in edge_types:
+            numba_edge_types.append(unique_edge_types[edge_type])
 
         return Graph(
             edges=numba_edges,
