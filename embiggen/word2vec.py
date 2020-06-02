@@ -362,7 +362,7 @@ class SkipGramWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1,  leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -589,7 +589,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         skip_window = self.skip_window
         span = 2 * skip_window + 1
         # again, probably we can go: span = self.span
-        sentencelen = len(sentence)
+        sentencelen = sentence.shape[0]
         batch_size = (sentencelen - (2 * skip_window))
         # two numpy arrays to hold target (batch) and context words (labels). Batch has span-1=2*window_size columns
         batch = np.ndarray(shape=(batch_size, span - 1), dtype=np.int32)
@@ -604,6 +604,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             data_index += 1  # move sliding window 1 spot to the right
             context_words = [w for w in range(span) if w != skip_window]
             for j, context_word in enumerate(context_words):
+                # TODO! This gets broken by ragged tensors!
                 batch[i, j] = buffer[context_word]
             labels[i, 0] = buffer[skip_window]
         return batch, labels
@@ -667,11 +668,11 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1, leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
-                    sentencelen = len(sentence)
+                    sentencelen = sentence.shape[0]
                     if sentencelen < window_len:
                         continue
                     batch_x, batch_y = self.generate_batch_cbow(sentence)

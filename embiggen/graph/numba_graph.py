@@ -18,6 +18,7 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_nodes_alias', types.ListType(triple_list)),
     ('_nodes_mapping', types.DictType(types.string, types.int64)),
     ('_nodes_reverse_mapping', types.ListType(types.string)),
+    ('_node_types', integer_list),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
     ('random_walk_preprocessing', types.boolean),
@@ -29,10 +30,11 @@ class NumbaGraph:
         edges: List[Tuple[str, str]],
         weights: List[int],
         nodes: List[str],
-        nodes_type: List[int],
+        node_types: List[int],
         directed: List[bool],
         return_weight: float = 1,
         explore_weight: float = 1,
+        change_type_weight: float = 1,
         random_walk_preprocessing: bool = True
     ):
         """Crate a new instance of a undirected graph with given edges.
@@ -49,20 +51,23 @@ class NumbaGraph:
             The node types for each source and sink.
         directed: List[bool],
             The edges directions for each source and sink.
-        return_weight : float in (0, inf),
+        return_weight : float = 1,
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
-        explore_weight : float in (0, inf),
-            Weight on the probability of visitng a neighbor node
+        explore_weight : float = 1,
+            Weight on the probability of visiting a neighbor node
             to the one we're coming from in the random walk
             Having this higher tends the walks to be
             more like a Depth-First Search.
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
+        change_type_weight: float = 1,
+            Weight on the probability of visiting a neighbor node of a
+            different type than the previous node.
         random_walk_preprocessing: bool = True,
             Wethever to encode the graph to run afterwards a random walk.
 
@@ -73,6 +78,11 @@ class NumbaGraph:
 
         self.random_walk_preprocessing = random_walk_preprocessing
         nodes_number = len(nodes)
+
+        # Storing node types
+        self._node_types = typed.List.empty_list(types.int64)
+        for node_type in node_types:
+            self._node_types.append(node_type)
 
         # Creating mapping of nodes and integer ID.
         # The map looks like the following:
@@ -194,10 +204,14 @@ class NumbaGraph:
         self._edges_alias = typed.List.empty_list(triple_list)
         for (src, dst), edge_neighbors in zip(self._edges_indices, edges_neighbors):
             probs = np.zeros(len(edge_neighbors))
-            for index, neighbour in enumerate(edge_neighbors):
+            destination_type = self._node_types[dst]
+            for index, neigh in enumerate(edge_neighbors):
                 # We get the weight for the edge from the destination to
                 # the neighbour.
+                neighbor_type = self._node_types[self._edges_indices[neigh][1]]
                 weight = neighbors_weights[dst][index]
+                if destination_type == neighbor_type:
+                    weight /= change_type_weight
                 # If the neigbour matches with the source, hence this is
                 # a backward loop like the following:
                 # SRC -> DST
@@ -205,11 +219,11 @@ class NumbaGraph:
                 #   \___/
                 #
                 # We weight the edge weight with the given return weight.
-                if neighbour == src:
+                if neigh == src:
                     weight = weight * return_weight
                 # If the backward loop does not exist, we multiply the weight
                 # of the edge by the weight for moving forward and explore more.
-                elif (neighbour, src) not in self._edges:
+                elif (neigh, src) not in self._edges:
                     weight = weight * explore_weight
                 # Then we store these results into the probability vector.
                 probs[index] = weight

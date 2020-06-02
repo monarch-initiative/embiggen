@@ -84,7 +84,7 @@ def read_graphs(*paths: List[str], **kwargs: Dict) -> List[Graph]:
     return [
         factory.read_csv(
             path,
-            edge_has_header=False,
+            edge_file_has_header=False,
             start_nodes_column=0,
             end_nodes_column=1,
             weights_column=2,

@@ -1,7 +1,7 @@
 from typing import Dict
-import pandas as pd # type: ignore
-import numpy as np # type: ignore
-from numba import typed, types # type: ignore
+import pandas as pd  # type: ignore
+import numpy as np  # type: ignore
+from numba import typed, types  # type: ignore
 from .graph import Graph
 
 
@@ -15,7 +15,7 @@ class GraphFactory:
         **kwargs: Dict
     ):
         """Create new GraphFactory object.
-        
+
         This object has the task of handling the creation of Graph objects,
         handling all the mess that is unifying the various types of CSVs.
 
@@ -48,12 +48,14 @@ class GraphFactory:
         node_path: str = None,
         edge_sep: str = "\t",
         node_sep: str = "\t",
-        edge_has_header: bool = True,
+        edge_file_has_header: bool = True,
+        node_file_has_header: bool = True,
         start_nodes_column: str = "subject",
         end_nodes_column: str = "object",
-        nodes_type_column: str = "category",
+        node_types_column: str = "category",
         directed_column: str = "is_directed",
         weights_column: str = "weight",
+        nodes_columns: str = "id",
         **kwargs: Dict
     ):
         """Return new instance of graph based on given files.
@@ -68,15 +70,17 @@ class GraphFactory:
             Separator to use for the edges file.
         node_sep: str = "\t",
             Separator to use for the nodes file.
-        edge_has_header: bool = True,
+        edge_file_has_header: bool = True,
             Whetever to edge files has a header or not.
+        node_file_has_header: bool = True,
+            Whetever to node files has a header or not.
         start_nodes_column: str = "subject",
             Column to use for the starting nodes. When no header is available,
             use the numeric index curresponding to the column.
         end_nodes_column: str = "object",
             Column to use for the ending nodes. When no header is available,
             use the numeric index curresponding to the column.
-        nodes_type_column: str = "category",
+        node_types_column: str = "category",
             Column to use for the nodes type. When no header is available,
             use the numeric index curresponding to the column.
         directed_column: str = "is_directed",
@@ -85,6 +89,9 @@ class GraphFactory:
         weights_column: str = "weight",
             Column to use for the edges weight. When no header is available,
             use the numeric index curresponding to the column.
+        nodes_columns: str = "id",
+            Column to use to load the node names, when the node_path argument
+            is provided. Parameter is ignored otherwise.
         **kwargs: Dict,
             Additional keyword arguments to pass to the instantiation of a new
             graph object.
@@ -92,37 +99,46 @@ class GraphFactory:
         Returns
         ----------------------
         """
-        graph_df = pd.read_csv(
+        edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
-            header=([0] if edge_has_header else None)
+            header=([0] if edge_file_has_header else None)
         )
 
         # Dropping duplicated edges
-        graph_df = graph_df.drop_duplicates(
-            [start_nodes_column, end_nodes_column])
+        edges_df = edges_df.drop_duplicates([
+            start_nodes_column, end_nodes_column
+        ])
 
-        edges = graph_df[[start_nodes_column,
+        edges = edges_df[[start_nodes_column,
                           end_nodes_column]].values.astype(str)
-        numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
-
-        for start, end in edges:
-            numba_edges.append((start, end))
 
         numba_nodes = typed.List.empty_list(types.string)
-        for (start, end) in edges:
-            if start not in numba_nodes:
-                numba_nodes.append(start)
-            if end not in numba_nodes:
-                numba_nodes.append(end)
+
+        if node_path is not None:
+            nodes_df = pd.read_csv(
+                node_path,
+                sep=node_sep,
+                header=([0] if node_file_has_header else None)
+            )
+            nodes = nodes_df[nodes_columns].values.astype(str)
+            for node in nodes:
+                numba_nodes.append(node)
+        else:
+            for node in np.unique(edges):
+                numba_nodes.append(node)
+
+        numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
+        for start, end in edges:
+            numba_edges.append((start, end))
 
         # Since numba is going to discontinue the support to the reflected list
         # we are going to convert the weights list into a numba list.
         weights = (
             # If provided, we use the list from the dataframe.
-            graph_df[weights_column].values.tolist()
+            edges_df[weights_column].values.tolist()
             # Otherwise if the column is not available.
-            if weights_column in graph_df.columns
+            if weights_column in edges_df.columns
             # We use the default weight.
             else [self._default_weight]*len(numba_edges)
         )
@@ -136,9 +152,9 @@ class GraphFactory:
 
         directed_edges = (
             # If provided, we use the list from the dataframe.
-            graph_df[directed_column].values.tolist()
+            edges_df[directed_column].values.tolist()
             # Otherwise if the column is not available.
-            if directed_column in graph_df.columns
+            if directed_column in edges_df.columns
             # We use the default weight.
             else [self._default_directed]*len(numba_edges)
         )
@@ -150,27 +166,32 @@ class GraphFactory:
         # Yet again we need to convert the node types to a list that is types
         # and numba compatible.
 
-        nodes_type = (
+        node_types = (
             # If provided, we use the list from the dataframe.
-            graph_df[nodes_type_column].values.tolist()
+            nodes_df[node_types_column].values.tolist()
             # Otherwise if the column is not available.
-            if nodes_type_column in graph_df.columns
+            if (
+                node_path is not None and
+                node_types_column in nodes_df.columns
+            )
             # We use the default weight.
-            else [self._default_node_type]*len(numba_edges)
+            else [self._default_node_type]*len(numba_nodes)
         )
 
-        unique_nodes_type = np.unique(nodes_type).tolist()
+        unique_node_types = {
+            node_type: i
+            for i, node_type in enumerate(np.unique(node_types).tolist())
+        }
 
-        numba_nodes_type = typed.List.empty_list(types.int64)
-        for node_type in nodes_type:
-            numba_nodes_type.append(unique_nodes_type.index(node_type))
+        numba_node_types = typed.List.empty_list(types.int64)
+        for node_type in node_types:
+            numba_node_types.append(unique_node_types[node_type])
 
         return Graph(
             edges=numba_edges,
             weights=numba_weights,
             nodes=numba_nodes,
-            nodes_type=numba_nodes_type,
-            nodes_types_number=len(unique_nodes_type),
+            node_types=numba_node_types,
             directed=numba_directed,
             **kwargs
         )
