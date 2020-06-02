@@ -12,13 +12,13 @@ class N2ETransformer:
         "weightedL2": lambda x1, x2: (x2 - x2)**2
     }
 
-    def __init__(self, embedding: Dict[str, List[float]], method: str = "hadamard"):
+    def __init__(self, embedding: np.ndarray, method: str = "hadamard"):
         """Create a new N2ETransformer object.
 
         Parameters
         ----------------------
-        embedding: Dict[str, List[float]],
-            Dictionary containing the nodes embedding.
+        embedding: np.ndarray,
+            Nodes embedding.
         method: str = "hadamard",
             Method to use to transform the nodes embedding to edges.
 
@@ -35,7 +35,7 @@ class N2ETransformer:
                 method=method,
                 methods=", ".join(N2ETransformer.methods.keys())
             ))
-        self._method = N2ETransformer.methods[method]
+        self._method = np.vectorize(N2ETransformer.methods[method])
         self._embedding = embedding
 
     def transform(self, G: Graph) -> np.ndarray:
@@ -50,10 +50,7 @@ class N2ETransformer:
         ---------------------
         The embedded edges.
         """
-        return np.array([
-            self._method(self._embedding[src], self._embedding[dst])
-            for src, dst in G.edges
-        ])
+        return self._method(*self.transform_nodes(G))
 
     def transform_nodes(self, G: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return nodes from given graph.
@@ -67,7 +64,4 @@ class N2ETransformer:
         ---------------------
         The embedded edges.
         """
-        return np.array([
-            (self._embedding[source], self._embedding[sink])
-             for source, sink in G.edges
-        ])
+        return self._embedding[G.sources], self._embedding[G.destinations]

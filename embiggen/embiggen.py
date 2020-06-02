@@ -1,11 +1,11 @@
 from .graph import Graph
-import tensorflow as tf # type: ignore
+import tensorflow as tf  # type: ignore
 from .word2vec import SkipGramWord2Vec, ContinuousBagOfWordsWord2Vec
 from .glove import GloVeModel
 from .coocurrence_encoder import CooccurrenceEncoder
 from .graph_partition_transformer import GraphPartitionTransfomer
 from typing import Dict, Tuple
-import numpy as np # type: ignore
+import numpy as np  # type: ignore
 
 
 class Embiggen:
@@ -104,7 +104,7 @@ class Embiggen:
         )
 
     def transform(self, positives: Graph, negatives: Graph) -> Tuple[np.ndarray, np.ndarray]:
-        """Return transformed positives and negatives graph partitions.
+        """Return tuple of embedded positives and negatives graph partitions.
 
         Parameters
         ----------------------
@@ -119,8 +119,26 @@ class Embiggen:
         """
         return self._transformer.transform(positives, negatives)
 
+    def transform_nodes(self, positives: Graph, negatives: Graph) -> Tuple[
+            np.ndarray, np.ndarray, np.ndarray]:
+        """Return triple of embedded positives and negatives graph partitions.
+
+        Parameters
+        ----------------------
+        positive: Graph,
+            The positive partition of the Graph.
+        negative: Graph,
+            The negative partition of the Graph.
+
+        Returns
+        ----------------------
+        Triple of X for the source nodes,
+        X for the destination nodes and the labels to be used for training.
+        """
+        return self._transformer.transform_nodes(positives, negatives)
+
     @property
-    def embedding(self) -> Dict[str, np.ndarray]:
+    def embedding(self) -> np.ndarray:
         """Return computed embedding.
 
         Raises

@@ -21,3 +21,4 @@ class TestCBOWconstruction(TestCase):
         embedder = Embiggen()
         embedder.fit(graph, walks_number=10)
         embedder.transform(graph, graph)
+        embedder.transform_nodes(graph, graph)

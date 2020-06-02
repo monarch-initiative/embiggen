@@ -118,12 +118,9 @@ class Word2Vec:
         return None
 
     @property
-    def embedding(self) -> Dict[str, np.ndarray]:
+    def embedding(self) -> np.ndarray:
         """Return the embedding obtained from the model."""
-        return {
-            word: tf.nn.embedding_lookup(self._embedding, key).numpy()
-            for key, word in enumerate(self.id2word)
-        }
+        return self._embedding.numpy()
 
     def save(self, path: str):
         """Save the computed embedding to the given file.
@@ -133,7 +130,10 @@ class Word2Vec:
         path: str,
             Path where to save the embedding.
         """
-        pd.DataFrame(self.embedding).T.to_csv(path)
+        pd.DataFrame({
+            word: tf.nn.embedding_lookup(self._embedding, key).numpy()
+            for key, word in enumerate(self.id2word)
+        }).T.to_csv(path, header=False)
 
 
 class SkipGramWord2Vec(Word2Vec):

@@ -77,17 +77,14 @@ class GraphPartitionTransfomer:
 
         Returns
         ----------------------
-        Tuple of X and y to be used for training.
+        Triple of X for the source nodes,
+        X for the destination nodes and the labels to be used for training.
         """
-        positive_sink, positive_source = self._transformer.transform_nodes(
-            positive
-        )
-        negative_sink, negative_source = self._transformer.transform_nodes(
-            negative
-        )
+        pos_src, pos_dst = self._transformer.transform_nodes(positive)
+        neg_src, neg_dst = self._transformer.transform_nodes(negative)
 
         return (
-            np.concatenate([positive_source, negative_source]),
-            np.concatenate([positive_sink, negative_sink]),
-            self._get_labels(positive_sink, negative_sink)
+            np.concatenate([pos_dst, neg_dst]),
+            np.concatenate([pos_src, neg_src]),
+            self._get_labels(pos_src, neg_src)
         )

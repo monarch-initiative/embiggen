@@ -63,25 +63,34 @@ class Graph(Hashable):
         return self._graph.neighbors(node)
 
     @property
-    def edges(self) -> List[Tuple[str, str]]:
+    def edges(self) -> np.ndarray:
         """Return edges of given node.
-
-        Parameters
-        ---------------------
-        node: int,
-            The node whose neigbours are to be identified.
 
         Returns
         ---------------------
-        Dictionary of edges.
+        Numpy array of edges.
         """
-        return [
-            (
-                self._graph._nodes_reverse_mapping[src],
-                self._graph._nodes_reverse_mapping[dst]
-            )
-            for src, dst in self._graph._edges_indices
-        ]
+        return np.array(self._graph._edges_indices)
+
+    @property
+    def sources(self) -> np.ndarray:
+        """Return sources of all edges
+
+        Returns
+        ---------------------
+        Numpy array of surces.
+        """
+        return self.edges[:, 0]
+    
+    @property
+    def destinations(self) -> np.ndarray:
+        """Return destinations of all edges
+
+        Returns
+        ---------------------
+        Numpy array of destinations.
+        """
+        return self.edges[:, 1]
 
     def degree(self, node: int) -> int:
         """Return degree of given node.
