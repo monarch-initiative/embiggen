@@ -69,7 +69,7 @@ class TestGraph(TestCase):
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
                     assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i) in subgraph._nodes_alias[i][0]
+                        i)[0] in subgraph._nodes_alias[i][0]
                 for edge in range(len(subgraph._edges_alias)):
                     assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0]
@@ -85,7 +85,7 @@ class TestGraph(TestCase):
                 graph = factory.read_csv(path, random_walk_preprocessing=False)
                 with pytest.raises(ValueError):
                     graph.random_walk(1, 1)
-                
+
                 assert graph.consistent_hash() == graph.consistent_hash()
 
     def test_legacy(self):
@@ -105,7 +105,7 @@ class TestGraph(TestCase):
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
                     assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i) in subgraph._nodes_alias[i][0]
+                        i)[0] in subgraph._nodes_alias[i][0]
                 for edge in range(len(subgraph._edges_alias)):
                     assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0]
@@ -128,29 +128,24 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
-                all_walks = graph.random_walk(10, 5).numpy()
+                walks_number = 10
+                walks_length = 5
+                walks = graph.random_walk(walks_number, walks_length).numpy()
                 subgraph = graph._graph
                 assert all(
-                    edge in subgraph._edges
-                    for walks in all_walks
+                    edge in subgraph._grouped_edge_types
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
                 )
-                assert all_walks.shape[0] == subgraph.nodes_number
-                assert all(
-                    walks.shape[0] == 10
-                    for walks in all_walks
-                )
+                assert walks.shape[0] == subgraph.nodes_number*walks_number
                 if subgraph.has_traps:
                     assert all(
-                        1 <= len(walk) <= 5
-                        for walks in all_walks
+                        1 <= len(walk) <= walks_length
                         for walk in walks
                     )
                 else:
                     assert all(
-                        len(walk) == 5
-                        for walks in all_walks
+                        len(walk) == walks_length
                         for walk in walks
                     )
 
@@ -170,23 +165,19 @@ class TestGraph(TestCase):
                     return_weight=10,
                     explore_weight=10
                 )
-                all_walks = graph.random_walk(10, 5)
+                walks_number = 10
+                walks_length = 5
+                walks = graph.random_walk(walks_number, walks_length)
                 subgraph = graph._graph
-                assert all_walks.shape[0] ==subgraph.nodes_number
-                assert all(
-                    walks.shape[0] == 10
-                    for walks in all_walks
-                )
+                assert walks.shape[0] == subgraph.nodes_number*walks_number
                 if subgraph.has_traps:
                     assert all(
-                        1 <= walk.shape[0] <= 5
-                        for walks in all_walks
+                        1 <= walk.shape[0] <= walks_length
                         for walk in walks
                     )
                 else:
                     assert all(
-                        walk.shape[0] == 5
-                        for walks in all_walks
+                        walk.shape[0] == walks_length
                         for walk in walks
                     )
 

@@ -6,7 +6,8 @@ from .alias_method import alias_draw, alias_setup
 
 # key and value types
 keys_tuple = types.UniTuple(types.int64, 2)
-kv_ty = (keys_tuple, types.int64)
+keys_triple = types.UniTuple(types.int64, 3)
+kv_ty = (keys_triple, types.int64)
 integer_list = types.ListType(types.int64)
 float_list = types.ListType(types.float64)
 triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
@@ -14,11 +15,14 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
 
 @jitclass([
     ('_edges', types.DictType(*kv_ty)),
-    ('_edges_indices', types.ListType(keys_tuple)),
+    ('_edges_indices', types.ListType(keys_triple)),
     ('_nodes_alias', types.ListType(triple_list)),
     ('_nodes_mapping', types.DictType(types.string, types.int64)),
     ('_nodes_reverse_mapping', types.ListType(types.string)),
+    ('_grouped_edge_types', types.DictType(keys_tuple, integer_list)),
     ('_node_types', integer_list),
+    ('_edge_types', integer_list),
+    ('_neighbors_edge_types', types.ListType(integer_list)),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
     ('random_walk_preprocessing', types.boolean),
@@ -31,10 +35,12 @@ class NumbaGraph:
         weights: List[int],
         nodes: List[str],
         node_types: List[int],
+        edge_types: List[int],
         directed: List[bool],
         return_weight: float = 1,
         explore_weight: float = 1,
-        change_type_weight: float = 1,
+        change_node_type_weight: float = 1,
+        change_edge_type_weight: float = 1,
         random_walk_preprocessing: bool = True
     ):
         """Crate a new instance of a undirected graph with given edges.
@@ -48,7 +54,9 @@ class NumbaGraph:
         weights: List[float],
             The weights for each source and sink.
         node_types: List[int],
-            The node types for each source and sink.
+            The node types for each node.
+        node_types: List[int],
+            The edge types for each source and sink.
         directed: List[bool],
             The edges directions for each source and sink.
         return_weight : float = 1,
@@ -65,9 +73,14 @@ class NumbaGraph:
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
-        change_type_weight: float = 1,
+        change_node_type_weight: float = 1,
             Weight on the probability of visiting a neighbor node of a
-            different type than the previous node.
+            different type than the previous node. This only applies to
+            colored graphs, otherwise it has no impact.
+        change_edge_type_weight: float = 1,
+            Weight on the probability of visiting a neighbor edge of a
+            different type than the previous edge. This only applies to
+            multigraphs, otherwise it has no impact.
         random_walk_preprocessing: bool = True,
             Wethever to encode the graph to run afterwards a random walk.
 
@@ -116,34 +129,53 @@ class NumbaGraph:
             # Each node has a list of neighbors weights.
             # These lists are initialized as empty, if a weight
             neighbors_weights = typed.List.empty_list(float_list)
+            # Each node has a list of the edges types.
+            # These lists are initialized as empty, if a weight
+            self._neighbors_edge_types = typed.List.empty_list(integer_list)
 
             for _ in range(nodes_number):
                 nodes_neighbors.append(typed.List.empty_list(types.int64))
                 neighbors_weights.append(typed.List.empty_list(types.float64))
+                self._neighbors_edge_types.append(
+                    typed.List.empty_list(types.int64)
+                )
+
+            # Dictionary of lists of types.
+            self._grouped_edge_types = typed.Dict.empty(keys_tuple, integer_list)
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
         i = 0
-        for k, (start_name, end_name) in enumerate(edges):
+        for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
             src, dst = self._nodes_mapping[start_name], self._nodes_mapping[end_name]
-            if (src, dst) not in self._edges:
-                self._edges[(src, dst)] = i
+            if (src, dst, edge_type) not in self._edges:
+                self._edges[(src, dst, edge_type)] = i
                 i += 1
                 if self.random_walk_preprocessing:
+                    if (src, dst) not in self._grouped_edge_types:
+                        self._grouped_edge_types[src, dst] = typed.List.empty_list(
+                            types.int64)
+                    self._grouped_edge_types[src, dst].append(edge_type)
                     nodes_neighbors[src].append(dst)
+                    self._neighbors_edge_types[src].append(edge_type)
                     neighbors_weights[src].append(weights[k])
             # If the edge is not-directed we add the inverse to be able to
             # convert undirected graph to a directed one.
-            if not directed[k] and (dst, src) not in self._edges:
-                self._edges[(dst, src)] = i
+            if not directed[k] and (dst, src, edge_type) not in self._edges:
+                self._edges[(dst, src, edge_type)] = i
                 i += 1
                 if self.random_walk_preprocessing:
+                    if (dst, src) not in self._grouped_edge_types:
+                        self._grouped_edge_types[dst, src] = typed.List.empty_list(
+                            types.int64)
+                    self._grouped_edge_types[dst, src].append(edge_type)
                     nodes_neighbors[dst].append(src)
+                    self._neighbors_edge_types[dst].append(edge_type)
                     neighbors_weights[dst].append(weights[k])
 
         # Compute edges
-        self._edges_indices = typed.List.empty_list(keys_tuple)
+        self._edges_indices = typed.List.empty_list(keys_triple)
         for edge in self._edges:
             self._edges_indices.append(edge)
 
@@ -165,9 +197,14 @@ class NumbaGraph:
         #    \-> BD
         # So the neighbors of each edge (start, end) are all the
         # edges in the form (end, neigh) where neigh is any neighbour of end.
-        for (_, dst), edge_neighbors in zip(self._edges_indices, edges_neighbors):
+        for (_, dst, edge_type), edge_neighbors in zip(self._edges_indices, edges_neighbors):
+            # For each node in the neighbourhood
             for neigh in nodes_neighbors[dst]:
-                edge_neighbors.append(self._edges[dst, neigh])
+                # We iterate the available edge_types of the edge
+                for neigh_edge_type in self._grouped_edge_types[dst, neigh]:
+                    # And retreve the edge id for the specific type.
+                    edge_neighbors.append(
+                        self._edges[dst, neigh, neigh_edge_type])
 
         # Creating struct saving all the data relative to the nodes.
         # This structure is composed by a list of three values:
@@ -202,16 +239,29 @@ class NumbaGraph:
         # A very similar struct is also used for the nodes.
         #
         self._edges_alias = typed.List.empty_list(triple_list)
-        for (src, dst), edge_neighbors in zip(self._edges_indices, edges_neighbors):
+        for (src, dst, edge_type), edge_neighbors in zip(self._edges_indices, edges_neighbors):
             probs = np.zeros(len(edge_neighbors))
             destination_type = self._node_types[dst]
             for index, neigh in enumerate(edge_neighbors):
                 # We get the weight for the edge from the destination to
                 # the neighbour.
-                neighbor_type = self._node_types[self._edges_indices[neigh][1]]
                 weight = neighbors_weights[dst][index]
-                if destination_type == neighbor_type:
-                    weight /= change_type_weight
+                # We retrieve the edge informations which is a triple like
+                # the following:
+                # (source, destination, edge_type)
+                _, neigh_dst, neigh_edge_type = self._edges_indices[neigh]
+                # Then we retrieve the neigh_dst node type.
+                neigh_dst_node_type = self._node_types[neigh_dst]
+                # And if the destination node type matches the neighbour
+                # destination node type (we are not changing the node type)
+                # we weigth using the provided change_node_type_weight weight.
+                if destination_type == neigh_dst_node_type:
+                    weight /= change_node_type_weight
+                # Similarly if the neighbour edge type matches the previous
+                # edge type (we are not changing the edge type)
+                # we weigth using the provided change_edge_type_weight weight.
+                if edge_type == neigh_edge_type:
+                    weight /= change_edge_type_weight
                 # If the neigbour matches with the source, hence this is
                 # a backward loop like the following:
                 # SRC -> DST
@@ -223,7 +273,7 @@ class NumbaGraph:
                     weight = weight * return_weight
                 # If the backward loop does not exist, we multiply the weight
                 # of the edge by the weight for moving forward and explore more.
-                elif (neigh, src) not in self._edges:
+                elif (neigh, src) not in self._grouped_edge_types:
                     weight = weight * explore_weight
                 # Then we store these results into the probability vector.
                 probs[index] = weight
@@ -288,22 +338,6 @@ class NumbaGraph:
         """
         return len(self._edges_alias[edge][0]) == 0
 
-    def get_edge_id(self, src: int, dst: int) -> int:
-        """Return the numeric id for the curresponding edge.
-
-        Parameters
-        ----------
-        src: int,
-            The start node of the edge
-        dst: int,
-            The end node of the edge
-
-        Returns
-        -----------------
-        Edge numeric ID.
-        """
-        return self._edges[src, dst]
-
     def get_edge_destination(self, edge: int) -> int:
         """Return the endpoint of the given edge ID.
 
@@ -349,22 +383,38 @@ class NumbaGraph:
         """
         return len(self.neighbors(node))
 
-    def extract_random_node_neighbour(self, node: int) -> int:
+    def extract_random_node_neighbour(self, src: int) -> Tuple[int, int]:
         """Return a random adiacent node to the one associated to node.
-        The Random is extracted by using the normalized weights of the edges
-        as probability distribution. 
+        The destination is extracted by using the normalized weights
+        of the edges as probability distribution. 
 
         Parameters
         ----------
-        node: int
-            The index of the node that is to be considered.
+        src: int
+            The index of the source node that is to be considered.
 
         Returns
         -------
-        The index of a random adiacent node to node.
+        A tuple containing the index of a random adiacent node to given
+        source node and the ID of th edge used for the transition between
+        the two nodes.
         """
-        neighbors, j, q = self._nodes_alias[node]
-        return neighbors[alias_draw(j, q)]
+        # Get the information relative to the source node, composed of a triple:
+        # - The list of the node's neighbours
+        # - The numpy array of opposite events for the alias method (j)
+        # - The probabilities for the extractions for the alias method (q)
+        neighbors, j, q = self._nodes_alias[src]
+        # We extract using the alias method the index of the transition edge
+        neighbor_index = alias_draw(j, q)
+        # We then retrieve the edge type corresponding to the edge used for
+        # the transition.
+        edge_type = self._neighbors_edge_types[src][neighbor_index]
+        # We retrieve the ID of the destination node
+        dst = neighbors[neighbor_index]
+        # Finally we retrieve the ID of the edge curresponding at the position
+        # given by the triple (src, dst, edge_type)
+        edge = self._edges[src, dst, edge_type]
+        return dst, edge
 
     def extract_random_edge_neighbour(self, edge: int) -> int:
         """Return a random adiacent edge to the one associated to edge.
