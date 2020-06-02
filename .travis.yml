@@ -11,7 +11,7 @@ language: python
 python:
 - '3.7'
 env:
-  - NUMBA_DISABLE_JIT
+  - NUMBA_DISABLE_JIT=1
 before_install:
 - pip install pip --upgrade
 - pip install setuptools --upgrade 
