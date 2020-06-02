@@ -362,7 +362,7 @@ class SkipGramWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1,  leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -668,7 +668,7 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1):
+        for _ in trange(1, self.n_epochs + 1, leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
