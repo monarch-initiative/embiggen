@@ -30,6 +30,7 @@ class NumbaGraph:
         weights: List[int],
         nodes: List[str],
         nodes_type: List[int],
+        nodes_types_number: int,
         directed: List[bool],
         return_weight: float = 1,
         explore_weight: float = 1,
