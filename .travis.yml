@@ -30,7 +30,7 @@ script:
 - rm -rf .coverage
 - coverage erase
 - export NUMBA_DISABLE_JIT=1  # disable numba JIT
-- pytest -s --cov=embiggen --cov-report xml:coverage.xml
+- pytest --cov=embiggen --cov-report xml:coverage.xml
 - coverage combine --append || true
 - coverage report
 - coverage xml
