@@ -103,9 +103,8 @@ class NumbaGraph:
         # }
         self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
         self._nodes_reverse_mapping = typed.List.empty_list(types.string)
+        print(len(nodes))
         for i, node in enumerate(nodes):
-            if 'CORD:c5f76feedb01591d839fec72a169dd01543aef21' == node:
-                print("FOUND THE DAMNED NODE!")
             self._nodes_mapping[str(node)] = i
             self._nodes_reverse_mapping.append(str(node))
 
@@ -144,10 +143,6 @@ class NumbaGraph:
         # of the graph parsing proceedure.
         i = 0
         for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
-            if 'CORD:c5f76feedb01591d839fec72a169dd01543aef21' == end_name:
-                print("HERE IS THE ISSUE!")
-                print(end_name in self._nodes_mapping, "end_name")
-                print(start_name in self._nodes_mapping, "start_name")
             src = self._nodes_mapping[str(start_name)]
             dst = self._nodes_mapping[str(end_name)]
             if (src, dst, edge_type) not in self._edges:
