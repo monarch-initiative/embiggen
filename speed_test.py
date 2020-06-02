@@ -31,4 +31,4 @@ response = {
 
 print(json.dumps(response, indent=4))
 
-compress_json.dump(response, "time_required.json", json_kwargs={"indent"=4})
+compress_json.dump(response, "time_required.json", json_kwargs={"indent":4})
