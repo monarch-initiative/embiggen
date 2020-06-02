@@ -374,7 +374,6 @@ class SkipGramWord2Vec(Word2Vec):
         return loss_history
 
 
-
 class ContinuousBagOfWordsWord2Vec(Word2Vec):
     """Class to run word2vec using continuous bag of words (cbow).
     Attributes:
