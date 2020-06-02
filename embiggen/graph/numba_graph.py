@@ -22,6 +22,7 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_grouped_edge_types', types.DictType(keys_tuple, integer_list)),
     ('_node_types', integer_list),
     ('_edge_types', integer_list),
+    ('_neighbors_edge_types', types.ListType(integer_list)),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
     ('random_walk_preprocessing', types.boolean),
@@ -136,7 +137,7 @@ class NumbaGraph:
                 nodes_neighbors.append(typed.List.empty_list(types.int64))
                 neighbors_weights.append(typed.List.empty_list(types.float64))
                 self._neighbors_edge_types.append(
-                    typed.List.empty_list(types.float64)
+                    typed.List.empty_list(types.int64)
                 )
 
             # Dictionary of lists of types.
