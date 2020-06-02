@@ -1,10 +1,10 @@
-import numpy as np
-from numba import njit
+import numpy as np  # type: ignore
+from numba import njit  # type: ignore
 from typing import Tuple, List
 
 
 @njit
-def alias_setup(probabilities: List) -> Tuple[List, List]:
+def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Compute utility lists for non-uniform sampling from discrete distributions.
     Refer to:
     https://lips.cs.princeton.edu/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
@@ -14,7 +14,7 @@ def alias_setup(probabilities: List) -> Tuple[List, List]:
 
     Parameters
     ----------
-    probabilities:List
+    probabilities: np.ndarray
         The normalized probabilities, e.g., [0.4 0.28 0.32], for
         transition to each neighbor.
 
@@ -35,7 +35,7 @@ def alias_setup(probabilities: List) -> Tuple[List, List]:
     if probabilities.size == 0:
         raise ValueError("Given probability vector is empty!")
 
-    if abs(probabilities.sum() -1) > 1e-08:
+    if abs(probabilities.sum() - 1) > 1e-08:
         raise ValueError("Given probability vector does not sum to one.")
 
     q = probabilities * probabilities.size
