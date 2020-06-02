@@ -94,8 +94,7 @@ class N2vGraph:
             else:
                 # node_type is going to a different node type
                 # dividing by the num of type of edges
-                # TODO: which one of the two formulas is the actual right one?
-                dst2prob[n] = float(self.gamma) *float(count) / num_types
+                dst2prob[n] = float(self.gamma)  / (float(count) * num_types)
 
                 total_non_own_probability += dst2prob[n]
 

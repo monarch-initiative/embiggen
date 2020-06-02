@@ -1,9 +1,9 @@
 from typing import Dict, List, Tuple
-from .graph import Graph
+from ..graph import Graph
 import numpy as np  # type: ignore
 
 
-class N2ETransformer:
+class Node2EdgeTransformer:
 
     methods = {
         "hadamard": lambda x1, x2: np.multiply(x1, x2),
@@ -12,33 +12,46 @@ class N2ETransformer:
         "weightedL2": lambda x1, x2: (x2 - x2)**2
     }
 
-    def __init__(self, embedding: Dict[str, List[float]], method: str = "hadamard"):
-        """Create a new N2ETransformer object.
+    def __init__(self, method: str = "hadamard"):
+        """Create a new Node2EdgeTransformer object.
 
         Parameters
         ----------------------
-        embedding: Dict[str, List[float]],
-            Dictionary containing the nodes embedding.
         method: str = "hadamard",
             Method to use to transform the nodes embedding to edges.
+
+        Raises
+        ----------------------
+        ValueError,
+            If the given embedding method is not supported.
 
         Returns
         ----------------------
         A new N2ETransformer object.
         """
 
-        if method not in N2ETransformer.methods:
+        if method not in Node2EdgeTransformer.methods:
             raise ValueError((
                 "Given method {method} is not supported. "
                 "The only supported methods are {methods}."
             ).format(
                 method=method,
-                methods=", ".join(N2ETransformer.methods.keys())
+                methods=", ".join(Node2EdgeTransformer.methods.keys())
             ))
-        self._method = N2ETransformer.methods[method]
+        self._method = np.vectorize(Node2EdgeTransformer.methods[method])
+        self._embedding = None
+
+    def fit(self,  embedding: np.ndarray):
+        """Fit the Node2EdgeTransformer model.
+
+        Parameters
+        ----------------------
+        embedding: np.ndarray,
+            Nodes embedding.
+        """
         self._embedding = embedding
 
-    def transform_edges(self, G: Graph) -> np.ndarray:
+    def transform(self, G: Graph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters
@@ -46,15 +59,16 @@ class N2ETransformer:
         G: Graph,
             The graph whose nodes are to be embedded.
 
+        Raises
+        --------------------
+        ValueError,
+            If model has not been fitted.
+
         Returns
         ---------------------
         The embedded edges.
         """
-        return np.fromiter(
-            (self._method(self._embedding[source], self._embedding[sink])
-            for source, sink in G.edges()),
-            dtype=np.float
-        )
+        return self._method(*self.transform_nodes(G))
 
     def transform_nodes(self, G: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return nodes from given graph.
@@ -64,12 +78,18 @@ class N2ETransformer:
         G: Graph,
             The graph whose nodes are to be embedded.
 
+        Raises
+        --------------------
+        ValueError,
+            If model has not been fitted.
+
         Returns
         ---------------------
         The embedded edges.
         """
-        return np.fromiter(
-            ((self._embedding[source], self._embedding[sink])
-            for source, sink in G.edges()),
-            dtype=np.float
-        ).T
+        if self._embedding is None:
+            raise ValueError("Model has not been fitted.")
+        return (
+            self._embedding[G.sources_indices],
+            self._embedding[G.destinations_indices]
+        )

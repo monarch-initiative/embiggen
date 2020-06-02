@@ -1,10 +1,10 @@
-import numpy as np
-from numba import njit
+import numpy as np  # type: ignore
+from numba import njit  # type: ignore
 from typing import Tuple, List
 
 
 @njit
-def alias_setup(probabilities: List) -> Tuple[List, List]:
+def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Compute utility lists for non-uniform sampling from discrete distributions.
     Refer to:
     https://lips.cs.princeton.edu/the-alias-method-efficient-sampling-with-many-discrete-outcomes/
@@ -14,9 +14,16 @@ def alias_setup(probabilities: List) -> Tuple[List, List]:
 
     Parameters
     ----------
-    probabilities:List
+    probabilities: np.ndarray
         The normalized probabilities, e.g., [0.4 0.28 0.32], for
         transition to each neighbor.
+
+    Raises
+    --------------------
+    ValueError,
+        If given probability vector does not sum to one.
+    ValueError,
+        If given probability vector is empty.
 
     Returns
     -------
@@ -25,38 +32,36 @@ def alias_setup(probabilities: List) -> Tuple[List, List]:
         The first argument is the mapping to the less probable binary outcome,
         and the second is the uniform distribution over binary outcomes
     """
+    if probabilities.size == 0:
+        raise ValueError("Given probability vector is empty!")
 
-    K = len(probabilities)
-    q = np.zeros(K)
-    J = np.zeros(K, dtype=np.int64)
+    if abs(probabilities.sum() - 1) > 1e-08:
+        raise ValueError("Given probability vector does not sum to one.")
 
-    # Sort the data into the outcomes with probabilities
-    # that are larger and smaller than 1/K.
-    smaller = []
-    larger = []
-    for kk, prob in enumerate(probabilities):
-        q[kk] = K*prob
-        if q[kk] < 1.0:
-            smaller.append(kk)
-        else:
-            larger.append(kk)
+    q = probabilities * probabilities.size
+    smaller_mask = q < 1.0
+    smaller = list(np.where(smaller_mask)[0])
+    larger = list(np.where(~smaller_mask)[0])
 
-    # Loop though and create little binary mixtures that
-    # appropriately allocate the larger outcomes over the
-    # overall uniform mixture.
-    while len(smaller) > 0 and len(larger) > 0:
+    # j is the mapping of the opposite event in the Bernulli trias
+    j = np.zeros_like(probabilities, dtype=np.int64)
+    # Converge to the equivalente binary mixture
+    while smaller and larger:
         small = smaller.pop()
         large = larger.pop()
 
-        J[small] = large
-        q[large] = q[large] - (1.0 - q[small])
+        # salva il mapping del evento opposto
+        j[small] = large
+
+        # this is equibalent but has better numerical accuracy
+        # q[larArgsge] = q[large] - (1.0 - q[small])
+        q[large] = (q[large] + q[small]) - 1.0
 
         if q[large] < 1.0:
             smaller.append(large)
         else:
             larger.append(large)
-
-    return J, q
+    return (j, q)
 
 
 @njit

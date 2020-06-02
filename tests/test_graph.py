@@ -57,17 +57,36 @@ class TestGraph(TestCase):
         ]
 
         self._factory = GraphFactory()
+        self._directed_factory = GraphFactory(default_directed=True)
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
             self._paths,
             desc="Testing on non-legacy"
         ):
-            graph = self._factory.read_csv(path)
-            for i in range(len(graph._nodes_alias)):
-                assert graph.extract_random_node_neighbour(i) in graph._nodes_alias[i][0]
-            for edge in range(len(graph._edges_alias)):
-                assert graph.extract_random_edge_neighbour(edge) in graph._edges_alias[edge][0]
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(path)
+                subgraph = graph._graph
+                for i in range(len(subgraph._nodes_alias)):
+                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i) in subgraph._nodes_alias[i][0]
+                for edge in range(len(subgraph._edges_alias)):
+                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0]
+
+                assert graph.consistent_hash() == graph.consistent_hash()
+
+    def test_unrastered_graph(self):
+        for path in tqdm(
+            self._paths,
+            desc="Testing on non-legacy"
+        ):
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(path, random_walk_preprocessing=False)
+                with pytest.raises(ValueError):
+                    graph.random_walk(1, 1)
+                
+                assert graph.consistent_hash() == graph.consistent_hash()
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
@@ -75,26 +94,30 @@ class TestGraph(TestCase):
             self._legacy_paths,
             desc="Testing on legacy"
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2
-            )
-            for i in range(len(graph._nodes_alias)):
-                assert graph.extract_random_node_neighbour(i) in graph._nodes_alias[i][0]
-            for edge in range(len(graph._edges_alias)):
-                assert graph.extract_random_edge_neighbour(edge) in graph._edges_alias[edge][0]
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2
+                )
+                subgraph = graph._graph
+                for i in range(len(subgraph._nodes_alias)):
+                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i) in subgraph._nodes_alias[i][0]
+                for edge in range(len(subgraph._edges_alias)):
+                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0]
 
-    # def test_setup_from_custom_dataframe(self):
-    #     # TODO: integrate all other remaining columns
-    #     graph = self._factory.read_csv(
-    #         "tests/data/small_9606.protein.actions.txt",
-    #         start_nodes_column="item_id_a",
-    #         end_nodes_column="item_id_b",
-    #         weights_column="score"
-    #     )
+    def test_setup_from_custom_dataframe(self):
+        graph = self._factory.read_csv(
+            "tests/data/small_9606.protein.actions.txt",
+            start_nodes_column="item_id_a",
+            end_nodes_column="item_id_b",
+            weights_column="score"
+        )
+        graph.random_walk(10, 5)
 
     def test_random_walk(self):
         for path in tqdm(
@@ -102,15 +125,34 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
-            all_walks = graph.random_walk(10, 5)
-            assert all_walks.shape == (10, graph.nodes_number, 5)
-            assert all(
-                edge in graph._edges
-                for walks in all_walks
-                for walk in walks
-                for edge in zip(walk[:-1], walk[1:])
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path, return_weight=10, explore_weight=10)
+                all_walks = graph.random_walk(10, 5).numpy()
+                subgraph = graph._graph
+                assert all(
+                    edge in subgraph._edges
+                    for walks in all_walks
+                    for walk in walks
+                    for edge in zip(walk[:-1], walk[1:])
+                )
+                assert all_walks.shape[0] == subgraph.nodes_number
+                assert all(
+                    walks.shape[0] == 10
+                    for walks in all_walks
+                )
+                if subgraph.has_traps:
+                    assert all(
+                        1 <= len(walk) <= 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
+                else:
+                    assert all(
+                        len(walk) == 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
 
     def test_random_walk_on_legacy(self):
         for path in tqdm(
@@ -118,23 +160,35 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2,
-                return_weight=10,
-                explore_weight=10
-            )
-            all_walks = graph.random_walk(10, 5)
-            assert all_walks.shape == (10, graph.nodes_number, 5)
-            assert all(
-                edge in graph._edges
-                for walks in all_walks
-                for walk in walks
-                for edge in zip(walk[:-1], walk[1:])
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2,
+                    return_weight=10,
+                    explore_weight=10
+                )
+                all_walks = graph.random_walk(10, 5)
+                subgraph = graph._graph
+                assert all_walks.shape[0] ==subgraph.nodes_number
+                assert all(
+                    walks.shape[0] == 10
+                    for walks in all_walks
+                )
+                if subgraph.has_traps:
+                    assert all(
+                        1 <= walk.shape[0] <= 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
+                else:
+                    assert all(
+                        walk.shape[0] == 5
+                        for walks in all_walks
+                        for walk in walks
+                    )
 
     def test_alias_shape(self):
         for path in tqdm(
@@ -142,27 +196,35 @@ class TestGraph(TestCase):
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(path, return_weight=10, explore_weight=10)
-            assert all(
-                len(neighbours) == len(j) == len(q) > 0
-                for (neighbours, j, q) in graph._nodes_alias
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path, return_weight=10, explore_weight=10)
+                subgraph = graph._graph
+                assert all(
+                    len(neighbors) == len(j) == len(q) and (
+                        subgraph.has_traps or len(q) > 0)
+                    for (neighbors, j, q) in subgraph._nodes_alias
+                )
+
     def test_alias_shape_on_legacy(self):
         for path in tqdm(
             self._legacy_paths,
             desc="Testing on non-legacy",
             disable=False
         ):
-            graph = self._factory.read_csv(
-                path,
-                edge_has_header=False,
-                start_nodes_column=0,
-                end_nodes_column=1,
-                weights_column=2,
-                return_weight=10,
-                explore_weight=10
-            )
-            assert all(
-                len(neighbours) == len(j) == len(q) > 0
-                for (neighbours, j, q) in graph._nodes_alias
-            )
+            for factory in (self._factory, self._directed_factory):
+                graph = factory.read_csv(
+                    path,
+                    edge_has_header=False,
+                    start_nodes_column=0,
+                    end_nodes_column=1,
+                    weights_column=2,
+                    return_weight=10,
+                    explore_weight=10
+                )
+                subgraph = graph._graph
+                assert all(
+                    len(neighbors) == len(j) == len(q) and (
+                        subgraph.has_traps or len(q) > 0)
+                    for (neighbors, j, q) in subgraph._nodes_alias
+                )
