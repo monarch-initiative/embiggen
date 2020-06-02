@@ -48,16 +48,6 @@ class Graph(Hashable):
         """Return mapping for numeric nodes ID to nodes."""
         return self._graph._nodes_reverse_mapping
 
-    @property
-    def nodes_number(self) -> int:
-        """Return the total number of nodes in the graph.
-
-        Returns
-        -------
-        The total number of nodes in the graph.
-        """
-        return self._graph.nodes_number
-
     def neighbors(self, node: int) -> List:
         """Return neighbors of given node.
 
@@ -111,11 +101,13 @@ class Graph(Hashable):
         """Return hash for the current instance of the graph."""
         return sha256({
             "random_walk_preprocessing": self._graph.random_walk_preprocessing,
-            "has_traps": self._graph.has_traps,
+            **(
+                {
+                    "edges_alias": self._graph._edges_alias,
+                    "nodes_alias": self._graph._nodes_alias,
+                }
+                if self._graph.random_walk_preprocessing else {}
+            ),
             "edges": self._graph._edges,
-            "edges_indices": self._graph._edges_indices,
-            "nodes_alias": self._graph._nodes_alias,
-            "nodes_mapping": self._graph._nodes_mapping,
-            "nodes_reverse_mapping": self._graph._nodes_reverse_mapping,
-            "edges_alias": self._graph._edges_alias,
+            "nodes_mapping": self._graph._nodes_mapping
         })

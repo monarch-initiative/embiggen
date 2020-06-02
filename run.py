@@ -7,7 +7,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, accuracy_score
 from cache_decorator import Cache
 from sanitize_ml_labels import sanitize_ml_labels
-from deflate_dict import deflate
 import tensorflow as tf
 import numpy as np
 import pandas as pd

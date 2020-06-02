@@ -74,6 +74,8 @@ class TestGraph(TestCase):
                     assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0]
 
+                assert graph.consistent_hash() == graph.consistent_hash()
+
     def test_unrastered_graph(self):
         for path in tqdm(
             self._paths,
@@ -83,6 +85,8 @@ class TestGraph(TestCase):
                 graph = factory.read_csv(path, random_walk_preprocessing=False)
                 with pytest.raises(ValueError):
                     graph.random_walk(1, 1)
+                
+                assert graph.consistent_hash() == graph.consistent_hash()
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
