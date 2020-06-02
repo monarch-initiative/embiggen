@@ -145,7 +145,7 @@ class GraphFactory:
         # we are going to convert the weights list into a numba list.
         weights = (
             # If provided, we use the list from the dataframe.
-            edges_df[weights_column].values.tolist()
+            edges_df[weights_column].fillna(self._default_weight).values.tolist()
             # Otherwise if the column is not available.
             if weights_column in edges_df.columns
             # We use the default weight.
@@ -161,7 +161,7 @@ class GraphFactory:
 
         directed_edges = (
             # If provided, we use the list from the dataframe.
-            edges_df[directed_column].values.tolist()
+            edges_df[directed_column].fillna(self._default_directed).values.tolist()
             # Otherwise if the column is not available.
             if directed_column in edges_df.columns
             # We use the default weight.
@@ -176,7 +176,7 @@ class GraphFactory:
 
         node_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[node_types_column].values.tolist()
+            nodes_df[node_types_column].fillna(self._default_node_type).values.tolist()
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
@@ -199,7 +199,7 @@ class GraphFactory:
 
         edge_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[edge_types_column].fillna("NaN").values.tolist()
+            nodes_df[edge_types_column].fillna(self._default_edge_type).values.tolist()
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
