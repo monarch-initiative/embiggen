@@ -1,11 +1,11 @@
 from .graph import Graph
-import tensorflow as tf
+import tensorflow as tf # type: ignore
 from .word2vec import SkipGramWord2Vec, ContinuousBagOfWordsWord2Vec
 from .glove import GloVeModel
 from .coocurrence_encoder import CooccurrenceEncoder
 from .graph_partition_transformer import GraphPartitionTransfomer
 from typing import Dict, Tuple
-import numpy as np
+import numpy as np # type: ignore
 
 
 class Embiggen:

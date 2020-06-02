@@ -141,19 +141,10 @@ class SkipGramWord2Vec(Word2Vec):
     Class to run word2vec using skip grams
     """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+    def __init__(self, *args, **kwargs) -> None:
 
-        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
-                         learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
-                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
+        super().__init__(*args, **kwargs)
 
-        self.data = data
-        self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # set vocabulary size
         self.calculate_vocabulary_size()
 
@@ -163,23 +154,19 @@ class SkipGramWord2Vec(Word2Vec):
             self.num_sampled = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            learning_rate)
+            self.learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-
-        # do not display examples during training unless the user calls add_display_words (i.e. default is None)
-        self.display = display
-        self.n_epochs = num_epochs
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self._embedding: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, embedding_size]))
+                tf.random.normal([self.vocabulary_size, self.embedding_size]))
 
             # construct the variables for the NCE loss
             self.nce_weights: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, embedding_size]))
+                tf.random.normal([self.vocabulary_size, self.embedding_size]))
             self.nce_biases: tf.Variable = tf.Variable(
                 tf.zeros([self.vocabulary_size]))
 
@@ -413,17 +400,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+    def __init__(self, *args,  **kwargs) -> None:
 
-        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
-                         learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
-                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
-        self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
+        super().__init__(*args, **kwargs)
+
         # set vocabulary size
         self.calculate_vocabulary_size()
 
@@ -433,30 +413,26 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.num_sampled = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            learning_rate)
+            self.learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-
-        # do not display examples during training unless the user calls add_display_words (i.e. default is None)
-        self.display = display
-        self.n_epochs = num_epochs
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self._embedding: tf.Variable = tf.Variable(
                 tf.random.uniform(
-                    [self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
+                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
             )
 
             # should we initialize with uniform or normal?
-            # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            # # tf.Variable(tf.random.normal([self.vocabulary_size, self.embedding_size]))
 
             # construct the variables for the softmax loss
-            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, embedding_size],
+            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
                                                          stddev=0.5 /
                                                          math.sqrt(
-                                                             embedding_size),
+                                                             self.embedding_size),
                                                          dtype=tf.float32)
             # get weights and biases
             self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
@@ -682,7 +658,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     currentTensor = data[data_index:endpos]
                     if len(currentTensor) < window_len:
                         break  # We are at the end
-                    batch_x, batch_y = self.next_batch(currentTensor)  # type: ignore
+                    batch_x, batch_y = self.next_batch(
+                        currentTensor)  # type: ignore
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:

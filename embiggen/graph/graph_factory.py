@@ -1,7 +1,7 @@
 from typing import Dict
-import pandas as pd
-import numpy as np
-from numba import typed, types
+import pandas as pd # type: ignore
+import numpy as np # type: ignore
+from numba import typed, types # type: ignore
 from .graph import Graph
 
 
