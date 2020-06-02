@@ -9,6 +9,10 @@ graph = factory.read_csv(
     "tests/data/first_walk_test_edges.tsv",
     "tests/data/first_walk_test_nodes.tsv",
 )
+# graph = factory.read_csv(
+#     "pos_train_edges.tsv",
+#     "pos_train_nodes.tsv"
+# )
 completed_graph = time() - start
 start_walk = time()
 graph.random_walk(number=10, length=80)
