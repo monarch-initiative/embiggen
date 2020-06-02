@@ -170,6 +170,7 @@ class GraphFactory:
             weights=numba_weights,
             nodes=numba_nodes,
             nodes_type=numba_nodes_type,
+            nodes_types_number=len(unique_nodes_type),
             directed=numba_directed,
             **kwargs
         )
