@@ -10,6 +10,8 @@ addons:
 language: python
 python:
 - '3.7'
+env:
+  - NUMBA_DISABLE_JIT
 before_install:
 - pip install pip --upgrade
 - pip install setuptools --upgrade 
