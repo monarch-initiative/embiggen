@@ -1,14 +1,14 @@
 import collections
 import math
 import numpy as np  # type: ignore
-import pandas as pd # type: ignore
+import pandas as pd  # type: ignore
 import random
 import tensorflow as tf  # type: ignore
 
 from tqdm import trange  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
-
-from embiggen.utils import get_embedding, calculate_cosine_similarity
+import os
+from .utils import get_embedding, calculate_cosine_similarity
 import logging
 
 
@@ -29,7 +29,7 @@ class Word2Vec:
             display: An integer of the number of words to display.
         """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
+    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: List[str],
                  learning_rate: float = 0.1, batch_size: int = 128,
                  num_epochs: int = 1, embedding_size: int = 200, max_vocabulary_size: int = 50000,
                  min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2, num_sampled: int = 7,
@@ -118,22 +118,61 @@ class Word2Vec:
         return None
 
     @property
-    def embedding(self) -> Dict[str, np.ndarray]:
-        """Return the embedding obtained from the model."""
-        return {
-            word: tf.nn.embedding_lookup(self._embedding, key).numpy()
-            for key, word in sorted(list(self.id2word.items()))
-        }
+    def embedding(self) -> np.ndarray:
+        """Return the embedding obtained from the model.
 
-    def save(self, path: str):
+        Raises
+        ---------------------
+        ValueError,
+            If the model is not yet fitted.
+        """
+        if self._embedding is None:
+            raise ValueError("Model is not yet fitted!")
+        return self._embedding.numpy()
+
+    def save_embedding(self, path: str):
         """Save the computed embedding to the given file.
 
         Parameters
         -------------------
         path: str,
             Path where to save the embedding.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the model is not yet fitted.
         """
-        pd.DataFrame(self.embedding).to_csv(path)
+        if self._embedding is None:
+            raise ValueError("Model is not yet fitted!")
+        pd.DataFrame({
+            word: tf.nn.embedding_lookup(self._embedding, key).numpy()
+            for key, word in enumerate(self.id2word)
+        }).T.to_csv(path, header=False)
+
+    def load_embedding(self, path: str):
+        """Save the computed embedding to the given file.
+
+        Raises
+        ---------------------
+        ValueError,
+            If the give path does not exists.
+
+        Parameters
+        -------------------
+        path: str,
+            Path where to save the embedding.
+        """
+        if not os.path.exists(path):
+            raise ValueError(
+                "Embedding file at path {} does not exists.".format(path)
+            )
+        embedding = pd.read_csv(path, header=None, index_col=0)
+        nodes_mapping = [
+            self.word2id[node_name]
+            for node_name in embedding.index.values.astype(str)
+        ]
+        self._embedding = embedding.values[nodes_mapping]
 
 
 class SkipGramWord2Vec(Word2Vec):
@@ -141,19 +180,10 @@ class SkipGramWord2Vec(Word2Vec):
     Class to run word2vec using skip grams
     """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+    def __init__(self, *args, **kwargs) -> None:
 
-        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
-                         learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
-                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
+        super().__init__(*args, **kwargs)
 
-        self.data = data
-        self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
         # set vocabulary size
         self.calculate_vocabulary_size()
 
@@ -163,23 +193,19 @@ class SkipGramWord2Vec(Word2Vec):
             self.num_sampled = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            learning_rate)
+            self.learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-
-        # do not display examples during training unless the user calls add_display_words (i.e. default is None)
-        self.display = display
-        self.n_epochs = num_epochs
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self._embedding: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, embedding_size]))
+                tf.random.normal([self.vocabulary_size, self.embedding_size]))
 
             # construct the variables for the NCE loss
             self.nce_weights: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, embedding_size]))
+                tf.random.normal([self.vocabulary_size, self.embedding_size]))
             self.nce_biases: tf.Variable = tf.Variable(
                 tf.zeros([self.vocabulary_size]))
 
@@ -195,13 +221,14 @@ class SkipGramWord2Vec(Word2Vec):
         with tf.device(self.device_type):
             y = tf.cast(y, tf.int64)
 
-            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.nce_weights,
-                                                 biases=self.nce_biases,
-                                                 labels=y,
-                                                 inputs=x_embed,
-                                                 num_sampled=self.num_sampled,
-                                                 num_classes=self.vocabulary_size)
-                                  )
+            loss = tf.reduce_mean(tf.nn.nce_loss(
+                weights=self.nce_weights,
+                biases=self.nce_biases,
+                labels=y,
+                inputs=x_embed,
+                num_sampled=self.num_sampled,
+                num_classes=self.vocabulary_size
+            ))
 
             return loss
 
@@ -260,13 +287,13 @@ class SkipGramWord2Vec(Word2Vec):
         Args:
             sentence: A list of words to be used to create the batch
         Returns:
-            A list where the first item us a batch and the second item is the batch's labels.
+            A list where the first item is a batch and the second item is the batch's labels.
         Raises:
             ValueError: If the number of skips is not <= twice the skip window length.
 
         TODO -- should num_skips and skip_window be arguments or simply taken from self
         within the method?
-            """
+        """
         num_skips = self.num_skips
         skip_window = self.skip_window
         if num_skips > 2 * skip_window:
@@ -278,11 +305,16 @@ class SkipGramWord2Vec(Word2Vec):
         span = 2 * skip_window + 1
         # again, probably we can go: span = self.span
         sentencelen = len(sentence)
-        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
-        batch = np.ndarray(shape=(batch_size,), dtype=np.int32)
-        labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
-        buffer: collections.deque = collections.deque(maxlen=span)
         sentence = sentence.numpy()
+        batch_size = ((sentencelen - (2 * skip_window)) * num_skips)
+        batch = np.empty(
+            shape=(batch_size,),
+            dtype=np.int32
+        )
+        labels = np.empty(
+            shape=(batch_size, 1),
+            dtype=np.int32)
+        buffer: collections.deque = collections.deque(maxlen=span)
         # The following command fills up the Buffer but leaves out the last spot
         # this allows us to always add the next word as the first thing we do in the
         # following loop.
@@ -320,13 +352,13 @@ class SkipGramWord2Vec(Word2Vec):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
             # print(log_str)
 
+    # TODO! this train method must receive the arguments that we don't need
+    # TODO! most likely this method should be renames to 'fit'
     def train(self) -> List[float]:
         """
         Trying out passing a simple Tensor to get_batch
         :return:
         """
-        x_test = np.array(self.display_examples)
-
         window_len = 2 * self.skip_window + 1
         step = 0
         loss_history = []
@@ -409,17 +441,10 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
-    def __init__(self, data: List, worddictionary: Dict[str, int], reverse_worddictionary: Dict[int, str],
-                 learning_rate: float = 0.1, batch_size: int = 128, num_epochs: int = 1, embedding_size: int = 200,
-                 max_vocabulary_size: int = 50000, min_occurrence: int = 1, skip_window: int = 3, num_skips: int = 2,
-                 num_sampled: int = 7, display: Optional[int] = None, device_type: str = 'cpu') -> None:
+    def __init__(self, *args,  **kwargs) -> None:
 
-        super().__init__(data=data, worddictionary=worddictionary, reverse_worddictionary=reverse_worddictionary,
-                         learning_rate=learning_rate, batch_size=batch_size, num_epochs=num_epochs,
-                         embedding_size=embedding_size, max_vocabulary_size=max_vocabulary_size,
-                         min_occurrence=min_occurrence, skip_window=skip_window, num_skips=num_skips,
-                         num_sampled=num_sampled, display=display, device_type=device_type)
-        self.device_type = '/CPU:0' if 'cpu' in device_type.lower() else '/GPU:0'
+        super().__init__(*args, **kwargs)
+
         # set vocabulary size
         self.calculate_vocabulary_size()
 
@@ -429,30 +454,26 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
             self.num_sampled = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            learning_rate)
+            self.learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
-
-        # do not display examples during training unless the user calls add_display_words (i.e. default is None)
-        self.display = display
-        self.n_epochs = num_epochs
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device(self.device_type):
             # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
             self._embedding: tf.Variable = tf.Variable(
                 tf.random.uniform(
-                    [self.vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
+                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
             )
 
             # should we initialize with uniform or normal?
-            # # tf.Variable(tf.random.normal([self.vocabulary_size, embedding_size]))
+            # # tf.Variable(tf.random.normal([self.vocabulary_size, self.embedding_size]))
 
             # construct the variables for the softmax loss
-            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, embedding_size],
+            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
                                                          stddev=0.5 /
                                                          math.sqrt(
-                                                             embedding_size),
+                                                             self.embedding_size),
                                                          dtype=tf.float32)
             # get weights and biases
             self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
@@ -636,6 +657,8 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
 
         return None
 
+    # TODO! this train method must receive the arguments that we don't need
+    # TODO! most likely this method should be renames to 'fit'
     def train(self) -> List[None]:  # type: ignore
         """Trains a CBOW model.
         Returns:
@@ -690,4 +713,4 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                     endpos = min(endpos,
                                  lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
-            return loss_history
+        return loss_history

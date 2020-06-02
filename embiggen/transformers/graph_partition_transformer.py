@@ -1,12 +1,12 @@
 from typing import Dict, List, Tuple
-from .graph import Graph
-from .node_2_edge_transformer import N2ETransformer
+from ..graph import Graph
+from .node_2_edge_transformer import Node2EdgeTransformer
 import numpy as np  # type: ignore
 
 
 class GraphPartitionTransfomer:
 
-    def __init__(self, embedding: Dict[str, List[float]], method: str = "hadamard"):
+    def __init__(self, method: str = "hadamard"):
         """Create a new GraphPartitionTransfomer object.
 
         It transforms a tuple formed of the positive partition of edges
@@ -15,16 +15,29 @@ class GraphPartitionTransfomer:
 
         Parameters
         ----------------------
-        embedding: Dict[str, List[float]],
-            Dictionary containing the nodes embedding.
         method: str = "hadamard",
             Method to use to transform the nodes embedding to edges.
+
+        Raises
+        ----------------------
+        ValueError,
+            If the given embedding method is not supported.
 
         Returns
         ----------------------
         A new GraphPartitionTransfomer object.
         """
-        self._transformer = N2ETransformer(embedding, method=method)
+        self._transformer = Node2EdgeTransformer(method=method)
+
+    def fit(self,  embedding: np.ndarray):
+        """Fit the GraphPartitionTransfomer model.
+
+        Parameters
+        ----------------------
+        embedding: np.ndarray,
+            Nodes embedding.
+        """
+        self._transformer.fit(embedding)
 
     def _get_labels(self, positive: np.ndarray, negative: np.ndarray) -> np.ndarray:
         """Return training labels for given graph partitions.
@@ -42,7 +55,7 @@ class GraphPartitionTransfomer:
         """
         return np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
 
-    def transform_edges(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
@@ -52,12 +65,18 @@ class GraphPartitionTransfomer:
         negative: Graph,
             The negative partition of the Graph.
 
+        Raises
+        --------------------
+        ValueError,
+            If model has not been fitted.
+
         Returns
         ----------------------
         Tuple of X and y to be used for training.
         """
-        positive_embedding = self._transformer.transform_edges(positive)
-        negative_embedding = self._transformer.transform_edges(negative)
+
+        positive_embedding = self._transformer.transform(positive)
+        negative_embedding = self._transformer.transform(negative)
 
         return (
             np.concatenate([positive_embedding, negative_embedding]),
@@ -65,7 +84,7 @@ class GraphPartitionTransfomer:
         )
 
     def transform_nodes(self, positive: Graph, negative: Graph) -> Tuple[
-        np.ndarray, np.ndarray, np.ndarray]:
+            np.ndarray, np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
@@ -77,17 +96,14 @@ class GraphPartitionTransfomer:
 
         Returns
         ----------------------
-        Tuple of X and y to be used for training.
+        Triple of X for the source nodes,
+        X for the destination nodes and the labels to be used for training.
         """
-        positive_sink, positive_source = self._transformer.transform_nodes(
-            positive
-        )
-        negative_sink, negative_source = self._transformer.transform_nodes(
-            negative
-        )
+        pos_src, pos_dst = self._transformer.transform_nodes(positive)
+        neg_src, neg_dst = self._transformer.transform_nodes(negative)
 
         return (
-            np.concatenate([positive_source, negative_source]),
-            np.concatenate([positive_sink, negative_sink]),
-            self._get_labels(positive_sink, negative_sink)
+            np.concatenate([pos_dst, neg_dst]),
+            np.concatenate([pos_src, neg_src]),
+            self._get_labels(pos_src, neg_src)
         )

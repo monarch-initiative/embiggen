@@ -1,6 +1,6 @@
 from unittest import TestCase
 import os.path
-from embiggen import CSFGraph
+from embiggen import GraphFactory, Graph
 from embiggen import link_prediction_functions
 import numpy as np
 import math
@@ -11,9 +11,8 @@ class TestlinkPredictionScores_1(TestCase):
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(
             __file__), 'data', 'small_graph.txt')
-        g = CSFGraph(inputfile)
-        self.g = g
-        str(g)
+        factory = GraphFactory()
+        self.g = factory.read_csv(inputfile)
 
     def test_notnull(self):
         self.assertIsNotNone(self.g)
@@ -100,9 +99,8 @@ class TestlinkPredictionScores_2(TestCase):
     def setUp(self):
         inputfile = os.path.join(os.path.dirname(
             __file__), 'data', 'small_het_graph_edges.tsv')
-        g = CSFGraph(inputfile)
-        self.g = g
-        str(g)
+        factory = GraphFactory()
+        self.g = factory.read_csv(inputfile)
 
     def test_notnull(self):
         self.assertIsNotNone(self.g)

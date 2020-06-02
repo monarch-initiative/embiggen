@@ -27,3 +27,4 @@ karate.embedded
 
 embedded_graph.embedded
 N2vGraph.pkl
+htmlcov

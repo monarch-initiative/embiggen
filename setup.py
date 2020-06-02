@@ -9,8 +9,8 @@ def readme():
 test_deps = [
     "codacy-coverage",
     "coveralls",
-    'nose',
-    "nose-cov",
+    'pytest',
+    "pytest-cov",
     "validate_version_code",
     "pylint",
     "silence_tensorflow",
@@ -49,8 +49,9 @@ setup(
         'tensorflow>=2.0.0',
         'click',
         'sanitize_ml_labels',
-        'deflate_dict',
-        'cache_decorator'
+        'cache_decorator',
+        "numba",
+        "dict_hash>=1.1.1"
     ],
     test_suite='nose.collector',
     tests_require=test_deps,

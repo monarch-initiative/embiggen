@@ -94,8 +94,7 @@ class N2vGraph:
             else:
                 # node_type is going to a different node type
                 # dividing by the num of type of edges
-                # TODO: which one of the two formulas is the actual right one?
-                dst2prob[n] = float(self.gamma) *float(count) / num_types
+                dst2prob[n] = float(self.gamma)  / (float(count) * num_types)
 
                 total_non_own_probability += dst2prob[n]
 
@@ -186,8 +185,8 @@ class N2vGraph:
                     continue
                 else:
                     # node_type is going to a different node type
-                    # TODO: I don't think this is a probability
-                    # TODO: which one of the two formulas is the actual right one?
+                    # TODO: use TOMMY version of GAMMA application
+                    # TODO: only use GAMMA for the edges, as it is used in the current implementation
                     neighbours_count_per_types_prob[neighbour_type] = float(self.gamma) / float(count) * num_types
                     total_non_own_probability += neighbours_count_per_types_prob[neighbour_type]
 
