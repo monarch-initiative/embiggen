@@ -41,7 +41,7 @@ class Word2Vec:
         self.batch_size = batch_size
         self.n_epochs = num_epochs
         self.display_step = 2000
-        self.eval_step = 100
+        self.eval_step = 10000
         self.embedding_size = embedding_size
         self.max_vocabulary_size = max_vocabulary_size
         self.vocabulary_size: int = 0
@@ -65,7 +65,7 @@ class Word2Vec:
             logging.info("Type of data:{} ".format(type(self.data)))
             raise TypeError("NEITHER RAGGED NOR TENSOR")
 
-    def add_display_words(self, count: list, num: int = 5) -> None:
+    def add_display_words(self, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
         sample.
 
@@ -75,7 +75,6 @@ class Word2Vec:
         more than 16, a random validation set of 'num' nodes/words, that includes common and uncommon nodes/words, is
         selected from a 'valid_window' of 50 nodes/words.
         Args:
-            count: A list of tuples (key:word, value:int).
             num: An integer representing the number of words to sample.
         Returns:
             None.
@@ -83,9 +82,9 @@ class Word2Vec:
             TypeError: If the user does not provide a list of display words.
         """
 
-        if not isinstance(count, list):
+        if not isinstance(num, int):
             self.display = None
-            raise TypeError('self.display requires a list of tuples with key:word, value:int (count)')
+            raise TypeError('self.display requires a integer number of words to display')
 
         if num > 16:
             logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
@@ -294,7 +293,7 @@ class SkipGramWord2Vec(Word2Vec):
         sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
                                           self.embedding,
                                           self.device_type).numpy()
-        #print(sim[0])
+        print(sim[0])
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
             nearest = (-sim[i, :]).argsort()[1:top_k + 1]
@@ -302,7 +301,7 @@ class SkipGramWord2Vec(Word2Vec):
             log_str = '"%s" nearest neighbors:' % disp_example
             for k in range(top_k):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
-            #print(log_str)
+            print(log_str)
 
     def train(self) -> List[float]:
         """
