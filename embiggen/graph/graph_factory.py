@@ -133,6 +133,8 @@ class GraphFactory:
             for node in np.unique(edges):
                 numba_nodes.append(node)
 
+        # TODO! Add an exception for when there are more nodes in the edges than in the nodes.
+
         numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
         for start, end in edges:
             numba_edges.append((start, end))
