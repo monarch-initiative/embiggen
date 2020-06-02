@@ -97,7 +97,7 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path,
-                    edge_has_header=False,
+                    edge_file_has_header=False,
                     start_nodes_column=0,
                     end_nodes_column=1,
                     weights_column=2
@@ -163,7 +163,7 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path,
-                    edge_has_header=False,
+                    edge_file_has_header=False,
                     start_nodes_column=0,
                     end_nodes_column=1,
                     weights_column=2,
@@ -215,7 +215,7 @@ class TestGraph(TestCase):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
                     path,
-                    edge_has_header=False,
+                    edge_file_has_header=False,
                     start_nodes_column=0,
                     end_nodes_column=1,
                     weights_column=2,
