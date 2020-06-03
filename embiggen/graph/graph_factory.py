@@ -228,14 +228,24 @@ class GraphFactory:
             else np.full(len(edges), self._default_weight, dtype=np.float64)
         )
 
-        directed_edges = (
-            # If provided, we use the list from the dataframe.
-            edges_df[directed_column].fillna(self._default_directed).values
+        #######################################
+        # Handling edge directions            #
+        #######################################
+
+        # If provided, we use the list from the dataframe.
+        if directed_column in edges_df.columns:
+            edges_df[directed_column].fillna(
+                value=self._default_directed,
+                inplace=True
+            )
+            directed_edges = edges_df[directed_column].values
+        else:
             # Otherwise if the column is not available.
-            if directed_column in edges_df.columns
-            # We use the default weight.
-            else np.full(len(edges), self._default_directed, dtype=np.bool)
-        )
+            directed_edges = np.full(len(edges), self._default_directed, dtype=np.bool)
+
+        #######################################
+        # Handling node types                 #
+        #######################################
 
         if node_path is not None and node_types_column in nodes_df.columns:
             # If provided, we use the list from the dataframe.
@@ -256,6 +266,10 @@ class GraphFactory:
         numba_node_types = np.empty(len(node_types), dtype=np.int64)
         for i, node_type in enumerate(node_types):
             numba_node_types[i] = unique_node_types[node_type]
+
+        #######################################
+        # Handling edge types                 #
+        #######################################
 
         # If provided, we use the list from the dataframe.
         if edge_types_column in edges_df.columns:
