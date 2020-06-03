@@ -108,6 +108,8 @@ class GraphFactory:
         ValueError,
             If the provided nodes file have malformed lines.
         ValueError,
+            If the nodes in the nodes file are duplicated.
+        ValueError,
             If the edges file contains node that do not appear in the nodes file.
 
         Returns
@@ -207,6 +209,12 @@ class GraphFactory:
                     ).format(
                         node
                     ))
+
+            if len(nodes_set) != len(nodes):
+                raise ValueError((
+                    "There are {} duplicate nodes "
+                    "in the given nodes file"
+                ).format(len(nodes) - len(nodes_set)))
 
         else:
             nodes = unique_nodes
