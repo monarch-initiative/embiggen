@@ -261,15 +261,12 @@ class GraphFactory:
 
         edge_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[edge_types_column].fillna(
-                self._default_edge_type).values.tolist()
+            edges_df[edge_types_column].fillna(
+                self._default_edge_type).values
             # Otherwise if the column is not available.
-            if (
-                node_path is not None and
-                edge_types_column in nodes_df.columns
-            )
+            if edge_types_column in edges_df.columns
             # We use the default weight.
-            else [self._default_edge_type]*len(edges)
+            else np.full(len(edges), self._default_edge_type, dtype=str)
         )
 
         unique_edge_types = {
