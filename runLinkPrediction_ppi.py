@@ -150,6 +150,8 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
     else:
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
 
+    model.add_display_words(16)
+
     model.train()
 
     write_embeddings(args.embed_graph, model.embedding, reverse_worddictionary)

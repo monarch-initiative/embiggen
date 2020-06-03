@@ -172,7 +172,7 @@ def w2v(test_url, algorithm, num_epochs, embed_text, learning_rate, context_wind
         model = SkipGramWord2Vec(data, worddictionary=dictionary,
                                  reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs,learning_rate= learning_rate,
                                  embedding_size=embedding_size, context_window=context_window)
-    model.add_display_words(count)
+    model.add_display_words(16)
     model.train()
     write_embeddings(embed_text, model.embedding, reverse_dictionary)
 
