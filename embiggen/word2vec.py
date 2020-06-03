@@ -41,7 +41,7 @@ class Word2Vec:
         self.batch_size = batch_size
         self.n_epochs = num_epochs
         self.display_step = 2000
-        self.eval_step = 100
+        self.eval_step = 10000
         self.embedding_size = embedding_size
         self.max_vocabulary_size = max_vocabulary_size
         self.vocabulary_size: int = 0
@@ -64,41 +64,7 @@ class Word2Vec:
             logging.info("NEITHER RAGGED NOR TENSOR")
             logging.info("Type of data:{} ".format(type(self.data)))
             raise TypeError("NEITHER RAGGED NOR TENSOR")
-
-    def add_display_words(self, count: list, num: int = 5) -> None:
-        """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
-        sample.
-
-        If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
-        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm. It is
-        important to note that display is a costly operation. Up to 16 nodes/words are permitted. If a user asks for
-        more than 16, a random validation set of 'num' nodes/words, that includes common and uncommon nodes/words, is
-        selected from a 'valid_window' of 50 nodes/words.
-        Args:
-            count: A list of tuples (key:word, value:int).
-            num: An integer representing the number of words to sample.
-        Returns:
-            None.
-        Raises:
-            TypeError: If the user does not provide a list of display words.
-        """
-
-        if not isinstance(count, list):
-            self.display = None
-            raise TypeError('self.display requires a list of tuples with key:word, value:int (count)')
-
-        if num > 16:
-            logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
-            num = 16
-
-        # pick a random validation set of 'num' words to sample
-        valid_window = 50
-        valid_examples = np.array(random.sample(range(2, valid_window), num))
-
-        # sample less common words - choose 'num' points randomly from the first 'valid_window' after element 1000
-        self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
-
-        return None
+        self.calculate_vocabulary_size()
 
     def calculate_vocabulary_size(self) -> None:
         """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
@@ -110,17 +76,46 @@ class Word2Vec:
         """
         if self.word2id is None and self.vocabulary_size == 0:
             self.vocabulary_size = 0
-        elif self.vocabulary_size ==0:
+        elif self.vocabulary_size == 0:
             self.vocabulary_size = len(self.word2id)+1
-        # Apr 28, changed by Peter (can be deleted)
-        # if any(isinstance(el, list) for el in data):
-        #    flat_list = [item for sublist in data for item in sublist]
-        #    self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
-        #    print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
-        # else:
-        ##    # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
-        #    self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
-        # print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
+        return None
+
+    def add_display_words(self, num: int = 5) -> None:
+        """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
+        sample.
+
+        If the argument 'display' is not None, then we expect that the user has passed an integer amount of words
+        that are to be displayed together with their nearest neighbors, as defined by the word2vec algorithm. It is
+        important to note that display is a costly operation. Up to 16 nodes/words are permitted. If a user asks for
+        more than 16, a random validation set of 'num' nodes/words, that includes common and uncommon nodes/words, is
+        selected from a 'valid_window' of 50 nodes/words.
+        Args:
+            num: An integer representing the number of words to sample.
+        Returns:
+            None.
+        Raises:
+            TypeError: If the user does not provide a list of display words.
+        """
+
+        if not isinstance(num, int):
+            self.display = None
+            raise TypeError('self.display requires a integer number of words to display')
+
+        if self.vocabulary_size == 0:
+            raise ValueError("Warning: Cannot set display items with vocabulary size of zero")
+
+        if num > 16:
+            logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
+            num = 16
+
+        # pick a random validation set of 'num' words to sample
+        valid_window = min(50, self.vocabulary_size)
+        self.display_examples = np.array(random.sample(range(2, valid_window), num))
+        # if we have enough words, take a sample of words starting at element 1000 (which are less common)
+        if self.vocabulary_size > 1000 + 50:
+            # sample less common words - choose 'num' points randomly from the first 'valid_window' after element 1000
+            self.display_examples = np.append(self.display_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
+
         return None
 
 
@@ -294,7 +289,7 @@ class SkipGramWord2Vec(Word2Vec):
         sim = calculate_cosine_similarity(get_embedding(x_test, self.embedding, self.device_type),
                                           self.embedding,
                                           self.device_type).numpy()
-        #print(sim[0])
+        print(sim[0])
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
             nearest = (-sim[i, :]).argsort()[1:top_k + 1]
@@ -302,7 +297,7 @@ class SkipGramWord2Vec(Word2Vec):
             log_str = '"%s" nearest neighbors:' % disp_example
             for k in range(top_k):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
-            #print(log_str)
+            print(log_str)
 
     def train(self) -> List[float]:
         """

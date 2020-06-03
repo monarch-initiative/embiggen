@@ -89,6 +89,10 @@ def parse_args():
     parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='learning rate for GD. Default is 0.1.')
 
+    parser.add_argument('--num_nearest_neighbors', type=int, default=16,
+                        help='Number of nearest neighbors to each word. Default is 16. A valid number is '
+                             'less than or equal to 16.')
+
     parser.add_argument('--classifier', nargs='?', default='LR',
                         help="Binary classifier for link prediction, it should be either LR, RF, SVM, MLP, FFNN")
 
@@ -149,6 +153,8 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                            learning_rate=args.learning_rate)
     else:
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
+
+    model.add_display_words(args.num_nearest_neighbors)
 
     model.train()
 
