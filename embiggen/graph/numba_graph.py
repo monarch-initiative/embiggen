@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from numba import typed, types, prange  # type: ignore
+from numba import typed, types  # type: ignore
 from .alias_method import alias_draw, alias_setup
 
 # key and value types
@@ -381,7 +381,7 @@ class NumbaGraph:
     def extract_random_node_neighbour(self, src: int) -> Tuple[int, int]:
         """Return a random adiacent node to the one associated to node.
         The destination is extracted by using the normalized weights
-        of the edges as probability distribution. 
+        of the edges as probability distribution.
 
         Parameters
         ----------
@@ -414,7 +414,7 @@ class NumbaGraph:
     def extract_random_edge_neighbour(self, edge: int) -> int:
         """Return a random adiacent edge to the one associated to edge.
         The Random is extracted by using the normalized weights of the edges
-        as probability distribution. 
+        as probability distribution.
 
         Parameters
         ----------

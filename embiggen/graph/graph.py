@@ -1,7 +1,6 @@
 from typing import List, Union, Tuple, Dict
 import numpy as np  # type: ignore
-from numba import typed, types, njit, prange  # type: ignore
-from .alias_method import alias_draw, alias_setup
+from numba import njit, prange  # type: ignore
 import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
 from .numba_graph import NumbaGraph
