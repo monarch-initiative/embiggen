@@ -147,9 +147,9 @@ def karate_test(pos_train_file, pos_valid_file, pos_test_file, neg_train_file, n
 @click.option("learning_rate", "-r", type=float, default=0.1)
 @click.option("embedding_size", "-s", type=int, default=200)
 @click.option("context_window", "-cw", type=int, default=3)
+@click.option("num_nearest_neighbors", "-nnn", type=int, default=16)
 
-
-def w2v(test_url, algorithm, num_epochs, embed_text, learning_rate, context_window,embedding_size):
+def w2v(test_url, algorithm, num_epochs, embed_text, learning_rate, context_window,embedding_size,num_nearest_neighbors):
     local_file = tempfile.NamedTemporaryFile().name
 
     with urlopen(test_url) as response:
@@ -172,7 +172,7 @@ def w2v(test_url, algorithm, num_epochs, embed_text, learning_rate, context_wind
         model = SkipGramWord2Vec(data, worddictionary=dictionary,
                                  reverse_worddictionary=reverse_dictionary, num_epochs=num_epochs,learning_rate= learning_rate,
                                  embedding_size=embedding_size, context_window=context_window)
-    model.add_display_words(16)
+    model.add_display_words(num=num_nearest_neighbors)
     model.train()
     write_embeddings(embed_text, model.embedding, reverse_dictionary)
 
