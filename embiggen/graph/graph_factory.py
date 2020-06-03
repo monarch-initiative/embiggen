@@ -219,8 +219,6 @@ class GraphFactory:
         else:
             nodes = unique_nodes
 
-        # TODO! Add an exception for when there are more nodes in the edges than in the nodes.
-
         weights = (
             # If provided, we use the list from the dataframe.
             edges_df[weights_column].fillna(
