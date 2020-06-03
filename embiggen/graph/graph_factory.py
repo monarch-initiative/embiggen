@@ -218,15 +218,19 @@ class GraphFactory:
 
         else:
             nodes = unique_nodes
+        
+        #######################################
+        # Handling edge weights               #
+        #######################################
 
-        weights = (
-            # If provided, we use the list from the dataframe.
-            edges_df[weights_column].fillna(self._default_weight).values
-            # Otherwise if the column is not available.
-            if weights_column in edges_df.columns
-            # We use the default weight.
-            else np.full(len(edges), self._default_weight, dtype=np.float64)
-        )
+        if weights_column in edges_df.columns:
+            edges_df[weights_column].fillna(
+                value=self._default_weight,
+                inplace=True
+            )
+            weights = edges_df[weights_column].values
+        else:
+            weights = np.full(len(edges), self._default_weight, dtype=np.float64)
 
         #######################################
         # Handling edge directions            #
