@@ -3,6 +3,7 @@ import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
 from numba import typed, types  # type: ignore
 from .graph import Graph
+from .csv_utils import check_consistent_lines
 
 
 class GraphFactory:
@@ -101,12 +102,37 @@ class GraphFactory:
             Additional keyword arguments to pass to the instantiation of a new
             graph object.
 
+        Raises
+        ----------------------
+        ValueError,
+            If the provided edges file have malformed lines.
+        ValueError,
+            If the provided nodes file have malformed lines.
+        ValueError,
+            If the edges file contains node that do not appear in the nodes file.
+
         Returns
         ----------------------
+        New instance of Graph
         """
+
+        if not check_consistent_lines(edge_path, edge_sep):
+            raise ValueError(
+                "Provided edges file has malformed lines. "
+                "The provided lines have different numbers "
+                "of the given separator"
+            )
+
+        if not (node_path is None or check_consistent_lines(node_path, node_sep)):
+            raise ValueError(
+                "Provided nodes file has malformed lines. "
+                "The provided lines have different numbers "
+                "of the given separator"
+            )
+
         tmp_edges_df = pd.read_csv(
             edge_path,
-            sep=node_sep,
+            sep=edge_sep,
             header=(0 if edge_file_has_header else None),
             nrows=1
         )
@@ -124,8 +150,14 @@ class GraphFactory:
                 )
                 if column is not None and column in tmp_edges_df.columns
             ],
-            header=(0 if edge_file_has_header else None),
-            low_memory=False
+            dtype={
+                start_nodes_column: str,
+                end_nodes_column: str,
+                edge_types_column: str,
+                weights_column: float,
+                directed_column: bool
+            },
+            header=(0 if edge_file_has_header else None)
         )
 
         # Dropping duplicated edges
@@ -136,6 +168,8 @@ class GraphFactory:
         edges = edges_df[[
             start_nodes_column, end_nodes_column
         ]].values.astype(str)
+
+        unique_nodes = np.unique(edges)
 
         if node_path is not None:
             tmp_nodes_df = pd.read_csv(
@@ -155,12 +189,28 @@ class GraphFactory:
                     )
                     if column is not None and column in tmp_nodes_df.columns
                 ],
-                header=(0 if node_file_has_header else None),
-                low_memory=False
+                dtype={
+                    nodes_columns: str,
+                    node_types_column: str
+                },
+                header=(0 if node_file_has_header else None)
             )
             nodes = nodes_df[nodes_columns].values.astype(str)
+
+            # Checking if the nodes from edges are contained in nodes file.
+            # We create a set since hashing has a O(1) access time.
+            nodes_set = set(nodes)
+            for node in unique_nodes:
+                if node not in nodes_set:
+                    raise ValueError((
+                        "Edge node {} does not appear "
+                        "in the given nodes set."
+                    ).format(
+                        node
+                    ))
+
         else:
-            nodes = np.unique(edges)
+            nodes = unique_nodes
 
         # TODO! Add an exception for when there are more nodes in the edges than in the nodes.
 

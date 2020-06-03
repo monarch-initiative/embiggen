@@ -103,7 +103,6 @@ class NumbaGraph:
         # }
         self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
         self._nodes_reverse_mapping = typed.List.empty_list(types.string)
-        print(len(nodes))
         for i, node in enumerate(nodes):
             self._nodes_mapping[str(node)] = i
             self._nodes_reverse_mapping.append(str(node))
