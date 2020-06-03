@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import Tuple
 from ..graph import Graph
 from .node_2_edge_transformer import Node2EdgeTransformer
 import numpy as np  # type: ignore

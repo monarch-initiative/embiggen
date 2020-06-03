@@ -1,4 +1,4 @@
-from embiggen.graph import Graph, GraphFactory
+from embiggen.graph import GraphFactory
 from unittest import TestCase
 import pytest
 from tqdm.auto import tqdm
@@ -73,7 +73,8 @@ class TestGraph(TestCase):
                     self.assertTrue(subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
                         edge) in subgraph._edges_alias[edge][0])
 
-                self.assertEqual(graph.consistent_hash(), graph.consistent_hash())
+                self.assertEqual(graph.consistent_hash(),
+                                 graph.consistent_hash())
 
     def test_unrastered_graph(self):
         for path in tqdm(
@@ -85,7 +86,8 @@ class TestGraph(TestCase):
                 with pytest.raises(ValueError):
                     graph.random_walk(1, 1)
 
-                self.assertEqual(graph.consistent_hash(), graph.consistent_hash())
+                self.assertEqual(graph.consistent_hash(),
+                                 graph.consistent_hash())
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
@@ -136,7 +138,8 @@ class TestGraph(TestCase):
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
                 ))
-                self.assertEqual(walks.shape[0], subgraph.nodes_number*walks_number)
+                self.assertEqual(
+                    walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:
                     self.assertTrue(all(
                         1 <= len(walk) <= walks_length
@@ -168,7 +171,8 @@ class TestGraph(TestCase):
                 walks_length = 5
                 walks = graph.random_walk(walks_number, walks_length)
                 subgraph = graph._graph
-                self.assertEqual(walks.shape[0], subgraph.nodes_number*walks_number)
+                self.assertEqual(
+                    walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:
                     self.assertTrue(all(
                         1 <= walk.shape[0] <= walks_length
