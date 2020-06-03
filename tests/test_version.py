@@ -6,4 +6,4 @@ from unittest import TestCase
 class TestTextEncoderSentences(TestCase):
 
     def test_version(self):
-        assert validate_version_code(__version__)
+        self.assertTrue(validate_version_code(__version__))

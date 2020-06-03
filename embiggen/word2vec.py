@@ -510,8 +510,6 @@ class ContinuousBagOfWordsWord2Vec(Word2Vec):
                 stacked_embeddings = tf.concat(
                     axis=2, values=stacked_embedding_value)
 
-        assert stacked_embeddings.get_shape().as_list()[
-            2] == 2 * self.skip_window
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
 
         return mean_embeddings

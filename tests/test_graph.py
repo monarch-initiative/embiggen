@@ -68,13 +68,13 @@ class TestGraph(TestCase):
                 graph = factory.read_csv(path)
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
-                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i)[0] in subgraph._nodes_alias[i][0]
+                    self.assertTrue(subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i)[0] in subgraph._nodes_alias[i][0])
                 for edge in range(len(subgraph._edges_alias)):
-                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
-                        edge) in subgraph._edges_alias[edge][0]
+                    self.assertTrue(subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0])
 
-                assert graph.consistent_hash() == graph.consistent_hash()
+                self.assertEqual(graph.consistent_hash(), graph.consistent_hash())
 
     def test_unrastered_graph(self):
         for path in tqdm(
@@ -86,7 +86,7 @@ class TestGraph(TestCase):
                 with pytest.raises(ValueError):
                     graph.random_walk(1, 1)
 
-                assert graph.consistent_hash() == graph.consistent_hash()
+                self.assertEqual(graph.consistent_hash(), graph.consistent_hash())
 
     def test_legacy(self):
         """Testing that the normalization process actually works."""
@@ -104,11 +104,11 @@ class TestGraph(TestCase):
                 )
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
-                    assert subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i)[0] in subgraph._nodes_alias[i][0]
+                    self.assertTrue(subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
+                        i)[0] in subgraph._nodes_alias[i][0])
                 for edge in range(len(subgraph._edges_alias)):
-                    assert subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
-                        edge) in subgraph._edges_alias[edge][0]
+                    self.assertTrue(subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
+                        edge) in subgraph._edges_alias[edge][0])
 
     def test_setup_from_custom_dataframe(self):
         graph = self._factory.read_csv(
@@ -132,22 +132,22 @@ class TestGraph(TestCase):
                 walks_length = 5
                 walks = graph.random_walk(walks_number, walks_length).numpy()
                 subgraph = graph._graph
-                assert all(
+                self.assertTrue(all(
                     edge in subgraph._grouped_edge_types
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
-                )
-                assert walks.shape[0] == subgraph.nodes_number*walks_number
+                ))
+                self.assertEqual(walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:
-                    assert all(
+                    self.assertTrue(all(
                         1 <= len(walk) <= walks_length
                         for walk in walks
-                    )
+                    ))
                 else:
-                    assert all(
+                    self.assertTrue(all(
                         len(walk) == walks_length
                         for walk in walks
-                    )
+                    ))
 
     def test_random_walk_on_legacy(self):
         for path in tqdm(
@@ -169,17 +169,17 @@ class TestGraph(TestCase):
                 walks_length = 5
                 walks = graph.random_walk(walks_number, walks_length)
                 subgraph = graph._graph
-                assert walks.shape[0] == subgraph.nodes_number*walks_number
+                self.assertEqual(walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:
-                    assert all(
+                    self.assertTrue(all(
                         1 <= walk.shape[0] <= walks_length
                         for walk in walks
-                    )
+                    ))
                 else:
-                    assert all(
+                    self.assertTrue(all(
                         walk.shape[0] == walks_length
                         for walk in walks
-                    )
+                    ))
 
     def test_alias_shape(self):
         for path in tqdm(
@@ -191,11 +191,11 @@ class TestGraph(TestCase):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
                 subgraph = graph._graph
-                assert all(
+                self.assertTrue(all(
                     len(neighbors) == len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
                     for (neighbors, j, q) in subgraph._nodes_alias
-                )
+                ))
 
     def test_alias_shape_on_legacy(self):
         for path in tqdm(
@@ -214,8 +214,8 @@ class TestGraph(TestCase):
                     explore_weight=10
                 )
                 subgraph = graph._graph
-                assert all(
+                self.assertTrue(all(
                     len(neighbors) == len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
                     for (neighbors, j, q) in subgraph._nodes_alias
-                )
+                ))

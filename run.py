@@ -1,18 +1,13 @@
 import argparse
 from embiggen import Graph, GraphFactory, Embiggen
-from embiggen.utils import write_embeddings, serialize, deserialize
 from embiggen.neural_networks import MLP, FFNN
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, average_precision_score, f1_score, accuracy_score
 from cache_decorator import Cache
 from sanitize_ml_labels import sanitize_ml_labels
-import tensorflow as tf
 import numpy as np
-import pandas as pd
 import os
-import logging
-import time
 from tqdm.auto import tqdm
 from typing import Dict, List
 import compress_json
@@ -180,7 +175,7 @@ def main(args):
         explore_weight=1/args.q
     )
 
-    embedding = Embiggen()
+    embedding = Embiggen(embedding_method=args.edges_embedding_method)
     embedding.fit(
         pos_train,
         walks_number=args.walks_number,
@@ -188,8 +183,7 @@ def main(args):
         embedding_model=args.embedding_model,
         epochs=args.epochs,
         embedding_size=args.embedding_size,
-        context_window=args.context_window,
-        edges_embedding_method=args.edges_embedding_method
+        context_window=args.context_window
     )
 
     X_train, y_train = embedding.transform(pos_train, neg_train)
