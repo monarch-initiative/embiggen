@@ -1,7 +1,6 @@
 from typing import Dict
 import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
-from numba import typed, types  # type: ignore
 from .graph import Graph
 from .csv_utils import check_consistent_lines
 

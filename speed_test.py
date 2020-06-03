@@ -1,6 +1,6 @@
 from time import time
 from humanize import naturaldelta
-from embiggen import Graph, GraphFactory
+from embiggen import GraphFactory
 import compress_json
 import json
 

@@ -2,7 +2,6 @@ from embiggen.graph import Graph, GraphFactory
 from unittest import TestCase
 import pytest
 from tqdm.auto import tqdm
-import numpy as np
 
 
 class TestGraph(TestCase):
