@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from numba import typed, types, prange  # type: ignore
+from numba import typed, types  # type: ignore
 from .alias_method import alias_draw, alias_setup
 
 # key and value types
@@ -20,7 +20,7 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_nodes_mapping', types.DictType(types.string, types.int64)),
     ('_nodes_reverse_mapping', types.ListType(types.string)),
     ('_grouped_edge_types', types.DictType(keys_tuple, integer_list)),
-    ('_node_types', integer_list),
+    ('_node_types', types.int64[:]),
     ('_edge_types', integer_list),
     ('_neighbors_edge_types', types.ListType(integer_list)),
     ('_edges_alias', types.ListType(triple_list)),
@@ -32,11 +32,11 @@ class NumbaGraph:
     def __init__(
         self,
         edges: List[Tuple[str, str]],
-        weights: List[int],
-        nodes: List[str],
-        node_types: List[int],
-        edge_types: List[int],
-        directed: List[bool],
+        weights: np.ndarray,
+        nodes: np.ndarray,
+        node_types: np.ndarray,
+        edge_types: np.ndarray,
+        directed: np.ndarray,
         return_weight: float = 1,
         explore_weight: float = 1,
         change_node_type_weight: float = 1,
@@ -93,9 +93,7 @@ class NumbaGraph:
         nodes_number = len(nodes)
 
         # Storing node types
-        self._node_types = typed.List.empty_list(types.int64)
-        for node_type in node_types:
-            self._node_types.append(node_type)
+        self._node_types = node_types
 
         # Creating mapping of nodes and integer ID.
         # The map looks like the following:
@@ -103,14 +101,11 @@ class NumbaGraph:
         #   "node_1_id": 0,
         #   "node_2_id": 1
         # }
-        # This is only a method variable and not a class variable because
-        # it is only used during the constractor.
-        # TODO: how should we handle singleton nodes?
         self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
         self._nodes_reverse_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
-            self._nodes_mapping[node] = i
-            self._nodes_reverse_mapping.append(node)
+            self._nodes_mapping[str(node)] = i
+            self._nodes_reverse_mapping.append(str(node))
 
         # Creating mapping of edges and integer ID.
         # The map looks like the following:
@@ -118,8 +113,6 @@ class NumbaGraph:
         #   (0, 1): 0,
         #   (0, 2): 1
         # }
-        # This is a class variable and not a method variable because it is
-        # also used for the counter translation.
         self._edges = typed.Dict.empty(*kv_ty)
 
         if self.random_walk_preprocessing:
@@ -141,14 +134,16 @@ class NumbaGraph:
                 )
 
             # Dictionary of lists of types.
-            self._grouped_edge_types = typed.Dict.empty(keys_tuple, integer_list)
+            self._grouped_edge_types = typed.Dict.empty(
+                keys_tuple, integer_list)
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
         i = 0
         for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
-            src, dst = self._nodes_mapping[start_name], self._nodes_mapping[end_name]
+            src = self._nodes_mapping[str(start_name)]
+            dst = self._nodes_mapping[str(end_name)]
             if (src, dst, edge_type) not in self._edges:
                 self._edges[(src, dst, edge_type)] = i
                 i += 1
@@ -386,7 +381,7 @@ class NumbaGraph:
     def extract_random_node_neighbour(self, src: int) -> Tuple[int, int]:
         """Return a random adiacent node to the one associated to node.
         The destination is extracted by using the normalized weights
-        of the edges as probability distribution. 
+        of the edges as probability distribution.
 
         Parameters
         ----------
@@ -419,7 +414,7 @@ class NumbaGraph:
     def extract_random_edge_neighbour(self, edge: int) -> int:
         """Return a random adiacent edge to the one associated to edge.
         The Random is extracted by using the normalized weights of the edges
-        as probability distribution. 
+        as probability distribution.
 
         Parameters
         ----------

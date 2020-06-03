@@ -1,6 +1,6 @@
 ###
-#from Tiffany Callahan's github repository: https://github.com/callahantiff/owl-nets/blob/master/LinkPrediction.py
-##Implementing 4 link prediction functions modfied according to CFSgraph class
+# from Tiffany Callahan's github repository: https://github.com/callahantiff/owl-nets/blob/master/LinkPrediction.py
+# Implementing 4 link prediction functions modfied according to CFSgraph class
 
 ###
 
@@ -8,7 +8,8 @@ import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 from .graph import Graph
 
-def DegreeProduct(graph, node_1, node_2):
+
+def DegreeProduct(graph: Graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
     nodes given the structure of the graph.
     :param graph: Graph  object
@@ -20,7 +21,7 @@ def DegreeProduct(graph, node_1, node_2):
     return graph.degree(node_1) * graph.degree(node_2)
 
 
-def CommonNeighbors(graph, node_1, node_2):
+def CommonNeighbors(graph: Graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Common Neighbors for these nodes given the
     structure of the graph.
     :param graph: Graph object
@@ -44,7 +45,8 @@ def CommonNeighbors(graph, node_1, node_2):
 
     return score
 
-def Jaccard(graph, node_1, node_2):
+
+def Jaccard(graph: Graph, node_1, node_2):
     ''' Function takes a CFS graph object and list of edges calculates the Jaccard for these nodes given the
     structure of the graph.
     :param graph: CFS graph object
@@ -70,7 +72,7 @@ def Jaccard(graph, node_1, node_2):
     return score
 
 
-def AdamicAdar(graph, node_1, node_2):
+def AdamicAdar(graph: Graph, node_1, node_2):
     ''' Function takes a CSF graph object and list of edges calculates the Adamic Adar for the nodes given the
     structure of the graph.
     :param graph: CSF graph object
@@ -97,20 +99,19 @@ def AdamicAdar(graph, node_1, node_2):
     return score
 
 
-#def get_cosine_sim(emb, valid_words, top_k):
+# def get_cosine_sim(emb, valid_words, top_k):
    # norm = np.sqrt(np.sum(emb**2,axis=1,keepdims=True))
    # norm_emb = emb/norm
     #in_emb = norm_emb[valid_words,:]
    # similarity = np.dot(in_emb, np.transpose(norm_emb))
     #sorted_ind = np.argsort(-similarity, axis=1)[:,1:top_k+1]
-    #return sorted_ind, valid_words
-
+    # return sorted_ind, valid_words
 
 
 def cosine_similarity_tf(emb1, emb2):
     # cosin_similarity of two vectors X and Y with tensorflow:
     # cosine similarity = <X,Y> / ||X||||Y|| where <X,Y> is the dot product and ||X|| is sqrt(<X,X>)
-    m = tf.keras.metrics.CosineSimilarity(name='cosine_similarity', dtype=None, axis=-1)
+    m = tf.keras.metrics.CosineSimilarity(
+        name='cosine_similarity', dtype=None, axis=-1)
     m.update_state(emb1, emb2)
     return m.result().numpy()
-

@@ -4,7 +4,7 @@ from .word2vec import SkipGramWord2Vec, ContinuousBagOfWordsWord2Vec
 from .glove import GloVeModel
 from .coocurrence_encoder import CooccurrenceEncoder
 from .transformers import GraphPartitionTransfomer
-from typing import Dict, Tuple
+from typing import Tuple
 import numpy as np  # type: ignore
 
 

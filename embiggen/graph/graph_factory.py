@@ -3,6 +3,7 @@ import pandas as pd  # type: ignore
 import numpy as np  # type: ignore
 from numba import typed, types  # type: ignore
 from .graph import Graph
+from .csv_utils import check_consistent_lines
 
 
 class GraphFactory:
@@ -101,13 +102,62 @@ class GraphFactory:
             Additional keyword arguments to pass to the instantiation of a new
             graph object.
 
+        Raises
+        ----------------------
+        ValueError,
+            If the provided edges file have malformed lines.
+        ValueError,
+            If the provided nodes file have malformed lines.
+        ValueError,
+            If the edges file contains node that do not appear in the nodes file.
+
         Returns
         ----------------------
+        New instance of Graph
         """
+
+        if not check_consistent_lines(edge_path, edge_sep):
+            raise ValueError(
+                "Provided edges file has malformed lines. "
+                "The provided lines have different numbers "
+                "of the given separator"
+            )
+
+        if not (node_path is None or check_consistent_lines(node_path, node_sep)):
+            raise ValueError(
+                "Provided nodes file has malformed lines. "
+                "The provided lines have different numbers "
+                "of the given separator"
+            )
+
+        tmp_edges_df = pd.read_csv(
+            edge_path,
+            sep=edge_sep,
+            header=(0 if edge_file_has_header else None),
+            nrows=1
+        )
         edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
-            header=([0] if edge_file_has_header else None)
+            usecols=[
+                column
+                for column in (
+                    start_nodes_column,
+                    end_nodes_column,
+                    edge_types_column,
+                    weights_column,
+                    directed_column
+                )
+                if column is not None and column in tmp_edges_df.columns
+            ],
+            dtype={
+                start_nodes_column: str,
+                end_nodes_column: str,
+                edge_types_column: str,
+                weights_column: float,
+                directed_column: bool
+            },
+            header=(0 if edge_file_has_header else None)
         )
 
         # Dropping duplicated edges
@@ -115,111 +165,127 @@ class GraphFactory:
             start_nodes_column, end_nodes_column
         ])
 
-        edges = edges_df[[start_nodes_column,
-                          end_nodes_column]].values.astype(str)
+        edges = edges_df[[
+            start_nodes_column, end_nodes_column
+        ]].values.astype(str)
 
-        numba_nodes = typed.List.empty_list(types.string)
+        unique_nodes = np.unique(edges)
 
         if node_path is not None:
+            tmp_nodes_df = pd.read_csv(
+                node_path,
+                sep=node_sep,
+                header=(0 if node_file_has_header else None),
+                nrows=1
+            )
             nodes_df = pd.read_csv(
                 node_path,
                 sep=node_sep,
-                header=([0] if node_file_has_header else None)
+                usecols=[
+                    column
+                    for column in (
+                        nodes_columns,
+                        node_types_column
+                    )
+                    if column is not None and column in tmp_nodes_df.columns
+                ],
+                dtype={
+                    nodes_columns: str,
+                    node_types_column: str
+                },
+                header=(0 if node_file_has_header else None)
             )
             nodes = nodes_df[nodes_columns].values.astype(str)
-            for node in nodes:
-                numba_nodes.append(node)
+
+            # Checking if the nodes from edges are contained in nodes file.
+            # We create a set since hashing has a O(1) access time.
+            nodes_set = set(nodes)
+            for node in unique_nodes:
+                if node not in nodes_set:
+                    raise ValueError((
+                        "Edge node {} does not appear "
+                        "in the given nodes set."
+                    ).format(
+                        node
+                    ))
+
         else:
-            for node in np.unique(edges):
-                numba_nodes.append(node)
+            nodes = unique_nodes
 
-        numba_edges = typed.List.empty_list(types.UniTuple(types.string, 2))
-        for start, end in edges:
-            numba_edges.append((start, end))
+        # TODO! Add an exception for when there are more nodes in the edges than in the nodes.
 
-        # Since numba is going to discontinue the support to the reflected list
-        # we are going to convert the weights list into a numba list.
         weights = (
             # If provided, we use the list from the dataframe.
-            edges_df[weights_column].values.tolist()
+            edges_df[weights_column].fillna(
+                self._default_weight).values
             # Otherwise if the column is not available.
             if weights_column in edges_df.columns
             # We use the default weight.
-            else [self._default_weight]*len(numba_edges)
+            else np.array([self._default_weight]*len(edges))
         )
-
-        numba_weights = typed.List.empty_list(types.float64)
-        for weight in weights:
-            numba_weights.append(weight)
-
-        # Similarly to what done for the weights, we have to resolve the very
-        # same issue also for the
 
         directed_edges = (
             # If provided, we use the list from the dataframe.
-            edges_df[directed_column].values.tolist()
+            edges_df[directed_column].fillna(
+                self._default_directed).values.astype(bool)
             # Otherwise if the column is not available.
             if directed_column in edges_df.columns
             # We use the default weight.
-            else [self._default_directed]*len(numba_edges)
+            else np.array([self._default_directed]*len(edges))
         )
-
-        numba_directed = typed.List.empty_list(types.boolean)
-        for directed_edge in directed_edges:
-            numba_directed.append(directed_edge)
-
-        # We need to convert the node types to a list that numba compatible.
 
         node_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[node_types_column].values.tolist()
+            nodes_df[node_types_column].fillna(
+                self._default_node_type).values.astype(str)
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
                 node_types_column in nodes_df.columns
             )
             # We use the default weight.
-            else [self._default_node_type]*len(numba_nodes)
+            else [self._default_node_type]*len(nodes)
         )
 
         unique_node_types = {
             node_type: i
-            for i, node_type in enumerate(np.unique(node_types).tolist())
+            for i, node_type in enumerate(np.unique(node_types))
         }
 
-        numba_node_types = typed.List.empty_list(types.int64)
-        for node_type in node_types:
-            numba_node_types.append(unique_node_types[node_type])
+        numba_node_types = np.empty(len(node_types), dtype=np.int64)
+        for i, node_type in enumerate(node_types):
+            numba_node_types[i] = unique_node_types[node_type]
 
         # We need to convert the edge types to a list that is numba compatible.
 
         edge_types = (
             # If provided, we use the list from the dataframe.
-            nodes_df[edge_types_column].values.tolist()
+            nodes_df[edge_types_column].fillna(
+                self._default_edge_type).values.tolist()
             # Otherwise if the column is not available.
             if (
                 node_path is not None and
                 edge_types_column in nodes_df.columns
             )
             # We use the default weight.
-            else [self._default_edge_type]*len(numba_edges)
+            else [self._default_edge_type]*len(edges)
         )
 
         unique_edge_types = {
-            node_type: i
-            for i, node_type in enumerate(np.unique(edge_types).tolist())
+            edge_type: i
+            for i, edge_type in enumerate(np.unique(edge_types))
         }
 
-        numba_edge_types = typed.List.empty_list(types.int64)
-        for node_type in edge_types:
-            numba_edge_types.append(unique_edge_types[node_type])
+        numba_edge_types = np.empty(len(edge_types), dtype=np.int64)
+        for i, edge_type in enumerate(edge_types):
+            numba_edge_types[i] = unique_edge_types[edge_type]
 
         return Graph(
-            edges=numba_edges,
-            weights=numba_weights,
-            nodes=numba_nodes,
+            edges=edges,
+            weights=weights,
+            nodes=nodes,
             node_types=numba_node_types,
             edge_types=numba_edge_types,
-            directed=numba_directed,
+            directed=directed_edges,
             **kwargs
         )

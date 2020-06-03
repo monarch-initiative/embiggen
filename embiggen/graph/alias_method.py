@@ -1,6 +1,6 @@
 import numpy as np  # type: ignore
 from numba import njit  # type: ignore
-from typing import Tuple, List
+from typing import Tuple
 
 
 @njit
@@ -28,7 +28,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     Returns
     -------
     parameters:Tuple[List, List]
-        Tuple of the parameters needed for the extraction. 
+        Tuple of the parameters needed for the extraction.
         The first argument is the mapping to the less probable binary outcome,
         and the second is the uniform distribution over binary outcomes
     """
@@ -70,13 +70,13 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
 
     Parameters
     ----------
-    j:np.ndarray,
+    j: np.ndarray,
         The mapping to the less probable binary outcome,
     q: np.ndarray
         Uniform distribution over binary outcomes
 
     Returns:
-        index:int 
+        index: int,
             index of random sample from non-uniform discrete distribution
     """
     # extract a random index for the mixture

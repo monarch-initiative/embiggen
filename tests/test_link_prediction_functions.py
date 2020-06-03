@@ -1,6 +1,6 @@
 from unittest import TestCase
 import os.path
-from embiggen import GraphFactory, Graph
+from embiggen import GraphFactory
 from embiggen import link_prediction_functions
 import numpy as np
 import math

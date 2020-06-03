@@ -2,8 +2,6 @@ import csv
 import tensorflow as tf  # type: ignore
 from random import shuffle
 
-assert tf.__version__ >= "2.0"
-
 
 class NotTrainedError(Exception):
     pass
