@@ -152,11 +152,11 @@ class GraphFactory:
                 if column is not None and column in tmp_edges_df.columns
             ],
             dtype={
-                start_nodes_column: str,
-                end_nodes_column: str,
-                edge_types_column: str,
-                weights_column: float,
-                directed_column: bool
+                start_nodes_column: "string",
+                end_nodes_column: "string",
+                edge_types_column: "string",
+                weights_column: np.float64,
+                directed_column: np.bool
             },
             header=(0 if edge_file_has_header else None)
         )
@@ -191,8 +191,8 @@ class GraphFactory:
                     if column is not None and column in tmp_nodes_df.columns
                 ],
                 dtype={
-                    nodes_columns: str,
-                    node_types_column: str
+                    nodes_columns: "string",
+                    node_types_column: "string"
                 },
                 header=(0 if node_file_has_header else None)
             )
@@ -221,36 +221,32 @@ class GraphFactory:
 
         weights = (
             # If provided, we use the list from the dataframe.
-            edges_df[weights_column].fillna(
-                self._default_weight).values
+            edges_df[weights_column].fillna(self._default_weight).values
             # Otherwise if the column is not available.
             if weights_column in edges_df.columns
             # We use the default weight.
-            else np.array([self._default_weight]*len(edges))
+            else np.full(len(edges), self._default_weight, dtype=np.float64)
         )
 
         directed_edges = (
             # If provided, we use the list from the dataframe.
-            edges_df[directed_column].fillna(
-                self._default_directed).values.astype(bool)
+            edges_df[directed_column].fillna(self._default_directed).values
             # Otherwise if the column is not available.
             if directed_column in edges_df.columns
             # We use the default weight.
-            else np.array([self._default_directed]*len(edges))
+            else np.full(len(edges), self._default_directed, dtype=np.bool)
         )
 
-        node_types = (
+        if node_path is not None and node_types_column in nodes_df.columns:
             # If provided, we use the list from the dataframe.
             nodes_df[node_types_column].fillna(
-                self._default_node_type).values.astype(str)
-            # Otherwise if the column is not available.
-            if (
-                node_path is not None and
-                node_types_column in nodes_df.columns
+                value=self._default_node_type,
+                inplace=True
             )
-            # We use the default weight.
-            else [self._default_node_type]*len(nodes)
-        )
+            node_types = nodes_df.values.astype(str)
+        else:
+            # Otherwise if the column is not available.
+            node_types = np.full(len(nodes), self._default_node_type, dtype=str)
 
         unique_node_types = {
             node_type: i
