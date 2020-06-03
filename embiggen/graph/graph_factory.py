@@ -243,7 +243,7 @@ class GraphFactory:
                 value=self._default_node_type,
                 inplace=True
             )
-            node_types = nodes_df.values.astype(str)
+            node_types = nodes_df[node_types_column].values.astype(str)
         else:
             # Otherwise if the column is not available.
             node_types = np.full(len(nodes), self._default_node_type, dtype=str)
@@ -257,17 +257,16 @@ class GraphFactory:
         for i, node_type in enumerate(node_types):
             numba_node_types[i] = unique_node_types[node_type]
 
-        # We need to convert the edge types to a list that is numba compatible.
-
-        edge_types = (
-            # If provided, we use the list from the dataframe.
+        # If provided, we use the list from the dataframe.
+        if edge_types_column in edges_df.columns:
             edges_df[edge_types_column].fillna(
-                self._default_edge_type).values
+                value=self._default_edge_type,
+                inplace=True
+            )
+            edge_types = edges_df[edge_types_column].values
+        else:
             # Otherwise if the column is not available.
-            if edge_types_column in edges_df.columns
-            # We use the default weight.
-            else np.full(len(edges), self._default_edge_type, dtype=str)
-        )
+            edge_types = np.full(len(edges), self._default_edge_type, dtype=str)
 
         unique_edge_types = {
             edge_type: i
