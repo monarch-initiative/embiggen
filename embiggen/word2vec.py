@@ -64,6 +64,21 @@ class Word2Vec:
             logging.info("NEITHER RAGGED NOR TENSOR")
             logging.info("Type of data:{} ".format(type(self.data)))
             raise TypeError("NEITHER RAGGED NOR TENSOR")
+        self.calculate_vocabulary_size()
+
+    def calculate_vocabulary_size(self) -> None:
+        """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
+        or list of lists (i.e. from a collection of sentences or random walks).
+        The function checks that self.vocabulary size has not been set
+
+        Returns:
+            None.
+        """
+        if self.word2id is None and self.vocabulary_size == 0:
+            self.vocabulary_size = 0
+        elif self.vocabulary_size == 0:
+            self.vocabulary_size = len(self.word2id)+1
+        return None
 
     def add_display_words(self, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full
@@ -86,40 +101,21 @@ class Word2Vec:
             self.display = None
             raise TypeError('self.display requires a integer number of words to display')
 
+        if self.vocabulary_size == 0:
+            raise ValueError("Warning: Cannot set display items with vocabulary size of zero")
+
         if num > 16:
             logging.warning('maximum of 16 display words allowed (you passed {num_words})'.format(num_words=num))
             num = 16
 
         # pick a random validation set of 'num' words to sample
-        valid_window = 50
-        valid_examples = np.array(random.sample(range(2, valid_window), num))
+        valid_window = min(50, self.vocabulary_size)
+        self.display_examples = np.array(random.sample(range(2, valid_window), num))
+        # if we have enough words, take a sample of words starting at element 1000 (which are less common)
+        if self.vocabulary_size > 1000 + 50:
+            # sample less common words - choose 'num' points randomly from the first 'valid_window' after element 1000
+            self.display_examples = np.append(self.display_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
 
-        # sample less common words - choose 'num' points randomly from the first 'valid_window' after element 1000
-        self.display_examples = np.append(valid_examples, random.sample(range(1000, 1000 + valid_window), num), axis=0)
-
-        return None
-
-    def calculate_vocabulary_size(self) -> None:
-        """Calculates the vocabulary size for the input data, which is a list of words (i.e. from a text),
-        or list of lists (i.e. from a collection of sentences or random walks).
-        The function checks that self.vocabulary size has not been set
-
-        Returns:
-            None.
-        """
-        if self.word2id is None and self.vocabulary_size == 0:
-            self.vocabulary_size = 0
-        elif self.vocabulary_size ==0:
-            self.vocabulary_size = len(self.word2id)+1
-        # Apr 28, changed by Peter (can be deleted)
-        # if any(isinstance(el, list) for el in data):
-        #    flat_list = [item for sublist in data for item in sublist]
-        #    self.vocabulary_size = min(self.max_vocabulary_size, len(set(flat_list)) + 1)
-        #    print('Vocabulary size (list of lists) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
-        # else:
-        ##    # was - self.vocabulary_size = min(self.max_vocabulary_size, len(set(data)) + 1)
-        #    self.vocabulary_size = min(self.max_vocabulary_size, TFUtilities.gets_tensor_length(data) + 1)
-        # print('Vocabulary size (flat) is {vocab_size}'.format(vocab_size=self.vocabulary_size))
         return None
 
 
