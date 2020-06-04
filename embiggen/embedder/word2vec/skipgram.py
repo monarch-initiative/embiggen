@@ -1,3 +1,6 @@
+import tensorflow as tf
+from typing import Union, Tuple, Dict, List
+
 from .word2vec import Word2Vec
 
 
@@ -10,29 +13,20 @@ class SkipGram(Word2Vec):
 
         super().__init__(*args, **kwargs)
 
-
-
         # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
         # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)
         if self.number_negative_samples > self.vocabulary_size:
             self.number_negative_samples = int(self.vocabulary_size / 2)
 
-        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            self.learning_rate)
+
         self.data_index: int = 0
         self.current_sentence: int = 0
 
-        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
-        with tf.device(self.device_type):
-            # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self._embedding: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, self.embedding_size]))
 
-            # construct the variables for the NCE loss
-            self.nce_weights: tf.Variable = tf.Variable(
-                tf.random.normal([self.vocabulary_size, self.embedding_size]))
-            self.nce_biases: tf.Variable = tf.Variable(
-                tf.zeros([self.vocabulary_size]))
+        # Note embeddings are initialized in superclass
+
+
+
 
     def fit(self, samples_per_window: int = 2):
         """Fit the Word2Vec skipgram model 

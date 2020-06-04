@@ -1,3 +1,7 @@
+import tensorflow as tf
+import numpy as np
+from typing import Union, Tuple, Dict, List
+
 from .word2vec import Word2Vec
 
 
@@ -10,7 +14,7 @@ class Cbow(Word2Vec):
         device_type: A string that indicates whether to run computations on (default=cpu).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
-        num_sepochs: The number of epochs to run when training the model (default=1).
+        num_epochs: The number of epochs to run when training the model (default=1).
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
         context_window: How many words to consider left and right.
@@ -34,9 +38,6 @@ class Cbow(Word2Vec):
 
         super().__init__(*args, **kwargs)
 
-        # set vocabulary size
-        self.calculate_vocabulary_size()
-
         # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
         # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)
         if self.number_negative_samples > self.vocabulary_size:
@@ -46,28 +47,9 @@ class Cbow(Word2Vec):
             self.learning_rate)
         self.data_index: int = 0
         self.current_sentence: int = 0
+        # Note embeddings are initialized in superclass
 
-        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
-        with tf.device(self.device_type):
-            # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self._embedding: tf.Variable = tf.Variable(
-                tf.random.uniform(
-                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
-            )
 
-            # should we initialize with uniform or normal?
-            # # tf.Variable(tf.random.normal([self.vocabulary_size, self.embedding_size]))
-
-            # construct the variables for the softmax loss
-            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
-                                                         stddev=0.5 /
-                                                                math.sqrt(
-                                                                    self.embedding_size),
-                                                         dtype=tf.float32)
-            # get weights and biases
-            self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
-            self.softmax_biases = tf.Variable(
-                tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
     def cbow_embedding(self, x):
         """The function performs embedding lookups for each column in the input (except the middle one) and then
@@ -82,11 +64,14 @@ class Cbow(Word2Vec):
         Raises:
             ValueError: If the shape of stacked_embeddings is not equal to twice the context_window length.
         """
+        if self._embedding is None:
+            raise ValueError('No embedding data found (i.e. embedding is None)')
 
         stacked_embeddings = None
         # print('Defining %d embedding lookups representing each word in the context' % (2 * self.context_window))
         for i in range(2 * self.context_window):
-            embedding_i = get_embedding(x[:, i], self._embedding)
+            with tf.device('cpu'):
+                embedding_i = tf.nn.embedding_lookup(self._embedding, x[:, i])
             # added ',_' -- is this correct?
             x_size, y_size = embedding_i.get_shape().as_list()
 

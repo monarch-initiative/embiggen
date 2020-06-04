@@ -23,20 +23,35 @@ class Word2Vec(Embedder):
 
         """
         self._embedding = None
+        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
+        with tf.device('cpu'):
+            self._embedding: tf.Variable = tf.Variable(
+                tf.random.uniform(
+                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
+            )
+            # get weights and biases
+            # construct the variables for the softmax loss
+            tf_distribution = \
+                tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
+                                           stddev=0.5 / tf.math.sqrt(self.embedding_size),
+                                           dtype=tf.float32)
+            self._softmax_weights: tf.Variable = tf.Variable(tf_distribution)
+            self._softmax_biases = tf.Variable(
+                tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
 
     def fit(
-        self,
-        X: Union[tf.Tensor, tf.RaggedTensor],
-        learning_rate: float = 0.05,
-        batch_size: int = 128,
-        num_epochs: int = 1,
-        embedding_size: int = 128,
-        context_window: int = 3,
-        number_negative_samples: int = 7,
-        callbacks: Tuple["Callback"] = ()
+            self,
+            X: Union[tf.Tensor, tf.RaggedTensor],
+            learning_rate: float = 0.05,
+            batch_size: int = 128,
+            num_epochs: int = 1,
+            embedding_size: int = 128,
+            context_window: int = 3,
+            number_negative_samples: int = 7,
+            callbacks: Tuple["Callback"] = ()
 
-        # !TODO! Add callbacks for displaying how the learning is going.
+            # !TODO! Add callbacks for displaying how the learning is going.
     ):
         """Fit the Word2Vec model.
         
@@ -62,7 +77,6 @@ class Word2Vec(Embedder):
         
         
         """
-        
 
         raise NotImplementedError(
             "The fit method must be implemented in the child classes of Word2Vec."
