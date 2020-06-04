@@ -8,6 +8,8 @@ __pycache__
 \.vscode/
 .vscode
 
+test.py
+
 # data
 karate.embedded
 twocities.txt
