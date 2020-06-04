@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from numba import typed, types  # type: ignore
+from numba import typed, types, njit, prange  # type: ignore
 from .alias_method import alias_draw, alias_setup
 from IPython import embed
 
@@ -16,6 +16,109 @@ float_list = types.ListType(types.float64)
 edges_type = (types.UniTuple(numba_nodes_type, 2), numba_edges_type)
 nodes_type = (types.string, numba_nodes_type)
 alias_method_list_type = types.Tuple((types.int16[:], types.float64[:]))
+
+
+@njit(parallel=True)
+def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
+    # TODO! Consider parallelizing this thing.
+    empty_j = np.empty(0, dtype=np.int16)
+    empty_q = np.empty(0, dtype=np.float64)
+    nodes_alias = typed.List.empty_list(alias_method_list_type)
+
+    for _ in nodes:
+        nodes_alias.append((empty_j, empty_q))
+
+    for i in prange(len(nodes)):  # pylint: disable=not-an-iterable
+        src = nodes_mapping[str(nodes[i])]
+        neighboring_edges = nodes_neighboring_edges[src]
+        neighboring_edges_number = len(neighboring_edges)
+
+        # Do not call the alias setup if the node is a trap.
+        # Because that node will have no neighbors and thus the necessity
+        # of setupping the alias method to efficently extract the neighbour.
+        if neighboring_edges_number == 0:
+            #j, q = np.zeros(0, dtype=np.int16), np.zeros(0, dtype=np.float64)
+            continue
+
+        probs = np.zeros(neighboring_edges_number, dtype=np.float64)
+        for j, neighboring_edge in enumerate(neighboring_edges):
+            probs[j] = weights[neighboring_edge]
+
+        nodes_alias[i] = alias_setup(probs/probs.sum())
+    return nodes_alias
+
+
+@njit(parallel=True)
+def build_alias_edges(
+    edges,
+    nodes_neighboring_edges,
+    node_types,
+    edge_types,
+    weights,
+    sources,
+    destinations,
+    return_weight,
+    explore_weight,
+    change_node_type_weight,
+    change_edge_type_weight,
+):
+    # TODO! Consider parallelizing this thing.
+    empty_j = np.empty(0, dtype=np.int16)
+    empty_q = np.empty(0, dtype=np.float64)
+    edges_alias = typed.List.empty_list(alias_method_list_type)
+
+    for _ in edges:
+        edges_alias.append((empty_j, empty_q))
+
+    for i in prange(len(sources)): # pylint: disable=not-an-iterable
+        src = sources[i]
+        dst = destinations[i]
+        neighboring_edges = nodes_neighboring_edges[dst]
+        neighboring_edges_number = len(neighboring_edges)
+
+        # Do not call the alias setup if the edge is a trap.
+        # Because that edge will have no neighbors and thus the necessity
+        # of setupping the alias method to efficently extract the neighbour.
+        if neighboring_edges_number == 0:
+            continue
+
+        probs = np.zeros(neighboring_edges_number, dtype=np.float64)
+        destination_type = node_types[dst]
+        edge_type = edge_types[i]
+
+        for index, neighboring_edge in enumerate(neighboring_edges):
+            # We get the weight for the edge from the destination to
+            # the neighbour.
+            weight = weights[neighboring_edge]
+            # Then we retrieve the neigh_dst node type.
+            # And if the destination node type matches the neighbour
+            # destination node type (we are not changing the node type)
+            # we weigth using the provided change_node_type_weight weight.
+            neighbor_type = destinations[neighboring_edge]
+            if destination_type == neighbor_type:
+                weight /= change_node_type_weight
+            # Similarly if the neighbour edge type matches the previous
+            # edge type (we are not changing the edge type)
+            # we weigth using the provided change_edge_type_weight weight.
+            if edge_type == edge_types[neighboring_edge]:
+                weight /= change_edge_type_weight
+            # If the neigbour matches with the source, hence this is
+            # a backward loop like the following:
+            # SRC -> DST
+            #  ▲     /
+            #   \___/
+            #
+            # We weight the edge weight with the given return weight.
+            if neighboring_edge == src:
+                weight = weight * return_weight
+            # If the backward loop does not exist, we multiply the weight
+            # of the edge by the weight for moving forward and explore more.
+            elif (neighboring_edge, src) not in edges:
+                weight = weight * explore_weight
+            # Then we store these results into the probability vector.
+            probs[index] = weight
+        edges_alias[i] = alias_setup(probs/probs.sum())
+    return edges_alias
 
 
 @jitclass([
@@ -144,6 +247,7 @@ class NumbaGraph:
         # Allocating the vectors of the mappings
         self._edges = typed.Dict.empty(*edges_type)
         self._destinations = np.empty(len(edges), dtype=numpy_nodes_type)
+        sources = np.empty(len(edges), dtype=numpy_nodes_type)
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
@@ -155,6 +259,8 @@ class NumbaGraph:
             dst = self._nodes_mapping[str(destination)]
             # Store the destinations into the destinations vector
             self._destinations[i] = dst
+            # Store the sources into the sources vector
+            sources[i] = src
             # Storing the edges mapping.
             self._edges[src, dst] = i
             # If the preprocessing is required we compute the neighbours
@@ -177,29 +283,14 @@ class NumbaGraph:
 
         # The following are empty versions of j and q, so to use only one
         # instance of these objects.
-        empty_j = np.empty(0, dtype=np.int16)
-        empty_q = np.empty(0, dtype=np.float64)
 
         # TODO! Consider parallelizing this thing.
-        self._nodes_alias = typed.List.empty_list(alias_method_list_type)
-        for node in nodes:
-            src = self._nodes_mapping[str(node)]
-            neighboring_edges = self._nodes_neighboring_edges[src]
-            neighboring_edges_number = len(neighboring_edges)
-
-            # Do not call the alias setup if the node is a trap.
-            # Because that node will have no neighbors and thus the necessity
-            # of setupping the alias method to efficently extract the neighbour.
-            if neighboring_edges_number == 0:
-                self._nodes_alias.append((empty_j, empty_q))
-                #j, q = np.zeros(0, dtype=np.int16), np.zeros(0, dtype=np.float64)
-                continue
-
-            probs = np.zeros(neighboring_edges_number, dtype=np.float64)
-            for i, neighboring_edge in enumerate(neighboring_edges):
-                probs[i] = weights[neighboring_edge]
-
-            self._nodes_alias.append(alias_setup(probs/probs.sum()))
+        self._nodes_alias = build_alias_nodes(
+            nodes,
+            weights,
+            self._nodes_mapping,
+            self._nodes_neighboring_edges
+        )
 
         # Creating struct saving all the data relative to the edges.
         # This structure is composed by a list of three values:
@@ -210,55 +301,21 @@ class NumbaGraph:
         #
         # A very similar struct is also used for the nodes.
         #
+
         # TODO! Consider parallelizing this thing.
-        self._edges_alias = typed.List.empty_list(alias_method_list_type)
-        for (src, dst), i in self._edges.items():
-            neighboring_edges = self._nodes_neighboring_edges[dst]
-            neighboring_edges_number = len(neighboring_edges)
-
-            # Do not call the alias setup if the edge is a trap.
-            # Because that edge will have no neighbors and thus the necessity
-            # of setupping the alias method to efficently extract the neighbour.
-            if neighboring_edges_number == 0:
-                self._edges_alias.append((empty_j, empty_q))
-                continue
-
-            probs = np.zeros(neighboring_edges_number, dtype=np.float64)
-            destination_type = node_types[dst]
-            edge_type = edge_types[i]
-
-            for index, neighboring_edge in enumerate(neighboring_edges):
-                # We get the weight for the edge from the destination to
-                # the neighbour.
-                weight = weights[neighboring_edge]
-                # Then we retrieve the neigh_dst node type.
-                # And if the destination node type matches the neighbour
-                # destination node type (we are not changing the node type)
-                # we weigth using the provided change_node_type_weight weight.
-                neighbor_type = self._destinations[neighboring_edge]
-                if destination_type == neighbor_type:
-                    weight /= change_node_type_weight
-                # Similarly if the neighbour edge type matches the previous
-                # edge type (we are not changing the edge type)
-                # we weigth using the provided change_edge_type_weight weight.
-                if edge_type == edge_types[neighboring_edge]:
-                    weight /= change_edge_type_weight
-                # If the neigbour matches with the source, hence this is
-                # a backward loop like the following:
-                # SRC -> DST
-                #  ▲     /
-                #   \___/
-                #
-                # We weight the edge weight with the given return weight.
-                if neighboring_edge == src:
-                    weight = weight * return_weight
-                # If the backward loop does not exist, we multiply the weight
-                # of the edge by the weight for moving forward and explore more.
-                elif (neighboring_edge, src) not in self._edges:
-                    weight = weight * explore_weight
-                # Then we store these results into the probability vector.
-                probs[index] = weight
-            self._edges_alias.append(alias_setup(probs/probs.sum()))
+        self._edges_alias = build_alias_edges(
+            self._edges,
+            self._nodes_neighboring_edges,
+            node_types,
+            edge_types,
+            weights,
+            sources,
+            self._destinations,
+            return_weight,
+            explore_weight,
+            change_edge_type_weight,
+            change_edge_type_weight
+        )
 
         # To verify if this graph has some walker traps, meaning some nodes
         # that do not have any neighbors, we have to iterate on the list of
