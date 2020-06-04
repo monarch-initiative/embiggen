@@ -110,6 +110,12 @@ class TextEncoder:
             sentence_data = open(self.filename).readlines()
             return [self.clean_text(sent) for sent in sentence_data]
 
+    # TODO! Use fit and transform instead of a constructor that does everything.
+    def fit(self, corpus):
+
+    # TODO! Use fit and transform instead of a constructor that does everything.
+    def transform(self, X:np.ndarray):
+
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
 
@@ -136,6 +142,7 @@ class TextEncoder:
         text = self.process_input_text()
 
         # get word count and set max_vocab_size
+        # TODO: Figure out why is there is if statement and why isn't tokenizer the default.
         if self.data_type == 'words':
             word_count = len(set(text))
             max_vocab = min(max_vocab, word_count) + 1
