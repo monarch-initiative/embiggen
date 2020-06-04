@@ -14,13 +14,13 @@ triple_list = types.Tuple((integer_list, types.int16[:], types.float32[:]))
 
 
 @jitclass([
+    ('_sources', types.int64[:]),
+    ('_destinations', types.int64[:]),
     ('_edges', types.DictType(*kv_ty)),
     ('_edges_indices', types.ListType(keys_triple)),
     ('_nodes_alias', types.ListType(triple_list)),
     ('_nodes_mapping', types.DictType(types.string, types.int64)),
-    ('_nodes_reverse_mapping', types.ListType(types.string)),
     ('_grouped_edge_types', types.DictType(keys_tuple, integer_list)),
-    ('_node_types', types.int16[:]),
     ('_neighbors_edge_types', types.ListType(integer_list)),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
@@ -30,12 +30,12 @@ class NumbaGraph:
 
     def __init__(
         self,
-        edges: List[Tuple[str, str]],
+        sources: List[str],
+        destinations: List[str],
         weights: np.ndarray,
         nodes: np.ndarray,
         node_types: np.ndarray,
         edge_types: np.ndarray,
-        directed: np.ndarray,
         return_weight: float = 1,
         explore_weight: float = 1,
         change_node_type_weight: float = 1,
@@ -46,6 +46,7 @@ class NumbaGraph:
 
         Parameters
         ---------------------
+        # TODO! UPDATE DOCSTRING!!!
         edges: List[Tuple[str, str]],
             List of edges of the graph.
         nodes: List[str],
@@ -56,8 +57,6 @@ class NumbaGraph:
             The node types for each node.
         node_types: List[int],
             The edge types for each source and sink.
-        directed: List[bool],
-            The edges directions for each source and sink.
         return_weight : float = 1,
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
@@ -88,11 +87,35 @@ class NumbaGraph:
         New instance of graph.
         """
 
+        # Algorithm for preprocessing the graph:
+        #
+        #   1 - Computing nodes neighbouring edges.
+        #       
+        #       A - Allocate the list of empty lists with len = len(nodes)
+        #       B - Iterate sequentially over the enumerate(sources)
+        #       C - Given an edge (i, src) -> n2e_neighbours[src].append(i)
+        #
+        #   2 - Compute edges j (int16) and q (float64) vectors for alias method.
+        #       
+        #   3 - Compute destinations.
+        #
+        # Create the mapping of nodes and edges to indices
+        # Compute the neighbours of each index
+        #   - in such a way that if the index is >= k it's a trap
+        #       - This can be done only after having built the first neighbours vector.
+        #       - The i-th node index can be computed as len(nodes) - i
+        # 
+        #   Random Walk:
+        #       Given an edge e, we access to the alias list to extract j, q
+        #           index = alias_draw(*alias[e])
+        #       Then we get the destination node with destinations[e] 
+        #           then we get the neighbours of the dest node with n2e_neihbours[destionation[e]]
+        #           and finally we can exract the indexth node
+        
+        #           new_edge = n2e_neighbours[destinations[e]][alias_draw(*alias[e])]
+
         self.random_walk_preprocessing = random_walk_preprocessing
         nodes_number = len(nodes)
-
-        # Storing node types
-        self._node_types = node_types
 
         # Creating mapping of nodes and integer ID.
         # The map looks like the following:
@@ -101,77 +124,27 @@ class NumbaGraph:
         #   "node_2_id": 1
         # }
         self._nodes_mapping = typed.Dict.empty(types.string, types.int64)
-        self._nodes_reverse_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
             self._nodes_mapping[str(node)] = i
-            self._nodes_reverse_mapping.append(str(node))
-
-        # Creating mapping of edges and integer ID.
-        # The map looks like the following:
-        # {
-        #   (0, 1): 0,
-        #   (0, 2): 1
-        # }
-        self._edges = typed.Dict.empty(*kv_ty)
 
         if self.random_walk_preprocessing:
             # Each node has a list of neighbors.
             # These lists are initialized as empty.
-            nodes_neighbors = typed.List.empty_list(integer_list)
-            # Each node has a list of neighbors weights.
-            # These lists are initialized as empty, if a weight
-            neighbors_weights = typed.List.empty_list(float_list)
-            # Each node has a list of the edges types.
-            # These lists are initialized as empty, if a weight
-            self._neighbors_edge_types = typed.List.empty_list(integer_list)
-
-            for _ in range(nodes_number):
-                nodes_neighbors.append(typed.List.empty_list(types.int64))
-                neighbors_weights.append(typed.List.empty_list(types.float32))
-                self._neighbors_edge_types.append(
-                    typed.List.empty_list(types.int64)
-                )
-
-            # Dictionary of lists of types.
-            self._grouped_edge_types = typed.Dict.empty(
-                keys_tuple, integer_list)
+            nodes_neighboring_edges = typed.List.empty_list(integer_list)
+        
+        # Allocating the vectors of the mappings
+        self._sources = np.empty(len(sources), )
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
-        i = 0
-        for k, ((start_name, end_name), edge_type) in enumerate(zip(edges, edge_types)):
-            src = self._nodes_mapping[str(start_name)]
-            dst = self._nodes_mapping[str(end_name)]
-            if (src, dst, edge_type) not in self._edges:
-                self._edges[(src, dst, edge_type)] = i
-                i += 1
-                if self.random_walk_preprocessing:
-                    if (src, dst) not in self._grouped_edge_types:
-                        self._grouped_edge_types[src, dst] = typed.List.empty_list(
-                            types.int64)
-                    self._grouped_edge_types[src, dst].append(edge_type)
-                    nodes_neighbors[src].append(dst)
-                    self._neighbors_edge_types[src].append(edge_type)
-                    neighbors_weights[src].append(weights[k])
-            # If the edge is not-directed we add the inverse to be able to
-            # convert undirected graph to a directed one.
-            if not directed[k] and (dst, src, edge_type) not in self._edges:
-                self._edges[(dst, src, edge_type)] = i
-                i += 1
-                if self.random_walk_preprocessing:
-                    if (dst, src) not in self._grouped_edge_types:
-                        self._grouped_edge_types[dst, src] = typed.List.empty_list(
-                            types.int64)
-                    self._grouped_edge_types[dst, src].append(edge_type)
-                    nodes_neighbors[dst].append(src)
-                    self._neighbors_edge_types[dst].append(edge_type)
-                    neighbors_weights[dst].append(weights[k])
-
-        # Compute edges
-        self._edges_indices = typed.List.empty_list(keys_triple)
-        for edge in self._edges:
-            self._edges_indices.append(edge)
+        for k, src in enumerate(sources):
+            src = self._nodes_mapping[str(src)]
+            self._sources
+            if self.random_walk_preprocessing:
+                nodes_neighboring_edges[src].append(i)
+                self._neighbors_edge_types[src].append(edge_type)
+                neighbors_weights[src].append(weights[k])
 
         if not self.random_walk_preprocessing:
             return

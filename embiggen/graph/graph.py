@@ -33,6 +33,7 @@ class Graph(Hashable):
             raise ValueError(
                 "Given graph was not properly setup for random walk.")
 
+        # TODO add optional argument for shuffling the tensor
         if self._graph.has_traps:
             return tf.ragged.constant(random_walk_with_traps(self._graph, number, length))
         return tf.constant(random_walk(self._graph, number, length))
