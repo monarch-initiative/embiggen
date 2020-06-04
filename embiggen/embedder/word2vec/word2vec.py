@@ -6,8 +6,10 @@ import tensorflow as tf  # type: ignore
 from typing import Dict, List, Optional, Tuple, Union
 import os
 
+from ..embedder import Embedder
 
-class Word2Vec:
+
+class Word2Vec(Embedder):
     """Superclass of all of the word2vec family algorithms."""
 
     def __init__(self) -> None:

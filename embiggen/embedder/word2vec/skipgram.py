@@ -1,3 +1,6 @@
+from .word2vec import Word2Vec
+
+
 class SkipGram(Word2Vec):
     """
     Class to run word2vec using skip grams
@@ -7,8 +10,7 @@ class SkipGram(Word2Vec):
 
         super().__init__(*args, **kwargs)
 
-        # set vocabulary size
-        self.calculate_vocabulary_size()
+
 
         # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
         # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)

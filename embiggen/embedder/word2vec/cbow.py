@@ -1,3 +1,6 @@
+from .word2vec import Word2Vec
+
+
 class Cbow(Word2Vec):
     """Class to run word2vec using continuous bag of words (cbow).
     Attributes:
@@ -27,7 +30,7 @@ class Cbow(Word2Vec):
         TypeError: If the self.data does not contain a list of lists, where each list contains integers.
     """
 
-    def __init__(self, *args,  **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
 
         super().__init__(*args, **kwargs)
 
@@ -58,8 +61,8 @@ class Cbow(Word2Vec):
             # construct the variables for the softmax loss
             tf_distribution = tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
                                                          stddev=0.5 /
-                                                         math.sqrt(
-                                                             self.embedding_size),
+                                                                math.sqrt(
+                                                                    self.embedding_size),
                                                          dtype=tf.float32)
             # get weights and biases
             self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
