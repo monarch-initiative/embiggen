@@ -94,7 +94,8 @@ def build_alias_edges(
             # And if the destination node type matches the neighbour
             # destination node type (we are not changing the node type)
             # we weigth using the provided change_node_type_weight weight.
-            neighbor_type = destinations[neighboring_edge]
+            neighbor_destination = destinations[neighboring_edge]
+            neighbor_type = node_types[neighbor_destination]
             if destination_type == neighbor_type:
                 weight /= change_node_type_weight
             # Similarly if the neighbour edge type matches the previous
@@ -109,11 +110,11 @@ def build_alias_edges(
             #   \___/
             #
             # We weight the edge weight with the given return weight.
-            if neighboring_edge == src:
+            if neighbor_destination == src:
                 weight = weight * return_weight
             # If the backward loop does not exist, we multiply the weight
             # of the edge by the weight for moving forward and explore more.
-            elif (neighboring_edge, src) not in edges:
+            elif (neighbor_destination, src) not in edges:
                 weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
