@@ -9,8 +9,8 @@ keys_tuple = types.UniTuple(types.int64, 2)
 keys_triple = types.UniTuple(types.int64, 3)
 kv_ty = (keys_triple, types.int64)
 integer_list = types.ListType(types.int64)
-float_list = types.ListType(types.float64)
-triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
+float_list = types.ListType(types.float32)
+triple_list = types.Tuple((integer_list, types.int16[:], types.float32[:]))
 
 
 @jitclass([
@@ -20,8 +20,7 @@ triple_list = types.Tuple((integer_list, types.int64[:], types.float64[:]))
     ('_nodes_mapping', types.DictType(types.string, types.int64)),
     ('_nodes_reverse_mapping', types.ListType(types.string)),
     ('_grouped_edge_types', types.DictType(keys_tuple, integer_list)),
-    ('_node_types', types.int64[:]),
-    ('_edge_types', integer_list),
+    ('_node_types', types.int16[:]),
     ('_neighbors_edge_types', types.ListType(integer_list)),
     ('_edges_alias', types.ListType(triple_list)),
     ('has_traps', types.boolean),
@@ -128,7 +127,7 @@ class NumbaGraph:
 
             for _ in range(nodes_number):
                 nodes_neighbors.append(typed.List.empty_list(types.int64))
-                neighbors_weights.append(typed.List.empty_list(types.float64))
+                neighbors_weights.append(typed.List.empty_list(types.float32))
                 self._neighbors_edge_types.append(
                     typed.List.empty_list(types.int64)
                 )
@@ -212,7 +211,7 @@ class NumbaGraph:
         #
         self._nodes_alias = typed.List.empty_list(triple_list)
         for node_neighbors, neighbour_weights in zip(nodes_neighbors, neighbors_weights):
-            probs = np.zeros(len(neighbour_weights))
+            probs = np.zeros(len(neighbour_weights), dtype=np.float32)
             for i, weight in enumerate(neighbour_weights):
                 probs[i] = weight
             # Do not call the alias setup if the node is a trap.
@@ -221,7 +220,7 @@ class NumbaGraph:
             if len(neighbour_weights):
                 j, q = alias_setup(probs/probs.sum())
             else:
-                j, q = np.zeros(0, dtype=np.int64), np.zeros(0)
+                j, q = np.zeros(0, dtype=np.int16), np.zeros(0, dtype=np.float32)
             self._nodes_alias.append((node_neighbors, j, q))
 
         # Creating struct saving all the data relative to the edges.
@@ -235,7 +234,7 @@ class NumbaGraph:
         #
         self._edges_alias = typed.List.empty_list(triple_list)
         for (src, dst, edge_type), edge_neighbors in zip(self._edges_indices, edges_neighbors):
-            probs = np.zeros(len(edge_neighbors))
+            probs = np.zeros(len(edge_neighbors), dtype=np.float32)
             destination_type = self._node_types[dst]
             for index, neigh in enumerate(edge_neighbors):
                 # We get the weight for the edge from the destination to
@@ -278,7 +277,7 @@ class NumbaGraph:
             if len(edge_neighbors):
                 j, q = alias_setup(probs/probs.sum())
             else:
-                j, q = np.zeros(0, dtype=np.int64), np.zeros(0)
+                j, q = np.zeros(0, dtype=np.int16), np.zeros(0, dtype=np.float32)
 
             self._edges_alias.append((edge_neighbors, j, q))
 

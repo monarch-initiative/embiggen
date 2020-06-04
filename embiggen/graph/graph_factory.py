@@ -155,7 +155,7 @@ class GraphFactory:
                 start_nodes_column: "string",
                 end_nodes_column: "string",
                 edge_types_column: "string",
-                weights_column: np.float64,
+                weights_column: np.float32,
                 directed_column: np.bool
             },
             header=(0 if edge_file_has_header else None)
@@ -230,7 +230,7 @@ class GraphFactory:
             )
             weights = edges_df[weights_column].values
         else:
-            weights = np.full(len(edges), self._default_weight, dtype=np.float64)
+            weights = np.full(len(edges), self._default_weight, dtype=np.float32)
 
         #######################################
         # Handling edge directions            #
@@ -263,11 +263,11 @@ class GraphFactory:
             node_types = np.full(len(nodes), self._default_node_type, dtype=str)
 
         unique_node_types = {
-            node_type: i
+            node_type: np.int16(i)
             for i, node_type in enumerate(np.unique(node_types))
         }
 
-        numba_node_types = np.empty(len(node_types), dtype=np.int64)
+        numba_node_types = np.empty(len(node_types), dtype=np.int16)
         for i, node_type in enumerate(node_types):
             numba_node_types[i] = unique_node_types[node_type]
 

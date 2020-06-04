@@ -32,6 +32,7 @@ class Graph(Hashable):
         if not self._graph.random_walk_preprocessing:
             raise ValueError(
                 "Given graph was not properly setup for random walk.")
+
         if self._graph.has_traps:
             return tf.ragged.constant(random_walk_with_traps(self._graph, number, length))
         return tf.constant(random_walk(self._graph, number, length))

@@ -34,9 +34,11 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     if probabilities.size == 0:
         raise ValueError("Given probability vector is empty!")
-
-    if abs(probabilities.sum() - 1) > 1e-08:
-        raise ValueError("Given probability vector does not sum to one.")
+    
+    if abs(probabilities.sum() - 1) > 1e-5:
+        raise ValueError(
+            "Given probability vector does not sum to one"
+        )
 
     q = probabilities * probabilities.size
     smaller_mask = q < 1.0
@@ -44,7 +46,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     larger = list(np.where(~smaller_mask)[0])
 
     # j is the mapping of the opposite event in the Bernulli trias
-    j = np.zeros_like(probabilities, dtype=np.int64)
+    j = np.zeros_like(probabilities, dtype=np.int16)
     # Converge to the equivalente binary mixture
     while smaller and larger:
         small = smaller.pop()
