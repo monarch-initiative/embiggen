@@ -2,6 +2,7 @@ from embiggen.graph import GraphFactory
 from unittest import TestCase
 import pytest
 from tqdm.auto import tqdm
+from IPython import embed
 
 
 class TestGraph(TestCase):
@@ -57,21 +58,38 @@ class TestGraph(TestCase):
 
         self._factory = GraphFactory()
         self._directed_factory = GraphFactory(default_directed=True)
+        self._verbose = False
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
             self._paths,
+            disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(path)
                 subgraph = graph._graph
-                for i in range(len(subgraph._nodes_alias)):
-                    self.assertTrue(subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i)[0] in subgraph._nodes_alias[i][0])
+                self.assertTrue(all([
+                    dst1 == dst2 and 0 <= dst1 < len(subgraph._nodes_neighboring_edges)
+                    for dst1, (_, dst2) in zip(subgraph._destinations, subgraph._edges)
+                ]))
+                self.assertTrue(all([
+                    0 <= edge_id < len(subgraph._edges)
+                    for _, edge_id in subgraph._edges.items()
+                ]))
+                self.assertTrue(all(
+                    0 <= edge_id < len(subgraph._edges)
+                    for edges in subgraph._nodes_neighboring_edges
+                    for edge_id in edges
+                ))
                 for edge in range(len(subgraph._edges_alias)):
-                    self.assertTrue(subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
-                        edge) in subgraph._edges_alias[edge][0])
+                    self.assertTrue(
+                        subgraph.is_edge_trap(edge) or
+                        subgraph.extract_random_edge_neighbour(edge)[1]
+                        in subgraph._nodes_neighboring_edges[
+                            subgraph._destinations[edge]
+                        ]
+                    )
 
                 self.assertEqual(graph.consistent_hash(),
                                  graph.consistent_hash())
@@ -79,6 +97,7 @@ class TestGraph(TestCase):
     def test_unrastered_graph(self):
         for path in tqdm(
             self._paths,
+            disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
@@ -93,6 +112,7 @@ class TestGraph(TestCase):
         """Testing that the normalization process actually works."""
         for path in tqdm(
             self._legacy_paths,
+            disable=not self._verbose,
             desc="Testing on legacy"
         ):
             for factory in (self._factory, self._directed_factory):
@@ -104,6 +124,16 @@ class TestGraph(TestCase):
                     weights_column=2
                 )
                 subgraph = graph._graph
+            
+                for _, edge_id in subgraph._edges.items():
+                    self.assertTrue(0 <= edge_id < len(subgraph._edges))
+
+                self.assertTrue(all(
+                    0 <= edge_id < len(subgraph._edges)
+                    for edges in subgraph._nodes_neighboring_edges
+                    for edge_id in edges
+                ))
+                
                 for i in range(len(subgraph._nodes_alias)):
                     self.assertTrue(
                         subgraph.is_node_trap(i) or
@@ -114,7 +144,9 @@ class TestGraph(TestCase):
                     self.assertTrue(
                         subgraph.is_edge_trap(edge) or
                         subgraph.extract_random_edge_neighbour(edge)[1]
-                        in subgraph._nodes_neighboring_edges[i]
+                        in subgraph._nodes_neighboring_edges[
+                            subgraph._destinations[edge]
+                        ]
                     )
 
     def test_setup_from_custom_dataframe(self):
@@ -129,8 +161,8 @@ class TestGraph(TestCase):
     def test_random_walk(self):
         for path in tqdm(
             self._paths,
-            desc="Testing on non-legacy",
-            disable=False
+            disable=not self._verbose,
+            desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
@@ -160,8 +192,8 @@ class TestGraph(TestCase):
     def test_random_walk_on_legacy(self):
         for path in tqdm(
             self._legacy_paths,
-            desc="Testing on non-legacy",
-            disable=False
+            disable=not self._verbose,
+            desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
@@ -193,8 +225,8 @@ class TestGraph(TestCase):
     def test_alias_shape(self):
         for path in tqdm(
             self._paths,
-            desc="Testing on non-legacy",
-            disable=False
+            disable=not self._verbose,
+            desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(
@@ -209,8 +241,8 @@ class TestGraph(TestCase):
     def test_alias_shape_on_legacy(self):
         for path in tqdm(
             self._legacy_paths,
-            desc="Testing on non-legacy",
-            disable=False
+            disable=not self._verbose,
+            desc="Testing on non-legacy"
         ):
             for factory in (self._factory, self._directed_factory):
                 graph = factory.read_csv(

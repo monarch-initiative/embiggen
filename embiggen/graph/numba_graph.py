@@ -3,7 +3,7 @@ import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from numba import typed, types  # type: ignore
 from .alias_method import alias_draw, alias_setup
-
+from IPython import embed
 
 numba_nodes_type = types.int64
 numpy_nodes_type = np.int64
@@ -11,7 +11,7 @@ numba_edges_type = types.int64
 numpy_edges_type = np.int64
 
 # key and value types
-integer_list = types.ListType(types.int64)
+edges_type_list = types.ListType(numba_edges_type)
 float_list = types.ListType(types.float64)
 edges_type = (types.UniTuple(numba_nodes_type, 2), numba_edges_type)
 nodes_type = (types.string, numba_nodes_type)
@@ -23,7 +23,7 @@ alias_method_list_type = types.Tuple((types.int16[:], types.float64[:]))
     ('_destinations', types.int64[:]),
     ('_nodes_mapping', types.DictType(*nodes_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
-    ('_nodes_neighboring_edges', types.ListType(integer_list)),
+    ('_nodes_neighboring_edges', types.ListType(edges_type_list)),
     ('_nodes_alias', types.ListType(alias_method_list_type)),
     ('_edges_alias', types.ListType(alias_method_list_type)),
     ('has_traps', types.boolean),
@@ -33,11 +33,11 @@ class NumbaGraph:
 
     def __init__(
         self,
-        edges: np.ndarray, # Array of strings
-        weights: np.ndarray, # Array of floats, same as the weights type
-        nodes: np.ndarray, # Array of strings
-        node_types: np.ndarray, # Array of integers, int16
-        edge_types: np.ndarray, # Array of integers, int16
+        edges: np.ndarray,  # Array of strings
+        weights: np.ndarray,  # Array of floats, same as the weights type
+        nodes: np.ndarray,  # Array of strings
+        node_types: np.ndarray,  # Array of integers, int16
+        edge_types: np.ndarray,  # Array of integers, int16
         return_weight: float = 1,
         explore_weight: float = 1,
         change_node_type_weight: float = 1,
@@ -125,7 +125,7 @@ class NumbaGraph:
         #   "node_1_id": 0,
         #   "node_2_id": 1
         # }
-        self._nodes_mapping = typed.Dict.empty(types.string, node_types)
+        self._nodes_mapping = typed.Dict.empty(*nodes_type)
         self._reverse_nodes_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
             self._nodes_mapping[str(node)] = i
@@ -134,10 +134,11 @@ class NumbaGraph:
         if self.random_walk_preprocessing:
             # Each node has a list of neighbors.
             # These lists are initialized as empty.
-            self._nodes_neighboring_edges = typed.List.empty_list(integer_list)
+            self._nodes_neighboring_edges = typed.List.empty_list(
+                edges_type_list)
             for _ in range(len(nodes)):
                 self._nodes_neighboring_edges.append(
-                    typed.List.empty_list(edge_types)
+                    typed.List.empty_list(numba_edges_type)
                 )
 
         # Allocating the vectors of the mappings
@@ -152,6 +153,8 @@ class NumbaGraph:
             src = self._nodes_mapping[str(source)]
             # Create the destinations numeric ID
             dst = self._nodes_mapping[str(destination)]
+            # Store the destinations into the destinations vector
+            self._destinations[i] = dst
             # Storing the edges mapping.
             self._edges[src, dst] = i
             # If the preprocessing is required we compute the neighbours
@@ -171,7 +174,7 @@ class NumbaGraph:
         #
         # A very similar struct is also used for the edges.
         #
-        
+
         # The following are empty versions of j and q, so to use only one
         # instance of these objects.
         empty_j = np.empty(0, dtype=np.int16)
@@ -210,7 +213,7 @@ class NumbaGraph:
         # TODO! Consider parallelizing this thing.
         self._edges_alias = typed.List.empty_list(alias_method_list_type)
         for (src, dst), i in self._edges.items():
-            neighboring_edges = self._nodes_neighboring_edges[src]
+            neighboring_edges = self._nodes_neighboring_edges[dst]
             neighboring_edges_number = len(neighboring_edges)
 
             # Do not call the alias setup if the edge is a trap.
@@ -218,6 +221,7 @@ class NumbaGraph:
             # of setupping the alias method to efficently extract the neighbour.
             if neighboring_edges_number == 0:
                 self._edges_alias.append((empty_j, empty_q))
+                continue
 
             probs = np.zeros(neighboring_edges_number, dtype=np.float64)
             destination_type = node_types[dst]
@@ -291,7 +295,7 @@ class NumbaGraph:
         -----------------
         Boolean True if node is a trap.
         """
-        return self._nodes_alias[node] is None
+        return len(self._nodes_neighboring_edges[node]) == 0
 
     def is_edge_trap(self, edge: int) -> bool:
         """Return boolean representing if edge is a dead end.
@@ -305,21 +309,7 @@ class NumbaGraph:
         -----------------
         Boolean True if edge is a trap.
         """
-        return self._edges_alias[edge] is None
-
-    def get_edge_destination(self, edge: int) -> int:
-        """Return the endpoint of the given edge ID.
-
-        Parameters
-        ----------
-        edge: int,
-            The id of the edge.
-
-        Returns
-        -----------------
-        Return destination id of given edge.
-        """
-        return self._destinations[edge]
+        return self.is_node_trap(self._destinations[edge])
 
     def neighbors(self, node: str) -> List:
         """Return neighbors of given node.
@@ -390,7 +380,7 @@ class NumbaGraph:
         # - The numpy array of opposite events for the alias method (j)
         # - The probabilities for the extractions for the alias method (q)
         j, q = self._nodes_alias[src]
-        
+
         return self.extract_transition_informations(src, j, q)
 
     def extract_random_edge_neighbour(self, edge: int) -> Tuple[int, int]:
@@ -415,5 +405,5 @@ class NumbaGraph:
         # - The numpy array of opposite events for the alias method (j)
         # - The probabilities for the extractions for the alias method (q)
         j, q = self._edges_alias[edge]
-        
+
         return self.extract_transition_informations(src, j, q)

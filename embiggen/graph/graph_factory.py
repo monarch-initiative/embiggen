@@ -168,7 +168,7 @@ class GraphFactory:
 
         # Handling directionality, in the future we may want to handle this
         # with another customly written class.
-        if directed:
+        if not directed:
             edges_number = edges_df.shape[0]
             # We need to get the dataframe columns because they might be not
             # in the order we expect.
