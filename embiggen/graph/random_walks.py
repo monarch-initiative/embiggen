@@ -33,8 +33,7 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
             walk[0] = src
             walk[1], edge = graph.extract_random_node_neighbour(walk[0])
             for index in range(2, length):
-                edge = graph.extract_random_edge_neighbour(edge)
-                walk[index] = graph.get_edge_destination(edge)
+                walk[index], edge = graph.extract_random_edge_neighbour(edge)
     return all_walks
 
 
@@ -80,6 +79,6 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
                 # loop.
                 if graph.is_edge_trap(edge):
                     break
-                edge = graph.extract_random_edge_neighbour(edge)
-                walk.append(graph.get_edge_destination(edge))
+                dst, edge = graph.extract_random_edge_neighbour(edge)
+                walk.append(dst)
     return all_walks

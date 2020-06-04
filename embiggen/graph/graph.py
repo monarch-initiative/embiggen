@@ -53,56 +53,14 @@ class Graph(Hashable):
         return self._graph.neighbors(node)
 
     @property
-    def edges_indices(self) -> np.ndarray:
+    def edges(self) -> np.ndarray:
         """Return edges indices.
 
         Returns
         ---------------------
         Numpy array of edges indices.
         """
-        return np.array(self._graph._edges_indices)
-
-    @property
-    def nodes_indices(self) -> np.ndarray:
-        """Return edges indices.
-
-        Returns
-        ---------------------
-        Numpy array of edges indices.
-        """
-        return np.array(self._graph._nodes_reverse_mapping)
-
-    @property
-    def sources_indices(self) -> np.ndarray:
-        """Return sources of all edges.
-
-        Returns
-        ---------------------
-        Numpy array of surces.
-        """
-        return self.edges_indices[:, 0]
-
-    @property
-    def destinations_indices(self) -> np.ndarray:
-        """Return destinations of all edges.
-
-        Returns
-        ---------------------
-        Numpy array of destinations.
-        """
-        return self.edges_indices[:, 1]
-
-    @property
-    def worddictionary(self) -> Dict[str, int]:
-        """Return mapping for nodes to numeric node ID."""
-        # TODO: this method is used too much internally within the w2v.
-        # We should use the numeric indices internally.
-        return self._graph._nodes_mapping
-
-    @property
-    def reverse_worddictionary(self) -> List[str]:
-        """Return mapping for numeric nodes ID to nodes."""
-        return self.nodes_indices
+        return self._graph._edges
 
     def degree(self, node: int) -> int:
         """Return degree of given node.
@@ -129,6 +87,5 @@ class Graph(Hashable):
                 }
                 if self._graph.random_walk_preprocessing else {}
             ),
-            "edges": self.edges_indices,
-            "nodes": self.nodes_indices
+            "edges": self.edges
         })

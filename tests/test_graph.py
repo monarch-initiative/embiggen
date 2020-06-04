@@ -105,11 +105,17 @@ class TestGraph(TestCase):
                 )
                 subgraph = graph._graph
                 for i in range(len(subgraph._nodes_alias)):
-                    self.assertTrue(subgraph.is_node_trap(i) or subgraph.extract_random_node_neighbour(
-                        i)[0] in subgraph._nodes_alias[i][0])
+                    self.assertTrue(
+                        subgraph.is_node_trap(i) or
+                        subgraph.extract_random_node_neighbour(i)[1]
+                        in subgraph._nodes_neighboring_edges[i]
+                    )
                 for edge in range(len(subgraph._edges_alias)):
-                    self.assertTrue(subgraph.is_edge_trap(edge) or subgraph.extract_random_edge_neighbour(
-                        edge) in subgraph._edges_alias[edge][0])
+                    self.assertTrue(
+                        subgraph.is_edge_trap(edge) or
+                        subgraph.extract_random_edge_neighbour(edge)[1]
+                        in subgraph._nodes_neighboring_edges[i]
+                    )
 
     def test_setup_from_custom_dataframe(self):
         graph = self._factory.read_csv(
@@ -134,7 +140,7 @@ class TestGraph(TestCase):
                 walks = graph.random_walk(walks_number, walks_length).numpy()
                 subgraph = graph._graph
                 self.assertTrue(all(
-                    edge in subgraph._grouped_edge_types
+                    edge in subgraph._edges
                     for walk in walks
                     for edge in zip(walk[:-1], walk[1:])
                 ))
@@ -195,9 +201,9 @@ class TestGraph(TestCase):
                     path, return_weight=10, explore_weight=10)
                 subgraph = graph._graph
                 self.assertTrue(all(
-                    len(neighbors) == len(j) == len(q) and (
+                    len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
-                    for (neighbors, j, q) in subgraph._nodes_alias
+                    for (j, q) in subgraph._nodes_alias
                 ))
 
     def test_alias_shape_on_legacy(self):
@@ -218,7 +224,7 @@ class TestGraph(TestCase):
                 )
                 subgraph = graph._graph
                 self.assertTrue(all(
-                    len(neighbors) == len(j) == len(q) and (
+                    len(j) == len(q) and (
                         subgraph.has_traps or len(q) > 0)
-                    for (neighbors, j, q) in subgraph._nodes_alias
+                    for (j, q) in subgraph._nodes_alias
                 ))

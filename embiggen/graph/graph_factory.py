@@ -10,7 +10,6 @@ class GraphFactory:
     def __init__(
         self,
         default_weight: int = 1,
-        default_directed: bool = False,
         default_node_type: str = 'biolink:NamedThing',
         default_edge_type: str = 'biolink:Association',
         **kwargs: Dict
@@ -40,7 +39,6 @@ class GraphFactory:
         -----------------------------
         Return new GraphFactory.
         """
-        self._default_directed = default_directed
         self._default_weight = default_weight
         self._default_node_type = default_node_type
         self._default_edge_type = default_edge_type
@@ -58,9 +56,9 @@ class GraphFactory:
         end_nodes_column: str = "object",
         node_types_column: str = "category",
         edge_types_column: str = "edge_label",
-        directed_column: str = "is_directed",
         weights_column: str = "weight",
         nodes_columns: str = "id",
+        directed: bool = True,
         **kwargs: Dict
     ):
         """Return new instance of graph based on given files.
@@ -88,9 +86,9 @@ class GraphFactory:
         node_types_column: str = "category",
             Column to use for the nodes type. When no header is available,
             use the numeric index curresponding to the column.
-        directed_column: str = "is_directed",
-            Column to use for the directionality of each edge. When no header is
-            avaliable, it assumes non-directed.
+        directed: bool = True,
+            Wethever the graph is directed or not. An undirected graph will
+            be rendered in the factory before being processed.
         weights_column: str = "weight",
             Column to use for the edges weight. When no header is available,
             use the numeric index curresponding to the column.
@@ -146,8 +144,7 @@ class GraphFactory:
                     start_nodes_column,
                     end_nodes_column,
                     edge_types_column,
-                    weights_column,
-                    directed_column
+                    weights_column
                 )
                 if column is not None and column in tmp_edges_df.columns
             ],
@@ -155,16 +152,42 @@ class GraphFactory:
                 start_nodes_column: "string",
                 end_nodes_column: "string",
                 edge_types_column: "string",
-                weights_column: np.float32,
-                directed_column: np.bool
+                weights_column: np.float64
             },
             header=(0 if edge_file_has_header else None)
         )
 
         # Dropping duplicated edges
-        edges_df = edges_df.drop_duplicates([
+        unique_columns = [
             start_nodes_column, end_nodes_column
-        ])
+        ]
+        if edge_types_column in edges_df.columns:
+            unique_columns.append(edge_types_column)
+
+        edges_df = edges_df.drop_duplicates(unique_columns)
+
+        # Handling directionality, in the future we may want to handle this
+        # with another customly written class.
+        if directed:
+            edges_number = edges_df.shape[0]
+            # We need to get the dataframe columns because they might be not
+            # in the order we expect.
+            for i, row in edges_df.iterrows():
+                src = row[end_nodes_column]
+                dst = row[start_nodes_column]
+                # We don't need to duplicate self loops
+                if src == dst:
+                    continue
+                swapped_row = {
+                    start_nodes_column: row[end_nodes_column],
+                    end_nodes_column: row[start_nodes_column],
+                }
+
+                for col in (edge_types_column, weights_column):
+                    if col in row:
+                        swapped_row[col] = row[col]
+
+                edges_df.loc[edges_number+i] = list(swapped_row.values())
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column
@@ -218,7 +241,7 @@ class GraphFactory:
 
         else:
             nodes = unique_nodes
-        
+
         #######################################
         # Handling edge weights               #
         #######################################
@@ -230,22 +253,8 @@ class GraphFactory:
             )
             weights = edges_df[weights_column].values
         else:
-            weights = np.full(len(edges), self._default_weight, dtype=np.float32)
-
-        #######################################
-        # Handling edge directions            #
-        #######################################
-
-        # If provided, we use the list from the dataframe.
-        if directed_column in edges_df.columns:
-            edges_df[directed_column].fillna(
-                value=self._default_directed,
-                inplace=True
-            )
-            directed_edges = edges_df[directed_column].values
-        else:
-            # Otherwise if the column is not available.
-            directed_edges = np.full(len(edges), self._default_directed, dtype=np.bool)
+            weights = np.full(
+                len(edges), self._default_weight, dtype=np.float64)
 
         #######################################
         # Handling node types                 #
@@ -260,7 +269,8 @@ class GraphFactory:
             node_types = nodes_df[node_types_column].values.astype(str)
         else:
             # Otherwise if the column is not available.
-            node_types = np.full(len(nodes), self._default_node_type, dtype=str)
+            node_types = np.full(
+                len(nodes), self._default_node_type, dtype=str)
 
         unique_node_types = {
             node_type: np.int16(i)
@@ -284,7 +294,8 @@ class GraphFactory:
             edge_types = edges_df[edge_types_column].values
         else:
             # Otherwise if the column is not available.
-            edge_types = np.full(len(edges), self._default_edge_type, dtype=str)
+            edge_types = np.full(
+                len(edges), self._default_edge_type, dtype=str)
 
         unique_edge_types = {
             edge_type: i
@@ -301,6 +312,5 @@ class GraphFactory:
             nodes=nodes,
             node_types=numba_node_types,
             edge_types=numba_edge_types,
-            directed=directed_edges,
             **kwargs
         )
