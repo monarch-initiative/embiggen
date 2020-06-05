@@ -15,13 +15,13 @@ edges_type_list = types.ListType(numba_edges_type)
 float_list = types.ListType(types.float64)
 edges_type = (types.UniTuple(numba_nodes_type, 2), numba_edges_type)
 nodes_type = (types.string, numba_nodes_type)
-alias_method_list_type = types.Tuple((types.int16[:], types.float64[:]))
+alias_method_list_type = types.Tuple((types.int32[:], types.float64[:]))
 
 
 @njit(parallel=True)
 def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
     # TODO! Consider parallelizing this thing.
-    empty_j = np.empty(0, dtype=np.int16)
+    empty_j = np.empty(0, dtype=np.int32)
     empty_q = np.empty(0, dtype=np.float64)
     nodes_alias = typed.List.empty_list(alias_method_list_type)
 
@@ -38,7 +38,7 @@ def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
         # Because that node will have no neighbors and thus the necessity
         # of setupping the alias method to efficently extract the neighbour.
         if neighboring_edges_number == 0:
-            #j, q = np.zeros(0, dtype=np.int16), np.zeros(0, dtype=np.float64)
+            #j, q = np.zeros(0, dtype=np.int32), np.zeros(0, dtype=np.float64)
             continue
 
         probs = np.zeros(neighboring_edges_number, dtype=np.float64)
@@ -64,7 +64,7 @@ def build_alias_edges(
     change_edge_type_weight,
 ):
     # TODO! Consider parallelizing this thing.
-    empty_j = np.empty(0, dtype=np.int16)
+    empty_j = np.empty(0, dtype=np.int32)
     empty_q = np.empty(0, dtype=np.float64)
     edges_alias = typed.List.empty_list(alias_method_list_type)
 
@@ -203,7 +203,7 @@ class NumbaGraph:
         #       B - Iterate sequentially over the enumerate(sources)
         #       C - Given an edge (i, src) -> n2e_neighbours[src].append(i)
         #
-        #   2 - Compute edges j (int16) and q (float64) vectors for alias method.
+        #   2 - Compute edges j (int32) and q (float64) vectors for alias method.
         #
         #   3 - Compute destinations.
         #
