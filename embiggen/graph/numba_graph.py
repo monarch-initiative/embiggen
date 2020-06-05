@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Set
 import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from numba import typed, types  # type: ignore
@@ -30,6 +30,7 @@ class NumbaGraph:
         nodes_number: int,
         sources: List[int],
         destinations: List[int],
+        edges_set: Set[Tuple[int, int]],
         node_types: List[np.uint16] = None,
         edge_types: List[np.uint16] = None,
         weights: List[float] = None,
@@ -40,7 +41,7 @@ class NumbaGraph:
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
     ):
-        """Crate a new instance of a undirected graph with given edges.
+        """Crate a new instance of a NumbaGraph with given edges.
 
         Parameters
         -------------------------
@@ -50,6 +51,8 @@ class NumbaGraph:
             List of the source nodes in edges of the graph.
         destinations: List[int],
             List of the destination nodes in edges of the graph.
+        edges_set: Set[Tuple[int, int]],
+            Set of unique edges in the graph.
         node_types: List[np.uint16] = None,
             The node types for each node.
             This is an optional parameter to make the graph behave as if it
@@ -92,8 +95,6 @@ class NumbaGraph:
         Raises
         -------------------------
         ValueError,
-            If given sources length does not match destinations length.
-        ValueError,
             If given edge types length does not match destinations length.
         ValueError,
             If given weights list length does not match destinations length
@@ -109,11 +110,6 @@ class NumbaGraph:
             If change_edge_type_weight is not a strictly positive real number.
 
         """
-
-        if len(sources) != len(destinations):
-            raise ValueError(
-                "Given sources length does not match destinations length."
-            )
         if edge_types is not None and len(edge_types) != len(destinations):
             raise ValueError(
                 "Given edge types length does not match destinations length."
@@ -152,17 +148,12 @@ class NumbaGraph:
                 typed.List.empty_list(numba_edges_type)
             )
 
-        # Allocating the vectors of the mappings
-        edges_set = set()
-
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
         for i, (src, dst) in enumerate(zip(self._destinations, self._sources)):
             # Appending outbound edge ID to SRC list.
             self._neighbors[src].append(i)
-            # Storing the edges mapping.
-            edges_set.add((src, dst))
 
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
