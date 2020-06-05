@@ -1,8 +1,8 @@
 from typing import List, Tuple, Dict, Set
 import numpy as np  # type: ignore
-from numba.experimental import jitclass, njit, prange  # type: ignore
-from numba import typed, types  # type: ignore
-from .numba_directed_graph import NumbaDirectedGraph
+from numba.experimental import jitclass  # type: ignore
+from numba import typed, types, njit, prange  # type: ignore
+from .numba_graph import NumbaGraph
 from .graph_types import (
     nodes_mapping_type,
     numpy_nodes_type,
@@ -10,26 +10,68 @@ from .graph_types import (
 )
 
 
-@jitclass([])
-class NumbaUndirectedGraph:
+@njit(parallel=True)
+def process_edges(
+    sources_names: List[str],
+    destinations_names: List[str],
+    mapping: Dict[str, int]
+) -> Tuple[List[int], List[int], Set[Tuple[int, int]]]:
+    """Return triple with mapped sources, destinations and edges set.
+
+    Parameters
+    --------------------------
+    sources_names: List[str],
+        List of the sources names.
+    destinations_names: List[str],
+        List of the destinations names.
+    mapping: Dict[str, int],
+        Dictionary mapping of the nodes.
+
+    Returns
+    --------------------------
+    Triple with:
+        - The mapped sources using given mapping, as a list of integers.
+        - The mapped destinations using given mapping, as a list of integers.
+        - The mapped edge sets using given mapping, as a set of tuples.
+    """
+    edges_number = len(sources_names)
+    sources = np.empty(edges_number, dtype=numpy_nodes_type)
+    destinations = np.empty(edges_number, dtype=numpy_nodes_type)
+    edges_set = set()
+
+    for i in prange(edges_number):  # pylint: disable=not-an-iterable
+        # Store the sources into the sources vector
+        sources[i] = mapping[str(sources_names[i])]
+        # Store the destinations into the destinations vector
+        destinations[i] = mapping[str(destinations_names[i])]
+        # Adding the edge to the set
+        edges_set.add((sources[i], destinations[i]))
+
+    return sources, destinations, edges_set
+
+
+class DirectedGraph:
 
     def __init__(
         self,
-        sources_names: np.ndarray,
-        destinations_names: np.ndarray,
-        node_types: np.ndarray = None,
-        edge_types: np.ndarray = None,
-        weights: np.ndarray = None,
+        nodes: List[str],
+        sources_names: List[str],
+        destinations_names: List[str],
+        preprocess: bool = True,
         **kwargs
     ):
         """Crate a new instance of a NumbaDirectedGraph with given edges.
 
         Parameters
         -------------------------
+        nodes: List[str],
+            List of node names.
         sources_names: List[int],
             List of the source nodes in edges of the graph.
         destinations_names: List[int],
             List of the destination nodes in edges of the graph.
+        preprocess: bool = True,
+            Wethever to preprocess this graph for random walk.
 
         Raises
         -------------------------
@@ -42,53 +84,48 @@ class NumbaUndirectedGraph:
                 "Given sources length does not match destinations length."
             )
 
-        # Counting self-loops
-        loops_mask = sources_names == destinations_names
-        total_loops = loops_mask.sum()
+        self._preprocess = preprocess
 
-        total_orig_edges = len(sources_names)
-        total_edges = (total_orig_edges-total_loops)*2 + total_loops
+        # Creating mapping and reverse mapping of nodes and integer ID.
+        # The map looks like the following:
+        # {
+        #   "node_1_id": 0,
+        #   "node_2_id": 1
+        # }
+        #
+        # The reverse mapping is just a list of the nodes.
+        #
+        self._nodes_mapping = typed.Dict.empty(*nodes_mapping_type)
+        self._reverse_nodes_mapping = typed.List.empty_list(types.string)
+        for i, node in enumerate(nodes):
+            self._nodes_mapping[str(node)] = np.uint32(i)
+            self._reverse_nodes_mapping.append(str(node))
 
-        full_sources = np.empty(total_edges, dtype=str)
-        full_destinations = np.empty(total_edges, dtype=str)
+        # Transform the lists of names into IDs
+        self._sources, self._destinations, edges_set = process_edges(
+            sources_names, destinations_names, self._nodes_mapping
+        )
 
-        full_sources[:total_orig_edges] = sources_names
-        full_sources[total_orig_edges:] = sources_names[loops_mask]
+        if not self._preprocess:
+            return
 
-        full_destinations[:total_orig_edges] = destinations_names
-        full_destinations[total_orig_edges:] = destinations_names[loops_mask]
-
-        if node_types is not None:
-            full_node_types = np.empty(total_edges, dtype=np.uint16)
-            full_node_types[:total_orig_edges] = node_types
-            full_node_types[total_orig_edges:] = node_types[loops_mask]
-            node_types = full_node_types
-
-        if edge_types is not None:
-            full_edge_types = np.empty(total_edges, dtype=np.uint16)
-            full_edge_types[:total_orig_edges] = edge_types
-            full_edge_types[total_orig_edges:] = edge_types[loops_mask]
-            edge_types = full_edge_types
-
-        if weights is not None:
-            full_weights = np.empty(total_edges, dtype=np.uint16)
-            full_weights[:total_orig_edges] = weights
-            full_weights[total_orig_edges:] = weights[loops_mask]
-            weights = full_weights
-
-        self._graph = NumbaDirectedGraph(
-            sources_names=full_sources,
-            destinations_names=full_destinations,
-            node_types=node_types,
-            edge_types=edge_types,
-            weights=weights,
+        self._graph = NumbaGraph(
+            nodes_number=len(self._nodes_mapping),
+            sources=self._sources,
+            destinations=self._destinations,
+            edges_set=edges_set,
             **kwargs
         )
 
     @property
+    def core(self) -> NumbaGraph:
+        """Return graph engine."""
+        return self._graph
+
+    @property
     def preprocessed(self) -> bool:
         """Return boolean representing if the graph was preprocessed."""
-        return self._graph.preprocessed
+        return self._preprocess
 
     @property
     def nodes_number(self) -> int:

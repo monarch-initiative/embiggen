@@ -26,7 +26,7 @@ def build_default_alias_vectors(number: int) -> Tuple[List[int], List[float]]:
     alias = typed.List.empty_list(alias_list_type)
     empty_j = np.empty(0, dtype=numpy_vector_alias_indices_type)
     empty_q = np.empty(0, dtype=numpy_vector_alias_probs_type)
-    for _ in number:
+    for _ in range(number):
         alias.append((empty_j, empty_q))
     return alias
 
@@ -144,7 +144,7 @@ def build_alias_edges(
     Lists of lists representing edges aliases.
     """
 
-    if len(node_types) != len(nodes_neighboring_edges):
+    if node_types is not None and len(node_types) != len(nodes_neighboring_edges):
         raise ValueError(
             "Given node types list has not the same length of the given "
             "nodes neighbouring edges list."

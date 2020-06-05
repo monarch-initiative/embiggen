@@ -2,7 +2,7 @@ from typing import List, Dict
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
-from .numba_undirected_graph import NumbaDirectedGraph, NumbaUndirectedGraph
+from .undirected_graph import DirectedGraph, UndirectedGraph
 from .random_walks import random_walk, random_walk_with_traps
 
 
@@ -14,9 +14,9 @@ class Graph(Hashable):
             **kwargs
         })
         if directed:
-            self._graph = NumbaDirectedGraph(**kwargs)
+            self._graph = DirectedGraph(**kwargs)
         else:
-            self._graph = NumbaUndirectedGraph(**kwargs)
+            self._graph = UndirectedGraph(**kwargs)
 
     def random_walk(self, number: int, length: int) -> tf.Tensor:
         """Return a list of graph walks
@@ -39,11 +39,16 @@ class Graph(Hashable):
 
         if self._graph.has_traps:
             return tf.ragged.constant(
-                random_walk_with_traps(self._graph, number, length)
+                random_walk_with_traps(self._graph.core, number, length)
             )
         return tf.constant(
-            random_walk(self._graph, number, length)
+            random_walk(self._graph.core, number, length)
         )
+
+    @property
+    def preprocessed(self) -> bool:
+        """Return boolean representing if the graph was preprocessed."""
+        return self._graph.preprocessed
 
     @property
     def sources(self) -> np.ndarray:

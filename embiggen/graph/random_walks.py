@@ -1,7 +1,8 @@
 from numba import njit, prange  # type: ignore
 from typing import List
 import numpy as np  # type: ignore
-from .numba_graph import NumbaGraph, numba_nodes_type
+from .numba_graph import NumbaGraph
+from .graph_types import numpy_nodes_type
 
 # This function is out of the class because otherwise we would not be able
 # to activate the parallel=True flag.
@@ -25,7 +26,7 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
     # or alternatively a numpy array.
     all_walks = np.empty(
         (graph.nodes_number * number, length),
-        dtype=numba_nodes_type
+        dtype=numpy_nodes_type
     )
 
     # We can use prange to parallelize the walks and the iterations on the
@@ -34,9 +35,9 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
         for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
             walk = all_walks[i*graph.nodes_number + src]
             walk[0] = src
-            walk[1], edge = graph.extract_random_node_neighbour(walk[0])
+            walk[1], edge = graph.extract_node_neighbour(walk[0])
             for index in range(2, length):
-                walk[index], edge = graph.extract_random_edge_neighbour(edge)
+                walk[index], edge = graph.extract_edge_neighbour(edge)
     return all_walks
 
 
@@ -75,13 +76,13 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
                 # If the node has no neighbors and is therefore a trap,
                 # we need to interrupt the walk as we cannot proceed further.
                 continue
-            dst, edge = graph.extract_random_node_neighbour(walk[0])
+            dst, edge = graph.extract_node_neighbour(walk[0])
             walk.append(dst)
             for _ in range(2, length):
                 # If the previous destination was a trap, we need to stop the
                 # loop.
-                if graph.is_edge_trap(edge):
+                if graph.is_node_trap(dst):
                     break
-                dst, edge = graph.extract_random_edge_neighbour(edge)
+                dst, edge = graph.extract_edge_neighbour(edge)
                 walk.append(dst)
     return all_walks

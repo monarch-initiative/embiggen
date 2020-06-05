@@ -25,9 +25,6 @@ class GraphFactory:
         ----------------------------
         default_weight: int = 1,
             The default weight for the node when no weight column is given
-        default_directed: bool = False,
-            Wethever a edge is directed or not when no column for direction is
-            given. By default, the edges are considered not directed.
         default_node_type: str = 'biolink:NamedThing',
             The default type for the nodes when no node type column is given.
         default_edge_type: str = 'biolink:Association',
@@ -58,7 +55,6 @@ class GraphFactory:
         edge_types_column: str = "edge_label",
         weights_column: str = "weight",
         nodes_columns: str = "id",
-        directed: bool = True,
         **kwargs: Dict
     ):
         """Return new instance of graph based on given files.
@@ -129,35 +125,33 @@ class GraphFactory:
                 "of the given separator"
             )
 
+        header = (0 if edge_file_has_header else None)
         tmp_edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
-            header=(0 if edge_file_has_header else None),
+            header=header,
             nrows=1
         )
+        use_columns = [
+            column
+            for column in (
+                start_nodes_column, end_nodes_column,
+                edge_types_column, weights_column
+            )
+            if column is not None and column in tmp_edges_df.columns
+        ]
         edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
-            usecols=[
-                column
-                for column in (
-                    start_nodes_column,
-                    end_nodes_column,
-                    edge_types_column,
-                    weights_column
-                )
-                if column is not None and column in tmp_edges_df.columns
-            ],
+            usecols=use_columns,
             dtype={
                 start_nodes_column: "string",
                 end_nodes_column: "string",
                 edge_types_column: "string",
                 weights_column: np.float64
             },
-            header=(0 if edge_file_has_header else None)
+            header=header
         )
-
-
 
         # Dropping duplicated edges
         unique_columns = [
@@ -167,30 +161,6 @@ class GraphFactory:
             unique_columns.append(edge_types_column)
 
         edges_df = edges_df.drop_duplicates(unique_columns)
-
-
-        # Handling directionality, in the future we may want to handle this
-        # with another customly written class.
-        if not directed:
-            edges_number = edges_df.shape[0]
-            # We need to get the dataframe columns because they might be not
-            # in the order we expect.
-            for i, row in edges_df.iterrows():
-                src = row[end_nodes_column]
-                dst = row[start_nodes_column]
-                # We don't need to duplicate self loops
-                if src == dst:
-                    continue
-                swapped_row = {
-                    start_nodes_column: row[end_nodes_column],
-                    end_nodes_column: row[start_nodes_column],
-                }
-
-                for col in (edge_types_column, weights_column):
-                    if col in row:
-                        swapped_row[col] = row[col]
-
-                edges_df.loc[edges_number+i] = list(swapped_row.values())
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column
@@ -256,8 +226,7 @@ class GraphFactory:
             )
             weights = edges_df[weights_column].values
         else:
-            weights = np.full(
-                len(edges), self._default_weight, dtype=np.float64)
+            weights = None
 
         #######################################
         # Handling node types                 #
@@ -269,20 +238,21 @@ class GraphFactory:
                 value=self._default_node_type,
                 inplace=True
             )
+
             node_types = nodes_df[node_types_column].values.astype(str)
+
+            unique_node_types = {
+                node_type: np.int16(i)
+                for i, node_type in enumerate(np.unique(node_types))
+            }
+
+            numba_node_types = np.empty(len(node_types), dtype=np.int16)
+            for i, node_type in enumerate(node_types):
+                numba_node_types[i] = unique_node_types[node_type]
+
         else:
             # Otherwise if the column is not available.
-            node_types = np.full(
-                len(nodes), self._default_node_type, dtype=str)
-
-        unique_node_types = {
-            node_type: np.int16(i)
-            for i, node_type in enumerate(np.unique(node_types))
-        }
-
-        numba_node_types = np.empty(len(node_types), dtype=np.int16)
-        for i, node_type in enumerate(node_types):
-            numba_node_types[i] = unique_node_types[node_type]
+            node_types = None
 
         #######################################
         # Handling edge types                 #
@@ -294,27 +264,27 @@ class GraphFactory:
                 value=self._default_edge_type,
                 inplace=True
             )
-            edge_types = edges_df[edge_types_column].values
+            edge_types = edges_df[edge_types_column].values.astype(str)
+
+            unique_edge_types = {
+                edge_type: i
+                for i, edge_type in enumerate(np.unique(edge_types))
+            }
+
+            numba_edge_types = np.empty(len(edge_types), dtype=np.int64)
+            for i, edge_type in enumerate(edge_types):
+                numba_edge_types[i] = unique_edge_types[edge_type]
         else:
             # Otherwise if the column is not available.
-            edge_types = np.full(
-                len(edges), self._default_edge_type, dtype=str)
-
-        unique_edge_types = {
-            edge_type: i
-            for i, edge_type in enumerate(np.unique(edge_types))
-        }
-
-        numba_edge_types = np.empty(len(edge_types), dtype=np.int64)
-        for i, edge_type in enumerate(edge_types):
-            numba_edge_types[i] = unique_edge_types[edge_type]
-
+            edge_types = None
 
         return Graph(
-            edges=edges,
-            weights=weights,
             nodes=nodes,
-            node_types=numba_node_types,
-            edge_types=numba_edge_types,
+            sources_names=edges_df[start_nodes_column].values.astype(str),
+            destinations_names=edges_df[end_nodes_column].values.astype(str),
+            node_types=node_types,
+            edge_types=edge_types,
+            weights=weights,
+            **self._kwargs,
             **kwargs
         )

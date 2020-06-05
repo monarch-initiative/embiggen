@@ -143,7 +143,7 @@ class NumbaGraph:
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
         self._neighbors = typed.List.empty_list(edges_type_list)
-        for _ in range(len(nodes_number)):
+        for _ in range(nodes_number):
             self._neighbors.append(
                 typed.List.empty_list(numba_edges_type)
             )
@@ -165,12 +165,18 @@ class NumbaGraph:
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the edges.
         self._edges_alias = build_alias_edges(
-            edges_set, self._neighbors,
-            node_types, edge_types, weights,
-            self._sources, self._destinations,
-            return_weight, explore_weight,
-            change_edge_type_weight, change_edge_type_weight,
-            default_weight
+            edges_set=edges_set,
+            nodes_neighboring_edges=self._neighbors,
+            node_types=node_types,
+            edge_types=edge_types,
+            weights=weights,
+            default_weight=default_weight,
+            sources=self._sources,
+            destinations=self._destinations,
+            return_weight=return_weight,
+            explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight
         )
 
         # To verify if this graph has some walker traps, meaning some nodes
