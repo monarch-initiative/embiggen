@@ -89,5 +89,4 @@ class Node2EdgeTransformer:
         """
         if self._embedding is None:
             raise ValueError("Model has not been fitted.")
-        sources, destinations = list(zip(*G.edges.keys()))
-        return self._embedding[sources], self._embedding[destinations]
+        return self._embedding[G.sources], self._embedding[G.destinations]

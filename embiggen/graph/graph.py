@@ -53,14 +53,24 @@ class Graph(Hashable):
         return self._graph.neighbors(node)
 
     @property
-    def edges(self) -> np.ndarray:
-        """Return edges indices.
+    def sources(self) -> np.ndarray:
+        """Return sources indices.
 
         Returns
         ---------------------
-        Numpy array of edges indices.
+        Numpy array of sources indices.
         """
-        return self._graph._edges
+        return self._graph._sources
+
+    @property
+    def destinations(self) -> np.ndarray:
+        """Return destinations indices.
+
+        Returns
+        ---------------------
+        Numpy array of destinations indices.
+        """
+        return self._graph._destinations
 
     def degree(self, node: int) -> int:
         """Return degree of given node.
@@ -87,5 +97,6 @@ class Graph(Hashable):
                 }
                 if self._graph.random_walk_preprocessing else {}
             ),
-            "edges": self.edges
+            "sources": self.sources,
+            "destinations": self.destinations
         })

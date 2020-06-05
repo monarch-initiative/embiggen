@@ -89,16 +89,10 @@ class TestGraph(TestCase):
             for factory in (self._factory, ):
                 graph = factory.read_csv(path)
                 subgraph = graph._graph
-                self.assertTrue(all([
-                    dst1 == dst2 and 0 <= dst1 < len(subgraph._nodes_neighboring_edges)
-                    for dst1, (_, dst2) in zip(subgraph._destinations, subgraph._edges)
-                ]))
-                self.assertTrue(all([
-                    0 <= edge_id < len(subgraph._edges)
-                    for _, edge_id in subgraph._edges.items()
-                ]))
+                self.assertEqual(len(subgraph._sources), len(subgraph._edges_alias))
+                self.assertEqual(len(subgraph._destinations), len(subgraph._edges_alias))
                 self.assertTrue(all(
-                    0 <= edge_id < len(subgraph._edges)
+                    0 <= edge_id < len(subgraph._edges_alias)
                     for edges in subgraph._nodes_neighboring_edges
                     for edge_id in edges
                 ))
@@ -144,12 +138,11 @@ class TestGraph(TestCase):
                     weights_column=2
                 )
                 subgraph = graph._graph
-            
-                for _, edge_id in subgraph._edges.items():
-                    self.assertTrue(0 <= edge_id < len(subgraph._edges))
+                self.assertEqual(len(subgraph._sources), len(subgraph._edges_alias))
+                self.assertEqual(len(subgraph._destinations), len(subgraph._edges_alias))
 
                 self.assertTrue(all(
-                    0 <= edge_id < len(subgraph._edges)
+                    0 <= edge_id < len(subgraph._edges_alias)
                     for edges in subgraph._nodes_neighboring_edges
                     for edge_id in edges
                 ))
@@ -191,11 +184,8 @@ class TestGraph(TestCase):
                 walks_length = 5
                 walks = graph.random_walk(walks_number, walks_length).numpy()
                 subgraph = graph._graph
-                self.assertTrue(all(
-                    edge in subgraph._edges
-                    for walk in walks
-                    for edge in zip(walk[:-1], walk[1:])
-                ))
+                self.assertEqual(len(subgraph._sources), len(subgraph._edges_alias))
+                self.assertEqual(len(subgraph._destinations), len(subgraph._edges_alias))
                 self.assertEqual(
                     walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:
@@ -229,6 +219,8 @@ class TestGraph(TestCase):
                 walks_length = 5
                 walks = graph.random_walk(walks_number, walks_length)
                 subgraph = graph._graph
+                self.assertEqual(len(subgraph._sources), len(subgraph._edges_alias))
+                self.assertEqual(len(subgraph._destinations), len(subgraph._edges_alias))
                 self.assertEqual(
                     walks.shape[0], subgraph.nodes_number*walks_number)
                 if subgraph.has_traps:

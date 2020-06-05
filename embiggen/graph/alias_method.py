@@ -1,6 +1,7 @@
 import numpy as np  # type: ignore
 from numba import njit  # type: ignore
 from typing import Tuple
+from random import random, randint
 
 
 @njit
@@ -34,7 +35,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     if probabilities.size == 0:
         raise ValueError("Given probability vector is empty!")
-    
+
     if abs(probabilities.sum() - 1) > 1e-8:
         raise ValueError(
             "Given probability vector does not sum to one"
@@ -81,10 +82,12 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
         index: int,
             index of random sample from non-uniform discrete distribution
     """
+    # NB: here we are using random.random and random.randint
+    # instead of the Numpy versions because in numba they are converted better.
     # extract a random index for the mixture
-    index = np.random.randint(0, len(q))
+    index = randint(0, len(q)-1)
     # do the Bernulli trial
-    if np.random.rand() < q[index]:
+    if random() < q[index]:
         # most probable case and fastest
         return index
     return j[index]

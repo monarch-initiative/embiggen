@@ -51,7 +51,7 @@ def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
 
 @njit(parallel=True)
 def build_alias_edges(
-    edges,
+    edges_set,
     nodes_neighboring_edges,
     node_types,
     edge_types,
@@ -68,7 +68,7 @@ def build_alias_edges(
     empty_q = np.empty(0, dtype=np.float64)
     edges_alias = typed.List.empty_list(alias_method_list_type)
 
-    for _ in edges:
+    for _ in range(len(sources)):
         edges_alias.append((empty_j, empty_q))
 
     for i in prange(len(sources)): # pylint: disable=not-an-iterable
@@ -116,7 +116,7 @@ def build_alias_edges(
                 weight = weight * return_weight
             # If the backward loop does not exist, we multiply the weight
             # of the edge by the weight for moving forward and explore more.
-            elif (neighbor_destination, src) not in edges:
+            elif (neighbor_destination, src) not in edges_set:
                 weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
@@ -125,8 +125,8 @@ def build_alias_edges(
 
 
 @jitclass([
-    ('_edges', types.DictType(*edges_type)),
     ('_destinations', types.int64[:]),
+    ('_sources', types.int64[:]),
     ('_nodes_mapping', types.DictType(*nodes_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
     ('_nodes_neighboring_edges', types.ListType(edges_type_list)),
@@ -248,9 +248,9 @@ class NumbaGraph:
                 )
 
         # Allocating the vectors of the mappings
-        self._edges = typed.Dict.empty(*edges_type)
+        edges_set = set()
         self._destinations = np.empty(len(edges), dtype=numpy_nodes_type)
-        sources = np.empty(len(edges), dtype=numpy_nodes_type)
+        self._sources = np.empty(len(edges), dtype=numpy_nodes_type)
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
@@ -263,13 +263,13 @@ class NumbaGraph:
             # Store the destinations into the destinations vector
             self._destinations[i] = dst
             # Store the sources into the sources vector
-            sources[i] = src
-            # Storing the edges mapping.
-            self._edges[src, dst] = i
+            self._sources[i] = src
             # If the preprocessing is required we compute the neighbours
             if self.random_walk_preprocessing:
                 # Appending outbound edge ID to SRC list.
                 self._nodes_neighboring_edges[src].append(i)
+                # Storing the edges mapping.
+                edges_set.add((src, dst))
 
         if not self.random_walk_preprocessing:
             return
@@ -307,12 +307,12 @@ class NumbaGraph:
 
         # TODO! Consider parallelizing this thing.
         self._edges_alias = build_alias_edges(
-            self._edges,
+            edges_set,
             self._nodes_neighboring_edges,
             node_types,
             edge_types,
             weights,
-            sources,
+            self._sources,
             self._destinations,
             return_weight,
             explore_weight,
