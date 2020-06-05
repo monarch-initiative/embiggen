@@ -135,7 +135,6 @@ class GraphFactory:
             header=(0 if edge_file_has_header else None),
             nrows=1
         )
-        print("Started loading edges")
         edges_df = pd.read_csv(
             edge_path,
             sep=edge_sep,
@@ -158,7 +157,6 @@ class GraphFactory:
             header=(0 if edge_file_has_header else None)
         )
 
-        print("Finished loading edges")
 
 
         # Dropping duplicated edges
@@ -170,7 +168,6 @@ class GraphFactory:
 
         edges_df = edges_df.drop_duplicates(unique_columns)
 
-        print("Finished parsing edges")
 
         # Handling directionality, in the future we may want to handle this
         # with another customly written class.
@@ -202,7 +199,6 @@ class GraphFactory:
         unique_nodes = np.unique(edges)
 
         if node_path is not None:
-            print("Starting loading nodes")
 
             tmp_nodes_df = pd.read_csv(
                 node_path,
@@ -247,7 +243,6 @@ class GraphFactory:
                     "in the given nodes file"
                 ).format(len(nodes) - len(nodes_set)))
 
-            print("Finished loading nodes")
 
         else:
             nodes = unique_nodes
@@ -316,7 +311,6 @@ class GraphFactory:
         for i, edge_type in enumerate(edge_types):
             numba_edge_types[i] = unique_edge_types[edge_type]
 
-        print("Finished preprocessing")
 
         return Graph(
             edges=edges,

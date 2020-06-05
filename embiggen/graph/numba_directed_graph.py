@@ -6,69 +6,58 @@ from .alias_method import alias_draw
 from .build_alias import build_alias_edges, build_alias_nodes
 from .graph_types import (
     numba_vector_nodes_type,
-    numba_edges_type,
-    alias_list_type,
-    edges_type_list
+    alias_list_type
 )
 
 
 @jitclass([
     ('_destinations', numba_vector_nodes_type),
     ('_sources', numba_vector_nodes_type),
+    ('_nodes_mapping', types.DictType(*nodes_type)),
+    ('_reverse_nodes_mapping', types.ListType(types.string)),
     ('_neighbors', types.ListType(edges_type_list)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
     ('has_traps', types.boolean),
-    ('uniform', types.boolean),
     ('random_walk_preprocessing', types.boolean),
 ])
 class NumbaGraph:
 
     def __init__(
         self,
-        nodes_number: int,
-        sources: List[int],
-        destinations: List[int],
-        node_types: List[np.uint16] = None,
-        edge_types: List[np.uint16] = None,
-        weights: List[float] = None,
-        default_weight: float = 1.0,
-        return_weight: float = 1.0,
-        explore_weight: float = 1.0,
-        change_node_type_weight: float = 1.0,
-        change_edge_type_weight: float = 1.0,
+        edges: np.ndarray,  # Array of strings
+        weights: np.ndarray,  # Array of floats, same as the weights type
+        nodes: np.ndarray,  # Array of strings
+        node_types: np.ndarray,  # Array of integers, int16
+        edge_types: np.ndarray,  # Array of integers, int16
+        return_weight: float = 1,
+        explore_weight: float = 1,
+        change_node_type_weight: float = 1,
+        change_edge_type_weight: float = 1,
+        random_walk_preprocessing: bool = True
     ):
         """Crate a new instance of a undirected graph with given edges.
 
         Parameters
-        -------------------------
-        nodes_number: int,
-            Number of nodes in the graph.
-        sources: List[int],
-            List of the source nodes of the graph.
-        destinations: List[int],
-            List of the destination nodes of the graph.
-        node_types: List[np.uint16] = None,
+        ---------------------
+        # TODO! UPDATE DOCSTRING!!!
+        edges: np.ndarray,
+            List of edges of the graph.
+        nodes: np.ndarray,
+            List of the nodes of the graph.
+        weights: np.ndarray,
+            The weights for each source and sink.
+        node_types: np.ndarray,
             The node types for each node.
-            This is an optional parameter to make the graph behave as if it
-            is colored within the walk.
-        edge_types: List[np.uint16],
+        node_types: np.ndarray,
             The edge types for each source and sink.
-            This is an optional parameter to make the graph behave as if it
-            is a multigraph within the walk.
-        weights: List[float] = None,
-            The weights for each source and sink. By default None. If you want
-            to specify a single value to be used for every weight, use the
-            default_weight parameter.
-        default_weight: int = 1.0,
-            The default weight to use when no weight is provided.
-        return_weight : float = 1.0,
+        return_weight : float = 1,
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
             Equal to the inverse of p in the Node2Vec paper.
-        explore_weight : float = 1.0,
+        explore_weight : float = 1,
             Weight on the probability of visiting a neighbor node
             to the one we're coming from in the random walk
             Having this higher tends the walks to be
@@ -76,71 +65,45 @@ class NumbaGraph:
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
-        change_node_type_weight: float = 1.0,
+        change_node_type_weight: float = 1,
             Weight on the probability of visiting a neighbor node of a
             different type than the previous node. This only applies to
             colored graphs, otherwise it has no impact.
-        change_edge_type_weight: float = 1.0,
+        change_edge_type_weight: float = 1,
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        
-        Raises
-        -------------------------
-        ValueError,
-            If given node types has not the same length of given nodes list.
-        ValueError,
-            If given sources length does not match destinations length.
-        ValueError,
-            If return_weight is not a strictly positive real number.
-        ValueError,
-            If explore_weight is not a strictly positive real number.
-        ValueError,      
-            If change_node_type_weight is not a strictly positive real number.
-        ValueError,
-            If change_edge_type_weight is not a strictly positive real number.
+        random_walk_preprocessing: bool = True,
+            Wethever to encode the graph to run afterwards a random walk.
 
+        Returns
+        ---------------------
+        New instance of graph.
         """
 
-        if len(sources) != len(destinations):
-            raise ValueError(
-                "Given sources length does not match destinations length."
-            )
-        if edge_types is not None and len(edge_types) != len(destinations):
-            raise ValueError(
-                "Given edge types length does not match destinations length."
-            )
-        if weights is not None and len(weights) != len(destinations):
-            raise ValueError(
-                "Given weights length does not match destinations length."
-            )
-        if node_types is not None and len(nodes) != len(node_types):
-            raise ValueError(
-                "Given node types has not the same length of given nodes list."
-            )
-        if return_weight <= 0:
-            raise ValueError("Given return weight is not a positive number")
-        if explore_weight <= 0:
-            raise ValueError("Given explore weight is not a positive number")
-        if change_node_type_weight <= 0:
-            raise ValueError(
-                "Given change_node_type_weigh is not a positive number"
-            )
-        if change_edge_type_weight <= 0:
-            raise ValueError(
-                "Given change_edge_type_weight is not a positive number"
-            )
-        
-        self._destinations = destinations
-        self._sources = sources
+        self.random_walk_preprocessing = random_walk_preprocessing
 
-        # Each node has a list of neighbors.
-        # These lists are initialized as empty.
-        self._neighbors = typed.List.empty_list(edges_type_list)
-        for _ in range(len(nodes_number)):
-            self._neighbors.append(
-                typed.List.empty_list(numba_edges_type)
-            )
+        # Creating mapping of nodes and integer ID.
+        # The map looks like the following:
+        # {
+        #   "node_1_id": 0,
+        #   "node_2_id": 1
+        # }
+        self._nodes_mapping = typed.Dict.empty(*nodes_type)
+        self._reverse_nodes_mapping = typed.List.empty_list(types.string)
+        for i, node in enumerate(nodes):
+            self._nodes_mapping[str(node)] = np.uint32(i)
+            self._reverse_nodes_mapping.append(str(node))
+
+        if self.random_walk_preprocessing:
+            # Each node has a list of neighbors.
+            # These lists are initialized as empty.
+            self._neighbors = typed.List.empty_list(
+                edges_type_list)
+            for _ in range(len(nodes)):
+                self._neighbors.append(
+                    typed.List.empty_list(numba_edges_type)
+                )
 
         # Allocating the vectors of the mappings
         edges_set = set()
