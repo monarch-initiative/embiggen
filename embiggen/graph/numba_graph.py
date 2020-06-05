@@ -6,6 +6,7 @@ from .alias_method import alias_draw, alias_setup
 from IPython import embed
 
 numba_nodes_type = types.uint32
+numba_vector_nodes_type = types.uint32[:]
 numpy_nodes_type = np.uint32
 numba_edges_type = types.int64
 numpy_edges_type = np.int64
@@ -125,8 +126,8 @@ def build_alias_edges(
 
 
 @jitclass([
-    ('_destinations', types.int64[:]),
-    ('_sources', types.int64[:]),
+    ('_destinations', numba_vector_nodes_type),
+    ('_sources', numba_vector_nodes_type),
     ('_nodes_mapping', types.DictType(*nodes_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
     ('_nodes_neighboring_edges', types.ListType(edges_type_list)),
@@ -233,7 +234,7 @@ class NumbaGraph:
         self._nodes_mapping = typed.Dict.empty(*nodes_type)
         self._reverse_nodes_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
-            self._nodes_mapping[str(node)] = i
+            self._nodes_mapping[str(node)] = np.uint32(i)
             self._reverse_nodes_mapping.append(str(node))
 
         if self.random_walk_preprocessing:
