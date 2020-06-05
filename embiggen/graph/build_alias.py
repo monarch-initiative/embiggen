@@ -10,7 +10,9 @@ from .graph_types import (
 
 
 @njit
-def build_default_alias_vectors(number: int) -> Tuple[List[int], List[float]]:
+def build_default_alias_vectors(
+    number: int
+) -> Tuple[List[int], List[float]]:
     """Return empty alias vectors to be populated in
         build_alias_nodes below
 
@@ -31,8 +33,9 @@ def build_default_alias_vectors(number: int) -> Tuple[List[int], List[float]]:
     return alias
 
 
-@njit(parallel=True)
+@njit(parallel=True, debug=True)
 def build_alias_nodes(
+    alias: List[Tuple],
     nodes_neighboring_edges: List[List[int]],
     weights: List[float]
 ) -> List[Tuple[List[int], List[float]]]:
@@ -50,6 +53,7 @@ def build_alias_nodes(
     -----------------------
     Lists of lists representing node aliases 
     """
+
     number = len(nodes_neighboring_edges)
     alias = build_default_alias_vectors(number)
 
@@ -68,8 +72,8 @@ def build_alias_nodes(
             neighboring_edges_number,
             dtype=numpy_vector_alias_probs_type
         )
-        for j, neighboring_edge in enumerate(neighboring_edges):
-            probs[j] = weights[neighboring_edge]
+        for j, edge in enumerate(neighboring_edges):
+            probs[j] = 1 if weights is None else weights[edge]
 
         alias[src] = alias_setup(probs/probs.sum())
     return alias
@@ -82,7 +86,6 @@ def build_alias_edges(
     node_types: List[int],
     edge_types: List[int],
     weights: List[float],
-    default_weight: float,
     sources: List[int],
     destinations: List[int],
     return_weight: float,
@@ -105,8 +108,6 @@ def build_alias_edges(
         List of edge types.
     weights: List[float],
         List of edge weights.
-    default_weight: float,
-        Default weight to use if weights is None.
     sources: List[int],
         List of source nodes for each edge.
     destinations: List[int],
@@ -198,7 +199,7 @@ def build_alias_edges(
         for index, edge in enumerate(neighboring_edges):
             # We get the weight for the edge from the destination to
             # the neighbour.
-            weight = default_weight if weights is None else weights[edge]
+            weight = 1 if weights is None else weights[edge]
             # Then we retrieve the neigh_dst node type.
             # And if the destination node type matches the neighbour
             # destination node type (we are not changing the node type)

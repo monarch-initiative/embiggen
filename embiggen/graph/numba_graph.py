@@ -1,40 +1,90 @@
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Dict
 import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from numba import typed, types  # type: ignore
+from numba import typed, types, njit, prange  # type: ignore
 from .alias_method import alias_draw
-from random import choice
 from .build_alias import build_alias_edges, build_alias_nodes
 from .graph_types import (
     numba_vector_nodes_type,
     numba_edges_type,
     alias_list_type,
-    edges_type_list
+    edges_type_list,
+    numba_vector_edges_type,
+    numpy_edges_type,
+    numba_nodes_type,
+    numpy_nodes_type,
+    nodes_mapping_type
 )
+
+
+@njit(parallel=True)
+def process_edges(
+    sources_names: List[str],
+    destinations_names: List[str],
+    mapping: Dict[str, int]
+) -> Tuple[List[int], List[int], Set[Tuple[int, int]]]:
+    """Return triple with mapped sources, destinations and edges set.
+
+    Parameters
+    --------------------------
+    sources_names: List[str],
+        List of the sources names.
+    destinations_names: List[str],
+        List of the destinations names.
+    mapping: Dict[str, int],
+        Dictionary mapping of the nodes.
+
+    Returns
+    --------------------------
+    Triple with:
+        - The mapped sources using given mapping, as a list of integers.
+        - The mapped destinations using given mapping, as a list of integers.
+        - The mapped edge sets using given mapping, as a set of tuples.
+    """
+    edges_number = len(sources_names)
+    sources = np.empty(edges_number, dtype=numpy_nodes_type)
+    destinations = np.empty(edges_number, dtype=numpy_nodes_type)
+    edges_set = set()
+
+    for i in prange(edges_number):  # pylint: disable=not-an-iterable
+        # Store the sources into the sources vector
+        sources[i] = mapping[str(sources_names[i])]
+        # Store the destinations into the destinations vector
+        destinations[i] = mapping[str(destinations_names[i])]
+
+    # Creating edge set.
+    for edge in zip(sources, destinations):
+        # Adding the edge to the set
+        edges_set.add(edge)
+
+    return sources, destinations, edges_set
 
 
 @jitclass([
     ('_destinations', numba_vector_nodes_type),
     ('_sources', numba_vector_nodes_type),
-    ('_neighbors', types.ListType(edges_type_list)),
+    ('_nodes_mapping', types.DictType(*nodes_mapping_type)),
+    ('_reverse_nodes_mapping', types.ListType(types.string)),
+    ('_neighbors', types.ListType(numba_vector_edges_type)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
     ('_has_traps', types.boolean),
     ('_uniform', types.boolean),
+    ('_preprocessed', types.boolean),
     ('_nodes_number', types.uint64)
 ])
 class NumbaGraph:
 
     def __init__(
         self,
-        nodes_number: int,
-        sources: List[int],
-        destinations: List[int],
-        edges_set: Set[Tuple[int, int]],
+        nodes: List[str],
+        sources_names: List[str],
+        destinations_names: List[str],
         node_types: List[np.uint16] = None,
         edge_types: List[np.uint16] = None,
         weights: List[float] = None,
         uniform: bool = True,
+        preprocess: bool = True,
         default_weight: float = 1.0,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -45,18 +95,14 @@ class NumbaGraph:
 
         Parameters
         -------------------------
-        nodes_number: int,
+        nodes_number: List[str],
             Number of nodes in the graph.
-        sources: List[int],
+        sources_names: List[str],
             List of the source nodes in edges of the graph.
-        destinations: List[int],
+        destinations_names: List[str],
             List of the destination nodes in edges of the graph.
         edges_set: Set[Tuple[int, int]],
             Set of unique edges in the graph.
-        node_types: List[np.uint16] = None,
-            The node types for each node.
-            This is an optional parameter to make the graph behave as if it
-            is colored within the walk.
         edge_types: List[np.uint16],
             The edge types for each source and sink.
             This is an optional parameter to make the graph behave as if it
@@ -67,8 +113,6 @@ class NumbaGraph:
             default_weight parameter.
         uniform: bool = True,
             Wethever if the weights for the nodes are close to be uniform.
-        default_weight: int = 1.0,
-            The default weight to use when no weight is provided.
         return_weight : float = 1.0,
             Weight on the probability of returning to node coming from
             Having this higher tends the walks to be
@@ -110,15 +154,15 @@ class NumbaGraph:
             If change_edge_type_weight is not a strictly positive real number.
 
         """
-        if edge_types is not None and len(edge_types) != len(destinations):
+        if edge_types is not None and len(edge_types) != len(destinations_names):
             raise ValueError(
                 "Given edge types length does not match destinations length."
             )
-        if weights is not None and len(weights) != len(destinations):
+        if weights is not None and len(weights) != len(destinations_names):
             raise ValueError(
                 "Given weights length does not match destinations length."
             )
-        if node_types is not None and nodes_number != len(node_types):
+        if node_types is not None and len(nodes) != len(node_types):
             raise ValueError(
                 "Given node types has not the same length of given nodes number."
             )
@@ -135,31 +179,66 @@ class NumbaGraph:
                 "Given change_edge_type_weight is not a positive number"
             )
 
-        self._destinations = destinations
-        self._sources = sources
-        self._nodes_number = nodes_number
+        # Creating mapping and reverse mapping of nodes and integer ID.
+        # The map looks like the following:
+        # {
+        #   "node_1_id": 0,
+        #   "node_2_id": 1
+        # }
+        #
+        # The reverse mapping is just a list of the nodes.
+        #
+        self._nodes_mapping = typed.Dict.empty(*nodes_mapping_type)
+        self._reverse_nodes_mapping = typed.List.empty_list(types.string)
+        for i, node in enumerate(nodes):
+            self._nodes_mapping[str(node)] = np.uint32(i)
+            self._reverse_nodes_mapping.append(str(node))
+
+        # Transform the lists of names into IDs
+        self._sources, self._destinations, edges_set = process_edges(
+            sources_names, destinations_names, self._nodes_mapping
+        )
+
+        self._preprocessed = preprocess
+
+        if not preprocess:
+            return
+
+        self._nodes_number = len(nodes)
         self._uniform = uniform or weights is None
 
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
-        self._neighbors = typed.List.empty_list(edges_type_list)
-        for _ in range(nodes_number):
-            self._neighbors.append(
+        neighbors = typed.List.empty_list(edges_type_list)
+        for _ in range(self.nodes_number):
+            neighbors.append(
                 typed.List.empty_list(numba_edges_type)
             )
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
-        for i, (src, dst) in enumerate(zip(self._destinations, self._sources)):
+        for i, src in enumerate(self._sources):
             # Appending outbound edge ID to SRC list.
-            self._neighbors[src].append(i)
+            neighbors[src].append(i)
 
+
+        self._neighbors = typed.List.empty_list(numba_vector_edges_type)
+        for src in range(self.nodes_number):
+            src = np.int64(src)
+            neighs = neighbors[src]
+            self._neighbors.append(
+                np.empty(len(neighs), dtype=numpy_edges_type))
+            for i, neigh in enumerate(neighs):
+                self._neighbors[src][i] = neigh
+        
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
         if not self._uniform:
-            self._nodes_alias = build_alias_nodes(self._neighbors, weights)
+            self._nodes_alias = build_alias_nodes(
+                self._nodes_alias, self._neighbors, weights
+            )
 
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
@@ -170,7 +249,6 @@ class NumbaGraph:
             node_types=node_types,
             edge_types=edge_types,
             weights=weights,
-            default_weight=default_weight,
             sources=self._sources,
             destinations=self._destinations,
             return_weight=return_weight,
@@ -187,10 +265,15 @@ class NumbaGraph:
         # to create a random walk with variable length, hence a list of lists.
 
         self._has_traps = False
-        for src in range(nodes_number):
-            if self.is_node_trap(src):
+        for src in range(self.nodes_number):
+            if self.is_node_trap(np.int64(src)):
                 self._has_traps = True
                 break
+
+    @property
+    def preprocessed(self) -> int:
+        """Return integer with the length of the graph."""
+        return self._preprocessed
 
     @property
     def nodes_number(self) -> int:
@@ -274,7 +357,7 @@ class NumbaGraph:
         # to get the next random weight and we can just use random choise to
         # accomplish that.
         if self._uniform:
-            edge = choice(self._neighbors[src])
+            edge = np.random.choice(self._neighbors[src])
             dst = self._destinations[edge]
             return dst, edge
         # Get the information relative to the source node, composed of a tuple:

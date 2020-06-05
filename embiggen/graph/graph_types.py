@@ -15,6 +15,7 @@ nodes_mapping_type = (types.string, numba_nodes_type)
 ############################
 
 numba_edges_type = types.int64
+numba_vector_edges_type = types.int64[:]
 numpy_edges_type = np.int64
 edges_type_list = types.ListType(numba_edges_type)
 

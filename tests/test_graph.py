@@ -99,8 +99,8 @@ class TestGraph(TestCase):
                 for path in tqdm(kwargs["paths"], desc="Executing test on {}".format(test), leave=False):
                     for args in kwargs["arguments"]:
                         graph = factory.read_csv(path, **args)
-                        if graph.preprocessed:
-                            graph.random_walk(5, 10)
-                        else:
-                            with pytest.raises(ValueError):
-                                graph.random_walk(5, 10)
+                        # if graph.preprocessed:
+                        #     graph.random_walk(5, 10)
+                        # else:
+                        #     with pytest.raises(ValueError):
+                        #         graph.random_walk(5, 10)
