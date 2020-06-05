@@ -41,7 +41,7 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
 # to activate the parallel=True flag.
 # In this random walk we take into account the possibility of encountering
 # traps within the execution of the code.
-@njit(parallel=True)
+@njit#(parallel=True)
 def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[List[List[int]]]:
     """Return a list of graph walks
 
@@ -63,8 +63,8 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+    for i in range(number):  # pylint: disable=not-an-iterable
+        for src in range(nodes_number):  # pylint: disable=not-an-iterable
             walk = all_walks[i*nodes_number + src]
             walk[0] = src
             # Check if the current node has neighbors
