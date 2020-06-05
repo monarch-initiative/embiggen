@@ -35,7 +35,6 @@ class GraphFactory:
         -----------------------------
         Return new GraphFactory.
         """
-        self._default_weight = default_weight
         self._default_node_type = default_node_type
         self._default_edge_type = default_edge_type
         self._kwargs = kwargs

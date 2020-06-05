@@ -60,7 +60,7 @@ class Graph(Hashable):
         ---------------------
         Numpy array of sources indices.
         """
-        return self._graph._sources
+        return self._graph.sources
 
     @property
     def destinations(self) -> np.ndarray:
@@ -70,7 +70,7 @@ class Graph(Hashable):
         ---------------------
         Numpy array of destinations indices.
         """
-        return self._graph._destinations
+        return self._graph.destinations
 
     def consistent_hash(self) -> str:
         """Return hash for the current instance of the graph."""
