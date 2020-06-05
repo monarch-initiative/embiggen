@@ -158,7 +158,7 @@ class NumbaGraph:
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
-        if not self.uniform:
+        if not self._uniform:
             self._nodes_alias = build_alias_nodes(self._neighbors, weights)
 
         # Creating the edges alias list, which contains tuples composed of
@@ -184,11 +184,6 @@ class NumbaGraph:
             if self.is_node_trap(src):
                 self._has_traps = True
                 break
-
-    @property
-    def uniform(self) -> int:
-        """Return integer with the length of the graph."""
-        return self._uniform
 
     @property
     def nodes_number(self) -> int:
@@ -271,7 +266,7 @@ class NumbaGraph:
         # If the graph is uniform, we do not need to use advanced proceedures
         # to get the next random weight and we can just use random choise to
         # accomplish that.
-        if self.uniform:
+        if self._uniform:
             edge = choice(self._neighbors[src])
             dst = self._destinations[edge]
             return dst, edge
