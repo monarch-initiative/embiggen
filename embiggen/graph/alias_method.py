@@ -47,7 +47,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     larger = list(np.where(~smaller_mask)[0])
 
     # j is the mapping of the opposite event in the Bernulli trias
-    j = np.zeros_like(probabilities, dtype=np.int16)
+    j = np.zeros_like(probabilities, dtype=np.uint16)
     # Converge to the equivalente binary mixture
     while smaller and larger:
         small = smaller.pop()
