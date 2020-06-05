@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import collections
 from typing import Union, Tuple, Dict, List
 
 from .word2vec import Word2Vec
@@ -213,7 +214,7 @@ class Cbow(Word2Vec):
         window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1, leave=False):
+        for _ in trange(1, self.epochs + 1, leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -260,3 +261,6 @@ class Cbow(Word2Vec):
                                  lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
         return loss_history
+
+    def fit(self, *args, **kwargs):
+        super().fit(*args, **kwargs)
