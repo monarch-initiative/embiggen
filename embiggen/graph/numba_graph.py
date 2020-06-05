@@ -3,7 +3,6 @@ import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from numba import typed, types, njit, prange  # type: ignore
 from .alias_method import alias_draw, alias_setup
-from IPython import embed
 
 numba_nodes_type = types.uint32
 numba_vector_nodes_type = types.uint32[:]
