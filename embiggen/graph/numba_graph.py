@@ -29,7 +29,8 @@ def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
         nodes_alias.append((empty_j, empty_q))
 
     for i in prange(len(nodes)):  # pylint: disable=not-an-iterable
-        src = nodes_mapping[str(nodes[i])]
+        k = np.int64(i)
+        src = nodes_mapping[str(nodes[k])]
         neighboring_edges = nodes_neighboring_edges[src]
         neighboring_edges_number = len(neighboring_edges)
 
@@ -44,7 +45,7 @@ def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
         for j, neighboring_edge in enumerate(neighboring_edges):
             probs[j] = weights[neighboring_edge]
 
-        nodes_alias[i] = alias_setup(probs/probs.sum())
+        nodes_alias[k] = alias_setup(probs/probs.sum())
     return nodes_alias
 
 
@@ -71,8 +72,9 @@ def build_alias_edges(
         edges_alias.append((empty_j, empty_q))
 
     for i in prange(len(sources)): # pylint: disable=not-an-iterable
-        src = sources[i]
-        dst = destinations[i]
+        k = np.int64(i)
+        src = sources[k]
+        dst = destinations[k]
         neighboring_edges = nodes_neighboring_edges[dst]
         neighboring_edges_number = len(neighboring_edges)
 
@@ -84,7 +86,7 @@ def build_alias_edges(
 
         probs = np.zeros(neighboring_edges_number, dtype=np.float64)
         destination_type = node_types[dst]
-        edge_type = edge_types[i]
+        edge_type = edge_types[k]
 
         for index, neighboring_edge in enumerate(neighboring_edges):
             # We get the weight for the edge from the destination to
@@ -118,7 +120,7 @@ def build_alias_edges(
                 weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
-        edges_alias[i] = alias_setup(probs/probs.sum())
+        edges_alias[k] = alias_setup(probs/probs.sum())
     return edges_alias
 
 
