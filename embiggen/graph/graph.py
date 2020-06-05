@@ -9,10 +9,10 @@ from .random_walks import random_walk, random_walk_with_traps
 class Graph(Hashable):
     def __init__(self, directed: bool = True, **kwargs):
         """Create new instance of Graph."""
-        self._consistent_hash = sha256({
-            "directed": directed,
-            **kwargs
-        })
+        # self._consistent_hash = sha256({
+        #     "directed": directed,
+        #     **kwargs
+        # })
         if directed:
             print("Building directed graph")
             self._graph = DirectedGraph(**kwargs)
@@ -72,6 +72,6 @@ class Graph(Hashable):
         """
         return self._graph.destinations
 
-    def consistent_hash(self) -> str:
-        """Return hash for the current instance of the graph."""
-        return self._consistent_hash
+    # def consistent_hash(self) -> str:
+    #     """Return hash for the current instance of the graph."""
+    #     return self._consistent_hash
