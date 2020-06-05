@@ -3,6 +3,7 @@ import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from numba import typed, types  # type: ignore
 from .alias_method import alias_draw
+from random import choice
 from .build_alias import build_alias_edges, build_alias_nodes
 from .graph_types import (
     numba_vector_nodes_type,
@@ -18,9 +19,9 @@ from .graph_types import (
     ('_neighbors', types.ListType(edges_type_list)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
-    ('has_traps', types.boolean),
-    ('uniform', types.boolean),
-    ('random_walk_preprocessing', types.boolean),
+    ('_has_traps', types.boolean),
+    ('_uniform', types.boolean),
+    ('_nodes_number', types.uint64)
 ])
 class NumbaGraph:
 
@@ -32,6 +33,7 @@ class NumbaGraph:
         node_types: List[np.uint16] = None,
         edge_types: List[np.uint16] = None,
         weights: List[float] = None,
+        uniform: bool = True,
         default_weight: float = 1.0,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -45,9 +47,9 @@ class NumbaGraph:
         nodes_number: int,
             Number of nodes in the graph.
         sources: List[int],
-            List of the source nodes of the graph.
+            List of the source nodes in edges of the graph.
         destinations: List[int],
-            List of the destination nodes of the graph.
+            List of the destination nodes in edges of the graph.
         node_types: List[np.uint16] = None,
             The node types for each node.
             This is an optional parameter to make the graph behave as if it
@@ -60,6 +62,8 @@ class NumbaGraph:
             The weights for each source and sink. By default None. If you want
             to specify a single value to be used for every weight, use the
             default_weight parameter.
+        uniform: bool = True,
+            Wethever if the weights for the nodes are close to be uniform.
         default_weight: int = 1.0,
             The default weight to use when no weight is provided.
         return_weight : float = 1.0,
@@ -84,13 +88,17 @@ class NumbaGraph:
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        
+
         Raises
         -------------------------
         ValueError,
-            If given node types has not the same length of given nodes list.
-        ValueError,
             If given sources length does not match destinations length.
+        ValueError,
+            If given edge types length does not match destinations length.
+        ValueError,
+            If given weights list length does not match destinations length
+        ValueError,
+            If given node types has not the same length of nodes numbers.
         ValueError,
             If return_weight is not a strictly positive real number.
         ValueError,
@@ -114,9 +122,9 @@ class NumbaGraph:
             raise ValueError(
                 "Given weights length does not match destinations length."
             )
-        if node_types is not None and len(nodes) != len(node_types):
+        if node_types is not None and nodes_number != len(node_types):
             raise ValueError(
-                "Given node types has not the same length of given nodes list."
+                "Given node types has not the same length of given nodes number."
             )
         if return_weight <= 0:
             raise ValueError("Given return weight is not a positive number")
@@ -130,9 +138,11 @@ class NumbaGraph:
             raise ValueError(
                 "Given change_edge_type_weight is not a positive number"
             )
-        
+
         self._destinations = destinations
         self._sources = sources
+        self._nodes_number = nodes_number
+        self._uniform = uniform
 
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
@@ -144,35 +154,21 @@ class NumbaGraph:
 
         # Allocating the vectors of the mappings
         edges_set = set()
-        self._destinations = np.empty(len(edges), dtype=numpy_nodes_type)
-        self._sources = np.empty(len(edges), dtype=numpy_nodes_type)
 
         # The following proceedure ASSUMES that the edges only appear
         # in a single direction. This must be handled in the preprocessing
         # of the graph parsing proceedure.
-        for i, (source, destination) in enumerate(edges):
-            # Create the sources numeric ID
-            src = self._nodes_mapping[str(source)]
-            # Create the destinations numeric ID
-            dst = self._nodes_mapping[str(destination)]
-            # Store the destinations into the destinations vector
-            self._destinations[i] = dst
-            # Store the sources into the sources vector
-            self._sources[i] = src
-            # If the preprocessing is required we compute the neighbours
-            if self.random_walk_preprocessing:
-                # Appending outbound edge ID to SRC list.
-                self._neighbors[src].append(i)
-                # Storing the edges mapping.
-                edges_set.add((src, dst))
-
-        if not self.random_walk_preprocessing:
-            return
+        for i, (src, dst) in enumerate(zip(self._destinations, self._sources)):
+            # Appending outbound edge ID to SRC list.
+            self._neighbors[src].append(i)
+            # Storing the edges mapping.
+            edges_set.add((src, dst))
 
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
-        self._nodes_alias = build_alias_nodes(self._neighbors, weights)
+        if not self.uniform:
+            self._nodes_alias = build_alias_nodes(self._neighbors, weights)
 
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
@@ -192,21 +188,36 @@ class NumbaGraph:
         # walk assuming that all the walks have the same length, but we need
         # to create a random walk with variable length, hence a list of lists.
 
-        self.has_traps = False
-        for src in range(len(self._nodes_alias)):
+        self._has_traps = False
+        for src in range(nodes_number):
             if self.is_node_trap(src):
-                self.has_traps = True
+                self._has_traps = True
                 break
 
     @property
-    def nodes_number(self) -> int:
-        """Return the total number of nodes in the graph.
+    def uniform(self) -> int:
+        """Return integer with the length of the graph."""
+        return self._uniform
 
-        Returns
-        -------
-        The total number of nodes in the graph.
-        """
-        return len(self._nodes_alias)
+    @property
+    def nodes_number(self) -> int:
+        """Return integer with the length of the graph."""
+        return self._nodes_number
+
+    @property
+    def sources(self) -> List[int]:
+        """Return list of source nodes of the graph."""
+        return self._sources
+
+    @property
+    def destinations(self) -> List[int]:
+        """Return list of destinations nodes of the graph."""
+        return self._destinations
+
+    @property
+    def has_traps(self) -> bool:
+        """Return boolean representing if graph has traps."""
+        return self._has_traps
 
     def is_node_trap(self, node: int) -> bool:
         """Return boolean representing if node is a dead end.
@@ -222,70 +233,36 @@ class NumbaGraph:
         """
         return len(self._neighbors[node]) == 0
 
-    def is_edge_trap(self, edge: int) -> bool:
-        """Return boolean representing if edge is a dead end.
-
-        Parameters
-        ----------
-        edge: int,
-            Edge numeric ID.
-
-        Returns
-        -----------------
-        Boolean True if edge is a trap.
-        """
-        return self.is_node_trap(self._destinations[edge])
-
-    def neighbors(self, node: str) -> List:
-        """Return neighbors of given node.
+    def _extract_transition_informations(
+        self,
+        src: int,
+        j: List[int],
+        q: List[float]
+    ) -> Tuple[int, int]:
+        """Return tuple with new destination and used edge.
 
         Parameters
         ---------------------
-        node: str,
-            The node whose neigbours are to be identified.
+        src: int,
+            The previous source node.
+        j: List[int],
+            The indices to use for alias method.
+        q: List[float]
+            The probabilities to use for alias method.
 
         Returns
         ---------------------
-        List of neigbours of given node.
+        Tuple containing the new destination and the used edge.
         """
-        # Get the numeric ID of the node
-        node_id = self._nodes_mapping[node]
-        # We get the node neighbours
-        neighbours = self._neighbors[node_id]
-        # And translate them back.
-        return [
-            # For each neighbor edge, we need to get first the destination ID
-            # and then remap the destination ID to the original node name
-            self._reverse_nodes_mapping[self._destinations[neighbor]]
-            for neighbor in neighbours
-        ]
-
-    def degree(self, node: str) -> int:
-        """Return degree of given node.
-
-        Parameters
-        ---------------------
-        node: str,
-            The node whose neigbours are to be identified.
-
-        Returns
-        ---------------------
-        Number of neighbors of given node.
-        """
-        return len(self.neighbors(node))
-
-    def extract_transition_informations(self, src: int, j: np.ndarray, q: np.ndarray) -> Tuple[int, int]:
-        # TODO! Add docstring!
-        neighbor_index = alias_draw(j, q)
-        neighbours = self._neighbors[src]
-        edge = neighbours[neighbor_index]
+        # Get the new edge, extracted randomly using alias method draw.
+        edge = self._neighbors[src][alias_draw(j, q)]
         # Get the destination of the chosen edge.
         dst = self._destinations[edge]
-        # Return the obtained tuple
+        # Return the obtained tuple.
         return dst, edge
 
-    def extract_random_node_neighbour(self, src: int) -> Tuple[int, int]:
-        """Return a random adiacent node to the one associated to node.
+    def extract_node_neighbour(self, src: int) -> Tuple[int, int]:
+        """Return a random adjacent node to the one associated to node.
         The destination is extracted by using the normalized weights
         of the edges as probability distribution.
 
@@ -300,15 +277,22 @@ class NumbaGraph:
         source node and the ID of th edge used for the transition between
         the two nodes.
         """
-        # !TODO! UPDATE THIS METHOD!
+        # If the graph is uniform, we do not need to use advanced proceedures
+        # to get the next random weight and we can just use random choise to
+        # accomplish that.
+        if self.uniform:
+            edge = choice(self._neighbors[src])
+            dst = self._destinations[edge]
+            return dst, edge
         # Get the information relative to the source node, composed of a tuple:
         # - The numpy array of opposite events for the alias method (j)
         # - The probabilities for the extractions for the alias method (q)
         j, q = self._nodes_alias[src]
+        # Get the tuple of the new transition, composed of the new destination
+        # and the edge used for the transition.
+        return self._extract_transition_informations(src, j, q)
 
-        return self.extract_transition_informations(src, j, q)
-
-    def extract_random_edge_neighbour(self, edge: int) -> Tuple[int, int]:
+    def extract_edge_neighbour(self, edge: int) -> Tuple[int, int]:
         """Return a random adiacent edge to the one associated to edge.
         The Random is extracted by using the normalized weights of the edges
         as probability distribution.
@@ -322,7 +306,6 @@ class NumbaGraph:
         -------
         The index of a random adiacent edge to edge.
         """
-        # !TODO! UPDATE THIS METHOD!
         # We retrieve the destination of edge currently used, which can be
         # considered the source of the edge we are looking for now.
         src = self._destinations[edge]
@@ -330,5 +313,6 @@ class NumbaGraph:
         # - The numpy array of opposite events for the alias method (j)
         # - The probabilities for the extractions for the alias method (q)
         j, q = self._edges_alias[edge]
-
-        return self.extract_transition_informations(src, j, q)
+        # Get the tuple of the new transition, composed of the new destination
+        # and the edge used for the transition.
+        return self._extract_transition_informations(src, j, q)
