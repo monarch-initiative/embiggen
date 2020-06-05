@@ -64,10 +64,21 @@ class TestGraph(TestCase):
             The goal of this test is to see if the factory is able to handle
             graphs containing singleton nodes.
         """
-        graph = self._factory.read_csv(
+        self._factory.read_csv(
             "tests/data/singleton_edges.tsv",
             "tests/data/singleton_nodes.tsv"
         )
+
+    def test_duplicated_nodes(self):
+        """
+            The goal of this test is to see if the factory raises a proper
+            exception when duplicated nodes are present.
+        """
+        with pytest.raises(ValueError):
+            self._factory.read_csv(
+                "tests/data/singleton_edges.tsv",
+                "tests/data/duplicated_nodes.tsv"
+            )
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
