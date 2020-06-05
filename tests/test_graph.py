@@ -57,8 +57,17 @@ class TestGraph(TestCase):
         ]
 
         self._factory = GraphFactory()
-        self._directed_factory = GraphFactory(default_directed=True)
         self._verbose = False
+
+    def test_singleton_nodes(self):
+        """
+            The goal of this test is to see if the factory is able to handle
+            graphs containing singleton nodes.
+        """
+        graph = self._factory.read_csv(
+            "tests/data/singleton_edges.tsv",
+            "tests/data/singleton_nodes.tsv"
+        )
 
     def test_setup_from_dataframe(self):
         for path in tqdm(
@@ -66,7 +75,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(path)
                 subgraph = graph._graph
                 self.assertTrue(all([
@@ -100,7 +109,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(path, random_walk_preprocessing=False)
                 with pytest.raises(ValueError):
                     graph.random_walk(1, 1)
@@ -115,7 +124,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(
                     path,
                     edge_file_has_header=False,
@@ -164,7 +173,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
                 walks_number = 10
@@ -195,7 +204,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(
                     path,
                     edge_file_has_header=False,
@@ -228,7 +237,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(
                     path, return_weight=10, explore_weight=10)
                 subgraph = graph._graph
@@ -244,7 +253,7 @@ class TestGraph(TestCase):
             disable=not self._verbose,
             desc="Testing on non-legacy"
         ):
-            for factory in (self._factory, self._directed_factory):
+            for factory in (self._factory, ):
                 graph = factory.read_csv(
                     path,
                     edge_file_has_header=False,

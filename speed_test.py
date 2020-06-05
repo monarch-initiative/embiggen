@@ -5,7 +5,7 @@ import compress_json
 import json
 
 start = time()
-factory = GraphFactory(default_directed=True)
+factory = GraphFactory()
 graph = factory.read_csv(
     "pos_train_edges.tsv",
     "pos_train_nodes.tsv"
