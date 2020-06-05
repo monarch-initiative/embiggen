@@ -242,8 +242,6 @@ class GraphFactory:
                     "There are {} duplicate nodes "
                     "in the given nodes file"
                 ).format(len(nodes) - len(nodes_set)))
-
-
         else:
             nodes = unique_nodes
 

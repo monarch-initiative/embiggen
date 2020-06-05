@@ -5,10 +5,6 @@ from dict_hash import sha256, Hashable  # type: ignore
 from .numba_undirected_graph import NumbaDirectedGraph, NumbaUndirectedGraph
 from .random_walks import random_walk, random_walk_with_traps
 
-#######################################
-# Class to wrapp the NumbaGraph code  #
-#######################################
-
 
 class Graph(Hashable):
     def __init__(self, directed: bool = True, **kwargs):

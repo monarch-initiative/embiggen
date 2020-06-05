@@ -138,7 +138,7 @@ class NumbaGraph:
         self._destinations = destinations
         self._sources = sources
         self._nodes_number = nodes_number
-        self._uniform = uniform
+        self._uniform = uniform or weights is None
 
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
@@ -169,7 +169,8 @@ class NumbaGraph:
             node_types, edge_types, weights,
             self._sources, self._destinations,
             return_weight, explore_weight,
-            change_edge_type_weight, change_edge_type_weight
+            change_edge_type_weight, change_edge_type_weight,
+            default_weight
         )
 
         # To verify if this graph has some walker traps, meaning some nodes
