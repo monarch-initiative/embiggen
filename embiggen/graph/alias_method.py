@@ -35,7 +35,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     if probabilities.size == 0:
         raise ValueError("Given probability vector is empty!")
     
-    if abs(probabilities.sum() - 1) > 1e-5:
+    if abs(probabilities.sum() - 1) > 1e-8:
         raise ValueError(
             "Given probability vector does not sum to one"
         )
