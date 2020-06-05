@@ -14,8 +14,10 @@ class Graph(Hashable):
             **kwargs
         })
         if directed:
+            print("Building directed graph")
             self._graph = DirectedGraph(**kwargs)
         else:
+            print("Building undirected graph graph")
             self._graph = UndirectedGraph(**kwargs)
 
     def random_walk(self, number: int, length: int) -> tf.Tensor:

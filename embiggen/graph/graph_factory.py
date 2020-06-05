@@ -9,7 +9,6 @@ class GraphFactory:
 
     def __init__(
         self,
-        default_weight: int = 1,
         default_node_type: str = 'biolink:NamedThing',
         default_edge_type: str = 'biolink:Association',
         **kwargs: Dict
@@ -125,6 +124,8 @@ class GraphFactory:
                 "of the given separator"
             )
 
+        print("Reading edge file")
+
         header = (0 if edge_file_has_header else None)
         tmp_edges_df = pd.read_csv(
             edge_path,
@@ -153,6 +154,8 @@ class GraphFactory:
             header=header
         )
 
+        print("Hadnling edge file")
+
         # Dropping duplicated edges
         unique_columns = [
             start_nodes_column, end_nodes_column
@@ -168,7 +171,9 @@ class GraphFactory:
 
         unique_nodes = np.unique(edges)
 
+
         if node_path is not None:
+            print("Loading nodes file")
 
             tmp_nodes_df = pd.read_csv(
                 node_path,
@@ -220,10 +225,6 @@ class GraphFactory:
         #######################################
 
         if weights_column in edges_df.columns:
-            edges_df[weights_column].fillna(
-                value=self._default_weight,
-                inplace=True
-            )
             weights = edges_df[weights_column].values
         else:
             weights = None
@@ -278,6 +279,8 @@ class GraphFactory:
             # Otherwise if the column is not available.
             edge_types = None
 
+        print("Done processing")
+        
         return Graph(
             nodes=nodes,
             sources_names=edges_df[start_nodes_column].values.astype(str),

@@ -35,7 +35,6 @@ def build_default_alias_vectors(
 
 @njit(parallel=True, debug=True)
 def build_alias_nodes(
-    alias: List[Tuple],
     nodes_neighboring_edges: List[List[int]],
     weights: List[float]
 ) -> List[Tuple[List[int], List[float]]]:
