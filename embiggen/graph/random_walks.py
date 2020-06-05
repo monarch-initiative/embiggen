@@ -1,7 +1,7 @@
 from numba import njit, prange  # type: ignore
 from typing import List
 import numpy as np  # type: ignore
-from .numba_graph import NumbaGraph
+from .numba_graph import NumbaGraph, numba_nodes_type
 
 # This function is out of the class because otherwise we would not be able
 # to activate the parallel=True flag.
@@ -23,7 +23,10 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
     Numpy array with all the walks containing the numeric IDs of nodes.
     """
     # or alternatively a numpy array.
-    all_walks = np.empty((graph.nodes_number * number, length), dtype=np.int64)
+    all_walks = np.empty(
+        (graph.nodes_number * number, length),
+        dtype=numba_nodes_type
+    )
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.

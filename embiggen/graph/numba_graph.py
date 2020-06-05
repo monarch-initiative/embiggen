@@ -5,8 +5,8 @@ from numba import typed, types, njit, prange  # type: ignore
 from .alias_method import alias_draw, alias_setup
 from IPython import embed
 
-numba_nodes_type = types.int64
-numpy_nodes_type = np.int64
+numba_nodes_type = types.uint32
+numpy_nodes_type = np.uint32
 numba_edges_type = types.int64
 numpy_edges_type = np.int64
 
@@ -20,7 +20,7 @@ alias_method_list_type = types.Tuple((types.int16[:], types.float64[:]))
 
 @njit(parallel=True)
 def build_alias_nodes(nodes, weights, nodes_mapping, nodes_neighboring_edges):
-    # TODO! Consider parallelizing this thing.
+    # TODO! WRITE A DOCSTRING HERE!
     empty_j = np.empty(0, dtype=np.int16)
     empty_q = np.empty(0, dtype=np.float64)
     nodes_alias = typed.List.empty_list(alias_method_list_type)
@@ -63,7 +63,7 @@ def build_alias_edges(
     change_node_type_weight,
     change_edge_type_weight,
 ):
-    # TODO! Consider parallelizing this thing.
+    # TODO! WRITE A DOCSTRING HERE!
     empty_j = np.empty(0, dtype=np.int16)
     empty_q = np.empty(0, dtype=np.float64)
     edges_alias = typed.List.empty_list(alias_method_list_type)
@@ -223,7 +223,6 @@ class NumbaGraph:
         #           new_edge = n2e_neighbours[destinations[e]][alias_draw(*alias[e])]
 
         self.random_walk_preprocessing = random_walk_preprocessing
-        nodes_number = len(nodes)
 
         # Creating mapping of nodes and integer ID.
         # The map looks like the following:
@@ -328,7 +327,7 @@ class NumbaGraph:
         # to create a random walk with variable length, hence a list of lists.
 
         self.has_traps = False
-        for src in range(nodes_number):
+        for src in range(len(self._nodes_alias)):
             if self.is_node_trap(src):
                 self.has_traps = True
                 break
