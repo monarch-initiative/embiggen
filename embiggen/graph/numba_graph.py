@@ -318,23 +318,6 @@ class NumbaGraph:
 
         numba_log("Processing edges alias")
 
-        # Creating the edges alias list, which contains tuples composed of
-        # the list of indices of the opposite extraction events and the list
-        # of probabilities for the extraction of edges neighbouring the edges.
-        self._edges_alias = build_alias_edges(
-            edges_set=edges_set,
-            nodes_neighboring_edges=self._neighbors,
-            node_types=node_types,
-            edge_types=edge_types,
-            weights=weights,
-            sources=self._sources,
-            destinations=self._destinations,
-            return_weight=return_weight,
-            explore_weight=explore_weight,
-            change_node_type_weight=change_node_type_weight,
-            change_edge_type_weight=change_edge_type_weight
-        )
-
         # To verify if this graph has some walker traps, meaning some nodes
         # that do not have any neighbors, we have to iterate on the list of
         # neighbors and to check if at least a node has no neighbors.
@@ -345,6 +328,25 @@ class NumbaGraph:
         numba_log("Searching for traps in the graph.")
         self._traps = process_traps(self._neighbors)
         self._has_traps = self._traps.any()
+
+        # Creating the edges alias list, which contains tuples composed of
+        # the list of indices of the opposite extraction events and the list
+        # of probabilities for the extraction of edges neighbouring the edges.
+        self._edges_alias = build_alias_edges(
+            edges_set=edges_set,
+            nodes_neighboring_edges=self._neighbors,
+            node_types=node_types,
+            edge_types=edge_types,
+            weights=weights,
+            sources=self._sources,
+            traps=self._traps,
+            destinations=self._destinations,
+            return_weight=return_weight,
+            explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight
+        )
+
         numba_log("Completed graph preprocessing for random walks.")
 
     @property

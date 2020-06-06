@@ -110,6 +110,7 @@ def build_alias_edges(
     weights: List[float],
     sources: List[int],
     destinations: List[int],
+    traps: List[bool],
     return_weight: float,
     explore_weight: float,
     change_node_type_weight: float,
@@ -134,6 +135,8 @@ def build_alias_edges(
         List of source nodes for each edge.
     destinations: List[int],
         List of destination nodes for each edge.
+    traps: List[bool],
+        List of trap nodes boolean mask.
     return_weight: float,
         hyperparameter for breadth first random walk - 1/p
     explore_weight: float,
@@ -269,7 +272,7 @@ def build_alias_edges(
                 weight = weight * return_weight
             # If the backward loop does not exist, we multiply the weight
             # of the edge by the weight for moving forward and explore more.
-            elif (ndst, src) not in edges_set:
+            elif traps[ndst] or (ndst, src) not in edges_set:
                 weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
