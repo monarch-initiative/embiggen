@@ -64,7 +64,7 @@ class UndirectedGraph(DirectedGraph):
             full_edge_types[total_orig_edges:] = edge_types[~loops_mask]
             edge_types = full_edge_types
 
-        if weights is not None:
+        if len(weights) > 0:
             full_weights = np.empty(total_edges, dtype=np.uint16)
             full_weights[:total_orig_edges] = weights
             full_weights[total_orig_edges:] = weights[~loops_mask]

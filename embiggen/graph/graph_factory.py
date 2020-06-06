@@ -226,7 +226,7 @@ class GraphFactory:
         if weights_column in edges_df.columns:
             weights = edges_df[weights_column].values
         else:
-            weights = None
+            weights = np.empty(0, dtype=np.float64)
 
         #######################################
         # Handling node types                 #

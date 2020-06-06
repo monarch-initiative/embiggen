@@ -158,7 +158,7 @@ class NumbaGraph:
             raise ValueError(
                 "Given edge types length does not match destinations length."
             )
-        if weights is not None and len(weights) != len(destinations_names):
+        if len(weights) > 0 and len(weights) != len(destinations_names):
             raise ValueError(
                 "Given weights length does not match destinations length."
             )
@@ -207,7 +207,7 @@ class NumbaGraph:
             return
 
         self._nodes_number = len(nodes)
-        self._uniform = uniform or weights is None
+        self._uniform = uniform or len(weights) == 0
 
         print("Processing neighbours")
 

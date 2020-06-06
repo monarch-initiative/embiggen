@@ -33,7 +33,7 @@ def build_default_alias_vectors(
     return alias
 
 
-@njit(parallel=True, debug=True)
+@njit(parallel=True)
 def build_alias_nodes(
     nodes_neighboring_edges: List[List[int]],
     weights: List[float]
@@ -72,10 +72,20 @@ def build_alias_nodes(
             dtype=numpy_vector_alias_probs_type
         )
         for j, edge in enumerate(neighboring_edges):
-            probs[j] = 1 if weights is None else weights[edge]
+            probs[j] = weights[edge]
 
         alias[src] = alias_setup(probs/probs.sum())
     return alias
+
+
+@njit
+def uniform_weight(weights: List[float], edge: int) -> float:
+    return 1.0
+
+
+@njit
+def non_uniform_weight(weights: List[float], edge: int) -> float:
+    return weights[edge]
 
 
 @njit(parallel=True)
@@ -154,7 +164,7 @@ def build_alias_edges(
             "Given edge types list has not the same length of the given "
             "sources list!"
         )
-    if weights is not None and len(sources) != len(weights):
+    if len(weights) > 0 and len(sources) != len(weights):
         raise ValueError(
             "Given source nodes list has not the same length of the given "
             "weights list!"
@@ -173,6 +183,8 @@ def build_alias_edges(
     if change_edge_type_weight <= 0:
         raise ValueError(
             "Given change_edge_type_weight is not a positive number")
+
+    weights_call = uniform_weight if len(weights) == 0 else non_uniform_weight
 
     number = len(sources)
     alias = build_default_alias_vectors(number)
@@ -198,7 +210,7 @@ def build_alias_edges(
         for index, edge in enumerate(neighboring_edges):
             # We get the weight for the edge from the destination to
             # the neighbour.
-            weight = 1 if weights is None else weights[edge]
+            weight = weights_call(weights, edge)
             # Then we retrieve the neigh_dst node type.
             # And if the destination node type matches the neighbour
             # destination node type (we are not changing the node type)
