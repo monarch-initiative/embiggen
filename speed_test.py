@@ -3,7 +3,7 @@ from time import time
 from humanize import naturaldelta
 from embiggen import GraphFactory
 import compress_json
-import jsos
+import json
 
 start = time()
 factory = GraphFactory(verbose=True)
