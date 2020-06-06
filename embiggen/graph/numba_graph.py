@@ -298,6 +298,9 @@ class NumbaGraph:
             neighs = neighbors[src]
             self._neighbors.append(
                 np.empty(len(neighs), dtype=numpy_edges_type))
+            # Here we are not directly casting the List to numpy array
+            # but we need to iterate on each element because currently there is
+            # no support for conversion between numba lists and numpy arrays.
             for i, neigh in enumerate(neighs):
                 self._neighbors[src][i] = neigh
 
@@ -310,6 +313,8 @@ class NumbaGraph:
             self._nodes_alias = build_alias_nodes(
                 self._neighbors, weights
             )
+        else:
+            numba_log("Skipping nodes alias building since graph is uniform.")
 
         numba_log("Processing edges alias")
 
