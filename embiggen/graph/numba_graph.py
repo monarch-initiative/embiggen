@@ -327,6 +327,17 @@ class NumbaGraph:
 
         numba_log("Processing edges alias")
 
+        # To verify if this graph has some walker traps, meaning some nodes
+        # that do not have any neighbors, we have to iterate on the list of
+        # neighbors and to check if at least a node has no neighbors.
+        # If such a condition is met, we cannot anymore do the simple random
+        # walk assuming that all the walks have the same length, but we need
+        # to create a random walk with variable length, hence a list of lists.
+
+        numba_log("Searching for traps in the graph.")
+        self._traps = process_traps(self._neighbors)
+        self._has_traps = self._traps.any()
+
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the edges.
@@ -338,23 +349,13 @@ class NumbaGraph:
             weights=weights,
             sources=self._sources,
             destinations=self._destinations,
+            traps=self._traps,
             return_weight=return_weight,
             explore_weight=explore_weight,
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight
         )
 
-
-        # To verify if this graph has some walker traps, meaning some nodes
-        # that do not have any neighbors, we have to iterate on the list of
-        # neighbors and to check if at least a node has no neighbors.
-        # If such a condition is met, we cannot anymore do the simple random
-        # walk assuming that all the walks have the same length, but we need
-        # to create a random walk with variable length, hence a list of lists.
-
-        numba_log("Searching for traps in the graph.")
-        self._traps = process_traps(self._neighbors)
-        self._has_traps = self._traps.any()
         numba_log("Completed graph preprocessing for random walks.")
 
     @property
