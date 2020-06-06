@@ -65,10 +65,10 @@ class TestGraph(TestCase):
         }
 
         self._factories= [
-            GraphFactory(directed=True),
-            GraphFactory(directed=False),
-            GraphFactory(preprocess=True),
-            GraphFactory(preprocess=False)
+            GraphFactory(directed=True, verbose=False),
+            GraphFactory(directed=False, verbose=False),
+            GraphFactory(preprocess=True, verbose=False),
+            GraphFactory(preprocess=False, verbose=False)
         ]
         self._verbose= False
 
@@ -77,7 +77,7 @@ class TestGraph(TestCase):
             The goal of this test is to see if the factory is able to handle
             graphs containing singleton nodes.
         """
-        GraphFactory().read_csv(
+        GraphFactory(verbose=False).read_csv(
             "tests/data/singleton_edges.tsv",
             "tests/data/singleton_nodes.tsv"
         )
@@ -88,7 +88,7 @@ class TestGraph(TestCase):
             exception when duplicated nodes are present.
         """
         with pytest.raises(ValueError):
-            GraphFactory().read_csv(
+            GraphFactory(verbose=False).read_csv(
                 "tests/data/singleton_edges.tsv",
                 "tests/data/duplicated_nodes.tsv"
             )

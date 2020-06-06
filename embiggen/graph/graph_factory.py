@@ -1,8 +1,12 @@
+import logging
 from typing import Dict
-import pandas as pd  # type: ignore
+
 import numpy as np  # type: ignore
-from .graph import Graph
+import pandas as pd  # type: ignore
+
+from ..utils import logger
 from .csv_utils import check_consistent_lines
+from .graph import Graph
 
 
 class GraphFactory:
@@ -11,6 +15,7 @@ class GraphFactory:
         self,
         default_node_type: str = 'biolink:NamedThing',
         default_edge_type: str = 'biolink:Association',
+        verbose: bool = True,
         **kwargs: Dict
     ):
         """Create new GraphFactory object.
@@ -28,6 +33,8 @@ class GraphFactory:
             The default type for the nodes when no node type column is given.
         default_edge_type: str = 'biolink:Association',
             The default type for the edges when no edge type column is given.
+        verbose: bool = True,
+            If to log with INFO level or with CRITICAL.
         **kwargs: Dict
             The kwargs to pass directly to the constructor of the Graph.
 
@@ -38,6 +45,10 @@ class GraphFactory:
         self._default_node_type = default_node_type
         self._default_edge_type = default_edge_type
         self._kwargs = kwargs
+        if verbose:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.CRITICAL)
 
     def read_csv(
         self,
@@ -123,7 +134,7 @@ class GraphFactory:
                 "of the given separator"
             )
 
-        print("Reading edge file")
+        logger.info("Reading edge file")
 
         header = (0 if edge_file_has_header else None)
         tmp_edges_df = pd.read_csv(
@@ -153,7 +164,7 @@ class GraphFactory:
             header=header
         )
 
-        print("Hadnling edge file")
+        logger.info("Hadnling edge file")
 
         # Dropping duplicated edges
         unique_columns = [
@@ -172,7 +183,7 @@ class GraphFactory:
 
 
         if node_path is not None:
-            print("Loading nodes file")
+            logger.info("Loading nodes file")
 
             tmp_nodes_df = pd.read_csv(
                 node_path,
@@ -278,7 +289,7 @@ class GraphFactory:
             # Otherwise if the column is not available.
             edge_types = None
 
-        print("Done processing")
+        logger.info("Done processing")
         
         return Graph(
             nodes=nodes,

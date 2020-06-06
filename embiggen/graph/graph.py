@@ -4,6 +4,7 @@ import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
 from .undirected_graph import DirectedGraph, UndirectedGraph
 from .random_walks import random_walk, random_walk_with_traps
+from ..utils import logger
 
 
 class Graph(Hashable):
@@ -14,10 +15,10 @@ class Graph(Hashable):
         #     **kwargs
         # })
         if directed:
-            print("Building directed graph")
+            logger.info("Building directed graph")
             self._graph = DirectedGraph(**kwargs)
         else:
-            print("Building undirected graph graph")
+            logger.info("Building undirected graph graph")
             self._graph = UndirectedGraph(**kwargs)
 
     def random_walk(self, number: int, length: int) -> tf.Tensor:
