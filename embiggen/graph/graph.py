@@ -37,13 +37,13 @@ class Graph(Hashable):
         logger.info("Starting random walks.")
         if self._graph.has_traps:
             logger.info("Using trap-aware algorithm for random walks.")
-            return tf.ragged.constant(
-                random_walk_with_traps(self._graph, number, length)
-            )
+            walks = random_walk_with_traps(self._graph, number, length)
+            logger.info("Building RaggedTensor from walks.")
+            return tf.ragged.constant(walks)
         logger.info("Using trap-unaware algorithm fo random walks.")
-        return tf.constant(
-            random_walk(self._graph, number, length)
-        )
+        walks = random_walk(self._graph, number, length)
+        logger.info("Building Tensor from walks.")
+        return tf.constant(walks)
 
     @property
     def preprocessed(self) -> bool:
