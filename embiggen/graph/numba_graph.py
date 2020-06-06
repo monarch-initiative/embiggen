@@ -12,7 +12,8 @@ from .graph_types import (
     numba_edges_type, numba_nodes_type,
     numba_vector_edges_type, numba_vector_nodes_type,
     numpy_edges_type, numpy_nodes_type,
-    numpy_nodes_colors_type, numpy_edges_colors_type
+    numpy_nodes_colors_type, numpy_edges_colors_type,
+    dict_edges_tuple
 )
 
 
@@ -38,12 +39,11 @@ def process_edges(
     Triple with:
         - The mapped sources using given mapping, as a list of integers.
         - The mapped destinations using given mapping, as a list of integers.
-        - The mapped edge sets using given mapping, as a set of tuples.
     """
     edges_number = len(sources_names)
     sources = np.empty(edges_number, dtype=numpy_nodes_type)
     destinations = np.empty(edges_number, dtype=numpy_nodes_type)
-    edges_set = set()
+    edges = set()
 
     for i in prange(edges_number):  # pylint: disable=not-an-iterable
         # Store the sources into the sources vector
@@ -51,12 +51,10 @@ def process_edges(
         # Store the destinations into the destinations vector
         destinations[i] = mapping[str(destinations_names[i])]
 
-    # Creating edge set.
-    for edge in zip(sources, destinations):
-        # Adding the edge to the set
-        edges_set.add(edge)
+    for src, dst in zip(sources, destinations):
+        edges.add((src, dst))
 
-    return sources, destinations, edges_set
+    return sources, destinations, edges
 
 
 @njit(parallel=True)
@@ -316,6 +314,17 @@ class NumbaGraph:
         else:
             numba_log("Skipping nodes alias building since graph is uniform.")
 
+        # To verify if this graph has some walker traps, meaning some nodes
+        # that do not have any neighbors, we have to iterate on the list of
+        # neighbors and to check if at least a node has no neighbors.
+        # If such a condition is met, we cannot anymore do the simple random
+        # walk assuming that all the walks have the same length, but we need
+        # to create a random walk with variable length, hence a list of lists.
+
+        numba_log("Searching for traps in the graph.")
+        self._traps = process_traps(self._neighbors)
+        self._has_traps = self._traps.any()
+
         numba_log("Processing edges alias")
 
         # To verify if this graph has some walker traps, meaning some nodes
@@ -334,13 +343,13 @@ class NumbaGraph:
         # of probabilities for the extraction of edges neighbouring the edges.
         self._edges_alias = build_alias_edges(
             edges_set=edges_set,
-            nodes_neighboring_edges=self._neighbors,
+            neighbors=self._neighbors,
             node_types=node_types,
             edge_types=edge_types,
             weights=weights,
             sources=self._sources,
-            traps=self._traps,
             destinations=self._destinations,
+            traps=self._traps,
             return_weight=return_weight,
             explore_weight=explore_weight,
             change_node_type_weight=change_node_type_weight,

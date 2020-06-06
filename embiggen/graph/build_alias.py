@@ -1,7 +1,7 @@
 from .alias_method import alias_setup
 from numba import typed, njit, prange  # type: ignore
 import numpy as np  # type: ignore
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Dict
 from ..utils import numba_log
 from .graph_types import (
     numpy_vector_alias_indices_type,
@@ -36,7 +36,7 @@ def build_default_alias_vectors(
 
 @njit(parallel=True)
 def build_alias_nodes(
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
     weights: List[float]
 ) -> List[Tuple[List[int], List[float]]]:
     """Return aliases for nodes to use for alias method for 
@@ -44,7 +44,7 @@ def build_alias_nodes(
 
     Parameters
     -----------------------
-    nodes_neighboring_edges:  List[List[int]],
+    neighbors:  List[List[int]],
         List of neighbouring edges for each node.
     weights: List[float],
         List of weights for each edge.
@@ -54,12 +54,12 @@ def build_alias_nodes(
     Lists of lists representing node aliases 
     """
 
-    number = len(nodes_neighboring_edges)
+    number = len(neighbors)
     alias = build_default_alias_vectors(number)
 
     for i in prange(number):  # pylint: disable=not-an-iterable
         src = np.int64(i)
-        neighboring_edges = nodes_neighboring_edges[src]
+        neighboring_edges = neighbors[src]
         neighboring_edges_number = len(neighboring_edges)
 
         # Do not call the alias setup if the node is a trap.
@@ -104,7 +104,7 @@ def multiple_types(single_type: int, all_types: List[int], edge: int, weight: in
 @njit(parallel=True)
 def build_alias_edges(
     edges_set: Set[Tuple[int, int]],
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
     node_types: List[int],
     edge_types: List[int],
     weights: List[float],
@@ -121,9 +121,7 @@ def build_alias_edges(
 
     Parameters
     -----------------------
-    edges_set: Set[Tuple[int, int]],
-        Set of unique edges.
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
         List of neighbouring edges for each node.
     node_types: List[int],
         List of node types.
@@ -170,7 +168,7 @@ def build_alias_edges(
     Lists of lists representing edges aliases.
     """
 
-    if len(node_types) > 0 and len(node_types) != len(nodes_neighboring_edges):
+    if len(node_types) > 0 and len(node_types) != len(neighbors):
         raise ValueError(
             "Given node types list has not the same length of the given "
             "nodes neighbouring edges list."
@@ -228,10 +226,10 @@ def build_alias_edges(
         k = np.int64(i)
         src = sources[k]
         dst = destinations[k]
-        neighboring_edges = nodes_neighboring_edges[dst]
+        neighboring_edges = neighbors[dst]
         neighboring_edges_number = len(neighboring_edges)
 
-        # Do not call the alias setup if the edge is a trap.
+        # Do not call the alias setup if the edge is a traps.
         # Because that edge will have no neighbors and thus the necessity
         # of setupping the alias method to efficently extract the neighbour.
         if neighboring_edges_number == 0:
