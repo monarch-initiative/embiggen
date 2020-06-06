@@ -92,18 +92,6 @@ def build_alias_nodes(
     return alias
 
 
-@njit
-def single_types(single_type: int, all_types: List[int], edge: int, weight: int, factor: float) -> float:
-    return weight
-
-
-@njit
-def multiple_types(single_type: int, all_types: List[int], edge: int, weight: int, factor: float) -> float:
-    if single_type == all_types[edge]:
-        return weight / factor
-    return weight
-
-
 @njit(parallel=True)
 def build_alias_edges(
     edges_set: Set[Tuple[int, int]],
@@ -201,25 +189,6 @@ def build_alias_edges(
         raise ValueError(
             "Given change_edge_type_weight is not a positive number")
 
-    if len(weights) == 0:
-        numba_log("No graph weights detected. Using uniform weights.")
-    else:
-        numba_log("Graph weights detected. Using weights from given file.")
-
-    if len(node_types) == 0:
-        nodes_call = single_types
-        numba_log("No graph node types found. Proceeding as homogeneous graph.")
-    else:
-        nodes_call = multiple_types
-        numba_log("Multiple node types found. Proceeding as heterogeneous graph.")
-
-    if len(edge_types) == 0:
-        edges_call = single_types
-        numba_log("No graph edge types found. Proceeding as normal graph.")
-    else:
-        edges_call = multiple_types
-        numba_log("Multiple edge types found. Proceeding as multi-graph.")
-
     alias = build_default_alias_vectors(len(sources))
 
     for i in prange(len(sources)):  # pylint: disable=not-an-iterable
@@ -245,38 +214,43 @@ def build_alias_edges(
             # the neighbour.
             probs = weights[min_edge:max_edge]
 
-        # We get the node types.
-        node_type = node_types[dst] if len(node_types) else 0
-        edge_type = edge_types[k] if len(node_types) else 0
+        neighbors_destinations = destinations[min_edge:max_edge]
 
-        for index in prange(total_neighbors):  # pylint: disable=not-an-iterable
-            # The minus 1 is required since the neighbours are stored as offsets.
-            edge = min_edge + index - 1
-            # Then we retrieve the neigh_dst node type.
-            # And if the destination node type matches the neighbour
+        if len(node_types):
+            # if the destination node type matches the neighbour
             # destination node type (we are not changing the node type)
             # we weigth using the provided change_node_type_weight weight.
-            ndst = destinations[edge]
-            probs[index] = nodes_call(
-                node_type, node_types, ndst, probs[index], change_node_type_weight)
+            mask = node_types[dst] == node_types[neighbors_destinations]
+            probs[mask] *= change_node_type_weight
+
+        if len(edge_types):
             # Similarly if the neighbour edge type matches the previous
             # edge type (we are not changing the edge type)
             # we weigth using the provided change_edge_type_weight weight.
-            probs[index] = edges_call(
-                edge_type, edge_types, edge, probs[index], change_edge_type_weight)
-            # If the neigbour matches with the source, hence this is
-            # a backward loop like the following:
-            # SRC -> DST
-            #  ▲     /
-            #   \___/
-            #
-            # We weight the edge weight with the given return weight.
-            if ndst == src:
-                probs[index] *= return_weight
+            mask = edge_types[k] == edge_types[min_edge:max_edge]
+            probs[mask] *= change_edge_type_weight
+
+        # If the neigbour matches with the source, hence this is
+        # a backward loop like the following:
+        # SRC -> DST
+        #  ▲     /
+        #   \___/
+        #
+        # We weight the edge weight with the given return weight.
+        is_looping_back = neighbors_destinations == src
+        probs[is_looping_back] *= return_weight
+
+        for index in prange(total_neighbors):  # pylint: disable=not-an-iterable
+            # If the edge between the neighbour and the original edge is
+            # looping backward we continue.
+            if is_looping_back[index]:
+                continue
             # If the backward loop does not exist, we multiply the weight
             # of the edge by the weight for moving forward and explore more.
-            elif traps[ndst] or (ndst, src) not in edges_set:
+            ndst = neighbors_destinations[index]
+            if traps[ndst] or (ndst, src) not in edges_set:
                 probs[index] *= explore_weight
+
         # Finally we assign the obtained alias method probabilities.
         alias[k] = alias_setup(probs/probs.sum())
     return alias
