@@ -195,7 +195,7 @@ class NumbaGraph:
             numba_log("Building undirected graph.")
             # Cunting self-loops
             numba_log("Counting self-loops.")
-            loops_mask = np.zeros(len(sources_names), dtype=np.bool_)
+            loops_mask = np.empty(len(sources_names), dtype=np.bool_)
             for i, (src, dst) in enumerate(zip(sources_names, destinations_names)):
                 loops_mask[i] = str(src) == str(dst)
 

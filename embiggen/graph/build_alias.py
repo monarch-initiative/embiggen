@@ -68,7 +68,7 @@ def build_alias_nodes(
         if neighboring_edges_number == 0:
             continue
 
-        probs = np.zeros(
+        probs = np.empty(
             neighboring_edges_number,
             dtype=numpy_vector_alias_probs_type
         )
@@ -235,7 +235,7 @@ def build_alias_edges(
         if neighboring_edges_number == 0:
             continue
 
-        probs = np.zeros(
+        probs = np.empty(
             neighboring_edges_number,
             dtype=numpy_vector_alias_probs_type
         )
