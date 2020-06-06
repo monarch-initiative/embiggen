@@ -8,6 +8,7 @@ from ..utils import logger
 from .csv_utils import check_consistent_lines
 from .graph import Graph
 from .graph_types import numpy_nodes_colors_type, numpy_edges_colors_type
+from tqdm.auto import tqdm
 
 
 class GraphFactory:
@@ -46,6 +47,8 @@ class GraphFactory:
         self._default_node_type = default_node_type
         self._default_edge_type = default_edge_type
         self._kwargs = kwargs
+        self._verbose = verbose
+
         if verbose:
             logger.setLevel(logging.INFO)
         else:
@@ -121,14 +124,14 @@ class GraphFactory:
         New instance of Graph
         """
 
-        if not check_consistent_lines(edge_path, edge_sep):
+        if not check_consistent_lines(edge_path, edge_sep, self._verbose):
             raise ValueError(
                 "Provided edges file has malformed lines. "
                 "The provided lines have different numbers "
                 "of the given separator"
             )
 
-        if not (node_path is None or check_consistent_lines(node_path, node_sep)):
+        if not (node_path is None or check_consistent_lines(node_path, node_sep, self._verbose)):
             raise ValueError(
                 "Provided nodes file has malformed lines. "
                 "The provided lines have different numbers "
@@ -157,9 +160,9 @@ class GraphFactory:
             sep=edge_sep,
             usecols=use_columns,
             dtype={
-                start_nodes_column: "string",
-                end_nodes_column: "string",
-                edge_types_column: "string",
+                start_nodes_column: str,
+                end_nodes_column: str,
+                edge_types_column: str,
                 weights_column: np.float64
             },
             header=header
@@ -178,7 +181,7 @@ class GraphFactory:
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column
-        ]].values.astype(str)
+        ]].values
 
         unique_nodes = np.unique(edges)
 
@@ -213,7 +216,11 @@ class GraphFactory:
             # Checking if the nodes from edges are contained in nodes file.
             # We create a set since hashing has a O(1) access time.
             nodes_set = set(nodes)
-            for node in unique_nodes:
+            for node in tqdm(
+                unique_nodes,
+                desc="Checking nodes and edges compatibility",
+                disable=not self._verbose
+            ):
                 if node not in nodes_set:
                     raise ValueError((
                         "Edge node {} does not appear "
@@ -254,11 +261,20 @@ class GraphFactory:
 
             unique_node_types = {
                 node_type: np.int16(i)
-                for i, node_type in enumerate(np.unique(node_types))
+                for i, node_type in enumerate(tqdm(
+                    np.unique(node_types),
+                    desc="Search unique node types",
+                    disable=not self._verbose
+                ))
             }
 
-            numba_node_types = np.empty(len(node_types), dtype=numpy_nodes_colors_type)
-            for i, node_type in enumerate(node_types):
+            numba_node_types = np.empty(
+                len(node_types), dtype=numpy_nodes_colors_type)
+            for i, node_type in enumerate(tqdm(
+                node_types,
+                desc="Mapping node types",
+                disable=not self._verbose
+            )):
                 numba_node_types[i] = unique_node_types[node_type]
 
         else:
@@ -279,17 +295,28 @@ class GraphFactory:
 
             unique_edge_types = {
                 edge_type: i
-                for i, edge_type in enumerate(np.unique(edge_types))
+                for i, edge_type in enumerate(tqdm(
+                    np.unique(edge_types),
+                    desc="Search unique edge types",
+                    disable=not self._verbose
+                ))
             }
 
-            numba_edge_types = np.empty(len(edge_types), dtype=numpy_edges_colors_type)
-            for i, edge_type in enumerate(edge_types):
+            numba_edge_types = np.empty(
+                len(edge_types), dtype=numpy_edges_colors_type)
+            for i, edge_type in enumerate(tqdm(
+                edge_types,
+                desc="Mapping edge types",
+                disable=not self._verbose
+            )):
                 numba_edge_types[i] = unique_edge_types[edge_type]
         else:
             # Otherwise if the column is not available.
             numba_edge_types = np.empty(0, dtype=numpy_edges_colors_type)
 
         logger.info("Done processing")
+
+        print(edges_df[start_nodes_column].values.dtype, edges_df[end_nodes_column].values.dtype)
 
         return Graph(
             nodes=nodes,

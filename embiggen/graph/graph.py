@@ -2,24 +2,19 @@ from typing import List, Dict
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
-from .undirected_graph import DirectedGraph, UndirectedGraph
+from .numba_graph import NumbaGraph
 from .random_walks import random_walk, random_walk_with_traps
 from ..utils import logger
 
 
 class Graph(Hashable):
-    def __init__(self, directed: bool = True, **kwargs):
+    def __init__(self, **kwargs):
         """Create new instance of Graph."""
         # self._consistent_hash = sha256({
         #     "directed": directed,
         #     **kwargs
         # })
-        if directed:
-            logger.info("Building directed graph")
-            self._graph = DirectedGraph(**kwargs)
-        else:
-            logger.info("Building undirected graph graph")
-            self._graph = UndirectedGraph(**kwargs)
+        self._graph = NumbaGraph(**kwargs)
 
     def random_walk(self, number: int, length: int) -> tf.Tensor:
         """Return a list of graph walks
@@ -42,10 +37,10 @@ class Graph(Hashable):
 
         if self._graph.has_traps:
             return tf.ragged.constant(
-                random_walk_with_traps(self._graph.core, number, length)
+                random_walk_with_traps(self._graph, number, length)
             )
         return tf.constant(
-            random_walk(self._graph.core, number, length)
+            random_walk(self._graph, number, length)
         )
 
     @property

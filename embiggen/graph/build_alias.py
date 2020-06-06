@@ -234,7 +234,7 @@ def build_alias_edges(
             # we weigth using the provided change_node_type_weight weight.
             ndst = destinations[edge]
             weight = nodes_call(
-                node_type, node_types, edge, weight, change_node_type_weight)
+                node_type, node_types, ndst, weight, change_node_type_weight)
             # Similarly if the neighbour edge type matches the previous
             # edge type (we are not changing the edge type)
             # we weigth using the provided change_edge_type_weight weight.

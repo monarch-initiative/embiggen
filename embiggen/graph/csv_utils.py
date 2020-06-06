@@ -1,4 +1,7 @@
-def check_consistent_lines(path: str, sep: str) -> bool:
+from tqdm.auto import tqdm
+
+
+def check_consistent_lines(path: str, sep: str, verbose: bool) -> bool:
     """Return a boolean representing if the file has consistent lines.
 
     Parameters
@@ -7,6 +10,8 @@ def check_consistent_lines(path: str, sep: str) -> bool:
         The path from which to be loaded.
     sep: str,
         The separators to use for the file.
+    verbose: bool,
+        Wethever to show loading bar or not.
 
     Returns
     ---------------------
@@ -15,7 +20,8 @@ def check_consistent_lines(path: str, sep: str) -> bool:
     expected_length = None
     with open(path, "r") as f:
         # We parse every line of the file.
-        for line in f:
+        for line in tqdm(
+            f, desc="Checking given file validity", disable=not verbose):
             # Split the lines in the sublines
             splits = line.split(sep)
             # If it's the first iteration we get the expected length

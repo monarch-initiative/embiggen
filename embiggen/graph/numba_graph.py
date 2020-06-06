@@ -7,16 +7,20 @@ from ..utils import logger
 
 from .alias_method import alias_draw
 from .build_alias import build_alias_edges, build_alias_nodes
-from .graph_types import (alias_list_type, edges_type_list, nodes_mapping_type,
-                          numba_edges_type, numba_nodes_type,
-                          numba_vector_edges_type, numba_vector_nodes_type,
-                          numpy_edges_type, numpy_nodes_type)
+from .graph_types import (
+    alias_list_type, edges_type_list, nodes_mapping_type,
+    numba_edges_type, numba_nodes_type,
+    numba_vector_edges_type, numba_vector_nodes_type,
+    numpy_edges_type, numpy_nodes_type,
+    numpy_nodes_colors_type, numpy_edges_colors_type
+)
 
 
 @njit
 def log(msg):
     with objmode():  # annotate return type
         logger.info(msg)
+
 
 @njit(parallel=True)
 def process_edges(
@@ -85,6 +89,7 @@ class NumbaGraph:
         edge_types: List[np.uint16] = None,
         weights: List[float] = None,
         uniform: bool = True,
+        directed: bool = True,
         preprocess: bool = True,
         default_weight: float = 1.0,
         return_weight: float = 1.0,
@@ -180,6 +185,51 @@ class NumbaGraph:
                 "Given change_edge_type_weight is not a positive number"
             )
 
+        if len(sources_names) != len(destinations_names):
+            raise ValueError(
+                "Given sources length does not match destinations length."
+            )
+
+        # Counting self-loops
+        if not directed:
+            loops_mask = sources_names == destinations_names
+            total_loops = loops_mask.sum()
+
+            total_orig_edges = len(sources_names)
+            total_edges = (total_orig_edges-total_loops)*2 + total_loops
+
+            full_sources = np.empty(total_edges, dtype=sources_names.dtype)
+            full_destinations = np.empty(
+                total_edges, dtype=destinations_names.dtype)
+
+            full_sources[:total_orig_edges] = sources_names
+            full_sources[total_orig_edges:] = sources_names[~loops_mask]
+            sources_names = full_sources
+
+            full_destinations[:total_orig_edges] = destinations_names
+            full_destinations[total_orig_edges:] = destinations_names[~loops_mask]
+            destinations_names = full_destinations
+
+            if len(node_types) > 0:
+                full_node_types = np.empty(
+                    total_edges, dtype=numpy_nodes_colors_type)
+                full_node_types[:total_orig_edges] = node_types
+                full_node_types[total_orig_edges:] = node_types[~loops_mask]
+                node_types = full_node_types
+
+            if len(edge_types) > 0:
+                full_edge_types = np.empty(
+                    total_edges, dtype=numpy_edges_colors_type)
+                full_edge_types[:total_orig_edges] = edge_types
+                full_edge_types[total_orig_edges:] = edge_types[~loops_mask]
+                edge_types = full_edge_types
+
+            if len(weights) > 0:
+                full_weights = np.empty(total_edges, dtype=np.float64)
+                full_weights[:total_orig_edges] = weights
+                full_weights[total_orig_edges:] = weights[~loops_mask]
+                weights = full_weights
+
         # Creating mapping and reverse mapping of nodes and integer ID.
         # The map looks like the following:
         # {
@@ -227,7 +277,6 @@ class NumbaGraph:
             # Appending outbound edge ID to SRC list.
             neighbors[src].append(i)
 
-
         self._neighbors = typed.List.empty_list(numba_vector_edges_type)
         for src in range(self.nodes_number):
             src = np.int64(src)
@@ -236,7 +285,7 @@ class NumbaGraph:
                 np.empty(len(neighs), dtype=numpy_edges_type))
             for i, neigh in enumerate(neighs):
                 self._neighbors[src][i] = neigh
-        
+
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
@@ -248,7 +297,7 @@ class NumbaGraph:
             )
 
         log("Processing edges alias")
-        
+
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the edges.
