@@ -1,6 +1,8 @@
 from embiggen.graph import GraphFactory
+from embiggen.utils import logger
 from unittest import TestCase
 import pytest
+import logging
 from tqdm.auto import tqdm
 
 
@@ -63,6 +65,8 @@ class TestGraph(TestCase):
                 }]
             }
         }
+        # Disable the logger
+        logger.setLevel(logging.NOTSET)
 
         self._factories= [
             GraphFactory(directed=True),

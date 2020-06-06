@@ -1,21 +1,22 @@
-from typing import List, Tuple, Set, Dict
+from typing import Dict, List, Set, Tuple
+
 import numpy as np  # type: ignore
+from numba import njit, prange, typed, types, objmode  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from numba import typed, types, njit, prange  # type: ignore
+from ..utils import logger
+
 from .alias_method import alias_draw
 from .build_alias import build_alias_edges, build_alias_nodes
-from .graph_types import (
-    numba_vector_nodes_type,
-    numba_edges_type,
-    alias_list_type,
-    edges_type_list,
-    numba_vector_edges_type,
-    numpy_edges_type,
-    numba_nodes_type,
-    numpy_nodes_type,
-    nodes_mapping_type
-)
+from .graph_types import (alias_list_type, edges_type_list, nodes_mapping_type,
+                          numba_edges_type, numba_nodes_type,
+                          numba_vector_edges_type, numba_vector_nodes_type,
+                          numpy_edges_type, numpy_nodes_type)
 
+
+@njit
+def log(msg):
+    with objmode():  # annotate return type
+        logger.info(msg)
 
 @njit(parallel=True)
 def process_edges(
@@ -188,14 +189,14 @@ class NumbaGraph:
         #
         # The reverse mapping is just a list of the nodes.
         #
-        print("Processing nodes mapping")
+        log("Processing nodes mapping")
         self._nodes_mapping = typed.Dict.empty(*nodes_mapping_type)
         self._reverse_nodes_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
             self._nodes_mapping[str(node)] = np.uint32(i)
             self._reverse_nodes_mapping.append(str(node))
 
-        print("Processing edges mapping")
+        log("Processing edges mapping")
         # Transform the lists of names into IDs
         self._sources, self._destinations, edges_set = process_edges(
             sources_names, destinations_names, self._nodes_mapping
@@ -209,7 +210,7 @@ class NumbaGraph:
         self._nodes_number = len(nodes)
         self._uniform = uniform or weights is None
 
-        print("Processing neighbours")
+        log("Processing neighbours")
 
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
@@ -240,13 +241,13 @@ class NumbaGraph:
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
         if not self._uniform:
-            print("Processing nodes alias")
+            log("Processing nodes alias")
 
             self._nodes_alias = build_alias_nodes(
                 self._neighbors, weights
             )
 
-        print("Processing edges alias")
+        log("Processing edges alias")
         
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
