@@ -168,7 +168,7 @@ class GraphFactory:
             header=header
         )
 
-        logger.info("Hadnling edge file")
+        logger.info("Handling edge file")
 
         # Dropping duplicated edges
         unique_columns = [
