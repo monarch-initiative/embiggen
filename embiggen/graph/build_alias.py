@@ -1,7 +1,7 @@
 from .alias_method import alias_setup
 from numba import typed, njit, prange  # type: ignore
 import numpy as np  # type: ignore
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Dict
 from ..utils import numba_log
 from .graph_types import (
     numpy_vector_alias_indices_type,
@@ -103,13 +103,14 @@ def multiple_types(single_type: int, all_types: List[int], edge: int, weight: in
 
 @njit(parallel=True)
 def build_alias_edges(
+    edges: Dict[Tuple[int, int], bool],
     neighbors: List[List[int]],
     node_types: List[int],
     edge_types: List[int],
     weights: List[float],
     sources: List[int],
     destinations: List[int],
-    trap: List[bool],
+    traps: List[bool],
     return_weight: float,
     explore_weight: float,
     change_node_type_weight: float,
@@ -132,8 +133,8 @@ def build_alias_edges(
         List of source nodes for each edge.
     destinations: List[int],
         List of destination nodes for each edge.
-    trap: List[bool],
-        List of known trap nodes.
+    traps: List[bool],
+        List of known traps nodes.
     return_weight: float,
         hyperparameter for breadth first random walk - 1/p
     explore_weight: float,
@@ -228,7 +229,7 @@ def build_alias_edges(
         neighboring_edges = neighbors[dst]
         neighboring_edges_number = len(neighboring_edges)
 
-        # Do not call the alias setup if the edge is a trap.
+        # Do not call the alias setup if the edge is a traps.
         # Because that edge will have no neighbors and thus the necessity
         # of setupping the alias method to efficently extract the neighbour.
         if neighboring_edges_number == 0:
@@ -267,20 +268,10 @@ def build_alias_edges(
             # We weight the edge weight with the given return weight.
             if ndst == src:
                 weight = weight * return_weight
-            else:
-                # If the backward loop does not exist, we multiply the weight
-                # of the edge by the weight for moving forward and explore more.
-                # So we check if the node is a trap or alternatively if
-                # no edge does not exists.
-                # TODO! Tommy take a look here!
-                found_edge = not trap[ndst]
-                if found_edge:
-                    for e in neighbors[ndst]:
-                        if destinations[e] == src:
-                            found_edge=True
-                            break
-                if not found_edge:
-                    weight = weight * explore_weight
+            # If the backward loop does not exist, we multiply the weight
+            # of the edge by the weight for moving forward and explore more.
+            elif traps[ndst] or (ndst, src) not in edges:
+                weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
         alias[k] = alias_setup(probs/probs.sum())

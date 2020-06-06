@@ -12,7 +12,8 @@ from .graph_types import (
     numba_edges_type, numba_nodes_type,
     numba_vector_edges_type, numba_vector_nodes_type,
     numpy_edges_type, numpy_nodes_type,
-    numpy_nodes_colors_type, numpy_edges_colors_type
+    numpy_nodes_colors_type, numpy_edges_colors_type,
+    dict_edges_tuple
 )
 
 
@@ -42,6 +43,7 @@ def process_edges(
     edges_number = len(sources_names)
     sources = np.empty(edges_number, dtype=numpy_nodes_type)
     destinations = np.empty(edges_number, dtype=numpy_nodes_type)
+    edges = typed.Dict.empty(*dict_edges_tuple)
 
     for i in prange(edges_number):  # pylint: disable=not-an-iterable
         # Store the sources into the sources vector
@@ -49,7 +51,10 @@ def process_edges(
         # Store the destinations into the destinations vector
         destinations[i] = mapping[str(destinations_names[i])]
 
-    return sources, destinations
+    for src, dst in zip(sources, destinations):
+        edges[src, dst] = False
+
+    return sources, destinations, edges
 
 
 @njit(parallel=True)
@@ -252,7 +257,7 @@ class NumbaGraph:
 
         numba_log("Processing edges mapping")
         # Transform the lists of names into IDs
-        self._sources, self._destinations = process_edges(
+        self._sources, self._destinations, edges = process_edges(
             sources_names, destinations_names, self._nodes_mapping
         )
 
@@ -326,13 +331,14 @@ class NumbaGraph:
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the edges.
         self._edges_alias = build_alias_edges(
+            edges=edges,
             neighbors=self._neighbors,
             node_types=node_types,
             edge_types=edge_types,
             weights=weights,
             sources=self._sources,
             destinations=self._destinations,
-            trap=self._traps,
+            traps=self._traps,
             return_weight=return_weight,
             explore_weight=explore_weight,
             change_node_type_weight=change_node_type_weight,
