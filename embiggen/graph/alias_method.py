@@ -2,6 +2,7 @@ import numpy as np  # type: ignore
 from numba import njit  # type: ignore
 from typing import Tuple
 from random import random, randint
+from .graph_types import numpy_indices_type
 
 
 @njit
@@ -47,7 +48,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     larger = list(np.where(~smaller_mask)[0])
 
     # j is the mapping of the opposite event in the Bernulli trias
-    j = np.empty_like(probabilities, dtype=np.uint16)
+    j = np.empty_like(probabilities, dtype=numpy_indices_type)
     # Converge to the equivalente binary mixture
     while smaller and larger:
         small = smaller.pop()

@@ -6,7 +6,7 @@ from numba.experimental import jitclass  # type: ignore
 from ..utils import numba_log
 
 from .alias_method import alias_draw
-from .build_alias import build_alias_edges, build_alias_nodes
+from .build_alias import build_alias_edges, build_alias_nodes, get_min_max_edge
 from .graph_types import (
     alias_list_type, edges_type_list, nodes_mapping_type,
     numba_edges_type, numba_nodes_type,
@@ -61,7 +61,8 @@ def process_edges(
 def process_traps(neighbors: List[List[int]]) -> List[bool]:
     traps = np.empty(len(neighbors), dtype=np.bool_)
     for src in prange(len(neighbors)):  # pylint: disable=not-an-iterable
-        traps[src] = neighbors[np.int64(src)].size == 0
+        min_edge, max_edge = get_min_max_edge(neighbors, src)
+        traps[src] = max_edge == min_edge
     return traps
 
 
@@ -70,7 +71,7 @@ def process_traps(neighbors: List[List[int]]) -> List[bool]:
     ('_sources', numba_vector_nodes_type),
     ('_nodes_mapping', types.DictType(*nodes_mapping_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
-    ('_neighbors', types.ListType(numba_vector_edges_type)),
+    ('_neighbors', numba_vector_edges_type),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
     ('_traps', types.boolean[:]),
@@ -196,8 +197,8 @@ class NumbaGraph:
             # Cunting self-loops
             numba_log("Counting self-loops.")
             loops_mask = np.empty(len(sources_names), dtype=np.bool_)
-            for i, (src, dst) in enumerate(zip(sources_names, destinations_names)):
-                loops_mask[i] = str(src) == str(dst)
+            for i, (src_name, dst_name) in enumerate(zip(sources_names, destinations_names)):
+                loops_mask[i] = str(src_name) == str(dst_name)
 
             total_loops = loops_mask.sum()
             total_orig_edges = len(sources_names)
@@ -252,7 +253,7 @@ class NumbaGraph:
         self._nodes_mapping = typed.Dict.empty(*nodes_mapping_type)
         self._reverse_nodes_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
-            self._nodes_mapping[str(node)] = np.uint32(i)
+            self._nodes_mapping[str(node)] = numpy_nodes_type(i)
             self._reverse_nodes_mapping.append(str(node))
 
         numba_log("Processing edges mapping")
@@ -261,6 +262,7 @@ class NumbaGraph:
             sources_names, destinations_names, self._nodes_mapping
         )
 
+        self._nodes_number = len(nodes)
         self._preprocessed = preprocess
 
         if not preprocess:
@@ -270,37 +272,57 @@ class NumbaGraph:
             )
             return
 
-        self._nodes_number = len(nodes)
+        # Sorting given edges using sources as index.
+        numba_log("Sorting edges values")
+        sorted_indices = np.argsort(self._sources)
+        self._sources = self._sources[sorted_indices]
+        self._destinations = self._destinations[sorted_indices]
+        # If edge types are provided we need to sort them.
+        if len(edge_types):
+            edge_types = edge_types[sorted_indices]
+        # If weights are provided we need to sort them.
+        if len(weights):
+            weights = weights[sorted_indices]
+
         self._uniform = uniform or len(weights) == 0
 
         numba_log("Processing neighbours")
 
-        # Each node has a list of neighbors.
-        # These lists are initialized as empty.
-        neighbors = typed.List.empty_list(edges_type_list)
-        for _ in range(self.nodes_number):
-            neighbors.append(
-                typed.List.empty_list(numba_edges_type)
-            )
-
-        # The following proceedure ASSUMES that the edges only appear
-        # in a single direction. This must be handled in the preprocessing
-        # of the graph parsing proceedure.
+        # IF THE EDGES ARE SORTED, we can use the destinations array to get the
+        # neighbours of a node. The idea is to store the number of neighbours of
+        # each NODE.
+        # E.G.    _
+        #   s1 d1  |
+        #   s1 d2  | -> 3
+        #   s1 d3 _|
+        #   s4 d1  | -> 2
+        #   s4 d3 _|
+        #   s6 d2  | -> 2
+        #   s6 d3 _|
+        # for optimization we can sum the number of neighbours so it became an
+        # offset.
+        # Then, we can compute it using the two array:
+        # [d1, d2, d3, d1, d3, d2, d3]
+        # [3, 3, 3, 5, 5, 7, 7]
+        # now to get the neighbours of s2 we get its index, s2 -> 1
+        # then we access the index of s2 and the previous index.
+        # Finally the neighbours are d[3:5]
+        last_source = last_count = 0
+        # preallocate the neighbours to avoid multiple reallocation
+        self._neighbors = np.empty(self._nodes_number, dtype=numpy_edges_type)
+        # we iterate on the sources because they are guaranteed to have neighbours
         for i, src in enumerate(self._sources):
-            # Appending outbound edge ID to SRC list.
-            neighbors[src].append(i)
-
-        self._neighbors = typed.List.empty_list(numba_vector_edges_type)
-        for src in range(self.nodes_number):
-            src = np.int64(src)
-            neighs = neighbors[src]
-            self._neighbors.append(
-                np.empty(len(neighs), dtype=numpy_edges_type))
-            # Here we are not directly casting the List to numpy array
-            # but we need to iterate on each element because currently there is
-            # no support for conversion between numba lists and numpy arrays.
-            for i, neigh in enumerate(neighs):
-                self._neighbors[src][i] = neigh
+            #
+            if last_source != src:
+                # Assigning to range instead of single value, so that traps
+                # have as delta between previous and next node zero.
+                self._neighbors[last_source:src] = i
+                last_count = i
+                last_source = src
+        # Fix the last nodes neighbours by propagating the last_count because if
+        # we haven't already filled the array, all the remaining nodes are traps
+        self._neighbors[last_source:src] = last_count
+        self._neighbors[src:] = last_count
 
         # Creating the node alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list
@@ -364,6 +386,11 @@ class NumbaGraph:
         return self._preprocessed
 
     @property
+    def uniform(self) -> int:
+        """Return integer with the length of the graph."""
+        return self._uniform
+
+    @property
     def nodes_number(self) -> int:
         """Return integer with the length of the graph."""
         return self._nodes_number
@@ -419,7 +446,8 @@ class NumbaGraph:
         Tuple containing the new destination and the used edge.
         """
         # Get the new edge, extracted randomly using alias method draw.
-        edge = self._neighbors[src][alias_draw(j, q)]
+        previous_edge = 0 if src == 0 else self._neighbors[src-1]
+        edge = previous_edge + alias_draw(j, q)
         # Get the destination of the chosen edge.
         dst = self._destinations[edge]
         # Return the obtained tuple.
@@ -429,6 +457,12 @@ class NumbaGraph:
         """Return a random adjacent node to the one associated to node.
         The destination is extracted by using the normalized weights
         of the edges as probability distribution.
+
+        For the uniform case, we can just extract a random neighbour. 
+        (This is actually not equivalent because we "ignore" that
+        different nodetypes can change the probability but it's an approximation
+        that allows us to don't build and save the node_neighbours struct which
+        is requires a cospicuos ammount of memory.)
 
         Parameters
         ----------
@@ -444,8 +478,8 @@ class NumbaGraph:
         # If the graph is uniform, we do not need to use advanced proceedures
         # to get the next random weight and we can just use random choise to
         # accomplish that.
-        if self._uniform:
-            edge = np.random.choice(self._neighbors[src])
+        if self.uniform:
+            edge = np.random.randint(*get_min_max_edge(self._neighbors, src))
             dst = self._destinations[edge]
             return dst, edge
         # Get the information relative to the source node, composed of a tuple:

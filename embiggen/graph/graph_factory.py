@@ -68,6 +68,8 @@ class GraphFactory:
         edge_types_column: str = "edge_label",
         weights_column: str = "weight",
         nodes_columns: str = "id",
+        check_for_rows_consistency: bool = True,
+        check_for_duplicates: bool = True,
         **kwargs: Dict
     ):
         """Return new instance of graph based on given files.
@@ -104,6 +106,18 @@ class GraphFactory:
         nodes_columns: str = "id",
             Column to use to load the node names, when the node_path argument
             is provided. Parameter is ignored otherwise.
+        check_for_rows_consistency: bool = True,
+            Wethever to check for rows consistency or not. User MUST provide
+            in all cases the input files with rows consistency. This flag is
+            only provided to avoid checking this aspect on input files when
+            the user is SURE that the input file has consistent rows.
+            Consider setting this flag to False when input files are very big.
+        check_for_duplicates: bool = True,
+            Wethever to check for duplicates or not. User MUST provide in all
+            cases the input files without duplicates, this flag is only provided
+            to avoid checking this aspect on input files when the user is SURE
+            that the input files do not contain duplicates.
+            Consider setting this flag to False when input files are very big.
         **kwargs: Dict,
             Additional keyword arguments to pass to the instantiation of a new
             graph object.
@@ -123,22 +137,24 @@ class GraphFactory:
         ----------------------
         New instance of Graph
         """
+        if check_for_rows_consistency:
+            logger.info("Checking for rows consistency.")
+            if not check_consistent_lines(edge_path, edge_sep, self._verbose):
+                raise ValueError(
+                    "Provided edges file has malformed lines. "
+                    "The provided lines have different numbers "
+                    "of the given separator"
+                )
 
-        if not check_consistent_lines(edge_path, edge_sep, self._verbose):
-            raise ValueError(
-                "Provided edges file has malformed lines. "
-                "The provided lines have different numbers "
-                "of the given separator"
-            )
+            if not (node_path is None or check_consistent_lines(
+                    node_path, node_sep, self._verbose)):
+                raise ValueError(
+                    "Provided nodes file has malformed lines. "
+                    "The provided lines have different numbers "
+                    "of the given separator"
+                )
 
-        if not (node_path is None or check_consistent_lines(node_path, node_sep, self._verbose)):
-            raise ValueError(
-                "Provided nodes file has malformed lines. "
-                "The provided lines have different numbers "
-                "of the given separator"
-            )
-
-        logger.info("Reading edge file")
+        logger.info("Loading edge file")
 
         header = (0 if edge_file_has_header else None)
         tmp_edges_df = pd.read_csv(
@@ -168,29 +184,31 @@ class GraphFactory:
             header=header
         )
 
-        logger.info("Handling edge file")
+        if check_for_duplicates:
+            logger.info("Checking for duplicates in edge dataframe.")
 
-        # Dropping duplicated edges
-        unique_columns = [
-            start_nodes_column, end_nodes_column
-        ]
-        if edge_types_column in edges_df.columns:
-            unique_columns.append(edge_types_column)
+            # Dropping duplicated edges
+            unique_columns = [
+                start_nodes_column, end_nodes_column
+            ]
+            if edge_types_column in edges_df.columns:
+                unique_columns.append(edge_types_column)
 
-        #edges_df = edges_df.drop_duplicates(unique_columns)
-        duplicated_rows_mask = edges_df.duplicated(unique_columns)
-        if duplicated_rows_mask.any():
-            raise ValueError(
-                (
-                    "There are {} duplicated rows within given edge file "
-                    "at path {}. Please drop these rows during preprocessing. "
-                    "An example of duplicated line is:\n{}"
-                ).format(
-                    duplicated_rows_mask.sum(),
-                    edge_path,
-                    edges_df.loc[duplicated_rows_mask.argmax()].to_json(indent=4)
+            #edges_df = edges_df.drop_duplicates(unique_columns)
+            duplicated_rows_mask = edges_df.duplicated(unique_columns)
+            if duplicated_rows_mask.any():
+                raise ValueError(
+                    (
+                        "There are {} duplicated rows within given edge file "
+                        "at path {}. Please drop these rows during preprocessing. "
+                        "An example of duplicated line is:\n{}"
+                    ).format(
+                        duplicated_rows_mask.sum(),
+                        edge_path,
+                        edges_df.loc[duplicated_rows_mask.argmax()
+                                    ].to_json(indent=4)
+                    )
                 )
-            )
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column

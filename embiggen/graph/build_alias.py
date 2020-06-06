@@ -4,8 +4,8 @@ import numpy as np  # type: ignore
 from typing import List, Tuple, Set, Dict
 from ..utils import numba_log
 from .graph_types import (
-    numpy_vector_alias_indices_type,
-    numpy_vector_alias_probs_type,
+    numpy_indices_type,
+    numpy_probs_type,
     alias_list_type
 )
 
@@ -27,16 +27,36 @@ def build_default_alias_vectors(
     Returns default alias vectors.
     """
     alias = typed.List.empty_list(alias_list_type)
-    empty_j = np.empty(0, dtype=numpy_vector_alias_indices_type)
-    empty_q = np.empty(0, dtype=numpy_vector_alias_probs_type)
+    empty_j = np.empty(0, dtype=numpy_indices_type)
+    empty_q = np.empty(0, dtype=numpy_probs_type)
     for _ in range(number):
         alias.append((empty_j, empty_q))
     return alias
 
 
+@njit
+def get_min_max_edge(neighbors: List[int], node: int) -> Tuple[int, int]:
+    """Return tuple with minimum and maximum edge for given node.
+    This method is used to retrieve the indices needed to extract the 
+    neighbours from the destination array.
+
+    Parameters
+    ---------------------------
+    neighbors: List[int],
+        List of offsets neighbours for given node.
+    node: int,
+        The id of the node to access.
+
+    Returns
+    ----------------------------
+    Tuple with minimum and maximum edge index for given node.
+    """
+    return 0 if node == 0 else neighbors[node-1], neighbors[node]
+
+
 @njit(parallel=True)
 def build_alias_nodes(
-    neighbors: List[List[int]],
+    neighbors: List[int],
     weights: List[float]
 ) -> List[Tuple[List[int], List[float]]]:
     """Return aliases for nodes to use for alias method for 
@@ -44,8 +64,8 @@ def build_alias_nodes(
 
     Parameters
     -----------------------
-    neighbors:  List[List[int]],
-        List of neighbouring edges for each node.
+    neighbors:  List[int],
+        List of neighbouring edges represented as offsets.
     weights: List[float],
         List of weights for each edge.
 
@@ -54,39 +74,22 @@ def build_alias_nodes(
     Lists of lists representing node aliases 
     """
 
-    number = len(neighbors)
-    alias = build_default_alias_vectors(number)
+    alias = build_default_alias_vectors(len(neighbors))
 
-    for i in prange(number):  # pylint: disable=not-an-iterable
+    for i in prange(len(neighbors)):  # pylint: disable=not-an-iterable
         src = np.int64(i)
-        neighboring_edges = neighbors[src]
-        neighboring_edges_number = len(neighboring_edges)
+        min_edge, max_edge = get_min_max_edge(neighbors, src)
 
         # Do not call the alias setup if the node is a trap.
         # Because that node will have no neighbors and thus the necessity
         # of setupping the alias method to efficently extract the neighbour.
-        if neighboring_edges_number == 0:
+        if min_edge == max_edge:
             continue
 
-        probs = np.empty(
-            neighboring_edges_number,
-            dtype=numpy_vector_alias_probs_type
-        )
-        for j, edge in enumerate(neighboring_edges):
-            probs[j] = weights[edge]
+        probs = weights[min_edge:max_edge]
 
         alias[src] = alias_setup(probs/probs.sum())
     return alias
-
-
-@njit
-def uniform_weight(weights: List[float], edge: int) -> float:
-    return 1.0
-
-
-@njit
-def non_uniform_weight(weights: List[float], edge: int) -> float:
-    return weights[edge]
 
 
 @njit
@@ -199,10 +202,8 @@ def build_alias_edges(
             "Given change_edge_type_weight is not a positive number")
 
     if len(weights) == 0:
-        weights_call = uniform_weight
         numba_log("No graph weights detected. Using uniform weights.")
     else:
-        weights_call = non_uniform_weight
         numba_log("Graph weights detected. Using weights from given file.")
 
     if len(node_types) == 0:
@@ -219,46 +220,50 @@ def build_alias_edges(
         edges_call = multiple_types
         numba_log("Multiple edge types found. Proceeding as multi-graph.")
 
-    number = len(sources)
-    alias = build_default_alias_vectors(number)
+    alias = build_default_alias_vectors(len(sources))
 
     for i in prange(len(sources)):  # pylint: disable=not-an-iterable
         k = np.int64(i)
         src = sources[k]
         dst = destinations[k]
-        neighboring_edges = neighbors[dst]
-        neighboring_edges_number = len(neighboring_edges)
+        min_edge, max_edge = get_min_max_edge(neighbors, dst)
+
+        total_neighbors = max_edge - min_edge
 
         # Do not call the alias setup if the edge is a traps.
         # Because that edge will have no neighbors and thus the necessity
         # of setupping the alias method to efficently extract the neighbour.
-        if neighboring_edges_number == 0:
+        if total_neighbors == 0:
             continue
 
-        probs = np.empty(
-            neighboring_edges_number,
-            dtype=numpy_vector_alias_probs_type
-        )
+        if len(weights) == 0:
+            # If the weights are uniform we can just assign a numpy array
+            # filled up of ones.
+            probs = np.ones(max_edge-min_edge, dtype=numpy_probs_type)
+        else:
+            # We get the weight for the edge from the destination to
+            # the neighbour.
+            probs = weights[min_edge:max_edge]
 
+        # We get the node types.
         node_type = node_types[dst] if len(node_types) else 0
         edge_type = edge_types[k] if len(node_types) else 0
 
-        for index, edge in enumerate(neighboring_edges):
-            # We get the weight for the edge from the destination to
-            # the neighbour.
-            weight = weights_call(weights, edge)
+        for index in prange(total_neighbors):  # pylint: disable=not-an-iterable
+            # The minus 1 is required since the neighbours are stored as offsets.
+            edge = min_edge + index - 1
             # Then we retrieve the neigh_dst node type.
             # And if the destination node type matches the neighbour
             # destination node type (we are not changing the node type)
             # we weigth using the provided change_node_type_weight weight.
             ndst = destinations[edge]
-            weight = nodes_call(
-                node_type, node_types, ndst, weight, change_node_type_weight)
+            probs[index] = nodes_call(
+                node_type, node_types, ndst, probs[index], change_node_type_weight)
             # Similarly if the neighbour edge type matches the previous
             # edge type (we are not changing the edge type)
             # we weigth using the provided change_edge_type_weight weight.
-            weight = edges_call(
-                edge_type, edge_types, edge, weight, change_edge_type_weight)
+            probs[index] = edges_call(
+                edge_type, edge_types, edge, probs[index], change_edge_type_weight)
             # If the neigbour matches with the source, hence this is
             # a backward loop like the following:
             # SRC -> DST
@@ -267,12 +272,11 @@ def build_alias_edges(
             #
             # We weight the edge weight with the given return weight.
             if ndst == src:
-                weight = weight * return_weight
+                probs[index] *= return_weight
             # If the backward loop does not exist, we multiply the weight
             # of the edge by the weight for moving forward and explore more.
             elif traps[ndst] or (ndst, src) not in edges_set:
-                weight = weight * explore_weight
-            # Then we store these results into the probability vector.
-            probs[index] = weight
+                probs[index] *= explore_weight
+        # Finally we assign the obtained alias method probabilities.
         alias[k] = alias_setup(probs/probs.sum())
     return alias
