@@ -12,7 +12,7 @@ from ..embedder import Embedder
 class Word2Vec(Embedder):
     """Superclass of all of the word2vec family algorithms."""
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Create a new instance of Word2Vec.
 
         Parameters
@@ -23,25 +23,11 @@ class Word2Vec(Embedder):
 
         """
         self._embedding = None
-        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
-        with tf.device('cpu'):
-            self._embedding: tf.Variable = tf.Variable(
-                tf.random.uniform(
-                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
-            )
-            # get weights and biases
-            # construct the variables for the softmax loss
-            tf_distribution = \
-                tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
-                                           stddev=0.5 / tf.math.sqrt(self.embedding_size),
-                                           dtype=tf.float32)
-            self._softmax_weights: tf.Variable = tf.Variable(tf_distribution)
-            self._softmax_biases = tf.Variable(
-                tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
+        self._is_list_of_lists = None # must be set in fit method
+        
 
 
-    def fit(
-            self,
+    def fit(self,
             X: Union[tf.Tensor, tf.RaggedTensor],
             learning_rate: float = 0.05,
             batch_size: int = 128,
@@ -77,7 +63,49 @@ class Word2Vec(Embedder):
         
         
         """
+        if not isinstance(number_negative_samples, int) or number_negative_samples < 1:
+                raise ValueError((
+                "Given number_negative_samples {} is not an int or is less than 1"
+            ).format(number_negative_samples))
 
-        raise NotImplementedError(
-            "The fit method must be implemented in the child classes of Word2Vec."
-        )
+        if number_negative_samples > self._vocabulary_size:
+            raise ValueError((
+                "Given number_negative_samples {} is larger than the vocabulary size. "
+                "Probably this is a toy example. Consider reducing "
+                "number_negative_samples"
+            ).format(number_negative_samples))
+
+        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
+        with tf.device('cpu'):
+            self._embedding: tf.Variable = tf.Variable(
+                tf.random.uniform(
+                    [self._vocabulary_size, embedding_size], -1.0, 1.0, dtype=tf.float32)
+            )
+            # get weights and biases
+            # construct the variables for the softmax loss
+            tf_distribution = \
+                tf.random.truncated_normal([self._vocabulary_size, embedding_size],
+                                            mean=0.0,
+                                           stddev=0.5 / tf.math.sqrt(embedding_size),
+                                           dtype=tf.float32)
+            self._softmax_weights: tf.Variable = tf.Variable(tf_distribution)
+            self._softmax_biases = tf.Variable(
+                tf.random.uniform([self._vocabulary_size], 0.0, 0.01))
+        
+        if isinstance(X, tf.Tensor):
+            self._is_list_of_lists = False
+        elif isinstance(X, tf.RaggedTensor):
+            self._is_list_of_lists = True
+        else:
+            raise ValueError("Data (X) must be either Tensor or RaggedTensor")
+
+         # This method should be callable by any class extending this one, but
+        # it can't be called since this is an "abstract method"
+        if self.__class__ == Word2Vec:
+            raise NotImplementedError(
+                "The fit method must be implemented in the child classes of Word2Vec."
+            )
+
+    @property
+    def list_of_lists(self) -> bool:
+        return self._is_list_of_lists

@@ -1,7 +1,7 @@
 import csv
 import tensorflow as tf  # type: ignore
 from random import shuffle
-
+from .embedder import Embedder
 
 class NotTrainedError(Exception):
     pass
@@ -11,7 +11,7 @@ class NotFitToCorpusError(Exception):
     pass
 
 
-class GloVeModel:
+class GloVeModel(Embedder):
     def __init__(self, co_oc_dict, vocab_size, embedding_size, context_size, min_occurrences=1,
                  scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05,
                  num_epochs=5):

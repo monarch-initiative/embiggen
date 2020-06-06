@@ -6,7 +6,7 @@ import pandas as pd
 
 class Embedder:
 
-    def __init__(self, word2id: Dict[str, int], id2word: List[str]):
+    def __init__(self, word2id: Dict[str, int], id2word: List[str], devicetype: "cpu"):
         """Abstract class for Embedder objects.
 
         Parameters
@@ -40,6 +40,7 @@ class Embedder:
 
         self._word2id = word2id
         self._id2word = id2word
+        self._devicetype = devicetype
         # TODO! Understand why there is a +1 here.
         self._vocabulary_size = len(self._word2id)+1
 
@@ -124,10 +125,6 @@ class Embedder:
                 "Given embedding_size {} is not an int or is less than 1"
             ).format(embedding_size))
 
-        if not isinstance(number_negative_samples, int) or number_negative_samples < 1:
-            raise ValueError((
-                "Given number_negative_samples {} is not an int or is less than 1"
-            ).format(number_negative_samples))
 
         # Checking if the context window is valid for given tensor shape.
         for sequence in X:
@@ -141,7 +138,7 @@ class Embedder:
         # it can't be called since this is an "abstract method"
         if self.__class__ == Embedder:
             raise NotImplementedError(
-                "The fit method must be implemented in the child classes of Word2Vec."
+                "The fit method must be implemented in the child classes of Embedder."
             )
 
     def transform(self):
@@ -159,6 +156,11 @@ class Embedder:
         if self._embedding is None:
             raise ValueError("Model is not yet fitted!")
         return self._embedding.numpy()
+
+    @property
+    def devicetype(self) -> str:
+        """Return the device type (cpu/gpu)
+        return self._devicetype
 
     def save_embedding(self, path: str):
         """Save the computed embedding to the given file.

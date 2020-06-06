@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from typing import Union, Tuple, Dict, List
 
 from .word2vec import Word2Vec
@@ -12,34 +13,9 @@ class SkipGram(Word2Vec):
     def __init__(self, *args, **kwargs) -> None:
 
         super().__init__(*args, **kwargs)
-
-        # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
-        # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)
-        if self.number_negative_samples > self.vocabulary_size:
-            self.number_negative_samples = int(self.vocabulary_size / 2)
-
-
         self.data_index: int = 0
         self.current_sentence: int = 0
 
-
-        # Note embeddings are initialized in superclass
-
-
-
-
-    def fit(self, samples_per_window: int = 2):
-        """Fit the Word2Vec skipgram model 
-        Parameters
-        ---------------------
-        samples_per_window:
-            samples_per_window: How many times to reuse an input to generate a label.
-            
-        """
-
-        if samples_per_window > 2 * context_window:
-            raise ValueError(
-                'The value of self.samples_per_window must be <= twice the length of self.context_window')
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
@@ -50,7 +26,7 @@ class SkipGram(Word2Vec):
             loss: The NCE losses.
         """
 
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             y = tf.cast(y, tf.int64)
 
             loss = tf.reduce_mean(tf.nn.nce_loss(
@@ -59,7 +35,7 @@ class SkipGram(Word2Vec):
                 labels=y,
                 inputs=x_embed,
                 number_negative_samples=self.number_negative_samples,
-                num_classes=self.vocabulary_size
+                num_classes=self._vocabulary_size
             ))
 
             return loss
@@ -223,4 +199,16 @@ class SkipGram(Word2Vec):
                         self.run_optimization(batch_x, batch_y)
         return loss_history
 
-
+    def fit(self, samples_per_window: int = 2):
+        """Fit the Word2Vec skipgram model 
+        Parameters
+        ---------------------
+        samples_per_window:
+            samples_per_window: How many times to reuse an input to generate a label.
+            
+        """
+        super().fit(*args, **kwargs)
+        
+        if samples_per_window > 2 * context_window:
+            raise ValueError(
+                'The value of self.samples_per_window must be <= twice the length of self.context_window')

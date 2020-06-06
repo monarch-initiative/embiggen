@@ -11,7 +11,7 @@ class Cbow(Word2Vec):
     Attributes:
         word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
-        data: A list or list of lists (if sentences or paths from node2vec).
+        X: the data, a list or list of lists (if sentences or paths from node2vec).
         device_type: A string that indicates whether to run computations on (default=cpu).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
@@ -32,17 +32,12 @@ class Cbow(Word2Vec):
         softmax_weights: A variable that stores the classifier weights.
         softmax_biases: A variable that stores classifier biases.
     Raises:
-        TypeError: If the self.data does not contain a list of lists, where each list contains integers.
+        TypeError: If the self.data does not contain a list or list of lists, where each list contains integers.
     """
 
     def __init__(self, *args, **kwargs) -> None:
 
         super().__init__(*args, **kwargs)
-
-        # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
-        # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)
-        if self.number_negative_samples > self.vocabulary_size:
-            self.number_negative_samples = int(self.vocabulary_size / 2)
 
         self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
             self.learning_rate)
@@ -118,7 +113,7 @@ class Cbow(Word2Vec):
             loss: The NCE losses.
         """
 
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             y = tf.cast(y, tf.int64)
 
             loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.softmax_weights,
@@ -189,7 +184,7 @@ class Cbow(Word2Vec):
             x: An array of integers to use as batch training data.
             y: An array of labels to use when evaluating loss for an epoch.
         """
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
                 emb = self.cbow_embedding(x)
@@ -262,5 +257,93 @@ class Cbow(Word2Vec):
                     # Evaluation.
         return loss_history
 
-    def fit(self, *args, **kwargs):
-        super().fit(*args, **kwargs)
+    def _fit_list_of_lists(self):
+        """Fit the CBOW model for input data being a list of lists
+        """
+        window_len = 2 * self.context_window + 1
+        step = 0
+        loss_history = []
+        for _ in trange(1, self.epochs + 1, leave=False):
+            for sentence in self.data:
+                # Sentence is a Tensor
+                sentencelen = sentence.shape[0]
+                if sentencelen < window_len:
+                    continue
+                batch_x, batch_y = self.generate_batch_cbow(sentence)
+                current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
+                loss_history.append(current_loss)
+                if step % 100 == 0:
+                    logging.info("loss {} ".format(current_loss))
+                step += 1
+        return loss_history
+
+    def _fit_list(self):
+        """Fit the CBOW model for input data being a single list of words/nodes
+        """
+        window_len = 2 * self.context_window + 1
+        step = 0
+        loss_history = []
+        for _ in trange(1, self.epochs + 1, leave=False):
+            data = self.data  #
+                if not isinstance(data, tf.Tensor):
+                    raise TypeError("We were expecting a Tensor object!")
+                batch_size = self.batch_size
+                data_len = len(data)
+                # Note that we cannot fully digest all of the data in any one batch
+                # if the window length is K and the natch_len is N, then the last
+                # window that we get starts at position (N-K). Therefore, if we start
+                # the next window at position (N-K)+1, we will get all windows.
+                window_len = 1 + 2 * self.context_window
+                shift_len = batch_size - window_len + 1
+                # we need to make sure that we do not shift outside the boundaries of self.data too
+                lastpos = data_len - 1  # index of the last word in data
+                data_index = 0
+                endpos = data_index + batch_size
+                while endpos <= lastpos:
+                    currentTensor = data[data_index:endpos]
+                    if len(currentTensor) < window_len:
+                        break  # We are at the end
+                    batch_x, batch_y = self.next_batch(
+                        currentTensor)  # type: ignore
+                    current_loss = self.run_optimization(
+                        batch_x, batch_y)  # type: ignore
+                    if step == 0 or step % 100 == 0:
+                        logging.info("loss {}".format(current_loss))
+                        loss_history.append(current_loss)
+                    data_index += shift_len
+                    endpos = data_index + batch_size
+                    endpos = min(endpos,
+                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                    # Evaluation.
+        return loss_history
+
+    def fit(self, 
+        X: Union[tf.Tensor, tf.RaggedTensor],
+        learning_rate: float = 0.05,
+        batch_size: int = 128,
+        epochs: int = 1,
+        embedding_size: int = 128,
+        context_window: int = 3,
+        number_negative_samples: int = 7,
+        callbacks: Tuple["Callback"] = ()):
+        """Fit the Word2Vec continuous bag of words model 
+        Parameters
+        ---------------------
+        samples_per_window:
+            samples_per_window: How many times to reuse an input to generate a label.
+            
+        """
+        super().fit(X=X,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            number_negative_samples=number_negative_samples,
+            callbacks=callbacks)
+        if self.list_of_lists:
+            # This is the case for a list of random walks
+            # or for a list of text segments (e.g., a list of sentences or abstracts)
+            self._fit_list_of_lists()
+        else:
+            self._fit_list()
