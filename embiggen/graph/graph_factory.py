@@ -181,7 +181,7 @@ class GraphFactory:
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column
-        ]].values
+        ]].values.astype(str)
 
         unique_nodes = np.unique(edges)
 
@@ -206,8 +206,8 @@ class GraphFactory:
                     if column is not None and column in tmp_nodes_df.columns
                 ],
                 dtype={
-                    nodes_columns: "string",
-                    node_types_column: "string"
+                    nodes_columns: str,
+                    node_types_column: str
                 },
                 header=(0 if node_file_has_header else None)
             )
@@ -315,8 +315,6 @@ class GraphFactory:
             numba_edge_types = np.empty(0, dtype=numpy_edges_colors_type)
 
         logger.info("Done processing")
-
-        print(edges_df[start_nodes_column].values.dtype, edges_df[end_nodes_column].values.dtype)
 
         return Graph(
             nodes=nodes,

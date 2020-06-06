@@ -190,27 +190,33 @@ class NumbaGraph:
                 "Given sources length does not match destinations length."
             )
 
-        # Counting self-loops
         if not directed:
-            loops_mask = sources_names == destinations_names
-            total_loops = loops_mask.sum()
+            log("Building undirected graph.")
+            # Cunting self-loops
+            log("Counting self-loops.")
+            loops_mask = np.zeros(len(sources_names), dtype=np.bool_)
+            for i, (src, dst) in enumerate(zip(sources_names, destinations_names)):
+                loops_mask[i] = str(src) == str(dst)
 
+            total_loops = loops_mask.sum()
             total_orig_edges = len(sources_names)
             total_edges = (total_orig_edges-total_loops)*2 + total_loops
 
+            log("Building undirected graph sources.")
             full_sources = np.empty(total_edges, dtype=sources_names.dtype)
-            full_destinations = np.empty(
-                total_edges, dtype=destinations_names.dtype)
-
             full_sources[:total_orig_edges] = sources_names
             full_sources[total_orig_edges:] = sources_names[~loops_mask]
             sources_names = full_sources
 
+            log("Building undirected graph destinations.")
+            full_destinations = np.empty(
+                total_edges, dtype=destinations_names.dtype)
             full_destinations[:total_orig_edges] = destinations_names
             full_destinations[total_orig_edges:] = destinations_names[~loops_mask]
             destinations_names = full_destinations
 
             if len(node_types) > 0:
+                log("Building undirected graph node types.")
                 full_node_types = np.empty(
                     total_edges, dtype=numpy_nodes_colors_type)
                 full_node_types[:total_orig_edges] = node_types
@@ -218,6 +224,7 @@ class NumbaGraph:
                 node_types = full_node_types
 
             if len(edge_types) > 0:
+                log("Building undirected graph edge types.")
                 full_edge_types = np.empty(
                     total_edges, dtype=numpy_edges_colors_type)
                 full_edge_types[:total_orig_edges] = edge_types
@@ -225,6 +232,7 @@ class NumbaGraph:
                 edge_types = full_edge_types
 
             if len(weights) > 0:
+                log("Building undirected graph weights.")
                 full_weights = np.empty(total_edges, dtype=np.float64)
                 full_weights[:total_orig_edges] = weights
                 full_weights[total_orig_edges:] = weights[~loops_mask]
@@ -255,6 +263,10 @@ class NumbaGraph:
         self._preprocessed = preprocess
 
         if not preprocess:
+            log(
+                "No further preprocessing for random walk has been required. "
+                "Stopping graph preprocessing before alias building."
+            )
             return
 
         self._nodes_number = len(nodes)
