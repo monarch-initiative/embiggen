@@ -327,7 +327,8 @@ class GraphFactory:
             # Otherwise if the column is not available.
             numba_edge_types = np.empty(0, dtype=numpy_edges_colors_type)
 
-        logger.info("Done processing")
+        logger.info("Done preprocessing graph files.")
+        logger.info("Starting graph build.")
 
         return Graph(
             nodes=nodes,

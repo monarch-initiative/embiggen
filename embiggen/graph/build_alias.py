@@ -211,13 +211,6 @@ def build_alias_edges(
         nodes_call = multiple_types
         numba_log("Multiple node types found. Proceeding as heterogeneous graph.")
 
-    if len(node_types) == 0:
-        nodes_call = single_types
-        numba_log("No graph node types found. Proceeding as homogeneous graph.")
-    else:
-        nodes_call = multiple_types
-        numba_log("Multiple node types found. Proceeding as multi-graph.")
-
     if len(edge_types) == 0:
         edges_call = single_types
         numba_log("No graph edge types found. Proceeding as normal graph.")
