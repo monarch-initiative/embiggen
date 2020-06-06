@@ -4,17 +4,18 @@ import inspect
 import logging
 from colorama import init, Fore, Style
 import linecache
+from numba import njit, objmode
 
 ####################################################################################################
 # Configs
 ####################################################################################################
 
 levels = {
-    "debug":(logging.DEBUG, Fore.CYAN),
-    "info":(logging.INFO, Fore.RESET),
-    "warning":(logging.WARNING, Fore.YELLOW),
-    "error":(logging.ERROR, Fore.MAGENTA),
-    "critical":(logging.CRITICAL, Fore.RED),
+    "debug": (logging.DEBUG, Fore.CYAN),
+    "info": (logging.INFO, Fore.RESET),
+    "warning": (logging.WARNING, Fore.YELLOW),
+    "error": (logging.ERROR, Fore.MAGENTA),
+    "critical": (logging.CRITICAL, Fore.RED),
 }
 
 stream = sys.stdout
@@ -25,17 +26,21 @@ files_format = "%(asctime)s [%(levelname)-8s] %(script)+10s-%(function)+8s-%(lin
 # Logger definition
 ####################################################################################################
 
+
 class MyLogger(logging.Logger):
     """Custom template class which will be filled dynamically by the 
         register_method function."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
+
 def define_method(level_name, level, color):
     """Function that build the custom loggin method from the parameters supplied
         by the user."""
     _level_name = level_name
     _level, _color = level, color
+
     def wrapped(self, msg, args=tuple(), **kwargs):
         kwargs.setdefault("extra", dict())
         kwargs["extra"]["color"] = _color
@@ -48,10 +53,12 @@ def define_method(level_name, level, color):
             self._log(_level, msg, args, **kwargs)
     return wrapped
 
+
 def register_method(logger_class, level_name, level, color):
     method = define_method(level_name, level, color)
     setattr(logger_class, level_name, method)
-    
+
+
 def formatException():
     """Format exceptions nicely"""
     exc_type, exc_obj, tb = sys.exc_info()
@@ -62,25 +69,30 @@ def formatException():
     line = linecache.getline(filename, lineno, f.f_globals)
     return f' - line : {lineno} [ {line.strip()} ] - {exc_obj}'
 
+
 def register_exit_method(logger_class, level_name, level, color):
     """Method to add custom logging methods that does sys.exit after logging"""
     method = define_method(level_name, level, color)
+
     def wrapped(self, error_code, *args, **kwargs):
         method(self, *args, **kwargs)
         sys.exit(int(error_code))
     setattr(logger_class, level_name + "_exit", wrapped)
+
 
 def register_methods(logger_class, levels):
     """Method to add custom logging methods"""
     for level_name, (level, color) in levels.items():
         register_method(logger_class, level_name, level, color)
         register_exit_method(logger_class, level_name, level, color)
-    
+
+
 register_methods(MyLogger, levels)
 
 ####################################################################################################
 # Select the level to log per file
 ####################################################################################################
+
 
 class SelectiveFilter(logging.Filter):
     def __init__(self, levels):
@@ -93,8 +105,19 @@ class SelectiveFilter(logging.Filter):
 # Logger Initializzation
 ####################################################################################################
 
+
 logger = MyLogger("root_logger")
 stream_handler = logging.StreamHandler(stream)
 stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(logging.Formatter(stream_format))
 logger.addHandler(stream_handler)
+
+
+####################################################################################################
+# Logger for numba methods
+####################################################################################################
+
+@njit
+def numba_log(msg):
+    with objmode():  # annotate return type
+        logger.info(msg)

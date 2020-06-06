@@ -3,7 +3,7 @@ from typing import Dict, List, Set, Tuple
 import numpy as np  # type: ignore
 from numba import njit, prange, typed, types, objmode  # type: ignore
 from numba.experimental import jitclass  # type: ignore
-from ..utils import logger
+from ..utils import numba_log
 
 from .alias_method import alias_draw
 from .build_alias import build_alias_edges, build_alias_nodes
@@ -14,12 +14,6 @@ from .graph_types import (
     numpy_edges_type, numpy_nodes_type,
     numpy_nodes_colors_type, numpy_edges_colors_type
 )
-
-
-@njit
-def log(msg):
-    with objmode():  # annotate return type
-        logger.info(msg)
 
 
 @njit(parallel=True)
@@ -191,9 +185,9 @@ class NumbaGraph:
             )
 
         if not directed:
-            log("Building undirected graph.")
+            numba_log("Building undirected graph.")
             # Cunting self-loops
-            log("Counting self-loops.")
+            numba_log("Counting self-loops.")
             loops_mask = np.zeros(len(sources_names), dtype=np.bool_)
             for i, (src, dst) in enumerate(zip(sources_names, destinations_names)):
                 loops_mask[i] = str(src) == str(dst)
@@ -202,13 +196,13 @@ class NumbaGraph:
             total_orig_edges = len(sources_names)
             total_edges = (total_orig_edges-total_loops)*2 + total_loops
 
-            log("Building undirected graph sources.")
+            numba_log("Building undirected graph sources.")
             full_sources = np.empty(total_edges, dtype=sources_names.dtype)
             full_sources[:total_orig_edges] = sources_names
             full_sources[total_orig_edges:] = sources_names[~loops_mask]
             sources_names = full_sources
 
-            log("Building undirected graph destinations.")
+            numba_log("Building undirected graph destinations.")
             full_destinations = np.empty(
                 total_edges, dtype=destinations_names.dtype)
             full_destinations[:total_orig_edges] = destinations_names
@@ -216,7 +210,7 @@ class NumbaGraph:
             destinations_names = full_destinations
 
             if len(node_types) > 0:
-                log("Building undirected graph node types.")
+                numba_log("Building undirected graph node types.")
                 full_node_types = np.empty(
                     total_edges, dtype=numpy_nodes_colors_type)
                 full_node_types[:total_orig_edges] = node_types
@@ -224,7 +218,7 @@ class NumbaGraph:
                 node_types = full_node_types
 
             if len(edge_types) > 0:
-                log("Building undirected graph edge types.")
+                numba_log("Building undirected graph edge types.")
                 full_edge_types = np.empty(
                     total_edges, dtype=numpy_edges_colors_type)
                 full_edge_types[:total_orig_edges] = edge_types
@@ -232,7 +226,7 @@ class NumbaGraph:
                 edge_types = full_edge_types
 
             if len(weights) > 0:
-                log("Building undirected graph weights.")
+                numba_log("Building undirected graph weights.")
                 full_weights = np.empty(total_edges, dtype=np.float64)
                 full_weights[:total_orig_edges] = weights
                 full_weights[total_orig_edges:] = weights[~loops_mask]
@@ -247,14 +241,14 @@ class NumbaGraph:
         #
         # The reverse mapping is just a list of the nodes.
         #
-        log("Processing nodes mapping")
+        numba_log("Processing nodes mapping")
         self._nodes_mapping = typed.Dict.empty(*nodes_mapping_type)
         self._reverse_nodes_mapping = typed.List.empty_list(types.string)
         for i, node in enumerate(nodes):
             self._nodes_mapping[str(node)] = np.uint32(i)
             self._reverse_nodes_mapping.append(str(node))
 
-        log("Processing edges mapping")
+        numba_log("Processing edges mapping")
         # Transform the lists of names into IDs
         self._sources, self._destinations, edges_set = process_edges(
             sources_names, destinations_names, self._nodes_mapping
@@ -263,7 +257,7 @@ class NumbaGraph:
         self._preprocessed = preprocess
 
         if not preprocess:
-            log(
+            numba_log(
                 "No further preprocessing for random walk has been required. "
                 "Stopping graph preprocessing before alias building."
             )
@@ -272,7 +266,7 @@ class NumbaGraph:
         self._nodes_number = len(nodes)
         self._uniform = uniform or len(weights) == 0
 
-        log("Processing neighbours")
+        numba_log("Processing neighbours")
 
         # Each node has a list of neighbors.
         # These lists are initialized as empty.
@@ -302,13 +296,13 @@ class NumbaGraph:
         # the list of indices of the opposite extraction events and the list
         # of probabilities for the extraction of edges neighbouring the nodes.
         if not self._uniform:
-            log("Processing nodes alias")
+            numba_log("Processing nodes alias.")
 
             self._nodes_alias = build_alias_nodes(
                 self._neighbors, weights
             )
 
-        log("Processing edges alias")
+        numba_log("Processing edges alias")
 
         # Creating the edges alias list, which contains tuples composed of
         # the list of indices of the opposite extraction events and the list

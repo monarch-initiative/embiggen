@@ -2,6 +2,7 @@ from .alias_method import alias_setup
 from numba import typed, njit, prange  # type: ignore
 import numpy as np  # type: ignore
 from typing import List, Tuple, Set
+from ..utils import numba_log
 from .graph_types import (
     numpy_vector_alias_indices_type,
     numpy_vector_alias_probs_type,
@@ -196,9 +197,33 @@ def build_alias_edges(
         raise ValueError(
             "Given change_edge_type_weight is not a positive number")
 
-    weights_call = uniform_weight if len(weights) == 0 else non_uniform_weight
-    nodes_call = single_types if len(node_types) == 0 else multiple_types
-    edges_call = single_types if len(edge_types) == 0 else multiple_types
+    if len(weights) == 0:
+        weights_call = uniform_weight
+        numba_log("No graph weights detected. Using uniform weights.")
+    else:
+        weights_call = non_uniform_weight
+        numba_log("Graph weights detected. Using weights from given file.")
+
+    if len(node_types) == 0:
+        nodes_call = single_types
+        numba_log("No graph node types found. Proceeding as homogeneous graph.")
+    else:
+        nodes_call = multiple_types
+        numba_log("Multiple node types found. Proceeding as heterogeneous graph.")
+
+    if len(node_types) == 0:
+        nodes_call = single_types
+        numba_log("No graph node types found. Proceeding as homogeneous graph.")
+    else:
+        nodes_call = multiple_types
+        numba_log("Multiple node types found. Proceeding as multi-graph.")
+
+    if len(edge_types) == 0:
+        edges_call = single_types
+        numba_log("No graph edge types found. Proceeding as normal graph.")
+    else:
+        edges_call = multiple_types
+        numba_log("Multiple edge types found. Proceeding as multi-graph.")
 
     number = len(sources)
     alias = build_default_alias_vectors(number)
