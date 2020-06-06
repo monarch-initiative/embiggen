@@ -20,7 +20,6 @@ class TestGraph(TestCase):
                 "paths": [
                     "tests/data/small_graph_LEGACY.txt",
                     "tests/data/small_g2d_test.txt",
-                    "tests/data/rand_100nodes_5000edges.graph",
                     "tests/data/ppt_train.txt",
                     "tests/data/ppt_test.txt",
                     *[
@@ -91,6 +90,20 @@ class TestGraph(TestCase):
             GraphFactory().read_csv(
                 "tests/data/singleton_edges.tsv",
                 "tests/data/duplicated_nodes.tsv"
+            )
+
+    def test_duplicated_edges(self):
+        """
+            The goal of this test is to see if the factory raises a proper
+            exception when duplicated edges are present.
+        """
+        with pytest.raises(ValueError):
+            GraphFactory().read_csv(
+                "tests/data/edges_with_duplicates.tsv",
+                edge_file_has_header=False,
+                start_nodes_column=0,
+                end_nodes_column=1,
+                weights_column=2
             )
 
     def test_everything_graph(self):

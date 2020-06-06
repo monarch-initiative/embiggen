@@ -177,7 +177,20 @@ class GraphFactory:
         if edge_types_column in edges_df.columns:
             unique_columns.append(edge_types_column)
 
-        edges_df = edges_df.drop_duplicates(unique_columns)
+        #edges_df = edges_df.drop_duplicates(unique_columns)
+        duplicated_rows_mask = edges_df.duplicated(unique_columns)
+        if duplicated_rows_mask.any():
+            raise ValueError(
+                (
+                    "There are {} duplicated rows within given edge file "
+                    "at path {}. Please drop these rows during preprocessing. "
+                    "An example of duplicated line is:\n{}"
+                ).format(
+                    duplicated_rows_mask.sum(),
+                    edge_path,
+                    edges_df.loc[duplicated_rows_mask.argmax()].to_json(indent=4)
+                )
+            )
 
         edges = edges_df[[
             start_nodes_column, end_nodes_column
