@@ -1,8 +1,9 @@
+import silence_tensorflow.auto
 from time import time
 from humanize import naturaldelta
 from embiggen import GraphFactory
 import compress_json
-import json
+import jsos
 
 start = time()
 factory = GraphFactory(verbose=True)

@@ -59,6 +59,14 @@ def process_edges(
     return sources, destinations, edges_set
 
 
+@njit(parallel=True)
+def process_traps(neighbors: List[List[int]]) -> List[bool]:
+    traps = np.empty(len(neighbors), dtype=np.bool_)
+    for src in prange(len(neighbors)):  # pylint: disable=not-an-iterable
+        traps[src] = neighbors[np.int64(src)].size == 0
+    return traps
+
+
 @jitclass([
     ('_destinations', numba_vector_nodes_type),
     ('_sources', numba_vector_nodes_type),
@@ -67,6 +75,7 @@ def process_edges(
     ('_neighbors', types.ListType(numba_vector_edges_type)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
+    ('_traps', types.boolean[:]),
     ('_has_traps', types.boolean),
     ('_uniform', types.boolean),
     ('_preprocessed', types.boolean),
@@ -328,11 +337,10 @@ class NumbaGraph:
         # walk assuming that all the walks have the same length, but we need
         # to create a random walk with variable length, hence a list of lists.
 
-        self._has_traps = False
-        for src in range(self.nodes_number):
-            if self.is_node_trap(np.int64(src)):
-                self._has_traps = True
-                break
+        numba_log("Searching for traps in the graph.")
+        self._traps = process_traps(self._neighbors)
+        self._has_traps = self._traps.any()
+        numba_log("Completed graph preprocessing for random walks.")
 
     @property
     def preprocessed(self) -> int:
@@ -371,7 +379,7 @@ class NumbaGraph:
         -----------------
         Boolean True if node is a trap.
         """
-        return len(self._neighbors[node]) == 0
+        return self._traps[node]
 
     def _extract_transition_informations(
         self,

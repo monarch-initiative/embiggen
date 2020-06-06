@@ -34,11 +34,13 @@ class Graph(Hashable):
             raise ValueError(
                 "Given graph was not properly setup for random walk."
             )
-
+        logger.info("Starting random walks.")
         if self._graph.has_traps:
+            logger.info("Using trap-aware algorithm for random walks.")
             return tf.ragged.constant(
                 random_walk_with_traps(self._graph, number, length)
             )
+        logger.info("Using trap-unaware algorithm fo random walks.")
         return tf.constant(
             random_walk(self._graph, number, length)
         )
