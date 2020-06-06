@@ -3,6 +3,7 @@ import numpy as np  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from numba import typed, types, njit, prange  # type: ignore
 from .directed_graph import DirectedGraph
+from .graph_types import numpy_edges_colors_type, numpy_nodes_colors_type
 
 
 class UndirectedGraph(DirectedGraph):
@@ -52,20 +53,20 @@ class UndirectedGraph(DirectedGraph):
         full_destinations[:total_orig_edges] = destinations_names
         full_destinations[total_orig_edges:] = destinations_names[~loops_mask]
 
-        if node_types is not None:
-            full_node_types = np.empty(total_edges, dtype=np.uint16)
+        if len(node_types) > 0:
+            full_node_types = np.empty(total_edges, dtype=numpy_nodes_colors_type)
             full_node_types[:total_orig_edges] = node_types
             full_node_types[total_orig_edges:] = node_types[~loops_mask]
             node_types = full_node_types
 
-        if edge_types is not None:
-            full_edge_types = np.empty(total_edges, dtype=np.uint16)
+        if len(edge_types) > 0:
+            full_edge_types = np.empty(total_edges, dtype=numpy_edges_colors_type)
             full_edge_types[:total_orig_edges] = edge_types
             full_edge_types[total_orig_edges:] = edge_types[~loops_mask]
             edge_types = full_edge_types
 
         if len(weights) > 0:
-            full_weights = np.empty(total_edges, dtype=np.uint16)
+            full_weights = np.empty(total_edges, dtype=np.float64)
             full_weights[:total_orig_edges] = weights
             full_weights[total_orig_edges:] = weights[~loops_mask]
             weights = full_weights

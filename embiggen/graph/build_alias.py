@@ -88,6 +88,18 @@ def non_uniform_weight(weights: List[float], edge: int) -> float:
     return weights[edge]
 
 
+@njit
+def single_types(single_type: int, all_types: List[int], edge: int, weight: int, factor: float) -> float:
+    return weight
+
+
+@njit
+def multiple_types(single_type: int, all_types: List[int], edge: int, weight: int, factor: float) -> float:
+    if single_type == all_types[edge]:
+        return weight / factor
+    return weight
+
+
 @njit(parallel=True)
 def build_alias_edges(
     edges_set: Set[Tuple[int, int]],
@@ -154,12 +166,12 @@ def build_alias_edges(
     Lists of lists representing edges aliases.
     """
 
-    if node_types is not None and len(node_types) != len(nodes_neighboring_edges):
+    if len(node_types) > 0 and len(node_types) != len(nodes_neighboring_edges):
         raise ValueError(
             "Given node types list has not the same length of the given "
             "nodes neighbouring edges list."
         )
-    if edge_types is not None and len(edge_types) != len(sources):
+    if len(edge_types) > 0 and len(edge_types) != len(sources):
         raise ValueError(
             "Given edge types list has not the same length of the given "
             "sources list!"
@@ -185,6 +197,8 @@ def build_alias_edges(
             "Given change_edge_type_weight is not a positive number")
 
     weights_call = uniform_weight if len(weights) == 0 else non_uniform_weight
+    nodes_call = single_types if len(node_types) == 0 else multiple_types
+    edges_call = single_types if len(edge_types) == 0 else multiple_types
 
     number = len(sources)
     alias = build_default_alias_vectors(number)
@@ -207,6 +221,9 @@ def build_alias_edges(
             dtype=numpy_vector_alias_probs_type
         )
 
+        node_type = node_types[dst] if len(node_types) else 0
+        edge_type = edge_types[k] if len(node_types) else 0
+
         for index, edge in enumerate(neighboring_edges):
             # We get the weight for the edge from the destination to
             # the neighbour.
@@ -216,13 +233,13 @@ def build_alias_edges(
             # destination node type (we are not changing the node type)
             # we weigth using the provided change_node_type_weight weight.
             ndst = destinations[edge]
-            if node_types is not None and node_types[dst] == node_types[ndst]:
-                weight /= change_node_type_weight
+            weight = nodes_call(
+                node_type, node_types, edge, weight, change_node_type_weight)
             # Similarly if the neighbour edge type matches the previous
             # edge type (we are not changing the edge type)
             # we weigth using the provided change_edge_type_weight weight.
-            if edge_types is not None and edge_types[k] == edge_types[edge]:
-                weight /= change_edge_type_weight
+            weight = edges_call(
+                edge_type, edge_types, edge, weight, change_edge_type_weight)
             # If the neigbour matches with the source, hence this is
             # a backward loop like the following:
             # SRC -> DST

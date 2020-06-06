@@ -7,6 +7,7 @@ import pandas as pd  # type: ignore
 from ..utils import logger
 from .csv_utils import check_consistent_lines
 from .graph import Graph
+from .graph_types import numpy_nodes_colors_type, numpy_edges_colors_type
 
 
 class GraphFactory:
@@ -15,7 +16,7 @@ class GraphFactory:
         self,
         default_node_type: str = 'biolink:NamedThing',
         default_edge_type: str = 'biolink:Association',
-        verbose: bool = True,
+        verbose: bool = False,
         **kwargs: Dict
     ):
         """Create new GraphFactory object.
@@ -33,7 +34,7 @@ class GraphFactory:
             The default type for the nodes when no node type column is given.
         default_edge_type: str = 'biolink:Association',
             The default type for the edges when no edge type column is given.
-        verbose: bool = True,
+        verbose: bool = False,
             If to log with INFO level or with CRITICAL.
         **kwargs: Dict
             The kwargs to pass directly to the constructor of the Graph.
@@ -181,7 +182,6 @@ class GraphFactory:
 
         unique_nodes = np.unique(edges)
 
-
         if node_path is not None:
             logger.info("Loading nodes file")
 
@@ -257,13 +257,13 @@ class GraphFactory:
                 for i, node_type in enumerate(np.unique(node_types))
             }
 
-            numba_node_types = np.empty(len(node_types), dtype=np.int16)
+            numba_node_types = np.empty(len(node_types), dtype=numpy_nodes_colors_type)
             for i, node_type in enumerate(node_types):
                 numba_node_types[i] = unique_node_types[node_type]
 
         else:
             # Otherwise if the column is not available.
-            node_types = None
+            numba_node_types = np.empty(0, dtype=numpy_nodes_colors_type)
 
         #######################################
         # Handling edge types                 #
@@ -282,21 +282,21 @@ class GraphFactory:
                 for i, edge_type in enumerate(np.unique(edge_types))
             }
 
-            numba_edge_types = np.empty(len(edge_types), dtype=np.int64)
+            numba_edge_types = np.empty(len(edge_types), dtype=numpy_edges_colors_type)
             for i, edge_type in enumerate(edge_types):
                 numba_edge_types[i] = unique_edge_types[edge_type]
         else:
             # Otherwise if the column is not available.
-            edge_types = None
+            numba_edge_types = np.empty(0, dtype=numpy_edges_colors_type)
 
         logger.info("Done processing")
-        
+
         return Graph(
             nodes=nodes,
             sources_names=edges_df[start_nodes_column].values.astype(str),
             destinations_names=edges_df[end_nodes_column].values.astype(str),
-            node_types=node_types,
-            edge_types=edge_types,
+            node_types=numba_node_types,
+            edge_types=numba_edge_types,
             weights=weights,
             **self._kwargs,
             **kwargs

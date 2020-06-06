@@ -5,9 +5,10 @@ import numpy as np  # type: ignore
 # Types relative to nodes  #
 ############################
 
-numba_nodes_type = types.uint32
-numba_vector_nodes_type = types.uint32[:]
-numpy_nodes_type = np.uint32
+numba_nodes_type = types.int64
+numba_vector_nodes_type = types.int64[:]
+numpy_nodes_type = np.int64
+numpy_nodes_colors_type = np.uint16
 nodes_mapping_type = (types.string, numba_nodes_type)
 
 ############################
@@ -17,6 +18,7 @@ nodes_mapping_type = (types.string, numba_nodes_type)
 numba_edges_type = types.int64
 numba_vector_edges_type = types.int64[:]
 numpy_edges_type = np.int64
+numpy_edges_colors_type = np.uint16
 edges_type_list = types.ListType(numba_edges_type)
 
 ############################

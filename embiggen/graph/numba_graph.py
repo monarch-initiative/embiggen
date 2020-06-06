@@ -155,7 +155,7 @@ class NumbaGraph:
             If change_edge_type_weight is not a strictly positive real number.
 
         """
-        if edge_types is not None and len(edge_types) != len(destinations_names):
+        if len(edge_types) > 0 and len(edge_types) != len(destinations_names):
             raise ValueError(
                 "Given edge types length does not match destinations length."
             )
@@ -163,7 +163,7 @@ class NumbaGraph:
             raise ValueError(
                 "Given weights length does not match destinations length."
             )
-        if node_types is not None and len(nodes) != len(node_types):
+        if len(node_types) > 0 and len(nodes) != len(node_types):
             raise ValueError(
                 "Given node types has not the same length of given nodes number."
             )
