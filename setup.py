@@ -54,7 +54,6 @@ setup(
         "dict_hash>=1.1.1",
         "colorama"
     ],
-    test_suite='nose.collector',
     tests_require=test_deps,
     include_package_data=True,
     zip_safe=False,
