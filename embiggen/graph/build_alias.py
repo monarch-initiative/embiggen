@@ -36,7 +36,7 @@ def build_default_alias_vectors(
 
 @njit(parallel=True)
 def build_alias_nodes(
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
     weights: List[float]
 ) -> List[Tuple[List[int], List[float]]]:
     """Return aliases for nodes to use for alias method for 
@@ -44,7 +44,7 @@ def build_alias_nodes(
 
     Parameters
     -----------------------
-    nodes_neighboring_edges:  List[List[int]],
+    neighbors:  List[List[int]],
         List of neighbouring edges for each node.
     weights: List[float],
         List of weights for each edge.
@@ -54,12 +54,12 @@ def build_alias_nodes(
     Lists of lists representing node aliases 
     """
 
-    number = len(nodes_neighboring_edges)
+    number = len(neighbors)
     alias = build_default_alias_vectors(number)
 
     for i in prange(number):  # pylint: disable=not-an-iterable
         src = np.int64(i)
-        neighboring_edges = nodes_neighboring_edges[src]
+        neighboring_edges = neighbors[src]
         neighboring_edges_number = len(neighboring_edges)
 
         # Do not call the alias setup if the node is a trap.
@@ -103,13 +103,13 @@ def multiple_types(single_type: int, all_types: List[int], edge: int, weight: in
 
 @njit(parallel=True)
 def build_alias_edges(
-    edges_set: Set[Tuple[int, int]],
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
     node_types: List[int],
     edge_types: List[int],
     weights: List[float],
     sources: List[int],
     destinations: List[int],
+    trap: List[bool],
     return_weight: float,
     explore_weight: float,
     change_node_type_weight: float,
@@ -120,9 +120,7 @@ def build_alias_edges(
 
     Parameters
     -----------------------
-    edges_set: Set[Tuple[int, int]],
-        Set of unique edges.
-    nodes_neighboring_edges: List[List[int]],
+    neighbors: List[List[int]],
         List of neighbouring edges for each node.
     node_types: List[int],
         List of node types.
@@ -134,6 +132,8 @@ def build_alias_edges(
         List of source nodes for each edge.
     destinations: List[int],
         List of destination nodes for each edge.
+    trap: List[bool],
+        List of known trap nodes.
     return_weight: float,
         hyperparameter for breadth first random walk - 1/p
     explore_weight: float,
@@ -167,7 +167,7 @@ def build_alias_edges(
     Lists of lists representing edges aliases.
     """
 
-    if len(node_types) > 0 and len(node_types) != len(nodes_neighboring_edges):
+    if len(node_types) > 0 and len(node_types) != len(neighbors):
         raise ValueError(
             "Given node types list has not the same length of the given "
             "nodes neighbouring edges list."
@@ -225,7 +225,7 @@ def build_alias_edges(
         k = np.int64(i)
         src = sources[k]
         dst = destinations[k]
-        neighboring_edges = nodes_neighboring_edges[dst]
+        neighboring_edges = neighbors[dst]
         neighboring_edges_number = len(neighboring_edges)
 
         # Do not call the alias setup if the edge is a trap.
@@ -267,10 +267,20 @@ def build_alias_edges(
             # We weight the edge weight with the given return weight.
             if ndst == src:
                 weight = weight * return_weight
-            # If the backward loop does not exist, we multiply the weight
-            # of the edge by the weight for moving forward and explore more.
-            elif (ndst, src) not in edges_set:
-                weight = weight * explore_weight
+            else:
+                # If the backward loop does not exist, we multiply the weight
+                # of the edge by the weight for moving forward and explore more.
+                # So we check if the node is a trap or alternatively if
+                # no edge does not exists.
+                # TODO! Tommy take a look here!
+                found_edge = not trap[ndst]
+                if found_edge:
+                    for e in neighbors[ndst]:
+                        if destinations[e] == src:
+                            found_edge=True
+                            break
+                if not found_edge:
+                    weight = weight * explore_weight
             # Then we store these results into the probability vector.
             probs[index] = weight
         alias[k] = alias_setup(probs/probs.sum())
