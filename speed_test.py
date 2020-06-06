@@ -5,6 +5,7 @@ from embiggen import GraphFactory
 import compress_json
 import json
 
+
 start = time()
 factory = GraphFactory(verbose=True)
 graph = factory.read_csv(
