@@ -34,13 +34,13 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         The first argument is the mapping to the less probable binary outcome,
         and the second is the uniform distribution over binary outcomes
     """
-    # if probabilities.size == 0:
-    #     raise ValueError("Given probability vector is empty!")
+    if probabilities.size == 0:
+        raise ValueError("Given probability vector is empty!")
 
-    # if abs(probabilities.sum() - 1) > 1e-8:
-    #     raise ValueError(
-    #         "Given probability vector does not sum to one"
-    #     )
+    if abs(probabilities.sum() - 1) > 1e-8:
+        raise ValueError(
+            "Given probability vector does not sum to one"
+        )
 
     q = probabilities * probabilities.size
     smaller_mask = q < 1.0
