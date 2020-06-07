@@ -37,8 +37,8 @@ def random_walk(graph: NumbaGraph, number: int, length: int) -> np.ndarray:
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+    for src in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+        for i in prange(number):  # pylint: disable=not-an-iterable
             walk = all_walks[i*graph.nodes_number + src]
             walk[0] = src
             walk[1], edge = extract_node_neighbour(walk[0])
@@ -78,8 +78,8 @@ def random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> List[
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+    for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+        for i in prange(number):  # pylint: disable=not-an-iterable
             walk = all_walks[i*nodes_number + src]
             walk[0] = src
             # Check if the current node has neighbors
@@ -132,8 +132,8 @@ def lazy_random_walk_with_traps(graph: NumbaGraph, number: int, length: int) -> 
 
     # We can use prange to parallelize the walks and the iterations on the
     # graph nodes.
-    for i in prange(number):  # pylint: disable=not-an-iterable
-        for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+    for src in prange(nodes_number):  # pylint: disable=not-an-iterable
+        for i in prange(number):  # pylint: disable=not-an-iterable
             walk = all_walks[i*nodes_number + src]
             walk[0] = src
             # Check if the current node has neighbors
