@@ -1,4 +1,5 @@
 from typing import List, Dict
+import gc
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
@@ -45,10 +46,25 @@ class Graph(Hashable):
         logger.info("Building Tensor from walks.")
         return tf.constant(walks)
 
-    @property
-    def preprocessed(self) -> bool:
-        """Return boolean representing if the graph was preprocessed."""
-        return self._graph.preprocessed
+    def build_graph_alias(self):
+        """Create objects necessary for quick random search over graph.
+
+        Note that these objects can get VERY big, for example in a graph with
+        15 million edges they get up to around 80GBs.
+
+        Consider using the lazy random walk that renders the probabilities as
+        the the walk proceeds as an alternative solution when the graph gets
+        too big for this quick walk.
+
+        After the walk is executed, to keep the graph object but destroy these
+        big objects, call the method graph.destroy_graph_alias().
+        """
+        self._graph.build_graph_alias()
+
+    def destroy_graph_alias(self):
+        """Destroys object related to graph alias."""
+        self._graph.destroy_graph_alias()
+        gc.collect()
 
     @property
     def sources(self) -> np.ndarray:

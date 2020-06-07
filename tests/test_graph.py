@@ -2,7 +2,7 @@ from embiggen.graph import GraphFactory
 from unittest import TestCase
 import pytest
 from tqdm.auto import tqdm
-
+import os
 
 class TestGraph(TestCase):
 
@@ -10,20 +10,22 @@ class TestGraph(TestCase):
         self._test_cases = {
             "non_legacy": {
                 "paths": [
-                    'tests/data/unweighted_small_graph.txt',
-                    'tests/data/small_het_graph_edges.tsv',
-                    'tests/data/small_graph.txt',
+                    ['tests/data/unweighted_small_graph.txt'],
+                    ['tests/data/small_het_graph_edges.tsv'],
+                    ['tests/data/small_graph.txt'],
+                    ["tests/data/first_walk_test_edges.tsv",
+                    "tests/data/first_walk_test_nodes.tsv"],
                 ],
                 "arguments": [{}]
             },
             "legacy": {
                 "paths": [
-                    "tests/data/small_graph_LEGACY.txt",
-                    "tests/data/small_g2d_test.txt",
-                    "tests/data/ppt_train.txt",
-                    "tests/data/ppt_test.txt",
+                   ["tests/data/small_graph_LEGACY.txt"],
+                   ["tests/data/small_g2d_test.txt"],
+                   ["tests/data/ppt_train.txt"],
+                   ["tests/data/ppt_test.txt"],
                     *[
-                        f"tests/data/ppismall_with_validation/{filename}"
+                        [f"tests/data/ppismall_with_validation/{filename}"]
                         for filename in (
                             "neg_test_edges_max_comp_graph",
                             "neg_train_edges_max_comp_graph",
@@ -34,7 +36,7 @@ class TestGraph(TestCase):
                         )
                     ],
                     *[
-                        f"tests/data/ppismall/{filename}"
+                        [f"tests/data/ppismall/{filename}"]
                         for filename in (
                             "neg_test_edges",
                             "neg_train_edges",
@@ -43,7 +45,7 @@ class TestGraph(TestCase):
                         )
                     ],
                     *[
-                        f"tests/data/karate/{filename}"
+                        [f"tests/data/karate/{filename}"]
                         for filename in (
                             "neg_test_edges",
                             "neg_train_edges",
@@ -64,11 +66,10 @@ class TestGraph(TestCase):
         }
 
         self._factories = [
-            GraphFactory(directed=True, ),
-            GraphFactory(directed=False, ),
+            GraphFactory(directed=True),
+            GraphFactory(directed=False),
             GraphFactory(directed=True, uniform=False, ),
             GraphFactory(directed=False, uniform=False, ),
-            GraphFactory(preprocess=False, )
         ]
         self._verbose = False
 
@@ -110,11 +111,11 @@ class TestGraph(TestCase):
     def test_everything_graph(self):
         for factory in tqdm(self._factories, desc="Executing factories", leave=False):
             for test, kwargs in self._test_cases.items():
-                for path in tqdm(kwargs["paths"], desc="Executing test on {}".format(test), leave=False):
+                for paths in tqdm(kwargs["paths"], desc="Executing test on {}".format(test), leave=False):
                     for args in kwargs["arguments"]:
-                        graph = factory.read_csv(path, **args)
-                        if graph.preprocessed:
+                        graph = factory.read_csv(*paths, **args)
+                        graph.build_graph_alias()
+                        graph.random_walk(5, 10)
+                        graph.destroy_graph_alias()
+                        with pytest.raises(ValueError):
                             graph.random_walk(5, 10)
-                        else:
-                            with pytest.raises(ValueError):
-                                graph.random_walk(5, 10)

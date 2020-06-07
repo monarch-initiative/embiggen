@@ -1,6 +1,6 @@
 import logging
 from typing import Dict
-
+import json
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
@@ -139,20 +139,9 @@ class GraphFactory:
         """
         if check_for_rows_consistency:
             logger.info("Checking for rows consistency.")
-            if not check_consistent_lines(edge_path, edge_sep, self._verbose):
-                raise ValueError(
-                    "Provided edges file has malformed lines. "
-                    "The provided lines have different numbers "
-                    "of the given separator"
-                )
-
-            if not (node_path is None or check_consistent_lines(
-                    node_path, node_sep, self._verbose)):
-                raise ValueError(
-                    "Provided nodes file has malformed lines. "
-                    "The provided lines have different numbers "
-                    "of the given separator"
-                )
+            check_consistent_lines(edge_path, edge_sep, self._verbose)
+            if node_path is not None:
+                check_consistent_lines(node_path, node_sep, self._verbose)
 
         logger.info("Loading edge file")
 
@@ -260,11 +249,19 @@ class GraphFactory:
                         node
                     ))
 
-            if len(nodes_set) != len(nodes):
+            uniques, counts = np.unique(nodes, return_counts=True)
+
+            if len(uniques) != len(nodes):
                 raise ValueError((
                     "There are {} duplicate nodes "
-                    "in the given nodes file"
-                ).format(len(nodes) - len(nodes_set)))
+                    "in the given nodes file.\n"
+                    "The node file is at path {}.\n"
+                    "A sample of the duplicates are: \n{}"
+                ).format(
+                    len(nodes) - len(nodes_set),
+                    node_path,
+                    json.dumps(uniques[counts>1][:5].tolist(), indent=4),
+                ))
         else:
             nodes = unique_nodes
 
@@ -350,8 +347,8 @@ class GraphFactory:
 
         return Graph(
             nodes=nodes,
-            sources_names=edges_df[start_nodes_column].values.astype(str),
-            destinations_names=edges_df[end_nodes_column].values.astype(str),
+            sources_names=edges_df[start_nodes_column].values.astype(nodes.dtype),
+            destinations_names=edges_df[end_nodes_column].values.astype(nodes.dtype),
             node_types=numba_node_types,
             edge_types=numba_edge_types,
             weights=weights,

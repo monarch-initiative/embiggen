@@ -5,65 +5,17 @@ from numba import njit, prange, typed, types, objmode  # type: ignore
 from numba.experimental import jitclass  # type: ignore
 from ..utils import numba_log
 
-from .alias_method import alias_draw
-from .build_alias import build_alias_edges, build_alias_nodes, get_min_max_edge
+from .alias_method import alias_draw, alias_setup
 from .graph_types import (
     alias_list_type, edges_type_list, nodes_mapping_type,
     numba_edges_type, numba_nodes_type,
-    numba_vector_edges_type, numba_vector_nodes_type,
+    numba_vector_edges_type, numba_vector_nodes_type, numba_probs_type,
     numpy_edges_type, numpy_nodes_type,
+    numba_vector_nodes_colors_type, numba_vector_edges_colors_type,
     numpy_nodes_colors_type, numpy_edges_colors_type,
-    dict_edges_tuple
+    dict_edges_tuple, numpy_probs_type,
+    numpy_indices_type
 )
-
-
-@njit(parallel=True)
-def process_edges(
-    sources_names: List[str],
-    destinations_names: List[str],
-    mapping: Dict[str, int]
-) -> Tuple[List[int], List[int], Set[Tuple[int, int]]]:
-    """Return triple with mapped sources, destinations and edges set.
-
-    Parameters
-    --------------------------
-    sources_names: List[str],
-        List of the sources names.
-    destinations_names: List[str],
-        List of the destinations names.
-    mapping: Dict[str, int],
-        Dictionary mapping of the nodes.
-
-    Returns
-    --------------------------
-    Triple with:
-        - The mapped sources using given mapping, as a list of integers.
-        - The mapped destinations using given mapping, as a list of integers.
-    """
-    edges_number = len(sources_names)
-    sources = np.empty(edges_number, dtype=numpy_nodes_type)
-    destinations = np.empty(edges_number, dtype=numpy_nodes_type)
-    edges = set()
-
-    for i in prange(edges_number):  # pylint: disable=not-an-iterable
-        # Store the sources into the sources vector
-        sources[i] = mapping[str(sources_names[i])]
-        # Store the destinations into the destinations vector
-        destinations[i] = mapping[str(destinations_names[i])]
-
-    for src, dst in zip(sources, destinations):
-        edges.add((src, dst))
-
-    return sources, destinations, edges
-
-
-@njit(parallel=True)
-def process_traps(neighbors: List[List[int]]) -> List[bool]:
-    traps = np.empty(len(neighbors), dtype=np.bool_)
-    for src in prange(len(neighbors)):  # pylint: disable=not-an-iterable
-        min_edge, max_edge = get_min_max_edge(neighbors, src)
-        traps[src] = max_edge == min_edge
-    return traps
 
 
 @jitclass([
@@ -71,14 +23,21 @@ def process_traps(neighbors: List[List[int]]) -> List[bool]:
     ('_sources', numba_vector_nodes_type),
     ('_nodes_mapping', types.DictType(*nodes_mapping_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
-    ('_neighbors', numba_vector_edges_type),
+    ('_outbound_edges', numba_vector_edges_type),
+    ('_backward_edges', types.ListType(numba_vector_edges_type)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
-    ('_traps', types.boolean[:]),
-    ('_has_traps', types.boolean),
     ('_uniform', types.boolean),
+    ('_directed', types.boolean),
     ('_preprocessed', types.boolean),
-    ('_nodes_number', types.uint64)
+    ('_nodes_number', types.uint64),
+    ('_weights', numba_probs_type),
+    ('_node_types', numba_vector_nodes_colors_type),
+    ('_edge_types', numba_vector_edges_colors_type),
+    ('_return_weight', types.float64),
+    ('_explore_weight', types.float64),
+    ('_change_node_type_weight', types.float64),
+    ('_change_edge_type_weight', types.float64),
 ])
 class NumbaGraph:
 
@@ -92,8 +51,6 @@ class NumbaGraph:
         weights: List[float] = None,
         uniform: bool = True,
         directed: bool = True,
-        preprocess: bool = True,
-        default_weight: float = 1.0,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -162,15 +119,15 @@ class NumbaGraph:
             If change_edge_type_weight is not a strictly positive real number.
 
         """
-        if len(edge_types) > 0 and len(edge_types) != len(destinations_names):
+        if edge_types.size and edge_types.size != destinations_names.size:
             raise ValueError(
                 "Given edge types length does not match destinations length."
             )
-        if len(weights) > 0 and len(weights) != len(destinations_names):
+        if weights.size and weights.size != destinations_names.size:
             raise ValueError(
                 "Given weights length does not match destinations length."
             )
-        if len(node_types) > 0 and len(nodes) != len(node_types):
+        if node_types.size and nodes.size != node_types.size:
             raise ValueError(
                 "Given node types has not the same length of given nodes number."
             )
@@ -192,54 +149,113 @@ class NumbaGraph:
                 "Given sources length does not match destinations length."
             )
 
-        if not directed:
-            numba_log("Building undirected graph.")
-            # Cunting self-loops
-            numba_log("Counting self-loops.")
-            loops_mask = np.empty(len(sources_names), dtype=np.bool_)
-            for i, (src_name, dst_name) in enumerate(zip(sources_names, destinations_names)):
-                loops_mask[i] = str(src_name) == str(dst_name)
+        self._preprocessed = False
+        self._directed = directed
+        self._weights = weights
+        self._node_types = node_types
+        self._edge_types = edge_types
+        self._nodes_number = len(nodes)
+        self._return_weight = return_weight
+        self._explore_weight = explore_weight
+        self._change_node_type_weight = change_node_type_weight
+        self._change_edge_type_weight = change_edge_type_weight
 
-            total_loops = loops_mask.sum()
-            total_orig_edges = len(sources_names)
-            total_edges = (total_orig_edges-total_loops)*2 + total_loops
+        if not self.directed:
+            sources_names, destinations_names = self._process_undirected_graph(
+                sources_names,
+                destinations_names
+            )
 
-            numba_log("Building undirected graph sources.")
-            full_sources = np.empty(total_edges, dtype=sources_names.dtype)
-            full_sources[:total_orig_edges] = sources_names
-            full_sources[total_orig_edges:] = sources_names[~loops_mask]
-            sources_names = full_sources
+        self._process_nodes_mapping(nodes)
 
-            numba_log("Building undirected graph destinations.")
-            full_destinations = np.empty(
-                total_edges, dtype=destinations_names.dtype)
-            full_destinations[:total_orig_edges] = destinations_names
-            full_destinations[total_orig_edges:] = destinations_names[~loops_mask]
-            destinations_names = full_destinations
+        numba_log("Processing edges mapping")
+        # Transform the lists of names into IDs
+        self._sources, self._destinations = process_edges(
+            sources_names, destinations_names, self._nodes_mapping
+        )
 
-            if len(node_types) > 0:
-                numba_log("Building undirected graph node types.")
-                full_node_types = np.empty(
-                    total_edges, dtype=numpy_nodes_colors_type)
-                full_node_types[:total_orig_edges] = node_types
-                full_node_types[total_orig_edges:] = node_types[~loops_mask]
-                node_types = full_node_types
+        # Sorting given edges using sources as index.
+        numba_log("Sorting edges values")
+        self._sort_edge_values()
 
-            if len(edge_types) > 0:
-                numba_log("Building undirected graph edge types.")
-                full_edge_types = np.empty(
-                    total_edges, dtype=numpy_edges_colors_type)
-                full_edge_types[:total_orig_edges] = edge_types
-                full_edge_types[total_orig_edges:] = edge_types[~loops_mask]
-                edge_types = full_edge_types
+        self._uniform = self._process_is_uniform(uniform)
 
-            if len(weights) > 0:
-                numba_log("Building undirected graph weights.")
-                full_weights = np.empty(total_edges, dtype=np.float64)
-                full_weights[:total_orig_edges] = weights
-                full_weights[total_orig_edges:] = weights[~loops_mask]
-                weights = full_weights
+        numba_log("Processing outbound edges")
+        self._outbound_edges = self.compute_outbound_edges()
 
+        numba_log("Processing backward outbound_edges")
+        self._backward_edges = self.compute_backward_edges()
+
+        numba_log("Completed construction of graph object.")
+
+    def build_graph_alias(self):
+        """Create objects necessary for quick random search over graph.
+
+        Note that these objects can get VERY big, for example in a graph with
+        15 million edges they get up to around 80GBs.
+
+        Consider using the lazy random walk that renders the probabilities as
+        the the walk proceeds as an alternative solution when the graph gets
+        too big for this quick walk.
+
+        After the walk is executed, to keep the graph object but destroy these
+        big objects, call the method graph.destroy_graph_alias().
+        """
+        # Creating the node alias list, which contains tuples composed of
+        # the list of indices of the opposite extraction events and the list
+        # of probabilities for the extraction of edges neighbouring the nodes.
+        if not self._uniform:
+            numba_log("Processing nodes alias.")
+            self._nodes_alias = build_alias_nodes(self)
+        else:
+            numba_log("Skipping nodes alias building since graph is uniform.")
+
+        # Creating the edges alias list, which contains tuples composed of
+        # the list of indices of the opposite extraction events and the list
+        # of probabilities for the extraction of edges neighbouring the edges.
+        numba_log("Processing edges alias")
+        self._edges_alias = build_alias_edges(self)
+        numba_log("Completed graph preprocessing for random walks.")
+
+        # Marking current graph as preprocessed
+        self._preprocessed = True
+
+    def destroy_graph_alias(self):
+        """Destroys object related to graph alias."""
+        self._preprocessed = False
+        self._nodes_alias = typed.List.empty_list(alias_list_type)
+        self._edges_alias = typed.List.empty_list(alias_list_type)
+
+    def _sort_edge_values(self):
+        """Sort the values so that we can compute the neighbours faster."""
+        sorted_indices = np.argsort(self._sources)
+        self._sources = self._sources[sorted_indices]
+        self._destinations = self._destinations[sorted_indices]
+        # If edge types are provided we need to sort them.
+        if self._edge_types.size:
+            self._edge_types = self._edge_types[sorted_indices]
+        # If weights are provided we need to sort them.
+        if self._weights.size:
+            self._weights = self._weights[sorted_indices]
+
+    def _process_is_uniform(self, uniform: bool) -> bool:
+        """Compute if we can process the graph as an uniform or not.
+        An uniform graph is a graph where we can ignore the weights.ƒ
+        """
+        return (
+            # if the user told us to.
+            uniform or
+            # or he didn't give us weights AND
+            self._weights.size == 0 and (
+                # there are no node-types or we don't have to change the weights
+                # based on the node-types
+                self._node_types.size == 0 or (
+                    1.0 - self._change_node_type_weight) < 1e8
+            )
+        )
+
+    def _process_nodes_mapping(self, nodes: List[str]):
+        """Create the outbound and backward mapping from each node to it's ID"""
         # Creating mapping and reverse mapping of nodes and integer ID.
         # The map looks like the following:
         # {
@@ -256,41 +272,68 @@ class NumbaGraph:
             self._nodes_mapping[str(node)] = numpy_nodes_type(i)
             self._reverse_nodes_mapping.append(str(node))
 
-        numba_log("Processing edges mapping")
-        # Transform the lists of names into IDs
-        self._sources, self._destinations, edges_set = process_edges(
-            sources_names, destinations_names, self._nodes_mapping
-        )
+    def _process_undirected_graph(self,
+                                  sources_names: List[str],
+                                  destinations_names: List[str]
+                                  ) -> Tuple[List[str], List[str]]:
+        """Parse the inputs of the class in an optimal way for undirected graphs
 
-        self._nodes_number = len(nodes)
-        self._preprocessed = preprocess
+        Parameters
+        ----------
+        sources_names: List[str],
+            List of the source nodes in edges of the graph.
+        destinations_names: List[str],
+            List of the destination nodes in edges of the graph.
 
-        if not preprocess:
-            numba_log(
-                "No further preprocessing for random walk has been required. "
-                "Stopping graph preprocessing before alias building."
-            )
-            return
+        Returns
+        -------
+        The two updated lists of sources_names and destinations_names.
+        """
+        numba_log("Building undirected graph.")
+        # Cunting self-loops
+        numba_log("Counting self-loops.")
+        loops_mask = np.empty(len(sources_names), dtype=np.bool_)
+        for i, (src_name, dst_name) in enumerate(zip(sources_names, destinations_names)):
+            loops_mask[i] = str(src_name) == str(dst_name)
 
-        # Sorting given edges using sources as index.
-        numba_log("Sorting edges values")
-        sorted_indices = np.argsort(self._sources)
-        self._sources = self._sources[sorted_indices]
-        self._destinations = self._destinations[sorted_indices]
-        # If edge types are provided we need to sort them.
-        if len(edge_types):
-            edge_types = edge_types[sorted_indices]
-        # If weights are provided we need to sort them.
-        if len(weights):
-            weights = weights[sorted_indices]
+        total_loops = loops_mask.sum()
+        total_orig_edges = len(sources_names)
+        total_edges = (total_orig_edges-total_loops)*2 + total_loops
 
-        self._uniform = uniform or len(weights) == 0
+        numba_log("Building undirected graph sources.")
+        full_sources = np.empty(total_edges, dtype=sources_names.dtype)
+        full_sources[:total_orig_edges] = sources_names
+        full_sources[total_orig_edges:] = destinations_names[~loops_mask]
 
-        numba_log("Processing neighbours")
+        numba_log("Building undirected graph destinations.")
+        full_destinations = np.empty(
+            total_edges, dtype=destinations_names.dtype)
+        full_destinations[:total_orig_edges] = destinations_names
+        full_destinations[total_orig_edges:] = sources_names[~loops_mask]
 
+        if self._edge_types.size:
+            numba_log("Building undirected graph edge types.")
+            full_edge_types = np.empty(
+                total_edges, dtype=numpy_edges_colors_type)
+            full_edge_types[:total_orig_edges] = self._edge_types
+            full_edge_types[total_orig_edges:] = self._edge_types[~loops_mask]
+            self._edge_types = full_edge_types
+
+        if self._weights.size:
+            numba_log("Building undirected graph weights.")
+            full_weights = np.empty(total_edges, dtype=np.float64)
+            full_weights[:total_orig_edges] = self._weights
+            full_weights[total_orig_edges:] = self._weights[~loops_mask]
+            self._weights = full_weights
+
+        return full_sources, full_destinations
+
+    def compute_outbound_edges(self) -> List[int]:
+        """Return offset sets of outbound outbound_edges."""
         # IF THE EDGES ARE SORTED, we can use the destinations array to get the
-        # neighbours of a node. The idea is to store the number of neighbours of
-        # each NODE.
+        # foward edges of a node.
+        #
+        # The idea is to store the number of outbound edges for each NODE.
         # E.G.    _
         #   s1 d1  |
         #   s1 d2  | -> 3
@@ -299,101 +342,78 @@ class NumbaGraph:
         #   s4 d3 _|
         #   s6 d2  | -> 2
         #   s6 d3 _|
-        # for optimization we can sum the number of neighbours so it became an
-        # offset.
+        # for optimization we can sum the number of outbound edges
+        # so it becomes an offset.
         # Then, we can compute it using the two array:
         # [d1, d2, d3, d1, d3, d2, d3]
         # [3, 3, 3, 5, 5, 7, 7]
-        # now to get the neighbours of s2 we get its index, s2 -> 1
+        # now to get the outbound edges of s2 we get its index, s2 -> 1
         # then we access the index of s2 and the previous index.
-        # Finally the neighbours are d[3:5]
-        last_source = last_count = 0
-        # preallocate the neighbours to avoid multiple reallocation
-        self._neighbors = np.empty(self._nodes_number, dtype=numpy_edges_type)
-        # we iterate on the sources because they are guaranteed to have neighbours
-        for i, src in enumerate(self._sources):
-            #
-            if last_source != src:
+        # Finally the outbound_edges are d[3:5]
+        last_src = 0
+        # preallocate the outbound_edges to avoid multiple reallocation
+        outbound_edges = np.empty(self.nodes_number, dtype=numpy_edges_type)
+        # we iterate on the sources because they have foward edges
+        for i, src in enumerate(self.sources):
+            if last_src != src:
                 # Assigning to range instead of single value, so that traps
                 # have as delta between previous and next node zero.
-                self._neighbors[last_source:src] = i
-                last_count = i
-                last_source = src
-        # Fix the last nodes neighbours by propagating the last_count because if
-        # we haven't already filled the array, all the remaining nodes are traps
-        self._neighbors[last_source:src] = last_count
-        self._neighbors[src:] = last_count
+                outbound_edges[last_src:src] = i
+                last_src = src
+        # Fix the last nodes foward edges by propagating the last_count because
+        # if we haven't already filled the array,
+        # all the remaining nodes are traps
+        outbound_edges[src:] = i + 1
+        return outbound_edges
 
-        # Creating the node alias list, which contains tuples composed of
-        # the list of indices of the opposite extraction events and the list
-        # of probabilities for the extraction of edges neighbouring the nodes.
-        if not self._uniform:
-            numba_log("Processing nodes alias.")
-            self._nodes_alias = build_alias_nodes(
-                self._neighbors, weights, self._destinations,
-                node_types, change_node_type_weight
-            )
-        else:
-            numba_log("Skipping nodes alias building since graph is uniform.")
+    def compute_backward_edges(self) -> List[int]:
+        """Return offset sets of backward outbound_edges."""
 
-        # To verify if this graph has some walker traps, meaning some nodes
-        # that do not have any neighbors, we have to iterate on the list of
-        # neighbors and to check if at least a node has no neighbors.
-        # If such a condition is met, we cannot anymore do the simple random
-        # walk assuming that all the walks have the same length, but we need
-        # to create a random walk with variable length, hence a list of lists.
+        # For each destination, we compute the number of times it receives an
+        # inbound edge.
+        sizes = np.zeros(self.nodes_number, dtype=numpy_nodes_type)
+        for dst in self._destinations:
+            sizes[dst] += 1
 
-        numba_log("Searching for traps in the graph.")
-        self._traps = process_traps(self._neighbors)
-        self._has_traps = self._traps.any()
+        # allocate the datastructure that we will fill in the next step
+        backwards_edges = typed.List.empty_list(numba_vector_edges_type)
+        for size in sizes:
+            backwards_edges.append(np.empty(size, dtype=numpy_edges_type))
 
-        numba_log("Processing edges alias")
+        # For each destination we are now able to store the IDs of the
+        # inbound edges.
+        for i, dst in enumerate(self._destinations):
+            # To get the index of the current ID to have it sorted.
+            backwards_edges[dst][-sizes[dst]] = i
+            # And reduce the size.
+            sizes[dst] -= 1
 
-        # To verify if this graph has some walker traps, meaning some nodes
-        # that do not have any neighbors, we have to iterate on the list of
-        # neighbors and to check if at least a node has no neighbors.
-        # If such a condition is met, we cannot anymore do the simple random
-        # walk assuming that all the walks have the same length, but we need
-        # to create a random walk with variable length, hence a list of lists.
-
-        numba_log("Searching for traps in the graph.")
-        self._traps = process_traps(self._neighbors)
-        self._has_traps = self._traps.any()
-
-        # Creating the edges alias list, which contains tuples composed of
-        # the list of indices of the opposite extraction events and the list
-        # of probabilities for the extraction of edges neighbouring the edges.
-        self._edges_alias = build_alias_edges(
-            edges_set=edges_set,
-            neighbors=self._neighbors,
-            node_types=node_types,
-            edge_types=edge_types,
-            weights=weights,
-            sources=self._sources,
-            destinations=self._destinations,
-            traps=self._traps,
-            return_weight=return_weight,
-            explore_weight=explore_weight,
-            change_node_type_weight=change_node_type_weight,
-            change_edge_type_weight=change_edge_type_weight
-        )
-
-        numba_log("Completed graph preprocessing for random walks.")
+        return backwards_edges
 
     @property
-    def preprocessed(self) -> int:
-        """Return integer with the length of the graph."""
+    def preprocessed(self) -> bool:
+        """Return boolean representing if the graph was preprocessed."""
         return self._preprocessed
 
     @property
-    def uniform(self) -> int:
-        """Return integer with the length of the graph."""
+    def directed(self) -> bool:
+        """Return boolean representing if the graph is directed."""
+        return self._directed
+
+    @property
+    def uniform(self) -> bool:
+        """Return boolean representing if the graph has uniform nodes weights."""
         return self._uniform
 
     @property
     def nodes_number(self) -> int:
-        """Return integer with the length of the graph."""
+        """Return integer with the number of nodes of the graph."""
         return self._nodes_number
+
+    @property
+    def edges_number(self) -> int:
+        """Return integer with the number of edges of the graph."""
+        return self._sources.size
 
     @property
     def sources(self) -> List[int]:
@@ -408,7 +428,10 @@ class NumbaGraph:
     @property
     def has_traps(self) -> bool:
         """Return boolean representing if graph has traps."""
-        return self._has_traps
+        for node in range(self.nodes_number):
+            if self.is_node_trap(node):
+                return True
+        return False
 
     def is_node_trap(self, node: int) -> bool:
         """Return boolean representing if node is a dead end.
@@ -422,14 +445,165 @@ class NumbaGraph:
         -----------------
         Boolean True if node is a trap.
         """
-        return self._traps[node]
+        _min, _max = self._get_min_max_edge(node)
+        return _min == _max
 
-    def _extract_transition_informations(
-        self,
-        src: int,
-        j: List[int],
-        q: List[float]
-    ) -> Tuple[int, int]:
+    def is_edge_trap(self, edge: int) -> bool:
+        """Return boolean representing if edge is a dead end.
+
+        Parameters
+        ----------
+        edge: int,
+            Edge numeric ID.
+
+        Returns
+        -----------------
+        Boolean True if edge is a trap.
+        """
+        return self.is_node_trap(self.destinations[edge])
+
+    def _get_min_max_edge(self, node: int) -> Tuple[int, int]:
+        """Return tuple with minimum and maximum edge for given node.
+        This method is used to retrieve the indices needed to extract the 
+        neighbors from the destination array.
+
+        Parameters
+        ---------------------------
+        node: int,
+            The id of the node to access.
+
+        Returns
+        ----------------------------
+        Tuple with minimum and maximum edge index for given node.
+        """
+        min_edge = 0 if node == 0 else self._outbound_edges[node-1]
+        max_edge = self._outbound_edges[node]
+        return min_edge, max_edge
+
+    def get_node_transition_weights(self, node: int) -> Tuple[List[float], List[int]]:
+        """Return transition weights vector for given node.
+
+        NB: the returned weights are NOT normalized.
+
+        Parameters
+        ----------------------------
+        node: int,
+            Node for which to compute the transition weights.
+
+        Returns
+        -----------------------------
+        Tuple with transition weights and transition destinations.
+        """
+        # Retrieve edge boundaries.
+        min_edge, max_edge = self._get_min_max_edge(node)
+        # If weights are given
+        if self._weights.size:
+            # We retrieve the weights relative to these transitions
+            transition_weights = self._weights[min_edge:max_edge]
+        else:
+            # Otherwise we start wi AND
+            transition_weights = np.ones(
+                max_edge-min_edge,
+                dtype=numpy_probs_type
+            )
+
+        destinations = self._destinations[min_edge:max_edge]
+
+        ############################################################
+        # Handling of the change node type parameter               #
+        ############################################################
+        # If the node types were given:
+        if self._node_types.size:
+            # if the destination node type matches the neighbour
+            # destination node type (we are not changing the node type)
+            # we weigth using the provided change_node_type_weight weight.
+            mask = self._node_types[node] == self._node_types[destinations]
+            transition_weights[mask] /= self._change_node_type_weight
+
+        return transition_weights, destinations
+
+    def get_edge_transition_weights(self, edge: int) -> List[float]:
+        """Return transition weights vector for given edge.
+
+        NB: the returned weights are NOT normalized.
+
+        Parameters
+        ----------------------------
+        edge: int,
+            Edge for which to compute the transition weights.
+
+        Returns
+        -----------------------------
+        Vector of the transition weights
+        """
+        # Get the source and destination for current edge.
+        src, dst = self.sources[edge], self.destinations[edge]
+
+        # Compute the transition weights relative to the node weights.
+        transition_weights, destinations = self.get_node_transition_weights(
+            dst)
+        min_edge, max_edge = self._get_min_max_edge(dst)
+
+        ############################################################
+        # Handling of the change edge type parameter               #
+        ############################################################
+
+        if self._edge_types.size:
+            # Similarly if the neighbour edge type matches the previous
+            # edge type (we are not changing the edge type)
+            # we weigth using the provided change_edge_type_weight weight.
+            mask = self._edge_types[edge] == self._edge_types[min_edge:max_edge]
+            transition_weights[mask] /= self._change_edge_type_weight
+
+        ############################################################
+        # Handling of the Q parameter: the return coefficient      #
+        ############################################################
+
+        # If the neigbour matches with the source, hence this is
+        # a backward loop like the following:
+        # SRC -> DST
+        #  ▲     /
+        #   \___/
+        #
+        # We weight the edge weight with the given return weight.
+        not_looping_back = destinations != src
+        transition_weights[not_looping_back] /= self._return_weight
+
+        ############################################################
+        # Handling of the P parameter: the exploration coefficient #
+        ############################################################
+
+        # Get the inbound edges for the source
+        inbound_edges = self._backward_edges[src]
+        # Get the outbound maximum edges offset from each destination
+        outbound_max_edges = self._outbound_edges[destinations]
+        # Get the mask for destinations that match the first node.
+        first_nodes = destinations == 0
+        # Setting the minimum edge for the first nodes at 0.
+        outbound_min_edges = np.zeros_like(
+            outbound_max_edges,
+            dtype=numpy_edges_type
+        )
+        # For the other nodes, which are after the first node, we use
+        # the offset of the node before them.
+        outbound_min_edges[~first_nodes] = self._outbound_edges[
+            destinations[~first_nodes]-1
+        ]
+        # Build mask for edges that go back to the source node.
+        has_backward_edge = np.sum(
+            (
+                (np.expand_dims(inbound_edges, 1) >= outbound_min_edges) &
+                (np.expand_dims(inbound_edges, 1) < outbound_max_edges)
+            ),
+            axis=0,
+            dtype=np.bool_
+        )
+        # Apply the explore weight
+        transition_weights[has_backward_edge] /= self._explore_weight
+
+        return transition_weights
+
+    def _extract_transition(self, src: int, j: List[int], q: List[float]) -> Tuple[int, int]:
         """Return tuple with new destination and used edge.
 
         Parameters
@@ -446,7 +620,7 @@ class NumbaGraph:
         Tuple containing the new destination and the used edge.
         """
         # Get the new edge, extracted randomly using alias method draw.
-        previous_edge = 0 if src == 0 else self._neighbors[src-1]
+        previous_edge, _ = self._get_min_max_edge(src)
         edge = previous_edge + alias_draw(j, q)
         # Get the destination of the chosen edge.
         dst = self._destinations[edge]
@@ -461,7 +635,7 @@ class NumbaGraph:
         For the uniform case, we can just extract a random neighbour. 
         (This is actually not equivalent because we "ignore" that
         different nodetypes can change the probability but it's an approximation
-        that allows us to don't build and save the node_neighbours struct which
+        that allows us to don't build and save the node_outbound_edges struct which
         is requires a cospicuos ammount of memory.)
 
         Parameters
@@ -479,7 +653,7 @@ class NumbaGraph:
         # to get the next random weight and we can just use random choise to
         # accomplish that.
         if self.uniform:
-            edge = np.random.randint(*get_min_max_edge(self._neighbors, src))
+            edge = np.random.randint(*self._get_min_max_edge(src))
             dst = self._destinations[edge]
             return dst, edge
         # Get the information relative to the source node, composed of a tuple:
@@ -488,7 +662,7 @@ class NumbaGraph:
         j, q = self._nodes_alias[src]
         # Get the tuple of the new transition, composed of the new destination
         # and the edge used for the transition.
-        return self._extract_transition_informations(src, j, q)
+        return self._extract_transition(src, j, q)
 
     def extract_edge_neighbour(self, edge: int) -> Tuple[int, int]:
         """Return a random adiacent edge to the one associated to edge.
@@ -513,4 +687,130 @@ class NumbaGraph:
         j, q = self._edges_alias[edge]
         # Get the tuple of the new transition, composed of the new destination
         # and the edge used for the transition.
-        return self._extract_transition_informations(src, j, q)
+        return self._extract_transition(src, j, q)
+
+
+@njit(parallel=True)
+def process_edges(
+    sources_names: List[str],
+    destinations_names: List[str],
+    mapping: Dict[str, int]
+) -> Tuple[List[int], List[int]]:
+    """Return triple with mapped sources, destinations and edges set.
+
+    Parameters
+    --------------------------
+    sources_names: List[str],
+        List of the sources names.
+    destinations_names: List[str],
+        List of the destinations names.
+    mapping: Dict[str, int],
+        Dictionary mapping of the nodes.
+
+    Returns
+    --------------------------
+    Triple with:
+        - The mapped sources using given mapping, as a list of integers.
+        - The mapped destinations using given mapping, as a list of integers.
+    """
+    edges_number = len(sources_names)
+    sources = np.empty(edges_number, dtype=numpy_nodes_type)
+    destinations = np.empty(edges_number, dtype=numpy_nodes_type)
+
+    for i in prange(edges_number):  # pylint: disable=not-an-iterable
+        # Store the sources into the sources vector
+        sources[i] = mapping[str(sources_names[i])]
+        # Store the destinations into the destinations vector
+        destinations[i] = mapping[str(destinations_names[i])]
+
+    return sources, destinations
+
+
+@njit
+def build_default_alias_vectors(
+    number: int
+) -> Tuple[List[int], List[float]]:
+    """Return empty alias vectors to be populated in
+        build_alias_nodes below
+
+    Parameters
+    -----------------------
+    number: int,
+        Number of aliases to setup for.
+
+    Returns
+    -----------------------
+    Returns default alias vectors.
+    """
+    alias = typed.List.empty_list(alias_list_type)
+    empty_j = np.empty(0, dtype=numpy_indices_type)
+    empty_q = np.empty(0, dtype=numpy_probs_type)
+    for _ in range(number):
+        alias.append((empty_j, empty_q))
+    return alias
+
+
+@njit(parallel=True)
+def build_alias_nodes(graph: NumbaGraph) -> List[Tuple[List[int], List[float]]]:
+    """Return aliases for nodes to use for alias method for 
+       selecting from discrete distribution.
+
+    Parameters
+    -----------------------
+    graph: NumbaGraph,
+        Graph for which to compute the alias nodes.
+
+    Returns
+    -----------------------
+    Lists of tuples representing node aliases 
+    """
+
+    alias = build_default_alias_vectors(graph.nodes_number)
+
+    for i in prange(graph.nodes_number):  # pylint: disable=not-an-iterable
+        node = np.int64(i)
+
+        # Do not call the alias setup if the node is a trap.
+        # Because that node will have no neighbors and thus the necessity
+        # of setupping the alias method to efficently extract the neighbour.
+        if graph.is_node_trap(node):
+            continue
+
+        # Compute the weights for the transition.
+        weights, _ = graph.get_node_transition_weights(node)
+        # Compute the alias method setup for given transition
+        alias[node] = alias_setup(weights/weights.sum())
+    return alias
+
+
+@njit(parallel=True)
+def build_alias_edges(graph: NumbaGraph) -> List[Tuple[List[int], List[float]]]:
+    """Return aliases for edges to use for alias method for 
+       selecting from discrete distribution.
+
+    Parameters
+    -----------------------
+    graph: NumbaGraph,
+        Graph for which to compute the alias edges.
+
+    Returns
+    -----------------------
+    Lists of tuples representing edges aliases.
+    """
+
+    alias = build_default_alias_vectors(graph.edges_number)
+
+    for i in prange(graph.edges_number):  # pylint: disable=not-an-iterable
+        edge = np.int64(i)
+
+        # Do not call the alias setup if the edge is a traps.
+        # Because that edge will have no neighbors and thus the necessity
+        # of setupping the alias method to efficently extract the neighbour.
+        if graph.is_edge_trap(edge):
+            continue
+
+        weights = graph.get_edge_transition_weights(edge)
+
+        # Finally we assign the obtained alias method probabilities.
+        alias[edge] = alias_setup(weights/weights.sum())
+    return alias

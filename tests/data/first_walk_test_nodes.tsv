@@ -15,15 +15,8 @@ ENSEMBL:ENSG00000104915	STX10	biolink:Gene	syntaxin 10	NCBIGene:8677
 ENSEMBL:ENSP00000466298		biolink:Protein									
 ENSEMBL:ENSG00000114450	GNB4	biolink:Gene	G protein subunit beta 4	NCBIGene:59345							
 ENSEMBL:ENSP00000232564		biolink:Protein									
-ENSEMBL:ENSG00000168280	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800	
-ENSEMBL:ENSP00000272298	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000253401	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000401445	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000418915	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000327801	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000466298	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000232564	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000248929	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000356737	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000319192	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
-ENSEMBL:ENSP00000427900	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800
+ENSEMBL:ENSG00000168280	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800							
+ENSEMBL:ENSP00000248929	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800							
+ENSEMBL:ENSP00000356737	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800							
+ENSEMBL:ENSP00000319192	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800							
+ENSEMBL:ENSP00000427900	KIF5C	biolink:Gene	kinesin family member 5C	NCBIGene:3800							
