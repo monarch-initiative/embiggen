@@ -12,10 +12,11 @@ graph = factory.read_csv(
     "pos_train_edges.tsv",
     "pos_train_nodes.tsv"
 )
-graph.build_graph_alias()
+#graph.build_graph_alias()
 completed_graph = time() - start
 start_walk = time()
-graph.random_walk(number=10, length=80)
+#graph.random_walk(number=10, length=80)
+graph.lazy_random_walk(number=10, length=80)
 delta = time() - start
 total_walk_time = time() - start_walk
 

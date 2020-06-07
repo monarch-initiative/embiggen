@@ -4,7 +4,8 @@ import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 from dict_hash import sha256, Hashable  # type: ignore
 from .numba_graph import NumbaGraph
-from .random_walks import random_walk, random_walk_with_traps
+from .random_walks import (
+    random_walk, random_walk_with_traps, lazy_random_walk_with_traps)
 from ..utils import logger
 
 
@@ -45,6 +46,25 @@ class Graph(Hashable):
         walks = random_walk(self._graph, number, length)
         logger.info("Building Tensor from walks.")
         return tf.constant(walks)
+
+    def lazy_random_walk(self, number: int, length: int) -> tf.Tensor:
+        """Return a list of graph walks with lazy evaluation.
+
+        Parameters
+        ----------
+        number: int,
+            Number of walks to execute.
+        length:int,
+            The length of the walks in edges traversed.
+
+        Returns
+        -------
+        Tensor with walks containing the numeric IDs of nodes.
+        """
+        logger.info("Starting lazy random walks.")
+        walks = lazy_random_walk_with_traps(self._graph, number, length)
+        logger.info("Building Tensor from walks.")
+        return tf.ragged.constant(walks)
 
     def build_graph_alias(self):
         """Create objects necessary for quick random search over graph.

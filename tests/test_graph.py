@@ -119,3 +119,4 @@ class TestGraph(TestCase):
                         graph.destroy_graph_alias()
                         with pytest.raises(ValueError):
                             graph.random_walk(5, 10)
+                        graph.lazy_random_walk(5, 10)

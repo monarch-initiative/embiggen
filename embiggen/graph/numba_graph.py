@@ -493,7 +493,7 @@ class NumbaGraph:
             mask = self._node_types[node] == self._node_types[destinations]
             transition_weights[mask] /= self._change_node_type_weight
 
-        return transition_weights, destinations
+        return transition_weights, destinations, min_edge
 
     def get_edge_transition_weights(self, edge: int) -> List[float]:
         """Return transition weights vector for given edge.
@@ -513,8 +513,9 @@ class NumbaGraph:
         src, dst = self._sources[edge], self._destinations[edge]
 
         # Compute the transition weights relative to the node weights.
-        transition_weights, destinations = self.get_node_transition_weights(
-            dst)
+        transition_weights, destinations, _ = self.get_node_transition_weights(
+            dst
+        )
         min_edge, max_edge = self._get_min_max_edge(dst)
 
         ############################################################
@@ -545,7 +546,7 @@ class NumbaGraph:
         ############################################################
         # Handling of the P parameter: the exploration coefficient #
         ############################################################
-        
+
         for i, ndst in enumerate(destinations):
             # If there is no branch from the destination to the source node
             # it means that the destination can lead to more exploration
@@ -553,7 +554,7 @@ class NumbaGraph:
                 # Hence we apply the explore weight
                 transition_weights[i] *= self._explore_weight
 
-        return transition_weights
+        return transition_weights, destinations, min_edge
 
     def _extract_transition(self, src: int, j: List[int], q: List[float]) -> Tuple[int, int]:
         """Return tuple with new destination and used edge.
@@ -578,6 +579,41 @@ class NumbaGraph:
         dst = self._destinations[edge]
         # Return the obtained tuple.
         return dst, edge
+
+    def _lazy_extraction(self, weights: List[float]) -> int:
+        """Return value from given weights distribution.
+
+        Parameters
+        ----------------------
+        weights: List[float],
+            Distribution of weights to use for sampling.
+
+        Returns
+        ----------------------
+        Return index extracted from given weights distribution.
+        """
+        cumulative = np.cumsum(weights)
+        sample = cumulative[-1]*np.random.rand()
+        return np.searchsorted(cumulative, sample, side="right")
+
+    def lazy_node_extraction(self, node: int) -> Tuple[int, int]:
+        """Return a random adiacent node to the one associated to node.
+
+        This method lazily evaluates the weights of the graph, hence it is
+        slower than extract_node_neighbour but does not require preprocessing.
+
+        Parameters
+        ----------
+        node: int
+            The index of the egde that is to be considered.
+
+        Returns
+        -------
+        Tuple with new destination and new edge.
+        """
+        weights, dsts, min_edge = self.get_node_transition_weights(node)
+        index = self._lazy_extraction(weights)
+        return dsts[index], min_edge + index
 
     def extract_node_neighbour(self, src: int) -> Tuple[int, int]:
         """Return a random adjacent node to the one associated to node.
@@ -616,6 +652,25 @@ class NumbaGraph:
         # and the edge used for the transition.
         return self._extract_transition(src, j, q)
 
+    def lazy_edge_extraction(self, edge: int) -> Tuple[int, int]:
+        """Return a random adiacent edge to the one associated to edge.
+
+        This method lazily evaluates the weights of the graph, hence it is
+        slower than extract_edge_neighbour but does not require preprocessing.
+
+        Parameters
+        ----------
+        edge: int
+            The index of the egde that is to be considered.
+
+        Returns
+        -------
+        Tuple with new destination and new edge.
+        """
+        weights, dsts, min_edge = self.get_edge_transition_weights(edge)
+        index = self._lazy_extraction(weights)
+        return dsts[index], min_edge + index
+
     def extract_edge_neighbour(self, edge: int) -> Tuple[int, int]:
         """Return a random adiacent edge to the one associated to edge.
         The Random is extracted by using the normalized weights of the edges
@@ -628,7 +683,7 @@ class NumbaGraph:
 
         Returns
         -------
-        The index of a random adiacent edge to edge.
+        Tuple with new destination and new edge.
         """
         # We retrieve the destination of edge currently used, which can be
         # considered the source of the edge we are looking for now.
@@ -733,7 +788,7 @@ def build_alias_nodes(graph: NumbaGraph) -> List[Tuple[List[int], List[float]]]:
             continue
 
         # Compute the weights for the transition.
-        weights, _ = graph.get_node_transition_weights(node)
+        weights, _, _ = graph.get_node_transition_weights(node)
         # Compute the alias method setup for given transition
         alias[node] = alias_setup(weights/weights.sum())
     return alias
@@ -765,7 +820,7 @@ def build_alias_edges(graph: NumbaGraph) -> List[Tuple[List[int], List[float]]]:
         if graph.is_edge_trap(edge):
             continue
 
-        weights = graph.get_edge_transition_weights(edge)
+        weights, _, _ = graph.get_edge_transition_weights(edge)
 
         # Finally we assign the obtained alias method probabilities.
         alias[edge] = alias_setup(weights/weights.sum())
