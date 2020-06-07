@@ -13,7 +13,7 @@ from .graph_types import (
     numpy_edges_type, numpy_nodes_type,
     numba_vector_nodes_colors_type, numba_vector_edges_colors_type,
     numpy_nodes_colors_type, numpy_edges_colors_type,
-    dict_edges_tuple, numpy_probs_type,
+    numpy_probs_type, edges_keys_tuple,
     numpy_indices_type
 )
 
@@ -23,8 +23,8 @@ from .graph_types import (
     ('_sources', numba_vector_nodes_type),
     ('_nodes_mapping', types.DictType(*nodes_mapping_type)),
     ('_reverse_nodes_mapping', types.ListType(types.string)),
+    ('_unique_edges', types.Set(edges_keys_tuple)),
     ('_outbound_edges', numba_vector_edges_type),
-    ('_backward_edges', types.ListType(numba_vector_edges_type)),
     ('_nodes_alias', types.ListType(alias_list_type)),
     ('_edges_alias', types.ListType(alias_list_type)),
     ('_uniform', types.boolean),
@@ -170,7 +170,7 @@ class NumbaGraph:
 
         numba_log("Processing edges mapping")
         # Transform the lists of names into IDs
-        self._sources, self._destinations = process_edges(
+        self._sources, self._destinations, self._unique_edges = process_edges(
             sources_names, destinations_names, self._nodes_mapping
         )
 
@@ -182,9 +182,6 @@ class NumbaGraph:
 
         numba_log("Processing outbound edges")
         self._outbound_edges = self.compute_outbound_edges()
-
-        numba_log("Processing backward outbound_edges")
-        self._backward_edges = self.compute_backward_edges()
 
         numba_log("Completed construction of graph object.")
 
@@ -366,30 +363,6 @@ class NumbaGraph:
         outbound_edges[src:] = i + 1
         return outbound_edges
 
-    def compute_backward_edges(self) -> List[int]:
-        """Return offset sets of backward outbound_edges."""
-
-        # For each destination, we compute the number of times it receives an
-        # inbound edge.
-        sizes = np.zeros(self.nodes_number, dtype=numpy_nodes_type)
-        for dst in self._destinations:
-            sizes[dst] += 1
-
-        # allocate the datastructure that we will fill in the next step
-        backwards_edges = typed.List.empty_list(numba_vector_edges_type)
-        for size in sizes:
-            backwards_edges.append(np.empty(size, dtype=numpy_edges_type))
-
-        # For each destination we are now able to store the IDs of the
-        # inbound edges.
-        for i, dst in enumerate(self._destinations):
-            # To get the index of the current ID to have it sorted.
-            backwards_edges[dst][-sizes[dst]] = i
-            # And reduce the size.
-            sizes[dst] -= 1
-
-        return backwards_edges
-
     @property
     def preprocessed(self) -> bool:
         """Return boolean representing if the graph was preprocessed."""
@@ -566,40 +539,19 @@ class NumbaGraph:
         #   \___/
         #
         # We weight the edge weight with the given return weight.
-        not_looping_back = destinations != src
-        transition_weights[not_looping_back] /= self._return_weight
+        is_looping_back = destinations == src
+        transition_weights[is_looping_back] *= self._return_weight
 
         ############################################################
         # Handling of the P parameter: the exploration coefficient #
         ############################################################
-
-        # Get the inbound edges for the source
-        inbound_edges = self._backward_edges[src]
-        # Get the outbound maximum edges offset from each destination
-        outbound_max_edges = self._outbound_edges[destinations]
-        # Get the mask for destinations that match the first node.
-        first_nodes = destinations == 0
-        # Setting the minimum edge for the first nodes at 0.
-        outbound_min_edges = np.zeros_like(
-            outbound_max_edges,
-            dtype=numpy_edges_type
-        )
-        # For the other nodes, which are after the first node, we use
-        # the offset of the node before them.
-        outbound_min_edges[~first_nodes] = self._outbound_edges[
-            destinations[~first_nodes]-1
-        ]
-        # Build mask for edges that go back to the source node.
-        has_backward_edge = np.sum(
-            (
-                (np.expand_dims(inbound_edges, 1) >= outbound_min_edges) &
-                (np.expand_dims(inbound_edges, 1) < outbound_max_edges)
-            ),
-            axis=0,
-            dtype=np.bool_
-        )
-        # Apply the explore weight
-        transition_weights[has_backward_edge] /= self._explore_weight
+        
+        for i, ndst in enumerate(destinations):
+            # If there is no branch from the destination to the source node
+            # it means that the destination can lead to more exploration
+            if (ndst, src) not in self._unique_edges:
+                # Hence we apply the explore weight
+                transition_weights[i] *= self._explore_weight
 
         return transition_weights
 
@@ -723,7 +675,11 @@ def process_edges(
         # Store the destinations into the destinations vector
         destinations[i] = mapping[str(destinations_names[i])]
 
-    return sources, destinations
+    unique_edges = set()
+
+    for edge in zip(sources, destinations):
+        unique_edges.add(edge)
+    return sources, destinations, unique_edges
 
 
 @njit

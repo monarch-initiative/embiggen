@@ -22,7 +22,7 @@ numpy_edges_type = np.int64
 numba_vector_edges_colors_type = types.uint16[:]
 numpy_edges_colors_type = np.uint16
 edges_type_list = types.ListType(numba_edges_type)
-dict_edges_tuple = (types.UniTuple(types.int64, 2), types.bool_)
+edges_keys_tuple = types.UniTuple(types.int64, 2)
 
 ############################
 # Types relative to alias  #
@@ -45,7 +45,6 @@ __all__ = [
     "numba_probs_type",
     "numpy_probs_type",
     "numba_indices_type",
-    "dict_edges_tuple",
     "numba_edges_type",
     "numpy_edges_type",
     "edges_type_list",
