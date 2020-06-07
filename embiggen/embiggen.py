@@ -8,12 +8,12 @@ import numpy as np  # type: ignore
 
 class Embiggen:
 
-    def __init__(self, embedding_method: str = "hadamard"):
+    def __init__(self, embedding_method: str = "skipgram", edge_creation="hadamard"):
         """Returns new instance of Embiggen.
 
         Parameters
         ----------------------
-        method: str = "hadamard",
+        method: str = "skipgram",
             Method to use to transform the nodes embedding to edges.
 
         Raises
@@ -23,7 +23,7 @@ class Embiggen:
         """
         # TODO: a very long docstring showing the possible usages of Embiggen.
         self._model = None  # TODO! move the constructor of the model here!
-        self._transformer = GraphPartitionTransfomer(method=embedding_method)
+        self._transformer = GraphPartitionTransfomer(method=edge_creation)
 
     def _get_embedding_model(
         self,
