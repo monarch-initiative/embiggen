@@ -1,7 +1,7 @@
 import csv
 import tensorflow as tf  # type: ignore
 from random import shuffle
-from .embedder import Embedder
+from ..embedder import Embedder
 
 class NotTrainedError(Exception):
     pass

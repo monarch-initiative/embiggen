@@ -104,7 +104,7 @@ class Graph(Hashable):
         return self.nodes_indices
 
     # !TODO: Integrate this with graph!
-    def DegreeProduct(graph: Graph, node_1, node_2):
+    def DegreeProduct(self, node_1, node_2) -> float:
         ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
         nodes given the structure of the graph.
         :param graph: Graph  object
@@ -113,20 +113,20 @@ class Graph(Hashable):
         :return: Degree Product score of the nodes
         '''
 
-        return graph.degree(node_1) * graph.degree(node_2)
+        return self._graph.degree(node_1) * self._graph.degree(node_2)
 
     # !TODO: Integrate this with graph!
-    def CommonNeighbors(graph: Graph, node_1, node_2):
+    # !TODO: what exactly is a common neighbors score???
+    def CommonNeighbors(self, node_1, node_2):
         ''' Function takes a CSF graph object and list of edges calculates the Common Neighbors for these nodes given the
         structure of the graph.
-        :param graph: Graph object
         :param node_1: one node of graph
         :param node_2: one node of a graph
         :return: Common Neighbors score of the nodes
         '''
 
-        node_1_neighbors = set(graph.neighbors(node_1))
-        node_2_neighbors = set(graph.neighbors(node_2))
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
 
         if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
             score = 0.0
@@ -141,17 +141,17 @@ class Graph(Hashable):
         return score
 
     # !TODO: Integrate this with graph!
-    def Jaccard(graph: Graph, node_1, node_2):
+    def Jaccard(self, node_1, node_2):
         ''' Function takes a CFS graph object and list of edges calculates the Jaccard for these nodes given the
         structure of the graph.
         :param graph: CFS graph object
         :param node_1: one node of graph
         :param node_2: one node of a graph
-        :return: The Jaccad score of two nodes
+        :return: The Jaccard score of two nodes
         '''
 
-        node_1_neighbors = set(graph.neighbors(node_1))
-        node_2_neighbors = set(graph.neighbors(node_2))
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
 
         if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
             score = 0.0
@@ -167,7 +167,7 @@ class Graph(Hashable):
         return score
 
     # !TODO: Integrate this with graph!
-    def AdamicAdar(graph: Graph, node_1, node_2):
+    def AdamicAdar(self, node_1, node_2):
         ''' Function takes a CSF graph object and list of edges calculates the Adamic Adar for the nodes given the
         structure of the graph.
         :param graph: CSF graph object
@@ -176,8 +176,8 @@ class Graph(Hashable):
         :return: AdamicAdar score of the nodes
         '''
 
-        node_1_neighbors = set(graph.neighbors(node_1))
-        node_2_neighbors = set(graph.neighbors(node_2))
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
 
         if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
             score = 0.0
@@ -190,7 +190,7 @@ class Graph(Hashable):
             n_intersection = node_1_neighbors.intersection(node_2_neighbors)
 
             for c in n_intersection:
-                score += 1/np.log(graph.degree(c))
+                score += 1/np.log(self._graph.degree(c))
         return score
 
     def degree(self, node: int) -> int:

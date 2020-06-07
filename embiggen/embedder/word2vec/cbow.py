@@ -285,35 +285,34 @@ class Cbow(Word2Vec):
         loss_history = []
         for _ in trange(1, self.epochs + 1, leave=False):
             data = self.data  #
-                if not isinstance(data, tf.Tensor):
-                    raise TypeError("We were expecting a Tensor object!")
-                batch_size = self.batch_size
-                data_len = len(data)
-                # Note that we cannot fully digest all of the data in any one batch
-                # if the window length is K and the natch_len is N, then the last
-                # window that we get starts at position (N-K). Therefore, if we start
-                # the next window at position (N-K)+1, we will get all windows.
-                window_len = 1 + 2 * self.context_window
-                shift_len = batch_size - window_len + 1
-                # we need to make sure that we do not shift outside the boundaries of self.data too
-                lastpos = data_len - 1  # index of the last word in data
-                data_index = 0
+            if not isinstance(data, tf.Tensor):
+                raise TypeError("We were expecting a Tensor object!")
+            batch_size = self.batch_size
+            data_len = len(data)
+            # Note that we cannot fully digest all of the data in any one batch
+            # if the window length is K and the natch_len is N, then the last
+            # window that we get starts at position (N-K). Therefore, if we start
+            # the next window at position (N-K)+1, we will get all windows.
+            window_len = 1 + 2 * self.context_window
+            shift_len = batch_size - window_len + 1
+            # we need to make sure that we do not shift outside the boundaries of self.data too
+            lastpos = data_len - 1  # index of the last word in data
+            data_index = 0
+            endpos = data_index + batch_size
+            while endpos <= lastpos:
+                currentTensor = data[data_index:endpos]
+                if len(currentTensor) < window_len:
+                    break  # We are at the end
+                batch_x, batch_y = self.next_batch(
+                    currentTensor)  # type: ignore
+                current_loss = self.run_optimization(
+                    batch_x, batch_y)  # type: ignore
+                if step == 0 or step % 100 == 0:
+                    logging.info("loss {}".format(current_loss))
+                    loss_history.append(current_loss)
+                data_index += shift_len
                 endpos = data_index + batch_size
-                while endpos <= lastpos:
-                    currentTensor = data[data_index:endpos]
-                    if len(currentTensor) < window_len:
-                        break  # We are at the end
-                    batch_x, batch_y = self.next_batch(
-                        currentTensor)  # type: ignore
-                    current_loss = self.run_optimization(
-                        batch_x, batch_y)  # type: ignore
-                    if step == 0 or step % 100 == 0:
-                        logging.info("loss {}".format(current_loss))
-                        loss_history.append(current_loss)
-                    data_index += shift_len
-                    endpos = data_index + batch_size
-                    endpos = min(endpos,
-                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                endpos = min(endpos,lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
         return loss_history
 

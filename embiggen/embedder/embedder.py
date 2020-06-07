@@ -160,6 +160,7 @@ class Embedder:
     @property
     def devicetype(self) -> str:
         """Return the device type (cpu/gpu)
+        """
         return self._devicetype
 
     def save_embedding(self, path: str):

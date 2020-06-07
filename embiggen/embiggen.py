@@ -1,8 +1,6 @@
 from .graph import Graph
 import tensorflow as tf  # type: ignore
-from .word2vec import SkipGramWord2Vec, ContinuousBagOfWordsWord2Vec
-from .glove import GloVeModel
-from .coocurrence_encoder import CooccurrenceEncoder
+from embiggen import SkipGram, Cbow, GloVeModel, CooccurrenceEncoder
 from .transformers import GraphPartitionTransfomer
 from typing import Tuple
 import numpy as np  # type: ignore
@@ -41,14 +39,14 @@ class Embiggen:
         # and add exceptions relative to the invalid ranges for the specific
         # parameters.
         if embedding_model == "skipgram":
-            return SkipGramWord2Vec(
+            return SkipGram(
                 data=walks,
                 worddictionary=graph.worddictionary,
                 reverse_worddictionary=graph.reverse_worddictionary,
                 num_epochs=epochs
             )
         if embedding_model == "cbow":
-            return ContinuousBagOfWordsWord2Vec(
+            return Cbow(
                 walks,
                 worddictionary=graph.worddictionary,
                 reverse_worddictionary=graph.reverse_worddictionary,

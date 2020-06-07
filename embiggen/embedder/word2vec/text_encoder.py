@@ -2,6 +2,7 @@ import nltk  # type: ignore
 import os
 import tensorflow as tf  # type: ignore
 import re
+import numpy as np
 
 from collections import Counter
 from more_itertools import unique_everseen  # type: ignore
@@ -112,9 +113,11 @@ class TextEncoder:
 
     # TODO! Use fit and transform instead of a constructor that does everything.
     def fit(self, corpus):
+        pass
 
     # TODO! Use fit and transform instead of a constructor that does everything.
     def transform(self, X:np.ndarray):
+        pass 
 
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
