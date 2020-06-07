@@ -66,7 +66,8 @@ class TestGraph(TestCase):
         self._factories = [
             GraphFactory(directed=True, ),
             GraphFactory(directed=False, ),
-            GraphFactory(preprocess=True, ),
+            GraphFactory(directed=True, uniform=False, ),
+            GraphFactory(directed=False, uniform=False, ),
             GraphFactory(preprocess=False, )
         ]
         self._verbose = False

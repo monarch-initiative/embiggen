@@ -54,10 +54,67 @@ def get_min_max_edge(neighbors: List[int], node: int) -> Tuple[int, int]:
     return 0 if node == 0 else neighbors[node-1], neighbors[node]
 
 
+@njit
+def get_node_transition_weights(
+    node: int,
+    weights: List[float],
+    node_types: List[int],
+    destinations: List[int],
+    min_edge: int,
+    max_edge: int,
+    change_node_type_weight: float
+) -> List[int]:
+    """Return transition weights vector for current node.
+
+    NB: the returned weights are NOT normalized.
+
+    Parameters
+    ----------------------------
+    node: int,
+        Node for which to compute the transition weights.
+    weights: List[float],
+        Weights of all the edges, sorted.
+    node_types: List[int],
+        Types of the nodes.
+    destinations: List[int],
+        List of the destinations or the given node.
+    min_edge: int,
+        Edge with minimum index in the order sorted by sources.
+    max_edge: int,
+        Edge with maximum index in the order sorted by sources.
+    change_node_type_weight: float,
+        Factor to use to compute the transition between different node types.
+
+    Returns
+    -----------------------------
+    Vector of weights describing the transition of the node through each edge.
+    """
+    # If weights are given
+    if weights.size:
+        # We retrieve the weights relative to these transitions
+        transition_weights = weights[min_edge:max_edge]
+    else:
+        # Otherwise we start with a vector of ones.
+        transition_weights = np.ones(max_edge-min_edge, dtype=numpy_probs_type)
+
+    # If the node types were given:
+    if node_types.size:
+        # if the destination node type matches the neighbour
+        # destination node type (we are not changing the node type)
+        # we weigth using the provided change_node_type_weight weight.
+        mask = node_types[node] == node_types[destinations]
+        transition_weights[mask] /= change_node_type_weight
+
+    return transition_weights
+
+
 @njit(parallel=True)
 def build_alias_nodes(
     neighbors: List[int],
-    weights: List[float]
+    weights: List[float],
+    destinations: List[int],
+    node_types: List[int],
+    change_node_type_weight: float
 ) -> List[Tuple[List[int], List[float]]]:
     """Return aliases for nodes to use for alias method for 
        selecting from discrete distribution.
@@ -77,8 +134,8 @@ def build_alias_nodes(
     alias = build_default_alias_vectors(len(neighbors))
 
     for i in prange(len(neighbors)):  # pylint: disable=not-an-iterable
-        src = np.int64(i)
-        min_edge, max_edge = get_min_max_edge(neighbors, src)
+        node = np.int64(i)
+        min_edge, max_edge = get_min_max_edge(neighbors, node)
 
         # Do not call the alias setup if the node is a trap.
         # Because that node will have no neighbors and thus the necessity
@@ -86,9 +143,20 @@ def build_alias_nodes(
         if min_edge == max_edge:
             continue
 
-        probs = weights[min_edge:max_edge]
+        neighboring_nodes = destinations[min_edge:max_edge],
 
-        alias[src] = alias_setup(probs/probs.sum())
+        # Compute the probabilities relative to the node weights.
+        probs = get_node_transition_weights(
+            node,
+            weights,
+            node_types,
+            neighboring_nodes,
+            min_edge,
+            max_edge,
+            change_node_type_weight
+        )
+
+        alias[node] = alias_setup(probs/probs.sum())
     return alias
 
 
@@ -135,59 +203,10 @@ def build_alias_edges(
     change_edge_type_weight: float,
         hyperparameter for changing edge type during random walk
 
-    Raises
-    -----------------------
-    ValueError,
-        If given node types list has not the same length of the given nodes
-        neighbouring edges list.
-    ValueError,
-        If given edge types have not the same length of the given weights list.
-    ValueError,
-        If given source nodes have not the same length of the given of the
-        given weights list.
-    ValueError,
-        If return_weight is not a strictly positive real number.
-    ValupeError,
-        If explore_weight is not a strictly positive real number.
-    ValueError,      
-        If change_node_type_weight is not a strictly positive real number.
-    ValueError,
-        If change_edge_type_weight is not a strictly positive real number.
-
     Returns
     -----------------------
     Lists of lists representing edges aliases.
     """
-
-    if len(node_types) > 0 and len(node_types) != len(neighbors):
-        raise ValueError(
-            "Given node types list has not the same length of the given "
-            "nodes neighbouring edges list."
-        )
-    if len(edge_types) > 0 and len(edge_types) != len(sources):
-        raise ValueError(
-            "Given edge types list has not the same length of the given "
-            "sources list!"
-        )
-    if len(weights) > 0 and len(sources) != len(weights):
-        raise ValueError(
-            "Given source nodes list has not the same length of the given "
-            "weights list!"
-        )
-
-    if return_weight <= 0:
-        raise ValueError("Given return weight is not a positive number")
-
-    if explore_weight <= 0:
-        raise ValueError("Given explore weight is not a positive number")
-
-    if change_node_type_weight <= 0:
-        raise ValueError(
-            "Given change_node_type_weigh is not a positive number")
-
-    if change_edge_type_weight <= 0:
-        raise ValueError(
-            "Given change_edge_type_weight is not a positive number")
 
     alias = build_default_alias_vectors(len(sources))
 
@@ -221,14 +240,14 @@ def build_alias_edges(
             # destination node type (we are not changing the node type)
             # we weigth using the provided change_node_type_weight weight.
             mask = node_types[dst] == node_types[neighbors_destinations]
-            probs[mask] *= change_node_type_weight
+            probs[mask] /= change_node_type_weight
 
         if len(edge_types):
             # Similarly if the neighbour edge type matches the previous
             # edge type (we are not changing the edge type)
             # we weigth using the provided change_edge_type_weight weight.
             mask = edge_types[k] == edge_types[min_edge:max_edge]
-            probs[mask] *= change_edge_type_weight
+            probs[mask] /= change_edge_type_weight
 
         # If the neigbour matches with the source, hence this is
         # a backward loop like the following:

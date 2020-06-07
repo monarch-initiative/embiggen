@@ -329,9 +329,9 @@ class NumbaGraph:
         # of probabilities for the extraction of edges neighbouring the nodes.
         if not self._uniform:
             numba_log("Processing nodes alias.")
-
             self._nodes_alias = build_alias_nodes(
-                self._neighbors, weights
+                self._neighbors, weights, self._destinations,
+                node_types, change_node_type_weight
             )
         else:
             numba_log("Skipping nodes alias building since graph is uniform.")
