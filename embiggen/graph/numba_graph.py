@@ -351,7 +351,7 @@ class NumbaGraph:
         # preallocate the outbound_edges to avoid multiple reallocation
         outbound_edges = np.empty(self.nodes_number, dtype=numpy_edges_type)
         # we iterate on the sources because they have foward edges
-        for i, src in enumerate(self.sources):
+        for i, src in enumerate(self._sources):
             if last_src != src:
                 # Assigning to range instead of single value, so that traps
                 # have as delta between previous and next node zero.
@@ -433,7 +433,7 @@ class NumbaGraph:
         -----------------
         Boolean True if edge is a trap.
         """
-        return self.is_node_trap(self.destinations[edge])
+        return self.is_node_trap(self._destinations[edge])
 
     def _get_min_max_edge(self, node: int) -> Tuple[int, int]:
         """Return tuple with minimum and maximum edge for given node.
@@ -510,7 +510,7 @@ class NumbaGraph:
         Vector of the transition weights
         """
         # Get the source and destination for current edge.
-        src, dst = self.sources[edge], self.destinations[edge]
+        src, dst = self._sources[edge], self._destinations[edge]
 
         # Compute the transition weights relative to the node weights.
         transition_weights, destinations = self.get_node_transition_weights(
