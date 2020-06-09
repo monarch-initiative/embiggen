@@ -67,7 +67,7 @@ class Embiggen:
 
     def fit(
         self,
-        graph: Graph,
+        data: Union[tf.Tensor, tf.RaggedTensor],
         walks_number: int = 100,
         walks_length: int = 100,
         embedding_model: str = "cbow",
@@ -76,7 +76,7 @@ class Embiggen:
         context_window: int = 3,
         window_size: int = 2
     ):
-        """Fit model using given graph.
+        """Fit model using input data (Tensors dervied from a Graph or a text).
 
         #TODO: add notes for the various parameters relative to which parameters
         # are best in which range! Add links to papers if any are relevant!
