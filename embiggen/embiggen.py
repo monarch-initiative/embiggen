@@ -77,7 +77,7 @@ class Embiggen:
         embedding_model: str = "cbow",
         epochs: int = 10,
         embedding_size: int = 200,
-        context_window: int = 3,
+        context_window: int = 2,
         window_size: int = 2
     ):
         """Fit model using input data (Tensors dervied from a Graph or a text).

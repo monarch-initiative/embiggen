@@ -7,6 +7,7 @@ import pandas as pd
 class Embedder:
 
     def __init__(self, 
+                data: Union[tf.Tensor, tf.RaggedTensor],
                 word2id: Dict[str, int], 
                 id2word: List[str], 
                 devicetype: "cpu"):
@@ -40,7 +41,22 @@ class Embedder:
                 "Given word mapping and word reverse "
                 "mapping have not the same length."
             )
+        if data is None:
+            raise ValueError("data argument is empty")
+        if isinstance(data, tf.Tensor):
+            self._is_list_of_lists = False
+        elif isinstance(data, tf.RaggedTensor):
+            self._is_list_of_lists = True
+        else:
+            raise ValueError("Data (X) must be either Tensor or RaggedTensor")
+        if len(data.shape) != 2:
+            raise ValueError(
+                "Given tensor is not 2-dimensional. "
+                "If your tensor has only one dimension, "
+                "you should use tensor.reshape(1, -1)."
+            )
 
+        self.data = data
         self._word2id = word2id
         self._id2word = id2word
         self._devicetype = devicetype
@@ -53,7 +69,6 @@ class Embedder:
 
     def fit(
         self,
-        X: Union[tf.Tensor, tf.RaggedTensor],
         learning_rate: float = 0.05,
         batch_size: int = 128,
         epochs: int = 1,
@@ -97,12 +112,6 @@ class Embedder:
             If context_size is not a strictly positive integer
 
         """
-        if len(X.shape) != 2:
-            raise ValueError(
-                "Given tensor is not 2-dimensional. "
-                "If your tensor has only one dimension, "
-                "you should use tensor.reshape(1, -1)."
-            )
 
         if not isinstance(learning_rate, float) or learning_rate <= 0:
             raise ValueError((
@@ -134,11 +143,13 @@ class Embedder:
 
 
         # Checking if the context window is valid for given tensor shape.
-        for sequence in X:
+        for sequence in self.data:
             if context_window > len(sequence):
+                for x in self.data:
+                    print(type(sequence), sequence)
                 raise ValueError((
-                    "Given context window {} is larger than at least one of "
-                    "the tensors in X {}"
+                    "Given context window ({}) is larger than at least one of "
+                    "the tensors in X (len={})"
                 ).format(context_window, len(sequence)))
 
         self.learning_rate = learning_rate

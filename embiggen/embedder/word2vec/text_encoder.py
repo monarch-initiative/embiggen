@@ -25,6 +25,7 @@ class TextEncoder:
         data_type: A string which is used to indicate whether or not the data should be read in as a single text
             object or as a list of sentences. Passed values can be "words" or "sentences" (default="sentences").
         stopwords: A set of stopwords. If nothing is passed by user a default list of stopwords is utilized.
+        minlen: minimum length to include a sentence. If a sentence is shorter, it will be skipped.
 
     Raises:
         ValueError: If the filename is None.
@@ -32,7 +33,11 @@ class TextEncoder:
         IOError: If the file referenced by filename could not be found.
     """
 
-    def __init__(self, filename: str, data_type: Optional[str] = None, stopwords: set = None):
+    def __init__(self, 
+                filename: str, 
+                data_type: Optional[str] = None, 
+                stopwords: set = None,
+                minlen: int = 10):
 
         if filename is None:
             raise ValueError('filename cannot be None')
@@ -42,14 +47,13 @@ class TextEncoder:
             raise IOError('Could not find file referenced by filename: {}'.format(filename))
 
         self.filename = filename
-
         self.data_type = data_type if data_type else 'sentences'
-
         try:
             self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
         except LookupError:
             nltk.download('stopwords')
             self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
+        self.minlen = minlen
 
     def clean_text(self, text: str) -> str:
         """Takes a text string and performs several tasks that are intended to clean the text including making the
@@ -109,7 +113,8 @@ class TextEncoder:
             return self.clean_text(word_data).split()
         else:
             sentence_data = open(self.filename).readlines()
-            return [self.clean_text(sent) for sent in sentence_data]
+            cleaned_sentences =  [self.clean_text(sent) for sent in sentence_data]
+            return [sent for sent in cleaned_sentences if len(sentence_data) >= self.minlen]
 
     # TODO! Use fit and transform instead of a constructor that does everything.
     def fit(self, corpus):

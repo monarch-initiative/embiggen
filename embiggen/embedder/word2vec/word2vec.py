@@ -40,9 +40,6 @@ class Word2Vec(Embedder):
 
 
     def fit(self,
-            data: Union[tf.Tensor, tf.RaggedTensor],
-            worddict: Dict[str,int],
-            reverse_worddict: Dict[int, str],
             learning_rate: float = 0.05,
             batch_size: int = 128,
             epochs: int = 1,
@@ -84,7 +81,6 @@ class Word2Vec(Embedder):
 
         # We expect that all words in the corpus are listed in worddict
         # !TODO: What about UNK?
-        self._vocabulary_size = len(worddict)
         self.context_window = context_window
 
         if number_negative_samples > self._vocabulary_size:
@@ -111,18 +107,9 @@ class Word2Vec(Embedder):
             self._softmax_biases = tf.Variable(
                 tf.random.uniform([self._vocabulary_size], 0.0, 0.01))
         
-        if isinstance(data, tf.Tensor):
-            self._is_list_of_lists = False
-        elif isinstance(data, tf.RaggedTensor):
-            self._is_list_of_lists = True
-        else:
-            raise ValueError("Data (X) must be either Tensor or RaggedTensor")
-
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
 
-        super().fit(word2id=worddict,
-            id2word=reverse_worddict,
-            learning_rate=learning_rate,
+        super().fit(learning_rate=learning_rate,
             batch_size=batch_size,
             epochs=epochs,
             embedding_size=embedding_size,

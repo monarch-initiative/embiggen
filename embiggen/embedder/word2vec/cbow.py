@@ -325,7 +325,7 @@ class Cbow(Word2Vec):
         batch_size: int = 128,
         epochs: int = 1,
         embedding_size: int = 128,
-        context_window: int = 3,
+        context_window: int = 2,
         number_negative_samples: int = 7,
         callbacks: Tuple["Callback"] = ()):
         """Fit the Word2Vec continuous bag of words model 
@@ -335,9 +335,7 @@ class Cbow(Word2Vec):
             samples_per_window: How many times to reuse an input to generate a label.
             
         """
-        super().fit(data=data,
-            #worddict=worddict,
-            #reverse_worddict=reverse_worddict,
+        super().fit(
             learning_rate=learning_rate,
             batch_size=batch_size,
             epochs=epochs,
