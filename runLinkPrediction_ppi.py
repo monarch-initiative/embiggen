@@ -135,6 +135,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                                  learning_rate= args.learning_rate,
                                  embedding_size=args.embedding_size, context_window=args.context_window,
                                  num_skips=args.num_skips)
+        model.add_display_words(args.num_nearest_neighbors)
     elif w2v_model.lower() == "cbow":
         logging.info("CBOW analysis ")
         model = ContinuousBagOfWordsWord2Vec(walks,
@@ -143,6 +144,7 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
                                              learning_rate= args.learning_rate,
                                              embedding_size=args.embedding_size, context_window=args.context_window,
                                              num_skips=args.num_skips)
+        model.add_display_words(args.num_nearest_neighbors)
     elif w2v_model.lower() == "glove":
         logging.info("GloVe analysis ")
         n_nodes = pos_train_graph.node_count()
@@ -151,10 +153,9 @@ def learn_embeddings(walks, pos_train_graph, w2v_model):
         model = GloVeModel(co_oc_dict=cooc_dict, vocab_size=n_nodes, embedding_size=args.embedding_size,
                            context_size=args.context_window, num_epochs=args.num_epochs,
                            learning_rate=args.learning_rate)
+
     else:
         raise ValueError('w2v_model must be "cbow", "skipgram" or "glove"')
-
-    model.add_display_words(args.num_nearest_neighbors)
 
     model.train()
 
