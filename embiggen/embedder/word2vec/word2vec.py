@@ -1,5 +1,6 @@
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
+import math
 import random
 import tensorflow as tf  # type: ignore
 
@@ -12,26 +13,39 @@ from ..embedder import Embedder
 class Word2Vec(Embedder):
     """Superclass of all of the word2vec family algorithms."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, 
+                data: Union[tf.Tensor, tf.RaggedTensor],
+                word2id: Dict[str, int], 
+                id2word: List[str], 
+                devicetype: "cpu") -> None:
         """Create a new instance of Word2Vec.
 
         Parameters
         --------------------
+        !TODO Bring this up to date
         vocabulary_size: An integer storing the total number of unique words in the vocabulary.
         reverse_worddictionary: 
         display: An integer of the number of words to display.
 
         """
+        super().__init__(data=data, 
+                        word2id=word2id, 
+                        id2word=id2word, 
+                        devicetype=devicetype)
         self._embedding = None
         self._is_list_of_lists = None # must be set in fit method
+        self.context_window = None # must be set in fit method
+        self.number_negative_samples = None # must be set in fit method
         
 
 
     def fit(self,
-            X: Union[tf.Tensor, tf.RaggedTensor],
+            data: Union[tf.Tensor, tf.RaggedTensor],
+            worddict: Dict[str,int],
+            reverse_worddict: Dict[int, str],
             learning_rate: float = 0.05,
             batch_size: int = 128,
-            num_epochs: int = 1,
+            epochs: int = 1,
             embedding_size: int = 128,
             context_window: int = 3,
             number_negative_samples: int = 7,
@@ -68,6 +82,11 @@ class Word2Vec(Embedder):
                 "Given number_negative_samples {} is not an int or is less than 1"
             ).format(number_negative_samples))
 
+        # We expect that all words in the corpus are listed in worddict
+        # !TODO: What about UNK?
+        self._vocabulary_size = len(worddict)
+        self.context_window = context_window
+
         if number_negative_samples > self._vocabulary_size:
             raise ValueError((
                 "Given number_negative_samples {} is larger than the vocabulary size. "
@@ -86,18 +105,29 @@ class Word2Vec(Embedder):
             tf_distribution = \
                 tf.random.truncated_normal([self._vocabulary_size, embedding_size],
                                             mean=0.0,
-                                           stddev=0.5 / tf.math.sqrt(embedding_size),
+                                           stddev=0.5 / math.sqrt(embedding_size),
                                            dtype=tf.float32)
             self._softmax_weights: tf.Variable = tf.Variable(tf_distribution)
             self._softmax_biases = tf.Variable(
                 tf.random.uniform([self._vocabulary_size], 0.0, 0.01))
         
-        if isinstance(X, tf.Tensor):
+        if isinstance(data, tf.Tensor):
             self._is_list_of_lists = False
-        elif isinstance(X, tf.RaggedTensor):
+        elif isinstance(data, tf.RaggedTensor):
             self._is_list_of_lists = True
         else:
             raise ValueError("Data (X) must be either Tensor or RaggedTensor")
+
+        self.optimizer = tf.keras.optimizers.SGD(learning_rate)
+
+        super().fit(word2id=worddict,
+            id2word=reverse_worddict,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            callbacks=callbacks)
 
          # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"

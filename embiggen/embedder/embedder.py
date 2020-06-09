@@ -6,7 +6,10 @@ import pandas as pd
 
 class Embedder:
 
-    def __init__(self, word2id: Dict[str, int], id2word: List[str], devicetype: "cpu"):
+    def __init__(self, 
+                word2id: Dict[str, int], 
+                id2word: List[str], 
+                devicetype: "cpu"):
         """Abstract class for Embedder objects.
 
         Parameters
@@ -43,6 +46,10 @@ class Embedder:
         self._devicetype = devicetype
         # TODO! Understand why there is a +1 here.
         self._vocabulary_size = len(self._word2id)+1
+        self.learning_rate = None # needs to be set in fit method
+        self.embedding_size = None
+        self.batch_size = None 
+        self.epochs = None
 
     def fit(
         self,
@@ -133,6 +140,11 @@ class Embedder:
                     "Given context window {} is larger than at least one of "
                     "the tensors in X {}"
                 ).format(context_window, len(sequence)))
+
+        self.learning_rate = learning_rate
+        self.embedding_size = embedding_size
+        self.batch_size = batch_size
+        self.epochs = epochs
 
         # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"

@@ -2,7 +2,7 @@ from .graph import Graph
 import tensorflow as tf  # type: ignore
 from embiggen import SkipGram, Cbow, GloVeModel, CooccurrenceEncoder
 from .transformers import GraphPartitionTransfomer
-from typing import Tuple
+from typing import Tuple, Union, Dict
 import numpy as np  # type: ignore
 
 
@@ -27,39 +27,43 @@ class Embiggen:
 
     def _get_embedding_model(
         self,
-        graph: Graph,
-        walks: tf.Tensor,
+        data: Union[tf.Tensor, tf.RaggedTensor],
+        worddict: Dict[str,int],
+        reverse_worddict: Dict[int, str],
         embedding_model: str,
         epochs: int,
         embedding_size: int,
         context_window: int,
-        window_size: int
+        window_size: int,
+        devicetype="cpu"
     ):
         # TODO: add notes for the various parameters relative to which parameters
         # and add exceptions relative to the invalid ranges for the specific
         # parameters.
         if embedding_model == "skipgram":
             return SkipGram(
-                data=walks,
-                worddictionary=graph.worddictionary,
-                reverse_worddictionary=graph.reverse_worddictionary,
+                data=data,
+                worddictionary=worddict,
+                reverse_worddictionary=reverse_worddict,
                 num_epochs=epochs
             )
         if embedding_model == "cbow":
             return Cbow(
-                walks,
-                worddictionary=graph.worddictionary,
-                reverse_worddictionary=graph.reverse_worddictionary,
-                num_epochs=epochs
+                data=data,
+                word2id=worddict,
+                id2word=reverse_worddict,
+                devicetype=devicetype
             )
+        # !TODO: Figure out API for vocab size. For now, take all words
+        vocab_size = len(worddict)
         cencoder = CooccurrenceEncoder(
-            walks,
+            data,
             window_size=window_size,
-            vocab_size=graph.nodes_number
+            vocab_size=vocab_size
         )
         return GloVeModel(
             co_oc_dict=cencoder.build_dataset(),
-            vocab_size=graph.nodes_number,
+            vocab_size=vocab_size,
             embedding_size=embedding_size,
             context_size=context_window,
             num_epochs=epochs
@@ -68,8 +72,8 @@ class Embiggen:
     def fit(
         self,
         data: Union[tf.Tensor, tf.RaggedTensor],
-        walks_number: int = 100,
-        walks_length: int = 100,
+        worddict: Dict[str,int],
+        reverse_worddict: Dict[int, str],
         embedding_model: str = "cbow",
         epochs: int = 10,
         embedding_size: int = 200,
@@ -95,11 +99,11 @@ class Embiggen:
             raise ValueError(
                 "Given embedding model must be 'cbow', 'skipgram' or 'glove'")
 
-        walks = graph.random_walk(number=walks_number, length=walks_length)
-
         # TODO! move this constructor to the constructor of the class.
         self._model = self._get_embedding_model(
-            graph, walks,
+            data=data,
+            worddict=worddict,
+            reverse_worddict=reverse_worddict,
             embedding_model=embedding_model,
             epochs=epochs,
             embedding_size=embedding_size,
@@ -109,7 +113,7 @@ class Embiggen:
 
         # TODO! this train method must receive the arguments that we don't need
         # to pass to the constructor of the model.
-        self._model.train()
+        self._model.fit(data=data, worddict=worddict, reverse_worddict=reverse_worddict)
 
         self._transformer.fit(self.embedding)
 

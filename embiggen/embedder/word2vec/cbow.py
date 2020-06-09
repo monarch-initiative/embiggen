@@ -35,12 +35,13 @@ class Cbow(Word2Vec):
         TypeError: If the self.data does not contain a list or list of lists, where each list contains integers.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
+                word2id: Dict[str, int], 
+                id2word: List[str], 
+                devicetype: "cpu") -> None:
 
-        super().__init__(*args, **kwargs)
-
-        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            self.learning_rate)
+        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
+        self.optimizer: tf.keras.optimizers = None
         self.data_index: int = 0
         self.current_sentence: int = 0
         # Note embeddings are initialized in superclass
@@ -317,7 +318,9 @@ class Cbow(Word2Vec):
         return loss_history
 
     def fit(self, 
-        X: Union[tf.Tensor, tf.RaggedTensor],
+        data: Union[tf.Tensor, tf.RaggedTensor],
+        worddict: Dict[str,int],
+        reverse_worddict: Dict[int, str],
         learning_rate: float = 0.05,
         batch_size: int = 128,
         epochs: int = 1,
@@ -332,7 +335,9 @@ class Cbow(Word2Vec):
             samples_per_window: How many times to reuse an input to generate a label.
             
         """
-        super().fit(X=X,
+        super().fit(data=data,
+            #worddict=worddict,
+            #reverse_worddict=reverse_worddict,
             learning_rate=learning_rate,
             batch_size=batch_size,
             epochs=epochs,
