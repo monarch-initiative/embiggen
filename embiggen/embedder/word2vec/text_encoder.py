@@ -122,7 +122,7 @@ class TextEncoder:
         pass
 
     # TODO! Use fit and transform instead of a constructor that does everything.
-    def transform(self, X: np.ndarray):
+    def transform(self, x: np.ndarray):
         pass
 
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
