@@ -49,7 +49,7 @@ class Embedder:
             self._is_list_of_lists = True
         else:
             raise ValueError("Data (X) must be either Tensor or RaggedTensor")
-        if len(data.shape) != 2:
+        if len(data.shape) > 2:
             raise ValueError(
                 "Given tensor is not 2-dimensional. "
                 "If your tensor has only one dimension, "
