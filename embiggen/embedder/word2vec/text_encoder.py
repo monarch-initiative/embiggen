@@ -111,8 +111,9 @@ class TextEncoder:
         sentence_data = open(self.filename).readlines()
         cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
 
+        # return correct structure
         if self.data_type == 'words':
-            return ' '.join([sent for sent in cleaned_sentences if sent.count(' ') + 1 >= self.minlen]).split()
+            return [word for word in ' '.join(cleaned_sentences).split()]
         else:
             return [sent for sent in cleaned_sentences if sent.count(' ') + 1 >= self.minlen]
 
