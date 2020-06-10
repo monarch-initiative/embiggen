@@ -108,12 +108,12 @@ class TextEncoder:
 
         print('Reading data from {filename} and processing it as {data_type}'.format(filename=self.filename,
                                                                                      data_type=self.data_type))
+        sentence_data = open(self.filename).readlines()
+        cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
+
         if self.data_type == 'words':
-            word_data = open(self.filename).read()
-            return self.clean_text(word_data).split()
+            return ' '.join([sent for sent in cleaned_sentences if len(sent) >= self.minlen]).split()
         else:
-            sentence_data = open(self.filename).readlines()
-            cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
             return [sent for sent in cleaned_sentences if len(sent) >= self.minlen]
 
     # TODO! Use fit and transform instead of a constructor that does everything.
@@ -155,7 +155,8 @@ class TextEncoder:
             word_count = len(set(text))
             max_vocab = min(max_vocab, word_count) + 1
             word_index_list = list(zip(['UNK'] + list(unique_everseen(text)), range(1, word_count + 2)))
-            sequences = [[x[1] - 1 for x in word_index_list if word in x[0]][0] for word in text]
+            word_index_dict = dict(word_index_list)
+            sequences = [word_index_dict[word] - 1 for word in text]
         else:
             word_count = len(set([word for sentence in text for word in sentence.split()]))
             max_vocab = min(max_vocab, word_count) + 1
