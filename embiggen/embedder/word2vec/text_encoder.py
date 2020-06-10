@@ -112,9 +112,9 @@ class TextEncoder:
         cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
 
         if self.data_type == 'words':
-            return ' '.join([sent for sent in cleaned_sentences if len(sent) >= self.minlen]).split()
+            return ' '.join([sent for sent in cleaned_sentences if sent.count(' ') + 1 >= self.minlen]).split()
         else:
-            return [sent for sent in cleaned_sentences if len(sent) >= self.minlen]
+            return [sent for sent in cleaned_sentences if sent.count(' ') + 1 >= self.minlen]
 
     # TODO! Use fit and transform instead of a constructor that does everything.
     def fit(self, corpus):
