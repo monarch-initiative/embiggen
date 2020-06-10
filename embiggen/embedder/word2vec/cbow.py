@@ -38,10 +38,9 @@ class Cbow(Word2Vec):
     def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
                 word2id: Dict[str, int], 
                 id2word: List[str], 
-                devicetype: "cpu",
-                callbacks: Tuple=()) -> None:
+                devicetype: "cpu") -> None:
 
-        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
+        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
         self.optimizer: tf.keras.optimizers = None
         self.data_index: int = 0
         self.current_sentence: int = 0
@@ -118,12 +117,12 @@ class Cbow(Word2Vec):
         with tf.device(self.devicetype):
             y = tf.cast(y, tf.int64)
 
-            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.softmax_weights,
-                                                 biases=self.softmax_biases,
+            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self._softmax_weights,
+                                                 biases=self._softmax_biases,
                                                  labels=y,
                                                  inputs=x_embed,
-                                                 number_negative_samples=self.number_negative_samples,
-                                                 num_classes=self.vocabulary_size))
+                                                 num_sampled=self.number_negative_samples,
+                                                 num_classes=self._vocabulary_size))
 
             return loss
 
@@ -194,11 +193,11 @@ class Cbow(Word2Vec):
 
             # compute gradients
             gradients = g.gradient(
-                loss, [self._embedding, self.softmax_weights, self.softmax_biases])
+                loss, [self._embedding, self._softmax_weights, self._softmax_biases])
 
             # Update W and b following gradients
             self.optimizer.apply_gradients(
-                zip(gradients, [self._embedding, self.softmax_weights, self.softmax_biases]))
+                zip(gradients, [self._embedding, self._softmax_weights, self._softmax_biases]))
             return tf.reduce_sum(loss)
 
     # TODO! this train method must receive the arguments that we don't need
@@ -222,8 +221,8 @@ class Cbow(Word2Vec):
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
-                    if step % 100 == 0:
-                        logging.info("loss {} ".format(current_loss))
+                    #if step % 100 == 0:
+                        #logging.info("loss {} ".format(current_loss))
                     step += 1
             else:
                 data = self.data  #
@@ -250,7 +249,7 @@ class Cbow(Word2Vec):
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
-                        logging.info("loss {}".format(current_loss))
+                        #logging.info("loss {}".format(current_loss))
                         loss_history.append(current_loss)
                     data_index += shift_len
                     endpos = data_index + batch_size
@@ -265,8 +264,12 @@ class Cbow(Word2Vec):
         window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
+        batch = 0
+        epoch = 0
         for _ in trange(1, self.epochs + 1, leave=False):
+            epoch += 1
             for sentence in self.data:
+                batch += 1
                 # Sentence is a Tensor
                 sentencelen = sentence.shape[0]
                 if sentencelen < window_len:
@@ -274,8 +277,10 @@ class Cbow(Word2Vec):
                 batch_x, batch_y = self.generate_batch_cbow(sentence)
                 current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
                 loss_history.append(current_loss)
-                if step % 100 == 0:
-                    logging.info("loss {} ".format(current_loss))
+                self.on_batch_end({"loss":"{}".format(current_loss)})
+                print("Bla cl {}".format(current_loss))
+                #if step % 100 == 0:
+                    #logging.info("loss {} ".format(current_loss))
                 step += 1
         return loss_history
 
@@ -285,7 +290,8 @@ class Cbow(Word2Vec):
         window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.epochs + 1, leave=False):
+        batch = 0
+        for epoch in range(1, self.epochs + 1):
             data = self.data  #
             if not isinstance(data, tf.Tensor):
                 raise TypeError("We were expecting a Tensor object!")
@@ -302,34 +308,36 @@ class Cbow(Word2Vec):
             data_index = 0
             endpos = data_index + batch_size
             while endpos <= lastpos:
+                batch += 1
                 currentTensor = data[data_index:endpos]
                 if len(currentTensor) < window_len:
                     break  # We are at the end
-                batch_x, batch_y = self.next_batch(
+                batch_x, batch_y = self.generate_batch_cbow(
                     currentTensor)  # type: ignore
                 current_loss = self.run_optimization(
                     batch_x, batch_y)  # type: ignore
                 if step == 0 or step % 100 == 0:
-                    logging.info("loss {}".format(current_loss))
+                    #logging.info("loss {}".format(current_loss))
                     loss_history.append(current_loss)
                 data_index += shift_len
                 endpos = data_index + batch_size
                 endpos = min(endpos,lastpos)  # takes care of last part of data. Maybe we should just ignore though
-                self.on_batch_end({"loss":"{}".format(current_loss)})
+                self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
                     # Evaluation.
+            self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
         return loss_history
 
     def fit(self, 
         data: Union[tf.Tensor, tf.RaggedTensor],
         worddict: Dict[str,int],
         reverse_worddict: Dict[int, str],
-        learning_rate: float = 0.05,
-        batch_size: int = 128,
-        epochs: int = 1,
-        embedding_size: int = 128,
-        context_window: int = 2,
-        number_negative_samples: int = 7,
-        callbacks: Tuple["Callback"] = ()):
+        learning_rate: float,
+        batch_size: int,
+        epochs: int,
+        embedding_size: int,
+        context_window: int,
+        number_negative_samples: int,
+        callbacks: Tuple["Callback"]):
         """Fit the Word2Vec continuous bag of words model 
         Parameters
         ---------------------
@@ -345,6 +353,7 @@ class Cbow(Word2Vec):
             context_window=context_window,
             number_negative_samples=number_negative_samples,
             callbacks=callbacks)
+        print("cbow fit")
         if self.list_of_lists:
             # This is the case for a list of random walks
             # or for a list of text segments (e.g., a list of sentences or abstracts)

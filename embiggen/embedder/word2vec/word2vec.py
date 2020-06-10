@@ -90,6 +90,8 @@ class Word2Vec(Embedder):
                 "Probably this is a toy example. Consider reducing "
                 "number_negative_samples"
             ).format(number_negative_samples))
+        else:
+            self.number_negative_samples = number_negative_samples
 
         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device('cpu'):

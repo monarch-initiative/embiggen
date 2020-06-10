@@ -13,10 +13,9 @@ class SkipGram(Word2Vec):
     def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
                 word2id: Dict[str, int], 
                 id2word: List[str], 
-                devicetype: "cpu",
-                callbacks: Tuple=()) -> None:
+                devicetype: "cpu") -> None:
 
-        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
+        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
         self.data_index: int = 0
         self.current_sentence: int = 0
 

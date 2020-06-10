@@ -130,6 +130,8 @@ class Embedder:
             raise ValueError((
                 "Given epochs {} is not a strictly positive real number."
             ).format(epochs))
+        else:
+            self.epochs = epochs
 
         if not isinstance(context_window, int) or context_window < 1:
             raise ValueError((
@@ -142,16 +144,16 @@ class Embedder:
                 "Given embedding_size {} is not an int or is less than 1"
             ).format(embedding_size))
 
-
+        # TODO -- It is not efficient to check length of tensors and len() does
+        # not seem to always work. Currently, the fit mehtods will just skip things that
+        # are too short
         # Checking if the context window is valid for given tensor shape.
-        for sequence in self.data:
-            if context_window > len(sequence):
-                for x in self.data:
-                    print(type(sequence), sequence)
-                raise ValueError((
-                    "Given context window ({}) is larger than at least one of "
-                    "the tensors in X (len={})"
-                ).format(context_window, len(sequence)))
+        #for sequence in self.data:
+        #    if context_window > tf.size(sequence):
+        #        raise ValueError((
+        #            "Given context window ({}) is larger than at least one of "
+        #            "the tensors in self.data ({}, len={})"
+        #        ).format(context_window, sequence, tf.size(sequence)))
 
         self.learning_rate = learning_rate
         self.embedding_size = embedding_size
@@ -167,13 +169,13 @@ class Embedder:
                 "The fit method must be implemented in the child classes of Embedder."
             )
 
-    def on_batch_end(self, logs:Dict[str,str]):
+    def on_batch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
         for cb in self.callbacks:
-            cb.on_batch_end()
+            cb.on_batch_end(epoch=epoch,batch=batch, log=log)
 
-    def on_epoch_end(self, logs:Dict[str,str]):
+    def on_epoch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
         for cb in self.callbacks:
-            cb.on_epoch_end(logs)
+            cb.on_epoch_end(batch=batch,epoch=epoch, log=log)
 
     def transform(self):
         pass

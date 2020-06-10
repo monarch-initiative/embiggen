@@ -35,8 +35,7 @@ class Embiggen:
         embedding_size: int,
         context_window: int,
         window_size: int,
-        devicetype="cpu",
-        callbacks: Tuple=()
+        devicetype="cpu"
     ):
         # TODO: add notes for the various parameters relative to which parameters
         # and add exceptions relative to the invalid ranges for the specific
@@ -46,8 +45,7 @@ class Embiggen:
                 data=data,
                 worddictionary=worddict,
                 reverse_worddictionary=reverse_worddict,
-                num_epochs=epochs,
-                callbacks=callbacks
+                num_epochs=epochs
             )
         if embedding_model == "cbow":
             return Cbow(
@@ -55,7 +53,6 @@ class Embiggen:
                 word2id=worddict,
                 id2word=reverse_worddict,
                 devicetype=devicetype,
-                callbacks=callbacks
             )
         # !TODO: Figure out API for vocab size. For now, take all words
         vocab_size = len(worddict)
@@ -79,6 +76,9 @@ class Embiggen:
         worddict: Dict[str,int],
         reverse_worddict: Dict[int, str],
         embedding_model: str = "cbow",
+        learning_rate: float = 0.05,
+        batch_size: int = 128,
+        number_negative_samples: int = 7,
         epochs: int = 10,
         embedding_size: int = 200,
         context_window: int = 2,
@@ -113,13 +113,21 @@ class Embiggen:
             epochs=epochs,
             embedding_size=embedding_size,
             context_window=context_window,
-            window_size=window_size,
-            callbacks=callbacks
+            window_size=window_size
         )
 
         # TODO! this train method must receive the arguments that we don't need
         # to pass to the constructor of the model.
-        self._model.fit(data=data, worddict=worddict, reverse_worddict=reverse_worddict)
+        self._model.fit(data=data, 
+                        worddict=worddict, 
+                        reverse_worddict=reverse_worddict, 
+                        learning_rate=learning_rate,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        embedding_size=embedding_size,
+                        context_window=context_window,
+                        number_negative_samples=number_negative_samples,
+                        callbacks=callbacks)
 
         self._transformer.fit(self.embedding)
 
