@@ -33,11 +33,11 @@ class TextEncoder:
         IOError: If the file referenced by filename could not be found.
     """
 
-    def __init__(self, 
-                filename: str, 
-                data_type: Optional[str] = None, 
-                stopwords: set = None,
-                minlen: int = 10):
+    def __init__(self,
+                 filename: str,
+                 data_type: Optional[str] = None,
+                 stopwords: set = None,
+                 minlen: int = 10):
 
         if filename is None:
             raise ValueError('filename cannot be None')
@@ -113,7 +113,7 @@ class TextEncoder:
             return self.clean_text(word_data).split()
         else:
             sentence_data = open(self.filename).readlines()
-            cleaned_sentences =  [self.clean_text(sent) for sent in sentence_data]
+            cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
             return [sent for sent in cleaned_sentences if len(sentence_data) >= self.minlen]
 
     # TODO! Use fit and transform instead of a constructor that does everything.
@@ -121,8 +121,8 @@ class TextEncoder:
         pass
 
     # TODO! Use fit and transform instead of a constructor that does everything.
-    def transform(self, X:np.ndarray):
-        pass 
+    def transform(self, X: np.ndarray):
+        pass
 
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
@@ -175,7 +175,7 @@ class TextEncoder:
                     filtered_count['UNK'] = 0
                     dictionary['UNK'] = 1
                 else:
-                    filtered_count[k] = count[v-1]
+                    filtered_count[k] = count[v - 1]
                     dictionary[k] = v
             else:
                 filtered_count['UNK'] += 1
@@ -186,13 +186,13 @@ class TextEncoder:
         if max_vocab != len(count_list):
             raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
         else:
-            #try:
+            # try:
             #    tensor_data = tf.data.Dataset.from_tensor_slices(sequences)
-            #except ValueError:
+            # except ValueError:
             #    tensor_data = tf.ragged.constant(sequences)  # for nested lists of differing lengths
             if isinstance(sequences, list):
                 tensor_data = tf.ragged.constant(sequences)
             else:
-                tensor_data = tf.convert_to_tensor(sequences) # should now be a 1D tensor
+                tensor_data = tf.convert_to_tensor(sequences)  # should now be a 1D tensor
 
         return tensor_data, count_list, dictionary, reverse_dictionary
