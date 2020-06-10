@@ -100,7 +100,7 @@ class Cbow(Word2Vec):
                                                          biases=self.softmax_biases,
                                                          inputs=mean_embeddings,
                                                          labels=y,
-                                                         number_negative_samples=self.number_negative_samples,
+                                                         num_sampled=self.number_negative_samples,
                                                          num_classes=self.vocabulary_size))
 
         return loss
@@ -337,6 +337,7 @@ class Cbow(Word2Vec):
         embedding_size: int,
         context_window: int,
         number_negative_samples: int,
+        samples_per_window:int,
         callbacks: Tuple["Callback"]):
         """Fit the Word2Vec continuous bag of words model 
         Parameters

@@ -18,7 +18,7 @@ embiggen.fit(
         data=tensor_data,
         worddict=dictionary,
         reverse_worddict=reverse_dictionary,
-        embedding_model = "cbow",
+        embedding_model = "skipgram",
         epochs = 10,
         embedding_size = 20,
         callbacks=[Shelldump()]

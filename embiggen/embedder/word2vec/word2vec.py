@@ -106,8 +106,8 @@ class Word2Vec(Embedder):
                                             mean=0.0,
                                            stddev=0.5 / math.sqrt(embedding_size),
                                            dtype=tf.float32)
-            self._softmax_weights: tf.Variable = tf.Variable(tf_distribution)
-            self._softmax_biases = tf.Variable(
+            self._nce_weights: tf.Variable = tf.Variable(tf_distribution)
+            self._nce_biases = tf.Variable(
                 tf.random.uniform([self._vocabulary_size], 0.0, 0.01))
         
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)

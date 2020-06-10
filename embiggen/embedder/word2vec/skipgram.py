@@ -1,5 +1,7 @@
 import tensorflow as tf
 import numpy as np
+import collections
+import random
 from typing import Union, Tuple, Dict, List
 
 from .word2vec import Word2Vec
@@ -19,6 +21,26 @@ class SkipGram(Word2Vec):
         self.data_index: int = 0
         self.current_sentence: int = 0
 
+    def get_skipgram_embedding(self,x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Variable], device: str = 'cpu')  \
+        -> Union[np.ndarray, tf.Tensor]:
+        """Get the embedding corresponding to the data points in x. Note, we ensure that this code is carried out on
+        the CPU because some ops are not compatible with the GPU.
+        Args:
+            x: A integer representing a node or word index.
+            embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
+            device: A string that indicates whether to run computations on (default=cpu).
+        Returns:
+            embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension)
+        Raises:
+            ValueError: If the embedding variable is None.
+        """
+        if embedding is None:
+            raise ValueError('No embedding data found (i.e. embedding is None)')
+        else:
+            with tf.device(device):
+                embedding = tf.nn.embedding_lookup(embedding, x)
+            return embedding
+
 
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
@@ -33,11 +55,11 @@ class SkipGram(Word2Vec):
             y = tf.cast(y, tf.int64)
 
             loss = tf.reduce_mean(tf.nn.nce_loss(
-                weights=self.nce_weights,
-                biases=self.nce_biases,
+                weights=self._nce_weights,
+                biases=self._nce_biases,
                 labels=y,
                 inputs=x_embed,
-                number_negative_samples=self.number_negative_samples,
+                num_sampled=self.number_negative_samples,
                 num_classes=self._vocabulary_size
             ))
 
@@ -74,19 +96,19 @@ class SkipGram(Word2Vec):
             The loss of the current optimization round.
         """
 
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
-                embedding = get_embedding(x, self._embedding, self.device_type)
+                embedding = self.get_skipgram_embedding(x, self._embedding, self.devicetype)
                 loss = self.nce_loss(embedding, y)
 
             # compute gradients
             gradients = g.gradient(
-                loss, [self._embedding, self.nce_weights, self.nce_biases])
+                loss, [self._embedding, self._nce_weights, self._nce_biases])
 
             # update W and b following gradients
             self.optimizer.apply_gradients(
-                zip(gradients, [self._embedding, self.nce_weights, self.nce_biases]))
+                zip(gradients, [self._embedding, self._nce_weights, self._nce_biases]))
 
         return loss
 
@@ -202,16 +224,91 @@ class SkipGram(Word2Vec):
                         self.run_optimization(batch_x, batch_y)
         return loss_history
 
-    def fit(self, samples_per_window: int = 2):
-        """Fit the Word2Vec skipgram model 
+    def _fit_list_of_lists(self):
+        pass
+
+    def _fit_list(self):
+        data = self.data  #
+        data_index = 0
+        window_len = 2 * self.context_window + 1
+        step = 0
+        if not isinstance(data, tf.Tensor):
+            raise TypeError("We were expecting a Tensor object!")
+        # batch_size = self.batch_size
+        data_len = len(data)
+        # Note that we cannot fully digest all of the data in any one batch
+        # if the window length is K and the natch_len is N, then the last
+        # window that we get starts at position (N-K). Therefore, if we start
+        # the next window at position (N-K)+1, we will get all windows.
+        window_len = 1 + 2 * self.context_window
+        shift_len = batch_size = window_len + 1
+        # we need to make sure that we do not shift outside the boundaries of self.data too
+        lastpos = data_len - 1  # index of the last word in data
+        batch = 0
+        for epoch in range(1, self.epochs + 1):
+            data_index = 0
+            endpos = data_index + batch_size
+            while True:
+                if endpos > lastpos:
+                    break
+                batch += 1
+                currentTensor = data[data_index:endpos]
+                if len(currentTensor) < window_len:
+                    break  # We are at the end
+                batch_x, batch_y = self.next_batch(currentTensor)
+                current_loss = self.run_optimization(batch_x, batch_y)
+                if step == 0 or step % 100 == 0:
+                    #logging.info("loss {}".format(current_loss))
+                    #loss_history.append(current_loss)
+                    pass
+                data_index += shift_len
+                endpos = data_index + batch_size
+                endpos = min(endpos,
+                             lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                # Evaluation.
+                step += 1
+                self.run_optimization(batch_x, batch_y)
+                self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
+            self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
+
+    
+
+    def fit(self,  data: Union[tf.Tensor, tf.RaggedTensor],
+        worddict: Dict[str,int],
+        reverse_worddict: Dict[int, str],
+        learning_rate: float,
+        batch_size: int,
+        epochs: int,
+        embedding_size: int,
+        context_window: int,
+        samples_per_window:int,
+        number_negative_samples: int,
+        callbacks: Tuple["Callback"]):
+        """Fit the Word2Vec continuous bag of words model 
         Parameters
         ---------------------
         samples_per_window:
             samples_per_window: How many times to reuse an input to generate a label.
             
         """
-        super().fit(*args, **kwargs)
+        super().fit(
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            number_negative_samples=number_negative_samples,
+            callbacks=callbacks)
         
         if samples_per_window > 2 * context_window:
             raise ValueError(
                 'The value of self.samples_per_window must be <= twice the length of self.context_window')
+        else:
+            self. samples_per_window = samples_per_window
+        print("skipgram fit")
+        if self.list_of_lists:
+            # This is the case for a list of random walks
+            # or for a list of text segments (e.g., a list of sentences or abstracts)
+            self._fit_list_of_lists()
+        else:
+            self._fit_list()

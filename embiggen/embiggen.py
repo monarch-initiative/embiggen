@@ -43,9 +43,9 @@ class Embiggen:
         if embedding_model == "skipgram":
             return SkipGram(
                 data=data,
-                worddictionary=worddict,
-                reverse_worddictionary=reverse_worddict,
-                num_epochs=epochs
+                word2id=worddict,
+                id2word=reverse_worddict,
+                devicetype=devicetype,
             )
         if embedding_model == "cbow":
             return Cbow(
@@ -79,6 +79,7 @@ class Embiggen:
         learning_rate: float = 0.05,
         batch_size: int = 128,
         number_negative_samples: int = 7,
+        samples_per_window=2,
         epochs: int = 10,
         embedding_size: int = 200,
         context_window: int = 2,
@@ -127,6 +128,7 @@ class Embiggen:
                         embedding_size=embedding_size,
                         context_window=context_window,
                         number_negative_samples=number_negative_samples,
+                        samples_per_window=samples_per_window,
                         callbacks=callbacks)
 
         self._transformer.fit(self.embedding)
