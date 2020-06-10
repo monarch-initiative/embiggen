@@ -1,6 +1,7 @@
 import csv
 import tensorflow as tf  # type: ignore
 from random import shuffle
+from typing import Union, Tuple, Dict, List
 from ..embedder import Embedder
 
 class NotTrainedError(Exception):
@@ -14,7 +15,8 @@ class NotFitToCorpusError(Exception):
 class GloVeModel(Embedder):
     def __init__(self, co_oc_dict, vocab_size, embedding_size, context_size, min_occurrences=1,
                  scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05,
-                 num_epochs=5):
+                 num_epochs=5,callbacks:Tuple=()):
+        # super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
         self.co_oc_dict = co_oc_dict
         self.vocab_size = vocab_size
         self.embedding_size = embedding_size

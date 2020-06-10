@@ -38,9 +38,10 @@ class Cbow(Word2Vec):
     def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
                 word2id: Dict[str, int], 
                 id2word: List[str], 
-                devicetype: "cpu") -> None:
+                devicetype: "cpu",
+                callbacks: Tuple=()) -> None:
 
-        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
+        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
         self.optimizer: tf.keras.optimizers = None
         self.data_index: int = 0
         self.current_sentence: int = 0
@@ -314,6 +315,7 @@ class Cbow(Word2Vec):
                 data_index += shift_len
                 endpos = data_index + batch_size
                 endpos = min(endpos,lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                self.on_batch_end({"loss":"{}".format(current_loss)})
                     # Evaluation.
         return loss_history
 

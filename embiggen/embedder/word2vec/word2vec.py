@@ -17,7 +17,8 @@ class Word2Vec(Embedder):
                 data: Union[tf.Tensor, tf.RaggedTensor],
                 word2id: Dict[str, int], 
                 id2word: List[str], 
-                devicetype: "cpu") -> None:
+                devicetype: "cpu",
+                callbacks: Tuple=()) -> None:
         """Create a new instance of Word2Vec.
 
         Parameters
@@ -31,7 +32,8 @@ class Word2Vec(Embedder):
         super().__init__(data=data, 
                         word2id=word2id, 
                         id2word=id2word, 
-                        devicetype=devicetype)
+                        devicetype=devicetype,
+                        callbacks=callbacks)
         self._embedding = None
         self._is_list_of_lists = None # must be set in fit method
         self.context_window = None # must be set in fit method

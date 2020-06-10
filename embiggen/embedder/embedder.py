@@ -66,6 +66,7 @@ class Embedder:
         self.embedding_size = None
         self.batch_size = None 
         self.epochs = None
+        self.callbacks = []
 
     def fit(
         self,
@@ -156,6 +157,8 @@ class Embedder:
         self.embedding_size = embedding_size
         self.batch_size = batch_size
         self.epochs = epochs
+        if len(callbacks) > 0:
+            self.callbacks = callbacks
 
         # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"
@@ -163,6 +166,14 @@ class Embedder:
             raise NotImplementedError(
                 "The fit method must be implemented in the child classes of Embedder."
             )
+
+    def on_batch_end(self, logs:Dict[str,str]):
+        for cb in self.callbacks:
+            cb.on_batch_end()
+
+    def on_epoch_end(self, logs:Dict[str,str]):
+        for cb in self.callbacks:
+            cb.on_epoch_end(logs)
 
     def transform(self):
         pass

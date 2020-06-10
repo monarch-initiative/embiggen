@@ -10,9 +10,13 @@ class SkipGram(Word2Vec):
     Class to run word2vec using skip grams
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
+                word2id: Dict[str, int], 
+                id2word: List[str], 
+                devicetype: "cpu",
+                callbacks: Tuple=()) -> None:
 
-        super().__init__(*args, **kwargs)
+        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
         self.data_index: int = 0
         self.current_sentence: int = 0
 

@@ -35,7 +35,8 @@ class Embiggen:
         embedding_size: int,
         context_window: int,
         window_size: int,
-        devicetype="cpu"
+        devicetype="cpu",
+        callbacks: Tuple=()
     ):
         # TODO: add notes for the various parameters relative to which parameters
         # and add exceptions relative to the invalid ranges for the specific
@@ -45,14 +46,16 @@ class Embiggen:
                 data=data,
                 worddictionary=worddict,
                 reverse_worddictionary=reverse_worddict,
-                num_epochs=epochs
+                num_epochs=epochs,
+                callbacks=callbacks
             )
         if embedding_model == "cbow":
             return Cbow(
                 data=data,
                 word2id=worddict,
                 id2word=reverse_worddict,
-                devicetype=devicetype
+                devicetype=devicetype,
+                callbacks=callbacks
             )
         # !TODO: Figure out API for vocab size. For now, take all words
         vocab_size = len(worddict)
@@ -66,7 +69,8 @@ class Embiggen:
             vocab_size=vocab_size,
             embedding_size=embedding_size,
             context_size=context_window,
-            num_epochs=epochs
+            num_epochs=epochs,
+            callbacks=callbacks
         )
 
     def fit(
@@ -78,7 +82,8 @@ class Embiggen:
         epochs: int = 10,
         embedding_size: int = 200,
         context_window: int = 2,
-        window_size: int = 2
+        window_size: int = 2,
+        callbacks: Tuple = ()
     ):
         """Fit model using input data (Tensors dervied from a Graph or a text).
 
@@ -108,7 +113,8 @@ class Embiggen:
             epochs=epochs,
             embedding_size=embedding_size,
             context_window=context_window,
-            window_size=window_size
+            window_size=window_size,
+            callbacks=callbacks
         )
 
         # TODO! this train method must receive the arguments that we don't need
