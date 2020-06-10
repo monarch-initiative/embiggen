@@ -114,7 +114,7 @@ class TextEncoder:
         else:
             sentence_data = open(self.filename).readlines()
             cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
-            return [sent for sent in cleaned_sentences if len(sentence_data) >= self.minlen]
+            return [sent for sent in cleaned_sentences if len(sent) >= self.minlen]
 
     # TODO! Use fit and transform instead of a constructor that does everything.
     def fit(self, corpus):
