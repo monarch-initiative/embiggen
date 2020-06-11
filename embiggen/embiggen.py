@@ -140,15 +140,10 @@ class Embiggen:
                         samples_per_window=samples_per_window,
                         callbacks=callbacks)
         elif self._embedding_method == EmbeddingMethod.cbow:
-            self._model = Cbow(
-                data=data,
-                word2id=worddict,
-                id2word=reverse_worddict,
-                devicetype=devicetype,
-            )
+            self._model = Cbow(devicetype=devicetype)
             self._model.fit(data=data, 
-                        worddict=worddict, 
-                        reverse_worddict=reverse_worddict, 
+                        word2id=worddict, 
+                        id2word=reverse_worddict, 
                         learning_rate=learning_rate,
                         batch_size=batch_size,
                         epochs=epochs,

@@ -14,11 +14,8 @@ class Word2Vec(Embedder):
     """Superclass of all of the word2vec family algorithms."""
 
     def __init__(self, 
-                data: Union[tf.Tensor, tf.RaggedTensor],
-                word2id: Dict[str, int], 
-                id2word: List[str], 
                 devicetype: "cpu",
-                callbacks: Tuple=()) -> None:
+                ) -> None:
         """Create a new instance of Word2Vec.
 
         Parameters
@@ -29,10 +26,7 @@ class Word2Vec(Embedder):
         display: An integer of the number of words to display.
 
         """
-        super().__init__(data=data, 
-                        word2id=word2id, 
-                        id2word=id2word, 
-                        devicetype=devicetype)
+        super().__init__(devicetype=devicetype)
         self._embedding = None
         self._is_list_of_lists = None # must be set in fit method
         self.context_window = None # must be set in fit method
@@ -41,21 +35,22 @@ class Word2Vec(Embedder):
 
 
     def fit(self,
-            learning_rate: float = 0.05,
-            batch_size: int = 128,
-            epochs: int = 1,
-            embedding_size: int = 128,
-            context_window: int = 3,
-            number_negative_samples: int = 7,
+            data: Union[tf.Tensor, tf.RaggedTensor],
+            word2id: Dict[str,int],
+            id2word: Dict[int, str],
+            learning_rate: float,
+            batch_size: int,
+            epochs: int,
+            embedding_size: int,
+            context_window: int,
+            number_negative_samples: int,
             callbacks: Tuple["Callback"] = ()
-
-            # !TODO! Add callbacks for displaying how the learning is going.
     ):
         """Fit the Word2Vec model.
         
         Parameters
         ---------------------
-        X: Union[List, tf.Tensor, tf.RaggedTensor],
+        data: Union[tf.Tensor, tf.RaggedTensor],
             
         learning_rate: float,
             A float between 0 and 1 that controls how fast the model learns to solve the problem (Default 0.05)
@@ -75,16 +70,16 @@ class Word2Vec(Embedder):
         
         
         """
-        if number_negative_samples > self._vocabulary_size:
-            raise ValueError((
-                "Given number_negative_samples {} is larger than the vocabulary size. "
-                "Probably this is a toy example. Consider reducing "
-                "number_negative_samples"
-            ).format(number_negative_samples))
-        else:
-            self.number_negative_samples = number_negative_samples
-
-        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
+        super().fit(data=data,
+            word2id=word2id,
+            id2word=id2word,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            callbacks=callbacks)
+         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device('cpu'):
             self._embedding: tf.Variable = tf.Variable(
                 tf.random.uniform(
@@ -103,12 +98,16 @@ class Word2Vec(Embedder):
         
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
 
-        super().fit(learning_rate=learning_rate,
-            batch_size=batch_size,
-            epochs=epochs,
-            embedding_size=embedding_size,
-            context_window=context_window,
-            callbacks=callbacks)
+        # Note that the super method sets the vocabulary size
+        if number_negative_samples > self._vocabulary_size:
+            raise ValueError((
+                "Given number_negative_samples {} is larger than the vocabulary size. "
+                "Probably this is a toy example. Consider reducing "
+                "number_negative_samples"
+            ).format(number_negative_samples))
+        else:
+            self.number_negative_samples = number_negative_samples
+
 
          # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"

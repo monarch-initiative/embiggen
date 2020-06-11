@@ -35,12 +35,8 @@ class Cbow(Word2Vec):
         TypeError: If the self.data does not contain a list or list of lists, where each list contains integers.
     """
 
-    def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
-                word2id: Dict[str, int], 
-                id2word: List[str], 
-                devicetype: "cpu") -> None:
-
-        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
+    def __init__(self, devicetype) -> None:
+        super().__init__(devicetype=devicetype)
         self.optimizer: tf.keras.optimizers = None
         self.data_index: int = 0
         self.current_sentence: int = 0
@@ -116,9 +112,8 @@ class Cbow(Word2Vec):
 
         with tf.device(self.devicetype):
             y = tf.cast(y, tf.int64)
-
-            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self._softmax_weights,
-                                                 biases=self._softmax_biases,
+            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self._nce_weights,
+                                                 biases=self._nce_biases,
                                                  labels=y,
                                                  inputs=x_embed,
                                                  num_sampled=self.number_negative_samples,
@@ -193,11 +188,11 @@ class Cbow(Word2Vec):
 
             # compute gradients
             gradients = g.gradient(
-                loss, [self._embedding, self._softmax_weights, self._softmax_biases])
+                loss, [self._embedding, self._nce_weights, self._nce_biases])
 
             # Update W and b following gradients
             self.optimizer.apply_gradients(
-                zip(gradients, [self._embedding, self._softmax_weights, self._softmax_biases]))
+                zip(gradients, [self._embedding, self._nce_weights, self._nce_biases]))
             return tf.reduce_sum(loss)
 
     # TODO! this train method must receive the arguments that we don't need
@@ -291,20 +286,21 @@ class Cbow(Word2Vec):
         step = 0
         loss_history = []
         batch = 0
+        data = self._data 
+        if not isinstance(data, tf.Tensor):
+            raise TypeError("We were expecting a Tensor object!")
+        data_len = len(data)
+        batch_size = self.batch_size
+        window_len = 1 + 2 * self.context_window
+        shift_len = batch_size - window_len + 1
+        # we need to make sure that we do not shift outside the boundaries of self.data too
+        lastpos = data_len - 1  # index of the last word in data
+
         for epoch in range(1, self.epochs + 1):
-            data = self.data  #
-            if not isinstance(data, tf.Tensor):
-                raise TypeError("We were expecting a Tensor object!")
-            batch_size = self.batch_size
-            data_len = len(data)
             # Note that we cannot fully digest all of the data in any one batch
             # if the window length is K and the natch_len is N, then the last
             # window that we get starts at position (N-K). Therefore, if we start
             # the next window at position (N-K)+1, we will get all windows.
-            window_len = 1 + 2 * self.context_window
-            shift_len = batch_size - window_len + 1
-            # we need to make sure that we do not shift outside the boundaries of self.data too
-            lastpos = data_len - 1  # index of the last word in data
             data_index = 0
             endpos = data_index + batch_size
             while endpos <= lastpos:
@@ -329,15 +325,14 @@ class Cbow(Word2Vec):
 
     def fit(self, 
         data: Union[tf.Tensor, tf.RaggedTensor],
-        worddict: Dict[str,int],
-        reverse_worddict: Dict[int, str],
+        word2id: Dict[str,int],
+        id2word: Dict[int, str],
         learning_rate: float,
         batch_size: int,
         epochs: int,
         embedding_size: int,
         context_window: int,
         number_negative_samples: int,
-        samples_per_window:int,
         callbacks: Tuple["Callback"]):
         """Fit the Word2Vec continuous bag of words model 
         Parameters
@@ -347,6 +342,9 @@ class Cbow(Word2Vec):
             
         """
         super().fit(
+            data=data,
+            word2id=word2id,
+            id2word=id2word,
             learning_rate=learning_rate,
             batch_size=batch_size,
             epochs=epochs,
