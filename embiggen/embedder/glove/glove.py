@@ -3,6 +3,7 @@ import tensorflow as tf  # type: ignore
 from random import shuffle
 from typing import Union, Tuple, Dict, List
 from ..embedder import Embedder
+from .coocurrence_encoder import CooccurrenceEncoder
 
 class NotTrainedError(Exception):
     pass
@@ -46,7 +47,7 @@ class GloVeModel(Embedder):
         self.scaling_factor = tf.constant([self.scaling_factor], dtype=tf.float32,
                                           name="scaling_factor")
         self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
-        self.embedding = None  # This variable will be initialized by the train() method
+        self._embedding = None
 
     def get_embeds(self, train_dataset, train_labels):
         """
@@ -114,10 +115,11 @@ class GloVeModel(Embedder):
         # we will return the sum
         return tf.math.reduce_sum(loss)
 
-    def train(self, log_dir=None):
+    def DEPRECATEDtrain(self, log_dir=None):
         batches = self.__prepare_batches()
         losses = []
-        for epoch in range(self.num_epochs):
+        batchnum = 0
+        for epoch in range(1, 1+self.num_epochs):
             shuffle(batches)
             for batch_index, batch in enumerate(batches):
                 i_s, j_s, x_ij_s = batch
@@ -127,8 +129,10 @@ class GloVeModel(Embedder):
                 if batch_index % 50 == 0:
                     losses.append(current_loss)
                     print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss.numpy()))
+                self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
+            self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
         # The final embeddings are defined to be the mean of the center and context embeddings.
-        self.embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
+        self._embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
 
     def _batchify(self, *sequences):
         for i in range(0, len(sequences[0]), self.batch_size):
@@ -142,3 +146,45 @@ class GloVeModel(Embedder):
                          for word_ids, count in self.co_oc_dict.items()]
         i_indices, j_indices, counts = zip(*cooccurrences)
         return list(self._batchify(i_indices, j_indices, counts))
+
+
+    def fit(self, 
+            data: Union[tf.Tensor, tf.RaggedTensor], 
+            worddict : Dict, 
+            reverse_worddict: Dict, 
+            learning_rate: float,
+            batch_size: int,
+            epochs: int,
+            embedding_size: int,
+            context_window: int,
+            number_negative_samples: int,
+            samples_per_window: int,
+            callbacks: Tuple):
+        print("fit method from glove")
+        self.vocab_size = len(worddict)
+        self.callbacks = callbacks
+        print("Calculating co-occurences...")
+        cencoder = CooccurrenceEncoder(
+            data,
+            window_size=context_window,
+            vocab_size=self.vocab_size
+        )
+        print("Fitting GloVe...")
+        batches = self.__prepare_batches()
+        losses = []
+        batchnum = 0
+        for epoch in range(1, 1+self.num_epochs):
+            shuffle(batches)
+            for batch_index, batch in enumerate(batches):
+                batchnum += 1
+                i_s, j_s, x_ij_s = batch
+                if len(x_ij_s) != self.batch_size:
+                    continue
+                current_loss = self.run_optimization(i_s, j_s, x_ij_s)
+                if batch_index % 50 == 0:
+                    losses.append(current_loss)
+                    print("loss at epoch {}, batch index {}: {}".format(epoch, batchnum, current_loss.numpy()))
+                self.on_batch_end(batch=batchnum,epoch=epoch,log= {"loss":"{}".format(current_loss)})
+            self.on_epoch_end(batch=batchnum,epoch=epoch,log={"loss":"{}".format(current_loss)})
+        # The final embeddings are defined to be the mean of the center and context embeddings.
+        self._embedding = tf.math.add(self.center_embeddings, self.context_embeddings)

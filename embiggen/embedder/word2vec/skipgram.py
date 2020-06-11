@@ -168,7 +168,7 @@ class SkipGram(Word2Vec):
 
     # TODO! this train method must receive the arguments that we don't need
     # TODO! most likely this method should be renames to 'fit'
-    def train(self) -> List[float]:
+    def DEPRECATEDtrain(self) -> List[float]:
         """
         Trying out passing a simple Tensor to get_batch
         :return:
@@ -225,7 +225,19 @@ class SkipGram(Word2Vec):
         return loss_history
 
     def _fit_list_of_lists(self):
-        pass
+        window_len = 2 * self.context_window + 1
+        batchnum = 0
+        for epoch in range(1, self.n_epochs + 1):
+            for sentence in self.data:
+                # Sentence is a Tensor
+                sentencelen = len(sentence)
+                if sentencelen < window_len:
+                    continue
+                batch_x, batch_y = self.next_batch(sentence)
+                batchnum += 1
+                current_loss = self.run_optimization(batch_x, batch_y)
+                self.on_batch_end(batch=batchnum,epoch=epoch,log= {"loss":"{}".format(current_loss)})
+            self.on_epoch_end(batch=batchnum,epoch=epoch,log={"loss":"{}".format(current_loss)})
 
     def _fit_list(self):
         data = self.data  #

@@ -24,6 +24,7 @@ class Embiggen:
         # TODO: a very long docstring showing the possible usages of Embiggen.
         self._model = None  # TODO! move the constructor of the model here!
         self._transformer = GraphPartitionTransfomer(method=edge_creation)
+        self._embedding = None
 
     def _get_embedding_model(
         self,
@@ -66,8 +67,7 @@ class Embiggen:
             vocab_size=vocab_size,
             embedding_size=embedding_size,
             context_size=context_window,
-            num_epochs=epochs,
-            callbacks=callbacks
+            num_epochs=epochs
         )
 
     def fit(
@@ -131,7 +131,7 @@ class Embiggen:
                         samples_per_window=samples_per_window,
                         callbacks=callbacks)
 
-        self._transformer.fit(self.embedding)
+        self._transformer.fit(self._embedding)
 
     def transform(self, positives: Graph, negatives: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return tuple of embedded positives and negatives graph partitions.
@@ -180,7 +180,7 @@ class Embiggen:
         ---------------------
         Computed embedding.
         """
-        return self._model.embedding
+        return self._model._embedding
 
     def save_embedding(self, path: str):
         """Save the computed embedding to the given file.
