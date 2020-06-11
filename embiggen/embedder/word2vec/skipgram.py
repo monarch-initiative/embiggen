@@ -12,12 +12,8 @@ class SkipGram(Word2Vec):
     Class to run word2vec using skip grams
     """
 
-    def __init__(self,  data: Union[tf.Tensor, tf.RaggedTensor],
-                word2id: Dict[str, int], 
-                id2word: List[str], 
-                devicetype: "cpu") -> None:
-
-        super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype)
+    def __init__(self, devicetype: "cpu") -> None:
+        super().__init__(devicetype=devicetype)
         self.data_index: int = 0
         self.current_sentence: int = 0
 
@@ -240,7 +236,7 @@ class SkipGram(Word2Vec):
             self.on_epoch_end(batch=batchnum,epoch=epoch,log={"loss":"{}".format(current_loss)})
 
     def _fit_list(self):
-        data = self.data  #
+        data = self._data  #
         data_index = 0
         window_len = 2 * self.context_window + 1
         step = 0
@@ -286,8 +282,8 @@ class SkipGram(Word2Vec):
     
 
     def fit(self,  data: Union[tf.Tensor, tf.RaggedTensor],
-        worddict: Dict[str,int],
-        reverse_worddict: Dict[int, str],
+        word2id: Dict[str,int],
+        id2word: Dict[int, str],
         learning_rate: float,
         batch_size: int,
         epochs: int,
@@ -304,6 +300,9 @@ class SkipGram(Word2Vec):
             
         """
         super().fit(
+            data=data,
+            word2id=word2id,
+            id2word=id2word,
             learning_rate=learning_rate,
             batch_size=batch_size,
             epochs=epochs,

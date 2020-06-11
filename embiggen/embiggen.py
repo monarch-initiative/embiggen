@@ -123,14 +123,11 @@ class Embiggen:
 
         if self._embedding_method == EmbeddingMethod.skipgram:
             self._model = SkipGram(
-                data=data,
-                word2id=worddict,
-                id2word=reverse_worddict,
                 devicetype=devicetype,
             )
             self._model.fit(data=data, 
-                        worddict=worddict, 
-                        reverse_worddict=reverse_worddict, 
+                        word2id=worddict, 
+                        id2word=reverse_worddict, 
                         learning_rate=learning_rate,
                         batch_size=batch_size,
                         epochs=epochs,
