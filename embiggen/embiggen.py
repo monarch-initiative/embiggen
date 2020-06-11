@@ -4,11 +4,20 @@ from embiggen import SkipGram, Cbow, GloVeModel, CooccurrenceEncoder
 from .transformers import GraphPartitionTransfomer
 from typing import Tuple, Union, Dict
 import numpy as np  # type: ignore
+import enum
+
+class EmbeddingMethod(enum.Enum):
+    """
+    Enumeraton of available embedding methods.
+    """
+    skipgram = 1
+    cbow = 2
+    glove = 3
 
 
 class Embiggen:
 
-    def __init__(self, embedding_method: str = "skipgram", edge_creation="hadamard"):
+    def __init__(self):
         """Returns new instance of Embiggen.
 
         Parameters
@@ -23,7 +32,6 @@ class Embiggen:
         """
         # TODO: a very long docstring showing the possible usages of Embiggen.
         self._model = None  # TODO! move the constructor of the model here!
-        self._transformer = GraphPartitionTransfomer(method=edge_creation)
         self._embedding = None
 
     def _get_embedding_model(
@@ -41,41 +49,33 @@ class Embiggen:
         # TODO: add notes for the various parameters relative to which parameters
         # and add exceptions relative to the invalid ranges for the specific
         # parameters.
-        if embedding_model == "skipgram":
+        if self._embedding_method == EmbeddingMethod.skipgram:
             return SkipGram(
                 data=data,
                 word2id=worddict,
                 id2word=reverse_worddict,
                 devicetype=devicetype,
             )
-        if embedding_model == "cbow":
-            return Cbow(
-                data=data,
-                word2id=worddict,
-                id2word=reverse_worddict,
-                devicetype=devicetype,
+  
+        elif embedding_model == EmbeddingMethod.glove:
+            vocab_size = len(worddict)
+            cencoder = CooccurrenceEncoder(
+                data,
+                window_size=window_size,
+                vocab_size=vocab_size
             )
-        # !TODO: Figure out API for vocab size. For now, take all words
-        vocab_size = len(worddict)
-        cencoder = CooccurrenceEncoder(
-            data,
-            window_size=window_size,
-            vocab_size=vocab_size
-        )
-        return GloVeModel(
-            co_oc_dict=cencoder.build_dataset(),
-            vocab_size=vocab_size,
-            embedding_size=embedding_size,
-            context_size=context_window,
-            num_epochs=epochs
-        )
+            return GloVeModel()
+        else:
+            # should never happen
+            raise ValueError("Unrecognized EmbeddingModel type")
 
     def fit(
         self,
         data: Union[tf.Tensor, tf.RaggedTensor],
         worddict: Dict[str,int],
         reverse_worddict: Dict[int, str],
-        embedding_model: str = "cbow",
+        embedding_method: str = "skipgram", 
+        edge_creation="hadamard",
         learning_rate: float = 0.05,
         batch_size: int = 128,
         number_negative_samples: int = 7,
@@ -84,6 +84,10 @@ class Embiggen:
         embedding_size: int = 200,
         context_window: int = 2,
         window_size: int = 2,
+        min_occurrences: int = 2,
+        scaling_factor: float = 0.75, 
+        cooccurrence_cap: int =100,
+        devicetype="cpu",
         callbacks: Tuple = ()
     ):
         """Fit model using input data (Tensors dervied from a Graph or a text).
@@ -100,26 +104,31 @@ class Embiggen:
             If given embedding model must be 'cbow', 'skipgram' or 'glove'.
 
         """
+        if not isinstance(embedding_method, str):
+                raise TypeError("embedding_method must be a string")
+        method = embedding_method.lower()
+        if method == 'skipgram':
+            self._embedding_method = EmbeddingMethod.skipgram
+        elif method == 'cbow':
+            self._embedding_method = EmbeddingMethod.cbow
+        elif method == 'glove':
+            self._embedding_method = EmbeddingMethod.glove
+        else:
+            raise ValueError("embedding method must be one of skipgram, cbow, glove")
+        if not isinstance(edge_creation, str):
+            raise TypeError("edge_creation must be a string")
+        if not edge_creation in {"hadamard"}:
+            raise TypeError("TODO ADD OTHER EDGE CREATION METHODS")
+        self._transformer = GraphPartitionTransfomer(method=edge_creation)
 
-        if embedding_model not in ("skipgram", "cbow", "glove"):
-            raise ValueError(
-                "Given embedding model must be 'cbow', 'skipgram' or 'glove'")
-
-        # TODO! move this constructor to the constructor of the class.
-        self._model = self._get_embedding_model(
-            data=data,
-            worddict=worddict,
-            reverse_worddict=reverse_worddict,
-            embedding_model=embedding_model,
-            epochs=epochs,
-            embedding_size=embedding_size,
-            context_window=context_window,
-            window_size=window_size
-        )
-
-        # TODO! this train method must receive the arguments that we don't need
-        # to pass to the constructor of the model.
-        self._model.fit(data=data, 
+        if self._embedding_method == EmbeddingMethod.skipgram:
+            self._model = SkipGram(
+                data=data,
+                word2id=worddict,
+                id2word=reverse_worddict,
+                devicetype=devicetype,
+            )
+            self._model.fit(data=data, 
                         worddict=worddict, 
                         reverse_worddict=reverse_worddict, 
                         learning_rate=learning_rate,
@@ -130,8 +139,40 @@ class Embiggen:
                         number_negative_samples=number_negative_samples,
                         samples_per_window=samples_per_window,
                         callbacks=callbacks)
-
-        self._transformer.fit(self._embedding)
+        elif self._embedding_method == EmbeddingMethod.cbow:
+            self._model = Cbow(
+                data=data,
+                word2id=worddict,
+                id2word=reverse_worddict,
+                devicetype=devicetype,
+            )
+            self._model.fit(data=data, 
+                        worddict=worddict, 
+                        reverse_worddict=reverse_worddict, 
+                        learning_rate=learning_rate,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        embedding_size=embedding_size,
+                        context_window=context_window,
+                        number_negative_samples=number_negative_samples,
+                        callbacks=callbacks)
+        elif self._embedding_method == EmbeddingMethod.glove:
+            self._model = GloVeModel()
+            print("About to Glove fit")
+            self._model.fit(data=data, 
+                        worddict=worddict, 
+                        reverse_worddict=reverse_worddict, 
+                        learning_rate=learning_rate,
+                        min_occurrences=min_occurrences,
+                        scaling_factor=scaling_factor,
+                        cooccurrence_cap=cooccurrence_cap,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        embedding_size=embedding_size,
+                        context_window=context_window,
+                        callbacks=callbacks)
+        # !TODO WHAT SHOULD THE TRANSFORMER DO?
+        #self._transformer.fit(self._embedding)
 
     def transform(self, positives: Graph, negatives: Graph) -> Tuple[np.ndarray, np.ndarray]:
         """Return tuple of embedded positives and negatives graph partitions.

@@ -75,15 +75,6 @@ class Word2Vec(Embedder):
         
         
         """
-        if not isinstance(number_negative_samples, int) or number_negative_samples < 1:
-                raise ValueError((
-                "Given number_negative_samples {} is not an int or is less than 1"
-            ).format(number_negative_samples))
-
-        # We expect that all words in the corpus are listed in worddict
-        # !TODO: What about UNK?
-        self.context_window = context_window
-
         if number_negative_samples > self._vocabulary_size:
             raise ValueError((
                 "Given number_negative_samples {} is larger than the vocabulary size. "

@@ -14,39 +14,8 @@ class NotFitToCorpusError(Exception):
 
 
 class GloVeModel(Embedder):
-    def __init__(self, co_oc_dict, vocab_size, embedding_size, context_size, min_occurrences=1,
-                 scaling_factor=3 / 4, cooccurrence_cap=100, batch_size=128, learning_rate=0.05,
-                 num_epochs=5,callbacks:Tuple=()):
+    def __init__(self):
         # super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
-        self.co_oc_dict = co_oc_dict
-        self.vocab_size = vocab_size
-        self.embedding_size = embedding_size
-        if isinstance(context_size, tuple):
-            self.left_context, self.right_context = context_size
-        elif isinstance(context_size, int):
-            self.left_context = self.right_context = context_size
-        else:
-            raise ValueError("`context_size` should be an int or a tuple of two ints")
-        self.min_occurrences = min_occurrences
-        self.scaling_factor = scaling_factor
-        self.cooccurrence_cap = cooccurrence_cap
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
-        self.num_epochs = num_epochs
-        self.epsilon = 0.0001
-        self.center_embeddings = tf.Variable(
-            tf.random.uniform([vocab_size, embedding_size], -1.0, 1.0), name='center.embeddings')
-        self.center_bias = tf.Variable(tf.random.uniform([vocab_size], -1.0, 1.0, dtype=tf.float32),
-                                       name='center.bias')
-        self.context_embeddings = tf.Variable(
-            tf.random.uniform([vocab_size, embedding_size], -1.0, 1.0), name='context.embeddings')
-        self.context_bias = tf.Variable(tf.random.uniform([vocab_size], -1.0, 1.0, dtype=tf.float32),
-                                        name='context.bias')
-        self.count_max = tf.constant([self.cooccurrence_cap], dtype=tf.float32,
-                                     name='max_cooccurrence_count')
-        self.scaling_factor = tf.constant([self.scaling_factor], dtype=tf.float32,
-                                          name="scaling_factor")
-        self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
         self._embedding = None
 
     def get_embeds(self, train_dataset, train_labels):
@@ -119,7 +88,7 @@ class GloVeModel(Embedder):
         batches = self.__prepare_batches()
         losses = []
         batchnum = 0
-        for epoch in range(1, 1+self.num_epochs):
+        for epoch in range(1, 1+self.epochs):
             shuffle(batches)
             for batch_index, batch in enumerate(batches):
                 i_s, j_s, x_ij_s = batch
@@ -153,13 +122,88 @@ class GloVeModel(Embedder):
             worddict : Dict, 
             reverse_worddict: Dict, 
             learning_rate: float,
+            min_occurrences: int,
+            scaling_factor: float, 
+            cooccurrence_cap: int,
             batch_size: int,
             epochs: int,
             embedding_size: int,
-            context_window: int,
-            number_negative_samples: int,
-            samples_per_window: int,
-            callbacks: Tuple):
+            context_window: Union[int, Tuple[int]],
+
+            callbacks: Tuple["Callback"]):
+        """
+        Set up and run the GloVe training
+        Parameters
+        ---------------------
+        data: Union[tf.Tensor, tf.RaggedTensor],
+            A list of integers representing either a text or nodes of a graph
+        learning_rate: float = 0.05,
+            A float between 0 and 1 that controls how fast the model learns to solve the problem.
+        batch_size: int = 128,
+            The size of each "batch" or slice of the data to sample when training the model.
+        epochs: int = 1,
+            The number of epochs to run when training the model.
+        embedding_size: int = 128,
+            Dimension of embedded vectors.
+        context_window: int = 3,
+            How many words to consider left and right (can be an int or a Duple)
+        callbacks: Tuple["Callback"] = (),
+            List of callbacks to be called on epoch end and on batch end.
+
+        Raises
+        ----------------------
+        ValueError,
+            If given learning rate is not a strictly positive real number.
+        ValueError,
+            If given tensor is not 2-dimensional.
+        ValueError,
+            If given batch_size is not a strictly positive integer number.
+        ValueError,
+            If given epochs is not a strictly positive integer number.
+        ValueError,
+            If context_size is not a strictly positive integer
+
+        """
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.embedding_size = embedding_size
+        if isinstance(context_window, tuple):
+            self.left_context, self.right_context = context_window
+        elif isinstance(context_window, int):
+            self.left_context = self.right_context = context_window
+        else:
+            raise ValueError("`context_size` should be an int or a tuple of two ints")
+        super().fit(
+            data=data,
+            word2id=worddict,
+            id2word=reverse_worddict,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            callbacks=callbacks)
+        self.min_occurrences = min_occurrences
+        self.scaling_factor = scaling_factor
+        self.cooccurrence_cap = cooccurrence_cap
+        self.epsilon = 0.0001
+        vocab_size = self._vocabulary_size
+        self.center_embeddings = tf.Variable(
+            tf.random.uniform([vocab_size, embedding_size], -1.0, 1.0), name='center.embeddings')
+        self.center_bias = tf.Variable(tf.random.uniform([vocab_size], -1.0, 1.0, dtype=tf.float32),
+                                       name='center.bias')
+        self.context_embeddings = tf.Variable(
+            tf.random.uniform([vocab_size, embedding_size], -1.0, 1.0), name='context.embeddings')
+        self.context_bias = tf.Variable(tf.random.uniform([vocab_size], -1.0, 1.0, dtype=tf.float32),
+                                        name='context.bias')
+        self.count_max = tf.constant([self.cooccurrence_cap], dtype=tf.float32,
+                                     name='max_cooccurrence_count')
+        self.scaling_factor = tf.constant([self.scaling_factor], dtype=tf.float32,
+                                          name="scaling_factor")
+        self.callbacks = []
+        self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
+
         print("fit method from glove")
         self.vocab_size = len(worddict)
         self.callbacks = callbacks
@@ -169,11 +213,12 @@ class GloVeModel(Embedder):
             window_size=context_window,
             vocab_size=self.vocab_size
         )
+        self.co_oc_dict = cencoder.build_dataset()
         print("Fitting GloVe...")
         batches = self.__prepare_batches()
         losses = []
         batchnum = 0
-        for epoch in range(1, 1+self.num_epochs):
+        for epoch in range(1, 1+self.epochs):
             shuffle(batches)
             for batch_index, batch in enumerate(batches):
                 batchnum += 1
