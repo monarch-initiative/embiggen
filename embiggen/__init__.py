@@ -14,7 +14,7 @@ from .embedder.word2vec.skipgram import SkipGram
 from .embedder.glove import GloVeModel
 from .embedder.glove import CooccurrenceEncoder
 from .embiggen import Embiggen
-from .embedder.callbacks import Shelldump
+from .embedder.callbacks import Shelldump, History
 
 __all__ = [
     "Graph", "GraphFactory", "Embiggen", "TextEncoder",

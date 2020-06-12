@@ -166,6 +166,10 @@ class Embedder:
     def on_epoch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
         for cb in self.callbacks:
             cb.on_epoch_end(batch=batch,epoch=epoch, log=log)
+    
+    def on_training_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
+        for cb in self.callbacks:
+            cb.on_training_end(batch=batch,epoch=epoch, log=log)
 
     def transform(self):
         pass

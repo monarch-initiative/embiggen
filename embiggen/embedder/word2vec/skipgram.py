@@ -278,6 +278,7 @@ class SkipGram(Word2Vec):
                 self.run_optimization(batch_x, batch_y)
                 self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
             self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
+        self.on_training_end(batch=batch, epoch=epoch, log={})
 
     
 
