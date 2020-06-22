@@ -11,7 +11,7 @@ class TestEmbiggen(TestCase):
     def setUp(self):
         self.graphs = []
 
-        factory = GraphFactory()
+        factory = GraphFactory(verbose=False)
         # TODO! Uncomment for testing for the ragged tensors!
         #directed_factory = GraphFactory(default_directed=True)
         # For heterogeneous test

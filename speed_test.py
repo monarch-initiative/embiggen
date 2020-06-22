@@ -1,18 +1,22 @@
+import silence_tensorflow.auto
 from time import time
 from humanize import naturaldelta
 from embiggen import GraphFactory
 import compress_json
 import json
 
+
 start = time()
-factory = GraphFactory(default_directed=True)
+factory = GraphFactory(verbose=True)
 graph = factory.read_csv(
     "pos_train_edges.tsv",
     "pos_train_nodes.tsv"
 )
+#graph.build_graph_alias()
 completed_graph = time() - start
 start_walk = time()
-graph.random_walk(number=10, length=80)
+#graph.random_walk(number=10, length=80)
+graph.lazy_random_walk(number=10, length=80)
 delta = time() - start
 total_walk_time = time() - start_walk
 
