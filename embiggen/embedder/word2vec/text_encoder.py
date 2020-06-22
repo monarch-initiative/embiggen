@@ -1,12 +1,14 @@
 import nltk  # type: ignore
+import numpy as np  # type: ignore
 import os
+import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 import re
 
 from collections import Counter
 from more_itertools import unique_everseen  # type: ignore
 from pandas.core.common import flatten  # type: ignore
-from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore
+from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore # pylint: disable=import-error
 from typing import Dict, List, Optional, Tuple, Union
 
 
@@ -21,34 +23,67 @@ class TextEncoder:
 
     Attributes:
         filename: A filepath and name to text which needs encoding.
+        payload_index: An integer that if specified is used to process a specific column from an input csv file.
+        header: An integer, that if specified contains the row index of the input data containing file header info.
+        delimiter: A string containing the file delimiter type.
         data_type: A string which is used to indicate whether or not the data should be read in as a single text
             object or as a list of sentences. Passed values can be "words" or "sentences" (default="sentences").
         stopwords: A set of stopwords. If nothing is passed by user a default list of stopwords is utilized.
+        minlen: minimum length to include a sentence. If a sentence is shorter, it will be skipped.
 
     Raises:
-        ValueError: If the filename is None.
-        TypeError: If the filename attribute is not a string.
+        ValueError: If filename is None.
+        TypeError: If filename and delimiter (when specified) are not strings.
+        TypeError: If payload_index, header, and minlen (when specified) are not integers.
         IOError: If the file referenced by filename could not be found.
+        TypeError: If payload_index is not an integer.
+        ValueError: If data_type is not "words" or "sentences".
     """
 
-    def __init__(self, filename: str, data_type: Optional[str] = None, stopwords: set = None):
+    def __init__(self, filename: str, payload_index: Optional[int] = None, header: Optional[int] = None,
+                 delimiter: Optional[str] = None, data_type: Optional[str] = None, stopwords: set = None, minlen: int
+                 = 10):
 
-        if filename is None:
+        # verify filename structure
+        if not filename:
             raise ValueError('filename cannot be None')
-        if not isinstance(filename, str):
+        elif not isinstance(filename, str):
             raise TypeError('filename must be a string')
-        if not os.path.exists(filename):
-            raise IOError('Could not find file referenced by filename: {}'.format(filename))
+        elif not os.path.exists(filename):
+            raise IOError('could not find file referenced by filename: {}'.format(filename))
+        else:
+            self.filename = filename
 
-        self.filename = filename
+        if payload_index and not isinstance(payload_index, int):
+            raise TypeError('payload_index must be an integer')
+        else:
+            self.payload_index = payload_index if payload_index else None
 
-        self.data_type = data_type if data_type else 'sentences'
+            if header and not isinstance(header, int):
+                raise TypeError('header must be an integer')
+            else:
+                self.header = header if header else None
+
+            if delimiter and not isinstance(delimiter, str):
+                raise TypeError('delimiter must be a string')
+            else:
+                self.delimiter = delimiter if delimiter else '\t'
+
+        if data_type and data_type.lower() not in ['sentences', 'words']:
+            raise ValueError('data_type must be "words" or "sentences"')
+        else:
+            self.data_type = data_type.lower() if data_type else 'sentences'
 
         try:
-            self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
+            self.stopwords = nltk.corpus.stopwords.words('english') if not stopwords else stopwords
         except LookupError:
             nltk.download('stopwords')
-            self.stopwords = nltk.corpus.stopwords.words('english') if stopwords is None else stopwords
+            self.stopwords = nltk.corpus.stopwords.words('english') if not stopwords else stopwords
+
+        if not isinstance(minlen, int):
+            raise TypeError('minlen must be an integer')
+        else:
+            self.minlen = minlen
 
     def clean_text(self, text: str) -> str:
         """Takes a text string and performs several tasks that are intended to clean the text including making the
@@ -101,14 +136,32 @@ class TextEncoder:
             text: A string or list of stings of text from the read in file.
         """
 
-        print('Reading data from {filename} and processing it as {data_type}'.format(filename=self.filename,
-                                                                                     data_type=self.data_type))
-        if self.data_type == 'words':
-            word_data = open(self.filename).read()
-            return self.clean_text(word_data).split()
+        print('Reading data from {file} and processing it {type}'.format(file=self.filename, type=self.data_type))
+
+        # read in data
+        if self.payload_index:
+            data = pd.read_csv(self.filename, sep=self.delimiter, header=self.header)
+            sentence_data = list(data[list(data).index(self.payload_index)])
         else:
-            sentence_data = open(self.filename).readlines()
-            return [self.clean_text(sent) for sent in sentence_data]
+            with open(self.filename, 'r') as input_file:
+                sentence_data = input_file.readlines()
+            input_file.close()
+
+        # clean input text
+        cleaned_sentences = [self.clean_text(sent) for sent in sentence_data]
+
+        if self.data_type == 'words':
+            return [word for word in ' '.join(cleaned_sentences).split()]
+        else:
+            return [sent for sent in cleaned_sentences if sent.count(' ') + 1 >= self.minlen]
+
+    # TODO! Use fit and transform instead of a constructor that does everything.
+    def fit(self, corpus):
+        pass
+
+    # TODO! Use fit and transform instead of a constructor that does everything.
+    def transform(self, x: np.ndarray):
+        pass
 
     def build_dataset(self, max_vocab=50000) -> Tuple[Union[tf.Tensor, tf.RaggedTensor], List, Dict, Dict]:
         """A TensorFlow implementation of the text-encoder functionality.
@@ -136,11 +189,13 @@ class TextEncoder:
         text = self.process_input_text()
 
         # get word count and set max_vocab_size
+        # TODO: Figure out why is there is if statement and why isn't tokenizer the default.
         if self.data_type == 'words':
             word_count = len(set(text))
             max_vocab = min(max_vocab, word_count) + 1
             word_index_list = list(zip(['UNK'] + list(unique_everseen(text)), range(1, word_count + 2)))
-            sequences = [[x[1] - 1 for x in word_index_list if word in x[0]][0] for word in text]
+            word_index_dict = dict(word_index_list)
+            sequences = [word_index_dict[word] - 1 for word in text]
         else:
             word_count = len(set([word for sentence in text for word in sentence.split()]))
             max_vocab = min(max_vocab, word_count) + 1
@@ -160,7 +215,7 @@ class TextEncoder:
                     filtered_count['UNK'] = 0
                     dictionary['UNK'] = 1
                 else:
-                    filtered_count[k] = count[v-1]
+                    filtered_count[k] = count[v - 1]
                     dictionary[k] = v
             else:
                 filtered_count['UNK'] += 1
@@ -171,13 +226,13 @@ class TextEncoder:
         if max_vocab != len(count_list):
             raise ValueError('The length of count_as_tuples does not match max_vocab_size.')
         else:
-            #try:
+            # try:
             #    tensor_data = tf.data.Dataset.from_tensor_slices(sequences)
-            #except ValueError:
+            # except ValueError:
             #    tensor_data = tf.ragged.constant(sequences)  # for nested lists of differing lengths
             if isinstance(sequences, list):
                 tensor_data = tf.ragged.constant(sequences)
             else:
-                tensor_data = tf.convert_to_tensor(sequences) # should now be a 1D tensor
+                tensor_data = tf.convert_to_tensor(sequences)  # should now be a 1D tensor
 
         return tensor_data, count_list, dictionary, reverse_dictionary
