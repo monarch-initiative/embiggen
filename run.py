@@ -1,5 +1,5 @@
 import argparse
-from embiggen import Graph, GraphFactory, Embiggen
+from embiggen import Embiggen
 from embiggen.neural_networks import MLP, FFNN
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression

@@ -49,9 +49,7 @@ setup(
         'tensorflow>=2.0.0',
         'click',
         'sanitize_ml_labels',
-        'cache_decorator',
-        "numba",
-        "dict_hash>=1.1.1",
+        "ensmallen_graph>=0.1.0",
         "colorama"
     ],
     tests_require=test_deps,
