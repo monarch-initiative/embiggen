@@ -58,6 +58,8 @@ def calculate_cosine_similarity(x_embed: tf.Tensor, embedding: Union[np.ndarray,
             cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
         """
 
+    # !TODO: Consider implementing this simply in scipy
+
     with tf.device(device):
         x_embed_cast = tf.cast(x_embed, tf.float32)
         x_embed_norm = x_embed_cast / \

@@ -97,15 +97,111 @@ class Graph(Hashable):
         return self._graph.sources
 
     @property
-    def destinations(self) -> np.ndarray:
-        """Return destinations indices.
+    def worddictionary(self) -> Dict[str, int]:
+        """Return mapping for nodes to numeric node ID."""
+        # TODO: this method is used too much internally within the w2v.
+        # We should use the numeric indices internally.
+        return self._graph._nodes_mapping
 
-        Returns
+    @property
+    def reverse_worddictionary(self) -> List[str]:
+        """Return mapping for numeric nodes ID to nodes."""
+        return self.nodes_indices
+
+    # !TODO: Integrate this with graph!
+    def DegreeProduct(self, node_1, node_2) -> float:
+        ''' Function takes a CSF graph object and list of edges calculates the Degree Product or Preferential Attachment for these
+        nodes given the structure of the graph.
+        :param graph: Graph  object
+        :param node_1: one node of graph
+        :param node_2: one node of a graph
+        :return: Degree Product score of the nodes
+        '''
+
+        return self._graph.degree(node_1) * self._graph.degree(node_2)
+
+    # !TODO: Integrate this with graph!
+    # !TODO: what exactly is a common neighbors score???
+    def CommonNeighbors(self, node_1, node_2):
+        ''' Function takes a CSF graph object and list of edges calculates the Common Neighbors for these nodes given the
+        structure of the graph.
+        :param node_1: one node of graph
+        :param node_2: one node of a graph
+        :return: Common Neighbors score of the nodes
+        '''
+
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
+
+        if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
+            score = 0.0
+
+        elif len(node_1_neighbors.intersection(node_2_neighbors)) == 0:
+            score = 0.0
+
+        else:
+            n_intersection = node_1_neighbors.intersection(node_2_neighbors)
+            score = float(len(n_intersection))
+
+        return score
+
+    # !TODO: Integrate this with graph!
+    def Jaccard(self, node_1, node_2):
+        ''' Function takes a CFS graph object and list of edges calculates the Jaccard for these nodes given the
+        structure of the graph.
+        :param graph: CFS graph object
+        :param node_1: one node of graph
+        :param node_2: one node of a graph
+        :return: The Jaccard score of two nodes
+        '''
+
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
+
+        if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
+            score = 0.0
+
+        elif len(node_1_neighbors.intersection(node_2_neighbors)) == 0:
+            score = 0.0
+
+        else:
+            n_intersection = set(node_1_neighbors.intersection(node_2_neighbors))
+            n_union = set(node_1_neighbors.union(node_2_neighbors))
+            score = float(len(n_intersection))/len(n_union)
+
+        return score
+
+    # !TODO: Integrate this with graph!
+    def AdamicAdar(self, node_1, node_2):
+        ''' Function takes a CSF graph object and list of edges calculates the Adamic Adar for the nodes given the
+        structure of the graph.
+        :param graph: CSF graph object
+        :param node_1: a node of the graph
+        :param node_2: one node of a graph
+        :return: AdamicAdar score of the nodes
+        '''
+
+        node_1_neighbors = set(self._graph.neighbors(node_1))
+        node_2_neighbors = set(self._graph.neighbors(node_2))
+
+        if len(node_1_neighbors) == 0 or len(node_2_neighbors) == 0:
+            score = 0.0
+
+        elif len(node_1_neighbors.intersection(node_2_neighbors)) == 0:
+            score = 0.0
+
+        else:
+            score = 0.0
+            n_intersection = node_1_neighbors.intersection(node_2_neighbors)
+
+            for c in n_intersection:
+                score += 1/np.log(self._graph.degree(c))
+        return score
+
+    def degree(self, node: int) -> int:
+        """Return degree of given node.
+
+        Parameters
         ---------------------
-        Numpy array of destinations indices.
-        """
-        return self._graph.destinations
-
-    # def consistent_hash(self) -> str:
-    #     """Return hash for the current instance of the graph."""
-    #     return self._consistent_hash
+        node: int,
+            The node whose neigbours are to be identified.
