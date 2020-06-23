@@ -13,9 +13,8 @@ class NotFitToCorpusError(Exception):
     pass
 
 
-class GloVeModel(Embedder):
+class GloVe(Embedder):
     def __init__(self):
-        # super().__init__(data=data, word2id=word2id, id2word=id2word, devicetype=devicetype, callbacks=callbacks)
         self._embedding = None
 
     def get_embeds(self, train_dataset, train_labels):

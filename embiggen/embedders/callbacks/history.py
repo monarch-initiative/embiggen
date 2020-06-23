@@ -1,6 +1,7 @@
 from .callback import Callback
-from statistics import mean 
+from statistics import mean
 from typing import Dict
+
 
 class History(Callback):
     """
@@ -14,7 +15,8 @@ class History(Callback):
             Determines how many loss values will be averaged per recorded
             data point
     """
-    def __init__(self,batch_count_for_avg: int = 10):
+
+    def __init__(self, batch_count_for_avg: int = 10):
         super().__init__()
         self.batch_count_for_avg = batch_count_for_avg
         self.loss_current = []
@@ -38,7 +40,7 @@ class History(Callback):
 
     def get_loss_history(self):
         return self.loss_history
- 
+
     def get_batch_count_for_avg(self):
         """
         Get the number of batches averaged for one point of the history

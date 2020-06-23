@@ -2,43 +2,38 @@ import tensorflow as tf
 from typing import Union, Tuple, Dict, List
 import numpy as np
 import pandas as pd
+import os
 
 
 class Embedder:
 
-    def __init__(self, 
-                devicetype: "cpu"):
+    def __init__(self):
         """Abstract class for Embedder objects.
         """
-        self._devicetype = devicetype
         # TODO! Understand why there is a +1 here.
         self._vocabulary_size = None
-        self.learning_rate = None # needs to be set in fit method
+        self.learning_rate = None  # needs to be set in fit method
         self.embedding_size = None
-        self.batch_size = None 
+        self.batch_size = None
         self.epochs = None
         self.callbacks = []
 
     def fit(
         self,
         data: Union[tf.Tensor, tf.RaggedTensor],
-                word2id: Dict[str, int], 
-                id2word: List[str], 
-        learning_rate: float,
-        batch_size: int,
-        epochs: int,
-        embedding_size: int,
-        context_window: int,
+        vocabulary_size: int,
+        learning_rate: float = 0.05,
+        batch_size: int = 128,
+        epochs: int = 10,
+        embedding_size: int = 200,
+        context_window: int = 2,
         callbacks: Tuple["Callback"] = ()
     ):
         """Fit the Embedder model.
 
           Parameters
         ----------------------
-        word2id: Dict[str, int],
-            Mapping between the word name and a numeric ID.
-        id2word: List[str],
-            Mapping between the numeric ID and word name
+        !TODO! Update docstring!
         learning_rate: float = 0.05,
             A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: int = 128,
@@ -75,20 +70,9 @@ class Embedder:
             If context_size is not a strictly positive integer
             Raises
         """
-        if not word2id:
-                raise ValueError("Given word2id dictionary is empty.")
-        if not id2word:
-            raise ValueError("Given id2word list is empty.")
-        if len(word2id) != len(id2word):
-            raise ValueError(
-                "Given word mapping and word reverse "
-                "mapping have not the same length."
-            )
         if data is None:
             raise ValueError("data argument is empty")
         self._data = data
-        self._word2id = word2id
-        self._id2word = id2word
         if isinstance(data, tf.Tensor):
             self._is_list_of_lists = False
         elif isinstance(data, tf.RaggedTensor):
@@ -141,7 +125,7 @@ class Embedder:
         # not seem to always work. Currently, the fit mehtods will just skip things that
         # are too short
         # Checking if the context window is valid for given tensor shape.
-        #for sequence in self.data:
+        # for sequence in self.data:
         #    if context_window > tf.size(sequence):
         #        raise ValueError((
         #            "Given context window ({}) is larger than at least one of "
@@ -150,7 +134,7 @@ class Embedder:
         if len(callbacks) > 0:
             self.callbacks = callbacks
 
-        self._vocabulary_size = len(self._word2id)
+        self._vocabulary_size = vocabulary_size
 
         # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"
@@ -160,16 +144,43 @@ class Embedder:
             )
 
     def on_batch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
-        for cb in self.callbacks:
-            cb.on_batch_end(epoch=epoch,batch=batch, log=log)
+        """Call all callbacks events for the batch end event.
 
-    def on_epoch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
+        Parameters
+        ----------------------------
+        epoch: int,
+            Current epoch that has just completed.
+        batch: int,
+            Current batch that has just completed.
+        log: Dict[str, str] = None
+            Additional parameters to pass to the events.
+        """
         for cb in self.callbacks:
-            cb.on_epoch_end(batch=batch,epoch=epoch, log=log)
-    
-    def on_training_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
+            cb.on_batch_end(epoch=epoch, batch=batch, log=log)
+
+    def on_epoch_end(self,  epoch: int, log: Dict[str, str] = None):
+        """Call all callbacks events for the batch end event.
+
+        Parameters
+        ----------------------------
+        epoch: int,
+            Current epoch that has just completed.
+        log: Dict[str, str] = None
+            Additional parameters to pass to the events.
+        """
         for cb in self.callbacks:
-            cb.on_training_end(batch=batch,epoch=epoch, log=log)
+            cb.on_epoch_end(epoch=epoch, log=log)
+
+    def on_training_end(self, log: Dict[str, str] = None):
+        """Call all callbacks events for the batch end event.
+
+        Parameters
+        ----------------------------
+        log: Dict[str, str] = None
+            Additional parameters to pass to the events.
+        """
+        for cb in self.callbacks:
+            cb.on_training_end(log=log)
 
     def transform(self):
         pass
@@ -186,12 +197,6 @@ class Embedder:
         if self._embedding is None:
             raise ValueError("Model is not yet fitted!")
         return self._embedding.numpy()
-
-    @property
-    def devicetype(self) -> str:
-        """Return the device type (cpu/gpu)
-        """
-        return self._devicetype
 
     def save_embedding(self, path: str):
         """Save the computed embedding to the given file.

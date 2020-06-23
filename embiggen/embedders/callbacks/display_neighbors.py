@@ -1,5 +1,5 @@
 from .callback import Callback
-from
+import numpy as np
 
 
 class DisplayNeighbors(Callback):
@@ -40,8 +40,6 @@ class DisplayNeighbors(Callback):
             for k in range(top_k):
                 log_str = '%s %s,' % (log_str, self.id2word[nearest[k]])
             # print(log_str)
-
-
 
     def add_display_words(self, count: list, num: int = 5) -> None:
         """Creates a list of display nodes/words by obtaining a random sample of 'num' nodes/words from the full

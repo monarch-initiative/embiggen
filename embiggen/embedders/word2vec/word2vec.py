@@ -13,9 +13,7 @@ from ..embedder import Embedder
 class Word2Vec(Embedder):
     """Superclass of all of the word2vec family algorithms."""
 
-    def __init__(self, 
-                devicetype: "cpu",
-                ) -> None:
+    def __init__(self) -> None:
         """Create a new instance of Word2Vec.
 
         Parameters
@@ -26,32 +24,26 @@ class Word2Vec(Embedder):
         display: An integer of the number of words to display.
 
         """
-        super().__init__(devicetype=devicetype)
+        super().__init__()
         self._embedding = None
-        self._is_list_of_lists = None # must be set in fit method
-        self.context_window = None # must be set in fit method
-        self.number_negative_samples = None # must be set in fit method
-        
+        self._is_list_of_lists = None  # must be set in fit method
+        self.context_window = None  # must be set in fit method
+        self.number_negative_samples = None  # must be set in fit method
 
-
-    def fit(self,
-            data: Union[tf.Tensor, tf.RaggedTensor],
-            word2id: Dict[str,int],
-            id2word: Dict[int, str],
-            learning_rate: float,
-            batch_size: int,
-            epochs: int,
-            embedding_size: int,
-            context_window: int,
-            number_negative_samples: int,
-            callbacks: Tuple["Callback"] = ()
+    def fit(
+        self,
+        *args,
+        learning_rate: float = 0.05,
+        embedding_size: int = 200,
+        number_negative_samples: int = 7,
+        **kwargs
     ):
         """Fit the Word2Vec model.
-        
+
         Parameters
         ---------------------
         data: Union[tf.Tensor, tf.RaggedTensor],
-            
+
         learning_rate: float,
             A float between 0 and 1 that controls how fast the model learns to solve the problem (Default 0.05)
         batch_size: int,
@@ -67,19 +59,16 @@ class Word2Vec(Embedder):
             How many words to consider left and right.
         number_negative_samples: int,
             Number of negative examples to sample (default=7).
-        
-        
+
         """
-        super().fit(data=data,
-            word2id=word2id,
-            id2word=id2word,
+        super().fit(
+            *args,
             learning_rate=learning_rate,
-            batch_size=batch_size,
-            epochs=epochs,
             embedding_size=embedding_size,
-            context_window=context_window,
-            callbacks=callbacks)
-         # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
+            **kwargs
+        )
+
+        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
         with tf.device('cpu'):
             self._embedding: tf.Variable = tf.Variable(
                 tf.random.uniform(
@@ -89,13 +78,14 @@ class Word2Vec(Embedder):
             # construct the variables for the softmax loss
             tf_distribution = \
                 tf.random.truncated_normal([self._vocabulary_size, embedding_size],
-                                            mean=0.0,
-                                           stddev=0.5 / math.sqrt(embedding_size),
+                                           mean=0.0,
+                                           stddev=0.5 /
+                                           math.sqrt(embedding_size),
                                            dtype=tf.float32)
             self._nce_weights: tf.Variable = tf.Variable(tf_distribution)
             self._nce_biases = tf.Variable(
                 tf.random.uniform([self._vocabulary_size], 0.0, 0.01))
-        
+
         self.optimizer = tf.keras.optimizers.SGD(learning_rate)
 
         # Note that the super method sets the vocabulary size
@@ -107,7 +97,6 @@ class Word2Vec(Embedder):
             ).format(number_negative_samples))
         else:
             self.number_negative_samples = number_negative_samples
-
 
          # This method should be callable by any class extending this one, but
         # it can't be called since this is an "abstract method"

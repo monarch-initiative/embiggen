@@ -10,7 +10,7 @@ from more_itertools import unique_everseen  # type: ignore
 from pandas.core.common import flatten  # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore # pylint: disable=import-error
 from typing import Dict, List, Optional, Tuple, Union
-
+from ..utils import logger
 
 class TextEncoder:
     """This class takes as input a file containing text that we want to encode as integers for Word2Vec. It cleanses the
@@ -135,8 +135,8 @@ class TextEncoder:
         Returns:
             text: A string or list of stings of text from the read in file.
         """
-
-        print('Reading data from {file} and processing it {type}'.format(file=self.filename, type=self.data_type))
+        # !TODO! Discover why the info method is not available here.
+        #logger.info('Reading data from {file} and processing it {type}'.format(file=self.filename, type=self.data_type))
 
         # read in data
         if self.payload_index:

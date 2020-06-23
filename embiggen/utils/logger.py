@@ -4,7 +4,6 @@ import inspect
 import logging
 from colorama import init, Fore, Style
 import linecache
-from numba import njit, objmode
 
 ####################################################################################################
 # Configs
@@ -111,13 +110,3 @@ stream_handler = logging.StreamHandler(stream)
 stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(logging.Formatter(stream_format))
 logger.addHandler(stream_handler)
-
-
-####################################################################################################
-# Logger for numba methods
-####################################################################################################
-
-@njit
-def numba_log(msg):
-    with objmode():  # annotate return type
-        logger.info(msg)
