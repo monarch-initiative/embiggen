@@ -1,7 +1,4 @@
 from typing import Dict
-from embiggen import CSFGraph, N2vGraph
-from runLinkPrediction_ppi import read_graphs, get_random_walks
-
 
 space = {
     "p": (0.1, 10.0),  # (float)

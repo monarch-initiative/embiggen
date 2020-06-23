@@ -25,7 +25,5 @@ test.py
 
 # other
 .single_run
-embedded_graph.embedded
-N2vGraph.pkl
 htmlcov
 *.egg*
