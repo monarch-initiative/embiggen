@@ -199,7 +199,7 @@ class CBOW(Word2Vec):
         loss_history = []
         batch = 0
         epoch = 0
-        for _ in trange(1, self.epochs + 1, leave=False):
+        for _ in trange(self.epochs, leave=False):
             epoch += 1
             for sentence in X:
                 batch += 1
@@ -234,7 +234,7 @@ class CBOW(Word2Vec):
         # we need to make sure that we do not shift outside the boundaries of self.data too
         lastpos = data_len - 1  # index of the last word in data
 
-        for epoch in range(1, self.epochs + 1):
+        for epoch in trange(self.epochs, leave=False):
             # Note that we cannot fully digest all of the data in any one batch
             # if the window length is K and the natch_len is N, then the last
             # window that we get starts at position (N-K). Therefore, if we start
@@ -260,7 +260,7 @@ class CBOW(Word2Vec):
                 self.on_batch_end(batch=batch, epoch=epoch, log={
                                   "loss": "{}".format(current_loss)})
                 # Evaluation.
-            self.on_epoch_end(batch=batch, epoch=epoch, log={
+            self.on_epoch_end(epoch=epoch, log={
                               "loss": "{}".format(current_loss)})
         return loss_history
 
@@ -286,7 +286,6 @@ class CBOW(Word2Vec):
         """
         super().fit(X, *args, context_window=context_window, **kwargs)
 
-        print("cbow fit")
         if self.list_of_lists:
             # This is the case for a list of random walks
             # or for a list of text segments (e.g., a list of sentences or abstracts)
