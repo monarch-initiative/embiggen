@@ -1,13 +1,21 @@
+import tensorflow as tf
+import numpy as np
+import collections
+from typing import Union, Tuple, Dict, List
+
+from .word2vec import Word2Vec
+
+
 class Cbow(Word2Vec):
     """Class to run word2vec using continuous bag of words (cbow).
     Attributes:
         word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
-        data: A list or list of lists (if sentences or paths from node2vec).
+        X: the data, a list or list of lists (if sentences or paths from node2vec).
         device_type: A string that indicates whether to run computations on (default=cpu).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
-        num_sepochs: The number of epochs to run when training the model (default=1).
+        num_epochs: The number of epochs to run when training the model (default=1).
         embedding_size: Dimension of embedded vectors.
         max_vocabulary_size: Maximum number of words (i.e. total number of different words in the vocabulary).
         context_window: How many words to consider left and right.
@@ -24,47 +32,17 @@ class Cbow(Word2Vec):
         softmax_weights: A variable that stores the classifier weights.
         softmax_biases: A variable that stores classifier biases.
     Raises:
-        TypeError: If the self.data does not contain a list of lists, where each list contains integers.
+        TypeError: If the self.data does not contain a list or list of lists, where each list contains integers.
     """
 
-    def __init__(self, *args,  **kwargs) -> None:
-
-        super().__init__(*args, **kwargs)
-
-        # set vocabulary size
-        self.calculate_vocabulary_size()
-
-        # with toy exs the # of nodes might be lower than the default value of number_negative_samples of 7. number_negative_samples needs to
-        # be less than the # of exs (number_negative_samples is the # of negative samples that get evaluated per positive ex)
-        if self.number_negative_samples > self.vocabulary_size:
-            self.number_negative_samples = int(self.vocabulary_size / 2)
-
-        self.optimizer: tf.keras.optimizers = tf.keras.optimizers.SGD(
-            self.learning_rate)
+    def __init__(self, devicetype) -> None:
+        super().__init__(devicetype=devicetype)
+        self.optimizer: tf.keras.optimizers = None
         self.data_index: int = 0
         self.current_sentence: int = 0
+        # Note embeddings are initialized in superclass
 
-        # ensure the following ops & var are assigned on CPU (some ops are not compatible on GPU)
-        with tf.device(self.device_type):
-            # create embedding (each row is a word embedding vector) with shape (#n_words, dims) and dim = vector size
-            self._embedding: tf.Variable = tf.Variable(
-                tf.random.uniform(
-                    [self.vocabulary_size, self.embedding_size], -1.0, 1.0, dtype=tf.float32)
-            )
 
-            # should we initialize with uniform or normal?
-            # # tf.Variable(tf.random.normal([self.vocabulary_size, self.embedding_size]))
-
-            # construct the variables for the softmax loss
-            tf_distribution = tf.random.truncated_normal([self.vocabulary_size, self.embedding_size],
-                                                         stddev=0.5 /
-                                                         math.sqrt(
-                                                             self.embedding_size),
-                                                         dtype=tf.float32)
-            # get weights and biases
-            self.softmax_weights: tf.Variable = tf.Variable(tf_distribution)
-            self.softmax_biases = tf.Variable(
-                tf.random.uniform([self.vocabulary_size], 0.0, 0.01))
 
     def cbow_embedding(self, x):
         """The function performs embedding lookups for each column in the input (except the middle one) and then
@@ -79,11 +57,14 @@ class Cbow(Word2Vec):
         Raises:
             ValueError: If the shape of stacked_embeddings is not equal to twice the context_window length.
         """
+        if self._embedding is None:
+            raise ValueError('No embedding data found (i.e. embedding is None)')
 
         stacked_embeddings = None
         # print('Defining %d embedding lookups representing each word in the context' % (2 * self.context_window))
         for i in range(2 * self.context_window):
-            embedding_i = get_embedding(x[:, i], self._embedding)
+            with tf.device('cpu'):
+                embedding_i = tf.nn.embedding_lookup(self._embedding, x[:, i])
             # added ',_' -- is this correct?
             x_size, y_size = embedding_i.get_shape().as_list()
 
@@ -115,7 +96,7 @@ class Cbow(Word2Vec):
                                                          biases=self.softmax_biases,
                                                          inputs=mean_embeddings,
                                                          labels=y,
-                                                         number_negative_samples=self.number_negative_samples,
+                                                         num_sampled=self.number_negative_samples,
                                                          num_classes=self.vocabulary_size))
 
         return loss
@@ -129,15 +110,14 @@ class Cbow(Word2Vec):
             loss: The NCE losses.
         """
 
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             y = tf.cast(y, tf.int64)
-
-            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self.softmax_weights,
-                                                 biases=self.softmax_biases,
+            loss = tf.reduce_mean(tf.nn.nce_loss(weights=self._nce_weights,
+                                                 biases=self._nce_biases,
                                                  labels=y,
                                                  inputs=x_embed,
-                                                 number_negative_samples=self.number_negative_samples,
-                                                 num_classes=self.vocabulary_size))
+                                                 num_sampled=self.number_negative_samples,
+                                                 num_classes=self._vocabulary_size))
 
             return loss
 
@@ -200,7 +180,7 @@ class Cbow(Word2Vec):
             x: An array of integers to use as batch training data.
             y: An array of labels to use when evaluating loss for an epoch.
         """
-        with tf.device(self.device_type):
+        with tf.device(self.devicetype):
             # wrap computation inside a GradientTape for automatic differentiation
             with tf.GradientTape() as g:
                 emb = self.cbow_embedding(x)
@@ -208,11 +188,11 @@ class Cbow(Word2Vec):
 
             # compute gradients
             gradients = g.gradient(
-                loss, [self._embedding, self.softmax_weights, self.softmax_biases])
+                loss, [self._embedding, self._nce_weights, self._nce_biases])
 
             # Update W and b following gradients
             self.optimizer.apply_gradients(
-                zip(gradients, [self._embedding, self.softmax_weights, self.softmax_biases]))
+                zip(gradients, [self._embedding, self._nce_weights, self._nce_biases]))
             return tf.reduce_sum(loss)
 
     # TODO! this train method must receive the arguments that we don't need
@@ -225,7 +205,7 @@ class Cbow(Word2Vec):
         window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
-        for _ in trange(1, self.n_epochs + 1, leave=False):
+        for _ in trange(1, self.epochs + 1, leave=False):
             if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
                 for sentence in self.data:
                     # Sentence is a Tensor
@@ -236,8 +216,8 @@ class Cbow(Word2Vec):
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     loss_history.append(current_loss)
-                    if step % 100 == 0:
-                        logging.info("loss {} ".format(current_loss))
+                    #if step % 100 == 0:
+                        #logging.info("loss {} ".format(current_loss))
                     step += 1
             else:
                 data = self.data  #
@@ -264,7 +244,7 @@ class Cbow(Word2Vec):
                     current_loss = self.run_optimization(
                         batch_x, batch_y)  # type: ignore
                     if step == 0 or step % 100 == 0:
-                        logging.info("loss {}".format(current_loss))
+                        #logging.info("loss {}".format(current_loss))
                         loss_history.append(current_loss)
                     data_index += shift_len
                     endpos = data_index + batch_size
@@ -272,3 +252,110 @@ class Cbow(Word2Vec):
                                  lastpos)  # takes care of last part of data. Maybe we should just ignore though
                     # Evaluation.
         return loss_history
+
+    def _fit_list_of_lists(self):
+        """Fit the CBOW model for input data being a list of lists
+        """
+        window_len = 2 * self.context_window + 1
+        step = 0
+        loss_history = []
+        batch = 0
+        epoch = 0
+        for _ in trange(1, self.epochs + 1, leave=False):
+            epoch += 1
+            for sentence in self.data:
+                batch += 1
+                # Sentence is a Tensor
+                sentencelen = sentence.shape[0]
+                if sentencelen < window_len:
+                    continue
+                batch_x, batch_y = self.generate_batch_cbow(sentence)
+                current_loss = self.run_optimization(batch_x, batch_y)  # type: ignore
+                loss_history.append(current_loss)
+                self.on_batch_end({"loss":"{}".format(current_loss)})
+                print("Bla cl {}".format(current_loss))
+                #if step % 100 == 0:
+                    #logging.info("loss {} ".format(current_loss))
+                step += 1
+        return loss_history
+
+    def _fit_list(self):
+        """Fit the CBOW model for input data being a single list of words/nodes
+        """
+        window_len = 2 * self.context_window + 1
+        step = 0
+        loss_history = []
+        batch = 0
+        data = self._data 
+        if not isinstance(data, tf.Tensor):
+            raise TypeError("We were expecting a Tensor object!")
+        data_len = len(data)
+        batch_size = self.batch_size
+        window_len = 1 + 2 * self.context_window
+        shift_len = batch_size - window_len + 1
+        # we need to make sure that we do not shift outside the boundaries of self.data too
+        lastpos = data_len - 1  # index of the last word in data
+
+        for epoch in range(1, self.epochs + 1):
+            # Note that we cannot fully digest all of the data in any one batch
+            # if the window length is K and the natch_len is N, then the last
+            # window that we get starts at position (N-K). Therefore, if we start
+            # the next window at position (N-K)+1, we will get all windows.
+            data_index = 0
+            endpos = data_index + batch_size
+            while endpos <= lastpos:
+                batch += 1
+                currentTensor = data[data_index:endpos]
+                if len(currentTensor) < window_len:
+                    break  # We are at the end
+                batch_x, batch_y = self.generate_batch_cbow(
+                    currentTensor)  # type: ignore
+                current_loss = self.run_optimization(
+                    batch_x, batch_y)  # type: ignore
+                if step == 0 or step % 100 == 0:
+                    #logging.info("loss {}".format(current_loss))
+                    loss_history.append(current_loss)
+                data_index += shift_len
+                endpos = data_index + batch_size
+                endpos = min(endpos,lastpos)  # takes care of last part of data. Maybe we should just ignore though
+                self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
+                    # Evaluation.
+            self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
+        return loss_history
+
+    def fit(self, 
+        data: Union[tf.Tensor, tf.RaggedTensor],
+        word2id: Dict[str,int],
+        id2word: Dict[int, str],
+        learning_rate: float,
+        batch_size: int,
+        epochs: int,
+        embedding_size: int,
+        context_window: int,
+        number_negative_samples: int,
+        callbacks: Tuple["Callback"]):
+        """Fit the Word2Vec continuous bag of words model 
+        Parameters
+        ---------------------
+        samples_per_window:
+            samples_per_window: How many times to reuse an input to generate a label.
+            
+        """
+        super().fit(
+            data=data,
+            word2id=word2id,
+            id2word=id2word,
+            learning_rate=learning_rate,
+            batch_size=batch_size,
+            epochs=epochs,
+            embedding_size=embedding_size,
+            context_window=context_window,
+            number_negative_samples=number_negative_samples,
+            callbacks=callbacks)
+        print("cbow fit")
+        if self.list_of_lists:
+            # This is the case for a list of random walks
+            # or for a list of text segments (e.g., a list of sentences or abstracts)
+            self._fit_list_of_lists()
+        else:
+            self._fit_list()

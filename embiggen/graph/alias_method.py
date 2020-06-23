@@ -1,6 +1,8 @@
 import numpy as np  # type: ignore
 from numba import njit  # type: ignore
 from typing import Tuple
+from random import random, randint
+from .graph_types import numpy_indices_type
 
 
 @njit
@@ -34,8 +36,8 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     if probabilities.size == 0:
         raise ValueError("Given probability vector is empty!")
-    
-    if abs(probabilities.sum() - 1) > 1e-5:
+
+    if abs(probabilities.sum() - 1) > 1e-8:
         raise ValueError(
             "Given probability vector does not sum to one"
         )
@@ -46,7 +48,7 @@ def alias_setup(probabilities: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     larger = list(np.where(~smaller_mask)[0])
 
     # j is the mapping of the opposite event in the Bernulli trias
-    j = np.zeros_like(probabilities, dtype=np.int16)
+    j = np.empty_like(probabilities, dtype=numpy_indices_type)
     # Converge to the equivalente binary mixture
     while smaller and larger:
         small = smaller.pop()
@@ -81,10 +83,12 @@ def alias_draw(j: np.ndarray, q: np.ndarray) -> int:
         index: int,
             index of random sample from non-uniform discrete distribution
     """
+    # NB: here we are using random.random and random.randint
+    # instead of the Numpy versions because in numba they are converted better.
     # extract a random index for the mixture
-    index = np.random.randint(0, len(q))
+    index = randint(0, len(q)-1)
     # do the Bernulli trial
-    if np.random.rand() < q[index]:
+    if random() < q[index]:
         # most probable case and fastest
         return index
     return j[index]

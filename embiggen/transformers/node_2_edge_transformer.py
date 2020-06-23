@@ -89,7 +89,4 @@ class Node2EdgeTransformer:
         """
         if self._embedding is None:
             raise ValueError("Model has not been fitted.")
-        return (
-            self._embedding[G.sources_indices],
-            self._embedding[G.destinations_indices]
-        )
+        return self._embedding[G.sources], self._embedding[G.destinations]

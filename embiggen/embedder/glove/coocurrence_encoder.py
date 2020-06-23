@@ -136,9 +136,6 @@ class CooccurrenceEncoder:
             # Incrementing the sparse matrix entries accordingly
             for inp, lbl, w in zip(batch, labels, weights):
                 cooc_mat[inp, lbl] += (1.0 * w)
-            i += 1
-            if i % 10 == 0:
-                print("Subsequence %d" % i)
             data_index += shift_len
             endpos = data_index + batch_size
             endpos = min(endpos, lastpos)  # takes care of last part of data. Maybe we should just ignore though
