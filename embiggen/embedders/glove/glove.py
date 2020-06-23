@@ -116,20 +116,20 @@ class GloVe(Embedder):
         return list(self._batchify(i_indices, j_indices, counts))
 
 
-    def fit(self, 
-            data: Union[tf.Tensor, tf.RaggedTensor], 
-            worddict : Dict, 
-            reverse_worddict: Dict, 
-            learning_rate: float,
-            min_occurrences: int,
-            scaling_factor: float, 
-            cooccurrence_cap: int,
-            batch_size: int,
-            epochs: int,
-            embedding_size: int,
-            context_window: Union[int, Tuple[int]],
+    def fit(self,X: Union[tf.Tensor, tf.RaggedTensor],
+        vocabulary_size: int,
+        learning_rate: float = 0.05,
+        batch_size: int = 128,
+        number_negative_samples: int = 7,
+        epochs: int = 10,
+        embedding_size: int = 200,
+        context_window: int = 2,
+        window_size: int = 2,
+        min_occurrences: int = 2,
+        scaling_factor: float = 0.75,
+        cooccurrence_cap: int =100,
+        callbacks: Tuple = ()):
 
-            callbacks: Tuple["Callback"]):
         """
         Set up and run the GloVe training
         Parameters
@@ -173,16 +173,9 @@ class GloVe(Embedder):
             self.left_context = self.right_context = context_window
         else:
             raise ValueError("`context_size` should be an int or a tuple of two ints")
-        super().fit(
-            data=data,
-            word2id=worddict,
-            id2word=reverse_worddict,
-            learning_rate=learning_rate,
-            batch_size=batch_size,
-            epochs=epochs,
-            embedding_size=embedding_size,
-            context_window=context_window,
-            callbacks=callbacks)
+        super().fit( X, vocabulary_size = vocabulary_size, learning_rate =learning_rate,
+        batch_size = batch_size, epochs = epochs, embedding_size = embedding_size,
+        context_window = context_window, callbacks = callbacks)
         self.min_occurrences = min_occurrences
         self.scaling_factor = scaling_factor
         self.cooccurrence_cap = cooccurrence_cap
@@ -204,11 +197,11 @@ class GloVe(Embedder):
         self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
 
         print("fit method from glove")
-        self.vocab_size = len(worddict)
+        self.vocab_size = vocabulary_size
         self.callbacks = callbacks
         print("Calculating co-occurences...")
         cencoder = CooccurrenceEncoder(
-            data,
+            X,
             window_size=context_window,
             vocab_size=self.vocab_size
         )
@@ -229,6 +222,6 @@ class GloVe(Embedder):
                     losses.append(current_loss)
                     print("loss at epoch {}, batch index {}: {}".format(epoch, batchnum, current_loss.numpy()))
                 self.on_batch_end(batch=batchnum,epoch=epoch,log= {"loss":"{}".format(current_loss)})
-            self.on_epoch_end(batch=batchnum,epoch=epoch,log={"loss":"{}".format(current_loss)})
+            self.on_epoch_end(epoch=epoch,log={"loss":"{}".format(current_loss)})
         # The final embeddings are defined to be the mean of the center and context embeddings.
         self._embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
