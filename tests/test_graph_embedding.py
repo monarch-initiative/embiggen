@@ -97,3 +97,15 @@ class TestGraphEmbedding(TestCase):
                 graphs["pos_train_edges"].get_nodes_number()
             )
             self.evaluate_embedding(embedder_model.embedding, graphs)
+
+    def test_glove(self):
+        for directory in self._directories:
+            graphs = self.build_graphs(directory)
+            X = tf.ragged.constant(
+                graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
+            embedder_model = GloVe()
+            embedder_model.fit(
+                X,
+                graphs["pos_train_edges"].get_nodes_number()
+            )
+            self.evaluate_embedding(embedder_model.embedding, graphs)
