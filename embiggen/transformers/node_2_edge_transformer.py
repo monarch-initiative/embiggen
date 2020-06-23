@@ -1,5 +1,5 @@
 from typing import Tuple
-from ..graph import Graph
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 import numpy as np  # type: ignore
 
 
@@ -51,12 +51,12 @@ class Node2EdgeTransformer:
         """
         self._embedding = embedding
 
-    def transform(self, G: Graph) -> np.ndarray:
+    def transform(self, G: EnsmallenGraph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters
         ---------------------
-        G: Graph,
+        G: EnsmallenGraph,
             The graph whose nodes are to be embedded.
 
         Raises
@@ -70,12 +70,12 @@ class Node2EdgeTransformer:
         """
         return self._method(*self.transform_nodes(G))
 
-    def transform_nodes(self, G: Graph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform_nodes(self, G: EnsmallenGraph) -> Tuple[np.ndarray, np.ndarray]:
         """Return nodes from given graph.
 
         Parameters
         ---------------------
-        G: Graph,
+        G: EnsmallenGraph,
             The graph whose nodes are to be embedded.
 
         Raises

@@ -1,4 +1,5 @@
 from typing import Tuple
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from .node_2_edge_transformer import Node2EdgeTransformer
 import numpy as np  # type: ignore
 
@@ -54,14 +55,14 @@ class GraphPartitionTransfomer:
         """
         return np.concatenate([np.ones(len(positive)), np.zeros(len(negative))])
 
-    def transform(self, positive: Graph, negative: Graph) -> Tuple[np.ndarray, np.ndarray]:
+    def transform(self, positive: EnsmallenGraph, negative: EnsmallenGraph) -> Tuple[np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
         ----------------------
-        positive: Graph,
+        positive: EnsmallenGraph,
             The positive partition of the Graph.
-        negative: Graph,
+        negative: EnsmallenGraph,
             The negative partition of the Graph.
 
         Raises
@@ -82,15 +83,15 @@ class GraphPartitionTransfomer:
             self._get_labels(positive_embedding, negative_embedding)
         )
 
-    def transform_nodes(self, positive: Graph, negative: Graph) -> Tuple[
+    def transform_nodes(self, positive: EnsmallenGraph, negative: EnsmallenGraph) -> Tuple[
             np.ndarray, np.ndarray, np.ndarray]:
         """Return X and y data for training.
 
         Parameters
         ----------------------
-        positive: Graph,
+        positive: EnsmallenGraph,
             The positive partition of the Graph.
-        negative: Graph,
+        negative: EnsmallenGraph,
             The negative partition of the Graph.
 
         Returns
