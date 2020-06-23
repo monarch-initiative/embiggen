@@ -24,7 +24,8 @@ class TestGraphEmbedding(TestCase):
     """Test suite for the class Embiggen"""
 
     def setUp(self):
-        paths = [
+        self._directories = ["karate", "ppi"]
+        self._paths = [
             "neg_test_edges",
             "neg_train_edges",
             "neg_validation_edges",
@@ -32,47 +33,48 @@ class TestGraphEmbedding(TestCase):
             "pos_test_edges",
             "pos_validation_edges",
         ]
-        self._graphs = {
-            path: EnsmallenGraph(
-                edge_path=f"tests/data/karate/{path}.tsv",
-                sources_column="subject",
-                destinations_column="object",
-                directed=False,
-            )
-            for path in paths
-        }
 
     def test_skipgram(self):
-        X = tf.ragged.constant(
-            self._graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
-        embedder_model = SkipGram()
-        embedder_model.fit(
-            X,
-            self._graphs["pos_train_edges"].get_nodes_number()
-        )
-        transformer_model = GraphPartitionTransformer()
-        transformer_model.fit(embedder_model.embedding)
-        X_train, y_train = transformer_model.transform(
-            self._graphs["pos_train_edges"],
-            self._graphs["neg_train_edges"]
-        )
-        X_test, y_test = transformer_model.transform(
-            self._graphs["pos_test_edges"],
-            self._graphs["neg_test_edges"]
-        )
-        X_validation, y_validation = transformer_model.transform(
-            self._graphs["pos_validation_edges"],
-            self._graphs["neg_validation_edges"]
-        )
+        for directory in self._directories:
+            graphs = {
+                path: EnsmallenGraph(
+                    edge_path=f"tests/data/{directory}/{path}.tsv",
+                    sources_column="subject",
+                    destinations_column="object",
+                    directed=False,
+                )
+                for path in self._paths
+            }
+            X = tf.ragged.constant(
+                graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
+            embedder_model = SkipGram()
+            embedder_model.fit(
+                X,
+                graphs["pos_train_edges"].get_nodes_number()
+            )
+            transformer_model = GraphPartitionTransformer()
+            transformer_model.fit(embedder_model.embedding)
+            X_train, y_train = transformer_model.transform(
+                graphs["pos_train_edges"],
+                graphs["neg_train_edges"]
+            )
+            X_test, y_test = transformer_model.transform(
+                graphs["pos_test_edges"],
+                graphs["neg_test_edges"]
+            )
+            X_validation, y_validation = transformer_model.transform(
+                graphs["pos_validation_edges"],
+                graphs["neg_validation_edges"]
+            )
 
-        forest = RandomForestClassifier(max_depth=20)
-        forest.fit(X_train, y_train)
-        y_train_pred = forest.predict(X_train)
-        y_test_pred = forest.predict(X_test)
-        y_validation_pred = forest.predict(X_validation)
+            forest = RandomForestClassifier(max_depth=20)
+            forest.fit(X_train, y_train)
+            y_train_pred = forest.predict(X_train)
+            y_test_pred = forest.predict(X_test)
+            y_validation_pred = forest.predict(X_validation)
 
-        print({
-            "train": report(y_train, y_train_pred),
-            "test": report(y_test, y_test_pred),
-            "validation": report(y_validation, y_validation_pred),
-        })
+            print({
+                "train": report(y_train, y_train_pred),
+                "test": report(y_test, y_test_pred),
+                "validation": report(y_validation, y_validation_pred),
+            })
