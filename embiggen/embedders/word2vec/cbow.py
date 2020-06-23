@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import collections
 from typing import Union, Tuple, Dict, List
+from tqdm.auto import trange
 
 from .word2vec import Word2Vec
 
@@ -188,65 +189,9 @@ class CBOW(Word2Vec):
             zip(gradients, [self._embedding, self._nce_weights, self._nce_biases]))
         return tf.reduce_sum(loss)
 
-    # TODO! this train method must receive the arguments that we don't need
-    # TODO! most likely this method should be renames to 'fit'
-    def train(self) -> List[None]:  # type: ignore
-        """Trains a CBOW model.
-        Returns:
-            None.
-        """
-        window_len = 2 * self.context_window + 1
-        step = 0
-        loss_history = []
-        for _ in trange(1, self.epochs + 1, leave=False):
-            if self.list_of_lists or isinstance(self.data, tf.RaggedTensor):
-                for sentence in self.data:
-                    # Sentence is a Tensor
-                    sentencelen = sentence.shape[0]
-                    if sentencelen < window_len:
-                        continue
-                    batch_x, batch_y = self.generate_batch_cbow(sentence)
-                    current_loss = self.run_optimization(
-                        batch_x, batch_y)  # type: ignore
-                    loss_history.append(current_loss)
-                    # if step % 100 == 0:
-                    #logging.info("loss {} ".format(current_loss))
-                    step += 1
-            else:
-                data = self.data  #
-                if not isinstance(data, tf.Tensor):
-                    raise TypeError("We were expecting a Tensor object!")
-                batch_size = self.batch_size
-                data_len = len(data)
-                # Note that we cannot fully digest all of the data in any one batch
-                # if the window length is K and the natch_len is N, then the last
-                # window that we get starts at position (N-K). Therefore, if we start
-                # the next window at position (N-K)+1, we will get all windows.
-                window_len = 1 + 2 * self.context_window
-                shift_len = batch_size - window_len + 1
-                # we need to make sure that we do not shift outside the boundaries of self.data too
-                lastpos = data_len - 1  # index of the last word in data
-                data_index = 0
-                endpos = data_index + batch_size
-                while endpos <= lastpos:
-                    currentTensor = data[data_index:endpos]
-                    if len(currentTensor) < window_len:
-                        break  # We are at the end
-                    batch_x, batch_y = self.next_batch(
-                        currentTensor)  # type: ignore
-                    current_loss = self.run_optimization(
-                        batch_x, batch_y)  # type: ignore
-                    if step == 0 or step % 100 == 0:
-                        #logging.info("loss {}".format(current_loss))
-                        loss_history.append(current_loss)
-                    data_index += shift_len
-                    endpos = data_index + batch_size
-                    endpos = min(endpos,
-                                 lastpos)  # takes care of last part of data. Maybe we should just ignore though
-                    # Evaluation.
-        return loss_history
 
-    def _fit_list_of_lists(self):
+
+    def _fit_list_of_lists(self, X: tf.Tensor, *args, context_window: int = 2, **kwargs):
         """Fit the CBOW model for input data being a list of lists
         """
         window_len = 2 * self.context_window + 1
@@ -254,9 +199,9 @@ class CBOW(Word2Vec):
         loss_history = []
         batch = 0
         epoch = 0
-        for _ in trange(1, self.epochs + 1, leave=False):
+        for _ in trange(self.epochs, leave=False):
             epoch += 1
-            for sentence in self.data:
+            for sentence in X:
                 batch += 1
                 # Sentence is a Tensor
                 sentencelen = sentence.shape[0]
@@ -266,31 +211,30 @@ class CBOW(Word2Vec):
                 current_loss = self.run_optimization(
                     batch_x, batch_y)  # type: ignore
                 loss_history.append(current_loss)
-                self.on_batch_end({"loss": "{}".format(current_loss)})
-                print("Bla cl {}".format(current_loss))
+                self.on_batch_end(batch = batch, epoch = epoch, log={"loss": "{}".format(current_loss)})
                 # if step % 100 == 0:
                 #logging.info("loss {} ".format(current_loss))
                 step += 1
         return loss_history
 
-    def _fit_list(self):
+    def _fit_list(self, X: tf.Tensor, *args, context_window: int = 2, **kwargs):
         """Fit the CBOW model for input data being a single list of words/nodes
         """
         window_len = 2 * self.context_window + 1
         step = 0
         loss_history = []
         batch = 0
-        data = self._data
-        if not isinstance(data, tf.Tensor):
+
+        if not isinstance(X, tf.Tensor):
             raise TypeError("We were expecting a Tensor object!")
-        data_len = len(data)
+        data_len = len(X)
         batch_size = self.batch_size
         window_len = 1 + 2 * self.context_window
         shift_len = batch_size - window_len + 1
         # we need to make sure that we do not shift outside the boundaries of self.data too
         lastpos = data_len - 1  # index of the last word in data
 
-        for epoch in range(1, self.epochs + 1):
+        for epoch in trange(self.epochs, leave=False):
             # Note that we cannot fully digest all of the data in any one batch
             # if the window length is K and the natch_len is N, then the last
             # window that we get starts at position (N-K). Therefore, if we start
@@ -299,7 +243,7 @@ class CBOW(Word2Vec):
             endpos = data_index + batch_size
             while endpos <= lastpos:
                 batch += 1
-                currentTensor = data[data_index:endpos]
+                currentTensor = X[data_index:endpos]
                 if len(currentTensor) < window_len:
                     break  # We are at the end
                 batch_x, batch_y = self.generate_batch_cbow(
@@ -320,17 +264,19 @@ class CBOW(Word2Vec):
                               "loss": "{}".format(current_loss)})
         return loss_history
 
-    def fit(self,
-            data: Union[tf.Tensor, tf.RaggedTensor],
-            word2id: Dict[str, int],
-            id2word: Dict[int, str],
-            learning_rate: float,
-            batch_size: int,
-            epochs: int,
-            embedding_size: int,
-            context_window: int,
-            number_negative_samples: int,
-            callbacks: Tuple["Callback"]):
+    def fit(self, X: tf.Tensor, *args,  context_window: int = 2, **kwargs):
+
+        #self,
+            #data: Union[tf.Tensor, tf.RaggedTensor],
+            #word2id: Dict[str, int],
+            #id2word: Dict[int, str],
+            #learning_rate: float,
+            #batch_size: int,
+            #epochs: int,
+            #embedding_size: int,
+            #context_window: int,
+            #number_negative_samples: int,
+            #callbacks: Tuple["Callback"]):
         """Fit the Word2Vec continuous bag of words model 
         Parameters
         ---------------------
@@ -338,21 +284,11 @@ class CBOW(Word2Vec):
             samples_per_window: How many times to reuse an input to generate a label.
 
         """
-        super().fit(
-            data=data,
-            word2id=word2id,
-            id2word=id2word,
-            learning_rate=learning_rate,
-            batch_size=batch_size,
-            epochs=epochs,
-            embedding_size=embedding_size,
-            context_window=context_window,
-            number_negative_samples=number_negative_samples,
-            callbacks=callbacks)
-        print("cbow fit")
+        super().fit(X, *args, context_window=context_window, **kwargs)
+
         if self.list_of_lists:
             # This is the case for a list of random walks
             # or for a list of text segments (e.g., a list of sentences or abstracts)
-            self._fit_list_of_lists()
+            self._fit_list_of_lists(X)
         else:
-            self._fit_list()
+            self._fit_list(X)
