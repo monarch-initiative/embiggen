@@ -260,7 +260,7 @@ class CBOW(Word2Vec):
                 self.on_batch_end(batch=batch, epoch=epoch, log={
                                   "loss": "{}".format(current_loss)})
                 # Evaluation.
-            self.on_epoch_end(batch=batch, epoch=epoch, log={
+            self.on_epoch_end(epoch=epoch, log={
                               "loss": "{}".format(current_loss)})
         return loss_history
 
