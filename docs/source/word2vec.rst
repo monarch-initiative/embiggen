@@ -27,19 +27,19 @@ We first import the relevant classes from embiggen. ::
 
     import embiggen
     from embiggen import SkipGramWord2Vec
-    from embiggen import TextEncoder
+    from embiggen import TextTransformer
     from embiggen.utils import write_embeddings
 
-TextEncoder
+TextTransformer
 ^^^^^^^^^^^
 
-The ``TextEncoder`` class is a convenience class that can be used to transform text
+The ``TextTransformer`` class is a convenience class that can be used to transform text
 datasets into integer representations that are used for embedding. Assuming you are
 using the Email dataset from above, find the file called ``Emails.csv`` and adjust
 the path of the following command accordingly. ::
 
     emails = '/../../../Emails.csv'
-    encoder = embiggen.text_encoder.TextEncoder(emails)
+    encoder = embiggen.text_encoder.TextTransformer(emails)
     tensor_data, count_list, dictionary, reverse_dictionary = encoder.build_dataset()
 
 Training the model

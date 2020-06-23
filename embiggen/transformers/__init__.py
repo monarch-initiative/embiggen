@@ -1,5 +1,6 @@
-from .graph_partition_transformer import GraphPartitionTransfomer
+from .graph_partition_transformer import GraphPartitionTransformer
+from .text_encoder import TextTransformer
 
 __all__ = [
-    "GraphPartitionTransfomer"
+    "GraphPartitionTransformer", "TextTransformer"
 ]

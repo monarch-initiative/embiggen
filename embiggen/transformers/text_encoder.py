@@ -12,7 +12,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer  # type: ignore # pyli
 from typing import Dict, List, Optional, Tuple, Union
 from ..utils import logger
 
-class TextEncoder:
+class TextTransformer:
     """This class takes as input a file containing text that we want to encode as integers for Word2Vec. It cleanses the
     data, splits the text into sentences, and returns a tf.Tensor (tf.data.Dataset if a single span of text or list of
     sentences of the same length OR a tf.RaggedTensor if the list of sentences differ in length), where the entries are

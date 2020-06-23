@@ -4,10 +4,10 @@ from .node_2_edge_transformer import Node2EdgeTransformer
 import numpy as np  # type: ignore
 
 
-class GraphPartitionTransfomer:
+class GraphPartitionTransformer:
 
     def __init__(self, method: str = "hadamard"):
-        """Create a new GraphPartitionTransfomer object.
+        """Create a new GraphPartitionTransformer object.
 
         It transforms a tuple formed of the positive partition of edges
         and the negative partition of edges into a tuple of vectors and labels
@@ -25,12 +25,12 @@ class GraphPartitionTransfomer:
 
         Returns
         ----------------------
-        A new GraphPartitionTransfomer object.
+        A new GraphPartitionTransformer object.
         """
         self._transformer = Node2EdgeTransformer(method=method)
 
     def fit(self,  embedding: np.ndarray):
-        """Fit the GraphPartitionTransfomer model.
+        """Fit the GraphPartitionTransformer model.
 
         Parameters
         ----------------------

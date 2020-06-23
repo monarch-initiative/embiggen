@@ -1,5 +1,5 @@
 import embiggen
-from embiggen import TextEncoder
+from embiggen import TextTransformer
 from embiggen import Embiggen
 from embiggen import Shelldump, History
 from embiggen import CooccurrenceEncoder
@@ -8,7 +8,7 @@ from embiggen import CooccurrenceEncoder
 path = '/home/peter/data/embiggen/hardy.txt'
 path = '/home/peter/data/embiggen/Emails.csv'
 #path='/Users/robinp/Documents/data/return-native.txt'
-encoder = TextEncoder(path, data_type="words")
+encoder = TextTransformer(path, data_type="words")
 tensor_data, count_list, dictionary, reverse_dictionary = encoder.build_dataset()
 print("Done reading data, got n={} words".format(len(count_list)))
 

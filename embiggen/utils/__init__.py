@@ -1,6 +1,5 @@
 from .embedding_utils import *
 from .tf_utils import TFUtilities
-from .text_encoder import TextEncoder
 from .logger import logger
 
 __all__ = [
@@ -8,5 +7,4 @@ __all__ = [
     'calculate_cosine_similarity', 
     "TFUtilities",
     "logger",
-    "TextEncoder"
 ]

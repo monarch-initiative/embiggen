@@ -3,11 +3,11 @@ import tensorflow as tf
 
 from unittest import TestCase
 
-from embiggen import TextEncoder
+from embiggen import TextTransformer
 from tests.utils.utils import gets_tensor_length
 
 
-class TestTextEncoderSentences(TestCase):
+class TestTextTransformerSentences(TestCase):
     """Test version of text encoder that extracts/converts words to integers and returns a tf.data.Dataset if list of
     sentences are the same length OR a tf.RaggedTensor if the list of sentences differ in length.
     """
@@ -18,7 +18,7 @@ class TestTextEncoderSentences(TestCase):
         self.infile = os.path.join(os.path.dirname(__file__), 'data', 'greatExpectations3.txt')
 
         # run text encoder
-        encoder = TextEncoder(filename=self.infile,
+        encoder = TextTransformer(filename=self.infile,
                               payload_index=None,
                               header=None,
                               delimiter=None,
@@ -32,7 +32,7 @@ class TestTextEncoderSentences(TestCase):
         """Tests the initialization of the class for the data_type parameter."""
 
         # when passing a word other than "words" or "sentences"
-        self.assertRaises(TypeError, TextEncoder, self.infile, 'line')
+        self.assertRaises(TypeError, TextTransformer, self.infile, 'line')
 
     def testParseSuccess(self):
 
@@ -62,7 +62,7 @@ class TestTextEncoderSentences(TestCase):
         self.assertEqual(3, tensor_length)
 
 
-class TestTextEncoderEnBlock(TestCase):
+class TestTextTransformerEnBlock(TestCase):
     """Test version of text encoder that extracts/converts words to integers and returns a tf.data.Dataset."""
 
     def setUp(self):
@@ -71,7 +71,7 @@ class TestTextEncoderEnBlock(TestCase):
         infile = os.path.join(os.path.dirname(__file__), 'data', 'greatExpectations3.txt')
 
         # run text encoder
-        encoder = TextEncoder(filename=infile,
+        encoder = TextTransformer(filename=infile,
                               payload_index=None,
                               header=None,
                               delimiter=None,
@@ -105,7 +105,7 @@ class TestTextEncoderEnBlock(TestCase):
         self.assertEqual(None, wordcount.get('the'))  # stopwords should have been removed
 
 
-class TestCsvTextEncoder(TestCase):
+class TestCsvTextTransformer(TestCase):
     """Test version of text encoder that extracts/converts words to integers and returns a tf.data.Dataset if list of
         sentences are the same length OR a tf.RaggedTensor if the list of sentences differ in length.
         """
@@ -115,7 +115,7 @@ class TestCsvTextEncoder(TestCase):
         self.infile2 = os.path.join(os.path.dirname(__file__), 'data', 'pubmed20n1015excerpt.txt')
 
         # run text encoder
-        encoder = TextEncoder(filename=self.infile2,
+        encoder = TextTransformer(filename=self.infile2,
                               payload_index=2,
                               header=None,
                               delimiter='\t',
@@ -129,25 +129,25 @@ class TestCsvTextEncoder(TestCase):
         """Tests the initialization of the class for the payload_index parameter."""
 
         # when passing a non-integer
-        self.assertRaises(TypeError, TextEncoder, self.infile2, 'two', None, None, 'words', None, 10)
+        self.assertRaises(TypeError, TextTransformer, self.infile2, 'two', None, None, 'words', None, 10)
 
     def testClassInitializationHeader(self):
         """Tests the initialization of the class for the header parameter."""
 
         # when passing a non-integer
-        self.assertRaises(TypeError, TextEncoder, self.infile2, 2, 'two', None, 'words', None, 10)
+        self.assertRaises(TypeError, TextTransformer, self.infile2, 2, 'two', None, 'words', None, 10)
 
     def testClassInitializationDelimiter(self):
         """Tests the initialization of the class for the delimiter parameter."""
 
         # when passing something other than a string
-        self.assertRaises(TypeError, TextEncoder, self.infile2, 2, None, [','], 'words', None, 10)
+        self.assertRaises(TypeError, TextTransformer, self.infile2, 2, None, [','], 'words', None, 10)
 
     def testClassInitializationMinLen(self):
         """Tests the initialization of the class for the minlen parameter."""
 
         # when passing something other than an int
-        self.assertRaises(TypeError, TextEncoder, self.infile2, 2, None, [','], 'words', None, 'ten')
+        self.assertRaises(TypeError, TextTransformer, self.infile2, 2, None, [','], 'words', None, 'ten')
 
     def testParseSuccess(self):
 
