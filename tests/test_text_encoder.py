@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from unittest import TestCase
 
-from embiggen import TextTransformer
+from embiggen.transformers import TextTransformer
 from tests.utils.utils import gets_tensor_length
 
 
