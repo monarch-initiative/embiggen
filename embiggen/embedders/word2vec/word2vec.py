@@ -30,6 +30,25 @@ class Word2Vec(Embedder):
         self.context_window = None  # must be set in fit method
         self.number_negative_samples = None  # must be set in fit method
 
+    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
+        """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
+        Args:
+            x_embed: A Tensor with shape [batch_size, dim].
+            y: An array containing the target classes with shape [batch_size, num_true].
+        Returns:
+            loss: The NCE losses.
+        """
+        y = tf.cast(y, tf.int64)
+
+        return tf.reduce_mean(tf.nn.nce_loss(
+            weights=self._nce_weights,
+            biases=self._nce_biases,
+            labels=y,
+            inputs=x_embed,
+            num_sampled=self.number_negative_samples,
+            num_classes=self._vocabulary_size
+        ))
+
     def fit(
         self,
         *args,

@@ -17,25 +17,6 @@ class SkipGram(Word2Vec):
         self.data_index: int = 0
         self.current_sentence: int = 0
 
-    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
-        """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
-        Args:
-            x_embed: A Tensor with shape [batch_size, dim].
-            y: An array containing the target classes with shape [batch_size, num_true].
-        Returns:
-            loss: The NCE losses.
-        """
-        y = tf.cast(y, tf.int64)
-
-        return tf.reduce_mean(tf.nn.nce_loss(
-            weights=self._nce_weights,
-            biases=self._nce_biases,
-            labels=y,
-            inputs=x_embed,
-            num_sampled=self.number_negative_samples,
-            num_classes=self._vocabulary_size
-        ))
-
     def run_optimization(self, x: np.array, y: np.array) -> float:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
         calculated, the gradients are computed and the weights and biases are updated accordingly.
@@ -93,7 +74,8 @@ class SkipGram(Word2Vec):
         )
         labels = np.empty(
             shape=(batch_size, 1),
-            dtype=np.int32)
+            dtype=np.int32
+        )
         buffer: collections.deque = collections.deque(maxlen=span)
         # The following command fills up the Buffer but leaves out the last spot
         # this allows us to always add the next word as the first thing we do in the

@@ -55,10 +55,6 @@ class CBOW(Word2Vec):
         Raises:
             ValueError: If the shape of stacked_embeddings is not equal to twice the context_window length.
         """
-        if self._embedding is None:
-            raise ValueError(
-                'No embedding data found (i.e. embedding is None)')
-
         stacked_embeddings = None
         # print('Defining %d embedding lookups representing each word in the context' % (2 * self.context_window))
         for i in range(2 * self.context_window):
@@ -79,42 +75,6 @@ class CBOW(Word2Vec):
         mean_embeddings = tf.reduce_mean(stacked_embeddings, 2, keepdims=False)
 
         return mean_embeddings
-
-    def get_loss(self, mean_embeddings: tf.Tensor, y: np.ndarray) -> Union[float, int]:
-        """Computes the softmax loss, using a sample of the negative labels each time. The inputs are embeddings of the
-        train words with this loss we optimize weights, biases, embeddings.
-        Args:
-            mean_embeddings: A Tensor with shape [batch_size, dim].
-            y: An array containing the target classes with shape [batch_size, num_true].
-        Returns:
-            loss: The softmax losses.
-        """
-        y = tf.cast(y, tf.int64)
-        loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(
-            weights=self.softmax_weights,
-            biases=self.softmax_biases,
-            inputs=mean_embeddings,
-            labels=y,
-            num_sampled=self.number_negative_samples,
-            num_classes=self.vocabulary_size))
-
-        return loss
-
-    def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
-        """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
-        Args:
-            x_embed: A Tensor with shape [batch_size, dim].
-            y: An array containing the target classes with shape [batch_size, num_true].
-        Returns:
-            loss: The NCE losses.
-        """
-        y = tf.cast(y, tf.int64)
-        return tf.reduce_mean(tf.nn.nce_loss(weights=self._nce_weights,
-                                             biases=self._nce_biases,
-                                             labels=y,
-                                             inputs=x_embed,
-                                             num_sampled=self.number_negative_samples,
-                                             num_classes=self._vocabulary_size))
 
     def evaluate(self, x_embed: tf.Tensor) -> tf.Tensor:
         """Computes the cosine similarity between a provided embedding and all other embedding vectors.
