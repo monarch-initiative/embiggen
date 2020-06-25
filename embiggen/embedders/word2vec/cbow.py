@@ -13,7 +13,6 @@ class CBOW(Word2Vec):
         word2id: A dictionary where the keys are nodes/words and values are integers that represent those nodes/words.
         id2word: A dictionary where the keys are integers and values are the nodes represented by the integers.
         X: the data, a list or list of lists (if sentences or paths from node2vec).
-        device_type: A string that indicates whether to run computations on (default=cpu).
         learning_rate: A float between 0 and 1 that controls how fast the model learns to solve the problem.
         batch_size: The size of each "batch" or slice of the data to sample when training the model.
         num_epochs: The number of epochs to run when training the model (default=1).
@@ -91,12 +90,13 @@ class CBOW(Word2Vec):
             loss: The softmax losses.
         """
         y = tf.cast(y, tf.int64)
-        loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(weights=self.softmax_weights,
-                                                         biases=self.softmax_biases,
-                                                         inputs=mean_embeddings,
-                                                         labels=y,
-                                                         num_sampled=self.number_negative_samples,
-                                                         num_classes=self.vocabulary_size))
+        loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(
+            weights=self.softmax_weights,
+            biases=self.softmax_biases,
+            inputs=mean_embeddings,
+            labels=y,
+            num_sampled=self.number_negative_samples,
+            num_classes=self.vocabulary_size))
 
         return loss
 
@@ -124,18 +124,17 @@ class CBOW(Word2Vec):
             cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
         """
 
-        with tf.device(self.device_type):
-            x_embed = tf.cast(x_embed, tf.float32)
-            x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
-            x_embed_sqrt = tf.sqrt(tf.reduce_sum(
-                tf.square(self._embedding), 1, keepdims=True), tf.float32)
-            embedding_norm = self._embedding / x_embed_sqrt
+        x_embed = tf.cast(x_embed, tf.float32)
+        x_embed_norm = x_embed / tf.sqrt(tf.reduce_sum(tf.square(x_embed)))
+        x_embed_sqrt = tf.sqrt(tf.reduce_sum(
+            tf.square(self._embedding), 1, keepdims=True), tf.float32)
+        embedding_norm = self._embedding / x_embed_sqrt
 
-            # calculate cosine similarity
-            cosine_sim_op = tf.matmul(
-                x_embed_norm, embedding_norm, transpose_b=True)
+        # calculate cosine similarity
+        cosine_sim_op = tf.matmul(
+            x_embed_norm, embedding_norm, transpose_b=True)
 
-            return cosine_sim_op
+        return cosine_sim_op
 
     def generate_batch_cbow(self, sentence: tf.Tensor) -> Tuple[np.ndarray, np.ndarray]:
         """Generates the next batch of data for CBOW.
@@ -189,8 +188,6 @@ class CBOW(Word2Vec):
             zip(gradients, [self._embedding, self._nce_weights, self._nce_biases]))
         return tf.reduce_sum(loss)
 
-
-
     def _fit_list_of_lists(self, X: tf.Tensor, *args, context_window: int = 2, **kwargs):
         """Fit the CBOW model for input data being a list of lists
         """
@@ -211,7 +208,8 @@ class CBOW(Word2Vec):
                 current_loss = self.run_optimization(
                     batch_x, batch_y)  # type: ignore
                 loss_history.append(current_loss)
-                self.on_batch_end(batch = batch, epoch = epoch, log={"loss": "{}".format(current_loss)})
+                self.on_batch_end(batch=batch, epoch=epoch, log={
+                                  "loss": "{}".format(current_loss)})
                 # if step % 100 == 0:
                 #logging.info("loss {} ".format(current_loss))
                 step += 1
@@ -266,17 +264,17 @@ class CBOW(Word2Vec):
 
     def fit(self, X: tf.Tensor, *args,  context_window: int = 2, **kwargs):
 
-        #self,
-            #data: Union[tf.Tensor, tf.RaggedTensor],
-            #word2id: Dict[str, int],
-            #id2word: Dict[int, str],
-            #learning_rate: float,
-            #batch_size: int,
-            #epochs: int,
-            #embedding_size: int,
-            #context_window: int,
-            #number_negative_samples: int,
-            #callbacks: Tuple["Callback"]):
+        # self,
+            # data: Union[tf.Tensor, tf.RaggedTensor],
+            # word2id: Dict[str, int],
+            # id2word: Dict[int, str],
+            # learning_rate: float,
+            # batch_size: int,
+            # epochs: int,
+            # embedding_size: int,
+            # context_window: int,
+            # number_negative_samples: int,
+            # callbacks: Tuple["Callback"]):
         """Fit the Word2Vec continuous bag of words model 
         Parameters
         ---------------------

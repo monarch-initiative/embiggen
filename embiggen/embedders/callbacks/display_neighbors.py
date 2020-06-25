@@ -28,9 +28,8 @@ class DisplayNeighbors(Callback):
         :return:
         """
         logging.info("Evaluation...")
-        sim = calculate_cosine_similarity(get_embedding(x_test, self._embedding, self.device_type),
-                                          self._embedding,
-                                          self.device_type).numpy()
+        sim = calculate_cosine_similarity(get_embedding(x_test, self._embedding),
+                                          self._embedding).numpy()
         # print(sim[0])
         for i in range(len(self.display_examples)):
             top_k = 8  # number of nearest neighbors.
