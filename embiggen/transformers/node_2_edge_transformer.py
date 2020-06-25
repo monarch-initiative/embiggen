@@ -51,7 +51,7 @@ class Node2EdgeTransformer:
         """
         self._embedding = embedding
 
-    def transform(self, G: EnsmallenGraph) -> np.ndarray:
+    def transform_edges(self, G: EnsmallenGraph) -> np.ndarray:
         """Return embedded edges from given graph nodes.
 
         Parameters

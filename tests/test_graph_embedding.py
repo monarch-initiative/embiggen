@@ -49,30 +49,53 @@ class TestGraphEmbedding(TestCase):
     def evaluate_embedding(self, embedding: np.ndarray, graphs: Dict):
         transformer_model = GraphPartitionTransformer()
         transformer_model.fit(embedding)
-        X_train, y_train = transformer_model.transform(
+
+        X_train, y_train = transformer_model.transform_edges(
             graphs["pos_train_edges"],
             graphs["neg_train_edges"]
         )
-        X_test, y_test = transformer_model.transform(
+        X_test, _ = transformer_model.transform_edges(
             graphs["pos_test_edges"],
             graphs["neg_test_edges"]
         )
-        X_validation, y_validation = transformer_model.transform(
+        X_validation, _ = transformer_model.transform_edges(
             graphs["pos_validation_edges"],
             graphs["neg_validation_edges"]
         )
 
         forest = RandomForestClassifier(max_depth=20)
         forest.fit(X_train, y_train)
-        y_train_pred = forest.predict(X_train)
-        y_test_pred = forest.predict(X_test)
-        y_validation_pred = forest.predict(X_validation)
+        _ = forest.predict(X_train)
+        _ = forest.predict(X_test)
+        _ = forest.predict(X_validation)
 
-        print({
-            "train": report(y_train, y_train_pred),
-            "test": report(y_test, y_test_pred),
-            "validation": report(y_validation, y_validation_pred),
-        })
+        X_train_src, X_train_dst, y_train = transformer_model.transform_nodes(
+            graphs["pos_train_edges"],
+            graphs["neg_train_edges"]
+        )
+        X_train = np.hstack([X_train_src, X_train_dst])
+        X_test_src, X_test_dst, _ = transformer_model.transform_nodes(
+            graphs["pos_test_edges"],
+            graphs["neg_test_edges"]
+        )
+        X_test = np.hstack([X_test_src, X_test_dst])
+        X_validation_src, X_validation_dst, _ = transformer_model.transform_nodes(
+            graphs["pos_validation_edges"],
+            graphs["neg_validation_edges"]
+        )
+        X_validation = np.hstack([X_validation_src, X_validation_dst])
+
+        forest = RandomForestClassifier(max_depth=20)
+        forest.fit(X_train, y_train)
+        _ = forest.predict(X_train)
+        _ = forest.predict(X_test)
+        _ = forest.predict(X_validation)
+
+        # print({
+        #     "train": report(y_train, y_train_pred),
+        #     "test": report(y_test, y_test_pred),
+        #     "validation": report(y_validation, y_validation_pred),
+        # })
 
     def test_skipgram(self):
         for directory in self._directories:

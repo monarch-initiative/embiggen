@@ -78,7 +78,7 @@ class SkipGram(Word2Vec):
         """
         samples_per_window = self.samples_per_window
         context_window = self.context_window
-        
+
         # OR -- is there any situation where we will change this during training??
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * context_window + 1
@@ -113,7 +113,7 @@ class SkipGram(Word2Vec):
 
     def _fit_list_of_lists(self, X: tf.RaggedTensor):
         window_len = 2 * self.context_window + 1
-        batchnum = 0
+        batch = 0
         for epoch in trange(self.epochs):
             for sentence in X:
                 # Sentence is a Tensor
@@ -121,12 +121,17 @@ class SkipGram(Word2Vec):
                 if sentencelen < window_len:
                     continue
                 batch_x, batch_y = self.next_batch(sentence)
-                batchnum += 1
+                batch += 1
                 current_loss = self.run_optimization(batch_x, batch_y)
-                self.on_batch_end(batch=batchnum, epoch=epoch, log={
-                                  "loss": "{}".format(current_loss)})
-            self.on_epoch_end(epoch=epoch, log={
-                              "loss": "{}".format(current_loss)})
+                self.on_batch_end(
+                    batch=batch,
+                    epoch=epoch,
+                    log=dict(loss=current_loss)
+                )
+            self.on_epoch_end(
+                epoch=epoch,
+                log=dict(loss=current_loss)
+            )
 
     def _fit_list(self, X: tf.Tensor):
         data_index = 0
@@ -165,10 +170,15 @@ class SkipGram(Word2Vec):
                 # Evaluation.
                 step += 1
                 self.run_optimization(batch_x, batch_y)
-                self.on_batch_end(batch=batch, epoch=epoch, log={
-                                  "loss": "{}".format(current_loss)})
-            self.on_epoch_end(epoch=epoch, log={
-                              "loss": "{}".format(current_loss)})
+                self.on_batch_end(
+                    batch=batch,
+                    epoch=epoch,
+                    log=dict(loss=current_loss)
+                )
+            self.on_epoch_end(
+                epoch=epoch,
+                log=dict(loss=current_loss)
+            )
         self.on_training_end(log={})
 
     def fit(self, X: tf.Tensor, *args, samples_per_window: int = 2, context_window: int = 2, **kwargs):

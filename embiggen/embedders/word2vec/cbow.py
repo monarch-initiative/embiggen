@@ -208,8 +208,11 @@ class CBOW(Word2Vec):
                 current_loss = self.run_optimization(
                     batch_x, batch_y)  # type: ignore
                 loss_history.append(current_loss)
-                self.on_batch_end(batch=batch, epoch=epoch, log={
-                                  "loss": "{}".format(current_loss)})
+                self.on_batch_end(
+                    batch=batch,
+                    epoch=epoch,
+                    log=dict(loss=current_loss)
+                )
                 # if step % 100 == 0:
                 #logging.info("loss {} ".format(current_loss))
                 step += 1
@@ -255,11 +258,13 @@ class CBOW(Word2Vec):
                 endpos = data_index + batch_size
                 # takes care of last part of data. Maybe we should just ignore though
                 endpos = min(endpos, lastpos)
-                self.on_batch_end(batch=batch, epoch=epoch, log={
-                                  "loss": "{}".format(current_loss)})
+                self.on_batch_end(
+                    batch=batch,
+                    epoch=epoch,
+                    log=dict(loss=current_loss)
+                )
                 # Evaluation.
-            self.on_epoch_end(epoch=epoch, log={
-                              "loss": "{}".format(current_loss)})
+            self.on_epoch_end(epoch=epoch, log=dict(loss=current_loss))
         return loss_history
 
     def fit(self, X: tf.Tensor, *args,  context_window: int = 2, **kwargs):
