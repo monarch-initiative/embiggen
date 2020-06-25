@@ -97,7 +97,7 @@ class CooccurrenceEncoder:
         """
         vocab_size = self.vocab_size
         cooc_mat = lil_matrix((vocab_size, vocab_size), dtype=np.float32)
-        for sequence in tqdm(self.data, desc="Parsing sentences"):
+        for sequence in tqdm(self.data, desc="Parsing sentences", leave=False):
             batch, labels, weights = self._generate_batch_from_sentence(
                 sequence)
             labels = labels.reshape(-1)  # why is the reshape needed
