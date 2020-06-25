@@ -78,11 +78,12 @@ class TestGraphEmbedding(TestCase):
         for directory in self._directories:
             graphs = self.build_graphs(directory)
             X = tf.ragged.constant(
-                graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
+                graphs["pos_train_edges"].walk(10, 80))
             embedder_model = SkipGram()
             embedder_model.fit(
                 X,
-                graphs["pos_train_edges"].get_nodes_number()
+                graphs["pos_train_edges"].get_nodes_number(),
+                epochs=2,
             )
             self.evaluate_embedding(embedder_model.embedding, graphs)
 
@@ -90,11 +91,12 @@ class TestGraphEmbedding(TestCase):
         for directory in self._directories:
             graphs = self.build_graphs(directory)
             X = tf.ragged.constant(
-                graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
+                graphs["pos_train_edges"].walk(10, 80))
             embedder_model = CBOW()
             embedder_model.fit(
                 X,
-                graphs["pos_train_edges"].get_nodes_number()
+                graphs["pos_train_edges"].get_nodes_number(),
+                epochs=2,
             )
             self.evaluate_embedding(embedder_model.embedding, graphs)
 
@@ -102,10 +104,11 @@ class TestGraphEmbedding(TestCase):
         for directory in self._directories:
             graphs = self.build_graphs(directory)
             X = tf.ragged.constant(
-                graphs["pos_train_edges"].walk(10, 80, 0, 1, 1, 1, 1))
+                graphs["pos_train_edges"].walk(10, 80))
             embedder_model = GloVe()
             embedder_model.fit(
                 X,
-                graphs["pos_train_edges"].get_nodes_number()
+                graphs["pos_train_edges"].get_nodes_number(),
+                epochs=2,
             )
             self.evaluate_embedding(embedder_model.embedding, graphs)

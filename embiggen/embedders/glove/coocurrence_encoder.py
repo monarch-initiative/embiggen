@@ -2,6 +2,7 @@ from scipy.sparse import lil_matrix  # type: ignore
 import collections
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
+from tqdm.auto import tqdm
 # from embiggen import TextTransformer
 
 
@@ -20,7 +21,8 @@ class CooccurrenceEncoder:
         :param window_size: Size of the window surrounding the center word (the total size is two times this)
         """
         self.window_size = window_size
-        self.num_samples_per_centerword = 2 * window_size  # number of samples per center word
+        # number of samples per center word
+        self.num_samples_per_centerword = 2 * window_size
         self.vocab_size = vocab_size
         self.batch_size = batch_size
         if isinstance(input, tf.RaggedTensor):
@@ -28,9 +30,9 @@ class CooccurrenceEncoder:
         elif isinstance(input, tf.Tensor):
             self.is_list = False
         else:
-            raise TypeError("'input' had type {} but we expected a Tensor or RaggedTensor.".format(type(input)))
+            raise TypeError(
+                "'input' had type {} but we expected a Tensor or RaggedTensor.".format(type(input)))
         self.data = input
-
 
     @classmethod
     def from_walks(cls, walks, n_nodes):
@@ -42,8 +44,8 @@ class CooccurrenceEncoder:
         Returns:
             None.
         """
-        print("Generating coocurrence matrix from walks: ", type(walks), "number of nodes ", n_nodes)
-
+        print("Generating coocurrence matrix from walks: ",
+              type(walks), "number of nodes ", n_nodes)
 
     def _generate_batch_from_sentence(self, sentence):
         """Generate a batch of co-occurence counts for this sentence
@@ -58,8 +60,10 @@ class CooccurrenceEncoder:
         # This is the number of context words we sample for a single target word
         num_samples_per_centerword = self.num_samples_per_centerword
         window_size = self.window_size
-        num_contexts = len(sentence) - num_samples_per_centerword  # total n of full-length contexts in the sentence
-        batch_size = num_contexts * num_samples_per_centerword  # For each context we sample num_samples time
+        # total n of full-length contexts in the sentence
+        num_contexts = len(sentence) - num_samples_per_centerword
+        # For each context we sample num_samples time
+        batch_size = num_contexts * num_samples_per_centerword
         batch = np.ndarray(shape=(batch_size), dtype=np.int32)
         labels = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
         weights = np.ndarray(shape=(batch_size), dtype=np.float32)
@@ -79,7 +83,8 @@ class CooccurrenceEncoder:
             for j in list(range(window_size)) + list(range(window_size + 1, 2 * window_size + 1)):
                 batch[i * num_samples_per_centerword + k] = buffer[window_size]
                 labels[i * num_samples_per_centerword + k, 0] = buffer[j]
-                weights[i * num_samples_per_centerword + k] = abs(1.0 / (j - window_size))
+                weights[i * num_samples_per_centerword +
+                        k] = abs(1.0 / (j - window_size))
                 k += 1
         return batch, labels, weights
 
@@ -92,17 +97,13 @@ class CooccurrenceEncoder:
         """
         vocab_size = self.vocab_size
         cooc_mat = lil_matrix((vocab_size, vocab_size), dtype=np.float32)
-        print(cooc_mat.shape)
-        i = 0
-        for sequence in self.data:
-            batch, labels, weights = self._generate_batch_from_sentence(sequence)
+        for sequence in tqdm(self.data, desc="Parsing sentences"):
+            batch, labels, weights = self._generate_batch_from_sentence(
+                sequence)
             labels = labels.reshape(-1)  # why is the reshape needed
             # Incrementing the sparse matrix entries accordingly
             for inp, lbl, w in zip(batch, labels, weights):
                 cooc_mat[inp, lbl] += (1.0 * w)
-            i += 1
-            if i % 10 == 0:
-                print("Sentence %d" % i)
         return cooc_mat
 
     def _generate_coor_from_single_string(self):
@@ -131,14 +132,16 @@ class CooccurrenceEncoder:
             current_sequence = self.data[data_index:endpos]
             if len(current_sequence) < window_len:
                 break  # We are at the end
-            batch, labels, weights = self._generate_batch_from_sentence(current_sequence)
+            batch, labels, weights = self._generate_batch_from_sentence(
+                current_sequence)
             labels = labels.reshape(-1)  # why is the reshape needed
             # Incrementing the sparse matrix entries accordingly
             for inp, lbl, w in zip(batch, labels, weights):
                 cooc_mat[inp, lbl] += (1.0 * w)
             data_index += shift_len
             endpos = data_index + batch_size
-            endpos = min(endpos, lastpos)  # takes care of last part of data. Maybe we should just ignore though
+            # takes care of last part of data. Maybe we should just ignore though
+            endpos = min(endpos, lastpos)
         return cooc_mat
 
     def build_dataset(self):

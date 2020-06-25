@@ -17,22 +17,6 @@ class SkipGram(Word2Vec):
         self.data_index: int = 0
         self.current_sentence: int = 0
 
-    def get_skipgram_embedding(self, x: Union[int, np.ndarray], embedding: Union[np.ndarray, tf.Variable])  \
-            -> Union[np.ndarray, tf.Tensor]:
-        """Get the embedding corresponding to the data points in x. Note, we ensure that this code is carried out on
-        the CPU because some ops are not compatible with the GPU.
-        Args:
-            x: A integer representing a node or word index.
-            embedding: A 2D tensor with shape (samples, sequence_length), where each entry is a sequence of integers.
-            device: A string that indicates whether to run computations on (default=cpu).
-        Returns:
-            embedding: Corresponding embeddings, with shape (batch_size, embedding_dimension)
-        Raises:
-            ValueError: If the embedding variable is None.
-        """
-        with tf.device("cpu"):
-            return tf.nn.embedding_lookup(embedding, x)
-
     def nce_loss(self, x_embed: tf.Tensor, y: np.ndarray) -> Union[float, int]:
         """Calculates the noise-contrastive estimation (NCE) training loss estimation for each batch.
         Args:
@@ -51,27 +35,6 @@ class SkipGram(Word2Vec):
             num_sampled=self.number_negative_samples,
             num_classes=self._vocabulary_size
         ))
-
-    # def evaluate(self, x_embed: tf.Tensor) -> Union[np.ndarray, tf.Tensor]:
-    #     """Computes the cosine similarity between a provided embedding and all other embedding vectors.
-    #
-    #     Args:
-    #         x_embed: A Tensor containing word embeddings.
-    #
-    #     Returns:
-    #         cosine_sim_op: A tensor of the cosine similarities between input data embedding and all other embeddings.
-    #     """
-    #
-    #     with tf.device(self.device_type):
-    #         x_embed_cast = tf.cast(x_embed, tf.float32)
-    #         x_embed_norm = x_embed_cast / tf.sqrt(tf.reduce_sum(tf.square(x_embed_cast)))
-    #         x_embed_sqrt = tf.sqrt(tf.reduce_sum(tf.square(self._embedding), 1, keepdims=True), tf.float32)
-    #         embedding_norm = self._embedding / x_embed_sqrt
-    #
-    #         # calculate cosine similarity
-    #         cosine_sim_op = tf.matmul(x_embed_norm, embedding_norm, transpose_b=True)
-    #
-    #         return cosine_sim_op
 
     def run_optimization(self, x: np.array, y: np.array) -> float:
         """Runs optimization for each batch by retrieving an embedding and calculating loss. Once the loss has been
@@ -115,10 +78,7 @@ class SkipGram(Word2Vec):
         """
         samples_per_window = self.samples_per_window
         context_window = self.context_window
-        if samples_per_window > 2 * context_window:
-            raise ValueError(
-                'The value of self.samples_per_window must be <= twice the length of self.context_window')
-        # TODO  -- We actually only need to check the above once in the Constructor?
+        
         # OR -- is there any situation where we will change this during training??
         # self.data is a list of lists, e.g., [[1, 2, 3], [5, 6, 7]]
         span = 2 * context_window + 1
@@ -197,7 +157,7 @@ class SkipGram(Word2Vec):
                     break  # We are at the end
                 batch_x, batch_y = self.next_batch(currentTensor)
                 current_loss = self.run_optimization(batch_x, batch_y)
-                
+
                 data_index += shift_len
                 endpos = data_index + batch_size
                 endpos = min(endpos,

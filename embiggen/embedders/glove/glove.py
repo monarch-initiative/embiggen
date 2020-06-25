@@ -4,6 +4,8 @@ from random import shuffle
 from typing import Union, Tuple, Dict, List
 from ..embedder import Embedder
 from .coocurrence_encoder import CooccurrenceEncoder
+from tqdm.auto import trange
+
 
 class NotTrainedError(Exception):
     pass
@@ -24,10 +26,14 @@ class GloVe(Embedder):
     @return embeddings for center words and context words
     """
         with tf.device('cpu'):
-            embed_in = tf.nn.embedding_lookup(self.center_embeddings, train_dataset)
-            embed_out = tf.nn.embedding_lookup(self.context_embeddings, train_labels)
-            embed_bias_in = tf.nn.embedding_lookup(self.center_bias, train_dataset)
-            embed_bias_out = tf.nn.embedding_lookup(self.context_bias, train_labels)
+            embed_in = tf.nn.embedding_lookup(
+                self.center_embeddings, train_dataset)
+            embed_out = tf.nn.embedding_lookup(
+                self.context_embeddings, train_labels)
+            embed_bias_in = tf.nn.embedding_lookup(
+                self.center_bias, train_dataset)
+            embed_bias_out = tf.nn.embedding_lookup(
+                self.context_bias, train_labels)
             return embed_in, embed_out, embed_bias_in, embed_bias_out
 
     def get_loss(self, weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out):
@@ -72,8 +78,10 @@ class GloVe(Embedder):
                     self.scaling_factor))
 
         with tf.GradientTape() as g:
-            embed_in, embed_out, embed_bias_in, embed_bias_out = self.get_embeds(train_dataset, train_labels)
-            loss = self.get_loss(weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out)
+            embed_in, embed_out, embed_bias_in, embed_bias_out = self.get_embeds(
+                train_dataset, train_labels)
+            loss = self.get_loss(
+                weighting_factor, x_ij_s, embed_in, embed_out, embed_bias_in, embed_bias_out)
 
         gradients = g.gradient(loss,
                                [self.center_embeddings, self.context_embeddings, self.center_bias, self.context_bias])
@@ -82,25 +90,6 @@ class GloVe(Embedder):
         # Note that the loss returned above is an array with the same dimension as batch size. For tracking the losss,
         # we will return the sum
         return tf.math.reduce_sum(loss)
-
-    def DEPRECATEDtrain(self, log_dir=None):
-        batches = self.__prepare_batches()
-        losses = []
-        batchnum = 0
-        for epoch in range(1, 1+self.epochs):
-            shuffle(batches)
-            for batch_index, batch in enumerate(batches):
-                i_s, j_s, x_ij_s = batch
-                if len(x_ij_s) != self.batch_size:
-                    continue
-                current_loss = self.run_optimization(i_s, j_s, x_ij_s)
-                if batch_index % 50 == 0:
-                    losses.append(current_loss)
-                    print("loss at epoch {}, batch index {}: {}".format(epoch, batch_index, current_loss.numpy()))
-                self.on_batch_end(batch=batch,epoch=epoch,log= {"loss":"{}".format(current_loss)})
-            self.on_epoch_end(batch=batch,epoch=epoch,log={"loss":"{}".format(current_loss)})
-        # The final embeddings are defined to be the mean of the center and context embeddings.
-        self._embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
 
     def _batchify(self, *sequences):
         for i in range(0, len(sequences[0]), self.batch_size):
@@ -115,21 +104,19 @@ class GloVe(Embedder):
         i_indices, j_indices, counts = zip(*cooccurrences)
         return list(self._batchify(i_indices, j_indices, counts))
 
-
-    def fit(self,X: Union[tf.Tensor, tf.RaggedTensor],
-        vocabulary_size: int,
-        learning_rate: float = 0.05,
-        batch_size: int = 128,
-        number_negative_samples: int = 7,
-        epochs: int = 10,
-        embedding_size: int = 200,
-        context_window: int = 2,
-        window_size: int = 2,
-        min_occurrences: int = 2,
-        scaling_factor: float = 0.75,
-        cooccurrence_cap: int =100,
-        callbacks: Tuple = ()):
-
+    def fit(self, X: Union[tf.Tensor, tf.RaggedTensor],
+            vocabulary_size: int,
+            learning_rate: float = 0.05,
+            batch_size: int = 128,
+            number_negative_samples: int = 7,
+            epochs: int = 10,
+            embedding_size: int = 200,
+            context_window: int = 2,
+            window_size: int = 2,
+            min_occurrences: int = 2,
+            scaling_factor: float = 0.75,
+            cooccurrence_cap: int = 100,
+            callbacks: Tuple = ()):
         """
         Set up and run the GloVe training
         Parameters
@@ -172,10 +159,11 @@ class GloVe(Embedder):
         elif isinstance(context_window, int):
             self.left_context = self.right_context = context_window
         else:
-            raise ValueError("`context_size` should be an int or a tuple of two ints")
-        super().fit( X, vocabulary_size = vocabulary_size, learning_rate =learning_rate,
-        batch_size = batch_size, epochs = epochs, embedding_size = embedding_size,
-        context_window = context_window, callbacks = callbacks)
+            raise ValueError(
+                "`context_size` should be an int or a tuple of two ints")
+        super().fit(X, vocabulary_size=vocabulary_size, learning_rate=learning_rate,
+                    batch_size=batch_size, epochs=epochs, embedding_size=embedding_size,
+                    context_window=context_window, callbacks=callbacks)
         self.min_occurrences = min_occurrences
         self.scaling_factor = scaling_factor
         self.cooccurrence_cap = cooccurrence_cap
@@ -196,21 +184,17 @@ class GloVe(Embedder):
         self.callbacks = []
         self.optimizer = tf.keras.optimizers.Adagrad(self.learning_rate)
 
-        print("fit method from glove")
         self.vocab_size = vocabulary_size
         self.callbacks = callbacks
-        print("Calculating co-occurences...")
         cencoder = CooccurrenceEncoder(
             X,
             window_size=context_window,
             vocab_size=self.vocab_size
         )
         self.co_oc_dict = cencoder.build_dataset()
-        print("Fitting GloVe...")
         batches = self.__prepare_batches()
-        losses = []
         batchnum = 0
-        for epoch in range(1, 1+self.epochs):
+        for epoch in trange(self.epochs, desc="Epochs"):
             shuffle(batches)
             for batch_index, batch in enumerate(batches):
                 batchnum += 1
@@ -218,10 +202,10 @@ class GloVe(Embedder):
                 if len(x_ij_s) != self.batch_size:
                     continue
                 current_loss = self.run_optimization(i_s, j_s, x_ij_s)
-                if batch_index % 50 == 0:
-                    losses.append(current_loss)
-                    print("loss at epoch {}, batch index {}: {}".format(epoch, batchnum, current_loss.numpy()))
-                self.on_batch_end(batch=batchnum,epoch=epoch,log= {"loss":"{}".format(current_loss)})
-            self.on_epoch_end(epoch=epoch,log={"loss":"{}".format(current_loss)})
+                self.on_batch_end(batch=batchnum, epoch=epoch, log={
+                                  "loss": "{}".format(current_loss)})
+            self.on_epoch_end(epoch=epoch, log={
+                              "loss": "{}".format(current_loss)})
         # The final embeddings are defined to be the mean of the center and context embeddings.
-        self._embedding = tf.math.add(self.center_embeddings, self.context_embeddings)
+        self._embedding = tf.math.add(
+            self.center_embeddings, self.context_embeddings)

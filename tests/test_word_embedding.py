@@ -16,5 +16,5 @@ class TestWordEmbedding(TestCase):
         text_encoder = TextTransformer(self._path)
         X, _, dictionary, _ = text_encoder.build_dataset()
         embedder_model = SkipGram()
-        embedder_model.fit(X, len(dictionary))
+        embedder_model.fit(X, len(dictionary), epochs=2)
         embedder_model.embedding
