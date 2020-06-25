@@ -112,8 +112,6 @@ class CooccurrenceEncoder:
         """
         vocab_size = self.vocab_size
         cooc_mat = lil_matrix((vocab_size, vocab_size), dtype=np.float32)
-        print(cooc_mat.shape)
-        i = 0
         batch_size = self.batch_size
         data_len = len(self.data)
         # Note that we cannot fully digest all of the data in any one batch
