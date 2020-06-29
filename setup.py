@@ -31,7 +31,7 @@ setup(
     author='Vida Ravanmehr, Peter Robinson',
     author_email='vida.ravanmehr@jax.org, peter.robinson@jax.org',
     license='BSD3',
-    packages=['embiggen'],
+    packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=[
         'click',
         'keras',
