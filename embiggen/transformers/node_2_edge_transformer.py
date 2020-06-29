@@ -6,7 +6,7 @@ import numpy as np  # type: ignore
 class Node2EdgeTransformer:
 
     methods = {
-        "hadamard": np.multiply,
+        "hadamard": lambda x1, x2: np.multiply(),
         "average": lambda x1, x2: np.mean([x1, x2], axis=0),
         "weightedL1": lambda x1, x2: np.abs(x1 - x2),
         "weightedL2": lambda x1, x2: (x2 - x2)**2
@@ -38,7 +38,7 @@ class Node2EdgeTransformer:
                 method=method,
                 methods=", ".join(Node2EdgeTransformer.methods.keys())
             ))
-        self._method = np.vectorize(Node2EdgeTransformer.methods[method])
+        self._method = Node2EdgeTransformer.methods[method]
         self._embedding = None
 
     def fit(self,  embedding: np.ndarray):
