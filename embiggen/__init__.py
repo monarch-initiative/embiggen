@@ -7,6 +7,7 @@
 
 """
 from .csf_graph import CSFGraph
+from .csf_graph import Edge
 from .random_walk_generator import N2vGraph
 from .link_prediction import LinkPrediction
 from .text_encoder import TextEncoder

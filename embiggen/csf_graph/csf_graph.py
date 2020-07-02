@@ -150,6 +150,7 @@ class CSFGraph:
         self.edge_to: np.ndarray = np.zeros(total_edge_count, dtype=np.int32)
         self.edge_weight: np.ndarray = np.zeros(
             total_edge_count, dtype=np.int32)
+        self.edge_type= np.zeros(total_edge_count,dtype="<U50")
         # self.proportion_of_different_neighbors = np.zeros(total_vertex_count, dtype=np.float32)
         self.offset_to_edge_: np.ndarray = np.zeros(
             total_vertex_count + 1, dtype=np.int32)
@@ -193,6 +194,7 @@ class CSFGraph:
 
             self.edge_to[j] = dest_index
             self.edge_weight[j] = edge.weight
+            self.edge_type[j] = edge.edge_type
             j += 1
 
     def assign_node_type(self, i: int, node_id: str,
@@ -507,3 +509,29 @@ class CSFGraph:
         :return: degree of node
         """
         return len(self.neighbors(node))
+
+    def edgetype(self, source: str, dest: str) -> Optional[str]:
+        """Takes user provided strings, representing node names for a source and destination node, and returns
+        edge types for each edge that exists between these nodes.
+
+        Assumptions:
+            - Assumes that there is a valid edge between source and destination nodes.
+
+        Args:
+            source: The name of a source node.
+            dest: The name of a destination node.
+
+        Returns:
+            The edge type of the edge that exists between the source and destination nodes.
+        """
+        # get indices for each user-provided node string
+        source_idx = self.node_to_index_map[source]
+        dest_idx = self.node_to_index_map[dest]
+
+        # get edge types for nodes
+        for i in range(self.offset_to_edge_[source_idx], self.offset_to_edge_[source_idx + 1]):
+            if dest_idx == self.edge_to[i]:
+                return self.edge_type[i]
+            else:
+                pass
+        return None

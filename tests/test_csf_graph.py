@@ -1,6 +1,7 @@
 from unittest import TestCase
 import os.path
 from embiggen import CSFGraph
+from embiggen import Edge
 from embiggen.csf_graph.csf_graph import CSFGraphNoSubjectColumnError, \
     CSFGraphNoObjectColumnError
 
@@ -212,3 +213,16 @@ class TestCSFGraph(TestCase):
         self.assertEqual(4, self.g.node_degree(node_2))
         self.assertEqual(3, self.g.node_degree(node_3))
 
+    def test_edge_type_1(self):
+        node_1 = "g1"
+        node_2 = "p1"
+        edge_type = self.g.edgetype(node_1, node_2)
+        expected = "biolink:interacts_with"
+        self.assertEqual(expected,edge_type)
+
+    def test_edge_type_2(self):
+        node_1 = "p2"
+        node_2 = "p4"
+        edge_type = self.g.edgetype(node_1, node_2)
+        expected = "biolink:molecularly_interacts_with"
+        self.assertEqual(expected,edge_type)
