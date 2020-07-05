@@ -43,6 +43,8 @@ conda install tensorflow-gpu
 # Install CMake Latest
 ################################################
 
+sudo snap install core
+sudo reboot # We need to restart the system after having installed the code of snap
 sudo snap install cmake --classic
 
 #################################################

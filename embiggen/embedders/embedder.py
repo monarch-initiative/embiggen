@@ -3,241 +3,96 @@ from typing import Union, Tuple, Dict, List
 import numpy as np
 import pandas as pd
 import os
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Optimizer
 
 
 class Embedder:
 
-    def __init__(self):
-        """Abstract class for Embedder objects.
-        """
-        # TODO! Understand why there is a +1 here.
-        self._vocabulary_size = None
-        self.learning_rate = None  # needs to be set in fit method
-        self.embedding_size = None
-        self.batch_size = None
-        self.epochs = None
-        self.callbacks = []
+    EMBEDDING_LAYER_NAME = "embedding"
 
-    def fit(
+    def __init__(
         self,
-        data: Union[tf.Tensor, tf.RaggedTensor],
         vocabulary_size: int,
-        learning_rate: float = 0.05,
-        batch_size: int = 128,
-        epochs: int = 10,
-        embedding_size: int = 200,
-        context_window: int = 2,
-        callbacks: Tuple["Callback"] = ()
+        embedding_size: int = 100,
+        optimizer: Union[str, Optimizer] = "nadam"
     ):
-        """Fit the Embedder model.
+        """Create new Embedder object.
 
-          Parameters
-        ----------------------
-        !TODO! Update docstring!
-        learning_rate: float = 0.05,
-            A float between 0 and 1 that controls how fast the model learns to solve the problem.
-        batch_size: int = 128,
-            The size of each "batch" or slice of the data to sample when training the model.
-        epochs: int = 1,
-            The number of epochs to run when training the model.
-        embedding_size: int = 128,
-            Dimension of embedded vectors.
-        context_window: int = 3,
-            How many words to consider left and right.
-        number_negative_samples: int = 7,
-            Number of negative examples to sample (default=7).
-        callbacks: Tuple["Callback"] = (),
-            List of callbacks to be called on epoch end and on batch end.
+        Parameters
+        ----------------------------------
+        vocabulary_size: int,
+            Number of terms to embed.
+            In a graph this is the number of nodes, while in a text is the
+            number of the unique words.
+        embedding_size: int = 100,
+            Dimension of the embedding.
+        optimizer: Union[str, Optimizer] = "nadam",
+            The optimizer to be used during the training of the model.
 
         Raises
-        ----------------------
+        -----------------------------------
         ValueError,
-            If the given word2id dictionary is empty.
+            When the given vocabulary size is not a strictly positive integer.
         ValueError,
-            If the given id2word list is empty.
-        ValueError,
-            If the given word mapping and and word reverse mapping have not the
-            same length.
-        ValueError,
-            If given learning rate is not a strictly positive real number.
-        ValueError,
-            If given tensor is not 2-dimensional.
-        ValueError,
-            If given batch_size is not a strictly positive integer number.
-        ValueError,
-            If given epochs is not a strictly positive integer number.
-        ValueError,
-            If context_size is not a strictly positive integer
-            Raises
+            When the given embedding size is not a strictly positive integer.
         """
-        if data is None:
-            raise ValueError("data argument is empty")
-        self._data = data
-        if isinstance(data, tf.Tensor):
-            self._is_list_of_lists = False
-        elif isinstance(data, tf.RaggedTensor):
-            self._is_list_of_lists = True
-        else:
-            raise ValueError("Data (X) must be either Tensor or RaggedTensor")
-        if len(data.shape) > 2:
-            raise ValueError(
-                "Given tensor is not 2-dimensional. "
-                "If your tensor has only one dimension, "
-                "you should use tensor.reshape(1, -1)."
-            )
-
-        if not isinstance(learning_rate, float) or learning_rate <= 0:
+        if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
             raise ValueError((
-                "Given learning_rate {} is not a "
-                "strictly positive real number."
-            ).format(learning_rate))
-        self.learning_rate = learning_rate
-
-        if not isinstance(batch_size, int) or batch_size <= 0:
-            raise ValueError((
-                "Given batch_size {} is not a "
-                "strictly positive integer number."
-            ).format(learning_rate))
-        self.batch_size = batch_size
-
-        if not isinstance(epochs, int) or epochs <= 0:
-            raise ValueError((
-                "Given epochs {} is not a strictly positive real number."
-            ).format(epochs))
-        else:
-            self.epochs = epochs
-        self.epochs = epochs
-
-        if not isinstance(context_window, int) or context_window < 1:
-            raise ValueError((
-                "Context window {} invalid. Must be a positive integer, "
-                "usually in range (1,10)"
-            ).format(context_window))
-        self.context_window = context_window
-
+                "The given vocabulary size ({}) "
+                "is not a strictly positive integer."
+            ).format(
+                vocabulary_size
+            ))
         if not isinstance(embedding_size, int) or embedding_size < 1:
             raise ValueError((
-                "Given embedding_size {} is not an int or is less than 1"
-            ).format(embedding_size))
-        self.embedding_size = embedding_size
-
-        # TODO -- It is not efficient to check length of tensors and len() does
-        # not seem to always work. Currently, the fit mehtods will just skip things that
-        # are too short
-        # Checking if the context window is valid for given tensor shape.
-        # for sequence in self.data:
-        #    if context_window > tf.size(sequence):
-        #        raise ValueError((
-        #            "Given context window ({}) is larger than at least one of "
-        #            "the tensors in self.data ({}, len={})"
-        #        ).format(context_window, sequence, tf.size(sequence)))
-        if len(callbacks) > 0:
-            self.callbacks = callbacks
-
+                "The given embedding size ({}) "
+                "is not a strictly positive integer."
+            ).format(
+                embedding_size
+            ))
         self._vocabulary_size = vocabulary_size
+        self._embedding_size = embedding_size
+        self._optimizer = optimizer
+        self._model = self._build_model()
 
-        # This method should be callable by any class extending this one, but
-        # it can't be called since this is an "abstract method"
-        if self.__class__ == Embedder:
-            raise NotImplementedError(
-                "The fit method must be implemented in the child classes of Embedder."
-            )
+    def _build_model(self) -> Model:
+        """Build new model for embedding."""
+        raise NotImplementedError(
+            "The method _build_model must be implemented in the child classes."
+        )
 
-    def on_batch_end(self,  epoch: int, batch: int, log: Dict[str, str] = None):
-        """Call all callbacks events for the batch end event.
-
-        Parameters
-        ----------------------------
-        epoch: int,
-            Current epoch that has just completed.
-        batch: int,
-            Current batch that has just completed.
-        log: Dict[str, str] = None
-            Additional parameters to pass to the events.
-        """
-        for cb in self.callbacks:
-            cb.on_batch_end(epoch=epoch, batch=batch, log=log)
-
-    def on_epoch_end(self,  epoch: int, log: Dict[str, str] = None):
-        """Call all callbacks events for the batch end event.
-
-        Parameters
-        ----------------------------
-        epoch: int,
-            Current epoch that has just completed.
-        log: Dict[str, str] = None
-            Additional parameters to pass to the events.
-        """
-        for cb in self.callbacks:
-            cb.on_epoch_end(epoch=epoch, log=log)
-
-    def on_training_end(self, log: Dict[str, str] = None):
-        """Call all callbacks events for the batch end event.
-
-        Parameters
-        ----------------------------
-        log: Dict[str, str] = None
-            Additional parameters to pass to the events.
-        """
-        for cb in self.callbacks:
-            cb.on_training_end(log=log)
-
-    def transform(self):
-        pass
+    def summary(self):
+        """Print model summary."""
+        self._model.summary()
 
     @property
     def embedding(self) -> np.ndarray:
-        """Return the embedding obtained from the model.
+        """Return model embeddings."""
+        for layer, weights in zip(self._model.layers, self._model.weights):
+            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+                return weights.numpy()
 
-        Raises
-        ---------------------
-        ValueError,
-            If the model is not yet fitted.
-        """
-        if self._embedding is None:
-            raise ValueError("Model is not yet fitted!")
-        return self._embedding.numpy()
-
-    def save_embedding(self, path: str):
-        """Save the computed embedding to the given file.
+    def save_weights(self, path: str):
+        """Save model weights to given path.
 
         Parameters
-        -------------------
+        ---------------------------
         path: str,
-            Path where to save the embedding.
-
-        Raises
-        ---------------------
-        ValueError,
-            If the model is not yet fitted.
+            Path where to save model weights.
         """
-        if self._embedding is None:
-            raise ValueError("Model is not yet fitted!")
-        pd.DataFrame({
-            word: tf.nn.embedding_lookup(self._embedding, key).numpy()
-            for key, word in enumerate(self._id2word)
-        }).T.to_csv(path, header=False)
+        self._model.save_weights(path)
 
-    def load_embedding(self, path: str):
-        """Save the computed embedding to the given file.
-
-        Raises
-        ---------------------
-        ValueError,
-            If the give path does not exists.
+    def load_weights(self, path: str):
+        """Load model weights from given path.
 
         Parameters
-        -------------------
+        ---------------------------
         path: str,
-            Path where to save the embedding.
+            Path from where to load model weights.
         """
-        if not os.path.exists(path):
-            raise ValueError(
-                "Embedding file at path {} does not exists.".format(path)
-            )
-        embedding = pd.read_csv(path, header=None, index_col=0)
-        nodes_mapping = [
-            self.word2id[node_name]
-            for node_name in embedding.index.values.astype(str)
-        ]
-        self._embedding = embedding.values[nodes_mapping]
+        self._model.load_weights(path)
+
+    def fit(self, *args, **kwargs)->pd.DataFrame:
+        """Return pandas dataframe with training history."""
+        return pd.DataFrame(self._model.fit(*args, **kwargs).history)
