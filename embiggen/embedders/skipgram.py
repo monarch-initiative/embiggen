@@ -1,7 +1,8 @@
-from .embedder import Embedder
-from tensorflow.keras.layers import Flatten, Input, Embedding, Dot, Dense
+from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input
 from tensorflow.keras.metrics import AUC, Precision, Recall
 from tensorflow.keras.models import Model
+
+from .embedder import Embedder
 
 
 class SkipGram(Embedder):

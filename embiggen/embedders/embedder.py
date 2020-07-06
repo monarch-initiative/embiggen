@@ -1,8 +1,9 @@
-import tensorflow as tf
-from typing import Union, Tuple, Dict, List
+import os
+from typing import Dict, List, Tuple, Union
+
 import numpy as np
 import pandas as pd
-import os
+import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Optimizer
 

@@ -18,9 +18,10 @@ class TestSkipGramSequences(TestSequences):
         )
 
     def test_output_shape(self):
-        (context_vector, words_vector), labels = self._sequence[0]
-        self.assertEqual(context_vector.shape[0], words_vector.shape[0])
-        self.assertEqual(labels.shape[0], words_vector.shape[0])
+        for i in range(20):
+            (context_vector, words_vector), labels = self._sequence[i]
+            self.assertEqual(context_vector.shape[0], words_vector.shape[0])
+            self.assertEqual(labels.shape[0], words_vector.shape[0])
 
     def test_nodes_range(self):
         self.assertTrue(self.check_nodes_range(self._sequence[0][0][0]))

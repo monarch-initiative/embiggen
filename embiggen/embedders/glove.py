@@ -1,22 +1,44 @@
-from .embedder import Embedder
-from tensorflow.keras import backend as K
+from typing import Union
+
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding, Dot, Dense, Input, Flatten, Add
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Add, Dense, Dot, Embedding, Flatten, Input
 from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Optimizer
+
+from .embedder import Embedder
 
 
 class GloVe(Embedder):
 
-    def __init__(self, alpha: float = 0.75, **kwargs):
+    def __init__(
+        self,
+        vocabulary_size: int,
+        embedding_size: int,
+        optimizer: Union[str, Optimizer] = "nadam",
+        alpha: float = 0.75
+    ):
         """Create new GloVe-based Embedder object.
 
         Parameters
         ----------------------------
+        vocabulary_size: int,
+            Number of terms to embed.
+            In a graph this is the number of nodes, while in a text is the
+            number of the unique words.
+        embedding_size: int,
+            Dimension of the embedding.
+        optimizer: Union[str, Optimizer] = "nadam",
+            The optimizer to be used during the training of the model.
         alpha: float = 0.75,
             Alpha to use for the function
         """
         self._alpha = alpha
-        super().__init__(**kwargs)
+        super().__init__(
+            vocabulary_size=vocabulary_size,
+            embedding_size=embedding_size,
+            optimizer=optimizer
+        )
 
     def _glove_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
         """Compute the glove loss function.

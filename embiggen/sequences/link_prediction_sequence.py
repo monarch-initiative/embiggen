@@ -1,5 +1,5 @@
 from tensorflow.keras.utils import Sequence
-from numpy import np
+import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from typing import Tuple, Union, Callable
 
@@ -50,6 +50,14 @@ class LinkPredictionSequence(Sequence):
         batches_per_epoch: bool = 2**8,
             Number of batches per epoch.
         """
+
+        if isinstance(method, str) and method not in LinkPredictionSequence.methods:
+            raise ValueError((
+                "Given method '{}' is not supported. "
+                "Supported methods are {}, or alternatively a lambda."
+            ).format(
+                method, ", ".join(list(LinkPredictionSequence.methods.keys()))
+            ))
         self._graph = graph
         self._embedding = embedding
         self._batch_size = batch_size

@@ -1,3 +1,4 @@
+import os
 from embiggen import SkipGram
 from .test_skipgrap_sequence import TestSkipGramSequences
 
@@ -11,6 +12,7 @@ class TestSkipGram(TestSkipGramSequences):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
         )
+        self._model.summary()
 
     def test_fit(self):
         self._model.fit(
@@ -24,3 +26,7 @@ class TestSkipGram(TestSkipGramSequences):
             self._model.embedding.shape,
             (self._graph.get_nodes_number(), self._embedding_size)
         )
+
+        self._model.save_weights(self._weights_path)
+        self._model.load_weights(self._weights_path)
+        os.remove(self._weights_path)

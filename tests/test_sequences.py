@@ -14,6 +14,7 @@ class TestSequences(TestCase):
             directed=False,
             weights_column="weight"
         )
+        self._weights_path = "weights_path.h5"
         self._sequence = None
 
     def check_nodes_range(self, nodes):

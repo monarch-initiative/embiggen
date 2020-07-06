@@ -1,7 +1,8 @@
-from tensorflow.keras.layers import Input, Dense, Embedding, Flatten, Layer
+from typing import Dict, Tuple
+
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from typing import Dict, Tuple
+from tensorflow.keras.layers import Dense, Embedding, Flatten, Input, Layer
 
 
 class NoiseContrastiveEstimation(Layer):
@@ -57,7 +58,6 @@ class NoiseContrastiveEstimation(Layer):
 
         super().build(input_shape)
 
-    # keras Layer interface
     def call(self, inputs: Tuple[Layer]):
         """Create call graph for current layer.
 
@@ -81,7 +81,3 @@ class NoiseContrastiveEstimation(Layer):
 
         # Computing logits for closing TF graph
         return K.dot(predictions, K.transpose(self._weights))
-
-    def compute_output_shape(self, *args):
-        """return output shape of the layer."""
-        return (self.vocabulary_size, )

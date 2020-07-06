@@ -1,3 +1,4 @@
+import os
 from embiggen import GloVe
 from .test_sequences import TestSequences
 
@@ -16,6 +17,7 @@ class TestGloVe(TestSequences):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size,
         )
+        self._model.summary()
 
     def test_fit(self):
         self._model.fit(
@@ -29,3 +31,7 @@ class TestGloVe(TestSequences):
             self._model.embedding.shape,
             (self._graph.get_nodes_number(), self._embedding_size)
         )
+
+        self._model.save_weights(self._weights_path)
+        self._model.load_weights(self._weights_path)
+        os.remove(self._weights_path)
