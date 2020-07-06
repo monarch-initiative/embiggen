@@ -1,7 +1,8 @@
-from tensorflow.keras.utils import Sequence
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from typing import Tuple
+
 import numpy as np  # type: ignore
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from tensorflow.keras.utils import Sequence
 
 
 class Node2VecSequence(Sequence):
@@ -79,7 +80,6 @@ class Node2VecSequence(Sequence):
 
     def on_epoch_end(self):
         """Shuffle private bed object on every epoch end."""
-        pass
 
     def __len__(self) -> int:
         """Return length of bed generator."""
@@ -92,7 +92,7 @@ class Node2VecSequence(Sequence):
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """Return batch corresponding to given index.
-        
+
         This method must be implemented in the child classes.
         """
         raise NotImplementedError(

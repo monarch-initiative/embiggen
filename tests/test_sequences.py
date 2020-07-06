@@ -1,6 +1,4 @@
-from embiggen import NodeSkipGramSequence, NodeCBOWSequence
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from itertools import chain
 from unittest import TestCase
 
 

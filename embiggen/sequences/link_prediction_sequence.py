@@ -7,7 +7,7 @@ from typing import Tuple, Union, Callable
 class LinkPredictionSequence(Sequence):
 
     methods = {
-        "hadamard": lambda x1, x2: np.multiply(x1, x2),
+        "hadamard": np.multiply,
         "average": lambda x1, x2: np.mean([x1, x2], axis=0),
         "weightedL1": lambda x1, x2: np.abs(x1 - x2),
         "weightedL2": lambda x1, x2: (x2 - x2)**2

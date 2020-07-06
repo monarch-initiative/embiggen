@@ -1,6 +1,7 @@
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-import numpy as np  # type: ignore
 from typing import Tuple
+
+import numpy as np  # type: ignore
+
 from .node2vec_sequence import Node2VecSequence
 
 
@@ -16,7 +17,7 @@ class NodeCBOWSequence(Node2VecSequence):
 
         Returns
         ---------------
-        
+
         """
         return self._graph.cbow(
             idx,

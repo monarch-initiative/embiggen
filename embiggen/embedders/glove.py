@@ -2,7 +2,7 @@ from typing import Union
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Add, Dense, Dot, Embedding, Flatten, Input
+from tensorflow.keras.layers import Add, Dot, Embedding, Flatten, Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Optimizer
 

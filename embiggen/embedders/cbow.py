@@ -1,9 +1,7 @@
 from typing import Union
 
-import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (Dense, Dot, Embedding, Flatten, Input,
-                                     Lambda)
+from tensorflow.keras.layers import (Dot, Embedding, Flatten, Input, Lambda)
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Optimizer
 
