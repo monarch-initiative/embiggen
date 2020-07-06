@@ -27,3 +27,5 @@ test.py
 .single_run
 htmlcov
 *.egg*
+.ipynb_checkpoints
+.pytest_cache
