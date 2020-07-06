@@ -12,8 +12,7 @@ test_deps = [
     "pytest-cov",
     "validate_version_code",
     "pylint",
-    "silence_tensorflow",
-    "parameterized"
+    "silence_tensorflow"
 ]
 
 extras = {
@@ -32,24 +31,10 @@ setup(
     license='BSD3',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=[
-        'click',
-        'keras',
-        'setuptools>=42.0.0',
-        'numpy>=1.16.4',
+        'numpy',
         'pandas',
-        'parameterized',
-        'silence_tensorflow',
-        'sklearn',
-        'nltk',
-        'more_itertools',
-        'tqdm',
-        "environments_utils",
-        "keras_tqdm",
         'tensorflow>=2.0.0',
-        'click',
-        'sanitize_ml_labels',
-        "ensmallen_graph>=0.1.0",
-        "colorama"
+        "ensmallen_graph"
     ],
     tests_require=test_deps,
     include_package_data=True,
