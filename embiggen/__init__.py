@@ -1,8 +1,6 @@
-""" embiggen: A python library for node2vec family algorithms
-.. module:: embiggen
-   :platform: Unix, Windows
-   :synopsis: node2vec family algorithms
+from .embedders import CBOW, SkipGram, GloVe
+from .sequences import NodeCBOWSequence, NodeSkipGramSequence
 
-.. moduleauthor:: Vida Ravanmehr <vida.ravanmehr@jax.org>, Peter N Robinson <peter.robinson@jax.org>
-
-"""
+__all__ = [
+   "CBOW", "SkipGram", "GloVe", "NodeCBOWSequence", "NodeSkipGramSequence"
+]

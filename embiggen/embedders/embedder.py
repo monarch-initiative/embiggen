@@ -9,12 +9,12 @@ from tensorflow.keras.optimizers import Optimizer
 
 class Embedder:
 
-    EMBEDDING_LAYER_NAME = "embedding"
+    EMBEDDING_LAYER_NAME = "words_embedding"
 
     def __init__(
         self,
         vocabulary_size: int,
-        embedding_size: int = 100,
+        embedding_size: int,
         optimizer: Union[str, Optimizer] = "nadam"
     ):
         """Create new Embedder object.
@@ -25,7 +25,7 @@ class Embedder:
             Number of terms to embed.
             In a graph this is the number of nodes, while in a text is the
             number of the unique words.
-        embedding_size: int = 100,
+        embedding_size: int,
             Dimension of the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.

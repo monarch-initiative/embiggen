@@ -1,5 +1,6 @@
 from .glove import GloVe
-from .word2vec import SkipGram, CBOW
+from .skipgram import SkipGram
+from .cbow import CBOW
 
 __all__ = [
     "GloVe", "SkipGram", "CBOW"

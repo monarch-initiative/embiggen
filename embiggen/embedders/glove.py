@@ -1,14 +1,14 @@
 from .embedder import Embedder
 from tensorflow.keras import backend as K
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding, Reshape, Dot, Dense, Input, Flatten
+from tensorflow.keras.layers import Embedding, Dot, Dense, Input, Flatten, Add
 from tensorflow.keras.models import Model
 
 
-class Glove(Embedder):
+class GloVe(Embedder):
 
     def __init__(self, alpha: float = 0.75, **kwargs):
-        """Create new Glove-based Embedder object.
+        """Create new GloVe-based Embedder object.
 
         Parameters
         ----------------------------
@@ -16,8 +16,9 @@ class Glove(Embedder):
             Alpha to use for the function
         """
         self._alpha = alpha
+        super().__init__(**kwargs)
 
-    def glove_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
+    def _glove_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
         """Compute the glove loss function.
 
         Parameters
@@ -31,48 +32,52 @@ class Glove(Embedder):
         ---------------------------
         Loss function score related to this batch.
         """
-        return K.sum(K.pow(K.clip(y_true, 0.0, 1.0), self._alpha) * K.square(y_pred - K.log(y_true)), axis=-1)
+        return K.sum(
+            K.pow(K.clip(y_true, 0.0, 1.0), self._alpha) *
+            K.square(y_pred - K.log(y_true)),
+            axis=-1
+        )
 
     def _build_model(self):
-        """
-        A Keras implementation of the GloVe architecture
-        :param vocab_size: The number of distinct words
-        :param vector_dim: The vector dimension of each word
-        :return:
-        """
+        """Create new Glove model."""
+        # Creating the input layers
         input_layers = [
             Input((1,), name=Embedder.EMBEDDING_LAYER_NAME),
-            Input((1,), name='contexts')
+            Input((1,))
         ]
 
-        central_embedding = Embedding(
-            self._vocabulary_size,
-            self._embedding_size,
-            input_length=1
+        # Creating the dot product of the embedding layers
+        dot_product_layer = Dot(axes=2)([
+            Embedding(
+                self._vocabulary_size,
+                self._embedding_size,
+                input_length=1
+            )(input_layer)
+            for input_layer in input_layers
+        ])
+
+        # Creating the biases laye
+        biases = [
+            Embedding(
+                self._vocabulary_size,
+                1,
+                input_length=1
+            )(input_layer)
+            for input_layer in input_layers
+        ]
+
+        # Concatenating with an add the three layers
+        prediction = Flatten()(Add()([dot_product_layer, *biases]))
+
+        # Creating the model
+        glove = Model(
+            inputs=input_layers,
+            outputs=prediction,
+            name="Glove"
         )
-
-        central_bias = Embedding(
-            vocab_size, 1, input_length=1)
-
-        context_embedding = Embedding(
-            vocab_size, vector_dim, input_length=1)
-        context_bias = Embedding(
-            vocab_size, 1, input_length=1)
-
-        bias_target = central_bias(input_target)
-        bias_context = context_bias(input_context)
-
-        dot_product = Dot(axes=-1)([vector_target, vector_context])
-        dot_product = Reshape((1, ))(dot_product)
-        bias_target = Reshape((1,))(bias_target)
-        bias_context = Reshape((1,))(bias_context)
-
-        prediction = Add()([dot_product, bias_target, bias_context])
-
-        model = Model(inputs=[input_target, input_context], outputs=prediction)
-        model.compile(
+        glove.compile(
             loss=self._glove_loss,
-            optimizer=Nadam(learning_rate=0.1),
+            optimizer=self._optimizer
         )
 
-        return model
+        return glove

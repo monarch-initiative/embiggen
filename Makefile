@@ -10,5 +10,5 @@ test:
 	pytest -s ./tests
 
 coverage:
-	pytest -s --cov=embiggen --cov-report=html ./tests
+	pytest -s ./tests --cov=embiggen --cov-report=html ./tests
 	$(OPEN_COMMAND) ./htmlcov/index.html & > /dev/null
