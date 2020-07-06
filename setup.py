@@ -19,6 +19,14 @@ extras = {
     'test': test_deps,
 }
 
+# TODO: Authors add your emails!!!
+authors = {
+    "Vida Ravanmehr":"vida.ravanmehr@jax.org",
+    "Peter Robinson":"peter.robinson@jax.org",
+    "Luca Cappelletti":"luca.cappelletti1@unimi.it",
+    "Tommaso Fontana":"tommaso.fontana@mail.polimi.it"
+}
+
 setup(
     name='embiggen',
     version='0.6.0',
@@ -26,8 +34,8 @@ setup(
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
     keywords='node2vec,word2vec,CBOW,SkipGram,GloVe',
-    author='Vida Ravanmehr, Peter Robinson',
-    author_email='vida.ravanmehr@jax.org, peter.robinson@jax.org',
+    author=", ".join(list(authors.keys())),
+    author_email=", ".join(list(authors.values())),
     license='BSD3',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=[
