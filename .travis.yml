@@ -10,6 +10,7 @@ addons:
   apt:
     packages:
       - libc6
+      - gcc
 
 language: python
 python:
