@@ -6,7 +6,22 @@ from .node2vec_sequence import Node2VecSequence
 
 class NodeSkipGramSequence(Node2VecSequence):
 
-    def __init__(self, *args, negative_samples: float = 7.0, graph_to_avoid: EnsmallenGraph = None, **kwargs):
+    def __init__(
+        self,
+        graph: EnsmallenGraph,
+        length: int,
+        batch_size: int,
+        negative_samples: float = 7.0,
+        graph_to_avoid: EnsmallenGraph = None,
+        iterations: int = 1,
+        window_size: int = 4,
+        shuffle: bool = True,
+        min_length: int = 0,
+        return_weight: float = 1.0,
+        explore_weight: float = 1.0,
+        change_node_type_weight: float = 1.0,
+        change_edge_type_weight: float = 1.0,
+    ):
         """Create new Node2Vec Sequence object.
 
         Parameters
@@ -58,9 +73,21 @@ class NodeSkipGramSequence(Node2VecSequence):
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
         """
-        super().__init__(*args, **kwargs)
         self._negative_samples = negative_samples
         self._graph_to_avoid = graph_to_avoid
+        super().__init__(
+            graph=graph,
+            length=length,
+            batch_size=batch_size,
+            iterations=iterations,
+            window_size=window_size,
+            shuffle=shuffle,
+            min_length=min_length,
+            return_weight=return_weight,
+            explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight,
+        )
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """Return batch corresponding to given index.
