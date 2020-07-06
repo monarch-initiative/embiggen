@@ -19,4 +19,4 @@ class TestNode2VecSequences(TestSequences):
 
     def test_not_implemented_error(self):
         with pytest.raises(NotImplementedError):
-            self._sequence[0]
+            self._sequence.__getitem__(0)

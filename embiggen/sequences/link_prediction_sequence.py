@@ -24,7 +24,7 @@ class LinkPredictionSequence(Sequence):
         batches_per_epoch: bool = 2**8
     ):
         """Create new LinkPredictionSequence object.
-        
+
         Parameters
         --------------------------------
         graph: EnsmallenGraph,

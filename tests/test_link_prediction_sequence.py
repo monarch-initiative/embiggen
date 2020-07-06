@@ -1,6 +1,5 @@
 import pytest
 from embiggen import LinkPredictionSequence, GloVe
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from .test_sequences import TestSequences
 
 
