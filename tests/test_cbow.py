@@ -12,6 +12,7 @@ class TestCBOW(TestCBOWSequences):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
         )
+        self.assertEqual("CBOW", self._model.name)
         self._model.summary()
 
     def test_fit(self):

@@ -95,7 +95,7 @@ class GloVe(Embedder):
         glove = Model(
             inputs=input_layers,
             outputs=prediction,
-            name="Glove"
+            name="GloVe"
         )
         glove.compile(
             loss=self._glove_loss,

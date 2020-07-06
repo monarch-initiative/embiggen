@@ -17,6 +17,7 @@ class TestGloVe(TestSequences):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size,
         )
+        self.assertEqual("GloVe", self._model.name)
         self._model.summary()
 
     def test_fit(self):

@@ -72,6 +72,11 @@ class Embedder:
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 return weights.numpy()
 
+    @property
+    def name(self) -> str:
+        """Return model name."""
+        return self._model.name
+
     def save_weights(self, path: str):
         """Save model weights to given path.
 
@@ -92,6 +97,6 @@ class Embedder:
         """
         self._model.load_weights(path)
 
-    def fit(self, *args, **kwargs)->pd.DataFrame:
+    def fit(self, *args, **kwargs) -> pd.DataFrame:
         """Return pandas dataframe with training history."""
         return pd.DataFrame(self._model.fit(*args, **kwargs).history)
