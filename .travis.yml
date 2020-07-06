@@ -11,6 +11,7 @@ addons:
     packages:
       - libc6
       - gcc
+      - binutils-dev
 
 language: python
 python:
