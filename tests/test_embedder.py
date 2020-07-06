@@ -1,6 +1,7 @@
+from unittest import TestCase
+
 import pytest
 from embiggen.embedders.embedder import Embedder
-from unittest import TestCase
 
 
 class TestEmbedder(TestCase):
