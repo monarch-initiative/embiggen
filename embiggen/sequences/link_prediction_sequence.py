@@ -21,7 +21,8 @@ class LinkPredictionSequence(Sequence):
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
         graph_to_avoid: EnsmallenGraph = None,
-        batches_per_epoch: bool = 2**8
+        batches_per_epoch: bool = 2**8,
+        avoid_self_loops: bool = False
     ):
         """Create new LinkPredictionSequence object.
 
@@ -49,6 +50,8 @@ class LinkPredictionSequence(Sequence):
             in the EnsmallenGraph package.
         batches_per_epoch: bool = 2**8,
             Number of batches per epoch.
+        avoid_self_loops: bool = False,
+            If the self loops must be filtered away from the result.
         """
 
         if isinstance(method, str) and method not in LinkPredictionSequence.methods:
@@ -64,6 +67,7 @@ class LinkPredictionSequence(Sequence):
         self._negative_samples = negative_samples
         self._graph_to_avoid = graph_to_avoid
         self._batches_per_epoch = batches_per_epoch
+        self._avoid_self_loops = avoid_self_loops
         self._method = LinkPredictionSequence.methods[method]
         self._current_epoch = 0
 
@@ -96,7 +100,8 @@ class LinkPredictionSequence(Sequence):
             idx + self._current_epoch,
             batch_size=self._batch_size,
             negative_samples=self._negative_samples,
-            graph_to_avoid=self._graph_to_avoid
+            graph_to_avoid=self._graph_to_avoid,
+            avoid_self_loops=self._avoid_self_loops
         )
         return (
             self._method(
