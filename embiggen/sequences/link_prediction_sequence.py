@@ -96,7 +96,7 @@ class LinkPredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources, destinations, labels = self._graph.link_prediction(
+        edges, labels = self._graph.link_prediction(
             idx + self._current_epoch,
             batch_size=self._batch_size,
             negative_samples=self._negative_samples,
@@ -105,8 +105,8 @@ class LinkPredictionSequence(Sequence):
         )
         return (
             self._method(
-                self._embedding[sources],
-                self._embedding[destinations],
+                self._embedding[edges[:, 0]],
+                self._embedding[edges[:, 1]],
             ),
             labels
         )
