@@ -7,6 +7,7 @@ __pycache__
 .mypy*
 \.vscode/
 .vscode
+.ipynb_checkpoints
 
 # data
 karate.embedded
@@ -18,13 +19,13 @@ cover
 coverage.xml
 .coverage
 .coverage*
-karate.embedded
 .mypy_cache/*
 *.log
+test.py
 
 # other
 .single_run
-
-embedded_graph.embedded
-N2vGraph.pkl
-output
+htmlcov
+*.egg*
+.ipynb_checkpoints
+.pytest_cache

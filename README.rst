@@ -34,8 +34,8 @@ slightly different results, here's three of them:
 |coveralls| |sonar_coverage| |code_climate_coverage|
 
 
-.. |travis| image:: https://travis-ci.org/monarch-initiative/n2v.png
-   :target: https://travis-ci.org/monarch-initiative/n2v
+.. |travis| image:: https://travis-ci.org/monarch-initiative/embiggen.svg?branch=master
+   :target: https://travis-ci.org/monarch-initiative/embiggen
    :alt: Travis CI build
 
 .. |sonar_quality| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_n2v&metric=alert_status

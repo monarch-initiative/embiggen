@@ -1,5 +1,4 @@
-from setuptools import setup
-
+from setuptools import find_packages, setup
 
 def readme():
     with open('README.rst') as f:
@@ -9,16 +8,23 @@ def readme():
 test_deps = [
     "codacy-coverage",
     "coveralls",
-    'nose',
-    "nose-cov",
+    'pytest',
+    "pytest-cov",
     "validate_version_code",
     "pylint",
-    "silence_tensorflow",
-    "parameterized"
+    "silence_tensorflow"
 ]
 
 extras = {
     'test': test_deps,
+}
+
+# TODO: Authors add your emails!!!
+authors = {
+    "Vida Ravanmehr":"vida.ravanmehr@jax.org",
+    "Peter Robinson":"peter.robinson@jax.org",
+    "Luca Cappelletti":"luca.cappelletti1@unimi.it",
+    "Tommaso Fontana":"tommaso.fontana@mail.polimi.it"
 }
 
 setup(
@@ -26,31 +32,18 @@ setup(
     version='0.6.0',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
-    url='https://github.com/monarch-initiative/N2V',
-    keywords='node2vec. word2vec',
-    author='Vida Ravanmehr, Peter Robinson',
-    author_email='vida.ravanmehr@jax.org, peter.robinson@jax.org',
+    url='https://github.com/monarch-initiative/embiggen',
+    keywords='node2vec,word2vec,CBOW,SkipGram,GloVe',
+    author=", ".join(list(authors.keys())),
+    author_email=", ".join(list(authors.values())),
     license='BSD3',
-    packages=['embiggen'],
+    packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     install_requires=[
-        'click',
-        'keras',
-        'setuptools>=42.0.0',
-        'numpy>=1.16.4',
+        'numpy',
         'pandas',
-        'parameterized',
-        'silence_tensorflow',
-        'sklearn',
-        'tensorflow>=2.0',
-        'nltk',
-        'more_itertools',
-        'tqdm',
-        "environments_utils",
-        "keras_tqdm",
         'tensorflow>=2.0.0',
-        'click'
+        "ensmallen_graph"
     ],
-    test_suite='nose.collector',
     tests_require=test_deps,
     include_package_data=True,
     zip_safe=False,
