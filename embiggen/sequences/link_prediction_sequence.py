@@ -2,16 +2,10 @@ from tensorflow.keras.utils import Sequence
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from typing import Tuple, Union, Callable
+from ..transformers import EdgeTransformer
 
 
 class LinkPredictionSequence(Sequence):
-
-    methods = {
-        "hadamard": np.multiply,
-        "average": lambda x1, x2: np.mean([x1, x2], axis=0),
-        "weightedL1": lambda x1, x2: np.abs(x1 - x2),
-        "weightedL2": lambda x1, x2: (x1 - x2)**2
-    }
 
     def __init__(
         self,
@@ -53,22 +47,14 @@ class LinkPredictionSequence(Sequence):
         avoid_self_loops: bool = False,
             If the self loops must be filtered away from the result.
         """
-
-        if isinstance(method, str) and method not in LinkPredictionSequence.methods:
-            raise ValueError((
-                "Given method '{}' is not supported. "
-                "Supported methods are {}, or alternatively a lambda."
-            ).format(
-                method, ", ".join(list(LinkPredictionSequence.methods.keys()))
-            ))
         self._graph = graph
-        self._embedding = embedding
         self._batch_size = batch_size
         self._negative_samples = negative_samples
         self._graph_to_avoid = graph_to_avoid
         self._batches_per_epoch = batches_per_epoch
         self._avoid_self_loops = avoid_self_loops
-        self._method = LinkPredictionSequence.methods[method]
+        self._transformer = EdgeTransformer(method)
+        self._transformer.fit(embedding)
         self._current_epoch = 0
 
     def on_epoch_end(self):
@@ -104,9 +90,9 @@ class LinkPredictionSequence(Sequence):
             avoid_self_loops=self._avoid_self_loops
         )
         return (
-            self._method(
-                self._embedding[edges[:, 0]],
-                self._embedding[edges[:, 1]],
+            self._transformer.transform(
+                edges[:, 0],
+                edges[:, 1]
             ),
             labels
         )
