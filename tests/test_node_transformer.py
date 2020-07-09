@@ -13,9 +13,9 @@ class TestNodeTransformer(TestCase):
             self._nodes_number,
             self._embedding_size
         ))
-
-    def test_node_transformer(self):
         self._transfomer = NodeTransformer()
+
+    def test_node_transformer(self):        
         self._transfomer.fit(self._embedding)
         samples_number = 50
         embedded_nodes = self._transfomer.transform(
@@ -28,4 +28,4 @@ class TestNodeTransformer(TestCase):
 
     def test_illegale_node_transformer(self):
         with pytest.raises(ValueError):
-            NodeTransformer().transform(None)
+            self._transfomer.transform(None)

@@ -1,7 +1,6 @@
 from embiggen import GraphTransformer
 from unittest import TestCase
 import numpy as np
-import pytest
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 
 

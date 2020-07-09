@@ -1,7 +1,6 @@
 from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input
 from tensorflow.keras.metrics import AUC, Precision, Recall
 from tensorflow.keras.models import Model
-from tensorflow_addons.metrics import F1Score
 
 from .embedder import Embedder
 
