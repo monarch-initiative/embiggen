@@ -1,51 +1,67 @@
-from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input
-from tensorflow.keras.metrics import AUC, Precision, Recall
-from tensorflow.keras.models import Model
+from typing import Union, Tuple
+from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras.layers import Layer
+from .node2vec import Node2Vec
 
-from .embedder import Embedder
 
+class SkipGram(Node2Vec):
 
-class SkipGram(Embedder):
+    def __init__(
+        self,
+        vocabulary_size: int,
+        embedding_size: int,
+        optimizer: Union[str, Optimizer] = "nadam",
+        window_size: int = 4,
+        negatives_samples: int = 10
+    ):
+        """Create new CBOW-based Embedder object.
 
-    def _build_model(self):
-        """Create new SkipGram model."""
-
-        # Creating the input layers
-        input_layers = [
-            Input(shape=(1,), name=Embedder.EMBEDDING_LAYER_NAME),
-            Input(shape=(1,), name="context")
-        ]
-
-        # Creating dot product of embedding layers for each input layer
-        dot_product_layer = Flatten()(Dot(axes=2)([
-            Embedding(
-                self._vocabulary_size,
-                self._embedding_size,
-                input_length=1
-            )(input_layer)
-            for input_layer in input_layers
-        ]))
-
-        # Output layer from previous dot product
-        output = Dense(1, activation="sigmoid")(dot_product_layer)
-
-        # Creating the actual model
-        skipgram = Model(
-            inputs=input_layers,
-            outputs=output,
-            name="SkipGram"
+        Parameters
+        -------------------------------------------
+        vocabulary_size: int,
+            Number of terms to embed.
+            In a graph this is the number of nodes, while in a text is the
+            number of the unique words.
+        embedding_size: int,
+            Dimension of the embedding.
+        optimizer: Union[str, Optimizer] = "nadam",
+            The optimizer to be used during the training of the model.
+        negative_samples: int,
+            The number of negative classes to randomly sample per batch.
+            This single sample of negative classes is evaluated for each element in the batch.
+        """
+        super().__init__(
+            vocabulary_size=vocabulary_size,
+            embedding_size=embedding_size,
+            model_name="SkipGram",
+            optimizer=optimizer,
+            window_size=window_size,
+            negatives_samples=negatives_samples
         )
 
-        # Compiling the model
-        skipgram.compile(
-            loss='binary_crossentropy',
-            optimizer=self._optimizer,
-            metrics=[
-                AUC(curve="ROC", name="auroc"),
-                AUC(curve="PR", name="auprc"),
-                Precision(),
-                Recall(),
-            ]
-        )
+    def _get_true_input_length(self) -> int:
+        """Return length of true input layer."""
+        return 1
 
-        return skipgram
+    def _get_true_output_length(self) -> int:
+        """Return length of true output layer."""
+        return self._window_size*2
+    
+    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
+        """Return sorted input layers for handling training with the same input sequences.
+
+        Parameters
+        ----------------------------
+        true_input_layer: Layer,
+            The input layer that will contain the true input.
+        true_output_layer: Layer,
+            The input layer that will contain the true output.
+
+        Returns
+        ----------------------------
+        Return tuple with the tuple of layers.
+        """
+        return (
+            true_output_layer,
+            true_input_layer,
+        )

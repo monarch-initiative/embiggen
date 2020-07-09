@@ -1,15 +1,15 @@
-from embiggen import NodeSkipGramSequence
+from embiggen import NodeBinarySkipGramSequence
 from .test_sequences import TestSequences
 
 
-class TestSkipGramSequences(TestSequences):
+class TestBinarySkipGramSequences(TestSequences):
 
     def setUp(self):
         super().setUp()
         self._window_size = 4
         self._length = 100
         self._batch_size = 1
-        self._sequence = NodeSkipGramSequence(
+        self._sequence = NodeBinarySkipGramSequence(
             self._graph,
             length=self._length,
             batch_size=self._batch_size,

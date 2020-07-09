@@ -1,15 +1,10 @@
-from typing import Union
-
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Embedding, Input, Lambda
-from tensorflow.keras.models import Model
+from typing import Union, Tuple
 from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras.layers import Layer
+from .node2vec import Node2Vec
 
-from .embedder import Embedder
-from .layers import NoiseContrastiveEstimation
 
-
-class CBOW(Embedder):
+class CBOW(Node2Vec):
 
     def __init__(
         self,
@@ -35,67 +30,38 @@ class CBOW(Embedder):
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         """
-        self._window_size = window_size
-        self._negatives_samples = negatives_samples
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
-            optimizer=optimizer
+            model_name="CBOW",
+            optimizer=optimizer,
+            window_size=window_size,
+            negatives_samples=negatives_samples
         )
 
-    def _build_model(self):
-        """Return CBOW model.
+    def _get_true_input_length(self) -> int:
+        """Return length of true input layer."""
+        return self._window_size*2
+
+    def _get_true_output_length(self) -> int:
+        """Return length of true output layer."""
+        return 1
+
+    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
+        """Return sorted input layers for handling training with the same input sequences.
 
         Parameters
-        --------------------------
-        vocabulary_size:int,
-            Number of different elements of the dataset.
-            In a text corpus this is the cardinality of the set of different words.
-            In a graph this is the number of nodes within the graph.
-        embedding_size:int,
-            The size of the embedding to be obtained.
-        window_size:int,
-            The sliding window size.
+        ----------------------------
+        true_input_layer: Layer,
+            The input layer that will contain the true input.
+        true_output_layer: Layer,
+            The input layer that will contain the true output.
 
         Returns
-        --------------------------
-        Sequential model of CBOW.
+        ----------------------------
+        Return tuple with the tuple of layers.
         """
-        # Creating the inputs layers
-        contexts_input = Input(
-            (self._window_size*2, ),
-            name=Embedder.EMBEDDING_LAYER_NAME
+        return (
+            true_input_layer,
+            true_output_layer
         )
-        words_input = Input((self._window_size*2, ))
-
-        # Creating the embedding layer for the contexts
-        embedding = Embedding(
-            input_dim=self._vocabulary_size,
-            output_dim=self._embedding_size,
-            input_length=self._window_size*2,
-        )(contexts_input)
-
-        # Computing mean of the embedding of all the contexts
-        mean_embedding = Lambda(
-            lambda x: K.mean(x, axis=1),
-            output_shape=(self._embedding_size,)
-        )(embedding)
-
-        # Adding layer that also executes the loss function
-        nce_loss = NoiseContrastiveEstimation(
-            vocabulary_size=self._vocabulary_size,
-            embedding_size=self._embedding_size,
-            negative_samples=self._negatives_samples
-        )((mean_embedding, words_input))
-
-        # Creating the actual model
-        cbow = Model(
-            inputs=[contexts_input, words_input],
-            outputs=nce_loss,
-            name="CBOW"
-        )
-
-        # No loss function is needed because it is already executed in
-        # the NCE loss layer.
-        cbow.compile(optimizer=self._optimizer)
-        return cbow

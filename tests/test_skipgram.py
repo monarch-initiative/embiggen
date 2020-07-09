@@ -1,9 +1,9 @@
 import os
 from embiggen import SkipGram
-from .test_skipgrap_sequence import TestSkipGramSequences
+from .test_node2vec_sequence import TestNode2VecSequence
 
 
-class TestSkipGram(TestSkipGramSequences):
+class TestSkipGram(TestNode2VecSequence):
 
     def setUp(self):
         super().setUp()

@@ -1,10 +1,10 @@
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 import numpy as np  # type: ignore
 from typing import Tuple
-from .node2vec_sequence import Node2VecSequence
+from .abstract_node2vec_sequence import AbstractNode2VecSequence
 
 
-class NodeSkipGramSequence(Node2VecSequence):
+class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
 
     def __init__(
         self,

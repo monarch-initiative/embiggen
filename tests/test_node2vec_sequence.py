@@ -1,9 +1,8 @@
-import pytest
-from embiggen.sequences.node2vec_sequence import Node2VecSequence
-from .test_sequences import TestSequences
+from embiggen import Node2VecSequence
+from .test_abstract_node2vec_sequence import TestAbstractNode2VecSequence
 
 
-class TestNode2VecSequences(TestSequences):
+class TestNode2VecSequence(TestAbstractNode2VecSequence):
 
     def setUp(self):
         super().setUp()
@@ -17,6 +16,14 @@ class TestNode2VecSequences(TestSequences):
             window_size=self._window_size
         )
 
-    def test_not_implemented_error(self):
-        with pytest.raises(NotImplementedError):
-            self._sequence.__getitem__(0)
+    def test_output_shape(self):
+        (context_vector, words_vector), _ = self._sequence[0]
+        self.assertEqual(
+            context_vector.shape,
+            ((self._length - self._window_size*2 + 1)*self._batch_size, self._window_size*2))
+        self.assertEqual(context_vector.shape[0], words_vector.shape[0])
+
+    def test_nodes_range(self):
+        self.assertTrue(self.check_nodes_range(self._sequence[0][0][0].flatten()))
+        self.assertTrue(self.check_nodes_range(self._sequence[0][0][1]))
+        self.assertTrue(self._sequence[0][1] is None)

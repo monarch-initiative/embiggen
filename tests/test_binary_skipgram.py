@@ -1,18 +1,18 @@
 import os
-from embiggen import CBOW
-from .test_node2vec_sequence import TestNode2VecSequence
+from embiggen import BinarySkipGram
+from .test_binary_skipgrap_sequence import TestBinarySkipGramSequences
 
 
-class TestCBOW(TestNode2VecSequence):
+class TestBinarySkipGram(TestBinarySkipGramSequences):
 
     def setUp(self):
         super().setUp()
         self._embedding_size = 50
-        self._model = CBOW(
+        self._model = BinarySkipGram(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
         )
-        self.assertEqual("CBOW", self._model.name)
+        self.assertEqual("BinarySkipGram", self._model.name)
         self._model.summary()
 
     def test_fit(self):

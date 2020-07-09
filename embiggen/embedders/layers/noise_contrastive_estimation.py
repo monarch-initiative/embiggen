@@ -11,6 +11,7 @@ class NoiseContrastiveEstimation(Layer):
         vocabulary_size: int,
         embedding_size: int,
         negative_samples: int,
+        positive_samples: int,
         **kwargs: Dict
     ):
         """Create new NoiseContrastiveEstimation layer.
@@ -29,11 +30,13 @@ class NoiseContrastiveEstimation(Layer):
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-
+        positive_samples: int,
+            The number of target classes per training example.
         """
         self.vocabulary_size = vocabulary_size
         self.embedding_size = embedding_size
         self.negative_samples = negative_samples
+        self.positive_samples = positive_samples
         super().__init__(**kwargs)
 
     def build(self, input_shape: Tuple[int, int]):
@@ -76,7 +79,8 @@ class NoiseContrastiveEstimation(Layer):
             labels=labels,
             inputs=predictions,
             num_sampled=self.negative_samples,
-            num_classes=self.vocabulary_size
+            num_classes=self.vocabulary_size,
+            num_true=self.positive_samples
         ))
 
         # Computing logits for closing TF graph
