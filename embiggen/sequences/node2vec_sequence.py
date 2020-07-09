@@ -19,7 +19,7 @@ class Node2VecSequence(AbstractNode2VecSequence):
         ---------------
         Tuple of tuples with input data.
         """
-        return self._graph.cbow(
+        return self._graph.node2vec(
             idx,
             self._batch_size,
             self._length,

@@ -101,7 +101,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         ---------------
         Tuple of tuples with vector of integer with words, contexts and labels.
         """
-        return self._graph.skipgrams(
+        return self._graph.binary_skipgrams(
             idx,
             self._batch_size,
             self._length,
