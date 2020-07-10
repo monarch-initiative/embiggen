@@ -44,6 +44,8 @@ setup(
         'tensorflow>=2.0.0',
         "ensmallen_graph>=0.2.5",
         "environments_utils",
+        "pydot",
+        "graphviz",
         "ipython"
     ],
     tests_require=test_deps,
