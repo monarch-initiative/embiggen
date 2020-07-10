@@ -42,7 +42,9 @@ setup(
         'numpy',
         'pandas',
         'tensorflow>=2.0.0',
-        "ensmallen_graph>=0.2.5"
+        "ensmallen_graph>=0.2.5",
+        "environments_utils",
+        "ipython"
     ],
     tests_require=test_deps,
     include_package_data=True,
