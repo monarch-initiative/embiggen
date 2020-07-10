@@ -1,10 +1,13 @@
 from typing import Union
 
+from IPython.display import SVG, display
+from tensorflow.keras.utils import model_to_dot
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Optimizer
-
+from environments_utils import is_notebook
+from warnings import warn
 
 class Embedder:
 
@@ -100,3 +103,24 @@ class Embedder:
     def fit(self, *args, **kwargs) -> pd.DataFrame:
         """Return pandas dataframe with training history."""
         return pd.DataFrame(self._model.fit(*args, **kwargs).history)
+
+    def plot(self):
+        """Plot model when used within a jupyter notebook.
+
+        Warns
+        ------------------------------------
+        UserWarning,
+            When using plot outside of a Jupyter Notebook.
+        """
+        if is_notebook():
+            return SVG(
+                model_to_dot(
+                    self._model,
+                    show_shapes=True,
+                    show_layer_names=False,
+                    rankdir='TB'
+                ).create(prog='dot', format='svg'))
+        warn(
+            "Method plot is only supported within jupyter notebooks.",
+            category=UserWarning
+        )
