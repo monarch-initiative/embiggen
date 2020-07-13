@@ -15,7 +15,7 @@ class AbstractNode2VecSequence(Sequence):
         iterations: int = 1,
         window_size: int = 4,
         shuffle: bool = True,
-        min_length: int = 0,
+        min_length: int = 1,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -39,7 +39,7 @@ class AbstractNode2VecSequence(Sequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Wthever to shuffle the vectors.
-        min_length: int = 8,
+        min_length: int = 1,
             Minimum length of the walks.
             In directed graphs, when traps are present, walks shorter than
             this amount are removed. This should be two times the window_size.
