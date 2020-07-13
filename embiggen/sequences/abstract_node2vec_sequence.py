@@ -83,7 +83,7 @@ class AbstractNode2VecSequence(Sequence):
 
     def __len__(self) -> int:
         """Return length of bed generator."""
-        return int(np.ceil(self._graph.get_nodes_number() / float(self._batch_size)))
+        return int(np.ceil(self._graph.get_not_trap_nodes_number() / float(self._batch_size)))
 
     @property
     def steps_per_epoch(self) -> int:
