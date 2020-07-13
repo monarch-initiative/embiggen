@@ -16,7 +16,7 @@ class GraphTransformer:
             a custom lambda that receives two numpy arrays with the nodes
             embedding and returns the edge embedding.
         """
-        self._transformer = EdgeTransformer()
+        self._transformer = EdgeTransformer(method=method)
 
     def fit(self, embedding: np.ndarray):
         """Fit the model.
