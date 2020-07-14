@@ -1,17 +1,19 @@
 from ensmallen_graph import EnsmallenGraph
+import numpy as np
+from matplotlib._color_data import TABLEAU_COLORS
+from matplotlib.axes import Axes
+from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 
 
 class GraphVisualizations:
-    
-    def __init__(self, graph: EnsmallenGraph):
-        
 
-    def plot_embedding(
-        graph: EnsmallenGraph,
-        tsne_embedding: np.ndarray,
-        k: int = 10,
-        axes: Axes = None
-    ):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def plot_tsne_embedding(graph: EnsmallenGraph, tsne_embedding: np.ndarray,
+                            k: int = 10, axes: Axes = None):
         if axes is None:
             _, axes = plt.subplots(figsize=(5, 5))
 
