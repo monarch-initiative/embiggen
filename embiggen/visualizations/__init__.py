@@ -1,5 +1,5 @@
-from ensmallen_graph import EnsmallenGraph
+from .graph_visualizations import GraphVisualizations
 
-
-class GraphVisualizations:
-    def __init__(self, graph: EnsmallenGraph):
+__all__ = [
+    "GraphVisualizations"
+]
