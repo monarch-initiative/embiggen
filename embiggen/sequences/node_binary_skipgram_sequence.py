@@ -9,7 +9,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        length: int,
+        walk_length: int,
         batch_size: int,
         negative_samples: float = 7.0,
         graph_to_avoid: EnsmallenGraph = None,
@@ -28,7 +28,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         -----------------------------
         graph: EnsmallenGraph,
             The graph from from where to extract the walks.
-        length: int,
+        walk_length: int,
             Maximal length of the walks.
             In directed graphs, when traps are present, walks may be shorter.
         batch_size: int,
@@ -77,7 +77,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         self._graph_to_avoid = graph_to_avoid
         super().__init__(
             graph=graph,
-            length=length,
+            walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,
             window_size=window_size,
@@ -103,8 +103,8 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         """
         return self._graph.binary_skipgrams(
             idx,
-            self._batch_size,
-            self._length,
+            self.batch_size,
+            self._walk_length,
             iterations=self._iterations,
             window_size=self._window_size,
             negative_samples=self._negative_samples,
