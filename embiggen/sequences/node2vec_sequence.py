@@ -24,6 +24,14 @@ class Node2VecSequence(AbstractNode2VecSequence):
         the speed of the training process since it does not require to allocate
         empty vectors of considerable size for the one-hot encoding process.
 
+        A batch returns words and contexts from:
+
+            (number of nodes provided in a batch) * 
+            (number of iterations of random walks per node) *
+            (walk length - window_size*2)
+
+        different contexts.
+
         Parameters
         ---------------
         idx: int,
