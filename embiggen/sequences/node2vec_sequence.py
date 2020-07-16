@@ -10,6 +10,28 @@ class Node2VecSequence(AbstractNode2VecSequence):
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], None]:
         """Return batch corresponding to given index.
 
+        The return tuple of tuples is composed of an inner tuple, containing
+        the words vector and the vector of vectors of the contexts.
+        Depending on the order of the input_layers of the models that can
+        accept these data format, one of the vectors is used as training
+        input and the other one is used as the output for the NCE loss layer.
+
+        The words vectors and contexts vectors contain numeric IDs, that
+        represent the index of the words' embedding column.
+
+        The true output value is None, since no loss function is used after
+        the NCE loss, that is implemented as a layer, and this vastly improves
+        the speed of the training process since it does not require to allocate
+        empty vectors of considerable size for the one-hot encoding process.
+
+        A batch returns words and contexts from:
+
+            (number of nodes provided in a batch) * 
+            (number of iterations of random walks per node) *
+            (walk length - window_size*2)
+
+        different contexts.
+
         Parameters
         ---------------
         idx: int,
