@@ -12,7 +12,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         walk_length: int,
         batch_size: int,
         negative_samples: float = 7.0,
-        graph_to_avoid: EnsmallenGraph = None,
         iterations: int = 1,
         window_size: int = 4,
         shuffle: bool = True,
@@ -35,10 +34,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             Number of nodes to include in a single batch.
         negative_samples: float = 7,
             Factor of negative samples to use.
-        graph_to_avoid: EnsmallenGraph = None,
-            The graph portion to be avoided. Can be usefull when using
-            holdouts where a portion of the graph is completely hidden,
-            and is not to be used neither for negatives nor positives.
         iterations: int = 1,
             Number of iterations of the single walks.
         window_size: int = 4,
@@ -74,7 +69,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             multigraphs, otherwise it has no impact.
         """
         self._negative_samples = negative_samples
-        self._graph_to_avoid = graph_to_avoid
         super().__init__(
             graph=graph,
             walk_length=walk_length,
@@ -113,6 +107,5 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             return_weight=self._return_weight,
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
-            change_edge_type_weight=self._change_edge_type_weight,
-            graph_to_avoid=self._graph_to_avoid
+            change_edge_type_weight=self._change_edge_type_weight
         )
