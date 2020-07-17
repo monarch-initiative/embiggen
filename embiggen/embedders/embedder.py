@@ -72,19 +72,19 @@ class Embedder:
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 return weights.numpy()
 
-    def save_embedding(self, path: str, nodes_names: List[str]):
-        """Save nodes embedding using given index names.
+    def save_embedding(self, path: str, term_names: List[str]):
+        """Save terms embedding using given index names.
 
         Parameters
         -----------------------------
         path: str,
             Save embedding as csv to given path.
-        nodes_names: List[str],
-            List of nodes to be used as index names.
+        term_names: List[str],
+            List of terms to be used as index names.
         """
         pd.DataFrame(
             self.embedding,
-            index=nodes_names
+            index=term_names
         ).to_csv(path, header=False)
 
     @property

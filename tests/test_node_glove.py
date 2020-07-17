@@ -3,7 +3,7 @@ from embiggen import GloVe
 from .test_node_sequences import TestNodeSequences
 
 
-class TestGloVe(TestNodeSequences):
+class TestNodeGloVe(TestNodeSequences):
 
     def setUp(self):
         super().setUp()

@@ -1,16 +1,15 @@
-from embiggen import Word2VecSequence, SkipGram
-from .test_word2vec_sequences import TestWord2VecSequences
+from embiggen import Word2VecSequence, BinarySkipGram
+from .test_word_binary_skipgram_sequence import TestWordBinarySkipGramSequence
 
 
-class TestWordSkipGram(TestWord2VecSequences):
+class TestWordBinarySkipGram(TestWordBinarySkipGramSequence):
 
     def setUp(self):
         super().setUp()
         self._embedding_size = 10
-        self._model = SkipGram(
+        self._model = BinarySkipGram(
             self._transformer.vocabulary_size,
-            embedding_size=self._embedding_size,
-            window_size=self._window_size
+            embedding_size=self._embedding_size
         )
 
     def test_fit(self):

@@ -2,7 +2,7 @@ from embiggen import Word2VecSequence, CBOW
 from .test_word2vec_sequences import TestWord2VecSequences
 
 
-class TestWordCBOWSequences(TestWord2VecSequences):
+class TestWordCBOW(TestWord2VecSequences):
 
     def setUp(self):
         super().setUp()

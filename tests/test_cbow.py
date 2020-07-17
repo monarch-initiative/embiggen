@@ -30,4 +30,5 @@ class TestCBOW(TestNode2VecSequence):
 
         self._model.save_weights(self._weights_path)
         self._model.load_weights(self._weights_path)
+        self._model.save_embedding(self._embedding_path, self._graph.nodes_reverse_mapping)
         os.remove(self._weights_path)
