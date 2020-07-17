@@ -1,9 +1,9 @@
 import os
 from embiggen import GloVe
-from .test_sequences import TestSequences
+from .test_node_sequences import TestNodeSequences
 
 
-class TestGloVe(TestSequences):
+class TestGloVe(TestNodeSequences):
 
     def setUp(self):
         super().setUp()

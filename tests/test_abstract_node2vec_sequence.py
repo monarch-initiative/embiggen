@@ -1,9 +1,9 @@
 import pytest
 from embiggen.sequences.abstract_node2vec_sequence import AbstractNode2VecSequence
-from .test_sequences import TestSequences
+from .test_node_sequences import TestNodeSequences
 
 
-class TestAbstractNode2VecSequence(TestSequences):
+class TestAbstractNode2VecSequence(TestNodeSequences):
 
     def setUp(self):
         super().setUp()

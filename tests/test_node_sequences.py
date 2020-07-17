@@ -2,7 +2,7 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from unittest import TestCase
 
 
-class TestSequences(TestCase):
+class TestNodeSequences(TestCase):
 
     def setUp(self):
         self._graph = EnsmallenGraph.from_csv(
