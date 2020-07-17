@@ -20,6 +20,9 @@ class CorpusTransformer:
     ):
         """Create new CorpusTransformer object.
 
+        This is a GENERIC text tokenizer and is only useful for basic examples
+        as in any advanced settings there will be need for a custom tokenizer.
+
         Parameters
         ----------------------------
         synonims: Dict = None,
