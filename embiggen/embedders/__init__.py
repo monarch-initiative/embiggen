@@ -1,3 +1,4 @@
+"""Module with graph embedding models."""
 from .glove import GloVe
 from .skipgram import SkipGram
 from .binary_skipgram import BinarySkipGram

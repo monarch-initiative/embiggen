@@ -8,11 +8,11 @@ class TestAbstractNode2VecSequence(TestSequences):
     def setUp(self):
         super().setUp()
         self._window_size = 4
-        self._length = 100
+        self._walk_length = 100
         self._batch_size = 1
         self._sequence = AbstractNode2VecSequence(
             self._graph,
-            length=self._length,
+            walk_length=self._walk_length,
             batch_size=self._batch_size,
             window_size=self._window_size
         )

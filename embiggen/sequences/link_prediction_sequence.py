@@ -1,7 +1,7 @@
-from tensorflow.keras.utils import Sequence
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from typing import Tuple, Union, Callable
+from keras_mixed_sequence import Sequence
 from ..transformers import EdgeTransformer
 
 
@@ -16,7 +16,8 @@ class LinkPredictionSequence(Sequence):
         negative_samples: float = 1.0,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
-        avoid_self_loops: bool = False
+        avoid_self_loops: bool = False,
+        elapsed_epochs: int = 0
     ):
         """Create new LinkPredictionSequence object.
 
@@ -46,29 +47,20 @@ class LinkPredictionSequence(Sequence):
             Number of batches per epoch.
         avoid_self_loops: bool = False,
             If the self loops must be filtered away from the result.
+        elapsed_epochs: int = 0,
+            Number of elapsed epochs to init state of generator.
         """
         self._graph = graph
-        self._batch_size = batch_size
         self._negative_samples = negative_samples
         self._graph_to_avoid = graph_to_avoid
-        self._batches_per_epoch = batches_per_epoch
         self._avoid_self_loops = avoid_self_loops
         self._transformer = EdgeTransformer(method)
         self._transformer.fit(embedding)
-        self._current_epoch = 0
-
-    def on_epoch_end(self):
-        """Shuffle private bed object on every epoch end."""
-        self._current_epoch += 1
-
-    def __len__(self) -> int:
-        """Return number of batches in generator."""
-        return self._batches_per_epoch
-
-    @property
-    def steps_per_epoch(self) -> int:
-        """Return number of batches in generator."""
-        return len(self)
+        super().__init__(
+            samples_number=batches_per_epoch,
+            batch_size=batch_size,
+            elapsed_epochs=elapsed_epochs
+        )
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return batch corresponding to given index.
@@ -83,8 +75,8 @@ class LinkPredictionSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         edges, labels = self._graph.link_prediction(
-            idx + self._current_epoch,
-            batch_size=self._batch_size,
+            idx + self.elapsed_epochs,
+            batch_size=self.batch_size,
             negative_samples=self._negative_samples,
             graph_to_avoid=self._graph_to_avoid,
             avoid_self_loops=self._avoid_self_loops

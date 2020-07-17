@@ -44,7 +44,7 @@ class Node2VecSequence(AbstractNode2VecSequence):
         return self._graph.node2vec(
             idx,
             self._batch_size,
-            self._length,
+            self._walk_length,
             iterations=self._iterations,
             window_size=self._window_size,
             shuffle=self._shuffle,

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 import numpy as np
 import pandas as pd
@@ -71,6 +71,21 @@ class Embedder:
         for layer, weights in zip(self._model.layers, self._model.weights):
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 return weights.numpy()
+
+    def save_embedding(self, path: str, nodes_names: List[str]):
+        """Save nodes embedding using given index names.
+
+        Parameters
+        -----------------------------
+        path: str,
+            Save embedding as csv to given path.
+        nodes_names: List[str],
+            List of nodes to be used as index names.
+        """
+        pd.DataFrame(
+            self.embedding,
+            index=nodes_names
+        ).to_csv(path, header=False)
 
     @property
     def name(self) -> str:
