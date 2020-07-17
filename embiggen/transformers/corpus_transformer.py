@@ -65,9 +65,8 @@ class CorpusTransformer:
                     w.lower()
                     for w in possible_synonims[0].lemma_names()
                 ]
-                for w in word_synonims:
-                    self._synonims[w] = word_synonims[0]
                 self._synonims[word] = word_synonims[0]
+                self._synonims[word_synonims[0]] = word_synonims[0]
             else:
                 self._synonims[word] = word
 
