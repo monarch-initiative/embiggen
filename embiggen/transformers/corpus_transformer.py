@@ -118,7 +118,7 @@ class CorpusTransformer:
         verbose: bool = True,
             Wethever to show or not the loading bars.
         """
-        tokens, counts = self.tokenize(texts, True, verbose)
+        _, counts = self.tokenize(texts, True, verbose)
 
         self._stopwords |= {
             word
@@ -127,7 +127,7 @@ class CorpusTransformer:
         }
 
         self._tokenizer = Tokenizer()
-        self._tokenizer.fit_on_texts(tokens)
+        self._tokenizer.fit_on_texts(self.tokenize(texts, False, verbose))
 
     @property
     def vocabulary_size(self) -> int:
