@@ -18,4 +18,4 @@ class TestAbstractNode2VecSequence(TestSequences):
         )
 
         with pytest.raises(NotImplementedError):
-            self._sequence.__getitem__(0)        
+            self._sequence.__getitem__(0)
