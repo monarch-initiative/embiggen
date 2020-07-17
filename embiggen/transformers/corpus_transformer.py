@@ -127,7 +127,10 @@ class CorpusTransformer:
         }
 
         self._tokenizer = Tokenizer()
-        self._tokenizer.fit_on_texts(self.tokenize(texts, False, verbose))
+        self._tokenizer.fit_on_texts((
+            " ".join(tokens)
+            for tokens in self.tokenize(texts, False, verbose)
+        ))
 
     @property
     def vocabulary_size(self) -> int:
