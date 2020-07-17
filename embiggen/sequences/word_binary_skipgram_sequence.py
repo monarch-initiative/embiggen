@@ -11,22 +11,23 @@ class WordBinarySkipGramSequence(AbstractWord2VecSequence):
 
     def __init__(
         self,
+        sequences: np.ndarray,
         batch_size: int,
-        samples_number: int,
         vocabulary_size: int,
         negative_samples: float = 7,
         window_size: int = 4,
         shuffle: bool = True,
+        seed: int = 42,
         elapsed_epochs: int = 0,
     ):
         """Create new Sequence object.
 
         Parameters
         -----------------------------
+        sequences: np.ndarray,
+            List of encoded texts.
         batch_size: int,
             Number of nodes to include in a single batch.
-        samples_number: int,
-            Number of samples that compose this Sequence.
         negative_samples: float = 7,
             Factor of negative samples to use.
         window_size: int = 4,
@@ -34,6 +35,8 @@ class WordBinarySkipGramSequence(AbstractWord2VecSequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Wthever to shuffle the vectors.
+        seed: int = 42,
+            The seed to use to make extraction reproducible.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         """
@@ -41,10 +44,10 @@ class WordBinarySkipGramSequence(AbstractWord2VecSequence):
         self._vocabulary_size = vocabulary_size
 
         super().__init__(
+            sequences=sequences,
+            batch_size=batch_size,
             window_size=window_size,
             shuffle=shuffle,
-            samples_number=samples_number,
-            batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )
 
@@ -81,4 +84,4 @@ class WordBinarySkipGramSequence(AbstractWord2VecSequence):
             window_size=self._window_size,
             negative_samples=self._negative_samples,
             shuffle=self._shuffle
-        ), None
+        )

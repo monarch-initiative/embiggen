@@ -34,7 +34,8 @@ class CorpusTransformer:
             Wethever to automatically extend the synonims using wordnet.
         """
         self._synonims = {} if synonims is None else synonims
-        self._stopwords = set(stopwords.words(language)) | set(string.punctuation)
+        self._stopwords = set(stopwords.words(
+            language)) | set(string.punctuation)
         self._stemmer = PorterStemmer()
         self._apply_stemming = apply_stemming
         self._extend_synonims = extend_synonims
@@ -66,7 +67,6 @@ class CorpusTransformer:
                 self._synonims[word] = word_synonims[0]
             else:
                 self._synonims[word] = word
-
 
         return self._synonims[word]
 
@@ -122,9 +122,14 @@ class CorpusTransformer:
             for word, count in counts.items()
             if count <= min_count
         }
-        
+
         self._tokenizer = Tokenizer()
         self._tokenizer.fit_on_texts(tokens)
+
+    @property
+    def vocabulary_size(self) -> int:
+        """Return number of different terms."""
+        return len(self._tokenizer.word_counts)
 
     def transform(self, texts: List[str], min_length: int = 0, verbose: bool = True) -> np.ndarray:
         """Transform given text.
@@ -142,10 +147,11 @@ class CorpusTransformer:
         --------------------------
         Numpy array with numpy arrays of tokens.
         """
-        return np.array(
-            self._tokenizer.texts_to_sequences((
+        return np.array([
+            np.array(tokens, dtype=np.int64) - 1
+            for tokens in self._tokenizer.texts_to_sequences((
                 " ".join(tokens)
                 for tokens in self.tokenize(texts, verbose=verbose)
                 if len(tokens) > min_length
             ))
-        )
+        ])

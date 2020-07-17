@@ -31,6 +31,8 @@ class AbstractWord2VecSequence(AbstractSequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Wthever to shuffle the vectors.
+        seed: int = 42,
+            The seed to use to make extraction reproducible.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         """

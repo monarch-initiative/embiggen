@@ -10,10 +10,11 @@ class TestWordSequences(TestCase):
         self._transformer = CorpusTransformer()
         with open("./tests/data/short_bible.txt") as f:
             lines = f.readlines()
-            self._transformer.fit(lines, min_count=2)
+            self._transformer.fit(lines, min_count=2, verbose=False)
             self._tokens = self._transformer.transform(
                 lines,
-                min_length=self._window_size*2 + 1
+                min_length=self._window_size*2 + 1,
+                verbose=False
             )
 
         self._sequence = None
