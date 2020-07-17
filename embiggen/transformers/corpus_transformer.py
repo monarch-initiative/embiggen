@@ -134,6 +134,34 @@ class CorpusTransformer:
         """Return number of different terms."""
         return len(self._tokenizer.word_counts)
 
+    def reverse_transform(self, sequences: List[List[int]]) -> List[str]:
+        """Reverse the sequence to texts.
+
+        Parameters
+        ------------------------
+        sequences: List[List[int]],
+            The sequences to counter transform.
+
+        Returns
+        ------------------------
+        The texts created from the given sequences.
+        """
+        return self._tokenizer.sequences_to_texts(sequences)
+
+    def get_word_id(self, word: str) -> int:
+        """Get the given words IDs.
+
+        Parameters
+        ------------------------
+        word: int
+            The word whose ID is to be retrieved.
+
+        Returns
+        ------------------------
+        The word numeric ID.
+        """
+        return self._tokenizer.word_index[word]
+
     def transform(self, texts: List[str], min_length: int = 0, verbose: bool = True) -> np.ndarray:
         """Transform given text.
 
