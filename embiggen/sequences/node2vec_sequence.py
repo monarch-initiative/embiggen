@@ -53,4 +53,5 @@ class Node2VecSequence(AbstractNode2VecSequence):
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
             change_edge_type_weight=self._change_edge_type_weight,
+            dense_nodes_mapping=self._dense_nodes_mapping
         ), None

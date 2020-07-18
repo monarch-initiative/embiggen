@@ -1,6 +1,6 @@
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from typing import Dict, Tuple
 import numpy as np  # type: ignore
-from typing import Tuple
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from .abstract_node2vec_sequence import AbstractNode2VecSequence
 
 
@@ -12,7 +12,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         walk_length: int,
         batch_size: int,
         negative_samples: float = 7.0,
-        graph_to_avoid: EnsmallenGraph = None,
         iterations: int = 1,
         window_size: int = 4,
         shuffle: bool = True,
@@ -21,6 +20,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
+        dense_nodes_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -35,10 +35,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             Number of nodes to include in a single batch.
         negative_samples: float = 7,
             Factor of negative samples to use.
-        graph_to_avoid: EnsmallenGraph = None,
-            The graph portion to be avoided. Can be usefull when using
-            holdouts where a portion of the graph is completely hidden,
-            and is not to be used neither for negatives nor positives.
         iterations: int = 1,
             Number of iterations of the single walks.
         window_size: int = 4,
@@ -72,9 +68,14 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
+        dense_nodes_mapping: Dict[int, int] = None,
+            Mapping to use for converting sparse walk space into a dense space.
+            This object can be created using the method available from graph
+            called `get_dense_nodes_mapping` that returns a mapping from
+            the non trap nodes (those from where a walk could start) and
+            maps these nodes into a dense range of values.
         """
         self._negative_samples = negative_samples
-        self._graph_to_avoid = graph_to_avoid
         super().__init__(
             graph=graph,
             walk_length=walk_length,
@@ -87,6 +88,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             explore_weight=explore_weight,
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
+            dense_nodes_mapping=dense_nodes_mapping
         )
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
@@ -114,5 +116,5 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
             change_edge_type_weight=self._change_edge_type_weight,
-            graph_to_avoid=self._graph_to_avoid
+            dense_nodes_mapping=self._dense_nodes_mapping
         )
