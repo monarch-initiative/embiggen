@@ -2,17 +2,17 @@
 from typing import Union
 
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Add, Dot, Embedding, Flatten, Input
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras import backend as K  # pylint: disable=import-error
+from tensorflow.keras.layers import Add, Dot, Embedding, Flatten, Input  # pylint: disable=import-error
+from tensorflow.keras.models import Model   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 
 from .embedder import Embedder
 
 
 class GloVe(Embedder):
     """GloVe model for graph and words embedding.
-    
+
     The GloVe model for graoh embedding receives two words and is asked to
     predict its cooccurrence probability.
     """
