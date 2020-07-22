@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 
 class CorpusTransformer:
+    """Simple class to tekenize textual corpuses."""
 
     def __init__(
         self,

@@ -66,7 +66,7 @@ class NoiseContrastiveEstimation(Layer):
 
         super().build(input_shape)
 
-    def call(self, inputs: Tuple[Layer]):
+    def call(self, inputs: Tuple[Layer], **kwargs):
         """Create call graph for current layer.
 
         Parameters

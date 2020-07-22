@@ -8,7 +8,7 @@ from .embedder import Embedder
 
 class BinarySkipGram(Embedder):
     """Binary SkipGram model for graph and words embedding.
-    
+
     The Binary SkipGram model receives a word and a candidate context
     and is asked to predict wethever if the context is actually or not
     in the context of the word. The prediction of this model is binary.
