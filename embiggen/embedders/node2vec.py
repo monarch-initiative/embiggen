@@ -1,3 +1,4 @@
+"""Abstract class for graph embedding models."""
 from typing import Union, Tuple
 
 from tensorflow.keras import backend as K
@@ -10,6 +11,7 @@ from .layers import NoiseContrastiveEstimation
 
 
 class Node2Vec(Embedder):
+    """Abstract class for graph embedding models."""
 
     def __init__(
         self,
@@ -20,7 +22,7 @@ class Node2Vec(Embedder):
         window_size: int = 4,
         negatives_samples: int = 10
     ):
-        """Create new CBOW-based Embedder object.
+        """Create new Graph Embedder model.
 
         Parameters
         -------------------------------------------

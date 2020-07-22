@@ -1,3 +1,4 @@
+"""SkipGram model for graph and words embedding."""
 from typing import Union, Tuple
 from tensorflow.keras.optimizers import Optimizer
 from tensorflow.keras.layers import Layer

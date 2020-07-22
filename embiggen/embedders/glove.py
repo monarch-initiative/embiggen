@@ -1,3 +1,4 @@
+"""GloVe model for graph and words embedding."""
 from typing import Union
 
 import tensorflow as tf
