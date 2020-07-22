@@ -13,10 +13,10 @@ class CorpusTransformer:
 
     def __init__(
         self,
-        synonims: Dict = None,
+        synonyms: Dict = None,
         language: str = "english",
         apply_stemming: bool = False,
-        extend_synonims: bool = True
+        extend_synonyms: bool = True
     ):
         """Create new CorpusTransformer object.
 
@@ -25,52 +25,52 @@ class CorpusTransformer:
 
         Parameters
         ----------------------------
-        synonims: Dict = None,
-            The synonims to use.
+        synonyms: Dict = None,
+            The synonyms to use.
         language: str = "english",
             The language for the stopwords.
         apply_stemming: bool = False,
             Wethever to apply or not a stemming procedure, which
             by default is disabled.
             The algorithm used is a Porter Stemmer.
-        extend_synonims: bool = True,
-            Wethever to automatically extend the synonims using wordnet.
+        extend_synonyms: bool = True,
+            Wethever to automatically extend the synonyms using wordnet.
         """
-        self._synonims = {} if synonims is None else synonims
+        self._synonyms = {} if synonyms is None else synonyms
         self._stopwords = set(stopwords.words(
             language)) | set(string.punctuation)
         self._stemmer = PorterStemmer()
         self._apply_stemming = apply_stemming
-        self._extend_synonims = extend_synonims
+        self._extend_synonyms = extend_synonyms
         self._tokenizer = None
 
-    def get_synonim(self, word: str) -> str:
-        """Return the synonim of the given word, if available.
+    def get_synonym(self, word: str) -> str:
+        """Return the synonym of the given word, if available.
 
         Parameters
         ----------------------------
         word: str,
-            The word whose synonim is to be found.
+            The word whose synonym is to be found.
 
         Returns
         ----------------------------
-        The given word synonim.
+        The given word synonym.
         """
-        if word not in self._synonims:
-            if not self._extend_synonims:
+        if word not in self._synonyms:
+            if not self._extend_synonyms:
                 return word
-            possible_synonims = wn.synsets(word)
-            if possible_synonims:
-                word_synonims = [
+            possible_synonyms = wn.synsets(word)
+            if possible_synonyms:
+                word_synonyms = [
                     w.lower()
-                    for w in possible_synonims[0].lemma_names()
+                    for w in possible_synonyms[0].lemma_names()
                 ]
-                self._synonims[word] = word_synonims[0]
-                self._synonims[word_synonims[0]] = word_synonims[0]
+                self._synonyms[word] = word_synonyms[0]
+                self._synonyms[word_synonyms[0]] = word_synonyms[0]
             else:
-                self._synonims[word] = word
+                self._synonyms[word] = word
 
-        return self._synonims[word]
+        return self._synonyms[word]
 
     def tokenize(self, texts: List[str], return_counts: bool = False, verbose: bool = True):
         """Fit model using stemming from given text.
@@ -94,11 +94,11 @@ class CorpusTransformer:
             tokens = []
             for word in word_tokenize(line.lower()):
                 if word not in self._stopwords:
-                    synonim = self.get_synonim(word)
+                    synonym = self.get_synonym(word)
                     if self._apply_stemming:
-                        synonim = self._stemmer.stem(synonim)
-                    counter[synonim] = counter.setdefault(synonim, 0) + 1
-                    tokens.append(synonim)
+                        synonym = self._stemmer.stem(synonym)
+                    counter[synonym] = counter.setdefault(synonym, 0) + 1
+                    tokens.append(synonym)
             all_tokens.append(tokens)
 
         if return_counts:

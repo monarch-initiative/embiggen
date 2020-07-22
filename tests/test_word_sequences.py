@@ -8,7 +8,7 @@ class TestWordSequences(TestCase):
         self._window_size = 2
         self._batch_size = 128
         self._transformer = CorpusTransformer()
-        transformer2 = CorpusTransformer(extend_synonims=False, apply_stemming=True)
+        transformer2 = CorpusTransformer(extend_synonyms=False, apply_stemming=True)
         with open("./tests/data/short_bible.txt") as f:
             lines = f.readlines()
             self._transformer.fit(lines, min_count=2, verbose=False)
