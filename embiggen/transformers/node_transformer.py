@@ -1,7 +1,9 @@
+"""NodeTransformer class to convert nodes to edge embeddings."""
 import numpy as np
 
 
 class NodeTransformer:
+    """NodeTransformer class to convert nodes to edge embeddings."""
 
     def __init__(self):
         """Create new NodeTransformer object."""
