@@ -1,6 +1,3 @@
-from typing import Tuple
-
-import numpy as np  # type: ignore
 from keras_mixed_sequence import Sequence
 
 

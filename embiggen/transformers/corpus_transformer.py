@@ -1,5 +1,5 @@
 """Module offers basic Corpus Transformer object, a simple class to tekenize textual corpuses."""
-from typing import Set, List, Dict
+from typing import List, Dict
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize

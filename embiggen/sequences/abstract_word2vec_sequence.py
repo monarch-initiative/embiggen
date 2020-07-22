@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import List
 
 import numpy as np  # type: ignore
 from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
