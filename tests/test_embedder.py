@@ -1,4 +1,4 @@
-"""Test that proper exceptions are raised when using illegal parameters in Embedder abstract model."""
+"""Test that exceptions are raised when using illegal parameters."""
 import pytest
 from embiggen.embedders.embedder import Embedder
 
@@ -12,6 +12,6 @@ def test_illegal_arguments():
 
 
 def test_not_implemented_methods():
-    """Check that NotImplementedError is raised on legal parameters calling directly abstract class."""
+    """Check NotImplementedError is raised when calling directly abstract."""
     with pytest.raises(NotImplementedError):
         Embedder(5, 5)

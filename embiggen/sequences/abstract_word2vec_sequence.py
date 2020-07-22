@@ -1,3 +1,4 @@
+"""Abstract Keras Sequence object for running models on graph walks."""
 from typing import List
 
 import numpy as np  # type: ignore
@@ -7,6 +8,7 @@ from .abstract_sequence import AbstractSequence
 
 
 class AbstractWord2VecSequence(AbstractSequence):
+    """Abstract Keras Sequence object for running models on texts."""
 
     def __init__(
         self,

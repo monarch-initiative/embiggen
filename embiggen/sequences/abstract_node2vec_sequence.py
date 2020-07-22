@@ -1,3 +1,4 @@
+"""Abstract Keras Sequence object for running models on graph walks."""
 from typing import Dict
 
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -5,6 +6,7 @@ from .abstract_sequence import AbstractSequence
 
 
 class AbstractNode2VecSequence(AbstractSequence):
+    """Abstract Keras Sequence object for running models on graph walks."""
 
     def __init__(
         self,

@@ -5,8 +5,10 @@ from .test_node_binary_skipgrap_sequence import TestNodeBinarySkipGramSequences
 
 
 class TestNodeBinarySkipGram(TestNodeBinarySkipGramSequences):
+    """Unit test to validate that the model BinarySkipgram works properly with graph walks."""
 
     def setUp(self):
+        """Setting up objects for running test on BinarySkipGram on graphs."""
         super().setUp()
         self._embedding_size = 50
         self._model = BinarySkipGram(
@@ -17,6 +19,7 @@ class TestNodeBinarySkipGram(TestNodeBinarySkipGramSequences):
         self._model.summary()
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,

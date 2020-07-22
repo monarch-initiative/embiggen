@@ -6,5 +6,7 @@ from .word2vec import Word2VecSequence
 from .word_binary_skipgram_sequence import WordBinarySkipGramSequence
 
 __all__ = [
-    "Node2VecSequence", "NodeBinarySkipGramSequence", "LinkPredictionSequence", "Word2VecSequence", "WordBinarySkipGramSequence"
+    "Node2VecSequence", "NodeBinarySkipGramSequence",
+    "LinkPredictionSequence", "Word2VecSequence",
+    "WordBinarySkipGramSequence"
 ]

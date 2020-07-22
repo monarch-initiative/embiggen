@@ -7,6 +7,7 @@ from embiggen import GraphTransformer
 
 
 class TestGraphTransformer(TestCase):
+    """Unit test class for GraphTransformer objects."""
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
@@ -19,7 +20,7 @@ class TestGraphTransformer(TestCase):
             weights_column="weight"
         )
         self._transfomer = None
-        self._embedding = np.random.random(( # pylint: disable=no-member
+        self._embedding = np.random.random((  # pylint: disable=no-member
             self._graph.get_nodes_number(),
             self._embedding_size
         ))

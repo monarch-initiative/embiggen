@@ -1,3 +1,4 @@
+"""Keras Sequence object for running BinarySkipGramSequence on texts."""
 from typing import Tuple
 
 import numpy as np  # type: ignore
@@ -7,6 +8,7 @@ from .abstract_word2vec_sequence import AbstractWord2VecSequence
 
 
 class WordBinarySkipGramSequence(AbstractWord2VecSequence):
+    """Keras Sequence object for running BinarySkipGramSequence on texts."""
 
     def __init__(
         self,
