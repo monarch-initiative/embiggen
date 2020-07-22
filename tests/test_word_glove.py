@@ -1,12 +1,15 @@
-import os
-from embiggen import GloVe
-from .test_word_sequences import TestWordSequences
+"""Test to validate that the model GloVe works properly with words sequences."""
 from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
+from embiggen import GloVe
+
+from .test_word_sequences import TestWordSequences
 
 
 class TestWordGloVe(TestWordSequences):
+    """Unit test class for testing that GloVe model works correctly with words sequences."""
 
     def setUp(self):
+        """Setup objects for testing that GloVe model works correctly with words sequences."""
         super().setUp()
         self._embedding_size = 50
         self._words, self._ctxs, self._freq = preprocessing.cooccurence_matrix(
@@ -22,6 +25,7 @@ class TestWordGloVe(TestWordSequences):
         self._model.summary()
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             (self._words, self._ctxs),
             self._freq,

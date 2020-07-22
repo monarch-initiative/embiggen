@@ -2,7 +2,7 @@ from embiggen import NodeBinarySkipGramSequence
 from .test_node_sequences import TestNodeSequences
 
 
-class TestBinarySkipGramSequences(TestNodeSequences):
+class TestNodeBinarySkipGramSequences(TestNodeSequences):
 
     def setUp(self):
         super().setUp()

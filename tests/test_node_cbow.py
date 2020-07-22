@@ -1,9 +1,10 @@
+"""Test to validate that the model CBOW works properly with graph walks."""
 import os
 from embiggen import CBOW
 from .test_node2vec_sequence import TestNode2VecSequence
 
 
-class TestCBOW(TestNode2VecSequence):
+class TestNodeCBOW(TestNode2VecSequence):
 
     def setUp(self):
         super().setUp()
@@ -16,6 +17,7 @@ class TestCBOW(TestNode2VecSequence):
         self._model.summary()
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,

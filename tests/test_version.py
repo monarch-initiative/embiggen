@@ -1,9 +1,8 @@
+"""Test to validate that version code is written in PEP8 compliant format."""
 from validate_version_code import validate_version_code
 from embiggen.__version__ import __version__
-from unittest import TestCase
 
 
-class TestTextTransformerSentences(TestCase):
-
-    def test_version(self):
-        self.assertTrue(validate_version_code(__version__))
+def test_version():
+    """Test to validate that version code is written in PEP8 compliant format."""
+    assert validate_version_code(__version__)

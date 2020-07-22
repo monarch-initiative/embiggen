@@ -1,5 +1,6 @@
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+"""Setup standard unit test class for NodeSequences."""
 from unittest import TestCase
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 
 
 class TestNodeSequences(TestCase):

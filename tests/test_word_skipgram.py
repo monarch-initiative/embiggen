@@ -1,10 +1,13 @@
-from embiggen import Word2VecSequence, SkipGram
+"""Uni test to test that model SkipGram works properly with words sequences."""
+from embiggen import SkipGram
 from .test_word2vec_sequences import TestWord2VecSequences
 
 
 class TestWordSkipGram(TestWord2VecSequences):
+    """Unit test to test that model SkipGram works properly with words sequences."""
 
     def setUp(self):
+        """Setup object to test SkipGram model on words sequences."""
         super().setUp()
         self._embedding_size = 10
         self._model = SkipGram(
@@ -14,6 +17,7 @@ class TestWordSkipGram(TestWord2VecSequences):
         )
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,

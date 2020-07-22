@@ -1,10 +1,14 @@
-from embiggen import Word2VecSequence, BinarySkipGram
+"""Test to validate that the BinarySkipGram model works properly on words sequences."""
+from embiggen import BinarySkipGram
+
 from .test_word_binary_skipgram_sequence import TestWordBinarySkipGramSequence
 
 
 class TestWordBinarySkipGram(TestWordBinarySkipGramSequence):
+    """Unit test for verifying that BinarySkipGram model works correctly on words sequences."""
 
     def setUp(self):
+        """Setting up objects to test that BinarySkipGram model class works correctly."""
         super().setUp()
         self._embedding_size = 10
         self._model = BinarySkipGram(
@@ -13,6 +17,7 @@ class TestWordBinarySkipGram(TestWordBinarySkipGramSequence):
         )
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,

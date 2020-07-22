@@ -1,3 +1,4 @@
+"""Test to validate that the abstract model Node2Vec works properly."""
 import os
 import pytest
 from embiggen.embedders.node2vec import Node2Vec

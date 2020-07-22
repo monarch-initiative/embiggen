@@ -1,3 +1,4 @@
+"""Test to validate that the model GloVe works properly with graph walks."""
 import os
 from embiggen import GloVe
 from .test_node_sequences import TestNodeSequences
@@ -21,6 +22,7 @@ class TestNodeGloVe(TestNodeSequences):
         self._model.summary()
 
     def test_fit(self):
+        """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
             (self._words, self._ctxs),
             self._freq,

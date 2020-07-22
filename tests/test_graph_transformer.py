@@ -1,3 +1,4 @@
+"""Unit test class for GraphTransformer objects."""
 from embiggen import GraphTransformer
 from unittest import TestCase
 import numpy as np
@@ -7,6 +8,7 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 class TestGraphTransformer(TestCase):
 
     def setUp(self):
+        """Setup objects for running tests on GraphTransformer objects class."""
         self._embedding_size = 50
         self._graph = EnsmallenGraph.from_csv(
             edge_path=f"tests/data/small_ppi.tsv",
@@ -21,6 +23,7 @@ class TestGraphTransformer(TestCase):
         ))
 
     def test_graph_transformer(self):
+        """Test to verify that graph transformation returns expected shape."""
         self._transfomer = GraphTransformer()
         self._transfomer.fit(self._embedding)
         embedded_nodes = self._transfomer.transform(self._graph)
