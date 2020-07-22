@@ -5,5 +5,8 @@ from .graph_transformer import GraphTransformer
 from .corpus_transformer import CorpusTransformer
 
 __all__ = [
-    "EdgeTransformer", "NodeTransformer", "GraphTransformer", "CorpusTransformer"
+    "EdgeTransformer",
+    "NodeTransformer",
+    "GraphTransformer",
+    "CorpusTransformer"
 ]

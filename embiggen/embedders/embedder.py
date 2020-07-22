@@ -1,3 +1,4 @@
+"""Abstract Keras Model object for embedding models."""
 from typing import Union, List
 
 import numpy as np
@@ -7,6 +8,7 @@ from tensorflow.keras.optimizers import Optimizer
 
 
 class Embedder:
+    """Abstract Keras Model object for embedding models."""
 
     EMBEDDING_LAYER_NAME = "words_embedding"
 

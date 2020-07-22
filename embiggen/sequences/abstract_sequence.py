@@ -1,7 +1,9 @@
+"""Abstract Keras Sequence object for running models on huge datasets."""
 from keras_mixed_sequence import Sequence
 
 
 class AbstractSequence(Sequence):
+    """Abstract Keras Sequence object for running models on huge datasets."""
 
     def __init__(
         self,

@@ -1,3 +1,4 @@
+"""Keras Sequence object for running CBOW and SkipGram on texts."""
 from typing import Tuple
 
 import numpy as np  # type: ignore
@@ -7,6 +8,7 @@ from .abstract_word2vec_sequence import AbstractWord2VecSequence
 
 
 class Word2VecSequence(AbstractWord2VecSequence):
+    """Keras Sequence object for running CBOW and SkipGram on texts."""
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], None]:
         """Return batch corresponding to given index.
