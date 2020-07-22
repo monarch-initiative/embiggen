@@ -7,7 +7,7 @@ from nltk.corpus import stopwords
 from nltk.corpus import wordnet as wn
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
-from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.text import Tokenizer   # pylint: disable=import-error
 from tqdm.auto import tqdm
 
 

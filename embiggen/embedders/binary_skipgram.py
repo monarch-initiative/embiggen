@@ -1,7 +1,7 @@
 """Binary SkipGram model for graph and words embedding."""
-from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input
-from tensorflow.keras.metrics import AUC, Precision, Recall
-from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input   # pylint: disable=import-error
+from tensorflow.keras.metrics import AUC, Precision, Recall   # pylint: disable=import-error
+from tensorflow.keras.models import Model  # pylint: disable=import-error
 
 from .embedder import Embedder
 

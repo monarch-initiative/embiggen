@@ -1,7 +1,7 @@
 """SkipGram model for graph and words embedding."""
 from typing import Union, Tuple
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 from .node2vec import Node2Vec
 
 

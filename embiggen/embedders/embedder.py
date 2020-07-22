@@ -3,8 +3,8 @@ from typing import Union, List
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras.models import Model   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 
 
 class Embedder:
