@@ -1,3 +1,4 @@
+"""Layer for executing NCE loss in Keras models."""
 from typing import Dict, Tuple
 
 import tensorflow as tf
@@ -6,6 +7,8 @@ from tensorflow.keras.layers import Layer
 
 
 class NoiseContrastiveEstimation(Layer):
+    """Layer for executing NCE loss in Keras models."""
+
     def __init__(
         self,
         vocabulary_size: int,
@@ -37,6 +40,8 @@ class NoiseContrastiveEstimation(Layer):
         self.embedding_size = embedding_size
         self.negative_samples = negative_samples
         self.positive_samples = positive_samples
+        self._weights = None
+        self._biases = None
         super().__init__(**kwargs)
 
     def build(self, input_shape: Tuple[int, int]):

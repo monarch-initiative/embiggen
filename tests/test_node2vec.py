@@ -1,13 +1,14 @@
 """Test to validate that the abstract model Node2Vec works properly."""
-import os
 import pytest
 from embiggen.embedders.node2vec import Node2Vec
 from .test_node_sequences import TestNodeSequences
 
 
 class TestNode2Vec(TestNodeSequences):
+    """Unit test to validate that the abstract model Node2Vec works properly."""
 
     def setUp(self):
+        """Setting up objects for testing Node2Vec abstract model."""
         super().setUp()
         self._embedding_size = 50
         self._words, self._ctxs, self._freq = self._graph.cooccurence_matrix(

@@ -5,6 +5,12 @@ from .node2vec import Node2Vec
 
 
 class SkipGram(Node2Vec):
+    """SkipGram model for graph and words embedding.
+    
+    The SkipGram model for graoh embedding receives a central word and tries
+    to predict its contexts. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,

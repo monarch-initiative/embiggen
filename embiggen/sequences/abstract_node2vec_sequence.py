@@ -1,6 +1,5 @@
-from typing import Tuple, Dict
+from typing import Dict
 
-import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from .abstract_sequence import AbstractSequence
 

@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np  # type: ignore
-from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import VectorSequence
 
 from .abstract_sequence import AbstractSequence

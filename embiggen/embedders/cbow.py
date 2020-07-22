@@ -1,3 +1,4 @@
+"""CBOW model for graph and words embedding."""
 from typing import Union, Tuple
 from tensorflow.keras.optimizers import Optimizer
 from tensorflow.keras.layers import Layer
@@ -5,6 +6,12 @@ from .node2vec import Node2Vec
 
 
 class CBOW(Node2Vec):
+    """CBOW model for graph and words embedding.
+    
+    The CBOW model for graoh embedding receives a list of contexts and tries
+    to predict the central word. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,

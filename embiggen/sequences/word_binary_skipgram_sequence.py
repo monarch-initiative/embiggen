@@ -1,8 +1,7 @@
-from typing import Tuple, List
+from typing import Tuple
 
 import numpy as np  # type: ignore
 from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
-from keras_mixed_sequence import VectorSequence
 
 from .abstract_word2vec_sequence import AbstractWord2VecSequence
 

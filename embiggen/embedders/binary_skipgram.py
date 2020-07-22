@@ -1,3 +1,4 @@
+"""Binary SkipGram model for graph and words embedding."""
 from tensorflow.keras.layers import Dense, Dot, Embedding, Flatten, Input
 from tensorflow.keras.metrics import AUC, Precision, Recall
 from tensorflow.keras.models import Model
@@ -6,6 +7,12 @@ from .embedder import Embedder
 
 
 class BinarySkipGram(Embedder):
+    """Binary SkipGram model for graph and words embedding.
+    
+    The Binary SkipGram model receives a word and a candidate context
+    and is asked to predict wethever if the context is actually or not
+    in the context of the word. The prediction of this model is binary.
+    """
 
     def _build_model(self):
         """Create new BinarySkipGram model."""
