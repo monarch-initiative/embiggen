@@ -1,10 +1,10 @@
 """Abstract class for graph embedding models."""
 from typing import Union, Tuple
 
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Embedding, Input, Lambda, Layer, Flatten
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras import backend as K   # pylint: disable=import-error
+from tensorflow.keras.layers import Embedding, Input, Lambda, Layer, Flatten   # pylint: disable=import-error
+from tensorflow.keras.models import Model   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
