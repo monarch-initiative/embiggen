@@ -28,7 +28,7 @@ class Node2VecSequence(AbstractNode2VecSequence):
 
         A batch returns words and contexts from:
 
-            (number of nodes provided in a batch) * 
+            (number of nodes provided in a batch) *
             (number of iterations of random walks per node) *
             (walk length - window_size*2)
 

@@ -73,6 +73,7 @@ class Embedder:
         for layer, weights in zip(self._model.layers, self._model.weights):
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 return weights.numpy()
+        return None
 
     def save_embedding(self, path: str, term_names: List[str]):
         """Save terms embedding using given index names.
