@@ -63,8 +63,12 @@ class Node2Vec(Embedder):
             "must be implemented in child class."
         ))
 
-    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
-        """Return sorted input layers for handling training with the same input sequences.
+    def _sort_input_layers(
+        self,
+        true_input_layer: Layer,
+        true_output_layer: Layer
+    ) -> Tuple[Layer, Layer]:
+        """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------
