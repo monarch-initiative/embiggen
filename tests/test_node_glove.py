@@ -5,8 +5,10 @@ from .test_node_sequences import TestNodeSequences
 
 
 class TestNodeGloVe(TestNodeSequences):
+    """Unit test for model GloVe on graph walks."""
 
     def setUp(self):
+        """Setting up objects to test CBOW model on graph walks."""
         super().setUp()
         self._embedding_size = 50
         self._words, self._ctxs, self._freq = self._graph.cooccurence_matrix(
