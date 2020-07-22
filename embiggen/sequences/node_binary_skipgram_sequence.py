@@ -1,6 +1,6 @@
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from typing import Dict, Tuple
 import numpy as np  # type: ignore
-from typing import Tuple
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from .abstract_node2vec_sequence import AbstractNode2VecSequence
 
 
@@ -20,6 +20,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
+        dense_nodes_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -67,6 +68,12 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
+        dense_nodes_mapping: Dict[int, int] = None,
+            Mapping to use for converting sparse walk space into a dense space.
+            This object can be created using the method available from graph
+            called `get_dense_nodes_mapping` that returns a mapping from
+            the non trap nodes (those from where a walk could start) and
+            maps these nodes into a dense range of values.
         """
         self._negative_samples = negative_samples
         super().__init__(
@@ -81,6 +88,7 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             explore_weight=explore_weight,
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
+            dense_nodes_mapping=dense_nodes_mapping
         )
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
@@ -107,5 +115,6 @@ class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
             return_weight=self._return_weight,
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
-            change_edge_type_weight=self._change_edge_type_weight
+            change_edge_type_weight=self._change_edge_type_weight,
+            dense_nodes_mapping=self._dense_nodes_mapping
         )
