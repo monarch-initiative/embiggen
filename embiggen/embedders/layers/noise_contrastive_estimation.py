@@ -2,8 +2,8 @@
 from typing import Dict, Tuple
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Layer
+import tensorflow.keras.backend as K   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 
 
 class NoiseContrastiveEstimation(Layer):
