@@ -78,15 +78,17 @@ class NoiseContrastiveEstimation(Layer):
         predictions, labels = inputs
 
         # Computing NCE loss.
-        self.add_loss(tf.nn.nce_loss(
-            self._weights,
-            self._biases,
-            labels=labels,
-            inputs=predictions,
-            num_sampled=self.negative_samples,
-            num_classes=self.vocabulary_size,
-            num_true=self.positive_samples
-        ))
+        self.add_loss(
+            K.mean(tf.nn.nce_loss(
+                self._weights,
+                self._biases,
+                labels=labels,
+                inputs=predictions,
+                num_sampled=self.negative_samples,
+                num_classes=self.vocabulary_size,
+                num_true=self.positive_samples
+            ), axis=0)
+        )
 
         # Computing logits for closing TF graph
         return K.dot(predictions, K.transpose(self._weights))
