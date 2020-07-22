@@ -7,7 +7,7 @@ from .node2vec import Node2Vec
 
 class CBOW(Node2Vec):
     """CBOW model for graph and words embedding.
-    
+
     The CBOW model for graoh embedding receives a list of contexts and tries
     to predict the central word. The model makes use of an NCE loss layer
     during the training process to generate the negatives.
@@ -54,8 +54,12 @@ class CBOW(Node2Vec):
         """Return length of true output layer."""
         return 1
 
-    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
-        """Return sorted input layers for handling training with the same input sequences.
+    def _sort_input_layers(
+        self,
+        true_input_layer: Layer,
+        true_output_layer: Layer
+    ) -> Tuple[Layer, Layer]:
+        """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------
