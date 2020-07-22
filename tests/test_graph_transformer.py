@@ -1,8 +1,9 @@
 """Unit test class for GraphTransformer objects."""
-from embiggen import GraphTransformer
 from unittest import TestCase
+
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from embiggen import GraphTransformer
 
 
 class TestGraphTransformer(TestCase):
@@ -17,6 +18,7 @@ class TestGraphTransformer(TestCase):
             directed=False,
             weights_column="weight"
         )
+        self._transfomer = None
         self._embedding = np.random.random(( # pylint: disable=no-member
             self._graph.get_nodes_number(),
             self._embedding_size

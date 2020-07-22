@@ -5,8 +5,10 @@ from .test_node2vec_sequence import TestNode2VecSequence
 
 
 class TestNodeCBOW(TestNode2VecSequence):
+    """Unit test to validate that the model CBOW works properly with graph walks."""
 
     def setUp(self):
+        """Setting up objects to test CBOW model on graph walks."""
         super().setUp()
         self._embedding_size = 50
         self._model = CBOW(
@@ -32,5 +34,6 @@ class TestNodeCBOW(TestNode2VecSequence):
 
         self._model.save_weights(self._weights_path)
         self._model.load_weights(self._weights_path)
-        self._model.save_embedding(self._embedding_path, self._graph.nodes_reverse_mapping)
+        self._model.save_embedding(
+            self._embedding_path, self._graph.nodes_reverse_mapping)
         os.remove(self._weights_path)
