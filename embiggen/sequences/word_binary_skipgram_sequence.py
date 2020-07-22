@@ -49,6 +49,7 @@ class WordBinarySkipGramSequence(AbstractWord2VecSequence):
             batch_size=batch_size,
             window_size=window_size,
             shuffle=shuffle,
+            seed=seed,
             elapsed_epochs=elapsed_epochs
         )
 
