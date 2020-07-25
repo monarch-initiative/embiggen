@@ -22,7 +22,7 @@ assert not training.overlaps(validation)
 assert not validation.overlaps(training)
 
 walk_length=100
-batch_size=2**7
+batch_size=2**6
 iterations=20
 window_size=4
 p=1.0
@@ -57,13 +57,13 @@ validation_sequence = Node2VecSequence(
 )
 
 #CREATING
-from tensorflow.distribute import MirroredStrategy
+#from tensorflow.distribute import MirroredStrategy
 from tensorflow.keras.optimizers import Nadam
 from embiggen import SkipGram
 
-strategy = MirroredStrategy()
-with strategy.scope():
-    model = SkipGram(
+#strategy = MirroredStrategy()
+#with strategy.scope():
+model = SkipGram(
         vocabulary_size=training.get_nodes_number(),
         embedding_size=embedding_size,
         window_size=window_size,
