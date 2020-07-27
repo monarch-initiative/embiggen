@@ -19,7 +19,8 @@ extras = {
     'test': test_deps,
     'visualization': [
         "cmake",
-        "MulticoreTSNE"
+        "MulticoreTSNE",
+        "matplotlib"
     ]
 }
 
