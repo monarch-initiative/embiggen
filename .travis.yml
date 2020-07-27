@@ -20,6 +20,7 @@ before_install:
 - pip install pip --upgrade
 install:
 - pip install .[test]
+- pip install .[visualization]
 - python -m nltk.downloader all
 before_script:
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter

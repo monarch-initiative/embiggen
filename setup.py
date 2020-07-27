@@ -17,6 +17,10 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'visualization': [
+        "cmake",
+        "MulticoreTSNE"
+    ]
 }
 
 # TODO: Authors add your emails!!!
