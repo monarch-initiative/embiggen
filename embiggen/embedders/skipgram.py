@@ -1,10 +1,17 @@
+"""SkipGram model for graph and words embedding."""
 from typing import Union, Tuple
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 from .node2vec import Node2Vec
 
 
 class SkipGram(Node2Vec):
+    """SkipGram model for graph and words embedding.
+
+    The SkipGram model for graoh embedding receives a central word and tries
+    to predict its contexts. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,
@@ -47,8 +54,12 @@ class SkipGram(Node2Vec):
         """Return length of true output layer."""
         return self._window_size*2
 
-    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
-        """Return sorted input layers for handling training with the same input sequences.
+    def _sort_input_layers(
+        self,
+        true_input_layer: Layer,
+        true_output_layer: Layer
+    ) -> Tuple[Layer, Layer]:
+        """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------

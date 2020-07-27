@@ -1,9 +1,9 @@
 import pytest
 from embiggen import LinkPredictionSequence, GloVe
-from .test_sequences import TestSequences
+from .test_node_sequences import TestNodeSequences
 
 
-class TestLinkPredictionSequence(TestSequences):
+class TestLinkPredictionSequence(TestNodeSequences):
 
     def setUp(self):
         super().setUp()

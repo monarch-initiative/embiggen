@@ -1,25 +1,28 @@
-from typing import Tuple
+"""Abstract Keras Sequence object for running models on graph walks."""
+from typing import Dict
 
-import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from tensorflow.keras.utils import Sequence
+from .abstract_sequence import AbstractSequence
 
 
-class AbstractNode2VecSequence(Sequence):
+class AbstractNode2VecSequence(AbstractSequence):
+    """Abstract Keras Sequence object for running models on graph walks."""
 
     def __init__(
         self,
         graph: EnsmallenGraph,
-        length: int,
+        walk_length: int,
         batch_size: int,
         iterations: int = 1,
         window_size: int = 4,
         shuffle: bool = True,
-        min_length: int = 0,
+        min_length: int = 1,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
+        elapsed_epochs: int = 0,
+        dense_nodes_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -27,7 +30,7 @@ class AbstractNode2VecSequence(Sequence):
         -----------------------------
         graph: EnsmallenGraph,
             The graph from from where to extract the walks.
-        length: int,
+        walk_length: int,
             Maximal length of the walks.
             In directed graphs, when traps are present, walks may be shorter.
         batch_size: int,
@@ -39,7 +42,7 @@ class AbstractNode2VecSequence(Sequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Wthever to shuffle the vectors.
-        min_length: int = 8,
+        min_length: int = 1,
             Minimum length of the walks.
             In directed graphs, when traps are present, walks shorter than
             this amount are removed. This should be two times the window_size.
@@ -65,36 +68,28 @@ class AbstractNode2VecSequence(Sequence):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
+        elapsed_epochs: int = 0,
+            Number of elapsed epochs to init state of generator.
+        dense_nodes_mapping: Dict[int, int] = None,
+            Mapping to use for converting sparse walk space into a dense space.
+            This object can be created using the method available from graph
+            called `get_dense_nodes_mapping` that returns a mapping from
+            the non trap nodes (those from where a walk could start) and
+            maps these nodes into a dense range of values.
         """
         self._graph = graph
-        self._length = length
-        self._batch_size = batch_size
+        self._walk_length = walk_length
         self._iterations = iterations
-        self._window_size = window_size
-        self._shuffle = shuffle
         self._min_length = min_length
         self._return_weight = return_weight
         self._explore_weight = explore_weight
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
+        self._dense_nodes_mapping = dense_nodes_mapping
 
-    def on_epoch_end(self):
-        """Shuffle private bed object on every epoch end."""
-
-    def __len__(self) -> int:
-        """Return length of bed generator."""
-        return int(np.ceil(self._graph.get_nodes_number() / float(self._batch_size)))
-
-    @property
-    def steps_per_epoch(self) -> int:
-        """Return length of bed generator."""
-        return len(self)
-
-    def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
-        """Return batch corresponding to given index.
-
-        This method must be implemented in the child classes.
-        """
-        raise NotImplementedError(
-            "The method __getitem__ must be implemented in the child classes."
+        super().__init__(
+            batch_size=batch_size,
+            samples_number=self._graph.get_not_trap_nodes_number(),
+            window_size=window_size,
+            elapsed_epochs=elapsed_epochs
         )

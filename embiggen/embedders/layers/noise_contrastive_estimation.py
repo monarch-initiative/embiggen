@@ -1,11 +1,14 @@
+"""Layer for executing NCE loss in Keras models."""
 from typing import Dict, Tuple
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Layer
+import tensorflow.keras.backend as K   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 
 
 class NoiseContrastiveEstimation(Layer):
+    """Layer for executing NCE loss in Keras models."""
+
     def __init__(
         self,
         vocabulary_size: int,
@@ -37,6 +40,8 @@ class NoiseContrastiveEstimation(Layer):
         self.embedding_size = embedding_size
         self.negative_samples = negative_samples
         self.positive_samples = positive_samples
+        self._weights = None
+        self._biases = None
         super().__init__(**kwargs)
 
     def build(self, input_shape: Tuple[int, int]):
@@ -61,7 +66,7 @@ class NoiseContrastiveEstimation(Layer):
 
         super().build(input_shape)
 
-    def call(self, inputs: Tuple[Layer]):
+    def call(self, inputs: Tuple[Layer], **kwargs):
         """Create call graph for current layer.
 
         Parameters
@@ -73,15 +78,17 @@ class NoiseContrastiveEstimation(Layer):
         predictions, labels = inputs
 
         # Computing NCE loss.
-        self.add_loss(tf.nn.nce_loss(
-            self._weights,
-            self._biases,
-            labels=labels,
-            inputs=predictions,
-            num_sampled=self.negative_samples,
-            num_classes=self.vocabulary_size,
-            num_true=self.positive_samples
-        ))
+        self.add_loss(
+            K.mean(tf.nn.nce_loss(
+                self._weights,
+                self._biases,
+                labels=labels,
+                inputs=predictions,
+                num_sampled=self.negative_samples,
+                num_classes=self.vocabulary_size,
+                num_true=self.positive_samples
+            ), axis=0)
+        )
 
         # Computing logits for closing TF graph
         return K.dot(predictions, K.transpose(self._weights))

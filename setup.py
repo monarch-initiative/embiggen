@@ -41,8 +41,10 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
+        "nltk",
         'tensorflow>=2.0.0',
-        "ensmallen_graph>=0.2.5"
+        "ensmallen_graph>=0.3.1",
+        "keras_mixed_sequence>=1.0.13"
     ],
     tests_require=test_deps,
     include_package_data=True,
