@@ -26,8 +26,8 @@ class TestGraphVisualization(TestCase):
         ))
         self._visualization = GraphVisualizations()
 
-    def test_graph_transformer(self):
-        """Test to verify that graph transformation returns expected shape."""
+    def test_graph_visualization(self):
+        """Test graph visualization."""
         self._visualization.fit(
             self._embedding,
             self._graph.nodes_mapping
