@@ -4,7 +4,6 @@ from unittest import TestCase
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from embiggen import GraphVisualizations
-import matplotlib.pyplot as plt
 
 
 class TestGraphVisualization(TestCase):
