@@ -30,3 +30,4 @@ htmlcov
 .ipynb_checkpoints
 .pytest_cache
 embedding.npy
+build
