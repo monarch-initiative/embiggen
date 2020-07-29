@@ -142,6 +142,7 @@ class GraphVisualizations:
             *node_tsne.T,
             s=s,
             alpha=alpha,
+            marker='.',
             c=node_types,
             cmap=ListedColormap(colors)
         )
@@ -211,6 +212,7 @@ class GraphVisualizations:
             c=degrees,
             s=s,
             alpha=alpha,
+            marker='.',
             cmap=plt.cm.get_cmap('RdYlBu')
         )
         figure.colorbar(scatter, ax=axes)
@@ -286,6 +288,7 @@ class GraphVisualizations:
             *edge_tsne.T,
             s=s,
             alpha=alpha,
+            marker='.',
             c=edge_types,
             cmap=ListedColormap(colors)
         )
@@ -351,6 +354,7 @@ class GraphVisualizations:
             c=weights,
             s=s,
             alpha=alpha,
+            marker='.',
             cmap=plt.cm.get_cmap('RdYlBu')
         )
         figure.colorbar(scatter, ax=axes)
