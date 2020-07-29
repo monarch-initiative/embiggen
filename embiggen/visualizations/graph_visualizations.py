@@ -101,6 +101,13 @@ class GraphVisualizations:
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
 
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+
         Returns
         ------------------------------
         Figure and Axis of the plot.
@@ -108,6 +115,11 @@ class GraphVisualizations:
         if self._node_embedding is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
+            )
+
+        if k > 10:
+            raise ValueError(
+                "Values of k greater than 10 are not supported!"
             )
 
         if figure is None or axes is None:
@@ -184,6 +196,11 @@ class GraphVisualizations:
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
 
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
         Returns
         ------------------------------
         Figure and Axis of the plot.
@@ -256,6 +273,13 @@ class GraphVisualizations:
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
 
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+
         Returns
         ------------------------------
         Figure and Axis of the plot.
@@ -263,6 +287,11 @@ class GraphVisualizations:
         if self._edge_embedding is None:
             raise ValueError(
                 "Edge fitting must be executed before plot."
+            )
+
+        if k > 10:
+            raise ValueError(
+                "Values of k greater than 10 are not supported!"
             )
 
         if figure is None or axes is None:
@@ -338,6 +367,11 @@ class GraphVisualizations:
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
 
         Returns
         ------------------------------
