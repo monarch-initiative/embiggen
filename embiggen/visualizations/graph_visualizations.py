@@ -339,7 +339,7 @@ class GraphVisualizations:
             edges, edge_types = graph.get_top_k_edges_by_edge_type(k)
             edge_tsne = self._edge_embedding[edges]
             common_edge_types_names = np.array(
-                graph.edge_types_reverse_node_mapping
+                graph.edge_types_reverse_mapping
             )[np.unique(edge_types)].tolist()
 
         # Shuffling points to avoid having artificial clusters
