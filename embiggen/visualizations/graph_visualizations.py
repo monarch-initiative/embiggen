@@ -1,6 +1,7 @@
 """Module with embedding visualization tools."""
+from collections import Counter, OrderedDict
 from multiprocessing import cpu_count
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,6 +14,12 @@ from ..transformers import GraphTransformer, NodeTransformer
 
 class GraphVisualizations:
     """Tools to visualize the graph embeddings."""
+
+    DEFAULT_SCATTER_KWARGS = dict(
+        s=1,
+        marker=".",
+        alpha=0.7
+    )
 
     def __init__(self, method: str = "hadamard"):
         """Create new GraphVisualizations object.
@@ -49,6 +56,51 @@ class GraphVisualizations:
             if "n_jobs" not in kwargs:
                 kwargs["n_jobs"] = cpu_count()
         return TSNE(**kwargs).fit_transform(X)
+
+    def _shuffle(self, *args: List[np.ndarray]) -> List[np.ndarray]:
+        """Return given arrats shuffled synchronously."""
+        # Shuffling points to avoid having artificial clusters
+        # caused by positions.
+        index = np.arange(args[0].shape[0])
+        np.random.shuffle(index)
+        return [
+            arg[index]
+            for arg in args
+        ]
+
+    def _clear_axes(self, axes: Axes, title: str):
+        """Reset the axes ticks and set the given title."""
+        axes.set_xticks([])
+        axes.set_xticks([], minor=True)
+        axes.set_yticks([])
+        axes.set_yticks([], minor=True)
+        axes.set_title(title)
+
+    def _set_legend(self, axes: Axes, labels: List[str], handles: List):
+        """Set the legend with the given values and handles transparency."""
+        legend = axes.legend(
+            handles=handles,
+            labels=labels,
+            bbox_to_anchor=(1.05, 1.0),
+            loc='upper left'
+        )
+        for legend_handle in legend.legendHandles:
+            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
+                1
+            )
+
+    def _to_dense(self, types: List, reverse_mapping: List[str]) -> Tuple:
+        """Return types and labels converted to dense space."""
+        dense_map = OrderedDict([
+            (t, i)
+            for i, (t, _) in enumerate(Counter(types).most_common())
+        ])
+        types = np.array([
+            dense_map[edge_type]
+            for edge_type in types
+        ])
+        labels = [reverse_mapping[key] for key in dense_map]
+        return types, labels
 
     def fit_transform_nodes(
         self,
@@ -153,29 +205,15 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = dict(
-                s=1,
-                marker=".",
-                alpha=0.7
-            )
+            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
-        if graph.node_types_reverse_mapping is None:
-            node_types = np.zeros(graph.get_nodes_number(), dtype=np.uint8)
-            common_node_types_names = ["No node type provided"]
-            node_tsne = self._node_embedding
-        else:
-            nodes, node_types = graph.get_top_k_nodes_by_node_type(k)
-            node_tsne = self._node_embedding[nodes]
-            common_node_types_names = np.array(
-                graph.node_types_reverse_mapping
-            )[np.unique(node_types)].tolist()
-
-        # Shuffling points to avoid having artificial clusters
-        # caused by positions.
-        index = np.arange(node_types.size)
-        np.random.shuffle(index)
-        node_types = node_types[index]
-        node_tsne = node_tsne[index]
+        nodes, node_types = graph.get_top_k_nodes_by_node_type(k)
+        node_tsne = self._node_embedding[nodes]
+        node_types, labels = self._to_dense(
+            node_types,
+            graph.node_types_reverse_mapping
+        )
+        node_tsne, node_types = self._shuffle(node_tsne, node_types)
 
         scatter = axes.scatter(
             *node_tsne.T,
@@ -183,21 +221,13 @@ class GraphVisualizations:
             cmap=plt.get_cmap("tab10"),
             **scatter_kwargs,
         )
-        legend = axes.legend(
-            handles=scatter.legend_elements()[0],
-            labels=common_node_types_names,
-            bbox_to_anchor=(1.05, 1.0),
-            loc='upper left'
+
+        self._set_legend(
+            axes,
+            labels,
+            scatter.legend_elements()[0]
         )
-        for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
-                1
-            )
-        axes.set_xticks([])
-        axes.set_xticks([], minor=True)
-        axes.set_yticks([])
-        axes.set_yticks([], minor=True)
-        axes.set_title("Node types")
+        self._clear_axes(axes, "Nodes types")
         return figure, axes
 
     def plot_node_degrees(
@@ -241,22 +271,13 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = dict(
-                s=1,
-                marker=".",
-                alpha=0.7
-            )
+            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
         degrees = graph.degrees()
         two_median = np.median(degrees)*2
         degrees[degrees > two_median] = min(two_median, degrees.max())
 
-        # Shuffling points to avoid having artificial clusters
-        # caused by positions.
-        index = np.arange(degrees.size)
-        np.random.shuffle(index)
-        degrees = degrees[index]
-        node_tsne = self._node_embedding[index]
+        node_tsne, degrees = self._shuffle(self._node_embedding, degrees)
 
         scatter = axes.scatter(
             *node_tsne.T,
@@ -267,11 +288,7 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        axes.set_xticks([])
-        axes.set_xticks([], minor=True)
-        axes.set_yticks([])
-        axes.set_yticks([], minor=True)
-        axes.set_title("Node degrees")
+        self._clear_axes(axes, "Nodes degrees")
         return figure, axes
 
     def plot_edge_types(
@@ -325,29 +342,15 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = dict(
-                s=1,
-                marker=".",
-                alpha=0.7
-            )
+            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
-        if graph.edge_types_reverse_mapping is None:
-            edge_types = np.zeros(graph.get_edges_number(), dtype=np.uint8)
-            common_edge_types_names = ["No edge type provided"]
-            edge_tsne = self._edge_embedding
-        else:
-            edges, edge_types = graph.get_top_k_edges_by_edge_type(k)
-            edge_tsne = self._edge_embedding[edges]
-            common_edge_types_names = np.array(
-                graph.edge_types_reverse_mapping
-            )[np.unique(edge_types)].tolist()
-
-        # Shuffling points to avoid having artificial clusters
-        # caused by positions.
-        index = np.arange(edge_types.size)
-        np.random.shuffle(index)
-        edge_types = edge_types[index]
-        edge_tsne = edge_tsne[index]
+        edges, edge_types = graph.get_top_k_edges_by_edge_type(k)
+        edge_tsne = self._edge_embedding[edges]
+        edge_types, labels = self._to_dense(
+            edge_types,
+            graph.edge_types_reverse_mapping
+        )
+        edge_tsne, edge_types = self._shuffle(edge_tsne, edge_types)
 
         scatter = axes.scatter(
             *edge_tsne.T,
@@ -355,21 +358,13 @@ class GraphVisualizations:
             cmap=plt.get_cmap("tab10"),
             **scatter_kwargs,
         )
-        legend = axes.legend(
-            handles=scatter.legend_elements()[0],
-            labels=common_edge_types_names,
-            bbox_to_anchor=(1.05, 1.0),
-            loc='upper left'
+
+        self._set_legend(
+            axes,
+            labels,
+            scatter.legend_elements()[0]
         )
-        for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
-                1
-            )
-        axes.set_xticks([])
-        axes.set_xticks([], minor=True)
-        axes.set_yticks([])
-        axes.set_yticks([], minor=True)
-        axes.set_title("Edge types")
+        self._clear_axes(axes, "Edge types")
         return figure, axes
 
     def plot_edge_weights(
@@ -413,18 +408,12 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = dict(
-                s=1,
-                marker=".",
-                alpha=0.7
-            )
+            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
-        # Shuffling points to avoid having artificial clusters
-        # caused by positions.
-        index = np.arange(graph.get_edges_number())
-        np.random.shuffle(index)
-        edge_embedding = self._edge_embedding[index]
-        weights = graph.weights[index]
+        edge_embedding, weights = self._shuffle(
+            self._edge_embedding,
+            graph.weights
+        )
 
         scatter = axes.scatter(
             *edge_embedding.T,
@@ -435,9 +424,5 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        axes.set_xticks([])
-        axes.set_xticks([], minor=True)
-        axes.set_yticks([])
-        axes.set_yticks([], minor=True)
-        axes.set_title("Edge weights")
+        self._clear_axes(axes, "Edge weights")
         return figure, axes

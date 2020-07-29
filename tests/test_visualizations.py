@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from embiggen import GraphVisualizations
+import pytest
 
 
 class TestGraphVisualization(TestCase):
@@ -17,7 +18,8 @@ class TestGraphVisualization(TestCase):
             sources_column="subject",
             destinations_column="object",
             directed=False,
-            weights_column="weight"
+            weights_column="weight",
+            edge_types_column="weight"
         )
         self._embedding = np.random.random((  # pylint: disable=no-member
             self._graph.get_nodes_number(),
@@ -39,6 +41,9 @@ class TestGraphVisualization(TestCase):
             n_iter=100
         )
         self._visualization.plot_node_degrees(self._graph)
-        self._visualization.plot_node_types(self._graph)
+        with pytest.raises(ValueError):
+            self._visualization.plot_node_types(self._graph)
         self._visualization.plot_edge_types(self._graph)
         self._visualization.plot_edge_weights(self._graph)
+        with pytest.raises(ValueError):
+            self._visualization.plot_edge_types(self._graph, k=15)
