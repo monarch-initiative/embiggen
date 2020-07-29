@@ -40,6 +40,9 @@ class GraphVisualizations:
             from MulticoreTSNE import MulticoreTSNE as TSNE
             if "n_jobs" not in kwargs:
                 kwargs["n_jobs"] = cpu_count()
+            if "random_state" not in kwargs:
+                kwargs["n_jobs"] = cpu_count()
+                kwargs["random_state"] = self._random_state
         return TSNE(
             verbose=self._verbose,
             **kwargs
