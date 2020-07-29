@@ -41,7 +41,6 @@ class GraphVisualizations:
             if "n_jobs" not in kwargs:
                 kwargs["n_jobs"] = cpu_count()
         return TSNE(
-            random_state=self._random_state,
             verbose=self._verbose,
             **kwargs
         ).fit_transform(X)
