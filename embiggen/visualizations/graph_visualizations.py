@@ -14,36 +14,41 @@ from ..transformers import GraphTransformer, NodeTransformer
 class GraphVisualizations:
     """Tools to visualize the graph embeddings."""
 
-    def __init__(
-        self,
+    def __init__(self, method: str = "hadamard"):
+        """Create new GraphVisualizations object.
+
+        Parameters
+        -----------------------
         method: str = "hadamard",
-        random_state: int = 42,
-        verbose: bool = True
-    ):
-        """Create new GraphVisualizations object."""
+            Edge embedding method.
+        """
         self._graph_transformer = GraphTransformer(method=method)
         self._node_transformer = NodeTransformer()
-        self._random_state = random_state
-        self._verbose = verbose
         self._node_mapping = self._node_embedding = self._edge_embedding = None
-        self._random = np.random.RandomState(  # pylint: disable=no-member
-            seed=random_state
-        )
 
-    def tsne(self, X: np.ndarray, **kwargs) -> np.ndarray:
-        """Return TSNE embedding of given array."""
+    def tsne(self, X: np.ndarray, **kwargs:Dict) -> np.ndarray:
+        """Return TSNE embedding of given array.
+        
+        Depending on what is available, we use tsnecuda or MulticoreTSNE.
+
+        Parameters
+        -----------------------
+        X: np.ndarray,
+            The data to embed.
+        **kwargs: Dict,
+            Parameters to pass directly to TSNE.
+
+        Returns
+        -----------------------
+        The obtained TSNE embedding.
+        """
         try:
             from tsnecuda import TSNE
         except ModuleNotFoundError:
             from MulticoreTSNE import MulticoreTSNE as TSNE
             if "n_jobs" not in kwargs:
                 kwargs["n_jobs"] = cpu_count()
-            if "random_state" not in kwargs:
-                kwargs["random_state"] = self._random_state
-        return TSNE(
-            verbose=self._verbose,
-            **kwargs
-        ).fit_transform(X)
+        return TSNE(**kwargs).fit_transform(X)
 
     def fit_transform_nodes(
         self,
@@ -52,7 +57,19 @@ class GraphVisualizations:
         node_mapping: Dict[str, int],
         **kwargs: Dict
     ):
-        """Executes fitting for plotting node embeddings."""
+        """Executes fitting for plotting node embeddings.
+        
+        Parameters
+        -------------------------
+        graph: EnsmallenGraph,
+            Graph from where to extract the nodes.
+        embedding: np.ndarray,
+            Embedding obtained from SkipGram, CBOW or GloVe.
+        node_mapping: Dict[str, int],
+            Nodes mapping to use to map eventual subgraphs.
+        **kwargs: Dict,
+            Data to pass directly to TSNE.
+        """
         self._node_transformer.fit(embedding)
         self._node_embedding = self.tsne(
             self._node_transformer.transform(np.fromiter((
@@ -68,7 +85,17 @@ class GraphVisualizations:
         embedding: np.ndarray,
         **kwargs: Dict
     ):
-        """Executes fitting for plotting edge embeddings."""
+        """Executes fitting for plotting edge embeddings.
+        
+        Parameters
+        -------------------------
+        graph: EnsmallenGraph,
+            Graph from where to extract the edges.
+        embedding: np.ndarray,
+            Embedding obtained from SkipGram, CBOW or GloVe.
+        **kwargs: Dict,
+            Data to pass directly to TSNE.            
+        """
         self._graph_transformer.fit(embedding)
         self._edge_embedding = self.tsne(
             self._graph_transformer.transform(graph),
