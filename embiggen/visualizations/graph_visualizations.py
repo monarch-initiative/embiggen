@@ -81,10 +81,9 @@ class GraphVisualizations:
         self,
         graph: EnsmallenGraph,
         k: int = 10,
-        s: float = 0.01,
-        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
+        scatter_kwargs: Dict = None,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -95,13 +94,11 @@ class GraphVisualizations:
             The graph to visualize.
         k: int = 10,
             Number of node types to visualize.
-        s: float = 0.01,
-            Size of the scatter.
-        alpha: float = 0.5,
-            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -117,6 +114,9 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(**kwargs)
+
+        if scatter_kwargs is None:
+            scatter_kwargs = {}
 
         if graph.node_types_reverse_mapping is None:
             node_types = np.zeros(graph.get_nodes_number(), dtype=np.uint8)
@@ -140,17 +140,18 @@ class GraphVisualizations:
 
         scatter = axes.scatter(
             *node_tsne.T,
-            s=s,
-            alpha=alpha,
-            marker='.',
             c=node_types,
-            cmap=ListedColormap(colors)
+            cmap=ListedColormap(colors),
+            **scatter_kwargs,
         )
-        axes.legend(
+        legend = axes.legend(
             handles=scatter.legend_elements()[0],
             labels=common_node_types_names,
-            loc="right"
+            bbox_to_anchor=(1.05, 1.0),
+            loc='upper left'
         )
+        for lh in legend.legendHandles:
+            lh.set_alpha(1)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -161,10 +162,9 @@ class GraphVisualizations:
     def plot_node_degrees(
         self,
         graph: EnsmallenGraph,
-        s: float = 0.01,
-        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
+        scatter_kwargs: Dict = None,
         **kwargs: Dict
     ):
         """Plot common node types of provided graph.
@@ -173,13 +173,11 @@ class GraphVisualizations:
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        s: float = 0.01,
-            Size of the scatter.
-        alpha: float = 0.5,
-            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -196,6 +194,9 @@ class GraphVisualizations:
         if figure is None or axes is None:
             figure, axes = plt.subplots(**kwargs)
 
+        if scatter_kwargs is None:
+            scatter_kwargs = {}
+
         degrees = graph.degrees()
         two_median = np.median(degrees)*2
         degrees[degrees > two_median] = min(two_median, degrees.max())
@@ -210,10 +211,8 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *node_tsne.T,
             c=degrees,
-            s=s,
-            alpha=alpha,
-            marker='.',
-            cmap=plt.cm.get_cmap('RdYlBu')
+            cmap=plt.cm.get_cmap('RdYlBu'),
+            **scatter_kwargs,
         )
         figure.colorbar(scatter, ax=axes)
         axes.set_xticks([])
@@ -227,10 +226,9 @@ class GraphVisualizations:
         self,
         graph: EnsmallenGraph,
         k: int = 10,
-        s: float = 0.01,
-        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
+        scatter_kwargs: Dict = None,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -241,13 +239,11 @@ class GraphVisualizations:
             The graph to visualize.
         k: int = 10,
             Number of edge types to visualize.
-        s: float = 0.01,
-            Size of the scatter.
-        alpha: float = 0.5,
-            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -263,6 +259,9 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(**kwargs)
+
+        if scatter_kwargs is None:
+            scatter_kwargs = {}
 
         if graph.edge_types_reverse_mapping is None:
             edge_types = np.zeros(graph.get_edges_number(), dtype=np.uint8)
@@ -286,17 +285,18 @@ class GraphVisualizations:
 
         scatter = axes.scatter(
             *edge_tsne.T,
-            s=s,
-            alpha=alpha,
-            marker='.',
             c=edge_types,
-            cmap=ListedColormap(colors)
+            cmap=ListedColormap(colors),
+            **scatter_kwargs,
         )
-        axes.legend(
+        legend = axes.legend(
             handles=scatter.legend_elements()[0],
             labels=common_edge_types_names,
-            loc="right"
+            bbox_to_anchor=(1.05, 1.0),
+            loc='upper left'
         )
+        for lh in legend.legendHandles:
+            lh.set_alpha(1)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -307,10 +307,9 @@ class GraphVisualizations:
     def plot_edge_weights(
         self,
         graph: EnsmallenGraph,
-        s: float = 0.01,
-        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
+        scatter_kwargs: Dict = None,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -319,13 +318,11 @@ class GraphVisualizations:
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        s: float = 0.01,
-            Size of the scatter.
-        alpha: float = 0.5,
-            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -342,6 +339,9 @@ class GraphVisualizations:
         if figure is None or axes is None:
             figure, axes = plt.subplots(**kwargs)
 
+        if scatter_kwargs is None:
+            scatter_kwargs = {}
+
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
         index = np.arange(graph.get_edges_number())
@@ -352,10 +352,8 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *edge_embedding.T,
             c=weights,
-            s=s,
-            alpha=alpha,
-            marker='.',
-            cmap=plt.cm.get_cmap('RdYlBu')
+            cmap=plt.cm.get_cmap('RdYlBu'),
+            **scatter_kwargs,
         )
         figure.colorbar(scatter, ax=axes)
         axes.set_xticks([])
