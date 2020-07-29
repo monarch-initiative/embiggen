@@ -126,7 +126,7 @@ class GraphVisualizations:
             nodes, node_types = graph.get_top_k_nodes_by_node_type(k)
             node_tsne = self._node_embedding[nodes]
             common_node_types_names = np.array(
-                graph.node_types_reverse_node_mapping
+                graph.node_types_reverse_mapping
             )[np.unique(node_types)].tolist()
 
         colors = list(TABLEAU_COLORS.keys())[:len(common_node_types_names)]
