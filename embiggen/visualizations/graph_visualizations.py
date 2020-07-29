@@ -116,7 +116,11 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = {}
+            scatter_kwargs = dict(
+                s=1,
+                marker=".",
+                alpha=0.9
+            )
 
         if graph.node_types_reverse_mapping is None:
             node_types = np.zeros(graph.get_nodes_number(), dtype=np.uint8)
@@ -150,8 +154,8 @@ class GraphVisualizations:
             bbox_to_anchor=(1.05, 1.0),
             loc='upper left'
         )
-        for lh in legend.legendHandles:
-            lh.set_alpha(1)
+        for legend_handle in legend.legendHandles:
+            legend_handle._legmarker.set_alpha(1) # pylint: disable=protected-access
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -195,7 +199,11 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = {}
+            scatter_kwargs = dict(
+                s=1,
+                marker=".",
+                alpha=0.9
+            )
 
         degrees = graph.degrees()
         two_median = np.median(degrees)*2
@@ -214,7 +222,8 @@ class GraphVisualizations:
             cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
         )
-        figure.colorbar(scatter, ax=axes)
+        color_bar = figure.colorbar(scatter, ax=axes)
+        color_bar.set_alpha(1)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -261,7 +270,11 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = {}
+            scatter_kwargs = dict(
+                s=1,
+                marker=".",
+                alpha=0.9
+            )
 
         if graph.edge_types_reverse_mapping is None:
             edge_types = np.zeros(graph.get_edges_number(), dtype=np.uint8)
@@ -295,8 +308,8 @@ class GraphVisualizations:
             bbox_to_anchor=(1.05, 1.0),
             loc='upper left'
         )
-        for lh in legend.legendHandles:
-            lh.set_alpha(1)
+        for legend_handle in legend.legendHandles:
+            legend_handle._legmarker.set_alpha(1) # pylint: disable=protected-access
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -340,7 +353,11 @@ class GraphVisualizations:
             figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
-            scatter_kwargs = {}
+            scatter_kwargs = dict(
+                s=1,
+                marker=".",
+                alpha=0.9
+            )
 
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
@@ -355,7 +372,8 @@ class GraphVisualizations:
             cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
         )
-        figure.colorbar(scatter, ax=axes)
+        color_bar = figure.colorbar(scatter, ax=axes)
+        color_bar.set_alpha(1)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
