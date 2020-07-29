@@ -82,6 +82,7 @@ class GraphVisualizations:
         graph: EnsmallenGraph,
         k: int = 10,
         s: float = 0.01,
+        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
         **kwargs
@@ -96,6 +97,8 @@ class GraphVisualizations:
             Number of node types to visualize.
         s: float = 0.01,
             Size of the scatter.
+        alpha: float = 0.5,
+            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -128,9 +131,17 @@ class GraphVisualizations:
 
         colors = list(TABLEAU_COLORS.keys())[:len(common_node_types_names)]
 
+        # Shuffling points to avoid having artificial clusters
+        # caused by positions.
+        index = np.arange(node_types.size)
+        np.random.shuffle(index)
+        node_types = node_types[index]
+        node_tsne = node_tsne[index]
+
         scatter = axes.scatter(
             *node_tsne.T,
             s=s,
+            alpha=alpha,
             c=node_types,
             cmap=ListedColormap(colors)
         )
@@ -141,6 +152,8 @@ class GraphVisualizations:
         )
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
+        axes.set_yticks([])
+        axes.set_yticks([], minor=True)
         axes.set_title("Node types")
         return figure, axes
 
@@ -148,6 +161,7 @@ class GraphVisualizations:
         self,
         graph: EnsmallenGraph,
         s: float = 0.01,
+        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
         **kwargs: Dict
@@ -160,6 +174,8 @@ class GraphVisualizations:
             The graph to visualize.
         s: float = 0.01,
             Size of the scatter.
+        alpha: float = 0.5,
+            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -182,15 +198,26 @@ class GraphVisualizations:
         degrees = graph.degrees()
         two_median = np.median(degrees)*2
         degrees[degrees > two_median] = min(two_median, degrees.max())
+
+        # Shuffling points to avoid having artificial clusters
+        # caused by positions.
+        index = np.arange(degrees.size)
+        np.random.shuffle(index)
+        degrees = degrees[index]
+        node_tsne = self._node_embedding[index]
+
         scatter = axes.scatter(
-            *self._node_embedding.T,
+            *node_tsne.T,
             c=degrees,
             s=s,
+            alpha=alpha,
             cmap=plt.cm.get_cmap('RdYlBu')
         )
         figure.colorbar(scatter, ax=axes)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
+        axes.set_yticks([])
+        axes.set_yticks([], minor=True)
         axes.set_title("Node degrees")
         return figure, axes
 
@@ -199,6 +226,7 @@ class GraphVisualizations:
         graph: EnsmallenGraph,
         k: int = 10,
         s: float = 0.01,
+        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
         **kwargs: Dict
@@ -213,6 +241,8 @@ class GraphVisualizations:
             Number of edge types to visualize.
         s: float = 0.01,
             Size of the scatter.
+        alpha: float = 0.5,
+            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -245,9 +275,17 @@ class GraphVisualizations:
 
         colors = list(TABLEAU_COLORS.keys())[:len(common_edge_types_names)]
 
+        # Shuffling points to avoid having artificial clusters
+        # caused by positions.
+        index = np.arange(edge_types.size)
+        np.random.shuffle(index)
+        edge_types = edge_types[index]
+        edge_tsne = edge_tsne[index]
+
         scatter = axes.scatter(
             *edge_tsne.T,
             s=s,
+            alpha=alpha,
             c=edge_types,
             cmap=ListedColormap(colors)
         )
@@ -258,6 +296,8 @@ class GraphVisualizations:
         )
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
+        axes.set_yticks([])
+        axes.set_yticks([], minor=True)
         axes.set_title("Edge types")
         return figure, axes
 
@@ -265,6 +305,7 @@ class GraphVisualizations:
         self,
         graph: EnsmallenGraph,
         s: float = 0.01,
+        alpha: float = 0.5,
         figure: Figure = None,
         axes: Axes = None,
         **kwargs: Dict
@@ -277,6 +318,8 @@ class GraphVisualizations:
             The graph to visualize.
         s: float = 0.01,
             Size of the scatter.
+        alpha: float = 0.5,
+            Alpha level for the scatter plot.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -296,14 +339,24 @@ class GraphVisualizations:
         if figure is None or axes is None:
             figure, axes = plt.subplots(**kwargs)
 
+        # Shuffling points to avoid having artificial clusters
+        # caused by positions.
+        index = np.arange(graph.get_edges_number())
+        np.random.shuffle(index)
+        edge_embedding = self._edge_embedding[index]
+        weights = graph.weights[index]
+
         scatter = axes.scatter(
-            *self._edge_embedding.T,
-            c=graph.weights,
+            *edge_embedding.T,
+            c=weights,
             s=s,
+            alpha=alpha,
             cmap=plt.cm.get_cmap('RdYlBu')
         )
         figure.colorbar(scatter, ax=axes)
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
+        axes.set_yticks([])
+        axes.set_yticks([], minor=True)
         axes.set_title("Edge weights")
         return figure, axes
