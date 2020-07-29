@@ -26,9 +26,9 @@ class GraphVisualizations:
         self._node_transformer = NodeTransformer()
         self._node_mapping = self._node_embedding = self._edge_embedding = None
 
-    def tsne(self, X: np.ndarray, **kwargs:Dict) -> np.ndarray:
+    def tsne(self, X: np.ndarray, **kwargs: Dict) -> np.ndarray:
         """Return TSNE embedding of given array.
-        
+
         Depending on what is available, we use tsnecuda or MulticoreTSNE.
 
         Parameters
@@ -58,7 +58,7 @@ class GraphVisualizations:
         **kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
-        
+
         Parameters
         -------------------------
         graph: EnsmallenGraph,
@@ -86,7 +86,7 @@ class GraphVisualizations:
         **kwargs: Dict
     ):
         """Executes fitting for plotting edge embeddings.
-        
+
         Parameters
         -------------------------
         graph: EnsmallenGraph,
@@ -156,7 +156,7 @@ class GraphVisualizations:
             scatter_kwargs = dict(
                 s=1,
                 marker=".",
-                alpha=0.9
+                alpha=0.7
             )
 
         if graph.node_types_reverse_mapping is None:
@@ -244,7 +244,7 @@ class GraphVisualizations:
             scatter_kwargs = dict(
                 s=1,
                 marker=".",
-                alpha=0.9
+                alpha=0.7
             )
 
         degrees = graph.degrees()
@@ -328,7 +328,7 @@ class GraphVisualizations:
             scatter_kwargs = dict(
                 s=1,
                 marker=".",
-                alpha=0.9
+                alpha=0.7
             )
 
         if graph.edge_types_reverse_mapping is None:
@@ -416,7 +416,7 @@ class GraphVisualizations:
             scatter_kwargs = dict(
                 s=1,
                 marker=".",
-                alpha=0.9
+                alpha=0.7
             )
 
         # Shuffling points to avoid having artificial clusters
