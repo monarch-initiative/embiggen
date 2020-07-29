@@ -5,9 +5,7 @@ from typing import Dict, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from matplotlib._color_data import TABLEAU_COLORS
 from matplotlib.axes import Axes
-from matplotlib.colors import ListedColormap
 from matplotlib.figure import Figure
 
 from ..transformers import GraphTransformer, NodeTransformer
@@ -133,8 +131,6 @@ class GraphVisualizations:
                 graph.node_types_reverse_mapping
             )[np.unique(node_types)].tolist()
 
-        colors = list(TABLEAU_COLORS.keys())[:len(common_node_types_names)]
-
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
         index = np.arange(node_types.size)
@@ -145,7 +141,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *node_tsne.T,
             c=node_types,
-            cmap=ListedColormap(colors),
+            cmap=plt.get_cmap("tab20"),
             **scatter_kwargs,
         )
         legend = axes.legend(
@@ -155,7 +151,9 @@ class GraphVisualizations:
             loc='upper left'
         )
         for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(1) # pylint: disable=protected-access
+            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
+                1
+            )
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
@@ -287,8 +285,6 @@ class GraphVisualizations:
                 graph.edge_types_reverse_node_mapping
             )[np.unique(edge_types)].tolist()
 
-        colors = list(TABLEAU_COLORS.keys())[:len(common_edge_types_names)]
-
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
         index = np.arange(edge_types.size)
@@ -299,7 +295,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *edge_tsne.T,
             c=edge_types,
-            cmap=ListedColormap(colors),
+            cmap=plt.get_cmap("tab20"),
             **scatter_kwargs,
         )
         legend = axes.legend(
@@ -309,7 +305,9 @@ class GraphVisualizations:
             loc='upper left'
         )
         for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(1) # pylint: disable=protected-access
+            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
+                1
+            )
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
