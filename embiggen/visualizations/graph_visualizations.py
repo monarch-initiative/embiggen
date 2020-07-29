@@ -141,7 +141,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *node_tsne.T,
             c=node_types,
-            cmap=plt.get_cmap("tab20"),
+            cmap=plt.get_cmap("tab10"),
             **scatter_kwargs,
         )
         legend = axes.legend(
@@ -296,7 +296,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *edge_tsne.T,
             c=edge_types,
-            cmap=plt.get_cmap("tab20"),
+            cmap=plt.get_cmap("tab10"),
             **scatter_kwargs,
         )
         legend = axes.legend(
