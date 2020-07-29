@@ -1,13 +1,15 @@
 """Module with embedding visualization tools."""
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from multiprocessing import cpu_count
+from typing import Dict, Tuple
+
+import matplotlib.pyplot as plt
 import numpy as np
-from typing import Dict
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib._color_data import TABLEAU_COLORS
-from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.colors import ListedColormap
-from multiprocessing import cpu_count
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+
 from ..transformers import GraphTransformer, NodeTransformer
 
 
@@ -18,7 +20,6 @@ class GraphVisualizations:
         self,
         method: str = "hadamard",
         random_state: int = 42,
-        size: float = 0.1,
         verbose: bool = True
     ):
         """Create new GraphVisualizations object."""
@@ -26,8 +27,7 @@ class GraphVisualizations:
         self._node_transformer = NodeTransformer()
         self._random_state = random_state
         self._verbose = verbose
-        self._mapping = None
-        self._size = size
+        self._node_mapping = self._node_embedding = self._edge_embedding = None
         self._random = np.random.RandomState(  # pylint: disable=no-member
             seed=random_state
         )
@@ -41,65 +41,116 @@ class GraphVisualizations:
             if "n_jobs" not in kwargs:
                 kwargs["n_jobs"] = cpu_count()
             if "random_state" not in kwargs:
-                kwargs["n_jobs"] = cpu_count()
                 kwargs["random_state"] = self._random_state
         return TSNE(
             verbose=self._verbose,
             **kwargs
         ).fit_transform(X)
 
-    def fit(self, embedding: np.ndarray, mapping: Dict[str, int]):
-        """Build embeddings for visualization porposes."""
-        self._graph_transformer.fit(embedding)
-        self._node_transformer.fit(embedding)
-        self._mapping = mapping
-
-    def _plot_node_types(
+    def fit_transform_nodes(
         self,
         graph: EnsmallenGraph,
-        node_tsne: np.ndarray,
-        axes: Axes
+        embedding: np.ndarray,
+        node_mapping: Dict[str, int],
+        **kwargs: Dict
     ):
+        """Executes fitting for plotting node embeddings."""
+        self._node_transformer.fit(embedding)
+        self._node_embedding = self.tsne(
+            self._node_transformer.transform(np.fromiter((
+                node_mapping[node]
+                for node in graph.nodes_reverse_mapping
+            ), dtype=np.int)),
+            **kwargs
+        )
+
+    def fit_transform_edges(
+        self,
+        graph: EnsmallenGraph,
+        embedding: np.ndarray,
+        **kwargs: Dict
+    ):
+        """Executes fitting for plotting edge embeddings."""
+        self._graph_transformer.fit(embedding)
+        self._edge_embedding = self.tsne(
+            self._graph_transformer.transform(graph),
+            **kwargs
+        )
+
+    def plot_node_types(
+        self,
+        graph: EnsmallenGraph,
+        k: int = 10,
+        s: float = 0.01,
+        figure: Figure = None,
+        axes: Axes = None,
+        **kwargs
+    ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
 
         Parameters
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        node_tsne: np.ndarray,
-            The node tsne embedding.
-        axes: Axes,
-            Axes to use to plot.
+        k: int = 10,
+            Number of node types to visualize.
+        s: float = 0.01,
+            Size of the scatter.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
         """
-        if graph.node_types_mapping is None:
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        if figure is None or axes is None:
+            figure, axes = plt.subplots(**kwargs)
+
+        if graph.node_types_reverse_mapping is None:
             node_types = np.zeros(graph.get_nodes_number(), dtype=np.uint8)
             common_node_types_names = ["No node type provided"]
+            node_tsne = self._node_embedding
         else:
-            nodes, node_types = graph.get_top_k_nodes_by_node_type(10)
-            node_tsne = node_tsne[nodes]
-            common_node_types_names = list(
-                np.array(graph.node_types_reverse_mapping)[np.unique(node_types)])
+            nodes, node_types = graph.get_top_k_nodes_by_node_type(k)
+            node_tsne = self._node_embedding[nodes]
+            common_node_types_names = np.array(
+                graph.node_types_reverse_node_mapping
+            )[np.unique(node_types)].tolist()
 
         colors = list(TABLEAU_COLORS.keys())[:len(common_node_types_names)]
 
         scatter = axes.scatter(
             *node_tsne.T,
-            s=self._size,
+            s=s,
             c=node_types,
             cmap=ListedColormap(colors)
         )
         axes.legend(
             handles=scatter.legend_elements()[0],
-            labels=common_node_types_names
+            labels=common_node_types_names,
+            loc="right"
         )
+        axes.set_xticks([])
+        axes.set_xticks([], minor=True)
         axes.set_title("Node types")
+        return figure, axes
 
-    def _plot_node_degrees(
+    def plot_node_degrees(
         self,
         graph: EnsmallenGraph,
-        node_tsne: np.ndarray,
-        fig: Figure,
-        axes: Axes
+        s: float = 0.01,
+        figure: Figure = None,
+        axes: Axes = None,
+        **kwargs: Dict
     ):
         """Plot common node types of provided graph.
 
@@ -107,30 +158,50 @@ class GraphVisualizations:
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        node_tsne: np.ndarray,
-            The node tsne embedding.
-        fig: Figure,
-            Figure to use to plot.
-        axes: Axes,
-            Axes to use to plot.
+        s: float = 0.01,
+            Size of the scatter.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
         """
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        if figure is None or axes is None:
+            figure, axes = plt.subplots(**kwargs)
+
         degrees = graph.degrees()
         two_median = np.median(degrees)*2
         degrees[degrees > two_median] = min(two_median, degrees.max())
         scatter = axes.scatter(
-            *node_tsne.T,
+            *self._node_embedding.T,
             c=degrees,
-            s=self._size,
+            s=s,
             cmap=plt.cm.get_cmap('RdYlBu')
         )
-        fig.colorbar(scatter, ax=axes)
+        figure.colorbar(scatter, ax=axes)
+        axes.set_xticks([])
+        axes.set_xticks([], minor=True)
         axes.set_title("Node degrees")
+        return figure, axes
 
-    def _plot_edge_types(
+    def plot_edge_types(
         self,
         graph: EnsmallenGraph,
-        edge_tsne: np.ndarray,
-        axes: Axes
+        k: int = 10,
+        s: float = 0.01,
+        figure: Figure = None,
+        axes: Axes = None,
+        **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
 
@@ -138,40 +209,65 @@ class GraphVisualizations:
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        edge_tsne: np.ndarray,
-            The edge tsne embedding.
-        axes: Axes,
-            Axes to use to plot.
+        k: int = 10,
+            Number of edge types to visualize.
+        s: float = 0.01,
+            Size of the scatter.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
         """
-        if graph.edge_types_mapping is None:
+        if self._edge_embedding is None:
+            raise ValueError(
+                "Edge fitting must be executed before plot."
+            )
+
+        if figure is None or axes is None:
+            figure, axes = plt.subplots(**kwargs)
+
+        if graph.edge_types_reverse_mapping is None:
             edge_types = np.zeros(graph.get_edges_number(), dtype=np.uint8)
             common_edge_types_names = ["No edge type provided"]
+            edge_tsne = self._edge_embedding
         else:
-            edges, edge_types = graph.get_top_k_edges_by_edge_type(10)
-            edge_tsne = edge_tsne[edges]
-            common_edge_types_names = list(
-                np.array(graph.edge_types_reverse_mapping)[np.unique(edge_types)])
+            edges, edge_types = graph.get_top_k_edges_by_edge_type(k)
+            edge_tsne = self._edge_embedding[edges]
+            common_edge_types_names = np.array(
+                graph.edge_types_reverse_node_mapping
+            )[np.unique(edge_types)].tolist()
 
         colors = list(TABLEAU_COLORS.keys())[:len(common_edge_types_names)]
 
         scatter = axes.scatter(
             *edge_tsne.T,
-            s=self._size,
+            s=s,
             c=edge_types,
             cmap=ListedColormap(colors)
         )
         axes.legend(
             handles=scatter.legend_elements()[0],
-            labels=common_edge_types_names
+            labels=common_edge_types_names,
+            loc="right"
         )
+        axes.set_xticks([])
+        axes.set_xticks([], minor=True)
         axes.set_title("Edge types")
+        return figure, axes
 
-    def _plot_edge_weights(
+    def plot_edge_weights(
         self,
         graph: EnsmallenGraph,
-        edge_tsne: np.ndarray,
-        fig: Figure,
-        axes: Axes
+        s: float = 0.01,
+        figure: Figure = None,
+        axes: Axes = None,
+        **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
 
@@ -179,94 +275,35 @@ class GraphVisualizations:
         ------------------------------
         graph: EnsmallenGraph,
             The graph to visualize.
-        edge_tsne: np.ndarray,
-            The edge tsne embedding.
-        fig: Figure,
-            Figure to use to plot.
-        axes: Axes,
-            Axes to use to plot.
+        s: float = 0.01,
+            Size of the scatter.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
         """
+        if self._edge_embedding is None:
+            raise ValueError(
+                "Edge fitting must be executed before plot."
+            )
+
+        if figure is None or axes is None:
+            figure, axes = plt.subplots(**kwargs)
+
         scatter = axes.scatter(
-            *edge_tsne.T,
+            *self._edge_embedding.T,
             c=graph.weights,
-            s=self._size,
+            s=s,
             cmap=plt.cm.get_cmap('RdYlBu')
         )
-        fig.colorbar(scatter, ax=axes)
+        figure.colorbar(scatter, ax=axes)
+        axes.set_xticks([])
+        axes.set_xticks([], minor=True)
         axes.set_title("Edge weights")
-
-    def visualize(self, graph: EnsmallenGraph, tsne_kwargs: Dict = None):
-        """Visualize given graph."""
-        if tsne_kwargs is None:
-            tsne_kwargs = {}
-        # Compute the original graph edge embedding
-        edge_embedding = self._graph_transformer.transform(graph)
-        # Computing the node embedding
-        nodes = np.array([
-            self._mapping[node]
-            for node in graph.nodes_reverse_mapping
-        ])
-        # Computing the TSNE embedding
-        if self._verbose:
-            print("Computing node TSNE embedding.")
-        nodes_tsne = self.tsne(
-            self._node_transformer.transform(nodes),
-            **tsne_kwargs
-        )
-        if self._verbose:
-            print("Computing edge TSNE embedding.")
-        edge_tsne = self.tsne(
-            edge_embedding,
-            **tsne_kwargs
-        )
-        # Creating the figure and axes
-        fig, axes = plt.subplots(
-            nrows=2,
-            ncols=2,
-            figsize=(10, 10)
-        )
-        axes = axes.flatten()
-        for ax in axes:
-            # for major ticks
-            ax.set_xticks([])
-            ax.set_yticks([])
-            # for minor ticks
-            ax.set_xticks([], minor=True)
-            ax.set_yticks([], minor=True)
-        (
-            node_type_axes,
-            node_degree_axes,
-            edge_type_axes,
-            edge_weight_axes
-        ) = axes
-        # Starting to visualize the various embeddings
-        # Plotting the node types
-        self._plot_node_types(
-            graph,
-            nodes_tsne,
-            node_type_axes
-        )
-        # Plotting the edge types
-        self._plot_node_degrees(
-            graph,
-            nodes_tsne,
-            fig,
-            node_degree_axes
-        )
-        # Plotting the edge types
-        self._plot_edge_types(
-            graph,
-            edge_tsne,
-            edge_type_axes
-        )
-        # Plotting the edge weights
-        self._plot_edge_weights(
-            graph,
-            edge_tsne,
-            fig,
-            edge_weight_axes
-        )
-
-        fig.tight_layout()
-
-        return fig, axes
+        return figure, axes

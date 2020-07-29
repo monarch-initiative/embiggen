@@ -27,13 +27,18 @@ class TestGraphVisualization(TestCase):
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        self._visualization.fit(
-            self._embedding,
-            self._graph.nodes_mapping
-        )
-        self._visualization.visualize(
+        self._visualization.fit_transform_nodes(
             self._graph,
-            tsne_kwargs={
-                "n_iter": 100
-            }
+            self._embedding,
+            self._graph.nodes_mapping,
+            n_iter=100
         )
+        self._visualization.fit_transform_edges(
+            self._graph,
+            self._embedding,
+            n_iter=100
+        )
+        self._visualization.plot_node_degrees(self._graph)
+        self._visualization.plot_node_types(self._graph)
+        self._visualization.plot_edge_types(self._graph)
+        self._visualization.plot_edge_weights(self._graph)
