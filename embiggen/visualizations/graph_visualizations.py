@@ -4,11 +4,11 @@ from multiprocessing import cpu_count
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
-from matplotlib.legend_handler import HandlerBase
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.legend_handler import HandlerBase
 
 from ..transformers import GraphTransformer, NodeTransformer
 
