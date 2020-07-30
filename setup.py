@@ -21,7 +21,7 @@ extras = {
         "cmake",
         "MulticoreTSNE",
         "matplotlib",
-        "sanitize_ml_label"
+        "sanitize_ml_label>=1.0.12"
     ]
 }
 
