@@ -362,7 +362,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *node_embeddding.T,
             c=degrees,
-            cmap=plt.cm.get_cmap('jet'),
+            cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
         )
         color_bar = figure.colorbar(scatter, ax=axes)
@@ -547,7 +547,7 @@ class GraphVisualizations:
         scatter = axes.scatter(
             *edge_embedding.T,
             c=weights,
-            cmap=plt.cm.get_cmap('jet'),
+            cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
         )
         color_bar = figure.colorbar(scatter, ax=axes)
