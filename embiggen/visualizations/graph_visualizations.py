@@ -4,6 +4,7 @@ from multiprocessing import cpu_count
 from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerBase
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
@@ -76,21 +77,50 @@ class GraphVisualizations:
         axes.set_yticks([], minor=True)
         axes.set_title(title)
 
-    def _set_legend(self, axes: Axes, labels: List[str], handles: List):
-        """Set the legend with the given values and handles transparency."""
+    def _set_legend(
+        self,
+        axes: Axes,
+        labels: List[str],
+        handles: List[HandlerBase]
+    ):
+        """Set the legend with the given values and handles transparency.
+
+        Parameters
+        ----------------------------
+        axes: Axes,
+            The axes on which to put the legend.
+        labels: List[str],
+            Labels to put in the legend.
+        handles: List,
+            Handles to display in the legend (the curresponding matplotlib
+            objects).
+        """
         legend = axes.legend(
             handles=handles,
             labels=labels,
-            bbox_to_anchor=(1.05, 1.0),
-            loc='upper left'
+            loc='best'
         )
+        # Setting alpha level in the legend to avoid having a transparent
+        # legend scatter dots.
         for legend_handle in legend.legendHandles:
             legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
                 1
             )
 
     def _to_dense(self, types: List, reverse_mapping: List[str]) -> Tuple:
-        """Return types and labels converted to dense space."""
+        """Return types and labels converted to dense space.
+
+        Parameters
+        --------------------------
+        types: List,
+            The list of types (either edge types or node types).
+        reverse_mapping: List[str],
+            The list for the reverse mapping.
+
+        Returns
+        --------------------------
+        Tuple with the types and labels.
+        """
         dense_map = OrderedDict([
             (t, i)
             for i, (t, _) in enumerate(Counter(types).most_common())
