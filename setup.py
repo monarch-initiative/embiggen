@@ -20,7 +20,8 @@ extras = {
     'visualization': [
         "cmake",
         "MulticoreTSNE",
-        "matplotlib"
+        "matplotlib",
+        "sanitize_ml_label"
     ]
 }
 

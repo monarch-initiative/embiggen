@@ -9,6 +9,7 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
+from sanitize_ml_labels import sanitize_ml_labels
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -98,7 +99,7 @@ class GraphVisualizations:
         """
         legend = axes.legend(
             handles=handles,
-            labels=labels,
+            labels=sanitize_ml_labels(labels),
             loc='best'
         )
         # Setting alpha level in the legend to avoid having a transparent
