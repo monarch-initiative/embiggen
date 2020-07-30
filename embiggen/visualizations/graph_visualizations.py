@@ -354,7 +354,7 @@ class GraphVisualizations:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
         degrees = graph.degrees()
-        two_median = np.median(degrees)*2
+        two_median = np.median(degrees)*3
         degrees[degrees > two_median] = min(two_median, degrees.max())
 
         node_embeddding, degrees = self._shuffle(self._node_embedding, degrees)
