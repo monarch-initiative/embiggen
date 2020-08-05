@@ -17,6 +17,12 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'visualization': [
+        "cmake",
+        "MulticoreTSNE",
+        "matplotlib",
+        "sanitize_ml_labels>=1.0.12"
+    ]
 }
 
 # TODO: Authors add your emails!!!

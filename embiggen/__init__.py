@@ -5,11 +5,13 @@ from .transformers import (
 from .sequences import (NodeBinarySkipGramSequence, Node2VecSequence,
                         LinkPredictionSequence, WordBinarySkipGramSequence,
                         Word2VecSequence)
+from .visualizations import GraphVisualizations
 
 __all__ = [
     "CBOW", "SkipGram", "GloVe", "BinarySkipGram",
     "NodeBinarySkipGramSequence", "LinkPredictionSequence", "Node2VecSequence",
     "WordBinarySkipGramSequence", "Word2VecSequence",
     "NodeTransformer", "EdgeTransformer",
-    "GraphTransformer", "CorpusTransformer"
+    "GraphTransformer", "CorpusTransformer",
+    "GraphVisualizations"
 ]
