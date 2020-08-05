@@ -1,21 +1,21 @@
-embiggen: Embeddding Generator
+Embiggen: Embedding Generator
 =========================================================================================
 |travis| |sonar_quality| |sonar_maintainability| |codacy|
 |code_climate_maintainability|
 
-embiggen is a Python 3 package that implements several
+Embiggen is a Python 3 package that implements several
 `word2vec <https://arxiv.org/abs/1301.3781>`_ and
 `node2vec <https://arxiv.org/abs/1607.00653>`_ family algorithms.
 
 This package allows users to perform node2vec analysis
 using several different word2vec family algorithms.
 
-Setting up embiggen
+Setting up Embiggen
 -------------------
 To do a local install, enter the following command from the main embiggen folder.
 .. code:: bash
 
-    pip install --user embiggen
+    pip install .
 
 Unit testing
 -----------------------------------
@@ -24,7 +24,7 @@ the coverage and the html report, you can use:
 
 .. code:: bash
 
-    nosetests --with-coverage --cover-package=xn2v --cover-html
+    pytest --cov embiggen --cov-report html
 
 Tests Coverage
 ----------------------------------------------
@@ -38,16 +38,16 @@ slightly different results, here's three of them:
    :target: https://travis-ci.org/monarch-initiative/embiggen
    :alt: Travis CI build
 
-.. |sonar_quality| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_n2v&metric=alert_status
-    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_n2v
+.. |sonar_quality| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_embiggen&metric=alert_status
+    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_embiggen
     :alt: SonarCloud Quality
 
-.. |sonar_maintainability| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_n2v&metric=sqale_rating
-    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_n2v
+.. |sonar_maintainability| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_embiggen&metric=sqale_rating
+    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_embiggen
     :alt: SonarCloud Maintainability
 
-.. |sonar_coverage| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_n2v&metric=coverage
-    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_n2v
+.. |sonar_coverage| image:: https://sonarcloud.io/api/project_badges/measure?project=monarch-initiative_embiggen&metric=coverage
+    :target: https://sonarcloud.io/dashboard/index/monarch-initiative_embiggen
     :alt: SonarCloud Coverage
 
 .. |coveralls| image:: https://coveralls.io/repos/github/monarch-initiative/N2V/badge.svg?branch=master
