@@ -20,7 +20,7 @@ To do a local install, enter the following command from the main embiggen folder
 Unit testing
 -----------------------------------
 To run the unit testing on the package, generating
-the coverage and the html report, you can use:
+the coverage and the HTML report, you can use:
 
 .. code:: bash
 
