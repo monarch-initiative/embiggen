@@ -5,10 +5,10 @@ import numpy as np
 from ensmallen_graph import EnsmallenGraph
 from embiggen import GraphTransformer, EdgeTransformer
 
-try:
-    from tsnecuda import TSNE
-except ModuleNotFoundError:
-    from MulticoreTSNE import MulticoreTSNE as TSNE
+#try:
+#    from tsnecuda import TSNE
+#except ModuleNotFoundError:
+from MulticoreTSNE import MulticoreTSNE as TSNE
 
 embedding_path = "./FOURTH/SkipGram_embedding.npy"
 
