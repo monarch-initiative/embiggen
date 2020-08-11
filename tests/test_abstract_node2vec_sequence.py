@@ -1,11 +1,14 @@
+"""Setup and test abstract unit test class for node2vec sequence."""
 import pytest
 from embiggen.sequences.abstract_node2vec_sequence import AbstractNode2VecSequence
-from .test_sequences import TestSequences
+from .test_node_sequences import TestNodeSequences
 
 
-class TestAbstractNode2VecSequence(TestSequences):
+class TestAbstractNode2VecSequence(TestNodeSequences):
+    """Abstract unit test to check that AbstractNode2VecClass behaves nominally."""
 
     def setUp(self):
+        """Setup and test abstract unit test class for node2vec sequence."""
         super().setUp()
         self._window_size = 4
         self._walk_length = 100
@@ -18,4 +21,4 @@ class TestAbstractNode2VecSequence(TestSequences):
         )
 
         with pytest.raises(NotImplementedError):
-            self._sequence.__getitem__(0)        
+            self._sequence.__getitem__(0)

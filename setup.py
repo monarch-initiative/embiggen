@@ -17,6 +17,12 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'visualization': [
+        "cmake",
+        "MulticoreTSNE",
+        "matplotlib",
+        "sanitize_ml_labels>=1.0.12"
+    ]
 }
 
 # TODO: Authors add your emails!!!
@@ -41,9 +47,10 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
+        "nltk",
         'tensorflow>=2.0.0',
-        "ensmallen_graph>=0.2.5",
-        "keras_mixed_sequence>=1.0.11"
+        "ensmallen_graph>=0.3.1",
+        "keras_mixed_sequence>=1.0.13"
     ],
     tests_require=test_deps,
     include_package_data=True,

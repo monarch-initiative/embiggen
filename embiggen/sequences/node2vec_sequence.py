@@ -1,3 +1,4 @@
+"""Keras Sequence object for running CBOW and SkipGram on graph walks."""
 from typing import Tuple
 
 import numpy as np  # type: ignore
@@ -6,6 +7,7 @@ from .abstract_node2vec_sequence import AbstractNode2VecSequence
 
 
 class Node2VecSequence(AbstractNode2VecSequence):
+    """Keras Sequence object for running CBOW and SkipGram on graph walks."""
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], None]:
         """Return batch corresponding to given index.
@@ -26,7 +28,7 @@ class Node2VecSequence(AbstractNode2VecSequence):
 
         A batch returns words and contexts from:
 
-            (number of nodes provided in a batch) * 
+            (number of nodes provided in a batch) *
             (number of iterations of random walks per node) *
             (walk length - window_size*2)
 

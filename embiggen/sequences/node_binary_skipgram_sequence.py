@@ -1,3 +1,4 @@
+"""Keras Sequence for running BinarySkipGramSequence on graph walks."""
 from typing import Dict, Tuple
 import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -5,6 +6,7 @@ from .abstract_node2vec_sequence import AbstractNode2VecSequence
 
 
 class NodeBinarySkipGramSequence(AbstractNode2VecSequence):
+    """Keras Sequence for running BinarySkipGramSequence on graph walks."""
 
     def __init__(
         self,

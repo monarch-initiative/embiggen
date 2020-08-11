@@ -1,9 +1,12 @@
+"""GraphTransformer class to convert graphs to edge embeddings."""
 import numpy as np
-from .edge_transformer import EdgeTransformer
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+
+from .edge_transformer import EdgeTransformer
 
 
 class GraphTransformer:
+    """GraphTransformer class to convert graphs to edge embeddings."""
 
     def __init__(self, method: str = "hadamard"):
         """Create new GraphTransformer object.

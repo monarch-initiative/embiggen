@@ -1,10 +1,13 @@
+"""Unit test for testing that Node2VecSequence works as expected."""
 from embiggen import Node2VecSequence
 from .test_abstract_node2vec_sequence import TestAbstractNode2VecSequence
 
 
 class TestNode2VecSequence(TestAbstractNode2VecSequence):
+    """Unit test for testing that Node2VecSequence works as expected."""
 
     def setUp(self):
+        """Setup objects to test that Node2Vec sequence works correctly."""
         super().setUp()
         self._window_size = 4
         self._walk_length = 100
@@ -17,6 +20,7 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
         )
 
     def test_output_shape(self):
+        """Test that object produced by sequence has correct shape."""
         (context_vector, words_vector), _ = self._sequence[0]
         self.assertEqual(
             context_vector.shape,
@@ -24,6 +28,9 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
         self.assertEqual(context_vector.shape[0], words_vector.shape[0])
 
     def test_nodes_range(self):
-        self.assertTrue(self.check_nodes_range(self._sequence[0][0][0].flatten()))
+        """Test that range of node IDs is as expected."""
+        self.assertTrue(self.check_nodes_range(
+            self._sequence[0][0][0].flatten())
+        )
         self.assertTrue(self.check_nodes_range(self._sequence[0][0][1]))
         self.assertTrue(self._sequence[0][1] is None)
