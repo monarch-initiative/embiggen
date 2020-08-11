@@ -1,15 +1,17 @@
+"""Abstract class for graph embedding models."""
 from typing import Union, Tuple
 
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Embedding, Input, Lambda, Layer, Flatten
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras import backend as K   # pylint: disable=import-error
+from tensorflow.keras.layers import Embedding, Input, Lambda, Layer, Flatten   # pylint: disable=import-error
+from tensorflow.keras.models import Model   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
 
 
 class Node2Vec(Embedder):
+    """Abstract class for graph embedding models."""
 
     def __init__(
         self,
@@ -20,7 +22,7 @@ class Node2Vec(Embedder):
         window_size: int = 4,
         negatives_samples: int = 10
     ):
-        """Create new CBOW-based Embedder object.
+        """Create new Graph Embedder model.
 
         Parameters
         -------------------------------------------
@@ -61,8 +63,12 @@ class Node2Vec(Embedder):
             "must be implemented in child class."
         ))
 
-    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
-        """Return sorted input layers for handling training with the same input sequences.
+    def _sort_input_layers(
+        self,
+        true_input_layer: Layer,
+        true_output_layer: Layer
+    ) -> Tuple[Layer, Layer]:
+        """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------

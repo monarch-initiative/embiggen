@@ -1,11 +1,15 @@
+"""Keras Sequence for running Neural Netwok on graph link prediction."""
+from typing import Callable, Tuple, Union
+
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from typing import Tuple, Union, Callable
 from keras_mixed_sequence import Sequence
+
 from ..transformers import EdgeTransformer
 
 
 class LinkPredictionSequence(Sequence):
+    """Keras Sequence for running Neural Netwok on graph link prediction."""
 
     def __init__(
         self,
