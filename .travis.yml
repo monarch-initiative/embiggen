@@ -1,4 +1,4 @@
-dist: trusty
+dist: bionic
 sudo: false
 git:
   depth: false
@@ -7,15 +7,17 @@ addons:
     organization: "monarch-initiative"
     token:
       secure: p/89xiWcWPZLwAl6De+GqK66qMJHuhvDRTl6YHT952vbsDkzX6nrFa8/UW6FmEfkeDopJYS3zWSSrhizCWZtDvwWq/TddD9hSw+KAAKE6IWMEPcK8okUILXrTX72laEe2/y0LBr61/2386J2rjoOy/lWFXtaHdrwczFXucqsyH7aAmeeA8WHJwTkMr99i75G4jGhadXz0s4k1csRN6Gmj8XKncfSgbM+u5HE9xWWL0T5j13cIjsWT/pL/s0XMa8fqlK1vjA+gRBoBtF5V3cwcmVdJi1Mp+ul3KwbRmduu2zWAMGzdMlZ7HZ3ya5t28DRdr+ePB4wowOwwJXfo5StQ9cuTY9uZ/IiRXS9MDSgD2d3h+KDlD0FYfF3IeH4bAFTOX6XgnWHrH7ZbBNGNf2uy+2HBFeVm9udiCjFzOmunK9Zt4D9YDzzHUUDKzfQrr4n7V6ghGU5jbGDKmKnnmuFpeWvTpOLrSMQe64BEmQUR4sO7DybGND80GPlSFlMo5NaMWRCoPG5VO4xYYloZlZoG6VpKUj0MXF0RDcKL3NW78SyfQmUEPvv8xuf3lcxRC86G6po0aXPQdH+eLg6rG/hxlWodw4h0XUQS7+f3O7ntwBPFie0Imb8zlveNe4gJUclswCJZ9mL4+6IvFQM32BA9ppXNaw0PMBM7zBpnvtrRbk=
+  apt:
+    packages:
+      - libc6
+      - gcc
+      - binutils-dev
+
 language: python
 python:
-- '3.6'
+- '3.7'
 before_install:
 - pip install pip --upgrade
-- pip uninstall -y numpy
-- pip install numpy --upgrade
-- pip install --upgrade mypy
-- pip install tensorflow==2.0
 install:
 - pip install .[test]
 before_script:
@@ -27,12 +29,11 @@ after_script:
 script:
 - rm -rf .coverage
 - coverage erase
-- nosetests --with-coverage --cover-package=embiggen --cover-xml
+- pytest tests --cov=embiggen --cov-report xml:coverage.xml
 - coverage combine --append || true
 - coverage report
 - coverage xml
 - pylint --errors-only --exit-zero embiggen
-- mypy --strict-optional embiggen
 - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sonar-scanner; fi' # sonar only on non-PRs
 after_success:
   - coveralls
