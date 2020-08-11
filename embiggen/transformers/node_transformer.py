@@ -1,7 +1,9 @@
+"""NodeTransformer class to convert nodes to edge embeddings."""
 import numpy as np
 
 
 class NodeTransformer:
+    """NodeTransformer class to convert nodes to edge embeddings."""
 
     def __init__(self):
         """Create new NodeTransformer object."""
@@ -17,12 +19,12 @@ class NodeTransformer:
         """
         self._embedding = embedding
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, nodes: np.ndarray) -> np.ndarray:
         """Return embeddings from given node.
 
         Parameters
         --------------------------
-        X: np.ndarray,
+        nodes: np.ndarray,
             Vector of nodes whose embedding is to be returned.
 
         Raises
@@ -38,4 +40,4 @@ class NodeTransformer:
             raise ValueError(
                 "Transformer was not fitted yet."
             )
-        return self._embedding[X]
+        return self._embedding[nodes]

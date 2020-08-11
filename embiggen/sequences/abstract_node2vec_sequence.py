@@ -1,11 +1,12 @@
-from typing import Tuple, Dict
+"""Abstract Keras Sequence object for running models on graph walks."""
+from typing import Dict
 
-import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from keras_mixed_sequence import Sequence
+from .abstract_sequence import AbstractSequence
 
 
-class AbstractNode2VecSequence(Sequence):
+class AbstractNode2VecSequence(AbstractSequence):
+    """Abstract Keras Sequence object for running models on graph walks."""
 
     def __init__(
         self,
@@ -79,8 +80,6 @@ class AbstractNode2VecSequence(Sequence):
         self._graph = graph
         self._walk_length = walk_length
         self._iterations = iterations
-        self._window_size = window_size
-        self._shuffle = shuffle
         self._min_length = min_length
         self._return_weight = return_weight
         self._explore_weight = explore_weight
@@ -89,7 +88,8 @@ class AbstractNode2VecSequence(Sequence):
         self._dense_nodes_mapping = dense_nodes_mapping
 
         super().__init__(
-            samples_number=self._graph.get_not_trap_nodes_number(),
             batch_size=batch_size,
+            samples_number=self._graph.get_not_trap_nodes_number(),
+            window_size=window_size,
             elapsed_epochs=elapsed_epochs
         )
