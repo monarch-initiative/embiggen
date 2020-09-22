@@ -1,5 +1,4 @@
 """Module with embedding visualization tools."""
-from collections import Counter, OrderedDict
 from multiprocessing import cpu_count
 from typing import Dict, List, Tuple
 
