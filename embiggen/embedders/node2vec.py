@@ -134,5 +134,7 @@ class Node2Vec(Embedder):
 
         # No loss function is needed because it is already executed in
         # the NCE loss layer.
-        model.compile(optimizer=self._optimizer)
+        model.compile(
+            optimizer=self._optimizer
+        )
         return model
