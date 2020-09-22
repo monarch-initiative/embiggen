@@ -8,10 +8,15 @@ from .sequences import (Node2VecSequence,
 from .visualizations import GraphVisualizations
 
 __all__ = [
-    "CBOW", "SkipGram", "GloVe",
-    "LinkPredictionSequence", "Node2VecSequence",
+    "CBOW",
+    "SkipGram",
+    "GloVe",
+    "LinkPredictionSequence",
+    "Node2VecSequence",
     "Word2VecSequence",
-    "NodeTransformer", "EdgeTransformer",
-    "GraphTransformer", "CorpusTransformer",
+    "NodeTransformer",
+    "EdgeTransformer",
+    "GraphTransformer",
+    "CorpusTransformer",
     "GraphVisualizations"
 ]
