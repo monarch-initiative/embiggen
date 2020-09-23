@@ -37,8 +37,6 @@ class Word2VecSequence(AbstractWord2VecSequence):
         Tuple of tuples with input data.
         """
         return preprocessing.word2vec(
-            idx+self.elapsed_epochs,
             self._sequences[idx],
             window_size=self._window_size,
-            shuffle=self._shuffle
         ), None

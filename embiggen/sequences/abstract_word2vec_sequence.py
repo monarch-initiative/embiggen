@@ -49,7 +49,8 @@ class AbstractWord2VecSequence(AbstractSequence):
             shuffle=shuffle,
             samples_number=self._sequences.samples_number,
             batch_size=batch_size,
-            elapsed_epochs=elapsed_epochs
+            elapsed_epochs=elapsed_epochs,
+            seed=seed
         )
 
     def on_epoch_end(self):

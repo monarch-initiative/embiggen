@@ -12,6 +12,7 @@ class AbstractSequence(Sequence):
         window_size: int = 4,
         shuffle: bool = True,
         elapsed_epochs: int = 0,
+        seed: int = 42
     ):
         """Create new Sequence object.
 
@@ -28,9 +29,12 @@ class AbstractSequence(Sequence):
             Wthever to shuffle the vectors.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        seed: int = 42,
+            Random seed to make the sequence reproducible.
         """
         self._window_size = window_size
         self._shuffle = shuffle
+        self._seed = seed
 
         super().__init__(
             samples_number=samples_number,

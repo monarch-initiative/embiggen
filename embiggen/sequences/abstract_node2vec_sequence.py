@@ -15,13 +15,13 @@ class AbstractNode2VecSequence(AbstractSequence):
         batch_size: int,
         iterations: int = 1,
         window_size: int = 4,
-        shuffle: bool = True,
         min_length: int = 1,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         elapsed_epochs: int = 0,
+        seed: int = 42,
         dense_nodes_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
@@ -91,5 +91,6 @@ class AbstractNode2VecSequence(AbstractSequence):
             batch_size=batch_size,
             samples_number=self._graph.get_not_trap_nodes_number(),
             window_size=window_size,
-            elapsed_epochs=elapsed_epochs
+            elapsed_epochs=elapsed_epochs,
+            seed=seed
         )
