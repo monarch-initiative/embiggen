@@ -42,7 +42,7 @@ class Node2Vec(Embedder):
         """
         self._model_name = model_name
         self._window_size = window_size
-        self._negatives_samples = negatives_samples
+        self.negative_samples = negatives_samples
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -118,7 +118,7 @@ class Node2Vec(Embedder):
         nce_loss = NoiseContrastiveEstimation(
             vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
-            negative_samples=self._negatives_samples,
+            negative_samples=self.negative_samples,
             positive_samples=self._get_true_output_length()
         )((mean_embedding, true_output_layer))
 
