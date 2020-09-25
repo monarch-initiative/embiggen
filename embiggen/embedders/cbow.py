@@ -19,7 +19,7 @@ class CBOW(Node2Vec):
         embedding_size: int,
         optimizer: Union[str, Optimizer] = "nadam",
         window_size: int = 4,
-        negatives_samples: int = 10
+        negative_samples: int = 10
     ):
         """Create new CBOW-based Embedder object.
 
@@ -46,7 +46,7 @@ class CBOW(Node2Vec):
             model_name="CBOW",
             optimizer=optimizer,
             window_size=window_size,
-            negatives_samples=negatives_samples
+            negative_samples=negative_samples
         )
 
     def _get_true_input_length(self) -> int:

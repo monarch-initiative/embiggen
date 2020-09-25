@@ -20,7 +20,7 @@ class Node2Vec(Embedder):
         model_name: str,
         optimizer: Union[str, Optimizer] = "nadam",
         window_size: int = 4,
-        negatives_samples: int = 10
+        negative_samples: int = 10
     ):
         """Create new Graph Embedder model.
 
@@ -45,7 +45,7 @@ class Node2Vec(Embedder):
         """
         self._model_name = model_name
         self._window_size = window_size
-        self._negative_samples = negatives_samples
+        self._negative_samples = negative_samples
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,

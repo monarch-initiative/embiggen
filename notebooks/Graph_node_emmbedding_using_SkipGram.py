@@ -28,7 +28,7 @@ window_size=4
 p=1.0
 q=1.0
 embedding_size=100
-negatives_samples=30
+negative_samples=30
 patience=5
 delta=0.0001
 epochs=1000
@@ -67,7 +67,7 @@ model = SkipGram(
         vocabulary_size=training.get_nodes_number(),
         embedding_size=embedding_size,
         window_size=window_size,
-        negatives_samples=negatives_samples,
+        negative_samples=negative_samples,
         optimizer=Nadam(learning_rate=learning_rate)
     )
 
