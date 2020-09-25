@@ -47,7 +47,7 @@ class AbstractNode2VecSequence(AbstractSequence):
             In directed graphs, when traps are present, walks shorter than
             this amount are removed. This should be two times the window_size.
         return_weight: float = 1.0,
-            Weight on the probability of returning to node coming from
+            Weight on the probability of returning to the same node the walk just came from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
@@ -72,7 +72,8 @@ class AbstractNode2VecSequence(AbstractSequence):
             Number of elapsed epochs to init state of generator.
         dense_nodes_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
-            This object can be created using the method available from graph
+            This object can be created using the method (available from the
+            graph object created using EnsmallenGraph)
             called `get_dense_nodes_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
@@ -89,7 +90,7 @@ class AbstractNode2VecSequence(AbstractSequence):
 
         super().__init__(
             batch_size=batch_size,
-            samples_number=self._graph.get_not_trap_nodes_number(),
+            sample_number=self._graph.get_not_trap_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             seed=seed

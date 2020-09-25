@@ -63,7 +63,7 @@ class LinkPredictionSequence(Sequence):
         self._transformer.fit(embedding)
         self._seed = seed
         super().__init__(
-            samples_number=batches_per_epoch,
+            sample_number=batches_per_epoch,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )

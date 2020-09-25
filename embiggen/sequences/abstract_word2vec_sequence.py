@@ -47,7 +47,7 @@ class AbstractWord2VecSequence(AbstractSequence):
         super().__init__(
             window_size=window_size,
             shuffle=shuffle,
-            samples_number=self._sequences.samples_number,
+            sample_number=self._sequences.sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,
             seed=seed

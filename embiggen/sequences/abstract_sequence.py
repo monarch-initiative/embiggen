@@ -8,7 +8,7 @@ class AbstractSequence(Sequence):
     def __init__(
         self,
         batch_size: int,
-        samples_number: int,
+        sample_number: int,
         window_size: int = 4,
         shuffle: bool = True,
         elapsed_epochs: int = 0,
@@ -20,7 +20,7 @@ class AbstractSequence(Sequence):
         -----------------------------
         batch_size: int,
             Number of nodes to include in a single batch.
-        samples_number: int,
+        sample_number: int,
             Number of samples that compose this Sequence.
         window_size: int = 4,
             Window size for the local context.
@@ -37,7 +37,7 @@ class AbstractSequence(Sequence):
         self._seed = seed
 
         super().__init__(
-            samples_number=samples_number,
+            sample_number=sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )

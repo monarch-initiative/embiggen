@@ -21,13 +21,13 @@ class TestNodeTransformer(TestCase):
     def test_node_transformer(self):
         """Test to verify that node transformation returns expected shape."""
         self._transfomer.fit(self._embedding)
-        samples_number = 50
+        sample_number = 50
         embedded_nodes = self._transfomer.transform(
-            np.random.randint(0, self._nodes_number, size=samples_number)
+            np.random.randint(0, self._nodes_number, size=sample_number)
         )
         self.assertEqual(
             embedded_nodes.shape,
-            (samples_number, self._embedding_size)
+            (sample_number, self._embedding_size)
         )
 
     def test_illegale_node_transformer(self):
