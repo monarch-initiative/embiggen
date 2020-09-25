@@ -307,7 +307,7 @@ class GraphVisualizations:
         scatter_kwargs: Dict = None,
         **kwargs: Dict
     ):
-        """Plot common node types of provided graph.
+        """Plot node degrees heatmap.
 
         Parameters
         ------------------------------
