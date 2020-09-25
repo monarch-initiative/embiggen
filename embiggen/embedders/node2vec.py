@@ -108,6 +108,7 @@ class Node2Vec(Embedder):
         )(true_input_layer)
 
         # If there is more than one value per single sample
+        # as there is for instance in CBOW-like models
         if self._get_true_input_length() > 1:
             # Computing mean of the embedding of all the contexts
             mean_embedding = Lambda(
@@ -115,6 +116,7 @@ class Node2Vec(Embedder):
                 output_shape=(self._embedding_size,)
             )(embedding)
         else:
+            # Otherwise we passthrough the previous result with a simple flatten.
             mean_embedding = Flatten()(embedding)
 
         # Adding layer that also executes the loss function
