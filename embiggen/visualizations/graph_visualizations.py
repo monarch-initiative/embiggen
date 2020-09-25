@@ -423,7 +423,7 @@ class GraphVisualizations:
         )[:k]))[0])
 
         edge_types = graph.edge_types
-        egde_labels = graph.edge_types_reverse_mapping
+        edge_labels = graph.edge_types_reverse_mapping
 
         for i, edge_type in enumerate(edge_types):
             if edge_type not in top_edge_types:
@@ -431,7 +431,7 @@ class GraphVisualizations:
 
         for edge_type in range(graph.get_edge_types_number()):
             if edge_type not in top_edge_types:
-                egde_labels[edge_type] = other_label
+                edge_labels[edge_type] = other_label
 
         edge_tsne, edge_types = self._shuffle(self._edge_embedding, edge_types)
 
@@ -444,7 +444,7 @@ class GraphVisualizations:
 
         self._set_legend(
             axes,
-            egde_labels,
+            edge_labels,
             scatter.legend_elements()[0]
         )
         self._clear_axes(axes, "Edge types")
