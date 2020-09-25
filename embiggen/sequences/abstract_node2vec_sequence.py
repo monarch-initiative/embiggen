@@ -22,7 +22,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         change_edge_type_weight: float = 1.0,
         elapsed_epochs: int = 0,
         seed: int = 42,
-        dense_nodes_mapping: Dict[int, int] = None
+        dense_node_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -70,11 +70,11 @@ class AbstractNode2VecSequence(AbstractSequence):
             multigraphs, otherwise it has no impact.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        dense_nodes_mapping: Dict[int, int] = None,
+        dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using EnsmallenGraph)
-            called `get_dense_nodes_mapping` that returns a mapping from
+            called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
         """
@@ -86,7 +86,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         self._explore_weight = explore_weight
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
-        self._dense_nodes_mapping = dense_nodes_mapping
+        self._dense_node_mapping = dense_node_mapping
 
         super().__init__(
             batch_size=batch_size,
