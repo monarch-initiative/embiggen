@@ -60,7 +60,7 @@ class GraphVisualizations:
         return TSNE(**kwargs).fit_transform(X)
 
     def _shuffle(self, *args: List[np.ndarray]) -> List[np.ndarray]:
-        """Return given arrats shuffled synchronously."""
+        """Return given arrays shuffled synchronously."""
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
         index = np.arange(args[0].shape[0])
