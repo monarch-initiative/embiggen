@@ -26,7 +26,7 @@ class AbstractSequence(Sequence):
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         seed: int = 42,

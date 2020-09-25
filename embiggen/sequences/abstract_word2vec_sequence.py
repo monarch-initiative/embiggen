@@ -31,7 +31,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         seed: int = 42,
             The seed to use to make extraction reproducible.
         elapsed_epochs: int = 0,

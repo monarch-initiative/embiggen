@@ -41,7 +41,7 @@ class AbstractNode2VecSequence(AbstractSequence):
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         min_length: int = 1,
             Minimum length of the walks.
             In directed graphs, when traps are present, walks shorter than
