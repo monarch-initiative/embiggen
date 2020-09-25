@@ -36,13 +36,16 @@ class Node2Vec(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+        window_size: int = 4,
+            Window size for the local context.
+            On the borders the window size is trimmed.
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         """
         self._model_name = model_name
         self._window_size = window_size
-        self.negative_samples = negatives_samples
+        self._negative_samples = negatives_samples
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -118,7 +121,7 @@ class Node2Vec(Embedder):
         nce_loss = NoiseContrastiveEstimation(
             vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
-            negative_samples=self.negative_samples,
+            negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length()
         )((mean_embedding, true_output_layer))
 

@@ -33,6 +33,9 @@ class SkipGram(Node2Vec):
             Dimension of the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+        window_size: int = 4,
+            Window size for the local context.
+            On the borders the window size is trimmed.
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
