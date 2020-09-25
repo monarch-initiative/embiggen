@@ -74,7 +74,7 @@ class LinkPredictionSequence(Sequence):
         Parameters
         ---------------
         idx: int,
-            Index corresponding to batch to be rendered.
+            Index corresponding to batch to be returned.
 
         Returns
         ---------------
