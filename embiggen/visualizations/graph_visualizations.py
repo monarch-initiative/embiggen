@@ -132,7 +132,7 @@ class GraphVisualizations:
         self._node_embedding = self.tsne(
             self._node_transformer.transform(np.fromiter((
                 node_mapping[node]
-                for node in graph.nodes_reverse_mapping
+                for node in graph.get_nodes_reverse_mapping()
             ), dtype=np.int)),
             **kwargs
         )
@@ -268,8 +268,8 @@ class GraphVisualizations:
             reverse=True
         )[:k]))[0])
 
-        node_types = graph.node_types
-        node_labels = graph.node_types_reverse_mapping
+        node_types = graph.get_node_types()
+        node_labels = graph.get_node_types_reverse_mapping()
 
         for i, node_type in enumerate(node_types):
             if node_type not in top_node_types:
@@ -422,8 +422,8 @@ class GraphVisualizations:
             reverse=True
         )[:k]))[0])
 
-        edge_types = graph.edge_types
-        edge_labels = graph.edge_types_reverse_mapping
+        edge_types = graph.get_edge_types()
+        edge_labels = graph.get_edge_types_reverse_mapping()
 
         for i, edge_type in enumerate(edge_types):
             if edge_type not in top_edge_types:
@@ -544,7 +544,7 @@ class GraphVisualizations:
 
         edge_embedding, weights = self._shuffle(
             self._edge_embedding,
-            graph.weights
+            graph.get_weights()
         )
 
         scatter = axes.scatter(

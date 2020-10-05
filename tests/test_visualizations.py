@@ -13,7 +13,7 @@ class TestGraphVisualization(TestCase):
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._embedding_size = 50
-        self._graph = EnsmallenGraph.from_csv(
+        self._graph = EnsmallenGraph.from_unsorted_csv(
             edge_path=f"tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",
@@ -32,7 +32,7 @@ class TestGraphVisualization(TestCase):
         self._visualization.fit_transform_nodes(
             self._graph,
             self._embedding,
-            self._graph.nodes_mapping,
+            self._graph.get_nodes_mapping(),
             n_iter=100
         )
         self._visualization.fit_transform_edges(

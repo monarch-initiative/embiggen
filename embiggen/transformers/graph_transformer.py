@@ -48,4 +48,4 @@ class GraphTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        return self._transformer.transform(graph.sources, graph.destinations)
+        return self._transformer.transform(graph.get_sources(), graph.get_destinations())

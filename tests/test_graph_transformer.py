@@ -12,7 +12,7 @@ class TestGraphTransformer(TestCase):
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._embedding_size = 50
-        self._graph = EnsmallenGraph.from_csv(
+        self._graph = EnsmallenGraph.from_unsorted_csv(
             edge_path=f"tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",

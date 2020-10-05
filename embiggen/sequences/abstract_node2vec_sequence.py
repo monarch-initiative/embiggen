@@ -90,7 +90,7 @@ class AbstractNode2VecSequence(AbstractSequence):
 
         super().__init__(
             batch_size=batch_size,
-            sample_number=self._graph.get_not_trap_nodes_number(),
+            sample_number=self._graph.get_source_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             seed=seed
