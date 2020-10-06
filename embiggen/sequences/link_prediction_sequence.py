@@ -84,8 +84,7 @@ class LinkPredictionSequence(Sequence):
             self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
             negative_samples=self._negative_samples,
-            graph_to_avoid=self._graph_to_avoid,
-            avoid_self_loops=self._avoid_self_loops
+            graph_to_avoid=self._graph_to_avoid
         )
         return (
             self._transformer.transform(
