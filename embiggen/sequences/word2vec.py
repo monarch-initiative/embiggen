@@ -30,15 +30,13 @@ class Word2VecSequence(AbstractWord2VecSequence):
         Parameters
         ---------------
         idx: int,
-            Index corresponding to batch to be rendered.
+            Index corresponding to batch to be returned.
 
         Returns
         ---------------
         Tuple of tuples with input data.
         """
         return preprocessing.word2vec(
-            idx+self.elapsed_epochs,
             self._sequences[idx],
             window_size=self._window_size,
-            shuffle=self._shuffle
         ), None

@@ -1,5 +1,4 @@
 """Module with embedding visualization tools."""
-from collections import Counter, OrderedDict
 from multiprocessing import cpu_count
 from typing import Dict, List, Tuple
 
@@ -61,7 +60,7 @@ class GraphVisualizations:
         return TSNE(**kwargs).fit_transform(X)
 
     def _shuffle(self, *args: List[np.ndarray]) -> List[np.ndarray]:
-        """Return given arrats shuffled synchronously."""
+        """Return given arrays shuffled synchronously."""
         # Shuffling points to avoid having artificial clusters
         # caused by positions.
         index = np.arange(args[0].shape[0])
@@ -109,31 +108,6 @@ class GraphVisualizations:
                 1
             )
 
-    def _to_dense(self, types: List, reverse_mapping: List[str]) -> Tuple:
-        """Return types and labels converted to dense space.
-
-        Parameters
-        --------------------------
-        types: List,
-            The list of types (either edge types or node types).
-        reverse_mapping: List[str],
-            The list for the reverse mapping.
-
-        Returns
-        --------------------------
-        Tuple with the types and labels.
-        """
-        dense_map = OrderedDict([
-            (t, i)
-            for i, (t, _) in enumerate(Counter(types).most_common())
-        ])
-        types = np.array([
-            dense_map[edge_type]
-            for edge_type in types
-        ])
-        labels = [reverse_mapping[key] for key in dense_map]
-        return types, labels
-
     def fit_transform_nodes(
         self,
         graph: EnsmallenGraph,
@@ -158,7 +132,7 @@ class GraphVisualizations:
         self._node_embedding = self.tsne(
             self._node_transformer.transform(np.fromiter((
                 node_mapping[node]
-                for node in graph.nodes_reverse_mapping
+                for node in graph.get_nodes_reverse_mapping()
             ), dtype=np.int)),
             **kwargs
         )
@@ -239,6 +213,7 @@ class GraphVisualizations:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        other_label: str = "Other",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -254,6 +229,8 @@ class GraphVisualizations:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        other_label: str = "Other",
+            Label to use for edges below the top k threshold.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -285,14 +262,25 @@ class GraphVisualizations:
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
-        nodes, node_types = graph.get_top_k_nodes_by_node_type(k)
-        node_embeddding = self._node_embedding[nodes]
-        node_types, labels = self._to_dense(
-            node_types,
-            graph.node_types_reverse_mapping
-        )
+        top_node_types = set(list(zip(*sorted(
+            graph.get_node_type_counts().items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:k]))[0])
+
+        node_types = graph.get_node_types()
+        node_labels = graph.get_node_types_reverse_mapping()
+
+        for i, node_type in enumerate(node_types):
+            if node_type not in top_node_types:
+                node_types[i] = len(top_node_types)
+
+        for node_type in range(graph.get_node_types_number()):
+            if node_type not in top_node_types:
+                node_labels[node_type] = other_label
+
         node_embeddding, node_types = self._shuffle(
-            node_embeddding,
+            self._node_embedding,
             node_types
         )
 
@@ -305,7 +293,7 @@ class GraphVisualizations:
 
         self._set_legend(
             axes,
-            labels,
+            node_labels,
             scatter.legend_elements()[0]
         )
         self._clear_axes(axes, "Nodes types")
@@ -319,7 +307,7 @@ class GraphVisualizations:
         scatter_kwargs: Dict = None,
         **kwargs: Dict
     ):
-        """Plot common node types of provided graph.
+        """Plot node degrees heatmap.
 
         Parameters
         ------------------------------
@@ -379,6 +367,7 @@ class GraphVisualizations:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        other_label: str = "Other",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -394,6 +383,8 @@ class GraphVisualizations:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        other_label: str = "Other",
+            Label to use for edges below the top k threshold.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -425,13 +416,24 @@ class GraphVisualizations:
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
-        edges, edge_types = graph.get_top_k_edges_by_edge_type(k)
-        edge_tsne = self._edge_embedding[edges]
-        edge_types, labels = self._to_dense(
-            edge_types,
-            graph.edge_types_reverse_mapping
-        )
-        edge_tsne, edge_types = self._shuffle(edge_tsne, edge_types)
+        top_edge_types = set(list(zip(*sorted(
+            graph.get_edge_type_counts().items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:k]))[0])
+
+        edge_types = graph.get_edge_types()
+        edge_labels = graph.get_edge_types_reverse_mapping()
+
+        for i, edge_type in enumerate(edge_types):
+            if edge_type not in top_edge_types:
+                edge_types[i] = len(top_edge_types)
+
+        for edge_type in range(graph.get_edge_types_number()):
+            if edge_type not in top_edge_types:
+                edge_labels[edge_type] = other_label
+
+        edge_tsne, edge_types = self._shuffle(self._edge_embedding, edge_types)
 
         scatter = axes.scatter(
             *edge_tsne.T,
@@ -442,7 +444,7 @@ class GraphVisualizations:
 
         self._set_legend(
             axes,
-            labels,
+            edge_labels,
             scatter.legend_elements()[0]
         )
         self._clear_axes(axes, "Edge types")
@@ -542,7 +544,7 @@ class GraphVisualizations:
 
         edge_embedding, weights = self._shuffle(
             self._edge_embedding,
-            graph.weights
+            graph.get_weights()
         )
 
         scatter = axes.scatter(

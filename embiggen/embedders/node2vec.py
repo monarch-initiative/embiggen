@@ -20,7 +20,7 @@ class Node2Vec(Embedder):
         model_name: str,
         optimizer: Union[str, Optimizer] = "nadam",
         window_size: int = 4,
-        negatives_samples: int = 10
+        negative_samples: int = 10
     ):
         """Create new Graph Embedder model.
 
@@ -36,13 +36,16 @@ class Node2Vec(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+        window_size: int = 4,
+            Window size for the local context.
+            On the borders the window size is trimmed.
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         """
         self._model_name = model_name
         self._window_size = window_size
-        self._negatives_samples = negatives_samples
+        self._negative_samples = negative_samples
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -105,6 +108,7 @@ class Node2Vec(Embedder):
         )(true_input_layer)
 
         # If there is more than one value per single sample
+        # as there is for instance in CBOW-like models
         if self._get_true_input_length() > 1:
             # Computing mean of the embedding of all the contexts
             mean_embedding = Lambda(
@@ -112,13 +116,14 @@ class Node2Vec(Embedder):
                 output_shape=(self._embedding_size,)
             )(embedding)
         else:
+            # Otherwise we passthrough the previous result with a simple flatten.
             mean_embedding = Flatten()(embedding)
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(
             vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
-            negative_samples=self._negatives_samples,
+            negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length()
         )((mean_embedding, true_output_layer))
 
@@ -134,5 +139,7 @@ class Node2Vec(Embedder):
 
         # No loss function is needed because it is already executed in
         # the NCE loss layer.
-        model.compile(optimizer=self._optimizer)
+        model.compile(
+            optimizer=self._optimizer
+        )
         return model

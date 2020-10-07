@@ -37,23 +37,22 @@ class Node2VecSequence(AbstractNode2VecSequence):
         Parameters
         ---------------
         idx: int,
-            Index corresponding to batch to be rendered.
+            Index corresponding to batch to be returned.
 
         Returns
         ---------------
         Tuple of tuples with input data.
         """
         return self._graph.node2vec(
-            idx,
             self._batch_size,
             self._walk_length,
             iterations=self._iterations,
             window_size=self._window_size,
-            shuffle=self._shuffle,
             min_length=self._min_length,
             return_weight=self._return_weight,
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
             change_edge_type_weight=self._change_edge_type_weight,
-            dense_nodes_mapping=self._dense_nodes_mapping
+            dense_node_mapping=self._dense_node_mapping,
+            seed=self._seed + idx + self.elapsed_epochs
         ), None

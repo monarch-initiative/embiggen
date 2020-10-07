@@ -31,7 +31,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         seed: int = 42,
             The seed to use to make extraction reproducible.
         elapsed_epochs: int = 0,
@@ -47,9 +47,10 @@ class AbstractWord2VecSequence(AbstractSequence):
         super().__init__(
             window_size=window_size,
             shuffle=shuffle,
-            samples_number=self._sequences.samples_number,
+            sample_number=self._sequences.sample_number,
             batch_size=batch_size,
-            elapsed_epochs=elapsed_epochs
+            elapsed_epochs=elapsed_epochs,
+            seed=seed
         )
 
     def on_epoch_end(self):

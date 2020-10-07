@@ -1,4 +1,4 @@
-"""Keras Sequence for running Neural Netwok on graph link prediction."""
+"""Keras Sequence for running Neural Network on graph link prediction."""
 from typing import Callable, Tuple, Union
 
 import numpy as np
@@ -9,7 +9,7 @@ from ..transformers import EdgeTransformer
 
 
 class LinkPredictionSequence(Sequence):
-    """Keras Sequence for running Neural Netwok on graph link prediction."""
+    """Keras Sequence for running Neural Network on graph link prediction."""
 
     def __init__(
         self,
@@ -21,7 +21,8 @@ class LinkPredictionSequence(Sequence):
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         avoid_self_loops: bool = False,
-        elapsed_epochs: int = 0
+        elapsed_epochs: int = 0,
+        seed: int = 42
     ):
         """Create new LinkPredictionSequence object.
 
@@ -60,8 +61,9 @@ class LinkPredictionSequence(Sequence):
         self._avoid_self_loops = avoid_self_loops
         self._transformer = EdgeTransformer(method)
         self._transformer.fit(embedding)
+        self._seed = seed
         super().__init__(
-            samples_number=batches_per_epoch,
+            sample_number=batches_per_epoch,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )
@@ -72,18 +74,17 @@ class LinkPredictionSequence(Sequence):
         Parameters
         ---------------
         idx: int,
-            Index corresponding to batch to be rendered.
+            Index corresponding to batch to be returned.
 
         Returns
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         edges, labels = self._graph.link_prediction(
-            idx + self.elapsed_epochs,
+            self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
             negative_samples=self._negative_samples,
-            graph_to_avoid=self._graph_to_avoid,
-            avoid_self_loops=self._avoid_self_loops
+            graph_to_avoid=self._graph_to_avoid
         )
         return (
             self._transformer.transform(

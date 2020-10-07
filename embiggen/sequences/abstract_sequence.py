@@ -8,10 +8,11 @@ class AbstractSequence(Sequence):
     def __init__(
         self,
         batch_size: int,
-        samples_number: int,
+        sample_number: int,
         window_size: int = 4,
         shuffle: bool = True,
         elapsed_epochs: int = 0,
+        seed: int = 42
     ):
         """Create new Sequence object.
 
@@ -19,21 +20,24 @@ class AbstractSequence(Sequence):
         -----------------------------
         batch_size: int,
             Number of nodes to include in a single batch.
-        samples_number: int,
+        sample_number: int,
             Number of samples that compose this Sequence.
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        seed: int = 42,
+            Random seed to make the sequence reproducible.
         """
         self._window_size = window_size
         self._shuffle = shuffle
+        self._seed = seed
 
         super().__init__(
-            samples_number=samples_number,
+            sample_number=sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )

@@ -6,7 +6,7 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 class TestNodeSequences(TestCase):
 
     def setUp(self):
-        self._graph = EnsmallenGraph.from_csv(
+        self._graph = EnsmallenGraph.from_unsorted_csv(
             edge_path=f"tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",

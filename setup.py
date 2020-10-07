@@ -43,14 +43,15 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
+    python_requires='>3.5.2',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
         'pandas',
         "nltk",
         'tensorflow>=2.0.0',
-        "ensmallen_graph>=0.3.1",
-        "keras_mixed_sequence>=1.0.13"
+        "ensmallen_graph>=0.4.3",
+        "keras_mixed_sequence>=1.0.20"
     ],
     tests_require=test_deps,
     include_package_data=True,

@@ -19,7 +19,7 @@ class SkipGram(Node2Vec):
         embedding_size: int,
         optimizer: Union[str, Optimizer] = "nadam",
         window_size: int = 4,
-        negatives_samples: int = 10
+        negative_samples: int = 10
     ):
         """Create new CBOW-based Embedder object.
 
@@ -33,6 +33,9 @@ class SkipGram(Node2Vec):
             Dimension of the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+        window_size: int = 4,
+            Window size for the local context.
+            On the borders the window size is trimmed.
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
@@ -43,7 +46,7 @@ class SkipGram(Node2Vec):
             model_name="SkipGram",
             optimizer=optimizer,
             window_size=window_size,
-            negatives_samples=negatives_samples
+            negative_samples=negative_samples
         )
 
     def _get_true_input_length(self) -> int:
