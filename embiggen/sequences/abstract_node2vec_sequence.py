@@ -21,6 +21,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         elapsed_epochs: int = 0,
+        support_mirror_strategy: bool = False,
         seed: int = 42,
         dense_node_mapping: Dict[int, int] = None
     ):
@@ -70,6 +71,14 @@ class AbstractNode2VecSequence(AbstractSequence):
             multigraphs, otherwise it has no impact.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
@@ -93,5 +102,6 @@ class AbstractNode2VecSequence(AbstractSequence):
             sample_number=self._graph.get_source_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
+            support_mirror_strategy=support_mirror_strategy,
             seed=seed
         )

@@ -43,7 +43,7 @@ class Node2VecSequence(AbstractNode2VecSequence):
         ---------------
         Tuple of tuples with input data.
         """
-        return self._graph.node2vec(
+        words, contexts = self._graph.node2vec(
             self._batch_size,
             self._walk_length,
             iterations=self._iterations,
@@ -55,4 +55,8 @@ class Node2VecSequence(AbstractNode2VecSequence):
             change_edge_type_weight=self._change_edge_type_weight,
             dense_node_mapping=self._dense_node_mapping,
             seed=self._seed + idx + self.elapsed_epochs
-        ), None
+        )
+
+        if self._support_mirror_strategy:
+            return (words.astype(float), contexts.astype(float)), None
+        return (words, contexts), None

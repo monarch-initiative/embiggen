@@ -22,6 +22,7 @@ class LinkPredictionSequence(Sequence):
         batches_per_epoch: bool = 2**8,
         avoid_self_loops: bool = False,
         elapsed_epochs: int = 0,
+        support_mirror_strategy: bool = False,
         seed: int = 42
     ):
         """Create new LinkPredictionSequence object.
@@ -54,6 +55,16 @@ class LinkPredictionSequence(Sequence):
             If the self loops must be filtered away from the result.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
+        seed: int = 42,
+            The seed to use to make extraction reproducible.
         """
         self._graph = graph
         self._negative_samples = negative_samples
@@ -61,6 +72,7 @@ class LinkPredictionSequence(Sequence):
         self._avoid_self_loops = avoid_self_loops
         self._transformer = EdgeTransformer(method)
         self._transformer.fit(embedding)
+        self._support_mirror_strategy = support_mirror_strategy
         self._seed = seed
         super().__init__(
             sample_number=batches_per_epoch,
@@ -86,10 +98,10 @@ class LinkPredictionSequence(Sequence):
             negative_samples=self._negative_samples,
             graph_to_avoid=self._graph_to_avoid
         )
-        return (
-            self._transformer.transform(
-                edges[:, 0],
-                edges[:, 1]
-            ),
-            labels
+        edge_embeddings = self._transformer.transform(
+            edges[:, 0],
+            edges[:, 1]
         )
+        if self._support_mirror_strategy:
+            return edge_embeddings.astype(float), labels.astype(float)
+        return edge_embeddings, labels
