@@ -16,6 +16,7 @@ class AbstractWord2VecSequence(AbstractSequence):
         batch_size: int,
         window_size: int = 4,
         shuffle: bool = True,
+        support_mirror_strategy: bool = False,
         seed: int = 42,
         elapsed_epochs: int = 0,
     ):
@@ -32,6 +33,14 @@ class AbstractWord2VecSequence(AbstractSequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Whether to shuffle the vectors.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         seed: int = 42,
             The seed to use to make extraction reproducible.
         elapsed_epochs: int = 0,

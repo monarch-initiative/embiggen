@@ -12,6 +12,7 @@ class AbstractSequence(Sequence):
         window_size: int = 4,
         shuffle: bool = True,
         elapsed_epochs: int = 0,
+        support_mirror_strategy: bool = False,
         seed: int = 42
     ):
         """Create new Sequence object.
@@ -29,12 +30,21 @@ class AbstractSequence(Sequence):
             Whether to shuffle the vectors.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         seed: int = 42,
             Random seed to make the sequence reproducible.
         """
         self._window_size = window_size
         self._shuffle = shuffle
         self._seed = seed
+        self._support_mirror_strategy = support_mirror_strategy
 
         super().__init__(
             sample_number=sample_number,

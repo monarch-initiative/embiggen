@@ -36,7 +36,11 @@ class Word2VecSequence(AbstractWord2VecSequence):
         ---------------
         Tuple of tuples with input data.
         """
-        return preprocessing.word2vec(
+        words, contexts = preprocessing.word2vec(
             self._sequences[idx],
             window_size=self._window_size,
-        ), None
+        )
+
+        if self._support_mirror_strategy:
+            return (words.astype(float), contexts.astype(float)), None
+        return (words, contexts), None
