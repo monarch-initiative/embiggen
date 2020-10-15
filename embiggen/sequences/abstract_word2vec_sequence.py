@@ -59,6 +59,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             sample_number=self._sequences.sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,
+            support_mirror_strategy=support_mirror_strategy,
             seed=seed
         )
 
