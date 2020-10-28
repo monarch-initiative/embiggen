@@ -103,5 +103,5 @@ class AbstractNode2VecSequence(AbstractSequence):
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,
-            seed=seed
+            random_state=seed
         )

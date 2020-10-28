@@ -48,13 +48,12 @@ class Node2VecSequence(AbstractNode2VecSequence):
             self._walk_length,
             iterations=self._iterations,
             window_size=self._window_size,
-            min_length=self._min_length,
             return_weight=self._return_weight,
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
             change_edge_type_weight=self._change_edge_type_weight,
             dense_node_mapping=self._dense_node_mapping,
-            seed=self._seed + idx + self.elapsed_epochs
+            random_state=self._random_state + idx + self.elapsed_epochs
         )
 
         if self._support_mirror_strategy:

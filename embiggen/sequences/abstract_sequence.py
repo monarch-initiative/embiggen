@@ -13,7 +13,7 @@ class AbstractSequence(Sequence):
         shuffle: bool = True,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
-        seed: int = 42
+        random_state: int = 42
     ):
         """Create new Sequence object.
 
@@ -38,12 +38,12 @@ class AbstractSequence(Sequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
-        seed: int = 42,
-            Random seed to make the sequence reproducible.
+        random_state: int = 42,
+            Random random_state to make the sequence reproducible.
         """
         self._window_size = window_size
         self._shuffle = shuffle
-        self._seed = seed
+        self._random_state = random_state
         self._support_mirror_strategy = support_mirror_strategy
 
         super().__init__(

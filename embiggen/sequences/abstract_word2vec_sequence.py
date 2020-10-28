@@ -60,7 +60,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,
-            seed=seed
+            random_state=seed
         )
 
     def on_epoch_end(self):

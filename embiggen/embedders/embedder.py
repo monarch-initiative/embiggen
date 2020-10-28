@@ -75,6 +75,21 @@ class Embedder:
                 return weights.numpy()
         return None
 
+    def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
+        """Return terms embedding using given index names.
+
+        Parameters
+        -----------------------------
+        path: str,
+            Save embedding as csv to given path.
+        term_names: List[str],
+            List of terms to be used as index names.
+        """
+        return pd.DataFrame(
+            self.embedding,
+            index=term_names
+        )
+
     def save_embedding(self, path: str, term_names: List[str]):
         """Save terms embedding using given index names.
 
@@ -85,10 +100,7 @@ class Embedder:
         term_names: List[str],
             List of terms to be used as index names.
         """
-        pd.DataFrame(
-            self.embedding,
-            index=term_names
-        ).to_csv(path, header=False)
+        self.get_embedding_dataframe(term_names).to_csv(path, header=False)
 
     @property
     def name(self) -> str:
