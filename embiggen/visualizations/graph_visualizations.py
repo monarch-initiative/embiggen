@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -111,8 +112,7 @@ class GraphVisualizations:
     def fit_transform_nodes(
         self,
         graph: EnsmallenGraph,
-        embedding: np.ndarray,
-        node_mapping: Dict[str, int],
+        embedding: pd.DataFrame,
         **kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
@@ -121,19 +121,14 @@ class GraphVisualizations:
         -------------------------
         graph: EnsmallenGraph,
             Graph from where to extract the nodes.
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
             Embedding obtained from SkipGram, CBOW or GloVe.
-        node_mapping: Dict[str, int],
-            Nodes mapping to use to map eventual subgraphs.
         **kwargs: Dict,
             Data to pass directly to TSNE.
         """
         self._node_transformer.fit(embedding)
         self._node_embedding = self.tsne(
-            self._node_transformer.transform(np.fromiter((
-                node_mapping[node]
-                for node in graph.get_nodes_reverse_mapping()
-            ), dtype=np.int)),
+            self._node_transformer.transform(graph.get_nodes_reverse_mapping()),
             **kwargs
         )
 

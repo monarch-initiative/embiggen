@@ -1,9 +1,7 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
-
-import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from embiggen import GraphVisualizations
+from embiggen import GraphVisualizations, GloVe
 import pytest
 
 
@@ -21,10 +19,10 @@ class TestGraphVisualization(TestCase):
             weights_column="weight",
             edge_types_column="weight"
         )
-        self._embedding = np.random.random((  # pylint: disable=no-member
-            self._graph.get_nodes_number(),
-            self._embedding_size
-        ))
+        self._embedding = GloVe(
+            vocabulary_size=self._graph.get_nodes_number(),
+            embedding_size=self._embedding_size
+        ).get_embedding_dataframe(self._graph.get_nodes_reverse_mapping())
         self._visualization = GraphVisualizations()
 
     def test_graph_visualization(self):
@@ -32,7 +30,6 @@ class TestGraphVisualization(TestCase):
         self._visualization.fit_transform_nodes(
             self._graph,
             self._embedding,
-            self._graph.get_nodes_mapping(),
             n_iter=100
         )
         self._visualization.fit_transform_edges(

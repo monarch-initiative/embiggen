@@ -1,4 +1,5 @@
 """GraphTransformer class to convert graphs to edge embeddings."""
+import pandas as pd
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 
@@ -21,13 +22,18 @@ class GraphTransformer:
         """
         self._transformer = EdgeTransformer(method=method)
 
-    def fit(self, embedding: np.ndarray):
+    def fit(self, embedding: pd.DataFrame):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
             Embedding to use to fit the transformer.
+            This is a pandas DataFrame and NOT a numpy array because we need
+            to be able to remap correctly the vector embeddings in case of
+            graphs that do not respect the same internal node mapping but have
+            the same node set. It is possible to remap such graphs using
+            Ensmallen's remap method but it may be less intuitive to users.
         """
         self._transformer.fit(embedding)
 
@@ -48,4 +54,4 @@ class GraphTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        return self._transformer.transform(graph.get_sources(), graph.get_destinations())
+        return self._transformer.transform(graph.get_source_names(), graph.get_destination_names())

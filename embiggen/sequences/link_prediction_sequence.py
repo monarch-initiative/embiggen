@@ -2,6 +2,7 @@
 from typing import Callable, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
@@ -14,7 +15,7 @@ class LinkPredictionSequence(Sequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
         method: Union[str, Callable] = "hadamard",
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
@@ -31,8 +32,13 @@ class LinkPredictionSequence(Sequence):
         --------------------------------
         graph: EnsmallenGraph,
             The graph from which to sample the edges.
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
             The embedding of the nodes.
+            This is a pandas DataFrame and NOT a numpy array because we need
+            to be able to remap correctly the vector embeddings in case of
+            graphs that do not respect the same internal node mapping but have
+            the same node set. It is possible to remap such graphs using
+            Ensmallen's remap method but it may be less intuitive to users.
         method: str = "hadamard",
             Method to use for the embedding.
             Can either be 'hadamard', 'average', 'weightedL1', 'weightedL2' or
@@ -74,6 +80,7 @@ class LinkPredictionSequence(Sequence):
         self._transformer.fit(embedding)
         self._support_mirror_strategy = support_mirror_strategy
         self._seed = seed
+        self._nodes = np.array(self._graph.get_nodes_reverse_mapping())
         super().__init__(
             sample_number=batches_per_epoch,
             batch_size=batch_size,
@@ -99,8 +106,8 @@ class LinkPredictionSequence(Sequence):
             graph_to_avoid=self._graph_to_avoid
         )
         edge_embeddings = self._transformer.transform(
-            edges[:, 0],
-            edges[:, 1]
+            self._nodes[edges[:, 0]],
+            self._nodes[edges[:, 1]]
         )
         if self._support_mirror_strategy:
             return edge_embeddings.astype(float), labels.astype(float)

@@ -1,5 +1,7 @@
 """EdgeTransformer class to convert edges to edge embeddings."""
 import numpy as np
+import pandas as pd
+from typing import List
 from .node_transformer import NodeTransformer
 
 
@@ -34,25 +36,30 @@ class EdgeTransformer:
         self._method = EdgeTransformer.methods[method]
         self._transformer = NodeTransformer()
 
-    def fit(self, embedding: np.ndarray):
+    def fit(self, embedding: pd.DataFrame):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
             Embedding to use to fit the transformer.
+            This is a pandas DataFrame and NOT a numpy array because we need
+            to be able to remap correctly the vector embeddings in case of
+            graphs that do not respect the same internal node mapping but have
+            the same node set. It is possible to remap such graphs using
+            Ensmallen's remap method but it may be less intuitive to users.
         """
         self._transformer.fit(embedding)
 
-    def transform(self, sources: np.ndarray, destinations: np.ndarray) -> np.ndarray:
+    def transform(self, sources: List[str], destinations: List[str]) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
         Parameters
         --------------------------
-        sources: np.ndarray,
-            Vector of source nodes whose embedding is to be returned.
-        destinations:np.ndarray,
-            Vector of destination nodes whose embedding is to be returned.
+        sources: List[str],
+            List of source nodes whose embedding is to be returned.
+        destinations:List[str],
+            List of destination nodes whose embedding is to be returned.
 
         Raises
         --------------------------
