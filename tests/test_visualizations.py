@@ -17,7 +17,7 @@ class TestGraphVisualization(TestCase):
             destinations_column="object",
             directed=False,
             weights_column="weight",
-            edge_types_column="weight"
+            edge_types_column="edge_label"
         )
         self._embedding = GloVe(
             vocabulary_size=self._graph.get_nodes_number(),
