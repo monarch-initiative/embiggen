@@ -42,7 +42,7 @@ setup(
         'numpy',
         'pandas',
         'tensorflow>=2.0.0',
-        "ensmallen_graph>=0.2.5",
+        "ensmallen_graph>=0.4.4",
         "keras_mixed_sequence>=1.0.11"
     ],
     tests_require=test_deps,
