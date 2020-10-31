@@ -1,9 +1,9 @@
 import pytest
 from embiggen import LinkPredictionSequence, GloVe
-from .test_sequences import TestSequences
+from .test_node_sequences import TestNodeSequences
 
 
-class TestLinkPredictionSequence(TestSequences):
+class TestLinkPredictionSequence(TestNodeSequences):
 
     def setUp(self):
         super().setUp()
@@ -16,7 +16,7 @@ class TestLinkPredictionSequence(TestSequences):
             embedding=GloVe(
                 self._graph.get_nodes_number(),
                 self._embedding_size
-            ).embedding,
+            ).get_embedding_dataframe(self._graph.get_nodes_reverse_mapping()),
             batch_size=self._batch_size
         )
 

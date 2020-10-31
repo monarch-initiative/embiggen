@@ -17,6 +17,12 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'visualization': [
+        "cmake",
+        "MulticoreTSNE",
+        "matplotlib",
+        "sanitize_ml_labels>=1.0.12"
+    ]
 }
 
 # TODO: Authors add your emails!!!
@@ -37,13 +43,15 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
+    python_requires='>3.5.2',
+    packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
         'pandas',
+        "nltk",
         'tensorflow>=2.0.0',
+        "keras_mixed_sequence>=1.0.20"
         "ensmallen_graph>=0.4.4",
-        "keras_mixed_sequence>=1.0.11"
     ],
     tests_require=test_deps,
     include_package_data=True,

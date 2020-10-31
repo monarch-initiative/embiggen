@@ -1,10 +1,17 @@
+"""CBOW model for graph and words embedding."""
 from typing import Union, Tuple
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 from .node2vec import Node2Vec
 
 
 class CBOW(Node2Vec):
+    """CBOW model for graph and words embedding.
+
+    The CBOW model for graoh embedding receives a list of contexts and tries
+    to predict the central word. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,
@@ -12,7 +19,7 @@ class CBOW(Node2Vec):
         embedding_size: int,
         optimizer: Union[str, Optimizer] = "nadam",
         window_size: int = 4,
-        negatives_samples: int = 10
+        negative_samples: int = 10
     ):
         """Create new CBOW-based Embedder object.
 
@@ -26,6 +33,9 @@ class CBOW(Node2Vec):
             Dimension of the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+        window_size: int = 4,
+            Window size for the local context.
+            On the borders the window size is trimmed.
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
@@ -36,7 +46,7 @@ class CBOW(Node2Vec):
             model_name="CBOW",
             optimizer=optimizer,
             window_size=window_size,
-            negatives_samples=negatives_samples
+            negative_samples=negative_samples
         )
 
     def _get_true_input_length(self) -> int:
@@ -47,8 +57,12 @@ class CBOW(Node2Vec):
         """Return length of true output layer."""
         return 1
 
-    def _sort_input_layers(self, true_input_layer: Layer, true_output_layer: Layer) -> Tuple[Layer, Layer]:
-        """Return sorted input layers for handling training with the same input sequences.
+    def _sort_input_layers(
+        self,
+        true_input_layer: Layer,
+        true_output_layer: Layer
+    ) -> Tuple[Layer, Layer]:
+        """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------

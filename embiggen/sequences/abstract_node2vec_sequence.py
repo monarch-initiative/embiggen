@@ -1,11 +1,12 @@
-from typing import Tuple, Dict
+"""Abstract Keras Sequence object for running models on graph walks."""
+from typing import Dict
 
-import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from keras_mixed_sequence import Sequence
+from .abstract_sequence import AbstractSequence
 
 
-class AbstractNode2VecSequence(Sequence):
+class AbstractNode2VecSequence(AbstractSequence):
+    """Abstract Keras Sequence object for running models on graph walks."""
 
     def __init__(
         self,
@@ -14,14 +15,15 @@ class AbstractNode2VecSequence(Sequence):
         batch_size: int,
         iterations: int = 1,
         window_size: int = 4,
-        shuffle: bool = True,
         min_length: int = 1,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         elapsed_epochs: int = 0,
-        dense_nodes_mapping: Dict[int, int] = None
+        support_mirror_strategy: bool = False,
+        seed: int = 42,
+        dense_node_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -40,13 +42,13 @@ class AbstractNode2VecSequence(Sequence):
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
-            Wthever to shuffle the vectors.
+            Whether to shuffle the vectors.
         min_length: int = 1,
             Minimum length of the walks.
             In directed graphs, when traps are present, walks shorter than
             this amount are removed. This should be two times the window_size.
         return_weight: float = 1.0,
-            Weight on the probability of returning to node coming from
+            Weight on the probability of returning to the same node the walk just came from
             Having this higher tends the walks to be
             more like a Breadth-First Search.
             Having this very high  (> 2) makes search very local.
@@ -69,27 +71,37 @@ class AbstractNode2VecSequence(Sequence):
             multigraphs, otherwise it has no impact.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        dense_nodes_mapping: Dict[int, int] = None,
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
+        dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
-            This object can be created using the method available from graph
-            called `get_dense_nodes_mapping` that returns a mapping from
+            This object can be created using the method (available from the
+            graph object created using EnsmallenGraph)
+            called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
         """
         self._graph = graph
         self._walk_length = walk_length
         self._iterations = iterations
-        self._window_size = window_size
-        self._shuffle = shuffle
         self._min_length = min_length
         self._return_weight = return_weight
         self._explore_weight = explore_weight
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
-        self._dense_nodes_mapping = dense_nodes_mapping
+        self._dense_node_mapping = dense_node_mapping
 
         super().__init__(
-            samples_number=self._graph.get_not_trap_nodes_number(),
             batch_size=batch_size,
-            elapsed_epochs=elapsed_epochs
+            sample_number=self._graph.get_source_nodes_number(),
+            window_size=window_size,
+            elapsed_epochs=elapsed_epochs,
+            support_mirror_strategy=support_mirror_strategy,
+            random_state=seed
         )

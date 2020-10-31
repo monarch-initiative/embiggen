@@ -1,12 +1,14 @@
+"""Abstract Keras Model object for embedding models."""
 from typing import Union, List
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras.models import Model   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 
 
 class Embedder:
+    """Abstract Keras Model object for embedding models."""
 
     EMBEDDING_LAYER_NAME = "words_embedding"
 
@@ -71,21 +73,34 @@ class Embedder:
         for layer, weights in zip(self._model.layers, self._model.weights):
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 return weights.numpy()
+        return None
 
-    def save_embedding(self, path: str, nodes_names: List[str]):
-        """Save nodes embedding using given index names.
+    def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
+        """Return terms embedding using given index names.
 
         Parameters
         -----------------------------
         path: str,
             Save embedding as csv to given path.
-        nodes_names: List[str],
-            List of nodes to be used as index names.
+        term_names: List[str],
+            List of terms to be used as index names.
         """
-        pd.DataFrame(
+        return pd.DataFrame(
             self.embedding,
-            index=nodes_names
-        ).to_csv(path, header=False)
+            index=term_names
+        )
+
+    def save_embedding(self, path: str, term_names: List[str]):
+        """Save terms embedding using given index names.
+
+        Parameters
+        -----------------------------
+        path: str,
+            Save embedding as csv to given path.
+        term_names: List[str],
+            List of terms to be used as index names.
+        """
+        self.get_embedding_dataframe(term_names).to_csv(path, header=False)
 
     @property
     def name(self) -> str:
