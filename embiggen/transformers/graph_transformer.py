@@ -57,7 +57,7 @@ class GraphTransformer:
         Numpy array of embeddings.
         """
         if isinstance(graph, EnsmallenGraph):
-            graph = graph.get_edge_names()
+            graph = graph.get_edge_names(directed=False)
         if isinstance(graph, List):
             graph = np.array(graph)
         if isinstance(graph, np.ndarray):
