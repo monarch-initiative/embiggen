@@ -128,7 +128,7 @@ class GraphVisualizations:
         """
         self._node_transformer.fit(embedding)
         self._node_embedding = self.tsne(
-            self._node_transformer.transform(graph.get_nodes_reverse_mapping()),
+            self._node_transformer.transform(graph.get_node_names()),
             **kwargs
         )
 
@@ -418,7 +418,7 @@ class GraphVisualizations:
         )[:k]))[0])
 
         edge_types = graph.get_edge_types()
-        edge_labels = graph.get_edge_types_reverse_mapping()
+        edge_labels = graph.get_edge_type_names()
 
         for i, edge_type in enumerate(edge_types):
             if edge_type not in top_edge_types:

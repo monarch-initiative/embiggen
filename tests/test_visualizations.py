@@ -22,7 +22,7 @@ class TestGraphVisualization(TestCase):
         self._embedding = GloVe(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
-        ).get_embedding_dataframe(self._graph.get_nodes_reverse_mapping())
+        ).get_embedding_dataframe(self._graph.get_node_names())
         self._visualization = GraphVisualizations()
 
     def test_graph_visualization(self):

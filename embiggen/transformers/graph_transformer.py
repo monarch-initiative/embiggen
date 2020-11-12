@@ -1,4 +1,5 @@
 """GraphTransformer class to convert graphs to edge embeddings."""
+from typing import List, Union
 import pandas as pd
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -37,13 +38,14 @@ class GraphTransformer:
         """
         self._transformer.fit(embedding)
 
-    def transform(self, graph: EnsmallenGraph) -> np.ndarray:
+    def transform(self, graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]]) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        graph: EnsmallenGraph,
+        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]],
             The graph whose edges are to embed.
+            It can either be an EnsmallenGraph or a list of lists of edges.
 
         Raises
         --------------------------
@@ -54,4 +56,11 @@ class GraphTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        return self._transformer.transform(graph.get_source_names(), graph.get_destination_names())
+        if isinstance(graph, EnsmallenGraph):
+            graph = graph.get_edge_names()
+        if isinstance(graph, List):
+            graph = np.array(graph)
+        if isinstance(graph, np.ndarray):
+            sources = graph[:, 0]
+            destinations = graph[:, 1]
+        return self._transformer.transform(sources, destinations)

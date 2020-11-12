@@ -16,7 +16,7 @@ class TestLinkPredictionSequence(TestNodeSequences):
             embedding=GloVe(
                 self._graph.get_nodes_number(),
                 self._embedding_size
-            ).get_embedding_dataframe(self._graph.get_nodes_reverse_mapping()),
+            ).get_embedding_dataframe(self._graph.get_node_names()),
             batch_size=self._batch_size
         )
 

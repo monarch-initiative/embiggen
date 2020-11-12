@@ -21,7 +21,7 @@ class TestGraphTransformer(TestCase):
         self._embedding = GloVe(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
-        ).get_embedding_dataframe(self._graph.get_nodes_reverse_mapping())
+        ).get_embedding_dataframe(self._graph.get_node_names())
 
     def test_graph_transformer(self):
         """Test to verify that graph transformation returns expected shape."""

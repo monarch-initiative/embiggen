@@ -19,7 +19,7 @@ class TestNodeTransformer(TestCase):
             directed=False,
             weights_column="weight"
         )
-        self._node_names = self._graph.get_nodes_reverse_mapping()
+        self._node_names = self._graph.get_node_names()
         self._embedding = GloVe(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size

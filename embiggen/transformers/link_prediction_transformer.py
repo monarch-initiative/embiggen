@@ -1,5 +1,5 @@
 """LinkPredictionTransformer class to convert graphs to edge embeddings to execute link prediction."""
-from typing import Tuple
+from typing import Tuple, Union, List
 import pandas as pd
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -40,16 +40,22 @@ class LinkPredictionTransformer:
 
     def transform(
         self,
-        positive_graph: EnsmallenGraph,
-        negative_graph: EnsmallenGraph,
+        positive_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]],
+        negative_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]],
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        graph: EnsmallenGraph,
-            The graph whose edges are to embed.
+        positive_graph: Union[EnsmallenGraph, List[List[str]]],
+            The graph whose edges are to be embedded and labeled as positives.
+            It can either be an EnsmallenGraph or a list of lists of edges.
+        negative_graph: Union[EnsmallenGraph, List[List[str]]],
+            The graph whose edges are to be embedded and labeled as positives.
+            It can either be an EnsmallenGraph or a list of lists of edges.
+        random_state: int = 42,
+            The random state to use to shuffle the labels.
 
         Raises
         --------------------------
@@ -60,13 +66,15 @@ class LinkPredictionTransformer:
         --------------------------
         Tuple with X and y values.
         """
+        positive_edge_embedding = self._transformer.transform(positive_graph)
+        negative_edge_embedding = self._transformer.transform(negative_graph)
         edge_embeddings = np.vstack([
-            self._transformer.transform(positive_graph),
-            self._transformer.transform(negative_graph),
+            positive_edge_embedding,
+            negative_edge_embedding
         ])
         edge_labels = np.concatenate([
-            np.ones(positive_graph.get_edges_number()),
-            np.zeros(negative_graph.get_edges_number())
+            np.ones(positive_edge_embedding.shape[0]),
+            np.zeros(negative_edge_embedding.shape[0])
         ])
         numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
             seed=random_state

@@ -80,7 +80,7 @@ class LinkPredictionSequence(Sequence):
         self._transformer.fit(embedding)
         self._support_mirror_strategy = support_mirror_strategy
         self._seed = seed
-        self._nodes = np.array(self._graph.get_nodes_reverse_mapping())
+        self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch,
             batch_size=batch_size,
