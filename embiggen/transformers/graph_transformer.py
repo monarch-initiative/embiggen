@@ -38,14 +38,19 @@ class GraphTransformer:
         """
         self._transformer.fit(embedding)
 
-    def transform(self, graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]]) -> np.ndarray:
+    def transform(self, graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]], aligned_node_mapping: bool = False) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]]],
+        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
             It can either be an EnsmallenGraph or a list of lists of edges.
+        aligned_node_mapping: bool = False,
+            If this value is true, then the method will accept
+            a list of integers, this integers are REQUIRED to have
+            a mapping.
+            This is a "Dangerous" operation and might cause bugs.
 
         Raises
         --------------------------
@@ -57,10 +62,13 @@ class GraphTransformer:
         Numpy array of embeddings.
         """
         if isinstance(graph, EnsmallenGraph):
-            graph = graph.get_edge_names(directed=False)
+            if aligned_node_mapping:
+                graph = graph.get_edges(directed=False)
+            else:
+                graph = graph.get_edge_names(directed=False)
         if isinstance(graph, List):
             graph = np.array(graph)
         if isinstance(graph, np.ndarray):
             sources = graph[:, 0]
             destinations = graph[:, 1]
-        return self._transformer.transform(sources, destinations)
+        return self._transformer.transform(sources, destinations, aligned_node_mapping)
