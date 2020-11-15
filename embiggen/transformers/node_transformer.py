@@ -39,10 +39,10 @@ class NodeTransformer:
             aligned_node_mapping is setted, then this methods also accepts
             a list of ints.
         aligned_node_mapping: bool = False,
-            If this value is true, then the method will accept
-            a list of integers, this integers are REQUIRED to have
-            a mapping.
-            This is a "Dangerous" operation and might cause bugs.
+            This parameter specifies wheter the mapping of the embeddings nodes
+            matches the internal node mapping of the given graph.
+            If these two mappings do not match, the generated edge embedding
+            will be meaningless.
 
         Raises
         --------------------------
