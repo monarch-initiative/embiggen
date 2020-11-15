@@ -30,5 +30,5 @@ class TestGraphTransformer(TestCase):
         embedded_nodes = self._transfomer.transform(self._graph)
         self.assertEqual(
             embedded_nodes.shape,
-            (self._graph.get_edges_number(), self._embedding_size)
+            (self._graph.get_undirected_edges_number(), self._embedding_size)
         )
