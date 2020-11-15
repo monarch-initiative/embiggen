@@ -24,6 +24,8 @@ class NodeTransformer:
             the same node set. It is possible to remap such graphs using
             Ensmallen's remap method but it may be less intuitive to users.
         """
+        if not isinstance(embedding, pd.DataFrame):
+            raise ValueError("Given embedding is not a pandas DataFrame.")
         self._embedding = embedding
 
     def transform(self, nodes: List[str]) -> np.ndarray:
