@@ -1,5 +1,5 @@
 """NodeTransformer class to convert nodes to edge embeddings."""
-from typing import List
+from typing import List, Union
 import numpy as np
 import pandas as pd
 
@@ -28,13 +28,21 @@ class NodeTransformer:
             raise ValueError("Given embedding is not a pandas DataFrame.")
         self._embedding = embedding
 
-    def transform(self, nodes: List[str]) -> np.ndarray:
+    def transform(self, nodes: Union[List[str], List[int]], aligned_node_mapping: bool = False) -> np.ndarray:
         """Return embeddings from given node.
 
         Parameters
         --------------------------
-        nodes: List[str],
+        nodes: Union[List[str], List[int]],
             List of nodes whose embedding is to be returned.
+            By default this should be a list of strings, if the
+            aligned_node_mapping is setted, then this methods also accepts
+            a list of ints.
+        aligned_node_mapping: bool = False,
+            If this value is true, then the method will accept
+            a list of integers, this integers are REQUIRED to have
+            a mapping.
+            This is a "Dangerous" operation and might cause bugs.
 
         Raises
         --------------------------
@@ -49,4 +57,8 @@ class NodeTransformer:
             raise ValueError(
                 "Transformer was not fitted yet."
             )
+
+        if aligned_node_mapping:
+            return self._embedding.values[nodes]
+
         return self._embedding.loc[nodes].values

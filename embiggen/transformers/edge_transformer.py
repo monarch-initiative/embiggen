@@ -3,55 +3,18 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from numba import njit, prange
 
 from .node_transformer import NodeTransformer
-
-
-@njit(parallel=True)
-def numba_hadamard(sources: np.ndarray, destinations: np.ndarray) -> np.ndarray:
-    """Execute hadamard in parallel within numba."""
-    results = np.empty_like(sources, dtype=np.float_)
-    for i in prange(sources.shape[0]):  # pylint: disable=not-an-iterable
-        results[i] = np.multiply(sources[i], destinations[i])
-    return results
-
-
-@njit(parallel=True)
-def numba_average(sources: np.ndarray, destinations: np.ndarray) -> np.ndarray:
-    """Execute average in parallel within numba."""
-    results = np.empty_like(sources, dtype=np.float_)
-    for i in prange(sources.shape[0]): # pylint: disable=not-an-iterable
-        results[i] = (sources[i] + destinations[i]) / 2
-    return results
-
-
-@njit(parallel=True)
-def numba_weightedL1(sources: np.ndarray, destinations: np.ndarray) -> np.ndarray:
-    """Execute weightedL1 in parallel within numba."""
-    results = np.empty_like(sources, dtype=np.float_)
-    for i in prange(sources.shape[0]): # pylint: disable=not-an-iterable
-        results[i] = np.abs(sources[i] - destinations[i])
-    return results
-
-
-@njit(parallel=True)
-def numba_weightedL2(sources: np.ndarray, destinations: np.ndarray) -> np.ndarray:
-    """Execute weightedL2 in parallel within numba."""
-    results = np.empty_like(sources, dtype=np.float_)
-    for i in prange(sources.shape[0]): # pylint: disable=not-an-iterable
-        results[i] = (sources[i], destinations[i])**2
-    return results
 
 
 class EdgeTransformer:
     """EdgeTransformer class to convert edges to edge embeddings."""
 
     methods = {
-        "hadamard": numba_hadamard,
-        "average": numba_average,
-        "weightedL1": numba_weightedL1,
-        "weightedL2": numba_weightedL2
+        "hadamard": np.multiply,
+        "average": lambda x1, x2: (x1 + x2) / 2,
+        "weightedL1": lambda x1, x2: np.abs(x1 - x2),
+        "weightedL2": lambda x1, x2: (x1 - x2)**2   
     }
 
     def __init__(self, method: str = "hadamard"):
@@ -90,7 +53,7 @@ class EdgeTransformer:
         """
         self._transformer.fit(embedding)
 
-    def transform(self, sources: List[str], destinations: List[str]) -> np.ndarray:
+    def transform(self, sources: List[str], destinations: List[str], aligned_node_mapping: bool = False) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
         Parameters
@@ -99,6 +62,11 @@ class EdgeTransformer:
             List of source nodes whose embedding is to be returned.
         destinations:List[str],
             List of destination nodes whose embedding is to be returned.
+        aligned_node_mapping: bool = False,
+            If this value is true, then the method will accept
+            a list of integers, this integers are REQUIRED to have
+            a mapping.
+            This is a "Dangerous" operation and might cause bugs.
 
         Raises
         --------------------------
@@ -110,6 +78,6 @@ class EdgeTransformer:
         Numpy array of embeddings.
         """
         return self._method(
-            self._transformer.transform(sources),
-            self._transformer.transform(destinations),
+            self._transformer.transform(sources, aligned_node_mapping),
+            self._transformer.transform(destinations, aligned_node_mapping),
         )
