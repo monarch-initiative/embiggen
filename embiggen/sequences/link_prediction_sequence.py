@@ -57,7 +57,6 @@ class LinkPredictionSequence(Sequence):
             in the EnsmallenGraph package.
         batches_per_epoch: bool = 2**8,
             Number of batches per epoch.
-            If the self loops must be filtered away from the result.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         support_mirror_strategy: bool = False,
@@ -86,7 +85,7 @@ class LinkPredictionSequence(Sequence):
         self._aligned_node_mapping = aligned_node_mapping
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
-            sample_number=batches_per_epoch,
+            sample_number=batches_per_epoch*batch_size,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )
