@@ -19,6 +19,7 @@ class LinkPredictionSequence(Sequence):
         method: Union[str, Callable] = "hadamard",
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
+        avoid_false_negatives: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
@@ -50,6 +51,11 @@ class LinkPredictionSequence(Sequence):
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples equal
             to 1.0, there will be 64 positives and 64 negatives.
+        avoid_false_negatives: bool = False,
+            Wether to filter out false negatives.
+            By default False.
+            Enabling this will slow down the batch generation while (likely) not
+            introducing any significant gain to the model performance.
         graph_to_avoid: EnsmallenGraph = None,
             Graph to avoid when generating the links.
             This can be the validation component of the graph, for example.
@@ -77,6 +83,7 @@ class LinkPredictionSequence(Sequence):
         """
         self._graph = graph
         self._negative_samples = negative_samples
+        self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
         self._transformer = EdgeTransformer(method)
         self._transformer.fit(embedding)
@@ -106,6 +113,7 @@ class LinkPredictionSequence(Sequence):
             self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
             negative_samples=self._negative_samples,
+            avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
         if self._aligned_node_mapping:
