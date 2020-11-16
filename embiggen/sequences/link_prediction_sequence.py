@@ -21,7 +21,6 @@ class LinkPredictionSequence(Sequence):
         negative_samples: float = 1.0,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
-        avoid_self_loops: bool = False,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         seed: int = 42
@@ -57,7 +56,6 @@ class LinkPredictionSequence(Sequence):
             in the EnsmallenGraph package.
         batches_per_epoch: bool = 2**8,
             Number of batches per epoch.
-        avoid_self_loops: bool = False,
             If the self loops must be filtered away from the result.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
@@ -75,7 +73,6 @@ class LinkPredictionSequence(Sequence):
         self._graph = graph
         self._negative_samples = negative_samples
         self._graph_to_avoid = graph_to_avoid
-        self._avoid_self_loops = avoid_self_loops
         self._transformer = EdgeTransformer(method)
         self._transformer.fit(embedding)
         self._support_mirror_strategy = support_mirror_strategy
