@@ -23,6 +23,7 @@ class LinkPredictionSequence(Sequence):
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
+        aligned_node_mapping: bool = False,
         seed: int = 42
     ):
         """Create new LinkPredictionSequence object.
@@ -67,6 +68,11 @@ class LinkPredictionSequence(Sequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        aligned_node_mapping: bool = False,
+            This parameter specifies wheter the mapping of the embeddings nodes
+            matches the internal node mapping of the given graph.
+            If these two mappings do not match, the generated edge embedding
+            will be meaningless.
         seed: int = 42,
             The seed to use to make extraction reproducible.
         """
@@ -77,6 +83,7 @@ class LinkPredictionSequence(Sequence):
         self._transformer.fit(embedding)
         self._support_mirror_strategy = support_mirror_strategy
         self._seed = seed
+        self._aligned_node_mapping = aligned_node_mapping
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch,
@@ -100,12 +107,21 @@ class LinkPredictionSequence(Sequence):
             self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
             negative_samples=self._negative_samples,
-            graph_to_avoid=self._graph_to_avoid
+            graph_to_avoid=self._graph_to_avoid,
         )
-        edge_embeddings = self._transformer.transform(
-            self._nodes[edges[:, 0]],
-            self._nodes[edges[:, 1]]
-        )
+        if self._aligned_node_mapping:
+            edge_embeddings = self._transformer.transform(
+                edges[:, 0],
+                edges[:, 1],
+                aligned_node_mapping=True
+            )
+        else:
+            edge_embeddings = self._transformer.transform(
+                self._nodes[edges[:, 0]],
+                self._nodes[edges[:, 1]],
+                aligned_node_mapping=False
+            )
+
         if self._support_mirror_strategy:
             return edge_embeddings.astype(float), labels.astype(float)
         return edge_embeddings, labels
