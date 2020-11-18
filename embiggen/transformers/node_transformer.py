@@ -59,6 +59,6 @@ class NodeTransformer:
             )
 
         if aligned_node_mapping:
-            return self._embedding.values[nodes]
+            return self._embedding.to_numpy()[nodes]
 
-        return self._embedding.loc[nodes].values
+        return self._embedding.loc[nodes].to_numpy()

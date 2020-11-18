@@ -13,6 +13,7 @@ class TestNodeSequences(TestCase):
             directed=False,
             weights_column="weight"
         )
+        self._graph.enable()
         self._weights_path = "weights_path.h5"
         self._embedding_path = "embedding.npy"
         self._sequence = None

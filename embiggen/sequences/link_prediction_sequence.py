@@ -6,7 +6,7 @@ import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
-from ..transformers import EdgeTransformer
+from ..transformers import GraphTransformer
 
 
 class LinkPredictionSequence(Sequence):
@@ -85,7 +85,7 @@ class LinkPredictionSequence(Sequence):
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
-        self._transformer = EdgeTransformer(method)
+        self._transformer = GraphTransformer(method)
         self._transformer.fit(embedding)
         self._support_mirror_strategy = support_mirror_strategy
         self._seed = seed
@@ -118,14 +118,12 @@ class LinkPredictionSequence(Sequence):
         )
         if self._aligned_node_mapping:
             edge_embeddings = self._transformer.transform(
-                edges[:, 0],
-                edges[:, 1],
+                edges,
                 aligned_node_mapping=True
             )
         else:
             edge_embeddings = self._transformer.transform(
-                self._nodes[edges[:, 0]],
-                self._nodes[edges[:, 1]],
+                self._nodes[edges],
                 aligned_node_mapping=False
             )
 

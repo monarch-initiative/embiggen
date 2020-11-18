@@ -99,7 +99,7 @@ class AbstractNode2VecSequence(AbstractSequence):
 
         super().__init__(
             batch_size=batch_size,
-            sample_number=self._graph.get_source_nodes_number(),
+            sample_number=self._graph.get_unique_sources_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,

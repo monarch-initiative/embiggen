@@ -14,7 +14,7 @@ class EdgeTransformer:
         "hadamard": np.multiply,
         "average": lambda x1, x2: (x1 + x2) / 2,
         "weightedL1": lambda x1, x2: np.abs(x1 - x2),
-        "weightedL2": lambda x1, x2: (x1 - x2)**2   
+        "weightedL2": lambda x1, x2: (x1 - x2).pow(2)
     }
 
     def __init__(self, method: str = "hadamard"):
