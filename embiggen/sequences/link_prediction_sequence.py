@@ -6,8 +6,6 @@ import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
-from ..transformers import GraphTransformer
-
 
 class LinkPredictionSequence(Sequence):
     """Keras Sequence for running Neural Network on graph link prediction."""
@@ -15,15 +13,14 @@ class LinkPredictionSequence(Sequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        embedding: pd.DataFrame,
-        method: Union[str, Callable] = "hadamard",
+        embedding: np.ndarray,
+        method: Union[str, Callable] = "Hadamard",
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
         avoid_false_negatives: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
         aligned_node_mapping: bool = False,
         seed: int = 42
     ):
@@ -33,18 +30,12 @@ class LinkPredictionSequence(Sequence):
         --------------------------------
         graph: EnsmallenGraph,
             The graph from which to sample the edges.
-        embedding: pd.DataFrame,
-            The embedding of the nodes.
-            This is a pandas DataFrame and NOT a numpy array because we need
-            to be able to remap correctly the vector embeddings in case of
-            graphs that do not respect the same internal node mapping but have
-            the same node set. It is possible to remap such graphs using
-            Ensmallen's remap method but it may be less intuitive to users.
-        method: str = "hadamard",
+        embedding: np.ndarray,
+            This is a numpy array and NOT a pandas DataFrame because we need
+            to quickly load the embedding for the nodes and a DataFrame is too slow.
+        method: str = "Hadamard",
             Method to use for the embedding.
-            Can either be 'hadamard', 'average', 'weightedL1', 'weightedL2' or
-            a custom lambda that receives two numpy arrays with the nodes
-            embedding and returns the edge embedding.
+            Can either be 'Hadamard', 'Average', 'L1', 'AbsoluteL1' or 'L2'.
         batch_size: int = 2**10,
             The batch size to use.
         negative_samples: float = 1.0,
@@ -65,14 +56,6 @@ class LinkPredictionSequence(Sequence):
             Number of batches per epoch.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         aligned_node_mapping: bool = False,
             This parameter specifies wheter the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
@@ -82,12 +65,11 @@ class LinkPredictionSequence(Sequence):
             The seed to use to make extraction reproducible.
         """
         self._graph = graph
+        self._graph.set_embedding(embedding)
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
-        self._transformer = GraphTransformer(method)
-        self._transformer.fit(embedding)
-        self._support_mirror_strategy = support_mirror_strategy
+        self._method = method
         self._seed = seed
         self._aligned_node_mapping = aligned_node_mapping
         self._nodes = np.array(self._graph.get_node_names())
@@ -109,24 +91,11 @@ class LinkPredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        edges, labels = self._graph.link_prediction(
+        return self._graph.link_prediction(
             self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
+            method=self._method,
             negative_samples=self._negative_samples,
             avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
-        if self._aligned_node_mapping:
-            edge_embeddings = self._transformer.transform(
-                edges,
-                aligned_node_mapping=True
-            )
-        else:
-            edge_embeddings = self._transformer.transform(
-                self._nodes[edges],
-                aligned_node_mapping=False
-            )
-
-        if self._support_mirror_strategy:
-            return edge_embeddings.astype(float), labels.astype(float)
-        return edge_embeddings, labels

@@ -23,13 +23,14 @@ class GraphVisualizations:
         alpha=0.7
     )
 
-    def __init__(self, method: str = "hadamard"):
+    def __init__(self, method: str = "Hadamard"):
         """Create new GraphVisualizations object.
 
         Parameters
         -----------------------
-        method: str = "hadamard",
+        method: str = "Hadamard",
             Edge embedding method.
+            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', or 'L2'.
         """
         self._graph_transformer = GraphTransformer(method=method)
         self._node_transformer = NodeTransformer()

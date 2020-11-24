@@ -10,16 +10,14 @@ from .edge_transformer import EdgeTransformer
 class GraphTransformer:
     """GraphTransformer class to convert graphs to edge embeddings."""
 
-    def __init__(self, method: str = "hadamard"):
+    def __init__(self, method: str = "Hadamard"):
         """Create new GraphTransformer object.
 
         Parameters
         ------------------------
         method: str = "hadamard",
             Method to use for the embedding.
-            Can either be 'hadamard', 'average', 'weightedL1', 'weightedL2' or
-            a custom lambda that receives two numpy arrays with the nodes
-            embedding and returns the edge embedding.
+            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', or 'L2'.
         """
         self._transformer = EdgeTransformer(method=method)
 

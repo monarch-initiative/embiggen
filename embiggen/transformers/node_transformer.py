@@ -10,6 +10,7 @@ class NodeTransformer:
     def __init__(self):
         """Create new NodeTransformer object."""
         self._embedding = None
+        self._embedding_numpy = None
 
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
@@ -27,6 +28,7 @@ class NodeTransformer:
         if not isinstance(embedding, pd.DataFrame):
             raise ValueError("Given embedding is not a pandas DataFrame.")
         self._embedding = embedding
+        self._embedding_numpy = embedding.to_numpy()
 
     def transform(self, nodes: Union[List[str], List[int]], aligned_node_mapping: bool = False) -> np.ndarray:
         """Return embeddings from given node.
@@ -59,6 +61,6 @@ class NodeTransformer:
             )
 
         if aligned_node_mapping:
-            return self._embedding.to_numpy()[nodes]
+            return self._embedding_numpy[nodes]
 
         return self._embedding.loc[nodes].to_numpy()

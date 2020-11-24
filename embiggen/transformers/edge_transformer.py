@@ -11,22 +11,22 @@ class EdgeTransformer:
     """EdgeTransformer class to convert edges to edge embeddings."""
 
     methods = {
-        "hadamard": np.multiply,
-        "average": lambda x1, x2: (x1 + x2) / 2,
-        "weightedL1": lambda x1, x2: np.abs(x1 - x2),
-        "weightedL2": lambda x1, x2: (x1 - x2).pow(2)
+        "Hadamard": lambda x1, x2: np.multiply(x1, x2, out=x1),
+        "Sum": lambda x1, x2: np.add(x1, x2, out=x1),
+        "Average": lambda x1, x2: np.divide(np.add(x1, x2, out=x1), 2, out=x1),
+        "L1": lambda x1, x2: np.subtract(x1, x2, out=x1),
+        "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
+        "L2": lambda x1, x2: np.pow(np.subtract(x1, x2, out=x1), out=x1)
     }
 
-    def __init__(self, method: str = "hadamard"):
+    def __init__(self, method: str = "Hadamard"):
         """Create new EdgeTransformer object.
 
         Parameters
         ------------------------
-        method: str = "hadamard",
+        method: str = "Hadamard",
             Method to use for the embedding.
-            Can either be 'hadamard', 'average', 'weightedL1', 'weightedL2' or
-            a custom lambda that receives two numpy arrays with the nodes
-            embedding and returns the edge embedding.
+            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', or 'L2'.
         """
         if isinstance(method, str) and method not in EdgeTransformer.methods:
             raise ValueError((
@@ -68,6 +68,7 @@ class EdgeTransformer:
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
 
+
         Raises
         --------------------------
         ValueError,
@@ -78,6 +79,12 @@ class EdgeTransformer:
         Numpy array of embeddings.
         """
         return self._method(
-            self._transformer.transform(sources, aligned_node_mapping),
-            self._transformer.transform(destinations, aligned_node_mapping),
+            self._transformer.transform(
+                sources,
+                aligned_node_mapping
+            ),
+            self._transformer.transform(
+                destinations,
+                aligned_node_mapping
+            )
         )
