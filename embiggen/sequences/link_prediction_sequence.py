@@ -2,7 +2,6 @@
 from typing import Callable, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
