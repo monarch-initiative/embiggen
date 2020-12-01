@@ -21,7 +21,6 @@ class LinkPredictionSequence(Sequence):
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
-        aligned_node_mapping: bool = False,
         seed: int = 42
     ):
         """Create new LinkPredictionSequence object.
@@ -56,11 +55,6 @@ class LinkPredictionSequence(Sequence):
             Number of batches per epoch.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
         seed: int = 42,
             The seed to use to make extraction reproducible.
         """
@@ -71,7 +65,6 @@ class LinkPredictionSequence(Sequence):
         self._graph_to_avoid = graph_to_avoid
         self._method = method
         self._seed = seed
-        self._aligned_node_mapping = aligned_node_mapping
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch*batch_size,
