@@ -19,6 +19,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
+        max_neighbours: int = None,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         seed: int = 42,
@@ -64,6 +65,9 @@ class AbstractNode2VecSequence(AbstractSequence):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
+        max_neighbours: int = None,
+            Number of maximum neighbours to consider when using approximated walks.
+            By default, None, we execute exact random walks.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         support_mirror_strategy: bool = False,
@@ -87,6 +91,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         self._iterations = iterations
         self._return_weight = return_weight
         self._explore_weight = explore_weight
+        self._max_neighbours = max_neighbours
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
