@@ -17,7 +17,7 @@ class GraphTransformer:
         ------------------------
         method: str = "hadamard",
             Method to use for the embedding.
-            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', or 'L2'.
+            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         """
         self._transformer = EdgeTransformer(method=method)
 

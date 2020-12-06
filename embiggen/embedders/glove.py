@@ -84,7 +84,7 @@ class GloVe(Embedder):
             for input_layer in input_layers
         ])
 
-        # Creating the biases laye
+        # Creating the biases layer
         biases = [
             Embedding(
                 self._vocabulary_size,
