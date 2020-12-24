@@ -35,7 +35,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.6.0',
+    version='0.7.0',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
@@ -51,7 +51,7 @@ setup(
         "nltk",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20"
-        "ensmallen_graph>=0.4.4",
+        "ensmallen_graph>=0.5.2",
     ],
     tests_require=test_deps,
     include_package_data=True,
