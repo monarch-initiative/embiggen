@@ -49,7 +49,7 @@ setup(
         'numpy',
         'pandas',
         "nltk",
-        'tensorflow>=2.0.0',
+        'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20"
         "ensmallen_graph>=0.4.4",
     ],

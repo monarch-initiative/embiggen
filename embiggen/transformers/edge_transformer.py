@@ -16,7 +16,7 @@ class EdgeTransformer:
         "Average": lambda x1, x2: np.divide(np.add(x1, x2, out=x1), 2, out=x1),
         "L1": lambda x1, x2: np.subtract(x1, x2, out=x1),
         "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
-        "L2": lambda x1, x2: np.pow(np.subtract(x1, x2, out=x1), out=x1),
+        "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
         "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
     }
 
@@ -61,14 +61,13 @@ class EdgeTransformer:
         --------------------------
         sources: List[str],
             List of source nodes whose embedding is to be returned.
-        destinations:List[str],
+        destinations: List[str],
             List of destination nodes whose embedding is to be returned.
         aligned_node_mapping: bool = False,
             This parameter specifies wheter the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-
 
         Raises
         --------------------------

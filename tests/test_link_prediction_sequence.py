@@ -29,7 +29,7 @@ class TestLinkPredictionSequence(TestNodeSequences):
 
     def test_illegal_arguments(self):
         with pytest.raises(ValueError):
-            LinkPredictionSequence(
+            _ = LinkPredictionSequence(
                 self._graph,
                 embedding=GloVe(
                     self._graph.get_nodes_number(),

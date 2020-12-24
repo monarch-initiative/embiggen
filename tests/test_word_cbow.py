@@ -1,5 +1,6 @@
 """Test to validate that the model CBOW works properly with words sequences."""
 from embiggen import CBOW
+import numpy as np
 from .test_word2vec_sequences import TestWord2VecSequences
 
 
@@ -29,3 +30,5 @@ class TestWordCBOW(TestWord2VecSequences):
             self._model.embedding.shape,
             (self._transformer.vocabulary_size, self._embedding_size)
         )
+
+        self.assertFalse(np.isnan(self._model.embedding).any())

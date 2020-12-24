@@ -1,5 +1,6 @@
 """Uni test to test that model SkipGram works properly with words sequences."""
 from embiggen import SkipGram
+import numpy as np
 from .test_word2vec_sequences import TestWord2VecSequences
 
 
@@ -24,6 +25,8 @@ class TestWordSkipGram(TestWord2VecSequences):
             epochs=2,
             verbose=False
         )
+
+        self.assertFalse(np.isnan(self._model.embedding).any())
 
         self.assertEqual(
             self._model.embedding.shape,
