@@ -156,7 +156,7 @@ class CorpusTransformer:
         """
         processes = min(cpu_count(), len(texts))
         chunks_number = processes*2
-        chunk_size = len(texts) // chunks_number
+        chunk_size = max(len(texts) // chunks_number, 1)
         with Pool(processes) as p:
             all_tokens = [
                 line
@@ -232,7 +232,9 @@ class CorpusTransformer:
             }
             tokens_list = self.parse_tokens_for_low_frequency(tokens_list)
 
-        self._tokenizer = Tokenizer()
+        self._tokenizer = Tokenizer(
+            lower=self._to_lower_case
+        )
         self._tokenizer.fit_on_texts((
             " ".join(tokens)
             for tokens in tqdm(
@@ -247,6 +249,11 @@ class CorpusTransformer:
     def vocabulary_size(self) -> int:
         """Return number of different terms."""
         return len(self._tokenizer.word_counts)
+
+    @property
+    def vocabulary(self) -> int:
+        """Return number of different terms."""
+        return len(self._tokenizer.vo)
 
     def reverse_transform(self, sequences: np.ndarray) -> List[str]:
         """Reverse the sequence to texts.
@@ -302,4 +309,4 @@ class CorpusTransformer:
                 )
                 if len(tokens) >= self._min_sequence_length
             ))
-        ])
+        ], dtype=object)
