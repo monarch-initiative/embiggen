@@ -119,7 +119,7 @@ class CorpusTransformer:
             self._stemmer.stem(self.get_synonym(word))
             if self._stemmer is not None
             else self.get_synonym(word)
-            for word in word_tokenize(line.lower())
+            for word in word_tokenize(line.lower() if self._to_lower_case else line)
             if word not in self._stopwords and len(word) > self._min_word_length
         ]
 
