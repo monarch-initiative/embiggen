@@ -68,6 +68,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         max_neighbours: int = None,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
+            This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         support_mirror_strategy: bool = False,
