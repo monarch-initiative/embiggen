@@ -24,6 +24,7 @@ class CorpusTransformer:
         apply_stemming: bool = True,
         remove_stop_words: bool = True,
         remove_punctuation: bool = True,
+        remove_digits: bool = False,
         extra_stop_words: Set[str] = None,
         min_word_length: int = 2,
         min_sequence_length: int = 0,
@@ -53,6 +54,8 @@ class CorpusTransformer:
             as defined from NLTK for the given language.
         remove_punctuation: bool = True,
             Wether to remove punctuation, as defined from the string package.
+        remove_digits: bool = False,
+            Wether to remove words composed of only digits.
         extra_stop_words: Set[str] = None,
             The additional stop words to be removed.
         min_word_length: int = 2,
@@ -79,6 +82,7 @@ class CorpusTransformer:
             self._stopwords |= set(stopwords.words(language))
         if remove_punctuation:
             self._stopwords |= set(string.punctuation)
+        self._remove_digits = remove_digits
         self._min_word_length = min_word_length
         self._min_count = min_count
         self._max_count = max_count
@@ -120,7 +124,9 @@ class CorpusTransformer:
             if self._stemmer is not None
             else self.get_synonym(word)
             for word in word_tokenize(line.lower() if self._to_lower_case else line)
-            if word not in self._stopwords and len(word) > self._min_word_length
+            if word not in self._stopwords and
+               len(word) > self._min_word_length and
+               (not self._remove_digits or not word.isnumeric())
         ]
 
     def tokenize_lines(self, lines: List[str]) -> List[List[str]]:
