@@ -125,8 +125,8 @@ class CorpusTransformer:
             else self.get_synonym(word)
             for word in word_tokenize(line.lower() if self._to_lower_case else line)
             if word not in self._stopwords and
-               len(word) > self._min_word_length and
-               (not self._remove_digits or not word.isnumeric())
+            len(word) > self._min_word_length and
+            (not self._remove_digits or not word.isnumeric())
         ]
 
     def tokenize_lines(self, lines: List[str]) -> List[List[str]]:
@@ -255,11 +255,6 @@ class CorpusTransformer:
     def vocabulary_size(self) -> int:
         """Return number of different terms."""
         return len(self._tokenizer.word_counts)
-
-    @property
-    def vocabulary(self) -> int:
-        """Return number of different terms."""
-        return len(self._tokenizer.vo)
 
     def reverse_transform(self, sequences: np.ndarray) -> List[str]:
         """Reverse the sequence to texts.
