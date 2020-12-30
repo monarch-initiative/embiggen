@@ -221,7 +221,7 @@ class CorpusTransformer:
                 yield new_tokens
 
     def fit(self, texts: List[str]):
-        """Fit the trasformer.
+        """Fit the transformer.
 
         Parameters
         ----------------------------
