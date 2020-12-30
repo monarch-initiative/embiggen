@@ -16,7 +16,7 @@ class TestLinkPredictionSequence(TestNodeSequences):
             embedding=GloVe(
                 self._graph.get_nodes_number(),
                 self._embedding_size
-            ).embedding,
+            ).get_embedding_dataframe(self._graph.get_node_names()).to_numpy(),
             batch_size=self._batch_size
         )
 
@@ -29,11 +29,11 @@ class TestLinkPredictionSequence(TestNodeSequences):
 
     def test_illegal_arguments(self):
         with pytest.raises(ValueError):
-            LinkPredictionSequence(
+            _ = LinkPredictionSequence(
                 self._graph,
                 embedding=GloVe(
                     self._graph.get_nodes_number(),
                     10
                 ).embedding,
                 method="not supported"
-            )
+            )[0]

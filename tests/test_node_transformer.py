@@ -1,8 +1,8 @@
 """Unit test class to verfy that NodeTransformer object behaves correctly."""
 from unittest import TestCase
-import numpy as np
 import pytest
-from embiggen import NodeTransformer
+from embiggen import NodeTransformer, GloVe
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 
 
 class TestNodeTransformer(TestCase):
@@ -12,19 +12,25 @@ class TestNodeTransformer(TestCase):
         """Setup objects for running tests on NodeTransformer object."""
         self._embedding_size = 50
         self._nodes_number = 100
-        self._embedding = np.random.random((  # pylint: disable=no-member
-            self._nodes_number,
-            self._embedding_size
-        ))
+        self._graph: EnsmallenGraph = EnsmallenGraph.from_unsorted_csv(
+            edge_path=f"tests/data/small_ppi.tsv",
+            sources_column="subject",
+            destinations_column="object",
+            directed=False,
+            weights_column="weight"
+        )
+        self._node_names = self._graph.get_node_names()
+        self._embedding = GloVe(
+            vocabulary_size=self._graph.get_nodes_number(),
+            embedding_size=self._embedding_size
+        ).get_embedding_dataframe(self._node_names)
         self._transfomer = NodeTransformer()
 
     def test_node_transformer(self):
         """Test to verify that node transformation returns expected shape."""
         self._transfomer.fit(self._embedding)
         sample_number = 50
-        embedded_nodes = self._transfomer.transform(
-            np.random.randint(0, self._nodes_number, size=sample_number)
-        )
+        embedded_nodes = self._transfomer.transform(self._node_names[:sample_number])
         self.assertEqual(
             embedded_nodes.shape,
             (sample_number, self._embedding_size)

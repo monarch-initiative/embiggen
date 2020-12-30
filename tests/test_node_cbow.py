@@ -1,5 +1,6 @@
 """Test to validate that the model CBOW works properly with graph walks."""
 import os
+import numpy as np
 from embiggen import CBOW
 from .test_node2vec_sequence import TestNode2VecSequence
 
@@ -32,8 +33,10 @@ class TestNodeCBOW(TestNode2VecSequence):
             (self._graph.get_nodes_number(), self._embedding_size)
         )
 
+        self.assertFalse(np.isnan(self._model.embedding).any())
+
         self._model.save_weights(self._weights_path)
         self._model.load_weights(self._weights_path)
         self._model.save_embedding(
-            self._embedding_path, self._graph.get_nodes_reverse_mapping())
+            self._embedding_path, self._graph.get_node_names())
         os.remove(self._weights_path)

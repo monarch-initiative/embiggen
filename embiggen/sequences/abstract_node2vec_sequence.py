@@ -15,11 +15,11 @@ class AbstractNode2VecSequence(AbstractSequence):
         batch_size: int,
         iterations: int = 1,
         window_size: int = 4,
-        min_length: int = 1,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
+        max_neighbours: int = None,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         seed: int = 42,
@@ -43,10 +43,6 @@ class AbstractNode2VecSequence(AbstractSequence):
             On the borders the window size is trimmed.
         shuffle: bool = True,
             Whether to shuffle the vectors.
-        min_length: int = 1,
-            Minimum length of the walks.
-            In directed graphs, when traps are present, walks shorter than
-            this amount are removed. This should be two times the window_size.
         return_weight: float = 1.0,
             Weight on the probability of returning to the same node the walk just came from
             Having this higher tends the walks to be
@@ -69,6 +65,10 @@ class AbstractNode2VecSequence(AbstractSequence):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
+        max_neighbours: int = None,
+            Number of maximum neighbours to consider when using approximated walks.
+            By default, None, we execute exact random walks.
+            This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         support_mirror_strategy: bool = False,
@@ -90,16 +90,16 @@ class AbstractNode2VecSequence(AbstractSequence):
         self._graph = graph
         self._walk_length = walk_length
         self._iterations = iterations
-        self._min_length = min_length
         self._return_weight = return_weight
         self._explore_weight = explore_weight
+        self._max_neighbours = max_neighbours
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
 
         super().__init__(
             batch_size=batch_size,
-            sample_number=self._graph.get_source_nodes_number(),
+            sample_number=self._graph.get_unique_sources_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,

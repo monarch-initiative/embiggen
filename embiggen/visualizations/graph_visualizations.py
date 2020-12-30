@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -22,13 +23,14 @@ class GraphVisualizations:
         alpha=0.7
     )
 
-    def __init__(self, method: str = "hadamard"):
+    def __init__(self, method: str = "Hadamard"):
         """Create new GraphVisualizations object.
 
         Parameters
         -----------------------
-        method: str = "hadamard",
+        method: str = "Hadamard",
             Edge embedding method.
+            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         """
         self._graph_transformer = GraphTransformer(method=method)
         self._node_transformer = NodeTransformer()
@@ -111,8 +113,7 @@ class GraphVisualizations:
     def fit_transform_nodes(
         self,
         graph: EnsmallenGraph,
-        embedding: np.ndarray,
-        node_mapping: Dict[str, int],
+        embedding: pd.DataFrame,
         **kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
@@ -121,19 +122,14 @@ class GraphVisualizations:
         -------------------------
         graph: EnsmallenGraph,
             Graph from where to extract the nodes.
-        embedding: np.ndarray,
+        embedding: pd.DataFrame,
             Embedding obtained from SkipGram, CBOW or GloVe.
-        node_mapping: Dict[str, int],
-            Nodes mapping to use to map eventual subgraphs.
         **kwargs: Dict,
             Data to pass directly to TSNE.
         """
         self._node_transformer.fit(embedding)
         self._node_embedding = self.tsne(
-            self._node_transformer.transform(np.fromiter((
-                node_mapping[node]
-                for node in graph.get_nodes_reverse_mapping()
-            ), dtype=np.int)),
+            self._node_transformer.transform(graph.get_node_names()),
             **kwargs
         )
 
@@ -423,7 +419,7 @@ class GraphVisualizations:
         )[:k]))[0])
 
         edge_types = graph.get_edge_types()
-        edge_labels = graph.get_edge_types_reverse_mapping()
+        edge_labels = graph.get_edge_type_names()
 
         for i, edge_type in enumerate(edge_types):
             if edge_type not in top_edge_types:

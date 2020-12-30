@@ -1,5 +1,6 @@
 """Test to validate that the model GloVe works properly with words sequences."""
 from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
+import numpy as np
 from embiggen import GloVe
 
 from .test_word_sequences import TestWordSequences
@@ -37,3 +38,5 @@ class TestWordGloVe(TestWordSequences):
             self._model.embedding.shape,
             (self._transformer.vocabulary_size, self._embedding_size)
         )
+
+        self.assertFalse(np.isnan(self._model.embedding).any())

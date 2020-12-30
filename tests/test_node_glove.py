@@ -1,5 +1,6 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 import os
+import numpy as np
 from embiggen import GloVe
 from .test_node_sequences import TestNodeSequences
 
@@ -16,27 +17,31 @@ class TestNodeGloVe(TestNodeSequences):
             window_size=4,
             iterations=20
         )
-        self._model = GloVe(
-            vocabulary_size=self._graph.get_nodes_number(),
-            embedding_size=self._embedding_size,
-        )
-        self.assertEqual("GloVe", self._model.name)
-        self._model.summary()
 
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
-        self._model.fit(
-            (self._words, self._ctxs),
-            self._freq,
-            epochs=2,
-            verbose=False
-        )
+        for shared_embedding_layers in (True, False):
+            model = GloVe(
+                vocabulary_size=self._graph.get_nodes_number(),
+                embedding_size=self._embedding_size,
+                shared_embedding_layers=shared_embedding_layers
+            )
+            self.assertEqual("GloVe", model.name)
+            model.summary()
+            model.fit(
+                (self._words, self._ctxs),
+                self._freq,
+                epochs=2,
+                verbose=False
+            )
 
-        self.assertEqual(
-            self._model.embedding.shape,
-            (self._graph.get_nodes_number(), self._embedding_size)
-        )
+            self.assertEqual(
+                model.embedding.shape,
+                (self._graph.get_nodes_number(), self._embedding_size)
+            )
 
-        self._model.save_weights(self._weights_path)
-        self._model.load_weights(self._weights_path)
-        os.remove(self._weights_path)
+            self.assertFalse(np.isnan(model.embedding).any())
+
+            model.save_weights(self._weights_path)
+            model.load_weights(self._weights_path)
+            os.remove(self._weights_path)
