@@ -50,12 +50,12 @@ class CorpusTransformer:
             by default is enabled.
             The algorithm used is a Porter Stemmer.
         remove_stop_words: bool = True,
-            Wether to remove stopwords,
+            Whether to remove stopwords,
             as defined from NLTK for the given language.
         remove_punctuation: bool = True,
-            Wether to remove punctuation, as defined from the string package.
+            Whether to remove punctuation, as defined from the string package.
         remove_digits: bool = False,
-            Wether to remove words composed of only digits.
+            Whether to remove words composed of only digits.
         extra_stop_words: Set[str] = None,
             The additional stop words to be removed.
         min_word_length: int = 2,
@@ -65,16 +65,16 @@ class CorpusTransformer:
             If you are using word2vec, the sequences MUST be longer than
             two times the window size plus one.
         min_count: int = 0,
-            Wether to drop terms that appear less than the given amount.
+            Whether to drop terms that appear less than the given amount.
         max_count: int = math.inf,
-            Wether to drop terms that appear more than the given amount.
+            Whether to drop terms that appear more than the given amount.
         to_lower_case: bool = True,
-            Wether to convert terms to lowercase.
+            Whether to convert terms to lowercase.
         processes: int = None,
             Number of parallel processes to use.
             If given processes is None, all the available processes is used.
         verbose: bool = True,
-            Wether to show loading bars and log process.
+            Whether to show loading bars and log process.
         """
         self._synonyms = {} if synonyms is None else synonyms
         self._stopwords = set() if extra_stop_words is None else extra_stop_words

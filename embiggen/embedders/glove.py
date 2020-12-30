@@ -40,7 +40,7 @@ class GloVe(Embedder):
         alpha: float = 0.75,
             Alpha to use for the function.
         shared_embedding_layers: bool = False,
-            Wether to share the embedding layers weights
+            Whether to share the embedding layers weights
             for the center words and the contexts.
             This will make the GloVe model more practical as it halves the number
             of parameters of the model, but it is still to be studied properly.

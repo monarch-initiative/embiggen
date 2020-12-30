@@ -41,7 +41,7 @@ class LinkPredictionSequence(Sequence):
             For example, with a batch size of 128 and negative_samples equal
             to 1.0, there will be 64 positives and 64 negatives.
         avoid_false_negatives: bool = False,
-            Wether to filter out false negatives.
+            Whether to filter out false negatives.
             By default False.
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
