@@ -6,6 +6,7 @@ from multiprocessing import Pool, cpu_count
 from typing import Dict, Generator, List, Set
 
 import numpy as np
+import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
@@ -227,7 +228,22 @@ class CorpusTransformer:
         ----------------------------
         texts: List[str],
             The texts to use for the fitting.
+
+        Raises
+        ----------------------------
+        ValueError,
+            If there are NaN values within given texts.
+        ValueError,
+            If there are non string values within given texts.
         """
+        if pd.isna(texts).any():
+            raise ValueError(
+                "There are NaN values within the given texts."
+            )
+        if any(not isinstance(text, str) for text in texts):
+            raise ValueError(
+                "There are not string values within the given texts."
+            )
         tokens_list, counts = self.tokenize(texts, True)
 
         if self._min_count > 0 or math.isfinite(self._max_count):
@@ -294,10 +310,25 @@ class CorpusTransformer:
         texts: List[str],
             The texts to encode as digits.
 
+        Raises
+        ----------------------------
+        ValueError,
+            If there are NaN values within given texts.
+        ValueError,
+            If there are non string values within given texts.
+
         Returns
         --------------------------
         Numpy array with numpy arrays of tokens.
         """
+        if pd.isna(texts).any():
+            raise ValueError(
+                "There are NaN values within the given texts."
+            )
+        if any(not isinstance(text, str) for text in texts):
+            raise ValueError(
+                "There are not string values within the given texts."
+            )
         return np.array([
             np.array(tokens, dtype=np.uint64) - 1
             for tokens in self._tokenizer.texts_to_sequences((

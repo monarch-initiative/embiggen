@@ -1,6 +1,7 @@
 """Setup standard unit test class for WordSequences."""
 from unittest import TestCase
-
+import pytest
+import numpy as np
 from embiggen import CorpusTransformer
 
 
@@ -23,3 +24,28 @@ class TestWordSequences(TestCase):
             self._transformer.reverse_transform(self._tokens)
 
         self._sequence = None
+
+        with pytest.raises(ValueError):
+            self._transformer.fit([
+                "test",
+                "with",
+                np.nan
+            ])
+        with pytest.raises(ValueError):
+            self._transformer.transform([
+                "test",
+                "with",
+                np.nan
+            ])
+        with pytest.raises(ValueError):
+            self._transformer.fit([
+                "test",
+                "with",
+                10
+            ])
+        with pytest.raises(ValueError):
+            self._transformer.transform([
+                "test",
+                "with",
+                10
+            ])
