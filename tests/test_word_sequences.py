@@ -12,6 +12,11 @@ class TestWordSequences(TestCase):
         """Setting up abstract class for executing tests on words sequences."""
         self._window_size = 2
         self._batch_size = 128
+        with pytest.raises(ValueError):
+            CorpusTransformer(
+                verbose=False,
+                tokenizer_method="unsupported"
+            )
         self._transformer = CorpusTransformer(
             verbose=False,
             min_sequence_length=self._window_size*2+1

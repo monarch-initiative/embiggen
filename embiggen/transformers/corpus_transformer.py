@@ -22,6 +22,7 @@ class CorpusTransformer:
         self,
         synonyms: Dict = None,
         language: str = "english",
+        tokenizer_method: str = "nltk",
         apply_stemming: bool = True,
         remove_stop_words: bool = True,
         remove_punctuation: bool = True,
@@ -46,6 +47,10 @@ class CorpusTransformer:
             The synonyms to use.
         language: str = "english",
             The language for the stopwords.
+        tokenizer_method: str = "nltk",
+            The tokenizer method to be used.
+            Can either be `nltk`, that is, using the nltk default method,
+            or alternatively can be `space`, that is splitting only on spaces.
         apply_stemming: bool = True,
             Wethever to apply or not a stemming procedure, which
             by default is enabled.
@@ -76,6 +81,11 @@ class CorpusTransformer:
             If given processes is None, all the available processes is used.
         verbose: bool = True,
             Whether to show loading bars and log process.
+
+        Raises
+        --------------------------
+        ValueError,
+            If the given tokenizer method is not supported.
         """
         self._synonyms = {} if synonyms is None else synonyms
         self._stopwords = set() if extra_stop_words is None else extra_stop_words
@@ -92,6 +102,14 @@ class CorpusTransformer:
         self._processes = cpu_count() if processes is None else processes
         self._verbose = verbose
         self._stemmer = PorterStemmer() if apply_stemming else None
+        if tokenizer_method not in ("nltk", "space"):
+            raise ValueError(
+                (
+                    "Given tokenizer method `{}` is not supported. "
+                    "The supported methods are `nltk` and `space`."
+                ).format(tokenizer_method)
+            )
+        self._tokenizer_method = tokenizer_method
         self._tokenizer = None
 
     def get_synonym(self, word: str) -> str:
@@ -107,6 +125,26 @@ class CorpusTransformer:
         The given word synonym.
         """
         return self._synonyms.get(word, word)
+
+    def split_line(self, line: str) -> List[str]:
+        """Return preliminary tokenization of the line.
+
+        Parameters
+        ---------------------
+        line: str,
+            The line to be tokenized.
+
+        Returns
+        ---------------------
+        The list of string tokens.
+        """
+        if self._to_lower_case:
+            line = line.lower()
+
+        if self._tokenizer_method == "nltk":
+            return word_tokenize(line)
+
+        return line.split(" ")
 
     def tokenize_line(self, line: str) -> List[str]:
         """Return tokenized line.
