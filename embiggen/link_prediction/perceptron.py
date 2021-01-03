@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Model
+from tensorflow.keras.metrics import AUC
 from ensmallen_graph import EnsmallenGraph
 from typing import Dict
 from .layers import edge_embedding_layer
@@ -39,6 +40,11 @@ class Perceptron:
         return self._model.compile(
             loss="binary_crossentropy",
             optimizer=optimizer,
+            metrics=[
+                AUC(curve="ROC", name="auroc"),
+                AUC(curve="PR", name="auprc"),
+                "accuracy"
+            ],
             **kwargs
         )
 
