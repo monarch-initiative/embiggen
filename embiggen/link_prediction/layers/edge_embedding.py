@@ -2,7 +2,7 @@
 from typing import Dict, Tuple
 
 import numpy as np
-from tensorflow.keras.layers import Layer, Embedding, Input   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer, Embedding, Input, Flatten   # pylint: disable=import-error
 
 
 class EdgeEmbedding(Layer):
@@ -91,7 +91,7 @@ class EdgeEmbedding(Layer):
         New output layer.
         """
         # Updated edge embedding layer
-        return self._call(
+        return Flatten()(self._call(
             self._embedding_layer(self._left_input),
             self._embedding_layer(self._right_input)
-        )
+        ))
