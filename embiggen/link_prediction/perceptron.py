@@ -33,10 +33,11 @@ class Perceptron:
 
         self._model = Model(
             inputs=embedding_layer.inputs,
-            outputs=self._output
+            outputs=self._output,
+            name="Perceptron_{}".format(edge_embedding_method)
         )
 
-    def compile(self, *args, optimizer: str = "nadam", **kwargs):
+    def compile(self, optimizer: str = "nadam", **kwargs):
         return self._model.compile(
             loss="binary_crossentropy",
             optimizer=optimizer,
@@ -67,6 +68,9 @@ class Perceptron:
             sequence,
             **kwargs
         ).history)
+
+    def summary(self):
+        self._model.summary()
 
     def predict(self, *args, **kwargs):
         return self._model.predict(*args, **kwargs)

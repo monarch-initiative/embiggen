@@ -26,4 +26,4 @@ class HadamardEdgeEmbedding(EdgeEmbedding):
         --------------------------
         New output layer.
         """
-        return Lambda(lambda x: K.prod(x, axis=-1))(left_embedding, right_embedding)
+        return Lambda(lambda x: K.prod(x, axis=0))([left_embedding, right_embedding])
