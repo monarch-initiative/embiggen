@@ -12,7 +12,7 @@ class LinkPredictionSequence(Sequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        embedding: np.ndarray,
+        embedding: np.ndarray = None,
         method: Union[str, Callable] = "Hadamard",
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
@@ -33,6 +33,7 @@ class LinkPredictionSequence(Sequence):
             to quickly load the embedding for the nodes and a DataFrame is too slow.
         method: str = "Hadamard",
             Method to use for the embedding.
+            Use None for when you don't want to compute the edge embedding.
             Can either be 'Hadamard', 'Average', 'L1', 'AbsoluteL1' or 'L2'.
         batch_size: int = 2**10,
             The batch size to use.
@@ -58,7 +59,8 @@ class LinkPredictionSequence(Sequence):
             The seed to use to make extraction reproducible.
         """
         self._graph = graph
-        self._graph.set_embedding(embedding)
+        if embedding is not None:
+            self._graph.set_embedding(embedding)
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
@@ -83,6 +85,15 @@ class LinkPredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
+        if self._method is None:
+            left, right, labels =  self._graph.link_prediction_ids(
+                self._seed + idx + self.elapsed_epochs,
+                batch_size=self.batch_size,
+                negative_samples=self._negative_samples,
+                avoid_false_negatives=self._avoid_false_negatives,
+                graph_to_avoid=self._graph_to_avoid,
+            )
+            return (left, right), labels
         return self._graph.link_prediction(
             self._seed + idx + self.elapsed_epochs,
             batch_size=self.batch_size,

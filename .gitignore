@@ -31,3 +31,4 @@ htmlcov
 .pytest_cache
 embedding.npy
 build
+graphs
