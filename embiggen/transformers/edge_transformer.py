@@ -17,7 +17,8 @@ class EdgeTransformer:
         "L1": lambda x1, x2: np.subtract(x1, x2, out=x1),
         "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
         "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
-        "Concatenate": lambda x1, x2: np.hstack((x1, x2))
+        "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
+        None: lambda x1, x2: np.vstack((x1, x2)),
     }
 
     def __init__(self, method: str = "Hadamard"):
@@ -40,12 +41,10 @@ class EdgeTransformer:
         self._transformer = NodeTransformer(
             numeric_node_ids=method is None
         )
-        if method is None:
-            method = "Concatenate"
         self._method = EdgeTransformer.methods[method]
 
     @property
-    def numeric_node_ids(self)->bool:
+    def numeric_node_ids(self) -> bool:
         """Return wheter the transformer returns numeric node IDs."""
         return self._transformer.numeric_node_ids
 
