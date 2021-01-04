@@ -53,6 +53,8 @@ class GraphVisualizations:
         -----------------------
         The obtained TSNE embedding.
         """
+        if X.shape[1] <= 2:
+            return X
         try:
             from tsnecuda import TSNE
         except ModuleNotFoundError:
