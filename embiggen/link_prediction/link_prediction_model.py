@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
-from tensorflow.keras.metrics import AUC
 from ensmallen_graph import EnsmallenGraph
 from typing import Dict
 from .layers import edge_embedding_layer
 from ..embedders import Embedder
 from ..sequences import LinkPredictionSequence
+from extra_keras_metrics import get_binary_metrics
 
 
 class LinkPredictionModel(Embedder):
@@ -33,11 +33,7 @@ class LinkPredictionModel(Embedder):
         self._model.compile(
             loss="binary_crossentropy",
             optimizer=self._optimizer,
-            metrics=[
-                AUC(curve="ROC", name="auroc"),
-                AUC(curve="PR", name="auprc"),
-                "accuracy"
-            ],
+            metrics=get_binary_metrics(),
         )
 
     def _build_model_body(self, input_layer: Layer) -> Layer:
