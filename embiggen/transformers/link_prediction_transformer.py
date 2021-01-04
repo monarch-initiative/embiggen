@@ -72,16 +72,10 @@ class LinkPredictionTransformer:
         """
         positive_edge_embedding = self._transformer.transform(positive_graph, aligned_node_mapping)
         negative_edge_embedding = self._transformer.transform(negative_graph, aligned_node_mapping)
-        if self._transformer.numeric_node_ids:
-            edge_embeddings = np.hstack([
-                positive_edge_embedding,
-                negative_edge_embedding
-            ])
-        else:
-            edge_embeddings = np.vstack([
-                positive_edge_embedding,
-                negative_edge_embedding
-            ])
+        edge_embeddings = np.vstack([
+            positive_edge_embedding,
+            negative_edge_embedding
+        ])
         edge_labels = np.concatenate([
             np.ones(positive_edge_embedding.shape[0]),
             np.zeros(negative_edge_embedding.shape[0])
