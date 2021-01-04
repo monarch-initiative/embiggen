@@ -9,7 +9,8 @@ class TestPerceptron(TestCase):
 
     def setUp(self):
         self._string_ppi = StringPPI(verbose=False)
-        self._embedding = np.random.uniform(size=(self._string_ppi.get_nodes_number(), 10))
+        self._embedding = np.random.uniform(
+            size=(self._string_ppi.get_nodes_number(), 10))
 
     def test_training(self):
         for method in edge_embedding_layer.keys():

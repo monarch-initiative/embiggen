@@ -267,7 +267,7 @@ class GraphVisualizations:
         )[:k]))[0])
 
         node_types = graph.get_node_types()
-        node_labels = graph.get_node_types_reverse_mapping()
+        node_labels = graph.get_node_type_names()
 
         for i, node_type in enumerate(node_types):
             if node_type not in top_node_types:
