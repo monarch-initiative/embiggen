@@ -7,10 +7,25 @@ import pandas as pd
 class NodeTransformer:
     """NodeTransformer class to convert nodes to edge embeddings."""
 
-    def __init__(self):
-        """Create new NodeTransformer object."""
+    def __init__(
+        self,
+        numeric_node_ids: bool = False
+    ):
+        """Create new NodeTransformer object.
+
+        Parameters
+        -------------------
+        numeric_node_ids: bool = False,
+            Wether to return the numeric node IDs instead of the node embedding.
+        """
+        self._numeric_node_ids = numeric_node_ids
         self._embedding = None
         self._embedding_numpy = None
+
+    @property
+    def numeric_node_ids(self)->bool:
+        """Return wheter the transformer returns numeric node IDs."""
+        return self._numeric_node_ids
 
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
@@ -61,6 +76,11 @@ class NodeTransformer:
             )
 
         if aligned_node_mapping:
+            if self._numeric_node_ids:
+                return nodes
             return self._embedding_numpy[nodes]
+
+        if self._numeric_node_ids:
+            return np.where(self._embedding.index.isin(nodes))
 
         return self._embedding.loc[nodes].to_numpy()

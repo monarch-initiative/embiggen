@@ -17,7 +17,7 @@ class EdgeTransformer:
         "L1": lambda x1, x2: np.subtract(x1, x2, out=x1),
         "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
         "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
-        "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
+        "Concatenate": lambda x1, x2: np.hstack((x1, x2))
     }
 
     def __init__(self, method: str = "Hadamard"):
@@ -27,6 +27,7 @@ class EdgeTransformer:
         ------------------------
         method: str = "Hadamard",
             Method to use for the embedding.
+            If None is used, we return instead the numeric tuples.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         """
         if isinstance(method, str) and method not in EdgeTransformer.methods:
@@ -36,8 +37,17 @@ class EdgeTransformer:
             ).format(
                 method, ", ".join(list(EdgeTransformer.methods.keys()))
             ))
+        self._transformer = NodeTransformer(
+            numeric_node_ids=method is None
+        )
+        if method is None:
+            method = "Concatenate"
         self._method = EdgeTransformer.methods[method]
-        self._transformer = NodeTransformer()
+
+    @property
+    def numeric_node_ids(self)->bool:
+        """Return wheter the transformer returns numeric node IDs."""
+        return self._transformer.numeric_node_ids
 
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
@@ -51,7 +61,16 @@ class EdgeTransformer:
             graphs that do not respect the same internal node mapping but have
             the same node set. It is possible to remap such graphs using
             Ensmallen's remap method but it may be less intuitive to users.
+
+        Raises
+        -------------------------
+        ValueError,
+            If the given method is None there is no need to call the fit method.
         """
+        if self._method is None:
+            raise ValueError(
+                "There is no need to call the fit when edge method is None."
+            )
         self._transformer.fit(embedding)
 
     def transform(self, sources: List[str], destinations: List[str], aligned_node_mapping: bool = False) -> np.ndarray:

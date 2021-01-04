@@ -36,7 +36,11 @@ class GraphTransformer:
         """
         self._transformer.fit(embedding)
 
-    def transform(self, graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]], aligned_node_mapping: bool = False) -> np.ndarray:
+    def transform(
+        self,
+        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        aligned_node_mapping: bool = False
+    ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
         Parameters
