@@ -21,6 +21,11 @@ class GraphTransformer:
         """
         self._transformer = EdgeTransformer(method=method)
 
+    @property
+    def numeric_node_ids(self) -> bool:
+        """Return wheter the transformer returns numeric node IDs."""
+        return self._transformer.numeric_node_ids
+
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
 

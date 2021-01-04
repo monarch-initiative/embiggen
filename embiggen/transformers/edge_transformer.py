@@ -18,7 +18,7 @@ class EdgeTransformer:
         "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
         "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
         "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
-        None: lambda x1, x2: np.vstack((x1, x2)).T,
+        None: lambda x1, x2: np.vstack((x1, x2)),
     }
 
     def __init__(self, method: str = "Hadamard"):
