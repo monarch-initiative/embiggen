@@ -19,5 +19,4 @@ class TestPerceptron(TestCase):
                 edge_embedding_method=method
             )
             model.summary()
-            model.compile()
             model.fit(self._string_ppi, batches_per_epoch=10)

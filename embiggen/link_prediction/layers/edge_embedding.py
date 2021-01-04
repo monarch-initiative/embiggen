@@ -2,6 +2,7 @@
 from typing import Dict, Tuple
 
 import numpy as np
+from ...embedders import Embedder
 from tensorflow.keras.layers import Layer, Embedding, Input, Flatten   # pylint: disable=import-error
 
 
@@ -58,6 +59,7 @@ class EdgeEmbedding(Layer):
             self._embedding_layer = Embedding(
                 *self._embedding.shape,
                 input_length=1,
+                name=Embedder.EMBEDDING_LAYER_NAME
             )
             self._embedding_layer.build((None,))
             self._embedding_layer.set_weights([self._embedding])

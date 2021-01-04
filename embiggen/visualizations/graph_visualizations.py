@@ -160,6 +160,7 @@ class GraphVisualizations:
 
     def plot_nodes(
         self,
+        graph: EnsmallenGraph,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -201,7 +202,7 @@ class GraphVisualizations:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
 
         axes.scatter(*self._node_embedding.T, **scatter_kwargs)
-        self._clear_axes(axes, "Nodes embedding")
+        self._clear_axes(axes, "Nodes embedding - {}".format(graph))
         return figure, axes
 
     def plot_node_types(
@@ -294,7 +295,7 @@ class GraphVisualizations:
             node_labels,
             scatter.legend_elements()[0]
         )
-        self._clear_axes(axes, "Nodes types")
+        self._clear_axes(axes, "Nodes types - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_node_degrees(
@@ -355,7 +356,7 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(axes, "Nodes degrees")
+        self._clear_axes(axes, "Nodes degrees - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_edge_types(
@@ -445,7 +446,7 @@ class GraphVisualizations:
             edge_labels,
             scatter.legend_elements()[0]
         )
-        self._clear_axes(axes, "Edge types")
+        self._clear_axes(axes, "Edge types - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_edges(
@@ -554,5 +555,5 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(axes, "Edge weights")
+        self._clear_axes(axes, "Edge weights - {}".format(graph.get_name()))
         return figure, axes
