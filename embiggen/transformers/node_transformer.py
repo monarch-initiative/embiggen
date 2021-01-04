@@ -23,7 +23,7 @@ class NodeTransformer:
         self._embedding_numpy = None
 
     @property
-    def numeric_node_ids(self)->bool:
+    def numeric_node_ids(self) -> bool:
         """Return wheter the transformer returns numeric node IDs."""
         return self._numeric_node_ids
 
@@ -70,17 +70,17 @@ class NodeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if self._embedding is None:
+        if self._embedding is None and not self.numeric_node_ids:
             raise ValueError(
                 "Transformer was not fitted yet."
             )
 
         if aligned_node_mapping:
-            if self._numeric_node_ids:
+            if self.numeric_node_ids:
                 return nodes
             return self._embedding_numpy[nodes]
 
-        if self._numeric_node_ids:
+        if self.numeric_node_ids:
             return np.where(self._embedding.index.isin(nodes))
 
         return self._embedding.loc[nodes].to_numpy()
