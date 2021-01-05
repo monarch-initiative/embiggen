@@ -63,19 +63,9 @@ class LinkPredictionModel(Embedder):
     def fit(
         self,
         graph: EnsmallenGraph,
-        batch_size: int = 2**16,
+        batch_size: int = 2**18,
         batches_per_epoch: int = 2**10,
-        validation_batches_per_epoch: int = 2**8,
         negative_samples: float = 1.0,
-        epochs: int = 100,
-        validation_split: float = 0.1,
-        patience: int = 5,
-        min_delta: float = 0.0001,
-        monitor: str = "val_loss",
-        mode: str = "min",
-        random_state: int = 42,
-        fast_sampling: bool = True,
-        verbose: bool = True,
         ** kwargs: Dict
     ) -> pd.DataFrame:
         """Train model and return training history dataframe.
@@ -88,30 +78,8 @@ class LinkPredictionModel(Embedder):
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
-        validation_batches_per_epoch: int = 2**8,
-            Validation batches per epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
-        epochs: int = 100,
-            Number of epochs to train for.
-        validation_split: float = 0.1,
-            Split to use for validation set and early stopping.
-        patience: int = 5,
-            How many epochs to wait for before stopping the training.
-        min_delta: float = 0.0001,
-            Minimum variation of loss function.
-        monitor: str = "val_loss",
-            Metric to monitor for early stopping.
-        mode: str = "min",
-            Direction of the minimum delta.
-        random_state: int = 42,
-            Random state to use for validation split.
-        fast_sampling: bool = True,
-            Wether to enable the fast sampling.
-            You may want to disable this when using very big graphs
-            that may not fit into main memory.
-        verbose: bool = True,
-            Wether to show loading bars.
         ** kwargs: Dict,
             Parameteres to pass to the dit call.
 
@@ -119,51 +87,15 @@ class LinkPredictionModel(Embedder):
         --------------------
         Dataframe with traininhg history.
         """
-        train_graph, validation_graph = graph.connected_holdout(
-            train_size=1-validation_split,
-            random_state=random_state,
-            verbose=verbose
-        )
-        if fast_sampling:
-            train_graph.enable(
-                vector_sources=True,
-                vector_destinations=True,
-            )
-            validation_graph.enable(
-                vector_sources=True,
-                vector_destinations=True,
-            )
-        training_sequence = LinkPredictionSequence(
-            train_graph,
+        sequence = LinkPredictionSequence(
+            graph,
             method=None,
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples=negative_samples,
         )
-        validation_sequence = LinkPredictionSequence(
-            validation_graph,
-            method=None,
-            batch_size=batch_size,
-            batches_per_epoch=validation_batches_per_epoch,
-            negative_samples=negative_samples,
-            # We need to avoid sampling edges from the training graph
-            # as negatives.
-            graph_to_avoid=train_graph
-        )
         return super().fit(
-            training_sequence,
-            epochs=epochs,
-            verbose=verbose,
-            validation_data=validation_sequence,
-            callbacks=[
-                EarlyStopping(
-                    monitor=monitor,
-                    min_delta=min_delta,
-                    patience=patience,
-                    mode=mode,
-                    restore_best_weights=True
-                )
-            ],
+            sequence,
             **kwargs
         )
 
