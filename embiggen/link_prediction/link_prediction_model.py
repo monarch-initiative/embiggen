@@ -64,7 +64,7 @@ class LinkPredictionModel(Embedder):
         self,
         graph: EnsmallenGraph,
         batch_size: int = 2**18,
-        batches_per_epoch: int = 2**10,
+        batches_per_epoch: int = 2**12,
         negative_samples: float = 1.0,
         ** kwargs: Dict
     ) -> pd.DataFrame:
