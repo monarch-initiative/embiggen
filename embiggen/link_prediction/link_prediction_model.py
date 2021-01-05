@@ -63,7 +63,7 @@ class LinkPredictionModel(Embedder):
     def fit(
         self,
         graph: EnsmallenGraph,
-        batch_size: int = 2**18,
+        batch_size: int = 2**16,
         batches_per_epoch: int = 2**10,
         validation_batches_per_epoch: int = 2**8,
         negative_samples: float = 1.0,
