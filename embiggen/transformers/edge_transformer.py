@@ -21,7 +21,11 @@ class EdgeTransformer:
         None: lambda x1, x2: np.vstack((x1, x2)).T,
     }
 
-    def __init__(self, method: str = "Hadamard"):
+    def __init__(
+        self,
+        method: str = "Hadamard",
+        aligned_node_mapping: bool = False
+    ):
         """Create new EdgeTransformer object.
 
         Parameters
@@ -30,6 +34,11 @@ class EdgeTransformer:
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        aligned_node_mapping: bool = False,
+            This parameter specifies wheter the mapping of the embeddings nodes
+            matches the internal node mapping of the given graph.
+            If these two mappings do not match, the generated edge embedding
+            will be meaningless.
         """
         if isinstance(method, str) and method not in EdgeTransformer.methods:
             raise ValueError((
@@ -39,7 +48,8 @@ class EdgeTransformer:
                 method, ", ".join(list(EdgeTransformer.methods.keys()))
             ))
         self._transformer = NodeTransformer(
-            numeric_node_ids=method is None
+            numeric_node_ids=method is None,
+            aligned_node_mapping=aligned_node_mapping
         )
         self._method = EdgeTransformer.methods[method]
 
@@ -72,7 +82,7 @@ class EdgeTransformer:
             )
         self._transformer.fit(embedding)
 
-    def transform(self, sources: List[str], destinations: List[str], aligned_node_mapping: bool = False) -> np.ndarray:
+    def transform(self, sources: List[str], destinations: List[str]) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
         Parameters
@@ -81,11 +91,6 @@ class EdgeTransformer:
             List of source nodes whose embedding is to be returned.
         destinations: List[str],
             List of destination nodes whose embedding is to be returned.
-        aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
 
         Raises
         --------------------------
@@ -97,12 +102,6 @@ class EdgeTransformer:
         Numpy array of embeddings.
         """
         return self._method(
-            self._transformer.transform(
-                sources,
-                aligned_node_mapping
-            ),
-            self._transformer.transform(
-                destinations,
-                aligned_node_mapping
-            )
+            self._transformer.transform(sources),
+            self._transformer.transform(destinations)
         )

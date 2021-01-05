@@ -9,7 +9,8 @@ class NodeTransformer:
 
     def __init__(
         self,
-        numeric_node_ids: bool = False
+        numeric_node_ids: bool = False,
+        aligned_node_mapping: bool = False
     ):
         """Create new NodeTransformer object.
 
@@ -17,10 +18,16 @@ class NodeTransformer:
         -------------------
         numeric_node_ids: bool = False,
             Wether to return the numeric node IDs instead of the node embedding.
+        aligned_node_mapping: bool = False,
+            This parameter specifies wheter the mapping of the embeddings nodes
+            matches the internal node mapping of the given graph.
+            If these two mappings do not match, the generated edge embedding
+            will be meaningless.
         """
         self._numeric_node_ids = numeric_node_ids
         self._embedding = None
         self._embedding_numpy = None
+        self._aligned_node_mapping = aligned_node_mapping
 
     @property
     def numeric_node_ids(self) -> bool:
@@ -45,7 +52,7 @@ class NodeTransformer:
         self._embedding = embedding
         self._embedding_numpy = embedding.to_numpy()
 
-    def transform(self, nodes: Union[List[str], List[int]], aligned_node_mapping: bool = False) -> np.ndarray:
+    def transform(self, nodes: Union[List[str], List[int]]) -> np.ndarray:
         """Return embeddings from given node.
 
         Parameters
@@ -55,11 +62,6 @@ class NodeTransformer:
             By default this should be a list of strings, if the
             aligned_node_mapping is setted, then this methods also accepts
             a list of ints.
-        aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
 
         Raises
         --------------------------
@@ -75,7 +77,7 @@ class NodeTransformer:
                 "Transformer was not fitted yet."
             )
 
-        if aligned_node_mapping:
+        if self._aligned_node_mapping:
             if self.numeric_node_ids:
                 return nodes
             return self._embedding_numpy[nodes]
