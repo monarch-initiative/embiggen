@@ -84,11 +84,11 @@ class LinkPredictionModel(Embedder):
         -------------------
         graph: EnsmallenGraph,
             Graph object to use for training.
-        batch_size: int = 2**14,
+        batch_size: int = 2**18,
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
-        validation_batches_per_epoch: int = 2**10,
+        validation_batches_per_epoch: int = 2**8,
             Validation batches per epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
