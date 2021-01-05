@@ -63,17 +63,18 @@ class LinkPredictionModel(Embedder):
     def fit(
         self,
         graph: EnsmallenGraph,
-        batch_size: int = 2**14,
-        batches_per_epoch: int = 2**10,
+        batch_size: int = 2**16,
+        batches_per_epoch: int = 2**12,
         negative_samples: float = 1.0,
         epochs: int = 100,
         validation_split: float = 0.2,
         patience: int = 5,
         min_delta: float = 0.0001,
         monitor: str = "val_loss",
-        random_state: int = 42,
-        verbose: bool = True,
         mode: str = "min",
+        random_state: int = 42,
+        fast_sampling: bool = True,
+        verbose: bool = True,
         ** kwargs: Dict
     ) -> pd.DataFrame:
         """Train model and return training history dataframe.
@@ -102,6 +103,10 @@ class LinkPredictionModel(Embedder):
             Direction of the minimum delta.
         random_state: int = 42,
             Random state to use for validation split.
+        fast_sampling: bool = True,
+            Wether to enable the fast sampling.
+            You may want to disable this when using very big graphs
+            that may not fit into main memory.
         verbose: bool = True,
             Wether to show loading bars.
         ** kwargs: Dict,
@@ -116,6 +121,15 @@ class LinkPredictionModel(Embedder):
             random_state=random_state,
             verbose=verbose
         )
+        if fast_sampling:
+            train_graph.enable(
+                vector_sources=True,
+                vector_destinations=True,
+            )
+            validation_graph.enable(
+                vector_sources=True,
+                vector_destinations=True,
+            )
         training_sequence = LinkPredictionSequence(
             train_graph,
             method=None,
