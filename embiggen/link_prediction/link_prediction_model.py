@@ -160,7 +160,8 @@ class LinkPredictionModel(Embedder):
                     monitor=monitor,
                     min_delta=min_delta,
                     patience=patience,
-                    mode=mode
+                    mode=mode,
+                    restore_best_weights=True
                 )
             ],
             **kwargs
