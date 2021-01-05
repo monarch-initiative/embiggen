@@ -68,7 +68,7 @@ class LinkPredictionModel(Embedder):
         validation_batches_per_epoch: int = 2**8,
         negative_samples: float = 1.0,
         epochs: int = 100,
-        validation_split: float = 0.2,
+        validation_split: float = 0.1,
         patience: int = 5,
         min_delta: float = 0.0001,
         monitor: str = "val_loss",
@@ -94,7 +94,7 @@ class LinkPredictionModel(Embedder):
             Rate of unbalancing in the batch.
         epochs: int = 100,
             Number of epochs to train for.
-        validation_split: float = 0.2,
+        validation_split: float = 0.1,
             Split to use for validation set and early stopping.
         patience: int = 5,
             How many epochs to wait for before stopping the training.
