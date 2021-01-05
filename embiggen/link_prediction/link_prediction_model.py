@@ -65,6 +65,7 @@ class LinkPredictionModel(Embedder):
         graph: EnsmallenGraph,
         batch_size: int = 2**16,
         batches_per_epoch: int = 2**12,
+        validation_batches_per_epoch: int = 2**10,
         negative_samples: float = 1.0,
         epochs: int = 100,
         validation_split: float = 0.2,
@@ -87,6 +88,8 @@ class LinkPredictionModel(Embedder):
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
+        validation_batches_per_epoch: int = 2**10,
+            Validation batches per epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
         epochs: int = 100,
@@ -141,7 +144,7 @@ class LinkPredictionModel(Embedder):
             validation_graph,
             method=None,
             batch_size=batch_size,
-            batches_per_epoch=batches_per_epoch,
+            batches_per_epoch=validation_batches_per_epoch,
             negative_samples=negative_samples,
             # We need to avoid sampling edges from the training graph
             # as negatives.
