@@ -51,7 +51,7 @@ setup(
         "nltk",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20",
-        "extra_keras_metrics",
+        "extra_keras_metrics>=2.0.0",
         "ensmallen_graph>=0.5.2",
     ],
     tests_require=test_deps,
