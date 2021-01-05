@@ -170,6 +170,9 @@ class LinkPredictionModel(Embedder):
         """Run predict."""
         return self._model.predict(*args, **kwargs)
 
-    def evaluate(self, *args, **kwargs):
+    def evaluate(self, *args, **kwargs)->Dict[str, float]:
         """Run predict."""
-        return self._model.evaluate(*args, **kwargs)
+        return dict(
+            self._model.metrics_names,
+            self._model.evaluate(*args, **kwargs)
+        )
