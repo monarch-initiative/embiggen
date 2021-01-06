@@ -70,9 +70,9 @@ class Embedder:
     @property
     def embedding(self) -> np.ndarray:
         """Return model embeddings."""
-        for layer, weights in zip(self._model.layers, self._model.weights):
+        for layer in self._model.layers:
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
-                return weights.numpy()
+                return layer.get_weights()[0]
         return None
 
     def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:

@@ -94,7 +94,6 @@ class Node2Vec(Embedder):
         # Creating the inputs layers
         true_input_layer = Input(
             (self._get_true_input_length(), ),
-            name=Embedder.EMBEDDING_LAYER_NAME
         )
         true_output_layer = Input(
             (self._get_true_output_length(), ),
@@ -104,7 +103,8 @@ class Node2Vec(Embedder):
         embedding = Embedding(
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
-            input_length=self._get_true_input_length()
+            input_length=self._get_true_input_length(),
+            name=Embedder.EMBEDDING_LAYER_NAME
         )(true_input_layer)
 
         # If there is more than one value per single sample

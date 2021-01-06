@@ -3,9 +3,11 @@ from typing import Union
 
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.layers import Add, Dot, Embedding, Flatten, Input  # pylint: disable=import-error
-from tensorflow.keras.models import Model   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
+                                     Embedding, Flatten, Input)
+from tensorflow.keras.models import Model  # pylint: disable=import-error
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error
 
 from .embedder import Embedder
 
@@ -77,7 +79,7 @@ class GloVe(Embedder):
         """Create new Glove model."""
         # Creating the input layers
         input_layers = [
-            Input((1,), name=Embedder.EMBEDDING_LAYER_NAME),
+            Input((1,)),
             Input((1,))
         ]
 
@@ -86,7 +88,8 @@ class GloVe(Embedder):
             embedding_layer = Embedding(
                 self._vocabulary_size,
                 self._embedding_size,
-                input_length=1
+                input_length=1,
+                name=Embedder.EMBEDDING_LAYER_NAME
             )
             embedding_layers = [
                 embedding_layer(input_layer)
@@ -97,9 +100,14 @@ class GloVe(Embedder):
                 Embedding(
                     self._vocabulary_size,
                     self._embedding_size,
-                    input_length=1
-                )(input_layer)
-                for input_layer in input_layers
+                    input_length=1,
+                    name=Embedder.EMBEDDING_LAYER_NAME
+                )(input_layers[0]),
+                Embedding(
+                    self._vocabulary_size,
+                    self._embedding_size,
+                    input_length=1,
+                )(input_layers[1])
             ]
 
         # Creating the dot product of the embedding layers
