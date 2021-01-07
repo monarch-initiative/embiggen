@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
 from extra_keras_metrics import get_standard_binary_metrics
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
 
@@ -65,8 +66,16 @@ class LinkPredictionModel(Embedder):
         self,
         graph: EnsmallenGraph,
         batch_size: int = 2**18,
-        batches_per_epoch: int = 2**14,
+        batches_per_epoch: int = 2**8,
         negative_samples: float = 1.0,
+        max_epochs: int = 1000,
+        validation_split: float = 0.1,
+        random_state: int = 42,
+        patience: int = 5,
+        min_delta: float = 0.0001,
+        mode: str = "min",
+        monitor: str = "val_loss",
+        verbose: bool = True,
         ** kwargs: Dict
     ) -> pd.DataFrame:
         """Train model and return training history dataframe.
@@ -77,10 +86,26 @@ class LinkPredictionModel(Embedder):
             Graph object to use for training.
         batch_size: int = 2**18,
             Batch size for the training process.
-        batches_per_epoch: int = 2**14,
+        batches_per_epoch: int = 2**8,
             Number of batches to train for in each epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
+        max_epochs: int = 1000,
+            Maximal number of epochs to train for.
+        validation_split: float = 0.1,
+            Percentage of split for validation.
+        random_state: int = 42,
+            Random state to use for the split.
+        patience: int = 5,
+            Number of epochs for wait for to trigger early stopping.
+        min_delta: float = 0.0001,
+            Minimum variation of delta.
+        mode: str = "min",
+            Direction of the early stopping delta.
+        monitor: str = "val_loss",
+            Metric to monitor.
+        verbose: bool = True,
+            Wether to shop loading bars.
         ** kwargs: Dict,
             Parameteres to pass to the dit call.
 
@@ -88,15 +113,41 @@ class LinkPredictionModel(Embedder):
         --------------------
         Dataframe with traininhg history.
         """
-        sequence = LinkPredictionSequence(
-            graph,
+        train, validation = graph.connected_holdout(
+            validation_split,
+            random_state=random_state,
+            verbose=verbose
+        )
+        training_sequence = LinkPredictionSequence(
+            train,
             method=None,
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples=negative_samples,
         )
+        validation_sequence = LinkPredictionSequence(
+            validation,
+            method=None,
+            batch_size=batch_size,
+            batches_per_epoch=batches_per_epoch,
+            negative_samples=negative_samples,
+            graph_to_avoid=train
+        )
         return super().fit(
-            sequence,
+            training_sequence,
+            epochs=max_epochs,
+            validation_data=validation_sequence,
+            verbose=verbose,
+            callbacks=[
+                EarlyStopping(
+                    monitor=monitor,
+                    min_delta=min_delta,
+                    patience=patience,
+                    mode=mode,
+                    restore_best_weights=True
+                ),
+                *kwargs.get("callbacks", [])
+            ],
             **kwargs
         )
 
