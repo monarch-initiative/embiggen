@@ -10,12 +10,7 @@ class MultiLayerPerceptron(LinkPredictionModel):
     def _build_model_body(self, input_layer: Layer) -> Layer:
         """Build new model body for link prediction."""
         input_layer = Dense(
-            units=32,
-            activation="relu",
-            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-        )(input_layer)
-        input_layer = Dense(
-            units=32,
+            units=16,
             activation="relu",
             kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
         )(input_layer)
