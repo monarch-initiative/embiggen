@@ -65,7 +65,7 @@ class LinkPredictionModel(Embedder):
     def fit(
         self,
         graph: EnsmallenGraph,
-        batch_size: int = 2**18,
+        batch_size: int = 2**16,
         batches_per_epoch: int = 2**8,
         negative_samples: float = 1.0,
         max_epochs: int = 1000,
@@ -84,7 +84,7 @@ class LinkPredictionModel(Embedder):
         -------------------
         graph: EnsmallenGraph,
             Graph object to use for training.
-        batch_size: int = 2**18,
+        batch_size: int = 2**16,
             Batch size for the training process.
         batches_per_epoch: int = 2**8,
             Number of batches to train for in each epoch.
