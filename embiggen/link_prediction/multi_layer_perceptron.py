@@ -14,6 +14,11 @@ class MultiLayerPerceptron(LinkPredictionModel):
             activation="relu",
             kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
         )(input_layer)
+        input_layer = Dense(
+            units=32,
+            activation="relu",
+            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+        )(input_layer)
         return Dense(
             units=1,
             activation="sigmoid",
