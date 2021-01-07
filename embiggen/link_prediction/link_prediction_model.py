@@ -1,14 +1,15 @@
+from typing import Dict
+
 import numpy as np
 import pandas as pd
+from ensmallen_graph import EnsmallenGraph
+from extra_keras_metrics import get_standard_binary_metrics
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import EarlyStopping
-from ensmallen_graph import EnsmallenGraph
-from typing import Dict
-from .layers import edge_embedding_layer
+
 from ..embedders import Embedder
 from ..sequences import LinkPredictionSequence
-from extra_keras_metrics import get_standard_binary_metrics
+from .layers import edge_embedding_layer
 
 
 class LinkPredictionModel(Embedder):
@@ -64,7 +65,7 @@ class LinkPredictionModel(Embedder):
         self,
         graph: EnsmallenGraph,
         batch_size: int = 2**18,
-        batches_per_epoch: int = 2**12,
+        batches_per_epoch: int = 2**14,
         negative_samples: float = 1.0,
         ** kwargs: Dict
     ) -> pd.DataFrame:
@@ -76,7 +77,7 @@ class LinkPredictionModel(Embedder):
             Graph object to use for training.
         batch_size: int = 2**18,
             Batch size for the training process.
-        batches_per_epoch: int = 2**10,
+        batches_per_epoch: int = 2**14,
             Number of batches to train for in each epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
