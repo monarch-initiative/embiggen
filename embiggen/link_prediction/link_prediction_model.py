@@ -67,6 +67,7 @@ class LinkPredictionModel(Embedder):
         batch_size: int = 2**18,
         batches_per_epoch: int = 2**10,
         negative_samples: float = 1.0,
+        support_mirror_strategy: bool = False,
         ** kwargs: Dict
     ) -> pd.DataFrame:
         """Train model and return training history dataframe.
@@ -81,6 +82,14 @@ class LinkPredictionModel(Embedder):
             Number of batches to train for in each epoch.
         negative_samples: float = 1.0,
             Rate of unbalancing in the batch.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         ** kwargs: Dict,
             Parameteres to pass to the dit call.
 
@@ -94,6 +103,7 @@ class LinkPredictionModel(Embedder):
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples=negative_samples,
+            support_mirror_strategy=support_mirror_strategy
         )
         return super().fit(
             sequence,
