@@ -103,10 +103,10 @@ class LinkPredictionModel(Embedder):
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples=negative_samples,
-            support_mirror_strategy=support_mirror_strategy
         )
         return super().fit(
             sequence,
+            support_mirror_strategy=support_mirror_strategy
             **kwargs
         )
 
