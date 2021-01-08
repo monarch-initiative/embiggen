@@ -17,6 +17,7 @@ class LinkPredictionSequence(Sequence):
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
         avoid_false_negatives: bool = False,
+        support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
@@ -46,6 +47,14 @@ class LinkPredictionSequence(Sequence):
             By default False.
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         graph_to_avoid: EnsmallenGraph = None,
             Graph to avoid when generating the links.
             This can be the validation component of the graph, for example.
@@ -63,6 +72,7 @@ class LinkPredictionSequence(Sequence):
             self._graph.set_embedding(embedding)
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
+        self._support_mirror_strategy = support_mirror_strategy
         self._graph_to_avoid = graph_to_avoid
         self._method = method
         self._seed = seed
@@ -93,6 +103,9 @@ class LinkPredictionSequence(Sequence):
                 avoid_false_negatives=self._avoid_false_negatives,
                 graph_to_avoid=self._graph_to_avoid,
             )
+            if self._support_mirror_strategy:
+                left = left.astype(float)
+                right = right.astype(float)
             return (left, right), labels
         return self._graph.link_prediction(
             self._seed + idx + self.elapsed_epochs,
