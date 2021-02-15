@@ -21,6 +21,8 @@ class GraphVisualizations:
         s=1,
         marker=".",
         alpha=0.7,
+    )
+    DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(10, 10),
         dpi=150
     )
@@ -198,7 +200,7 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(**(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
@@ -258,7 +260,9 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS)
+            )
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
@@ -340,7 +344,8 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
@@ -414,7 +419,8 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
@@ -488,7 +494,8 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
@@ -540,7 +547,8 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
