@@ -340,7 +340,7 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(figsize=figsize, **kwargs)
+            figure, axes = plt.subplots(**kwargs)
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
