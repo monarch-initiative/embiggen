@@ -20,7 +20,9 @@ class GraphVisualizations:
     DEFAULT_SCATTER_KWARGS = dict(
         s=1,
         marker=".",
-        alpha=0.7
+        alpha=0.7,
+        figsize=(10, 10),
+        dpi=150
     )
 
     def __init__(self, method: str = "Hadamard"):
@@ -315,11 +317,13 @@ class GraphVisualizations:
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
-            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
 
         Raises
         ------------------------------
@@ -336,7 +340,7 @@ class GraphVisualizations:
             )
 
         if figure is None or axes is None:
-            figure, axes = plt.subplots(**kwargs)
+            figure, axes = plt.subplots(figsize=figsize, **kwargs)
 
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
