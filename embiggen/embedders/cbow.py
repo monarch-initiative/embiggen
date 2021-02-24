@@ -1,12 +1,12 @@
-"""CBOW model for graph and words embedding."""
+"""CBOW model for sequence embedding."""
 from typing import Union, Tuple
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 from tensorflow.keras.layers import Layer   # pylint: disable=import-error
-from .node2vec import Node2Vec
+from .word2vec import Word2Vec
 
 
-class CBOW(Node2Vec):
-    """CBOW model for graph and words embedding.
+class CBOW(Word2Vec):
+    """CBOW model for sequence embedding.
 
     The CBOW model for graoh embedding receives a list of contexts and tries
     to predict the central word. The model makes use of an NCE loss layer
@@ -17,8 +17,9 @@ class CBOW(Node2Vec):
         self,
         vocabulary_size: int,
         embedding_size: int,
-        optimizer: Union[str, Optimizer] = "nadam",
-        window_size: int = 4,
+        model_name: str = "CBOW",
+        optimizer: Union[str, Optimizer] = None,
+        window_size: int = 7,
         negative_samples: int = 10
     ):
         """Create new CBOW-based Embedder object.
@@ -31,9 +32,13 @@ class CBOW(Node2Vec):
             number of the unique words.
         embedding_size: int,
             Dimension of the embedding.
-        optimizer: Union[str, Optimizer] = "nadam",
+        model_name: str = "CBOW",
+            Name of the model.
+        optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
-        window_size: int = 4,
+            By default, if None is provided, Nadam with learning rate
+            set at 0.01 is used.
+        window_size: int = 7,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int,
@@ -43,7 +48,7 @@ class CBOW(Node2Vec):
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
-            model_name="CBOW",
+            model_name=model_name,
             optimizer=optimizer,
             window_size=window_size,
             negative_samples=negative_samples

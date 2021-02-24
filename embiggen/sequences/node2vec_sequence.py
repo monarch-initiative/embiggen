@@ -58,5 +58,5 @@ class Node2VecSequence(AbstractNode2VecSequence):
         )
 
         if self._support_mirror_strategy:
-            return (words.astype(float), contexts.astype(float)), None
-        return (words, contexts), None
+            return (contexts.astype(float), words.astype(float)), None
+        return (contexts, words), None

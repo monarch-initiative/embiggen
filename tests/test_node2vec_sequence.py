@@ -9,7 +9,7 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
     def setUp(self):
         """Setup objects to test that Node2Vec sequence works correctly."""
         super().setUp()
-        self._window_size = 4
+        self._window_size = 7
         self._walk_length = 100
         self._batch_size = 1
         self._sequence = Node2VecSequence(
@@ -24,7 +24,7 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
         (context_vector, words_vector), _ = self._sequence[0]
         self.assertEqual(
             context_vector.shape,
-            ((self._walk_length - self._window_size*2 - 1)*self._batch_size, self._window_size*2))
+            ((self._walk_length - self._window_size*2)*self._batch_size, self._window_size*2))
         self.assertEqual(context_vector.shape[0], words_vector.shape[0])
 
     def test_nodes_range(self):

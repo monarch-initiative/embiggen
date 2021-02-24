@@ -7,7 +7,7 @@ class TestLinkPredictionSequence(TestNodeSequences):
 
     def setUp(self):
         super().setUp()
-        self._window_size = 4
+        self._window_size = 7
         self._length = 100
         self._batch_size = 128
         self._embedding_size = 100

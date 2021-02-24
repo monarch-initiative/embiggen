@@ -1,21 +1,22 @@
-"""Abstract class for graph embedding models."""
-from typing import Union, Dict, List
+"""GraphSkipGram model for graph embedding."""
+from typing import Union, Dict
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 from ensmallen_graph import EnsmallenGraph
-import pandas as pd
-import numpy as np
-from tensorflow.keras.optimizers import Optimizer
-from tensorflow.keras.callbacks import EarlyStopping
-from .word2vec import Word2Vec
-from ..sequences import Node2VecSequence
+from .skipgram import SkipGram
+from .node2vec import Node2Vec
 
 
-class Node2Vec:
-    """Abstract class for sequence embedding models."""
+class GraphSkipGram(Node2Vec):
+    """GraphSkipGram model for graph embedding.
+
+    The SkipGram model for graoh embedding receives a central word and tries
+    to predict its contexts. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,
         graph: EnsmallenGraph,
-        word2vec_model: Word2Vec,
         embedding_size: int = 100,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
@@ -110,8 +111,12 @@ class Node2Vec:
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
         """
-        self._sequence = Node2VecSequence(
-            graph,
+        super().__init__(
+            graph=graph,
+            word2vec_model=SkipGram,
+            embedding_size=embedding_size,
+            optimizer=optimizer,
+            negative_samples=negative_samples,
             walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,
@@ -121,120 +126,8 @@ class Node2Vec:
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
-            support_mirror_strategy=support_mirror_strategy,
             elapsed_epochs=elapsed_epochs,
+            support_mirror_strategy=support_mirror_strategy,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping
         )
-        self._model = word2vec_model(
-            vocabulary_size=graph.get_nodes_number(),
-            embedding_size=embedding_size,
-            model_name="Graph{}".format(word2vec_model.__name__),
-            optimizer=optimizer,
-            window_size=window_size,
-            negative_samples=negative_samples
-        )
-
-    def fit(
-        self,
-        epochs: int = 100,
-        monitor: str = "loss",
-        min_delta: float = 0.1,
-        patience: int = 5,
-        mode: str = "min",
-        **kwargs: Dict
-    ) -> pd.DataFrame:
-        """Return pandas dataframe with training history.
-
-        Parameters
-        -----------------------
-        epochs: int = 100,
-            Epochs to train the model for.
-        monitor: str = "loss",
-            Metric to monitor for early stopping.
-        min_delta: float = 0.1,
-            Minimum delta of metric to stop the training.
-        patience: int = 5,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved.
-        mode: str = "min",
-            Direction of the variation of the monitored metric.
-        **kwargs: Dict,
-            Additional kwargs to pass to the Keras fit call.
-
-        Returns
-        -----------------------
-        Dataframe with training history.
-        """
-        return self._model.fit(
-            self._sequence,
-            steps_per_epoch=self._sequence.steps_per_epoch,
-            epochs=epochs,
-            callbacks=[
-                EarlyStopping(
-                    monitor=monitor,
-                    min_delta=min_delta,
-                    patience=patience,
-                    mode=mode,
-                    restore_best_weights=True
-                ),
-                *kwargs.get("callbacks", ())
-            ],
-            **kwargs
-        )
-
-    def summary(self):
-        """Print model summary."""
-        self._model.summary()
-
-    @property
-    def embedding(self) -> np.ndarray:
-        """Return model embeddings."""
-        return self._model.embedding
-
-    def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
-        """Return terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        term_names: List[str],
-            List of terms to be used as index names.
-        """
-        return self._model.get_embedding_dataframe(term_names)
-
-    def save_embedding(self, path: str, term_names: List[str]):
-        """Save terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        path: str,
-            Save embedding as csv to given path.
-        term_names: List[str],
-            List of terms to be used as index names.
-        """
-        self._model.save_embedding(path, term_names)
-
-    @property
-    def name(self) -> str:
-        """Return model name."""
-        return self._model.name
-
-    def save_weights(self, path: str):
-        """Save model weights to given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path where to save model weights.
-        """
-        self._model.save_weights(path)
-
-    def load_weights(self, path: str):
-        """Load model weights from given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path from where to load model weights.
-        """
-        self._model.load_weights(path)

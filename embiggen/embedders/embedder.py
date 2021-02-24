@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from tensorflow.keras.models import Model   # pylint: disable=import-error
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from tensorflow.keras.optimizers import Nadam
 
 
 class Embedder:
@@ -16,7 +17,7 @@ class Embedder:
         self,
         vocabulary_size: int,
         embedding_size: int,
-        optimizer: Union[str, Optimizer] = "nadam"
+        optimizer: Union[str, Optimizer] = None
     ):
         """Create new Embedder object.
 
@@ -28,8 +29,10 @@ class Embedder:
             number of the unique words.
         embedding_size: int,
             Dimension of the embedding.
-        optimizer: Union[str, Optimizer] = "nadam",
+        optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
+            By default, if None is provided, Nadam with learning rate
+            set at 0.01 is used.
 
         Raises
         -----------------------------------
@@ -54,6 +57,8 @@ class Embedder:
             ))
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
+        if optimizer is None:
+            optimizer = Nadam(learning_rate=0.01)
         self._optimizer = optimizer
         self._model = self._build_model()
 
@@ -80,8 +85,6 @@ class Embedder:
 
         Parameters
         -----------------------------
-        path: str,
-            Save embedding as csv to given path.
         term_names: List[str],
             List of terms to be used as index names.
         """

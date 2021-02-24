@@ -23,7 +23,7 @@ class GloVe(Embedder):
         self,
         vocabulary_size: int,
         embedding_size: int,
-        optimizer: Union[str, Optimizer] = "nadam",
+        optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         shared_embedding_layers: bool = False
     ):
@@ -39,6 +39,8 @@ class GloVe(Embedder):
             Dimension of the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
+            By default, if None is provided, Nadam with learning rate
+            set at 0.01 is used.
         alpha: float = 0.75,
             Alpha to use for the function.
         shared_embedding_layers: bool = False,

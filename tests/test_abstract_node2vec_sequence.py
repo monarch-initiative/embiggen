@@ -10,7 +10,7 @@ class TestAbstractNode2VecSequence(TestNodeSequences):
     def setUp(self):
         """Setup and test abstract unit test class for node2vec sequence."""
         super().setUp()
-        self._window_size = 4
+        self._window_size = 7
         self._walk_length = 100
         self._batch_size = 1
         self._sequence = AbstractNode2VecSequence(
