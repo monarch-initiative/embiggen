@@ -21,7 +21,7 @@ class LinkPredictionSequence(Sequence):
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
-        seed: int = 42
+        random_state: int = 42
     ):
         """Create new LinkPredictionSequence object.
 
@@ -64,8 +64,8 @@ class LinkPredictionSequence(Sequence):
             Number of batches per epoch.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        seed: int = 42,
-            The seed to use to make extraction reproducible.
+        random_state: int = 42,
+            The random_state to use to make extraction reproducible.
         """
         self._graph = graph
         if embedding is not None:
@@ -75,7 +75,7 @@ class LinkPredictionSequence(Sequence):
         self._support_mirror_strategy = support_mirror_strategy
         self._graph_to_avoid = graph_to_avoid
         self._method = method
-        self._seed = seed
+        self._random_state = random_state
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch*batch_size,
@@ -97,7 +97,7 @@ class LinkPredictionSequence(Sequence):
         """
         if self._method is None:
             left, right, labels =  self._graph.link_prediction_ids(
-                self._seed + idx + self.elapsed_epochs,
+                self._random_state + idx + self.elapsed_epochs,
                 batch_size=self.batch_size,
                 negative_samples=self._negative_samples,
                 avoid_false_negatives=self._avoid_false_negatives,
@@ -108,7 +108,7 @@ class LinkPredictionSequence(Sequence):
                 right = right.astype(float)
             return (left, right), labels
         return self._graph.link_prediction(
-            self._seed + idx + self.elapsed_epochs,
+            self._random_state + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
             method=self._method,
             negative_samples=self._negative_samples,

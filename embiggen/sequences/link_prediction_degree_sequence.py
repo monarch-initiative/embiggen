@@ -18,7 +18,7 @@ class LinkPredictionDegreeSequence(Sequence):
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: bool = 2**8,
         elapsed_epochs: int = 0,
-        seed: int = 42
+        random_state: int = 42
     ):
         """Create new LinkPredictionSequence object.
 
@@ -46,14 +46,14 @@ class LinkPredictionDegreeSequence(Sequence):
             Number of batches per epoch.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        seed: int = 42,
-            The seed to use to make extraction reproducible.
+        random_state: int = 42,
+            The random_state to use to make extraction reproducible.
         """
         self._graph = graph
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
-        self._seed = seed
+        self._random_state = random_state
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch*batch_size,
@@ -74,7 +74,7 @@ class LinkPredictionDegreeSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         left, right, labels = self._graph.link_prediction_degrees(
-            self._seed + idx + self.elapsed_epochs,
+            self._random_state + idx + self.elapsed_epochs,
             batch_size=self._batch_size,
             normalize=True,
             negative_samples=self._negative_samples,

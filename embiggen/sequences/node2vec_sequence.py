@@ -43,11 +43,11 @@ class Node2VecSequence(AbstractNode2VecSequence):
         ---------------
         Tuple of tuples with input data.
         """
-        words, contexts = self._graph.node2vec(
-            self._batch_size,
-            self._walk_length,
-            iterations=self._iterations,
+        contexts, words = self._graph.node2vec(
+            batch_size=self._batch_size,
+            walk_length=self._walk_length,
             window_size=self._window_size,
+            iterations=self._iterations,
             return_weight=self._return_weight,
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,

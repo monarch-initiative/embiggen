@@ -11,8 +11,8 @@ class AbstractNode2VecSequence(AbstractSequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        walk_length: int,
-        batch_size: int,
+        walk_length: int = 128,
+        batch_size: int = 128,
         iterations: int = 1,
         window_size: int = 4,
         return_weight: float = 1.0,
@@ -22,7 +22,7 @@ class AbstractNode2VecSequence(AbstractSequence):
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
-        seed: int = 42,
+        random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None
     ):
         """Create new Node2Vec Sequence object.
@@ -31,10 +31,9 @@ class AbstractNode2VecSequence(AbstractSequence):
         -----------------------------
         graph: EnsmallenGraph,
             The graph from from where to extract the walks.
-        walk_length: int,
+        walk_length: int = 128,
             Maximal length of the walks.
-            In directed graphs, when traps are present, walks may be shorter.
-        batch_size: int,
+        batch_size: int = 128,
             Number of nodes to include in a single batch.
         iterations: int = 1,
             Number of iterations of the single walks.
@@ -79,6 +78,8 @@ class AbstractNode2VecSequence(AbstractSequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        random_state: int = 42,
+            The random state to reproduce the training sequence.
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
@@ -103,5 +104,5 @@ class AbstractNode2VecSequence(AbstractSequence):
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,
-            random_state=seed
+            random_state=random_state
         )
