@@ -1,5 +1,5 @@
 """Abstract class for graph embedding models."""
-from typing import Union, Dict, List
+from typing import Union, Dict
 from ensmallen_graph import EnsmallenGraph
 import pandas as pd
 import numpy as np
@@ -110,8 +110,9 @@ class Node2Vec:
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
         """
+        self._graph = graph
         self._sequence = Node2VecSequence(
-            graph,
+            self._graph,
             walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,
@@ -127,7 +128,7 @@ class Node2Vec:
             dense_node_mapping=dense_node_mapping
         )
         self._model = word2vec_model(
-            vocabulary_size=graph.get_nodes_number(),
+            vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             model_name="Graph{}".format(word2vec_model.__name__),
             optimizer=optimizer,
@@ -192,27 +193,19 @@ class Node2Vec:
         """Return model embeddings."""
         return self._model.embedding
 
-    def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
-        """Return terms embedding using given index names.
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return self._model.get_embedding_dataframe(self._graph.get_node_names())
 
-        Parameters
-        -----------------------------
-        term_names: List[str],
-            List of terms to be used as index names.
-        """
-        return self._model.get_embedding_dataframe(term_names)
-
-    def save_embedding(self, path: str, term_names: List[str]):
+    def save_embedding(self, path: str):
         """Save terms embedding using given index names.
 
         Parameters
         -----------------------------
         path: str,
             Save embedding as csv to given path.
-        term_names: List[str],
-            List of terms to be used as index names.
         """
-        self._model.save_embedding(path, term_names)
+        self._model.save_embedding(path, self._graph.get_node_names())
 
     @property
     def name(self) -> str:
