@@ -211,7 +211,7 @@ class Node2Vec:
                     (TqdmCallback(),)
                     if verbose
                     else ()
-                )
+                ),
                 * kwargs.get("callbacks", ())
             ],
             **kwargs
