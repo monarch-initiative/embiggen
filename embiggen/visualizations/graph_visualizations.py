@@ -24,7 +24,7 @@ class GraphVisualizations:
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(10, 10),
-        dpi=100
+        dpi=200
     )
 
     def __init__(self, method: str = "Hadamard"):

@@ -16,7 +16,8 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
             self._graph,
             walk_length=self._walk_length,
             batch_size=self._batch_size,
-            window_size=self._window_size
+            window_size=self._window_size,
+            iterations=1
         )
 
     def test_output_shape(self):

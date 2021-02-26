@@ -22,7 +22,7 @@ class GraphCBOW(Node2Vec):
         negative_samples: int = 10,
         walk_length: int = 128,
         batch_size: int = 256,
-        iterations: int = 1,
+        iterations: int = 20,
         window_size: int = 7,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -58,7 +58,7 @@ class GraphCBOW(Node2Vec):
             Maximal length of the walks.
         batch_size: int = 256,
             Number of nodes to include in a single batch.
-        iterations: int = 1,
+        iterations: int = 20,
             Number of iterations of the single walks.
         window_size: int = 7,
             Window size for the local context.

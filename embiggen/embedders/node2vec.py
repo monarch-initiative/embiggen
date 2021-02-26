@@ -1,12 +1,15 @@
 """Abstract class for graph embedding models."""
-from typing import Union, Dict
-from ensmallen_graph import EnsmallenGraph
-import pandas as pd
+from typing import Dict, Union
+
 import numpy as np
-from tensorflow.keras.optimizers import Optimizer
+import pandas as pd
+from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras.callbacks import EarlyStopping
-from .word2vec import Word2Vec
+from tensorflow.keras.optimizers import Optimizer
+from tqdm.keras import TqdmCallback
+
 from ..sequences import Node2VecSequence
+from .word2vec import Word2Vec
 
 
 class Node2Vec:
@@ -21,7 +24,7 @@ class Node2Vec:
         negative_samples: int = 10,
         walk_length: int = 128,
         batch_size: int = 256,
-        iterations: int = 1,
+        iterations: int = 20,
         window_size: int = 7,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -57,7 +60,7 @@ class Node2Vec:
             Maximal length of the walks.
         batch_size: int = 256,
             Number of nodes to include in a single batch.
-        iterations: int = 1,
+        iterations: int = 20,
             Number of iterations of the single walks.
         window_size: int = 7,
             Window size for the local context.
@@ -139,10 +142,15 @@ class Node2Vec:
     def fit(
         self,
         epochs: int = 100,
-        monitor: str = "loss",
-        min_delta: float = 0.1,
-        patience: int = 5,
-        mode: str = "min",
+        early_stopping_monitor: str = "loss",
+        early_stopping_min_delta: float = 0.1,
+        early_stopping_patience: int = 5,
+        early_stopping_mode: str = "min",
+        reduce_lr_monitor: str = "loss",
+        reduce_lr_min_delta: float = 1,
+        reduce_lr_patience: int = 3,
+        reduce_lr_mode: str = "min",
+        reduce_lr_factor: float = 0.9,
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -151,15 +159,26 @@ class Node2Vec:
         -----------------------
         epochs: int = 100,
             Epochs to train the model for.
-        monitor: str = "loss",
+        early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
-        min_delta: float = 0.1,
+        early_stopping_min_delta: float = 0.1,
             Minimum delta of metric to stop the training.
-        patience: int = 5,
+        early_stopping_patience: int = 5,
             Number of epochs to wait for when the given minimum delta is not
-            achieved.
-        mode: str = "min",
-            Direction of the variation of the monitored metric.
+            achieved after which trigger early stopping.
+        early_stopping_mode: str = "min",
+            Direction of the variation of the monitored metric for early stopping.
+        reduce_lr_monitor: str = "loss",
+            Metric to monitor for reducing learning rate.
+        reduce_lr_min_delta: float = 1,
+            Minimum delta of metric to reduce learning rate.
+        reduce_lr_patience: int = 3,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which reducing learning rate.
+        reduce_lr_mode: str = "min",
+            Direction of the variation of the monitored metric for learning rate.
+        reduce_lr_factor: float = 0.9,
+            Factor for reduction of learning rate.
         **kwargs: Dict,
             Additional kwargs to pass to the Keras fit call.
 
@@ -167,19 +186,33 @@ class Node2Vec:
         -----------------------
         Dataframe with training history.
         """
+        verbose = kwargs.pop("verbose", True)
         return self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=epochs,
+            verbose=False,
             callbacks=[
                 EarlyStopping(
-                    monitor=monitor,
-                    min_delta=min_delta,
-                    patience=patience,
-                    mode=mode,
+                    monitor=early_stopping_monitor,
+                    min_delta=early_stopping_min_delta,
+                    patience=early_stopping_patience,
+                    mode=early_stopping_mode,
                     restore_best_weights=True
                 ),
-                *kwargs.get("callbacks", ())
+                ReduceLROnPlateau(
+                    monitor=reduce_lr_monitor,
+                    min_delta=reduce_lr_min_delta,
+                    patience=reduce_lr_patience,
+                    factor=reduce_lr_factor,
+                    mode=reduce_lr_mode,
+                ),
+                *(
+                    (TqdmCallback(),)
+                    if verbose
+                    else ()
+                )
+                * kwargs.get("callbacks", ())
             ],
             **kwargs
         )

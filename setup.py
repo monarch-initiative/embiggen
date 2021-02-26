@@ -49,6 +49,7 @@ setup(
         'numpy',
         'pandas',
         "nltk",
+        "tqdm",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20",
         "extra_keras_metrics>=2.0.0",
