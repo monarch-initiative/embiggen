@@ -4,7 +4,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Optimizer
 from tqdm.keras import TqdmCallback
 
