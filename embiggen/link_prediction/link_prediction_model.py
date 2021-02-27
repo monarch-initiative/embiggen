@@ -143,7 +143,7 @@ class LinkPredictionModel(Embedder):
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
         early_stopping_monitor: str = "loss",
-            Metric to monitor for early stopping.
+            Metric to monitor for early stopping. 
         early_stopping_min_delta: float = 0.001,
             Minimum delta of metric to stop the training.
         early_stopping_patience: int = 10,

@@ -1,5 +1,5 @@
 """Model implementing Node Label max_neighbours Backpropagation for graphs."""
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -138,6 +138,7 @@ class NoLaN(Embedder):
         y_train: np.ndarray,
         batch_size: int = 256,
         epochs: int = 10000,
+        validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0,
         early_stopping_patience: int = 100,
@@ -155,8 +156,14 @@ class NoLaN(Embedder):
 
         Parameters
         -----------------------
+        X_train: np.ndarray,
+            Node IDs reserved for the training.
+        y_train: np.ndarray,
+            One-hot encoded categorical classes.
         epochs: int = 10000,
             Epochs to train the model for.
+        validation_data: Tuple = None,
+            Data reserved for validation.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
         early_stopping_min_delta: float = 0.1,
