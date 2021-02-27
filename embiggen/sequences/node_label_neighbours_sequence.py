@@ -69,7 +69,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         nodes = super().__getitem__(idx)
         max_neighbours = np.zeros((nodes.size, self._max_neighbours + 1))
         for i, node in enumerate(nodes):
-            node_max_neighbours = self._graph.get_filtered_max_neighbours(node)
+            node_max_neighbours = self._graph.get_filtered_neighbours(node)
             if node_max_neighbours.size > self._max_neighbours:
                 node_max_neighbours = np.random.choice(
                     node_max_neighbours,
