@@ -119,7 +119,7 @@ class Word2Vec(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
-            #embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
             #embeddings_constraint=UnitNorm(),
             name=Embedder.EMBEDDING_LAYER_NAME
         )(true_input_layer)
