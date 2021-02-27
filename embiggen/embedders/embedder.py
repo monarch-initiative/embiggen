@@ -71,8 +71,8 @@ class Embedder:
                     "Seed embedding was provided but also vocabulary size "
                     "and/or embedding size was provided."
                 )
-            embedding_size = embedding.shape[0]
-            vocabulary_size = embedding.shape[1]
+            embedding_size = embedding.shape[1]
+            vocabulary_size = embedding.shape[0]
 
         if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
             raise ValueError((
