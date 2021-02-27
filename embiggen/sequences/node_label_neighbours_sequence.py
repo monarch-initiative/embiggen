@@ -67,22 +67,22 @@ class NodeLabelNeighboursSequence(VectorSequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         nodes = super().__getitem__(idx)
-        max_neighbours = np.zeros((nodes.size, self._max_neighbours + 1))
+        neighbours = np.zeros((nodes.size, self._max_neighbours + 1))
         for i, node in enumerate(nodes):
-            node_max_neighbours = self._graph.get_filtered_neighbours(node)
-            if node_max_neighbours.size > self._max_neighbours:
-                node_max_neighbours = np.random.choice(
-                    node_max_neighbours,
+            node_neighbours = self._graph.get_filtered_neighbours(node)
+            if node_neighbours.size > self._max_neighbours:
+                node_neighbours = np.random.choice(
+                    node_neighbours,
                     size=self._max_neighbours,
                     replace=False
                 )
-            # The plus one is needed to handle nodes with less than max max_neighbours
+            # The plus one is needed to handle nodes with less than max neighbours
             # such nodes are represented with zeros and in the embedding layer
             # are masked.
-            max_neighbours[i, 1:node_max_neighbours.size+1] = node_max_neighbours + 1
-        # As per above, the plus one is needed to handle nodes with less than max max_neighbours
+            neighbours[i, 1:node_neighbours.size+1] = node_neighbours + 1
+        # As per above, the plus one is needed to handle nodes with less than max neighbours
         # such nodes are represented with zeros and in the embedding layer are masked.
-        max_neighbours[:, 0] = nodes + 1
+        neighbours[:, 0] = nodes + 1
         if self._support_mirror_strategy:
-            return max_neighbours.astype(float)
-        return max_neighbours
+            return neighbours.astype(float)
+        return neighbours
