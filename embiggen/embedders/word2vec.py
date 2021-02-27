@@ -1,8 +1,8 @@
 """Abstract class for sequence embedding models."""
 from typing import Dict, List, Tuple, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras import regularizers
 from tensorflow.keras.constraints import UnitNorm
@@ -119,8 +119,8 @@ class Word2Vec(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
-            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            #embeddings_constraint=UnitNorm(),
+            #embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            embeddings_constraint=UnitNorm(),
             name=Embedder.EMBEDDING_LAYER_NAME
         )(true_input_layer)
 
