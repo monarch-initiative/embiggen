@@ -136,7 +136,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 256,
+        batch_size: int = 128,
         epochs: int = 10000,
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",

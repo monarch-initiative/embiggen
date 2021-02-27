@@ -26,7 +26,7 @@ class Word2Vec(Embedder):
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "Word2Vec",
         optimizer: Union[str, Optimizer] = None,
-        window_size: int = 16,
+        window_size: int = 8,
         negative_samples: int = 10
     ):
         """Create new sequence Embedder model.
@@ -51,7 +51,7 @@ class Word2Vec(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        window_size: int = 16,
+        window_size: int = 8,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,

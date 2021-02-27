@@ -12,9 +12,9 @@ class AbstractNode2VecSequence(AbstractSequence):
         self,
         graph: EnsmallenGraph,
         walk_length: int = 128,
-        batch_size: int = 256,
-        iterations: int = 32,
-        window_size: int = 16,
+        batch_size: int = 128,
+        iterations: int = 16,
+        window_size: int = 8,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -33,11 +33,11 @@ class AbstractNode2VecSequence(AbstractSequence):
             The graph from from where to extract the walks.
         walk_length: int = 128,
             Maximal length of the walks.
-        batch_size: int = 256,
+        batch_size: int = 128,
             Number of nodes to include in a single batch.
-        iterations: int = 32,
+        iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 8,
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,

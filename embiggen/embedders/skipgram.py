@@ -19,7 +19,7 @@ class SkipGram(Word2Vec):
         embedding_size: int,
         model_name: str = "SkipGram",
         optimizer: Union[str, Optimizer] = None,
-        window_size: int = 16,
+        window_size: int = 8,
         negative_samples: int = 10
     ):
         """Create new CBOW-based Embedder object.
@@ -38,7 +38,7 @@ class SkipGram(Word2Vec):
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 16,
+        window_size: int = 8,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,

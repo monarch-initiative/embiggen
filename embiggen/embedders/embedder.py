@@ -273,7 +273,7 @@ class Embedder:
                 "Given verbose value is not valid, as it must be either "
                 "a boolean value or 0, 1 or 2."
             )
-        return self._model.fit(
+        return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
             verbose=False,
@@ -296,4 +296,4 @@ class Embedder:
                 * kwargs.get("callbacks", ())
             ],
             **kwargs
-        )
+        ).history)
