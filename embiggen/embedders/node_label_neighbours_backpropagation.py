@@ -210,7 +210,6 @@ class NoLaN(Embedder):
                 random_state=random_state
             )
         )
-        validation_data = kwargs.get("validation_data", None)
         if validation_data is not None:
             X_test, y_test = validation_data
             validation_data = MixedSequence(
@@ -246,7 +245,7 @@ class NoLaN(Embedder):
     @property
     def embedding(self) -> np.ndarray:
         """Return model embeddings.
-        
+
         Raises
         -------------------
         NotImplementedError,
@@ -256,4 +255,8 @@ class NoLaN(Embedder):
         # curresponding to the indices 0, as this value is reserved for the
         # masked values. The masked values are the values used to fill
         # the batches of the neigbours of the nodes.
-        return Embedder.embedding.fget(self)[1:] # pylint: disable=no-member
+        return Embedder.embedding.fget(self)[1:]  # pylint: disable=no-member
+
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return super().get_embedding_dataframe(self._graph.get_node_names())
