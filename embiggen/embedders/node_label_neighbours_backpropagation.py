@@ -1,19 +1,19 @@
 """Model implementing Node Label max_neighbours Backpropagation for graphs."""
-from typing import Dict, Union, Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
+from extra_keras_metrics import get_minimal_multiclass_metrics
 from keras_mixed_sequence import MixedSequence, VectorSequence
 from tensorflow.keras import regularizers
-from extra_keras_metrics import get_minimal_multiclass_metrics
 from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (Dense, Dropout, Embedding,
                                      GlobalAveragePooling1D, Input)
+from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Optimizer
-from ..sequences import NodeLabelNeighboursSequence
 
+from ..sequences import NodeLabelNeighboursSequence
 from .embedder import Embedder
 
 

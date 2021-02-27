@@ -97,7 +97,7 @@ class Embedder:
 
         self._optimizer = optimizer
         self._model = self._build_model()
-        self.trainable = trainable_embedding
+        #self.trainable = trainable_embedding
 
     def _build_model(self) -> Model:
         """Build new model for embedding."""
