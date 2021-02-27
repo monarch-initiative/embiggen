@@ -22,8 +22,8 @@ class GraphSkipGram(Node2Vec):
         negative_samples: int = 10,
         walk_length: int = 128,
         batch_size: int = 256,
-        iterations: int = 20,
-        window_size: int = 7,
+        iterations: int = 32,
+        window_size: int = 16,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -48,7 +48,7 @@ class GraphSkipGram(Node2Vec):
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 7,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,
@@ -58,9 +58,9 @@ class GraphSkipGram(Node2Vec):
             Maximal length of the walks.
         batch_size: int = 256,
             Number of nodes to include in a single batch.
-        iterations: int = 20,
+        iterations: int = 32,
             Number of iterations of the single walks.
-        window_size: int = 7,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
@@ -88,7 +88,7 @@ class GraphSkipGram(Node2Vec):
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
         max_neighbours: int = None,
-            Number of maximum neighbours to consider when using approximated walks.
+            Number of maximum max_neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,

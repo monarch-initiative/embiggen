@@ -4,7 +4,6 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.optimizers import Optimizer
 from tqdm.keras import TqdmCallback
 
@@ -24,8 +23,8 @@ class Node2Vec:
         negative_samples: int = 10,
         walk_length: int = 128,
         batch_size: int = 256,
-        iterations: int = 20,
-        window_size: int = 7,
+        iterations: int = 32,
+        window_size: int = 16,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -50,7 +49,7 @@ class Node2Vec:
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 7,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,
@@ -60,9 +59,9 @@ class Node2Vec:
             Maximal length of the walks.
         batch_size: int = 256,
             Number of nodes to include in a single batch.
-        iterations: int = 20,
+        iterations: int = 32,
             Number of iterations of the single walks.
-        window_size: int = 7,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
@@ -90,7 +89,7 @@ class Node2Vec:
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
         max_neighbours: int = None,
-            Number of maximum neighbours to consider when using approximated walks.
+            Number of maximum max_neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
@@ -141,7 +140,7 @@ class Node2Vec:
 
     def fit(
         self,
-        epochs: int = 100,
+        epochs: int = 10000,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.1,
         early_stopping_patience: int = 5,
@@ -151,13 +150,14 @@ class Node2Vec:
         reduce_lr_patience: int = 3,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
+        verbose: int = 1,
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
 
         Parameters
         -----------------------
-        epochs: int = 100,
+        epochs: int = 10000,
             Epochs to train the model for.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
@@ -179,6 +179,12 @@ class Node2Vec:
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
+        verbose: int = 1,
+            Wethever to show the loading bar.
+            Specifically, the options are:
+            * 0 or False: No loading bar.
+            * 1 or True: Showing only the loading bar for the epochs.
+            * 2: Showing loading bar for both epochs and batches.
         **kwargs: Dict,
             Additional kwargs to pass to the Keras fit call.
 
@@ -186,34 +192,19 @@ class Node2Vec:
         -----------------------
         Dataframe with training history.
         """
-        verbose = kwargs.pop("verbose", True)
         return self._model.fit(
             self._sequence,
-            steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=epochs,
-            verbose=False,
-            callbacks=[
-                EarlyStopping(
-                    monitor=early_stopping_monitor,
-                    min_delta=early_stopping_min_delta,
-                    patience=early_stopping_patience,
-                    mode=early_stopping_mode,
-                    restore_best_weights=True
-                ),
-                ReduceLROnPlateau(
-                    monitor=reduce_lr_monitor,
-                    min_delta=reduce_lr_min_delta,
-                    patience=reduce_lr_patience,
-                    factor=reduce_lr_factor,
-                    mode=reduce_lr_mode,
-                ),
-                *(
-                    (TqdmCallback(),)
-                    if verbose
-                    else ()
-                ),
-                * kwargs.get("callbacks", ())
-            ],
+            early_stopping_monitor=early_stopping_monitor,
+            early_stopping_min_delta=early_stopping_min_delta,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_mode=early_stopping_mode,
+            reduce_lr_monitor=reduce_lr_monitor,
+            reduce_lr_min_delta=reduce_lr_min_delta,
+            reduce_lr_patience=reduce_lr_patience,
+            reduce_lr_mode=reduce_lr_mode,
+            reduce_lr_factor=reduce_lr_factor,
+            verbose=verbose,
             **kwargs
         )
 
@@ -225,6 +216,28 @@ class Node2Vec:
     def embedding(self) -> np.ndarray:
         """Return model embeddings."""
         return self._model.embedding
+
+    @property
+    def trainable(self) -> bool:
+        """Return whether the embedding layer can be trained.
+        
+        Raises
+        -------------------
+        NotImplementedError,
+            If the current embedding model does not have an embedding layer.
+        """
+        return self._model.trainable
+
+    @trainable.setter
+    def trainable(self, trainable: bool):
+        """Set whether the embedding layer can be trained or not.
+        
+        Parameters
+        -------------------
+        trainable: bool,
+            Whether the embedding layer can be trained or not.
+        """
+        self._model.trainable = trainable
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
         """Return terms embedding using given index names."""

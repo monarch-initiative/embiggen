@@ -13,8 +13,8 @@ class AbstractNode2VecSequence(AbstractSequence):
         graph: EnsmallenGraph,
         walk_length: int = 128,
         batch_size: int = 256,
-        iterations: int = 20,
-        window_size: int = 7,
+        iterations: int = 32,
+        window_size: int = 16,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -35,9 +35,9 @@ class AbstractNode2VecSequence(AbstractSequence):
             Maximal length of the walks.
         batch_size: int = 256,
             Number of nodes to include in a single batch.
-        iterations: int = 20,
+        iterations: int = 32,
             Number of iterations of the single walks.
-        window_size: int = 7,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
         shuffle: bool = True,
@@ -65,7 +65,7 @@ class AbstractNode2VecSequence(AbstractSequence):
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
         max_neighbours: int = None,
-            Number of maximum neighbours to consider when using approximated walks.
+            Number of maximum max_neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,

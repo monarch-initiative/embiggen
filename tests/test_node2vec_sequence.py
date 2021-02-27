@@ -9,7 +9,7 @@ class TestNode2VecSequence(TestAbstractNode2VecSequence):
     def setUp(self):
         """Setup objects to test that Node2Vec sequence works correctly."""
         super().setUp()
-        self._window_size = 7
+        self._window_size = 16
         self._walk_length = 100
         self._batch_size = 1
         self._sequence = Node2VecSequence(

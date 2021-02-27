@@ -15,8 +15,8 @@ class TestPerceptron(TestCase):
     def test_training(self):
         for method in edge_embedding_layer.keys():
             model = Perceptron(
-                self._embedding,
+                embedding=self._embedding,
                 edge_embedding_method=method
             )
             model.summary()
-            model.fit(self._string_ppi, batches_per_epoch=10)
+            model.fit(self._string_ppi, batches_per_epoch=10, epochs=1)

@@ -17,6 +17,5 @@ class TestLinkPredictionModel(TestLinkPredictionSequence):
         self._model.fit(
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,
-            epochs=2,
-            verbose=False
+            epochs=2
         )

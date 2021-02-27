@@ -1,8 +1,11 @@
 """GloVe model for graph and words embedding."""
-from typing import Union
+from typing import Dict, List, Union
 
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error
+from tensorflow.keras import regularizers
+from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
                                      Embedding, Flatten, Input)
 from tensorflow.keras.models import Model  # pylint: disable=import-error
@@ -91,6 +94,11 @@ class GloVe(Embedder):
                 self._vocabulary_size,
                 self._embedding_size,
                 input_length=1,
+                embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                embeddings_constraint=UnitNorm(),
+                weights=None if self._embedding is None else [
+                    self._embedding
+                ],
                 name=Embedder.EMBEDDING_LAYER_NAME
             )
             embedding_layers = [
@@ -103,12 +111,21 @@ class GloVe(Embedder):
                     self._vocabulary_size,
                     self._embedding_size,
                     input_length=1,
+                    embeddings_regularizer=regularizers.l1_l2(
+                        l1=1e-5, l2=1e-4),
+                    embeddings_constraint=UnitNorm(),
+                    weights=None if self._embedding is None else [
+                        self._embedding
+                    ],
                     name=Embedder.EMBEDDING_LAYER_NAME
                 )(input_layers[0]),
                 Embedding(
                     self._vocabulary_size,
                     self._embedding_size,
                     input_length=1,
+                    embeddings_regularizer=regularizers.l1_l2(
+                        l1=1e-5, l2=1e-4),
+                    embeddings_constraint=UnitNorm()
                 )(input_layers[1])
             ]
 
@@ -140,3 +157,79 @@ class GloVe(Embedder):
         )
 
         return glove
+
+    def fit(
+        self,
+        *args: List,
+        epochs: int = 10000,
+        early_stopping_monitor: str = "loss",
+        early_stopping_min_delta: float = 0.001,
+        early_stopping_patience: int = 10,
+        early_stopping_mode: str = "min",
+        reduce_lr_monitor: str = "loss",
+        reduce_lr_min_delta: float = 0.01,
+        reduce_lr_patience: int = 10,
+        reduce_lr_mode: str = "min",
+        reduce_lr_factor: float = 0.9,
+        verbose: int = 1,
+        **kwargs: Dict
+    ) -> pd.DataFrame:
+        """Return pandas dataframe with training history.
+
+        Parameters
+        -----------------------
+        epochs: int = 10000,
+            Epochs to train the model for.
+        early_stopping_monitor: str = "loss",
+            Metric to monitor for early stopping.
+        early_stopping_min_delta: float = 0.001,
+            Minimum delta of metric to stop the training.
+        early_stopping_patience: int = 10,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which trigger early stopping.
+        early_stopping_mode: str = "min",
+            Direction of the variation of the monitored metric for early stopping.
+        reduce_lr_monitor: str = "loss",
+            Metric to monitor for reducing learning rate.
+        reduce_lr_min_delta: float = 0.01,
+            Minimum delta of metric to reduce learning rate.
+        reduce_lr_patience: int = 10,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which reducing learning rate.
+        reduce_lr_mode: str = "min",
+            Direction of the variation of the monitored metric for learning rate.
+        reduce_lr_factor: float = 0.9,
+            Factor for reduction of learning rate.
+        verbose: int = 1,
+            Wethever to show the loading bar.
+            Specifically, the options are:
+            * 0 or False: No loading bar.
+            * 1 or True: Showing only the loading bar for the epochs.
+            * 2: Showing loading bar for both epochs and batches.
+        **kwargs: Dict,
+            Additional kwargs to pass to the Keras fit call.
+
+        Raises
+        -----------------------
+        ValueError,
+            If given verbose value is not within the available set (-1, 0, 1).
+
+        Returns
+        -----------------------
+        Dataframe with training history.
+        """
+        return super().fit(
+            *args,
+            epochs=epochs,
+            early_stopping_monitor=early_stopping_monitor,
+            early_stopping_min_delta=early_stopping_min_delta,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_mode=early_stopping_mode,
+            reduce_lr_monitor=reduce_lr_monitor,
+            reduce_lr_min_delta=reduce_lr_min_delta,
+            reduce_lr_patience=reduce_lr_patience,
+            reduce_lr_mode=reduce_lr_mode,
+            reduce_lr_factor=reduce_lr_factor,
+            verbose=verbose,
+            **kwargs
+        )

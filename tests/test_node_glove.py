@@ -31,8 +31,7 @@ class TestNodeGloVe(TestNodeSequences):
             model.fit(
                 (self._words, self._ctxs),
                 self._freq,
-                epochs=2,
-                verbose=False
+                epochs=2
             )
 
             self.assertEqual(
