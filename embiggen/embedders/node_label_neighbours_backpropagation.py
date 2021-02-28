@@ -29,7 +29,7 @@ class NoLaN(Embedder):
         labels_number: int,
         embedding_size: int = None,
         use_dropout: bool = True,
-        dropout_rate: float = 0.5,
+        dropout_rate: float = 0.6,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         trainable_embedding: bool = True,
@@ -111,7 +111,7 @@ class NoLaN(Embedder):
 
         output = Dense(
             self._labels_number,
-            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            kernel_regularizer=regularizers.l1_l2(l1=1e-4, l2=1e-4),
             activation="softmax"
         )(neighbours_embedding)
 
@@ -135,7 +135,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 128,
+        batch_size: int = 256,
         validation_data: Tuple = None,
         random_state: int = 42
     ) -> Tuple[MixedSequence, MixedSequence]:
@@ -147,7 +147,7 @@ class NoLaN(Embedder):
             Node indices for training.
         y_train: np.ndarray,
             Labels to predict.
-        batch_size: int = 128,
+        batch_size: int = 256,
             Batch size for the sequence.
         validation_data: Tuple = None,
             Tuple containing:
@@ -227,7 +227,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 128,
+        batch_size: int = 256,
         epochs: int = 10000,
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
