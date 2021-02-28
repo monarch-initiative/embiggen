@@ -79,7 +79,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
             # The plus one is needed to handle nodes with less than max neighbours
             # such nodes are represented with zeros and in the embedding layer
             # are masked.
-            neighbours[i, node_neighbours.size] = node_neighbours + 1
+            neighbours[i, :node_neighbours.size] = node_neighbours + 1
         if self._support_mirror_strategy:
             return neighbours.astype(float)
         return neighbours
