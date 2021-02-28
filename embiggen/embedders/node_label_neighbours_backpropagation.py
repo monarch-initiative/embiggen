@@ -11,6 +11,7 @@ from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (Dense, Dropout, Embedding,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model
+from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Optimizer
 
 from ..sequences import NodeLabelNeighboursSequence
@@ -130,7 +131,7 @@ class NoLaN(Embedder):
         """Compile model."""
         self._model.compile(
             optimizer=self._optimizer,
-            loss="categorical_crossentropy",
+            loss=CategoricalCrossentropy(label_smoothing=0.1),
             metrics=get_minimal_multiclass_metrics()
         )
 
