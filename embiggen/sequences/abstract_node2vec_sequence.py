@@ -65,7 +65,7 @@ class AbstractNode2VecSequence(AbstractSequence):
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
         max_neighbours: int = None,
-            Number of maximum max_neighbours to consider when using approximated walks.
+            Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
