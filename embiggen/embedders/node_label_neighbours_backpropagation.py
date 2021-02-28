@@ -132,6 +132,98 @@ class NoLaN(Embedder):
 
         return model
 
+    def build_training_sequence(
+        self,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        batch_size: int = 128,
+        validation_data: Tuple = None,
+        random_state: int = 42
+    ) -> Tuple[MixedSequence, MixedSequence]:
+        """Return .
+
+        Parameters
+        --------------------
+        X_train: np.ndarray,
+            Node indices for training.
+        y_train: np.ndarray,
+            Labels to predict.
+        batch_size: int = 128,
+            Batch size for the sequence.
+        validation_data: Tuple = None,
+            Tuple containing:
+            - Node indices for validation
+            - Labels to predict
+            If None, no validation data are used.
+        random_state: int = 42,
+            Random seed to reproduce.
+
+        Returns
+        --------------------
+        Training and validation MixedSequence
+        """
+        if (X_train < 0).any():
+            raise ValueError(
+                "There cannot be negative node indices in the training nodes."
+            )
+        if (X_train >= self._graph.get_nodes_number()).any():
+            raise ValueError(
+                "There cannot be node indices in the training nodes higher "
+                "than the number of nodes in the graph."
+            )
+        if (np.bincount(X_train, minlength=self._graph.get_nodes_number()) > 1).any():
+            raise ValueError(
+                "There cannot be duplicated node indices in the training nodes."
+            )
+        train_sequence = MixedSequence(
+            x=NodeLabelNeighboursSequence(
+                self._graph, X_train,
+                batch_size=batch_size,
+                random_state=random_state,
+                support_mirror_strategy=self._support_mirror_strategy
+            ),
+            y=VectorSequence(
+                y_train,
+                batch_size=batch_size,
+                random_state=random_state
+            )
+        )
+        if validation_data is not None:
+            X_validation, y_validation = validation_data
+            if (X_validation < 0).any():
+                raise ValueError(
+                    "There cannot be negative node indices in the validation nodes."
+                )
+            if (X_validation >= self._graph.get_nodes_number()).any():
+                raise ValueError(
+                    "There cannot be node indices in the validation nodes higher "
+                    "than the number of nodes in the graph."
+                )
+            if (np.bincount(X_validation, minlength=self._graph.get_nodes_number()) > 1).any():
+                raise ValueError(
+                    "There cannot be duplicated node indices in the testing nodes."
+                )
+            if np.isin(X_train, X_validation, assume_unique=True).any():
+                raise ValueError(
+                    "Train and validation node indices cannot overlap!."
+                )
+            validation_sequence = MixedSequence(
+                x=NodeLabelNeighboursSequence(
+                    self._graph, X_validation,
+                    batch_size=batch_size,
+                    random_state=random_state,
+                    support_mirror_strategy=self._support_mirror_strategy
+                ),
+                y=VectorSequence(
+                    y_validation,
+                    batch_size=batch_size,
+                    random_state=random_state
+                )
+            )
+        else:
+            validation_sequence = None
+        return train_sequence, validation_sequence
+
     def fit(
         self,
         X_train: np.ndarray,
@@ -197,38 +289,16 @@ class NoLaN(Embedder):
         -----------------------
         Dataframe with training history.
         """
-        train_sequence = MixedSequence(
-            x=NodeLabelNeighboursSequence(
-                self._graph, X_train,
-                batch_size=batch_size,
-                random_state=random_state,
-                support_mirror_strategy=self._support_mirror_strategy
-            ),
-            y=VectorSequence(
-                y_train,
-                batch_size=batch_size,
-                random_state=random_state
-            )
+        train_sequence, validation_sequence = self.build_training_sequence(
+            X_train, y_train,
+            batch_size=batch_size,
+            validation_data=validation_data,
+            random_state=random_state
         )
-        if validation_data is not None:
-            X_test, y_test = validation_data
-            validation_data = MixedSequence(
-                x=NodeLabelNeighboursSequence(
-                    self._graph, X_test,
-                    batch_size=batch_size,
-                    random_state=random_state,
-                    support_mirror_strategy=self._support_mirror_strategy
-                ),
-                y=VectorSequence(
-                    y_test,
-                    batch_size=batch_size,
-                    random_state=random_state
-                )
-            )
         return super().fit(
             train_sequence,
             epochs=epochs,
-            validation_data=validation_data,
+            validation_data=validation_sequence,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
