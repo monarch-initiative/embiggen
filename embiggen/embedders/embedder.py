@@ -299,7 +299,7 @@ class Embedder:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose-1),) if verbose > 0 else ()),
+                *((TqdmCallback(verbose=verboseverbose-1),) if verbose > 0 else ()),
                 * kwargs.get("callbacks", ())
             ],
             **kwargs

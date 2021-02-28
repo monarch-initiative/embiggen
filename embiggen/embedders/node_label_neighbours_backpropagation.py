@@ -249,7 +249,7 @@ class NoLaN(Embedder):
         reduce_lr_min_delta: float = 0,
         reduce_lr_patience: int = 20,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.95,
         verbose: int = 1,
         random_state: int = 42,
         **kwargs: Dict
