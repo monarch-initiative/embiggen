@@ -124,13 +124,15 @@ class NoLaN(Embedder):
             name="NodeLabelPredictor"
         )
 
-        model.compile(
+        return model
+
+    def _compile_model(self) -> Model:
+        """Compile model."""
+        self._model.compile(
             optimizer=self._optimizer,
             loss="categorical_crossentropy",
             metrics=get_minimal_multiclass_metrics()
         )
-
-        return model
 
     def build_training_sequence(
         self,

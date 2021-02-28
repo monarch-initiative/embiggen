@@ -97,12 +97,18 @@ class Embedder:
 
         self._optimizer = optimizer
         self._model = self._build_model()
-        #self.trainable = trainable_embedding
+        self.trainable = trainable_embedding
 
     def _build_model(self) -> Model:
         """Build new model for embedding."""
         raise NotImplementedError(
             "The method _build_model must be implemented in the child classes."
+        )
+
+    def _compile_model(self) -> Model:
+        """Compile model."""
+        raise NotImplementedError(
+            "The method _compile_model must be implemented in the child classes."
         )
 
     def summary(self):
@@ -153,6 +159,7 @@ class Embedder:
         for layer in self._model.layers:
             if layer.name == Embedder.EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
+        self._compile_model()
 
     def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
         """Return terms embedding using given index names.

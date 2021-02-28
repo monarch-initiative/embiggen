@@ -151,12 +151,15 @@ class GloVe(Embedder):
             outputs=prediction,
             name="GloVe"
         )
-        glove.compile(
+        
+        return glove
+
+    def _compile_model(self) -> Model:
+        """Compile model."""
+        self._model.compile(
             loss=self._glove_loss,
             optimizer=self._optimizer
         )
-
-        return glove
 
     def fit(
         self,

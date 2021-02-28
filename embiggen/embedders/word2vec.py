@@ -120,7 +120,7 @@ class Word2Vec(Embedder):
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
             #embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            #embeddings_constraint=UnitNorm(),
+            # embeddings_constraint=UnitNorm(),
             name=Embedder.EMBEDDING_LAYER_NAME
         )(true_input_layer)
 
@@ -153,13 +153,15 @@ class Word2Vec(Embedder):
             outputs=nce_loss,
             name=self._model_name
         )
+        return model
 
+    def _compile_model(self) -> Model:
+        """Compile model."""
         # No loss function is needed because it is already executed in
         # the NCE loss layer.
-        model.compile(
+        self._model.compile(
             optimizer=self._optimizer
         )
-        return model
 
     def fit(
         self,

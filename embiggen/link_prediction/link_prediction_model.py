@@ -71,6 +71,9 @@ class LinkPredictionModel(Embedder):
             embedding=embedding,
             trainable_embedding=trainable_embedding
         )
+
+    def _compile_model(self) -> Model:
+        """Compile model."""
         self._model.compile(
             loss="binary_crossentropy",
             optimizer=self._optimizer,

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras.optimizers import Optimizer
-from tqdm.keras import TqdmCallback
 
 from ..sequences import Node2VecSequence
 from .word2vec import Word2Vec
