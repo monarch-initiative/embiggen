@@ -7,6 +7,7 @@ from ensmallen_graph import EnsmallenGraph
 from extra_keras_metrics import get_minimal_multiclass_metrics
 from keras_mixed_sequence import MixedSequence, VectorSequence
 from tensorflow.keras import regularizers
+from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (Dense, Dropout, Embedding,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model
@@ -29,7 +30,7 @@ class NoLaN(Embedder):
         labels_number: int,
         embedding_size: int = None,
         use_dropout: bool = True,
-        dropout_rate: float = 0.6,
+        dropout_rate: float = 0.7,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         trainable_embedding: bool = True,
@@ -91,6 +92,8 @@ class NoLaN(Embedder):
         node_embedding_layer = Embedding(
             input_dim=self._vocabulary_size+1,
             output_dim=self._embedding_size,
+            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            embeddings_constraint=UnitNorm(),
             weights=None if self._embedding is None else [np.vstack([
                 np.zeros(self._embedding_size),
                 self._embedding
@@ -135,7 +138,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 256,
+        batch_size: int = 128,
         validation_data: Tuple = None,
         random_state: int = 42
     ) -> Tuple[MixedSequence, MixedSequence]:
@@ -147,7 +150,7 @@ class NoLaN(Embedder):
             Node indices for training.
         y_train: np.ndarray,
             Labels to predict.
-        batch_size: int = 256,
+        batch_size: int = 128,
             Batch size for the sequence.
         validation_data: Tuple = None,
             Tuple containing:
@@ -227,7 +230,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int = 256,
+        batch_size: int = 128,
         epochs: int = 10000,
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
