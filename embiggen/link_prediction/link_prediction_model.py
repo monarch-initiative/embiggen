@@ -107,17 +107,17 @@ class LinkPredictionModel(Embedder):
         self,
         graph: EnsmallenGraph,
         batch_size: int = 2**16,
-        batches_per_epoch: int = 2**8,
+        batches_per_epoch: int = 2**10,
         negative_samples: float = 1.0,
         epochs: int = 10000,
         support_mirror_strategy: bool = False,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.01,
-        early_stopping_patience: int = 10,
+        early_stopping_patience: int = 5,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.01,
-        reduce_lr_patience: int = 5,
+        reduce_lr_min_delta: float = 0.1,
+        reduce_lr_patience: int = 3,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         verbose: int = 2,
@@ -129,7 +129,7 @@ class LinkPredictionModel(Embedder):
         -------------------
         graph: EnsmallenGraph,
             Graph object to use for training.
-        batch_size: int = 2**18,
+        batch_size: int = 2**16,
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
@@ -147,18 +147,18 @@ class LinkPredictionModel(Embedder):
             exploiting multiple GPUs it may be unnoticeable.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping. 
-        early_stopping_min_delta: float = 0.001,
+        early_stopping_min_delta: float = 0.01,
             Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 10,
+        early_stopping_patience: int = 5,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which trigger early stopping.
         early_stopping_mode: str = "min",
             Direction of the variation of the monitored metric for early stopping.
         reduce_lr_monitor: str = "loss",
             Metric to monitor for reducing learning rate.
-        reduce_lr_min_delta: float = 0.01,
+        reduce_lr_min_delta: float = 0.1,
             Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 5,
+        reduce_lr_patience: int = 3,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which reducing learning rate.
         reduce_lr_mode: str = "min",
