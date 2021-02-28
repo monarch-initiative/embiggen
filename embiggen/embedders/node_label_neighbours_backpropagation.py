@@ -139,6 +139,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
+        max_neighbours: int = None,
         batch_size: int = 128,
         validation_data: Tuple = None,
         random_state: int = 42
@@ -151,6 +152,9 @@ class NoLaN(Embedder):
             Node indices for training.
         y_train: np.ndarray,
             Labels to predict.
+        max_neighbours: int = None,
+            Number of neighbours to consider.
+            If None, the graph median is used.
         batch_size: int = 128,
             Batch size for the sequence.
         validation_data: Tuple = None,
@@ -181,6 +185,7 @@ class NoLaN(Embedder):
         train_sequence = MixedSequence(
             x=NodeLabelNeighboursSequence(
                 self._graph, X_train,
+                max_neighbours=max_neighbours,
                 batch_size=batch_size,
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy
@@ -213,6 +218,7 @@ class NoLaN(Embedder):
             validation_sequence = MixedSequence(
                 x=NodeLabelNeighboursSequence(
                     self._graph, X_validation,
+                    max_neighbours=max_neighbours,
                     batch_size=batch_size,
                     random_state=random_state,
                     support_mirror_strategy=self._support_mirror_strategy
@@ -231,6 +237,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
+        max_neighbours: int = None,
         batch_size: int = 128,
         epochs: int = 10000,
         validation_data: Tuple = None,
@@ -255,6 +262,9 @@ class NoLaN(Embedder):
             Node IDs reserved for the training.
         y_train: np.ndarray,
             One-hot encoded categorical classes.
+        max_neighbours: int = None,
+            Number of neighbours to consider.
+            If None, the graph median is used.
         epochs: int = 10000,
             Epochs to train the model for.
         validation_data: Tuple = None,
@@ -294,6 +304,7 @@ class NoLaN(Embedder):
         """
         train_sequence, validation_sequence = self.build_training_sequence(
             X_train, y_train,
+            max_neighbours=max_neighbours,
             batch_size=batch_size,
             validation_data=validation_data,
             random_state=random_state

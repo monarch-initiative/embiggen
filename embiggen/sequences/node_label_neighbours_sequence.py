@@ -27,6 +27,9 @@ class NodeLabelNeighboursSequence(VectorSequence):
             The graph from which to sample the edges.
         node_ids: np.ndarray = None,
             IDs of the nodes to consider.
+        max_neighbours: int = None,
+            Number of neighbours to consider.
+            If None, the graph median is used.
         batch_size: int = 2**8,
             The batch size to use.
         elapsed_epochs: int = 0,
