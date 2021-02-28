@@ -112,7 +112,7 @@ class LinkPredictionModel(Embedder):
         epochs: int = 10000,
         support_mirror_strategy: bool = False,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.001,
+        early_stopping_min_delta: float = 0.01,
         early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
