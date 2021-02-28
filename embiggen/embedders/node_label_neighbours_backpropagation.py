@@ -92,8 +92,6 @@ class NoLaN(Embedder):
         node_embedding_layer = Embedding(
             input_dim=self._vocabulary_size+1,
             output_dim=self._embedding_size,
-            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            embeddings_constraint=UnitNorm(),
             weights=None if self._embedding is None else [np.vstack([
                 np.zeros(self._embedding_size),
                 self._embedding

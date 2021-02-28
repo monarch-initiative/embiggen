@@ -4,8 +4,6 @@ from typing import Dict, List, Union
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras import regularizers
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
                                      Embedding, Flatten, Input)
 from tensorflow.keras.models import Model  # pylint: disable=import-error
@@ -94,8 +92,6 @@ class GloVe(Embedder):
                 self._vocabulary_size,
                 self._embedding_size,
                 input_length=1,
-                embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-                embeddings_constraint=UnitNorm(),
                 weights=None if self._embedding is None else [
                     self._embedding
                 ],
@@ -111,9 +107,6 @@ class GloVe(Embedder):
                     self._vocabulary_size,
                     self._embedding_size,
                     input_length=1,
-                    embeddings_regularizer=regularizers.l1_l2(
-                        l1=1e-5, l2=1e-4),
-                    embeddings_constraint=UnitNorm(),
                     weights=None if self._embedding is None else [
                         self._embedding
                     ],
@@ -123,9 +116,6 @@ class GloVe(Embedder):
                     self._vocabulary_size,
                     self._embedding_size,
                     input_length=1,
-                    embeddings_regularizer=regularizers.l1_l2(
-                        l1=1e-5, l2=1e-4),
-                    embeddings_constraint=UnitNorm()
                 )(input_layers[1])
             ]
 
