@@ -172,7 +172,7 @@ class Word2Vec(Embedder):
         reduce_lr_patience: int = 3,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
-        verbose: int = 1,
+        verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -203,7 +203,7 @@ class Word2Vec(Embedder):
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
-        verbose: int = 1,
+        verbose: int = 2,
             Wethever to show the loading bar.
             Specifically, the options are:
             * 0 or False: No loading bar.
