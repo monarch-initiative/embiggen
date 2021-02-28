@@ -7,7 +7,6 @@ from ensmallen_graph import EnsmallenGraph
 from extra_keras_metrics import get_minimal_multiclass_metrics
 from keras_mixed_sequence import MixedSequence, VectorSequence
 from tensorflow.keras import regularizers
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (Dense, Dropout, Embedding,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model
