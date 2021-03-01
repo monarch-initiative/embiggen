@@ -40,8 +40,6 @@ class AbstractNode2VecSequence(AbstractSequence):
         window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
-        shuffle: bool = True,
-            Whether to shuffle the vectors.
         return_weight: float = 1.0,
             Weight on the probability of returning to the same node the walk just came from
             Having this higher tends the walks to be

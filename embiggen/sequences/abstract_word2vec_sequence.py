@@ -15,7 +15,6 @@ class AbstractWord2VecSequence(AbstractSequence):
         sequences: List[np.ndarray],
         batch_size: int,
         window_size: int = 16,
-        shuffle: bool = True,
         support_mirror_strategy: bool = False,
         random_state: int = 42,
         elapsed_epochs: int = 0,
@@ -31,8 +30,6 @@ class AbstractWord2VecSequence(AbstractSequence):
         window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
-        shuffle: bool = True,
-            Whether to shuffle the vectors.
         support_mirror_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
@@ -55,7 +52,6 @@ class AbstractWord2VecSequence(AbstractSequence):
         )
         super().__init__(
             window_size=window_size,
-            shuffle=shuffle,
             sample_number=self._sequences.sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,

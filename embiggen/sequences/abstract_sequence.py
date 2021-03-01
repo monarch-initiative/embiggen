@@ -10,7 +10,6 @@ class AbstractSequence(Sequence):
         batch_size: int,
         sample_number: int,
         window_size: int = 16,
-        shuffle: bool = True,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         random_state: int = 42
@@ -26,8 +25,6 @@ class AbstractSequence(Sequence):
         window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
-        shuffle: bool = True,
-            Whether to shuffle the vectors.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         support_mirror_strategy: bool = False,
@@ -42,7 +39,6 @@ class AbstractSequence(Sequence):
             Random random_state to make the sequence reproducible.
         """
         self._window_size = window_size
-        self._shuffle = shuffle
         self._random_state = random_state
         self._support_mirror_strategy = support_mirror_strategy
 

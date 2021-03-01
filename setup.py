@@ -54,6 +54,7 @@ setup(
         "keras_mixed_sequence>=1.0.20",
         "extra_keras_metrics>=2.0.0",
         "ensmallen_graph>=0.5.2",
+        "cache_decorator>=1.6.0"
     ],
     tests_require=test_deps,
     include_package_data=True,
