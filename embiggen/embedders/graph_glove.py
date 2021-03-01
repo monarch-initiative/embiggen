@@ -20,7 +20,7 @@ class GraphGloVe(GloVe):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        embedding_size: int,
+        embedding_size: int = 100,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         shared_embedding_layers: bool = False,

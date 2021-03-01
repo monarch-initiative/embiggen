@@ -79,13 +79,13 @@ def _compute_node_embedding(
 
     strategy = tf.distribute.MirroredStrategy(devices=devices)
     with strategy.scope():
-        # Creating the SkipGram model
+        # Creating the node embedding model
         model = get_node_embedding_method(node_embedding_method_name)(
             graph,
             support_mirror_strategy=True,
             **kwargs
         )
-        # Fitting the SkipGram model
+        # Fitting the node embedding model
         model.fit(**fit_kwargs)
         # Extracting computed embedding
         node_embedding = model.get_embedding_dataframe()
