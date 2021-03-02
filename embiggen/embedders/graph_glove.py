@@ -111,16 +111,16 @@ class GraphGloVe(GloVe):
             maps these nodes into a dense range of values.
         """
         self._graph = graph
-        self._walk_length = walk_length,
-        self._iterations = iterations,
-        self._window_size = window_size,
-        self._return_weight = return_weight,
-        self._explore_weight = explore_weight,
-        self._change_node_type_weight = change_node_type_weight,
-        self._change_edge_type_weight = change_edge_type_weight,
-        self._max_neighbours = max_neighbours,
-        self._support_mirror_strategy = support_mirror_strategy,
-        self._random_state = random_state,
+        self._walk_length = walk_length
+        self._iterations = iterations
+        self._window_size = window_size
+        self._return_weight = return_weight
+        self._explore_weight = explore_weight
+        self._change_node_type_weight = change_node_type_weight
+        self._change_edge_type_weight = change_edge_type_weight
+        self._max_neighbours = max_neighbours
+        self._support_mirror_strategy = support_mirror_strategy
+        self._random_state = random_state
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
             alpha=alpha,
