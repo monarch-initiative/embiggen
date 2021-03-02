@@ -130,19 +130,23 @@ class GraphGloVe(GloVe):
             optimizer=optimizer
         )
 
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return self._model.get_embedding_dataframe(self._graph.get_node_names())
+
     def fit(
         self,
         epochs: int = 10000,
         batch_size: int = 2**18,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.001,
-        early_stopping_patience: int = 10,
+        early_stopping_min_delta: float = 0.0001,
+        early_stopping_patience: int = 30,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.01,
+        reduce_lr_min_delta: float = 0.001,
         reduce_lr_patience: int = 10,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.95,
         verbose: int = 1,
         **kwargs: Dict
     ) -> pd.DataFrame:
