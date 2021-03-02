@@ -284,7 +284,6 @@ class GraphVisualization:
 
     def plot_node_types(
         self,
-        graph: EnsmallenGraph,
         k: int = 10,
         figure: Figure = None,
         axes: Axes = None,
@@ -296,8 +295,6 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        graph: EnsmallenGraph,
-            The graph to visualize.
         k: int = 10,
             Number of node types to visualize.
         figure: Figure = None,
@@ -341,19 +338,19 @@ class GraphVisualization:
             scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         top_node_types = set(list(zip(*sorted(
-            graph.get_node_type_counts().items(),
+            self._graph.get_node_type_counts().items(),
             key=lambda x: x[1],
             reverse=True
         )[:k]))[0])
 
-        node_types = graph.get_node_types()
-        node_labels = graph.get_node_type_names()
+        node_types = self._graph.get_node_types()
+        node_labels = self._graph.get_node_type_names()
 
         for i, node_type in enumerate(node_types):
             if node_type not in top_node_types:
                 node_types[i] = len(top_node_types)
 
-        for node_type in range(graph.get_node_types_number()):
+        for node_type in range(self._graph.get_node_types_number()):
             if node_type not in top_node_types:
                 node_labels[node_type] = other_label
 
@@ -375,12 +372,11 @@ class GraphVisualization:
             scatter.legend_elements()[0]
         )
         self._clear_axes(
-            figure, axes, "Nodes types - {}".format(graph.get_name()))
+            figure, axes, "Nodes types - {}".format(self._graph.get_name()))
         return figure, axes
 
     def plot_node_degrees(
         self,
-        graph: EnsmallenGraph,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -390,8 +386,6 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        graph: EnsmallenGraph,
-            The graph to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -424,7 +418,7 @@ class GraphVisualization:
         if scatter_kwargs is None:
             scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
-        degrees = graph.degrees()
+        degrees = self._graph.degrees()
         two_median = np.median(degrees)*3
         degrees[degrees > two_median] = min(two_median, degrees.max())
 
@@ -440,12 +434,11 @@ class GraphVisualization:
         color_bar.set_alpha(1)
         color_bar.draw_all()
         self._clear_axes(
-            figure, axes, "Nodes degrees - {}".format(graph.get_name()))
+            figure, axes, "Nodes degrees - {}".format(self._graph.get_name()))
         return figure, axes
 
     def plot_edge_types(
         self,
-        graph: EnsmallenGraph,
         k: int = 10,
         figure: Figure = None,
         axes: Axes = None,
@@ -457,8 +450,6 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        graph: EnsmallenGraph,
-            The graph to visualize.
         k: int = 10,
             Number of edge types to visualize.
         figure: Figure = None,
@@ -501,19 +492,19 @@ class GraphVisualization:
             scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         top_edge_types = set(list(zip(*sorted(
-            graph.get_edge_type_counts().items(),
+            self._graph.get_edge_type_counts().items(),
             key=lambda x: x[1],
             reverse=True
         )[:k]))[0])
 
-        edge_types = graph.get_edge_types()
-        edge_labels = graph.get_edge_type_names()
+        edge_types = self._graph.get_edge_types()
+        edge_labels = self._graph.get_edge_type_names()
 
         for i, edge_type in enumerate(edge_types):
             if edge_type not in top_edge_types:
                 edge_types[i] = len(top_edge_types)
 
-        for edge_type in range(graph.get_edge_types_number()):
+        for edge_type in range(self._graph.get_edge_types_number()):
             if edge_type not in top_edge_types:
                 edge_labels[edge_type] = other_label
 
@@ -532,7 +523,7 @@ class GraphVisualization:
             scatter.legend_elements()[0]
         )
         self._clear_axes(
-            figure, axes, "Edge types - {}".format(graph.get_name()))
+            figure, axes, "Edge types - {}".format(self._graph.get_name()))
         return figure, axes
 
     def plot_edges(
@@ -588,7 +579,6 @@ class GraphVisualization:
 
     def plot_edge_weights(
         self,
-        graph: EnsmallenGraph,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -598,8 +588,6 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        graph: EnsmallenGraph,
-            The graph to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -632,7 +620,7 @@ class GraphVisualization:
 
         edge_embedding, weights = self._shuffle(
             self._edge_embedding,
-            graph.get_weights()
+            self._graph.get_weights()
         )
 
         scatter = axes.scatter(
@@ -645,5 +633,5 @@ class GraphVisualization:
         color_bar.set_alpha(1)
         color_bar.draw_all()
         self._clear_axes(
-            figure, axes, "Edge weights - {}".format(graph.get_name()))
+            figure, axes, "Edge weights - {}".format(self._graph.get_name()))
         return figure, axes
