@@ -20,7 +20,7 @@ class NodeTransformer:
         numeric_node_ids: bool = False,
             Wether to return the numeric node IDs instead of the node embedding.
         aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
+            This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
@@ -41,7 +41,7 @@ class NodeTransformer:
 
     @property
     def numeric_node_ids(self) -> bool:
-        """Return wheter the transformer returns numeric node IDs."""
+        """Return whether the transformer returns numeric node IDs."""
         return self._numeric_node_ids
 
     def fit(self, embedding: pd.DataFrame):

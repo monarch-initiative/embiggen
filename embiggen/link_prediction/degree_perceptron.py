@@ -2,8 +2,8 @@ from typing import Dict
 
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Input, Concatenate
+from tensorflow.keras.models import Model
 from extra_keras_metrics import get_standard_binary_metrics
 
 from ..sequences import LinkPredictionDegreeSequence
@@ -14,13 +14,22 @@ class DegreePerceptron:
     def __init__(self, optimizer: str = "nadam"):
         """Create new Perceptron object."""
         self._model_name = self.__class__.__name__
-        self._model = Sequential(
-            [
-                Dense(
-                    units=1,
-                    activation="sigmoid",
-                )
+        sources_input = Input((1,), name="SourceNodeDegreeInput")
+        destination_input = Input((1,), name="DestinationNodeDegreeInput")
+        concatenation = Concatenate()([
+            sources_input,
+            destination_input
+        ])
+        output = Dense(
+            units=1,
+            activation="sigmoid",
+        )(concatenation)
+        self._model = Model(
+            inputs=[
+                sources_input,
+                destination_input
             ],
+            outputs=output,
             name=self._model_name
         )
         self._model.compile(

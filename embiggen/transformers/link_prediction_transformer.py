@@ -24,7 +24,7 @@ class LinkPredictionTransformer:
             Method to use for the embedding.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
+            This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.

@@ -10,11 +10,12 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
 from sanitize_ml_labels import sanitize_ml_labels
+from sklearn.decomposition import PCA
 
 from ..transformers import GraphTransformer, NodeTransformer
 
 
-class GraphVisualizations:
+class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
@@ -27,64 +28,155 @@ class GraphVisualizations:
         dpi=200
     )
 
-    def __init__(self, method: str = "Hadamard"):
-        """Create new GraphVisualizations object.
+    def __init__(
+        self,
+        graph: EnsmallenGraph,
+        decomposition_method: str = "TSNE",
+        n_components: int = 2,
+        method: str = "Hadamard"
+    ):
+        """Create new GraphVisualization object.
 
         Parameters
-        -----------------------
+        --------------------------
+        graph: EnsmallenGraph,
+            The graph to visualize.
+        decomposition_method: str = "TSNE",
+            The decomposition method to use.
+            The supported methods are TSNE and PCA.
+        n_components: int = 2,
+            Number of components to reduce the image to.
+            Currently, we only support 2D decompositions but we plan
+            to add support for also 3D decompositions.
         method: str = "Hadamard",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+
+        Raises
+        ---------------------------
+        ValueError,
+            If the target decomposition size is not supported.
+        ModuleNotFoundError,
+            If TSNE decomposition has been required and no module supporting
+            it is installed.
         """
+        self._graph = graph
         self._graph_transformer = GraphTransformer(method=method)
         self._node_transformer = NodeTransformer()
         self._node_mapping = self._node_embedding = self._edge_embedding = None
-        self._method = method
 
-    def tsne(self, X: np.ndarray, **kwargs: Dict) -> np.ndarray:
-        """Return TSNE embedding of given array.
+        if n_components != 2:
+            raise ValueError(
+                "We currently only support 2D decomposition visualization."
+            )
 
-        Depending on what is available, we use tsnecuda or MulticoreTSNE.
+        self._n_components = n_components
+
+        if decomposition_method == "TSNE":
+            try:
+                # We try to use CUDA tsne if available, but this does not
+                # currently support 3D decomposition. If the user has required a
+                # 3D decomposition we need to switch to the MulticoreTSNE version.
+                if n_components != 2:
+                    raise ModuleNotFoundError()
+                from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
+                self._decomposition_method = CUDATSNE(
+                    n_components=2,
+                    verbose=True
+                )
+            except ModuleNotFoundError:
+                try:
+                    from MulticoreTSNE import MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                    self._decomposition_method = MulticoreTSNE(
+                        n_components=n_components,
+                        n_jobs=cpu_count(),
+                        verbose=True
+                    )
+                except ModuleNotFoundError:
+                    try:
+                        from sklearn.manifold import TSNE  # pylint: disable=import-outside-toplevel
+                        self._decomposition_method = TSNE(
+                            n_components=n_components,
+                            n_jobs=cpu_count(),
+                            verbose=True
+                        )
+                    except:
+                        raise ModuleNotFoundError(
+                            "You do not have installed a supported TSNE "
+                            "decomposition algorithm. Depending on your use case, "
+                            "we suggest you install tsne-cuda if your graph is "
+                            "very big (in the millions of nodes) if you have access "
+                            "to a compatible GPU system.\n"
+                            "Alternatively, we suggest (and support) MulticoreTSNE, "
+                            "which tends to be easier to install, and is significantly "
+                            "faster than the Sklearn implementation.\n"
+                            "Alternatively, we suggest (and support) MulticoreTSNE, "
+                            "which tends to be easier to install, and is significantly "
+                            "faster than the Sklearn implementation.\n"
+                            "If you intend to do 3D decompositions, "
+                            "remember that tsne-cuda, at the time of writing, "
+                            "does not support them."
+                        )
+        elif decomposition_method == "PCA":
+            self._decomposition_method = PCA(
+                n_components=n_components
+            )
+        else:
+            raise ValueError(
+                "We currently only support PCA and TSNE decomposition methods."
+            )
+
+    def decompose(self, X: np.ndarray) -> np.ndarray:
+        """Return requested decomposition of given array.
 
         Parameters
         -----------------------
         X: np.ndarray,
             The data to embed.
-        **kwargs: Dict,
-            Parameters to pass directly to TSNE.
+
+        Raises
+        -----------------------
+        ValueError,
+            If the given vector has less components than the required
+            decomposition target.
 
         Returns
         -----------------------
-        The obtained TSNE embedding.
+        The obtained decomposition.
         """
-        if X.shape[1] <= 2:
+        if X.shape[1] == self._n_components:
             return X
-        try:
-            from tsnecuda import TSNE
-        except ModuleNotFoundError:
-            from MulticoreTSNE import MulticoreTSNE as TSNE
-            if "n_jobs" not in kwargs:
-                kwargs["n_jobs"] = cpu_count()
-        return TSNE(**kwargs).fit_transform(X)
+        if X.shape[1] < self._n_components:
+            raise ValueError(
+                "The vector to decompose has less components than "
+                "the decomposition target."
+            )
+        return self._decomposition_method.fit_transform(X)
 
     def _shuffle(self, *args: List[np.ndarray]) -> List[np.ndarray]:
-        """Return given arrays shuffled synchronously."""
-        # Shuffling points to avoid having artificial clusters
-        # caused by positions.
+        """Return given arrays shuffled synchronously.
+
+        The reason to shuffle the points is mainly that this avoids for
+        'fake' clusters to appear simply by stacking the points by class
+        artifically according to how the points are sorted.
+        """
         index = np.arange(args[0].shape[0])
         np.random.shuffle(index)
-        return [
-            arg[index]
-            for arg in args
-        ]
+        return [arg[index] for arg in args]
 
-    def _clear_axes(self, axes: Axes, title: str):
+    def _clear_axes(
+        self,
+        figure: Figure,
+        axes: Axes,
+        title: str
+    ):
         """Reset the axes ticks and set the given title."""
         axes.set_xticks([])
         axes.set_xticks([], minor=True)
         axes.set_yticks([])
         axes.set_yticks([], minor=True)
         axes.set_title(title)
+        figure.tight_layout()
 
     def _set_legend(
         self,
@@ -116,50 +208,30 @@ class GraphVisualizations:
                 1
             )
 
-    def fit_transform_nodes(
-        self,
-        graph: EnsmallenGraph,
-        embedding: pd.DataFrame,
-        **kwargs: Dict
-    ):
+    def fit_transform_nodes(self, embedding: pd.DataFrame):
         """Executes fitting for plotting node embeddings.
 
         Parameters
         -------------------------
-        graph: EnsmallenGraph,
-            Graph from where to extract the nodes.
         embedding: pd.DataFrame,
-            Embedding obtained from SkipGram, CBOW or GloVe.
-        **kwargs: Dict,
-            Data to pass directly to TSNE.
+            Embedding of the graph nodes.
         """
         self._node_transformer.fit(embedding)
-        self._node_embedding = self.tsne(
-            self._node_transformer.transform(graph.get_node_names()),
-            **kwargs
+        self._node_embedding = self.decompose(
+            self._node_transformer.transform(self._graph.get_node_names())
         )
 
-    def fit_transform_edges(
-        self,
-        graph: EnsmallenGraph,
-        embedding: np.ndarray,
-        **kwargs: Dict
-    ):
+    def fit_transform_edges(self, embedding: np.ndarray):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        graph: EnsmallenGraph,
-            Graph from where to extract the edges.
         embedding: np.ndarray,
             Embedding obtained from SkipGram, CBOW or GloVe.
-        **kwargs: Dict,
-            Data to pass directly to TSNE.            
         """
         self._graph_transformer.fit(embedding)
-        self._edge_embedding = self.tsne(
-            self._graph_transformer.transform(graph),
-            **kwargs
+        self._edge_embedding = self.decompose(
+            self._graph_transformer.transform(self._graph),
         )
 
     def plot_nodes(
@@ -201,13 +273,13 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         axes.scatter(*self._node_embedding.T, **scatter_kwargs)
-        self._clear_axes(axes, "Nodes embedding - {}".format(graph))
+        self._clear_axes(figure, axes, "Nodes embedding - {}".format(graph))
         return figure, axes
 
     def plot_node_types(
@@ -262,11 +334,11 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS)
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
             )
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         top_node_types = set(list(zip(*sorted(
             graph.get_node_type_counts().items(),
@@ -302,7 +374,8 @@ class GraphVisualizations:
             node_labels,
             scatter.legend_elements()[0]
         )
-        self._clear_axes(axes, "Nodes types - {}".format(graph.get_name()))
+        self._clear_axes(
+            figure, axes, "Nodes types - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_node_degrees(
@@ -346,10 +419,10 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         degrees = graph.degrees()
         two_median = np.median(degrees)*3
@@ -366,7 +439,8 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(axes, "Nodes degrees - {}".format(graph.get_name()))
+        self._clear_axes(
+            figure, axes, "Nodes degrees - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_edge_types(
@@ -421,10 +495,10 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         top_edge_types = set(list(zip(*sorted(
             graph.get_edge_type_counts().items(),
@@ -457,7 +531,8 @@ class GraphVisualizations:
             edge_labels,
             scatter.legend_elements()[0]
         )
-        self._clear_axes(axes, "Edge types - {}".format(graph.get_name()))
+        self._clear_axes(
+            figure, axes, "Edge types - {}".format(graph.get_name()))
         return figure, axes
 
     def plot_edges(
@@ -496,16 +571,17 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         axes.scatter(*self._edge_embedding.T, **scatter_kwargs)
         self._clear_axes(
+            figure,
             axes,
             "Edge embeddings with method {method}".format(
-                method=self._method
+                method=self._graph_transformer.method
             )
         )
         return figure, axes
@@ -549,10 +625,10 @@ class GraphVisualizations:
 
         if figure is None or axes is None:
             figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualizations.DEFAULT_SUBPLOT_KWARGS))
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
 
         if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualizations.DEFAULT_SCATTER_KWARGS
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
 
         edge_embedding, weights = self._shuffle(
             self._edge_embedding,
@@ -568,5 +644,6 @@ class GraphVisualizations:
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(axes, "Edge weights - {}".format(graph.get_name()))
+        self._clear_axes(
+            figure, axes, "Edge weights - {}".format(graph.get_name()))
         return figure, axes

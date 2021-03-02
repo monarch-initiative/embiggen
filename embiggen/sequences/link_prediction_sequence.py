@@ -96,7 +96,7 @@ class LinkPredictionSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         if self._method is None:
-            left, right, labels =  self._graph.link_prediction_ids(
+            left, right, labels = self._graph.link_prediction_ids(
                 self._random_state + idx + self.elapsed_epochs,
                 batch_size=self.batch_size,
                 negative_samples=self._negative_samples,

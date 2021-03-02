@@ -36,7 +36,7 @@ class EdgeTransformer:
             If None is used, we return instead the numeric tuples.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
+            This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
@@ -61,12 +61,18 @@ class EdgeTransformer:
             aligned_node_mapping=aligned_node_mapping,
             support_mirror_strategy=support_mirror_strategy
         )
-        self._method = EdgeTransformer.methods[method]
+        self._method_name = method
+        self._method = EdgeTransformer.methods[self._method_name]
 
     @property
     def numeric_node_ids(self) -> bool:
-        """Return wheter the transformer returns numeric node IDs."""
+        """Return whether the transformer returns numeric node IDs."""
         return self._transformer.numeric_node_ids
+
+    @property
+    def method(self) -> str:
+        """Return the used edge embedding method."""
+        return self._method_name
 
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
