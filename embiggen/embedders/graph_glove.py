@@ -132,7 +132,7 @@ class GraphGloVe(GloVe):
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
         """Return terms embedding using given index names."""
-        return self._model.get_embedding_dataframe(self._graph.get_node_names())
+        return super().get_embedding_dataframe(self._graph.get_node_names())
 
     def fit(
         self,
