@@ -5,7 +5,7 @@ from .transformers import (
 from .sequences import (Node2VecSequence,
                         LinkPredictionSequence,
                         Word2VecSequence)
-from .visualizations import GraphVisualizations
+from .visualizations import GraphVisualization
 
 __all__ = [
     "CBOW",
@@ -21,5 +21,5 @@ __all__ = [
     "GraphTransformer",
     "CorpusTransformer",
     "LinkPredictionTransformer",
-    "GraphVisualizations"
+    "GraphVisualization"
 ]
