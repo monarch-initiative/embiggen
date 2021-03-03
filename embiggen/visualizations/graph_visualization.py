@@ -217,8 +217,11 @@ class GraphVisualization:
             Embedding of the graph nodes.
         """
         self._node_transformer.fit(embedding)
-        self._node_embedding = self.decompose(
-            self._node_transformer.transform(self._graph.get_node_names())
+        self._node_embedding = pd.DataFrame(
+            self.decompose(
+                self._node_transformer.transform(self._graph.get_node_names())
+            ),
+            index=embedding.index
         )
 
     def fit_transform_edges(self, embedding: np.ndarray):
@@ -647,7 +650,7 @@ class GraphVisualization:
             cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
         )
-        
+
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
