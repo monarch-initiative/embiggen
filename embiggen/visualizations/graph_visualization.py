@@ -372,7 +372,7 @@ class GraphVisualization:
         )
 
         scatter = axes.scatter(
-            *node_embeddding.T,
+            *node_embeddding.T.values,
             c=node_types,
             cmap=plt.get_cmap("tab10"),
             **scatter_kwargs,
@@ -438,7 +438,7 @@ class GraphVisualization:
         node_embeddding, degrees = self._shuffle(self._node_embedding, degrees)
 
         scatter = axes.scatter(
-            *node_embeddding.T,
+            *node_embeddding.T.values,
             c=degrees,
             cmap=plt.cm.get_cmap('RdYlBu'),
             **scatter_kwargs,
