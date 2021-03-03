@@ -33,7 +33,8 @@ class GraphVisualization:
         graph: EnsmallenGraph,
         decomposition_method: str = "TSNE",
         n_components: int = 2,
-        method: str = "Hadamard"
+        node_embedding_method: str = None,
+        edge_embedding_method: str = "Hadamard"
     ):
         """Create new GraphVisualization object.
 
@@ -48,7 +49,10 @@ class GraphVisualization:
             Number of components to reduce the image to.
             Currently, we only support 2D decompositions but we plan
             to add support for also 3D decompositions.
-        method: str = "Hadamard",
+        node_embedding_method: str = None,
+            Name of the node embedding method used.
+            If provided, it is added to the images titles.
+        edge_embedding_method: str = "Hadamard",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
 
@@ -61,8 +65,11 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
-        self._graph_transformer = GraphTransformer(method=method)
+        self._graph_transformer = GraphTransformer(
+            method=edge_embedding_method
+        )
         self._node_transformer = NodeTransformer()
+        self._node_embedding_method = node_embedding_method
         self._node_mapping = self._node_embedding = self._edge_embedding = None
 
         if n_components != 2:
@@ -176,6 +183,11 @@ class GraphVisualization:
     ):
         """Reset the axes ticks and set the given title."""
         axes.set_axis_off()
+        if self._node_embedding_method is not None:
+            title = "{} - {}".format(
+                title,
+                self._node_embedding_method
+            )
         axes.set_title(title)
         figure.tight_layout()
 
