@@ -1,6 +1,6 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -153,7 +153,7 @@ class GraphVisualization:
             )
         return self._decomposition_method.fit_transform(X)
 
-    def _shuffle(self, *args: List[np.ndarray]) -> List[np.ndarray]:
+    def _shuffle(self, *args: List[Union[np.ndarray, pd.DataFrame]]) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
 
         The reason to shuffle the points is mainly that this avoids for
@@ -162,7 +162,11 @@ class GraphVisualization:
         """
         index = np.arange(args[0].shape[0])
         np.random.shuffle(index)
-        return [arg[index] for arg in args]
+        return [
+            arg[index]
+            if isinstance(arg, np.ndarray) else arg.iloc[index]
+            for arg in args
+        ]
 
     def _clear_axes(
         self,
