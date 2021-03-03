@@ -319,6 +319,11 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
+        if not self._graph.has_node_types():
+            raise ValueError(
+                "The graph does not have node types!"
+            )
+
         if self._node_embedding is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
@@ -371,6 +376,7 @@ class GraphVisualization:
             node_labels,
             scatter.legend_elements()[0]
         )
+
         self._clear_axes(
             figure, axes, "Nodes types - {}".format(self._graph.get_name()))
         return figure, axes
@@ -466,6 +472,8 @@ class GraphVisualization:
         Raises
         ------------------------------
         ValueError,
+            If the graph does not have edge types.
+        ValueError,
             If edge fitting was not yet executed.
         ValueError,
             If given k is greater than maximum supported value (10).
@@ -474,6 +482,11 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
+        if not self._graph.has_edge_types():
+            raise ValueError(
+                "The graph does not have edge types!"
+            )
+
         if self._edge_embedding is None:
             raise ValueError(
                 "Edge fitting must be executed before plot."
@@ -606,6 +619,11 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
+        if not self._graph.has_weights():
+            raise ValueError(
+                "The graph does not have edge weights!"
+            )
+
         if self._edge_embedding is None:
             raise ValueError(
                 "Edge fitting must be executed before plot."
