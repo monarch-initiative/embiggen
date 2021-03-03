@@ -175,8 +175,8 @@ class GraphVisualization:
         title: str
     ):
         """Reset the axes ticks and set the given title."""
-        axes.xaxis.set_visible(False)
-        axes.yaxis.set_visible(False)
+        axes.get_xaxis.set_visible(False)
+        axes.get_yaxis().set_visible(False)
         axes.set_title(title)
         figure.tight_layout()
 
