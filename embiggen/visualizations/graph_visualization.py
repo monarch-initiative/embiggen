@@ -21,13 +21,13 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=3,
+        s=2,
         marker=".",
         alpha=0.9,
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(10, 10),
-        dpi=120
+        figsize=(5, 5),
+        dpi=200
     )
 
     def __init__(
@@ -37,7 +37,7 @@ class GraphVisualization:
         n_components: int = 2,
         node_embedding_method: str = None,
         edge_embedding_method: str = "Hadamard",
-        subsample_points: int = 50_000
+        subsample_points: int = 20_000
     ):
         """Create new GraphVisualization object.
 
@@ -58,7 +58,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Hadamard",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        subsample_points: int = 50_000,
+        subsample_points: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
