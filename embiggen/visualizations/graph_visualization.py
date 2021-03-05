@@ -9,6 +9,7 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
+from matplotlib.colors import LogNorm
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 
@@ -160,7 +161,7 @@ class GraphVisualization:
             )
         return self._decomposition_method.fit_transform(X)
 
-    def _shuffle(self, *args: List[Union[np.ndarray, pd.DataFrame]]) -> List[np.ndarray]:
+    def _shuffle(self, *args: List[Union[np.ndarray, pd.DataFrame, None]]) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
 
         The reason to shuffle the points is mainly that this avoids for
@@ -170,8 +171,9 @@ class GraphVisualization:
         index = np.arange(args[0].shape[0])
         np.random.shuffle(index)
         return [
-            arg[index]
-            if isinstance(arg, np.ndarray) else arg.iloc[index]
+            arg[index] if isinstance(arg, np.ndarray)
+            else arg.iloc[index] if isinstance(arg, pd.DataFrame)
+            else None
             for arg in args
         ]
 
@@ -250,28 +252,203 @@ class GraphVisualization:
             self._graph_transformer.transform(self._graph),
         )
 
-    def plot_nodes(
+    def _plot_scatter(
         self,
-        graph: EnsmallenGraph,
+        title: str,
+        points: np.ndarray,
+        colors: List[int] = None,
+        labels: List[str] = None,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
-        **kwargs: Dict
-    ):
+        **kwargs
+    ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
 
         Parameters
         ------------------------------
-        graph: EnsmallenGraph,
-            The graph to visualize.
+        title: str,
+            Title to use for the plot.
+        points: np.ndarray,
+            Points to plot.
+        colors: List[int] = None,
+            List of the colors to use for the scatter plot.
+        labels: List[str] = None,
+            Labels for the different colors.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
-            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if figure is None or axes is None:
+            figure, axes = plt.subplots(
+                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
+            )
+
+        if scatter_kwargs is None:
+            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
+
+        points, colors = self._shuffle(
+            points,
+            colors
+        )
+
+        scatter = axes.scatter(
+            *points.T,
+            c=colors,
+            **scatter_kwargs
+        )
+
+        if labels is not None:
+            self._set_legend(
+                axes,
+                labels,
+                scatter.legend_elements()[0]
+            )
+
+        self._clear_axes(
+            figure,
+            axes,
+            "{title} - {graph_name}".format(
+                title=title,
+                graph_name=self._graph.get_name()
+            )
+        )
+
+        return figure, axes, scatter
+
+    def _plot_types(
+        self,
+        title: str,
+        points: np.ndarray,
+        types: List[int],
+        type_labels: List[str],
+        k: int = 10,
+        figure: Figure = None,
+        axes: Axes = None,
+        scatter_kwargs: Dict = None,
+        other_label: str = "Other",
+        **kwargs
+    ) -> Tuple[Figure, Axes]:
+        """Plot common node types of provided graph.
+
+        Parameters
+        ------------------------------
+        title: str,
+            Title to use for the plot.
+        points: np.ndarray,
+            Points to plot.
+        types: List[int],
+            Types of the provided points.
+        type_labels: List[str],
+            List of the labels for the provided types.
+        k: int = 10,
+            Number of node types to visualize.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        other_label: str = "Other",
+            Label to use for edges below the top k threshold.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+        ValueError,
+            If the number of given type labels does not match the number
+            of given type counts.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        if k > 10:
+            raise ValueError(
+                "Values of k greater than 10 are not supported!"
+            )
+
+        if not isinstance(types, np.ndarray):
+            raise ValueError(
+                "Expecting types to be a numpy array."
+            )
+
+        number_of_types = len(type_labels)
+
+        if number_of_types != types.max() + 1:
+            raise ValueError(
+                "Expecting types to be from a dense range."
+            )
+
+        counts = np.bincount(types, minlength=len(number_of_types))
+        top_counts = np.argsort(counts)[::-1][:k]
+
+        type_labels = list(type_labels[top_counts])
+
+        if k < number_of_types:
+            for i, element_type in enumerate(types):
+                if element_type not in top_counts:
+                    types[i] = k+1
+
+            type_labels.append(other_label)
+
+        figure, axis, _ = self._plot_scatter(
+            title=title,
+            points=points,
+            colors=types,
+            labels=type_labels,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            **kwargs
+        )
+
+        return figure, axis
+
+    def plot_nodes(
+        self,
+        figure: Figure = None,
+        axes: Axes = None,
+        scatter_kwargs: Dict = None,
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Plot nodes of provided graph.
+
+        Parameters
+        ------------------------------
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
 
         Raises
         ------------------------------
@@ -287,16 +464,63 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
+        figure, axis, _ = self._plot_scatter(
+            "Nodes embedding",
+            self._node_embedding,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            **kwargs
+        )
 
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
+        return figure, axis
 
-        axes.scatter(*self._node_embedding.T, **scatter_kwargs)
-        self._clear_axes(figure, axes, "Nodes embedding - {}".format(graph))
-        return figure, axes
+    def plot_edges(
+        self,
+        figure: Figure = None,
+        axes: Axes = None,
+        scatter_kwargs: Dict = None,
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Plot edge embedding of provided graph.
+
+        Parameters
+        ------------------------------
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._edge_embedding is None:
+            raise ValueError(
+                "Edge fitting must be executed before plot."
+            )
+
+        figure, axis, _ = self._plot_scatter(
+            "Edges embedding",
+            self._edge_embedding,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            **kwargs
+        )
+
+        return figure, axis
 
     def plot_node_types(
         self,
@@ -345,57 +569,18 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        if k > 10:
-            raise ValueError(
-                "Values of k greater than 10 are not supported!"
-            )
-
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
-            )
-
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
-
-        top_node_types = set(list(zip(*sorted(
-            self._graph.get_node_type_counts().items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:k]))[0])
-
-        node_types = self._graph.get_node_types()
-        node_labels = self._graph.get_node_type_names()
-
-        for i, node_type in enumerate(node_types):
-            if node_type not in top_node_types:
-                node_types[i] = len(top_node_types)
-
-        for node_type in range(self._graph.get_node_types_number()):
-            if node_type not in top_node_types:
-                node_labels[node_type] = other_label
-
-        node_embeddding, node_types = self._shuffle(
-            self._node_embedding,
-            node_types
+        return self._plot_types(
+            "Node types",
+            self._node_embedding.values,
+            types=self._graph.get_node_types(),
+            type_labels=self._graph.get_node_type_names(),
+            k=k,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            other_label=other_label,
+            **kwargs
         )
-
-        scatter = axes.scatter(
-            *node_embeddding.T.values,
-            c=node_types,
-            cmap=plt.get_cmap("tab10"),
-            **scatter_kwargs,
-        )
-
-        self._set_legend(
-            axes,
-            node_labels,
-            scatter.legend_elements()[0]
-        )
-
-        self._clear_axes(
-            figure, axes, "Nodes types - {}".format(self._graph.get_name()))
-        return figure, axes
 
     def plot_node_degrees(
         self,
@@ -433,30 +618,23 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
-
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
-
-        degrees = self._graph.degrees()
-        two_median = np.median(degrees)*3
-        degrees[degrees > two_median] = min(two_median, degrees.max())
-
-        node_embeddding, degrees = self._shuffle(self._node_embedding, degrees)
-
-        scatter = axes.scatter(
-            *node_embeddding.T.values,
-            c=degrees,
-            cmap=plt.cm.get_cmap('RdYlBu'),
-            **scatter_kwargs,
+        figure, axes, scatter = self._plot_scatter(
+            "Node degrees",
+            self._node_embedding.values,
+            colors=self._graph.degrees(),
+            figure=figure,
+            axes=axes,
+            scatter_kwargs={
+                **({} if scatter_kwargs is None else scatter_kwargs),
+                "cmap": plt.cm.get_cmap('RdYlBu'),
+                "norm": LogNorm()
+            },
+            **kwargs
         )
+
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(
-            figure, axes, "Nodes degrees - {}".format(self._graph.get_name()))
         return figure, axes
 
     def plot_edge_types(
@@ -505,106 +683,21 @@ class GraphVisualization:
 
         if self._edge_embedding is None:
             raise ValueError(
-                "Edge fitting must be executed before plot."
+                "Edge fitting was not yet executed!"
             )
 
-        if k > 10:
-            raise ValueError(
-                "Values of k greater than 10 are not supported!"
-            )
-
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
-
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
-
-        top_edge_types = set(list(zip(*sorted(
-            self._graph.get_edge_type_counts().items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:k]))[0])
-
-        edge_types = self._graph.get_edge_types()
-        edge_labels = self._graph.get_edge_type_names()
-
-        for i, edge_type in enumerate(edge_types):
-            if edge_type not in top_edge_types:
-                edge_types[i] = len(top_edge_types)
-
-        for edge_type in range(self._graph.get_edge_types_number()):
-            if edge_type not in top_edge_types:
-                edge_labels[edge_type] = other_label
-
-        edge_tsne, edge_types = self._shuffle(self._edge_embedding, edge_types)
-
-        scatter = axes.scatter(
-            *edge_tsne.T,
-            c=edge_types,
-            cmap=plt.get_cmap("tab10"),
-            **scatter_kwargs,
+        return self._plot_types(
+            "Edge types",
+            self._edge_embedding.values,
+            types=self._graph.get_edge_types(),
+            type_labels=self._graph.get_edge_type_names(),
+            k=k,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            other_label=other_label,
+            **kwargs
         )
-
-        self._set_legend(
-            axes,
-            edge_labels,
-            scatter.legend_elements()[0]
-        )
-        self._clear_axes(
-            figure, axes, "Edge types - {}".format(self._graph.get_name()))
-        return figure, axes
-
-    def plot_edges(
-        self,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        **kwargs: Dict
-    ):
-        """Plot edge embedding of provided graph.
-
-        Parameters
-        ------------------------------
-        figure: Figure = None,
-            Figure to use to plot. If None, a new one is created using the
-            provided kwargs.
-        scatter_kwargs: Dict = None,
-            Kwargs to pass to the scatter plot call.
-        axes: Axes = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
-
-        Raises
-        ------------------------------
-        ValueError,
-            If edge fitting was not yet executed.
-
-        Returns
-        ------------------------------
-        Figure and Axis of the plot.
-        """
-        if self._edge_embedding is None:
-            raise ValueError(
-                "Edge fitting must be executed before plot."
-            )
-
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
-
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
-
-        axes.scatter(*self._edge_embedding.T, **scatter_kwargs)
-        self._clear_axes(
-            figure,
-            axes,
-            "Edge embeddings with method {method}".format(
-                method=self._graph_transformer.method
-            )
-        )
-        return figure, axes
 
     def plot_edge_weights(
         self,
@@ -645,28 +738,20 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS))
-
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
-
-        edge_embedding, weights = self._shuffle(
-            self._edge_embedding,
-            self._graph.get_weights()
-        )
-
-        scatter = axes.scatter(
-            *edge_embedding.T,
-            c=weights,
-            cmap=plt.cm.get_cmap('RdYlBu'),
-            **scatter_kwargs,
+        figure, axes, scatter = self._plot_scatter(
+            "Edge weights",
+            self._node_embedding.values,
+            colors=self._graph.degrees(),
+            figure=figure,
+            axes=axes,
+            scatter_kwargs={
+                **({} if scatter_kwargs is None else scatter_kwargs),
+                "cmap": plt.cm.get_cmap('RdYlBu')
+            },
+            **kwargs
         )
 
         color_bar = figure.colorbar(scatter, ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
-        self._clear_axes(
-            figure, axes, "Edge weights - {}".format(self._graph.get_name()))
         return figure, axes
