@@ -373,7 +373,8 @@ class GraphVisualization:
                 scatter.legend_elements()[0]
             )
 
-        axes.set_axis_off()
+        if self._n_components == 2:
+            axes.set_axis_off()
         if self._node_embedding_method is not None:
             title = "{} - {} - {}".format(
                 title,
