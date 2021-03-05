@@ -307,7 +307,7 @@ class GraphVisualization:
             self.decompose(
                 self._graph_transformer.transform(edge_names),
             ),
-            index=node_names
+            index=edge_names
         )
 
     def _plot_scatter(
