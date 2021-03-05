@@ -95,7 +95,7 @@ def _compute_node_embedding(
 def compute_node_embedding(
     graph: EnsmallenGraph,
     node_embedding_method_name: str,
-    devices: List[str] = None,
+    devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
     **kwargs: Dict
 ) -> pd.DataFrame:
@@ -132,6 +132,10 @@ def compute_node_embedding(
         )
     if fit_kwargs is None:
         fit_kwargs = {}
+
+    # If devices are given as a single device we adapt this into a list.
+    if isinstance(devices, str):
+        devices = [devices]
     return _compute_node_embedding(
         graph,
         graph_name=graph.get_name(),
