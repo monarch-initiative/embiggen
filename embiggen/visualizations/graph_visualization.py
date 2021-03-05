@@ -20,7 +20,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=3,
+        s=1,
         marker=".",
         alpha=0.9,
     )
@@ -403,7 +403,7 @@ class GraphVisualization:
                 "Expecting types to be from a dense range."
             )
 
-        counts = np.bincount(types, minlength=len(number_of_types))
+        counts = np.bincount(types, minlength=number_of_types)
         top_counts = np.argsort(counts)[::-1][:k]
 
         type_labels = list(type_labels[top_counts])
