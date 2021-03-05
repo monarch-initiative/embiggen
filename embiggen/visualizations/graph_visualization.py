@@ -10,6 +10,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
 from matplotlib.colors import LogNorm
+from ddd_subplots import subplots as subplots_3d
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
@@ -21,7 +22,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=2,
+        s=1,
         marker=".",
         alpha=0.9,
     )
@@ -37,7 +38,8 @@ class GraphVisualization:
         n_components: int = 2,
         node_embedding_method: str = None,
         edge_embedding_method: str = "Hadamard",
-        subsample_points: int = 20_000
+        subsample_points: int = 20_000,
+        random_state: int = 42
     ):
         """Create new GraphVisualization object.
 
@@ -70,6 +72,8 @@ class GraphVisualization:
             separately to the two different sets) by using a Stratified Shuffle
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
+        random_state: int = 42,
+            The random state to reproduce the visualizations.
 
         Raises
         ---------------------------
@@ -89,10 +93,11 @@ class GraphVisualization:
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
         self._subsample_points = subsample_points
+        self._random_state = random_state
 
-        if n_components != 2:
+        if n_components not in {2, 3}:
             raise ValueError(
-                "We currently only support 2D decomposition visualization."
+                "We currently only support 2D and 3D decomposition visualization."
             )
 
         self._n_components = n_components
@@ -186,29 +191,14 @@ class GraphVisualization:
         artifically according to how the points are sorted.
         """
         index = np.arange(args[0].shape[0])
-        np.random.shuffle(index)
+        random_state = np.random.RandomState(seed=self._random_state)
+        random_state.shuffle(index)
         return [
             arg[index] if isinstance(arg, np.ndarray)
             else arg.iloc[index] if isinstance(arg, pd.DataFrame)
             else None
             for arg in args
         ]
-
-    def _clear_axes(
-        self,
-        figure: Figure,
-        axes: Axes,
-        title: str
-    ):
-        """Reset the axes ticks and set the given title."""
-        axes.set_axis_off()
-        if self._node_embedding_method is not None:
-            title = "{} - {}".format(
-                title,
-                self._node_embedding_method
-            )
-        axes.set_title(title)
-        figure.tight_layout()
 
     def _set_legend(
         self,
@@ -262,7 +252,8 @@ class GraphVisualization:
             # We compute the indices
             self._subsampled_node_ids, _ = next(Splitter(
                 n_splits=1,
-                train_size=self._subsample_points
+                train_size=self._subsample_points,
+                random_state=self._random_state
             ).split(node_names, self._graph.get_node_types()))
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
@@ -297,7 +288,8 @@ class GraphVisualization:
             # We compute the indices
             self._subsampled_edge_ids, _ = next(Splitter(
                 n_splits=1,
-                train_size=self._subsample_points
+                train_size=self._subsample_points,
+                random_state=self._random_state
             ).split(edge_names, self._graph.get_edge_types()))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
@@ -349,9 +341,14 @@ class GraphVisualization:
         Figure and Axis of the plot.
         """
         if figure is None or axes is None:
-            figure, axes = plt.subplots(
-                **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
-            )
+            if self._n_components == 2:
+                figure, axes = plt.subplots(
+                    **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
+                )
+            else:
+                figure, axes = subplots_3d(
+                    **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
+                )
 
         scatter_kwargs = {
             **({} if scatter_kwargs is None else scatter_kwargs),
@@ -376,14 +373,15 @@ class GraphVisualization:
                 scatter.legend_elements()[0]
             )
 
-        self._clear_axes(
-            figure,
-            axes,
-            "{title} - {graph_name}".format(
-                title=title,
-                graph_name=self._graph.get_name()
+        axes.set_axis_off()
+        if self._node_embedding_method is not None:
+            title = "{} - {} - {}".format(
+                title,
+                self._graph.get_name(),
+                self._node_embedding_method
             )
-        )
+        axes.set_title(title)
+        figure.tight_layout()
 
         return figure, axes, scatter
 
