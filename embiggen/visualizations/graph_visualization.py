@@ -20,7 +20,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=1,
+        s=3,
         marker=".",
         alpha=0.9,
     )
@@ -295,8 +295,10 @@ class GraphVisualization:
                 **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
             )
 
-        if scatter_kwargs is None:
-            scatter_kwargs = GraphVisualization.DEFAULT_SCATTER_KWARGS
+        scatter_kwargs = {
+            **({} if scatter_kwargs is None else scatter_kwargs),
+            **GraphVisualization.DEFAULT_SCATTER_KWARGS
+        }
 
         points, colors = self._shuffle(
             points,
