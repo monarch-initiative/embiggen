@@ -12,6 +12,7 @@ from matplotlib.legend_handler import HandlerBase
 from matplotlib.colors import LogNorm
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -35,7 +36,8 @@ class GraphVisualization:
         decomposition_method: str = "TSNE",
         n_components: int = 2,
         node_embedding_method: str = None,
-        edge_embedding_method: str = "Hadamard"
+        edge_embedding_method: str = "Hadamard",
+        subsample_points: int = 50_000
     ):
         """Create new GraphVisualization object.
 
@@ -56,6 +58,18 @@ class GraphVisualization:
         edge_embedding_method: str = "Hadamard",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        subsample_points: int = 50_000,
+            Number of points to subsample.
+            Some graphs have a number of nodes and edges in the millions.
+            Using non-CUDA versions of TSNE, the dimensionality reduction
+            procedure can take a considerable amount of time.
+            For this porpose, we include the possibility to subsample the
+            points to the given number.
+            The subsampling is done in a way that takes into consideration
+            the node types and/or edge types (the subsampling is applied
+            separately to the two different sets) by using a Stratified Shuffle
+            Split if there are node types or edge types.
+            Otherwise, a normal train test split is used.
 
         Raises
         ---------------------------
@@ -72,6 +86,9 @@ class GraphVisualization:
         self._node_transformer = NodeTransformer()
         self._node_embedding_method = node_embedding_method
         self._node_mapping = self._node_embedding = self._edge_embedding = None
+        self._subsampled_node_ids = None
+        self._subsampled_edge_ids = None
+        self._subsample_points = subsample_points
 
         if n_components != 2:
             raise ValueError(
@@ -231,12 +248,31 @@ class GraphVisualization:
         embedding: pd.DataFrame,
             Embedding of the graph nodes.
         """
+        # Retrieve the nodes
+        node_names = np.array(self._graph.get_node_names())
+        # If necessary, we proceed with the subsampling
+        if self._graph.get_nodes_number() > self._subsample_points:
+            # If there are node types, we use a stratified
+            # node sampling so that all the nodes types may be displayed.
+            if self._graph.has_node_types():
+                Splitter = StratifiedShuffleSplit
+            else:
+                # Otherwise there is no need to stratify.
+                Splitter = ShuffleSplit
+            # We compute the indices
+            self._subsampled_node_ids, _ = next(Splitter(
+                n_splits=1,
+                train_size=self._subsample_points
+            ).split(node_names, self._graph.get_node_types()))
+            # And sample the nodes
+            node_names = node_names[self._subsampled_node_ids]
+
         self._node_transformer.fit(embedding)
         self._node_embedding = pd.DataFrame(
             self.decompose(
-                self._node_transformer.transform(self._graph.get_node_names())
+                self._node_transformer.transform(node_names)
             ),
-            index=embedding.index
+            index=node_names
         )
 
     def fit_transform_edges(self, embedding: np.ndarray):
@@ -247,9 +283,31 @@ class GraphVisualization:
         embedding: np.ndarray,
             Embedding obtained from SkipGram, CBOW or GloVe.
         """
+        # Retrieve the edges
+        edge_names = np.array(self._graph.get_edge_names())
+        # If necessary, we proceed with the subsampling
+        if self._graph.get_edges_number() > self._subsample_points:
+            # If there are edge types, we use a stratified
+            # edge sampling so that all the edges types may be displayed.
+            if self._graph.has_edge_types():
+                Splitter = StratifiedShuffleSplit
+            else:
+                # Otherwise there is no need to stratify.
+                Splitter = ShuffleSplit
+            # We compute the indices
+            self._subsampled_edge_ids, _ = next(Splitter(
+                n_splits=1,
+                train_size=self._subsample_points
+            ).split(edge_names, self._graph.get_edge_types()))
+            # And sample the edges
+            edge_names = edge_names[self._subsampled_edge_ids]
+
         self._graph_transformer.fit(embedding)
-        self._edge_embedding = self.decompose(
-            self._graph_transformer.transform(self._graph),
+        self._edge_embedding = pd.DataFrame(
+            self.decompose(
+                self._graph_transformer.transform(edge_names),
+            ),
+            index=node_names
         )
 
     def _plot_scatter(
@@ -571,10 +629,14 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
+        node_types = self._graph.get_node_types()
+        if self._subsampled_node_ids is not None:
+            node_types = node_types[self._subsampled_node_ids]
+
         return self._plot_types(
             "Node types",
             self._node_embedding.values,
-            types=self._graph.get_node_types(),
+            types=node_types,
             type_labels=np.array(self._graph.get_node_type_names()),
             k=k,
             figure=figure,
@@ -620,10 +682,14 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
+        degrees = self._graph.degrees()
+        if self._subsampled_node_ids is not None:
+            degrees = degrees[self._subsampled_node_ids]
+
         figure, axes, scatter = self._plot_scatter(
             "Node degrees",
             self._node_embedding.values,
-            colors=self._graph.degrees(),
+            colors=degrees,
             figure=figure,
             axes=axes,
             scatter_kwargs={
@@ -688,10 +754,14 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
+        edge_types = self._graph.get_edge_types()
+        if self._subsampled_node_ids is not None:
+            edge_types = edge_types[self._subsampled_edge_ids]
+
         return self._plot_types(
             "Edge types",
             self._edge_embedding.values,
-            types=self._graph.get_edge_types(),
+            types=edge_types,
             type_labels=np.array(self._graph.get_edge_type_names()),
             k=k,
             figure=figure,
@@ -740,10 +810,14 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
+        weights = self._graph.get_weights()
+        if self._subsampled_node_ids is not None:
+            weights = weights[self._subsampled_node_ids]
+
         figure, axes, scatter = self._plot_scatter(
             "Edge weights",
             self._node_embedding.values,
-            colors=self._graph.degrees(),
+            colors=weights,
             figure=figure,
             axes=axes,
             scatter_kwargs={
