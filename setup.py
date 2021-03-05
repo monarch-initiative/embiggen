@@ -46,7 +46,7 @@ setup(
         "tqdm",
         "matplotlib",
         "sklearn",
-        "ddd_subplots",
+        "ddd_subplots>=1.0.7",
         "sanitize_ml_labels>=1.0.12",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20",
