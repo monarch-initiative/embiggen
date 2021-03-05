@@ -191,7 +191,7 @@ class GraphVisualization:
         artifically according to how the points are sorted.
         """
         index = np.arange(args[0].shape[0])
-        random_state = np.random.RandomState(seed=self._random_state)
+        random_state = np.random.RandomState(seed=self._random_state) # pylint: disable
         random_state.shuffle(index)
         return [
             arg[index] if isinstance(arg, np.ndarray)
