@@ -17,13 +17,6 @@ test_deps = [
 
 extras = {
     'test': test_deps,
-    'visualization': [
-        "cmake",
-        "MulticoreTSNE",
-        "matplotlib",
-        "ddd_subplots",
-        "sanitize_ml_labels>=1.0.12"
-    ]
 }
 
 # TODO: Authors add your emails!!!
@@ -51,6 +44,10 @@ setup(
         'pandas',
         "nltk",
         "tqdm",
+        "matplotlib",
+        "sklearn",
+        "ddd_subplots",
+        "sanitize_ml_labels>=1.0.12",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20",
         "extra_keras_metrics>=2.0.0",
