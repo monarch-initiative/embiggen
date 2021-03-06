@@ -386,12 +386,18 @@ class GraphVisualization:
 
         if self._n_components == 2:
             axes.set_axis_off()
+        
+        title = "{} - {}".format(
+            title,
+            self._graph.get_name(),
+        )
+
         if self._node_embedding_method is not None:
-            title = "{} - {} - {}".format(
+            title = "{} - {}".format(
                 title,
-                self._graph.get_name(),
                 self._node_embedding_method
             )
+
         axes.set_title(title)
         figure.tight_layout()
 
@@ -463,7 +469,7 @@ class GraphVisualization:
 
         number_of_types = np.unique(types).size
 
-        if number_of_types != types.max() + 1:
+        if number_of_types != types.max():
             raise ValueError(
                 "Expecting types to be from a dense range."
             )
