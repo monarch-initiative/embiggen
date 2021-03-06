@@ -222,7 +222,7 @@ class GraphVisualization:
         """
         legend = axes.legend(
             handles=handles,
-            labels=sanitize_ml_labels(labels),
+            labels=labels,
             loc='best'
         )
         # Setting alpha level in the legend to avoid having a transparent
@@ -471,7 +471,7 @@ class GraphVisualization:
 
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = list(np.argsort(counts)[::-1][:k])
-        type_labels = list(type_labels[top_counts])
+        type_labels = sanitize_ml_labels(list(type_labels[top_counts]))
 
 
         for i, element_type in enumerate(types):
