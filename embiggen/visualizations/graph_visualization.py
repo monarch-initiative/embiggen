@@ -654,6 +654,65 @@ class GraphVisualization:
             **kwargs
         )
 
+    def plot_connected_components(
+        self,
+        k: int = 10,
+        figure: Figure = None,
+        axes: Axes = None,
+        scatter_kwargs: Dict = None,
+        other_label: str = "Other",
+        **kwargs
+    ) -> Tuple[Figure, Axes]:
+        """Plot common node types of provided graph.
+
+        Parameters
+        ------------------------------
+        k: int = 10,
+            Number of components to visualize.
+        figure: Figure = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        other_label: str = "Other",
+            Label to use for edges below the top k threshold.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        components, components_number, _, _ = self._graph.connected_components()
+        if self._subsampled_node_ids is not None:
+            components = components[self._subsampled_node_ids]
+
+        return self._plot_types(
+            "Node components",
+            self._node_embedding.values,
+            types=components,
+            type_labels=np.arange(components_number),
+            k=k,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            other_label=other_label,
+            **kwargs
+        )
+
     def plot_node_degrees(
         self,
         figure: Figure = None,
