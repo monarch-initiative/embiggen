@@ -24,7 +24,7 @@ class GraphVisualization:
     DEFAULT_SCATTER_KWARGS = dict(
         s=1,
         marker=".",
-        alpha=0.9,
+        alpha=0.8,
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(5, 5),
@@ -461,7 +461,7 @@ class GraphVisualization:
                 "Expecting types to be a numpy array."
             )
 
-        number_of_types = len(type_labels)
+        number_of_types = np.unique(types).size
 
         if number_of_types != types.max() + 1:
             raise ValueError(
