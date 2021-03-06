@@ -469,11 +469,6 @@ class GraphVisualization:
 
         number_of_types = np.unique(types).size
 
-        if number_of_types != types.max():
-            raise ValueError(
-                "Expecting types to be from a dense range."
-            )
-
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = list(np.argsort(counts)[::-1][:k])
         type_labels = list(type_labels[top_counts])
