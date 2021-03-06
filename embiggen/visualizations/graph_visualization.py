@@ -72,6 +72,7 @@ class GraphVisualization:
             separately to the two different sets) by using a Stratified Shuffle
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
+            If None is given, no subsampling is executed.
         random_state: int = 42,
             The random state to reproduce the visualizations.
 
@@ -246,7 +247,7 @@ class GraphVisualization:
         # Retrieve the nodes
         node_names = np.array(self._graph.get_node_names())
         # If necessary, we proceed with the subsampling
-        if self._graph.get_nodes_number() > self._subsample_points:
+        if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
             if self._graph.has_node_types() and all(
@@ -285,7 +286,7 @@ class GraphVisualization:
         # Retrieve the edges
         edge_names = np.array(self._graph.get_edge_names())
         # If necessary, we proceed with the subsampling
-        if self._graph.get_edges_number() > self._subsample_points:
+        if self._subsample_points is not None and self._graph.get_edges_number() > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
             if self._graph.has_edge_types() and all(
@@ -386,7 +387,7 @@ class GraphVisualization:
 
         if self._n_components == 2:
             axes.set_axis_off()
-        
+
         title = "{} - {}".format(
             title,
             self._graph.get_name(),
@@ -472,7 +473,6 @@ class GraphVisualization:
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = list(np.argsort(counts)[::-1][:k])
         type_labels = sanitize_ml_labels(list(type_labels[top_counts]))
-
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
