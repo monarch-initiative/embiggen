@@ -191,7 +191,9 @@ class GraphVisualization:
         artifically according to how the points are sorted.
         """
         index = np.arange(args[0].shape[0])
-        random_state = np.random.RandomState(seed=self._random_state) # pylint: disable
+        random_state = np.random.RandomState(  # pylint: disable=no-member
+            seed=self._random_state
+        )
         random_state.shuffle(index)
         return [
             arg[index] if isinstance(arg, np.ndarray)
@@ -230,7 +232,10 @@ class GraphVisualization:
                 1
             )
 
-    def fit_transform_nodes(self, embedding: pd.DataFrame):
+    def fit_transform_nodes(
+        self,
+        embedding: pd.DataFrame
+    ):
         """Executes fitting for plotting node embeddings.
 
         Parameters
@@ -244,7 +249,10 @@ class GraphVisualization:
         if self._graph.get_nodes_number() > self._subsample_points:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
-            if self._graph.has_node_types():
+            if self._graph.has_node_types() and all(
+                count > 1
+                for count in self._graph.get_node_type_counts().values()
+            ):
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
@@ -280,7 +288,10 @@ class GraphVisualization:
         if self._graph.get_edges_number() > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types():
+            if self._graph.has_edge_types() and all(
+                count > 1
+                for count in self._graph.get_edge_type_counts().values()
+            ):
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
@@ -440,11 +451,6 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._node_embedding is None:
-            raise ValueError(
-                "Node fitting must be executed before plot."
-            )
-
         if k > 10:
             raise ValueError(
                 "Values of k greater than 10 are not supported!"
