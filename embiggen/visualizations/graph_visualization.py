@@ -475,15 +475,17 @@ class GraphVisualization:
             )
 
         counts = np.bincount(types, minlength=number_of_types)
-        top_counts = np.argsort(counts)[::-1][:k]
-
+        top_counts = list(np.argsort(counts)[::-1][:k])
         type_labels = list(type_labels[top_counts])
 
-        if k < number_of_types:
-            for i, element_type in enumerate(types):
-                if element_type not in top_counts:
-                    types[i] = k+1
 
+        for i, element_type in enumerate(types):
+            if element_type not in top_counts:
+                types[i] = k+1
+            else:
+                types[i] = top_counts.index(element_type)
+
+        if k < number_of_types:
             type_labels.append(other_label)
 
         figure, axis, _ = self._plot_scatter(
