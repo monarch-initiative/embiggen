@@ -24,11 +24,11 @@ class GraphVisualization:
     DEFAULT_SCATTER_KWARGS = dict(
         s=1,
         marker=".",
-        alpha=0.8,
+        alpha=0.7,
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(5, 5),
-        dpi=200
+        figsize=(8, 8),
+        dpi=100
     )
 
     def __init__(
@@ -476,7 +476,7 @@ class GraphVisualization:
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
-                types[i] = k+1
+                types[i] = k
             else:
                 types[i] = top_counts.index(element_type)
 
