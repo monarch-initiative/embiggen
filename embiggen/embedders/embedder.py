@@ -280,6 +280,7 @@ class Embedder:
                 "Given verbose value is not valid, as it must be either "
                 "a boolean value or 0, 1 or 2."
             )
+        callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
@@ -300,7 +301,7 @@ class Embedder:
                     mode=reduce_lr_mode,
                 ),
                 *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
-                * kwargs.get("callbacks", ())
+                *callbacks
             ],
             **kwargs
         ).history)
