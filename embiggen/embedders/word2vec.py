@@ -25,7 +25,8 @@ class Word2Vec(Embedder):
         model_name: str = "Word2Vec",
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
-        negative_samples: int = 10
+        negative_samples: int = 10,
+        classes_number: int = 0
     ):
         """Create new sequence Embedder model.
 
@@ -55,10 +56,14 @@ class Word2Vec(Embedder):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
+        classes_number: int = 0,
+            Number of classes that the elements may have.
+            This may be the number of node types in a graph for instance.
         """
         self._model_name = model_name
         self._window_size = window_size
         self._negative_samples = negative_samples
+        self._classes_number = classes_number
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -108,9 +113,11 @@ class Word2Vec(Embedder):
         true_input_layer = Input(
             (self._get_true_input_length(), ),
         )
-        true_output_layer = Input(
-            (self._get_true_output_length(), ),
-        )
+        true_output_length = self._get_true_output_length()
+        true_output_layers = [
+            Input((true_output_length, ))
+            for i in range(1 + self._classes_number)
+        ]
 
         # Creating the embedding layer for the contexts
         embedding = Embedding(
@@ -138,15 +145,18 @@ class Word2Vec(Embedder):
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length()
-        )((mean_embedding, true_output_layer))
+        )
 
         # Creating the actual model
         model = Model(
             inputs=self._sort_input_layers(
                 true_input_layer,
-                true_output_layer
+                *true_output_layers
             ),
-            outputs=nce_loss,
+            outputs=[
+                nce_loss((mean_embedding, true_output_layer))
+                for true_output_layer in true_output_layers
+            ],
             name=self._model_name
         )
         return model
