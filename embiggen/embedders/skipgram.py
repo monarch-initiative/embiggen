@@ -20,7 +20,9 @@ class SkipGram(Word2Vec):
         model_name: str = "SkipGram",
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
-        negative_samples: int = 10
+        negative_samples: int = 10,
+        classes_number: int = 0,
+        extra_features_number: int = 0
     ):
         """Create new CBOW-based Embedder object.
 
@@ -44,6 +46,11 @@ class SkipGram(Word2Vec):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
+        classes_number: int = 0,
+            Number of classes that the elements may have.
+            This may be the number of node types in a graph for instance.
+        extra_features_number: int = 0,
+            Number of additional features provided for each term.
         """
         super().__init__(
             vocabulary_size=vocabulary_size,
@@ -51,7 +58,9 @@ class SkipGram(Word2Vec):
             model_name=model_name,
             optimizer=optimizer,
             window_size=window_size,
-            negative_samples=negative_samples
+            negative_samples=negative_samples,
+            classes_number=classes_number,
+            extra_features_number=extra_features_number
         )
 
     def _get_true_input_length(self) -> int:
