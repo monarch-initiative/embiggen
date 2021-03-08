@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Flatten, Input, Lambda, Layer
+from tensorflow.keras.layers import Flatten, Input, Lambda, Layer, Concatenate
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
@@ -26,7 +26,8 @@ class Word2Vec(Embedder):
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
         negative_samples: int = 10,
-        classes_number: int = 0
+        classes_number: int = 0,
+        extra_features_number: int = 0
     ):
         """Create new sequence Embedder model.
 
@@ -59,11 +60,14 @@ class Word2Vec(Embedder):
         classes_number: int = 0,
             Number of classes that the elements may have.
             This may be the number of node types in a graph for instance.
+        extra_features_number: int = 0,
+            Number of additional features provided for each term.
         """
         self._model_name = model_name
         self._window_size = window_size
         self._negative_samples = negative_samples
         self._classes_number = classes_number
+        self._extra_features_number = extra_features_number
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -87,15 +91,15 @@ class Word2Vec(Embedder):
     def _sort_input_layers(
         self,
         true_input_layer: Layer,
-        true_output_layer: Layer
-    ) -> Tuple[Layer, Layer]:
+        *true_output_layers: Tuple[Layer]
+    ) -> Tuple[Layer]:
         """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------
         true_input_layer: Layer,
             The input layer that will contain the true input.
-        true_output_layer: Layer,
+        *true_output_layers: Tuple[Layer]
             The input layer that will contain the true output.
 
         Returns
@@ -113,11 +117,21 @@ class Word2Vec(Embedder):
         true_input_layer = Input(
             (self._get_true_input_length(), ),
         )
+
+        # To handle the multi-head case we have a list
+        # of the output layers.
         true_output_length = self._get_true_output_length()
         true_output_layers = [
             Input((true_output_length, ))
             for i in range(1 + self._classes_number)
         ]
+
+        # If there are additional features for the nodes, we add an input
+        # for them.
+        if self._extra_features_number != 0:
+            features_input = Input(
+                (self._extra_features_number, ),
+            )
 
         # Creating the embedding layer for the contexts
         embedding = Embedding(
@@ -126,6 +140,14 @@ class Word2Vec(Embedder):
             input_length=self._get_true_input_length(),
             name=Embedder.EMBEDDING_LAYER_NAME
         )(true_input_layer)
+
+        # We concatenate the additional features to the embedding
+        # if the features have been provided.
+        if self._extra_features_number != 0:
+            embedding = Concatenate()((
+                embedding,
+                features_input
+            ))
 
         # If there is more than one value per single sample
         # as there is for instance in CBOW-like models

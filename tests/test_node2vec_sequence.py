@@ -1,9 +1,8 @@
 """Unit test for testing that Node2VecSequence works as expected."""
 from embiggen import Node2VecSequence
-from .test_abstract_node2vec_sequence import TestAbstractNode2VecSequence
+from .test_node_sequences import TestNodeSequences
 
-
-class TestNode2VecSequence(TestAbstractNode2VecSequence):
+class TestNode2VecSequence(TestNodeSequences):
     """Unit test for testing that Node2VecSequence works as expected."""
 
     def setUp(self):

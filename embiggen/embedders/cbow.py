@@ -65,15 +65,15 @@ class CBOW(Word2Vec):
     def _sort_input_layers(
         self,
         true_input_layer: Layer,
-        true_output_layer: Layer
-    ) -> Tuple[Layer, Layer]:
+        *true_output_layers: Tuple[Layer]
+    ) -> Tuple[Layer]:
         """Return input layers for training with the same input sequence.
 
         Parameters
         ----------------------------
         true_input_layer: Layer,
             The input layer that will contain the true input.
-        true_output_layer: Layer,
+        *true_output_layers: Tuple[Layer]
             The input layer that will contain the true output.
 
         Returns
@@ -82,5 +82,5 @@ class CBOW(Word2Vec):
         """
         return (
             true_input_layer,
-            true_output_layer
+            true_output_layers[0]
         )

@@ -2,6 +2,7 @@
 from typing import Union, Dict
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 from ensmallen_graph import EnsmallenGraph
+import numpy as np
 from .skipgram import SkipGram
 from .node2vec import Node2Vec
 
@@ -32,7 +33,9 @@ class GraphSkipGram(Node2Vec):
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None
+        dense_node_mapping: Dict[int, int] = None,
+        nodes_test_set: np.ndarray = None,
+        classes_number: int = 0,
     ):
         """Create new sequence Embedder model.
 
@@ -108,6 +111,13 @@ class GraphSkipGram(Node2Vec):
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
+        nodes_test_set: np.ndarray = None,
+            Nodes to filter out from the contexts when training the
+            multi-head version of Node2Vec.
+            THIS IS AN EXPERIMENTAL FEATURE!
+        classes_number: int = 0,
+            Number of classes that the elements may have.
+            This may be the number of node types in a graph for instance.
         """
         super().__init__(
             graph=graph,
@@ -127,5 +137,7 @@ class GraphSkipGram(Node2Vec):
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,
             random_state=random_state,
-            dense_node_mapping=dense_node_mapping
+            dense_node_mapping=dense_node_mapping,
+            nodes_test_set=nodes_test_set,
+            classes_number=classes_number
         )
