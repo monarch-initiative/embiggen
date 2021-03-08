@@ -3,7 +3,7 @@ from typing import Tuple, Dict
 
 import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from .abstract_sequence import AbstractSequence
+from embiggen.sequences.abstract_sequence import AbstractSequence
 
 
 class Node2VecSequence(AbstractSequence):
@@ -175,25 +175,20 @@ class Node2VecSequence(AbstractSequence):
         outputs = [contexts_batch, words_batch]
 
         if self._nodes_test_set is not None:
-            masks_batch = np.logical_not(np.isin(contexts_batch, self._nodes_test_set))
+            masks_batch = np.isin(contexts_batch, self._nodes_test_set)
             # to_keep = masks_batch.any(axis=-1)
             # masks_batch = masks_batch[to_keep]
             # contexts_batch = contexts_batch[to_keep]
             # words_batch = words_batch[to_keep]
-            filtered_contexts_batch = [
-                np.array([
-                    [
-                        np.random.choice(
-                            context[mask & (self._node_types[context] == class_number)],
-                            size=self._window_size*2,
-                            replace=True
-                        )
-                        for context, mask in zip(contexts, masks)
-                    ]
-                    for contexts, masks in zip(contexts_batch, masks_batch)
-                ])
-                for class_number in range(self._graph.get_node_types_number())
-            ]
+            
+            filtered_contexts_batch = []
+            filtered_batch = contexts_batch.copy()
+            filtered_batch[masks_batch] = 0
+            
+            for class_number in range(self._graph.get_node_types_number()):
+                local_copy = filtered_batch.copy()
+                local_copy[self._node_types[filtered_batch] != class_number] = 0
+                filtered_contexts_batch.append(local_copy)
 
             outputs += filtered_contexts_batch
             
