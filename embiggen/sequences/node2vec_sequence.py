@@ -110,6 +110,7 @@ class Node2VecSequence(AbstractSequence):
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
         self._nodes_test_set = nodes_test_set
+        self._node_types = graph.get_node_types()
         self._extra_features = extra_features
 
         super().__init__(
@@ -183,7 +184,7 @@ class Node2VecSequence(AbstractSequence):
                 np.array([
                     [
                         np.random.choice(
-                            context[mask],
+                            context[mask & (self._node_types[context] == class_number)],
                             size=self._window_size*2,
                             replace=True
                         )
