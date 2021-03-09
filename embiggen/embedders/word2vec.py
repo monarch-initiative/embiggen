@@ -116,25 +116,25 @@ class Word2Vec(Embedder):
     def _build_model(self):
         """Return Node2Vec model."""
         # Creating the inputs layers
-        true_input_layer = Input((self._get_true_input_length(), ))
+        true_input_layer = Input((self._get_true_input_length(), ), dtype=tf.int32)
 
         # To handle the multi-head case we have a list
         # of the output layers.
         true_output_length = self._get_true_output_length()
         if self._classes_number == 0:
             true_output_layers = [
-                Input((true_output_length, ))
+                Input((true_output_length, ), dtype=tf.int32)
             ]
         else:
             true_output_layers = [
                 # Contextual nodes
-                Input((true_output_length, )),
+                Input((true_output_length, ), dtype=tf.int32),
                 # Mask for training nodes
                 # The values in here == True are the nodes whose labels are
                 # reserved for the training.
-                Input((true_output_length, )),
+                Input((true_output_length, ), dtype=tf.bool),
                 # Node types to be used to create the multiple outputs.
-                Input((true_output_length, ))
+                Input((true_output_length, ), dtype=tf.int32)
             ]
 
         # If there are additional features for the nodes, we add an input
