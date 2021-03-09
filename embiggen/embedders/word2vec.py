@@ -117,31 +117,35 @@ class Word2Vec(Embedder):
         """Return Node2Vec model."""
         # Creating the inputs layers
         true_input_layer = Input(
-            (self._get_true_input_length(), ), dtype=tf.uint32)
+            (self._get_true_input_length(), ),
+            dtype=tf.uint32,
+            name="InputWords"
+        )
 
         # To handle the multi-head case we have a list
         # of the output layers.
         true_output_length = self._get_true_output_length()
-        if self._classes_number == 0:
-            true_output_layers = [
-                Input((true_output_length, ), dtype=tf.uint32)
-            ]
-        else:
-            true_output_layers = [
-                # Contextual nodes
-                Input((true_output_length, ), dtype=tf.uint32),
+        # Contextual nodes
+        true_output_layers = [
+            Input((true_output_length, ), dtype=tf.uint32, name="InputContexts")
+        ]
+        if self._classes_number != 0:
+            true_output_layers += [
                 # Mask for training nodes
                 # The values in here == True are the nodes whose labels are
                 # reserved for the test.
-                Input((true_output_length, ), dtype=tf.uint32),
+                Input((true_output_length, ), dtype=tf.bool,
+                      name="InputContextsMask"),
                 # Node types to be used to create the multiple outputs.
-                Input((true_output_length, ), dtype=tf.uint32)
+                Input((true_output_length, ), dtype=tf.uint32,
+                      name="InputContextualTypes")
             ]
 
         # If there are additional features for the nodes, we add an input
         # for them.
         if self._extra_features_number != 0:
-            features_input = Input((self._extra_features_number, ))
+            features_input = Input(
+                (self._extra_features_number, ), name="InputFeatures")
 
         # Creating the embedding layer for the contexts
         embedding_layer = Embedding(
@@ -151,7 +155,7 @@ class Word2Vec(Embedder):
             input_length=self._get_true_input_length(),
             name=Embedder.EMBEDDING_LAYER_NAME,
             #embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            #embeddings_constraint=UnitNorm(),
+            # embeddings_constraint=UnitNorm(),
             mask_zero=True
         )
 
@@ -178,14 +182,19 @@ class Word2Vec(Embedder):
             embedding_layer=embedding_layer
         )
 
-        if self._classes_number == 0:
-            outputs = nce_loss((mean_embedding, true_output_layers[0]))
-        else:
-            outputs = []
-            for node_type_class in range(self._classes_number):
+        outputs = [
+            # Normal NCE loss output
+            nce_loss((mean_embedding, true_output_layers[0]))
+        ]
+        if self._classes_number != 0:
+            for class_id in range(self._classes_number):
+                # We compute the mask of values that need to be filtered out.
                 mask = tf.math.logical_and(
-                    math_ops.not_equal(true_output_layers[2], node_type_class),
-                    math_ops.not_equal(true_output_layers[1], 1),
+                    # The class_id must be the class_id of this specific
+                    # head of the word2vec model.
+                    # We filter out all values that are not of that class.
+                    math_ops.not_equal(true_output_layers[2], class_id),
+                    true_output_layers[1],
                 )
                 outputs.append(nce_loss((
                     mean_embedding,
