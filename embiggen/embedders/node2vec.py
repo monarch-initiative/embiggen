@@ -153,7 +153,6 @@ class Node2Vec:
 
     def fit(
         self,
-        *args: List,
         epochs: int = 100,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 1,
