@@ -132,7 +132,7 @@ class Word2Vec(Embedder):
                 # Mask for training nodes
                 # The values in here == True are the nodes whose labels are
                 # reserved for the test.
-                Input((true_output_length, ), dtype=tf.bool),
+                Input((true_output_length, ), dtype=tf.int32),
                 # Node types to be used to create the multiple outputs.
                 Input((true_output_length, ), dtype=tf.int32)
             ]
@@ -184,7 +184,7 @@ class Word2Vec(Embedder):
             for node_type_class in range(self._classes_number):
                 mask = tf.math.logical_and(
                     math_ops.not_equal(true_output_layers[2], node_type_class),
-                    true_output_layers[1]
+                    math_ops.not_equal(true_output_layers[1], 1),
                 )
                 outputs.append(nce_loss((
                     mean_embedding,
