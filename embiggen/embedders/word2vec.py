@@ -10,7 +10,8 @@ from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
 from tensorflow.keras import regularizers
 from tensorflow.keras.constraints import UnitNorm
-
+import tensorflow as tf
+from tensorflow.python.ops import math_ops # pylint: disable=no-name-in-module
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
 
@@ -120,10 +121,21 @@ class Word2Vec(Embedder):
         # To handle the multi-head case we have a list
         # of the output layers.
         true_output_length = self._get_true_output_length()
-        true_output_layers = [
-            Input((true_output_length, ))
-            for i in range(1 + self._classes_number)
-        ]
+        if self._classes_number == 0:
+            true_output_layers = [
+                Input((true_output_length, ))
+            ]
+        else:
+            true_output_layers = [
+                # Contextual nodes
+                Input((true_output_length, )),
+                # Mask for training nodes
+                # The values in here == True are the nodes whose labels are
+                # reserved for the training.
+                Input((true_output_length, )),
+                # Node types to be used to create the multiple outputs.
+                Input((true_output_length, ))
+            ]
 
         # If there are additional features for the nodes, we add an input
         # for them.
@@ -141,7 +153,7 @@ class Word2Vec(Embedder):
             embeddings_constraint=UnitNorm(),
             mask_zero=True
         )
-        
+
         embedding = embedding_layer(true_input_layer)
 
         # We concatenate the additional features to the embedding
@@ -150,7 +162,10 @@ class Word2Vec(Embedder):
             embedding = Concatenate()((embedding, features_input))
 
         # Executing average of the embeddings and features (if provided)
-        mean_embedding = GlobalAveragePooling1D()(embedding)
+        mean_embedding = GlobalAveragePooling1D()(
+            embedding,
+            mask=embedding_layer.compute_mask(true_input_layer)
+        )
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(
@@ -162,16 +177,33 @@ class Word2Vec(Embedder):
             embedding_layer=embedding_layer
         )
 
+        if self._classes_number == 0:
+            outputs = nce_loss((mean_embedding, true_output_layers[0]))
+        else:
+            outputs = [
+                nce_loss((
+                    mean_embedding,
+                    tf.tensor_scatter_nd_update(
+                        true_output_layers[0],
+                        tf.where(
+                            tf.math.logical_and(
+                                math_ops.not_equal(true_output_layers[2], node_type_class),
+                                true_output_layers[1]
+                            )
+                        ),
+                        tf.constant(0)
+                    )
+                ))
+                for node_type_class in range(self._classes_number)
+            ]
+
         # Creating the actual model
         model = Model(
             inputs=self._sort_input_layers(
                 true_input_layer,
                 *true_output_layers
             ),
-            outputs=[
-                nce_loss((mean_embedding, true_output_layer))
-                for true_output_layer in true_output_layers
-            ],
+            outputs=outputs,
             name=self._model_name
         )
         return model

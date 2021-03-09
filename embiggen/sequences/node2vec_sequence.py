@@ -171,30 +171,19 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-        original_context = contexts_batch.copy()
-        contexts_batch += 1
-        words_batch += 1
-
-        outputs = [contexts_batch, words_batch]
-
         if self._nodes_test_set is not None:
-            masks_batch = np.isin(original_context, self._nodes_test_set)
-            # to_keep = masks_batch.any(axis=-1)
-            # masks_batch = masks_batch[to_keep]
-            # contexts_batch = contexts_batch[to_keep]
-            # words_batch = words_batch[to_keep]
+            masks_batch = np.logical_not(np.isin(contexts_batch, self._nodes_test_set))
+            contexts_batch_node_types = self._node_types[contexts_batch]
 
-            filtered_contexts_batch = []
-            filtered_batch = contexts_batch.copy()
-            filtered_batch[masks_batch] = 0
-
-            for class_number in range(self._graph.get_node_types_number()):
-                local_copy = filtered_batch.copy()
-                local_copy[self._node_types[original_context]
-                           != class_number] = 0
-                filtered_contexts_batch.append(local_copy)
-
-            outputs += filtered_contexts_batch
+            outputs = [
+                contexts_batch + 1,
+                words_batch + 1,
+                masks_batch,
+                contexts_batch_node_types
+            ]
+            
+        else:
+            outputs = [contexts_batch + 1, words_batch + 1]
 
         if self._support_mirror_strategy:
             outputs = [
