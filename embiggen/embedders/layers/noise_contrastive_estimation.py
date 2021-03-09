@@ -15,7 +15,7 @@ class NoiseContrastiveEstimation(Layer):
         embedding_size: int,
         negative_samples: int,
         positive_samples: int,
-        embedding_layer: Embedding,
+        embedding_layer: Embedding = None,
         **kwargs: Dict
     ):
         """Create new NoiseContrastiveEstimation layer.
@@ -36,12 +36,15 @@ class NoiseContrastiveEstimation(Layer):
             This single sample of negative classes is evaluated for each element in the batch.
         positive_samples: int,
             The number of target classes per training example.
+        embedding_layer: Embedding = None,
+            The embedding layer to bind.
         """
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._negative_samples = negative_samples
         self._positive_samples = positive_samples
         self._embedding_layer = embedding_layer
+        self._weights = None
         self._biases = None
         super().__init__(**kwargs)
 
@@ -53,14 +56,15 @@ class NoiseContrastiveEstimation(Layer):
         input_shape: Tuple[int, int],
             Shape of the output of the previous layer.
         """
-        # self._weights = self.add_weight(
-        #     name="approx_softmax_weights",
-        #     shape=(self.vocabulary_size, self.embedding_size),
-        #     initializer="glorot_normal",
-        # )
-        self.trainable_weights.append(
-            self._embedding_layer.weights[0]
-        )
+        if self._embedding_layer is None:
+            self._weights = self.add_weight(
+                name="approx_softmax_weights",
+                shape=(self._vocabulary_size, self._embedding_size),
+                initializer="glorot_normal",
+            )
+        else:
+            self._weights = self._embedding_layer.weights[0]
+            self.trainable_weights.append(self._weights)
 
         self._biases = self.add_weight(
             name="approx_softmax_biases",
@@ -84,7 +88,7 @@ class NoiseContrastiveEstimation(Layer):
         # Computing NCE loss.
         self.add_loss(
             K.mean(tf.nn.nce_loss(
-                self._embedding_layer.weights[0],
+                self._weights,
                 self._biases,
                 labels=labels,
                 inputs=predictions,
@@ -97,5 +101,5 @@ class NoiseContrastiveEstimation(Layer):
         # Computing logits for closing TF graph
         return K.dot(
             predictions,
-            self._biases + K.transpose(self._embedding_layer.weights[0])
+            self._biases + K.transpose(self._weights)
         )

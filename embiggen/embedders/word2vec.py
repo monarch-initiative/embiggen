@@ -29,7 +29,8 @@ class Word2Vec(Embedder):
         window_size: int = 16,
         negative_samples: int = 10,
         classes_number: int = 0,
-        extra_features_number: int = 0
+        extra_features_number: int = 0,
+        siamese: bool = False
     ):
         """Create new sequence Embedder model.
 
@@ -64,12 +65,15 @@ class Word2Vec(Embedder):
             This may be the number of node types in a graph for instance.
         extra_features_number: int = 0,
             Number of additional features provided for each term.
+        siamese: bool = False,
+            Whether to use a siamese connection for the NCE loss and embedding.
         """
         self._model_name = model_name
         self._window_size = window_size
         self._negative_samples = negative_samples
         self._classes_number = classes_number
         self._extra_features_number = extra_features_number
+        self._siamese = siamese
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -179,7 +183,7 @@ class Word2Vec(Embedder):
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length(),
-            embedding_layer=embedding_layer
+            embedding_layer=embedding_layer if self._siamese else None
         )
 
         outputs = [
