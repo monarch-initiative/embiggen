@@ -193,7 +193,9 @@ class Word2Vec(Embedder):
                         true_output_layers[0],
                         tf.where(mask),
                         tf.zeros(
-                            (tf.math.reduce_sum(tf.cast(mask, tf.uint32)), ))
+                            (tf.math.reduce_sum(tf.cast(mask, tf.uint32)), ),
+                            dtype=tf.uint32
+                        )
                     )
                 )))
 
