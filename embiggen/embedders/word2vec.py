@@ -305,7 +305,7 @@ class Word2Vec(Embedder):
         -----------------------
         Dataframe with training history.
         """
-        super().fit(
+        return super().fit(
             *args,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
