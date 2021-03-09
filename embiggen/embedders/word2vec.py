@@ -3,12 +3,13 @@ from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Flatten, Input, Lambda, Layer, Concatenate
+from tensorflow.keras.layers import Input, Layer, Concatenate, GlobalAveragePooling1D
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
+from tensorflow.keras import regularizers
+from tensorflow.keras.constraints import UnitNorm
 
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
@@ -114,9 +115,7 @@ class Word2Vec(Embedder):
     def _build_model(self):
         """Return Node2Vec model."""
         # Creating the inputs layers
-        true_input_layer = Input(
-            (self._get_true_input_length(), ),
-        )
+        true_input_layer = Input((self._get_true_input_length(), ))
 
         # To handle the multi-head case we have a list
         # of the output layers.
@@ -129,44 +128,38 @@ class Word2Vec(Embedder):
         # If there are additional features for the nodes, we add an input
         # for them.
         if self._extra_features_number != 0:
-            features_input = Input(
-                (self._extra_features_number, ),
-            )
+            features_input = Input((self._extra_features_number, ))
 
         # Creating the embedding layer for the contexts
-        embedding = Embedding(
-            input_dim=self._vocabulary_size,
+        embedding_layer = Embedding(
+            # The plus one is needed for the zero padding!
+            input_dim=self._vocabulary_size + 1,
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
-            name=Embedder.EMBEDDING_LAYER_NAME
-        )(true_input_layer)
+            name=Embedder.EMBEDDING_LAYER_NAME,
+            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            embeddings_constraint=UnitNorm(),
+            mask_zero=True
+        )
+        
+        embedding = embedding_layer(true_input_layer)
 
         # We concatenate the additional features to the embedding
         # if the features have been provided.
         if self._extra_features_number != 0:
-            embedding = Concatenate()((
-                embedding,
-                features_input
-            ))
+            embedding = Concatenate()((embedding, features_input))
 
-        # If there is more than one value per single sample
-        # as there is for instance in CBOW-like models
-        if self._get_true_input_length() > 1:
-            # Computing mean of the embedding of all the contexts
-            mean_embedding = Lambda(
-                lambda x: K.mean(x, axis=1),
-                output_shape=(self._embedding_size,)
-            )(embedding)
-        else:
-            # Otherwise we passthrough the previous result with a simple flatten.
-            mean_embedding = Flatten()(embedding)
+        # Executing average of the embeddings and features (if provided)
+        mean_embedding = GlobalAveragePooling1D()(embedding)
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(
-            vocabulary_size=self._vocabulary_size,
+            # The plus one is needed for the zero padding!
+            vocabulary_size=self._vocabulary_size + 1,
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
-            positive_samples=self._get_true_output_length()
+            positive_samples=self._get_true_output_length(),
+            embedding_layer=embedding_layer
         )
 
         # Creating the actual model
@@ -190,6 +183,21 @@ class Word2Vec(Embedder):
         self._model.compile(
             optimizer=self._optimizer
         )
+
+    @property
+    def embedding(self) -> np.ndarray:
+        """Return model embeddings.
+
+        Raises
+        -------------------
+        NotImplementedError,
+            If the current embedding model does not have an embedding layer.
+        """
+        # We need to drop the first column (feature) of the embedding
+        # curresponding to the indices 0, as this value is reserved for the
+        # masked values. The masked values are the values used to fill
+        # the batches of the neigbours of the nodes.
+        return Embedder.embedding.fget(self)[1:]  # pylint: disable=no-member
 
     def fit(
         self,

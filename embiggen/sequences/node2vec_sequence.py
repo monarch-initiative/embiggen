@@ -110,7 +110,8 @@ class Node2VecSequence(AbstractSequence):
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
         self._nodes_test_set = nodes_test_set
-        self._node_types = graph.get_node_types()
+        if self._nodes_test_set is not None:
+            self._node_types = graph.get_node_types()
         self._extra_features = extra_features
 
         super().__init__(
@@ -121,8 +122,6 @@ class Node2VecSequence(AbstractSequence):
             support_mirror_strategy=support_mirror_strategy,
             random_state=random_state
         )
-
-    """Keras Sequence object for running CBOW and SkipGram on graph walks."""
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], None]:
         """Return batch corresponding to given index.
@@ -172,30 +171,35 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
+        original_context = contexts_batch.copy()
+        contexts_batch += 1
+        words_batch += 1
+
         outputs = [contexts_batch, words_batch]
 
         if self._nodes_test_set is not None:
-            masks_batch = np.isin(contexts_batch, self._nodes_test_set)
+            masks_batch = np.isin(original_context, self._nodes_test_set)
             # to_keep = masks_batch.any(axis=-1)
             # masks_batch = masks_batch[to_keep]
             # contexts_batch = contexts_batch[to_keep]
             # words_batch = words_batch[to_keep]
-            
+
             filtered_contexts_batch = []
             filtered_batch = contexts_batch.copy()
             filtered_batch[masks_batch] = 0
-            
+
             for class_number in range(self._graph.get_node_types_number()):
                 local_copy = filtered_batch.copy()
-                local_copy[self._node_types[filtered_batch] != class_number] = 0
+                local_copy[self._node_types[original_context]
+                           != class_number] = 0
                 filtered_contexts_batch.append(local_copy)
 
             outputs += filtered_contexts_batch
-            
+
         if self._support_mirror_strategy:
             outputs = [
                 output.astype(float)
                 for output in outputs
             ]
-        
+
         return outputs, None

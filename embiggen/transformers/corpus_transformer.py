@@ -343,7 +343,7 @@ class CorpusTransformer:
         """
         if isinstance(sequences, (list, tuple)):
             sequences = np.array(sequences)
-        return self._tokenizer.sequences_to_texts(sequences + 1)
+        return self._tokenizer.sequences_to_texts(sequences)
 
     def get_word_id(self, word: str) -> int:
         """Get the given words IDs.
@@ -357,7 +357,7 @@ class CorpusTransformer:
         ------------------------
         The word numeric ID.
         """
-        return self._tokenizer.word_index[word] - 1
+        return self._tokenizer.word_index[word]
 
     def transform(self, texts: List[str]) -> np.ndarray:
         """Transform given text.
@@ -387,7 +387,7 @@ class CorpusTransformer:
                 "There are not string values within the given texts."
             )
         return np.array([
-            np.array(tokens, dtype=np.uint64) - 1
+            np.array(tokens, dtype=np.uint64)
             for tokens in self._tokenizer.texts_to_sequences((
                 " ".join(tokens)
                 for tokens in tqdm(
