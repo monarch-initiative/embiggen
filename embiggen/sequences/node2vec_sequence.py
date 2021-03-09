@@ -172,7 +172,7 @@ class Node2VecSequence(AbstractSequence):
         )
 
         if self._nodes_test_set is not None:
-            masks_batch = np.logical_not(np.isin(contexts_batch, self._nodes_test_set))
+            masks_batch = np.isin(contexts_batch, self._nodes_test_set)
             contexts_batch_node_types = self._node_types[contexts_batch]
 
             outputs = [

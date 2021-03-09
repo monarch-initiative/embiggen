@@ -131,7 +131,7 @@ class Word2Vec(Embedder):
                 Input((true_output_length, ), dtype=tf.int32),
                 # Mask for training nodes
                 # The values in here == True are the nodes whose labels are
-                # reserved for the training.
+                # reserved for the test.
                 Input((true_output_length, ), dtype=tf.bool),
                 # Node types to be used to create the multiple outputs.
                 Input((true_output_length, ), dtype=tf.int32)
@@ -180,22 +180,20 @@ class Word2Vec(Embedder):
         if self._classes_number == 0:
             outputs = nce_loss((mean_embedding, true_output_layers[0]))
         else:
-            outputs = [
-                nce_loss((
+            outputs = []
+            for node_type_class in range(self._classes_number):
+                mask = tf.math.logical_and(
+                    math_ops.not_equal(true_output_layers[2], node_type_class),
+                    true_output_layers[1]
+                )
+                outputs.append(nce_loss((
                     mean_embedding,
                     tf.tensor_scatter_nd_update(
                         true_output_layers[0],
-                        tf.where(
-                            tf.math.logical_and(
-                                math_ops.not_equal(true_output_layers[2], node_type_class),
-                                true_output_layers[1]
-                            )
-                        ),
-                        tf.constant(0)
+                        tf.where(mask),
+                        tf.zeros((tf.math.reduce_sum(mask), ))
                     )
-                ))
-                for node_type_class in range(self._classes_number)
-            ]
+                )))
 
         # Creating the actual model
         model = Model(
