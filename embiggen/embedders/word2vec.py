@@ -118,7 +118,7 @@ class Word2Vec(Embedder):
         # Creating the inputs layers
         true_input_layer = Input(
             (self._get_true_input_length(), ),
-            dtype=tf.uint32,
+            dtype=tf.int64,
             name="InputWords"
         )
 
@@ -127,7 +127,7 @@ class Word2Vec(Embedder):
         true_output_length = self._get_true_output_length()
         # Contextual nodes
         true_output_layers = [
-            Input((true_output_length, ), dtype=tf.uint32, name="InputContexts")
+            Input((true_output_length, ), dtype=tf.int64, name="InputContexts")
         ]
         if self._classes_number != 0:
             true_output_layers += [
@@ -137,7 +137,7 @@ class Word2Vec(Embedder):
                 Input((true_output_length, ), dtype=tf.bool,
                       name="InputContextsMask"),
                 # Node types to be used to create the multiple outputs.
-                Input((true_output_length, ), dtype=tf.uint32,
+                Input((true_output_length, ), dtype=tf.int64,
                       name="InputContextualTypes")
             ]
 
@@ -202,8 +202,8 @@ class Word2Vec(Embedder):
                         true_output_layers[0],
                         tf.where(mask),
                         tf.zeros(
-                            (tf.math.reduce_sum(tf.cast(mask, tf.uint32)), ),
-                            dtype=tf.uint32
+                            (tf.math.reduce_sum(tf.cast(mask, tf.int64)), ),
+                            dtype=tf.int64
                         )
                     )
                 )))
