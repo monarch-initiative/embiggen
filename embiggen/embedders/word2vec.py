@@ -195,6 +195,7 @@ class Word2Vec(Embedder):
                     # We filter out all values that are not of that class.
                     math_ops.not_equal(true_output_layers[2], class_id),
                     true_output_layers[1],
+                    name="MaskForClass{}".format(class_id)
                 )
                 outputs.append(nce_loss((
                     mean_embedding,
@@ -203,7 +204,8 @@ class Word2Vec(Embedder):
                         tf.where(mask),
                         tf.zeros(
                             (tf.math.reduce_sum(tf.cast(mask, tf.int64)), ),
-                            dtype=tf.int64
+                            dtype=tf.int64,
+                            name="ZerosUpdatesForClass{}".format(class_id)
                         )
                     )
                 )))
