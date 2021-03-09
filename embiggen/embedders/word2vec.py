@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import \
 from tensorflow.keras import regularizers
 from tensorflow.keras.constraints import UnitNorm
 import tensorflow as tf
-from tensorflow.python.ops import math_ops # pylint: disable=no-name-in-module
+from tensorflow.python.ops import math_ops  # pylint: disable=no-name-in-module
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
 
@@ -116,25 +116,26 @@ class Word2Vec(Embedder):
     def _build_model(self):
         """Return Node2Vec model."""
         # Creating the inputs layers
-        true_input_layer = Input((self._get_true_input_length(), ), dtype=tf.int32)
+        true_input_layer = Input(
+            (self._get_true_input_length(), ), dtype=tf.uint32)
 
         # To handle the multi-head case we have a list
         # of the output layers.
         true_output_length = self._get_true_output_length()
         if self._classes_number == 0:
             true_output_layers = [
-                Input((true_output_length, ), dtype=tf.int32)
+                Input((true_output_length, ), dtype=tf.uint32)
             ]
         else:
             true_output_layers = [
                 # Contextual nodes
-                Input((true_output_length, ), dtype=tf.int32),
+                Input((true_output_length, ), dtype=tf.uint32),
                 # Mask for training nodes
                 # The values in here == True are the nodes whose labels are
                 # reserved for the test.
-                Input((true_output_length, ), dtype=tf.int32),
+                Input((true_output_length, ), dtype=tf.uint32),
                 # Node types to be used to create the multiple outputs.
-                Input((true_output_length, ), dtype=tf.int32)
+                Input((true_output_length, ), dtype=tf.uint32)
             ]
 
         # If there are additional features for the nodes, we add an input
@@ -191,7 +192,8 @@ class Word2Vec(Embedder):
                     tf.tensor_scatter_nd_update(
                         true_output_layers[0],
                         tf.where(mask),
-                        tf.zeros((tf.math.reduce_sum(mask), ))
+                        tf.zeros(
+                            (tf.math.reduce_sum(tf.cast(mask, tf.uint32)), ))
                     )
                 )))
 
