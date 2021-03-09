@@ -251,7 +251,7 @@ class Word2Vec(Embedder):
     def fit(
         self,
         *args: List,
-        epochs: int = 10000,
+        epochs: int = 100,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 1,
         early_stopping_patience: int = 2,
@@ -270,7 +270,7 @@ class Word2Vec(Embedder):
         -----------------------
         *args: List,
             List of parameters to pass to the fit call.
-        epochs: int = 10000,
+        epochs: int = 100,
             Epochs to train the model for.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
