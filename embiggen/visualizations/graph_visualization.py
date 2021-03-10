@@ -516,7 +516,7 @@ class GraphVisualization:
             legend_elements.append(test_scatter.legend_elements()[0])
 
         if train_indices is not None and test_indices is not None:
-            legend_elements = list(zip(legend_elements))
+            legend_elements = list(zip(*legend_elements))
 
         if labels is not None:
             self._set_legend(
