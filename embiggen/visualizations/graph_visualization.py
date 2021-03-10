@@ -118,9 +118,7 @@ class GraphVisualization:
                 # 3D decomposition we need to switch to the MulticoreTSNE version.
                 if n_components != 2:
                     raise ModuleNotFoundError()
-                from tsnecuda import \
-                    TSNE as \
-                    CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
+                from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
                     random_state=random_state,
@@ -501,7 +499,8 @@ class GraphVisualization:
             train_scatter = axes.scatter(
                 *points[train_mask].T,
                 c=colors[train_mask],
-                edgecolors=None if edgecolors is None else cmap(edgecolors[train_mask]),
+                edgecolors=None if edgecolors is None else cmap(
+                    edgecolors[train_mask]),
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -514,7 +513,8 @@ class GraphVisualization:
             test_scatter = axes.scatter(
                 *points[test_mask].T,
                 c=colors[test_mask],
-                edgecolors=None if edgecolors is None else cmap(edgecolors[test_mask]),
+                edgecolors=None if edgecolors is None else cmap(
+                    edgecolors[test_mask]),
                 marker=test_marker,
                 cmap=cmap,
                 **scatter_kwargs
