@@ -517,10 +517,14 @@ class GraphVisualization:
             collections.append(test_scatter)
             legend_elements.append(test_scatter.legend_elements()[0])
 
-        r = matplotlib.patches.Rectangle((0, 0), 1, 1, fill=False, edgecolor='none',
-                                         visible=False)
+        rectangle_to_fill_legend = matplotlib.patches.Rectangle(
+            (0, 0), 1, 1,
+            fill=False,
+            edgecolor='none',
+            visible=False
+        )
 
-        if train_indices is not None and test_indices is not None:
+        if colors is not None and train_indices is not None and test_indices is not None:
             unique_train_colors = np.unique(colors[train_mask])
             unique_test_colors = np.unique(colors[test_mask])
             new_legend_elements = []
@@ -532,12 +536,12 @@ class GraphVisualization:
                     new_tuple.append(legend_elements[0][train_element_index])
                     train_element_index += 1
                 else:
-                    new_tuple.append(r)
+                    new_tuple.append(rectangle_to_fill_legend)
                 if color in unique_test_colors:
                     new_tuple.append(legend_elements[1][test_element_index])
                     test_element_index += 1
                 else:
-                    new_tuple.append(r)
+                    new_tuple.append(rectangle_to_fill_legend)
 
                 new_legend_elements.append(tuple(new_tuple))
             legend_elements = new_legend_elements
