@@ -291,7 +291,6 @@ class Embedder:
                     min_delta=early_stopping_min_delta,
                     patience=early_stopping_patience,
                     mode=early_stopping_mode,
-                    restore_best_weights=True
                 ),
                 ReduceLROnPlateau(
                     monitor=reduce_lr_monitor,
