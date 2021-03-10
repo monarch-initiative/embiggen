@@ -475,7 +475,8 @@ class GraphVisualization:
             "tab:cyan",
         ])
 
-        cmap = ListedColormap(color_names[:colors.max() + 1])
+        cmap = scatter_kwargs.pop(
+            "cmap", ListedColormap(color_names[:colors.max() + 1]))
 
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
