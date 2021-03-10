@@ -24,8 +24,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=3,
-        linewidths=0.5,
+        s=10,
         alpha=0.7,
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
@@ -431,6 +430,11 @@ class GraphVisualization:
 
         scatter_kwargs = {
             **GraphVisualization.DEFAULT_SCATTER_KWARGS,
+            **(
+                dict(linewidths=0)
+                if edgecolors is None
+                else dict(linewidths=1)
+            )
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
