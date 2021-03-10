@@ -430,7 +430,7 @@ class GraphVisualization:
                 })
 
         scatter_kwargs = {
-            **GraphVisualization.DEFAULT_SCATTER_KWARGS
+            **GraphVisualization.DEFAULT_SCATTER_KWARGS,
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
