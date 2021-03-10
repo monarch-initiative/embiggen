@@ -14,6 +14,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         graph: EnsmallenGraph,
         node_ids: np.ndarray,
         max_neighbours: int = None,
+        include_central_node: bool = True,
         batch_size: int = 2**8,
         elapsed_epochs: int = 0,
         random_state: int = 42,
@@ -29,7 +30,10 @@ class NodeLabelNeighboursSequence(VectorSequence):
             IDs of the nodes to consider.
         max_neighbours: int = None,
             Number of neighbours to consider.
-            If None, the graph median is used.
+            If None, the graph mean is used.
+        include_central_node: bool = False,
+            Whether to include the central node.
+            In our experiments, this lead to overfitting.
         batch_size: int = 2**8,
             The batch size to use.
         elapsed_epochs: int = 0,
@@ -47,8 +51,9 @@ class NodeLabelNeighboursSequence(VectorSequence):
         """
         self._graph = graph
         if max_neighbours is None:
-            max_neighbours = self._graph.degrees_median()
+            max_neighbours = np.ceil(self._graph.degrees_mean()).astype(int)
         self._max_neighbours = max_neighbours
+        self._include_central_node = include_central_node
         self._support_mirror_strategy = support_mirror_strategy
         super().__init__(
             vector=node_ids,
@@ -70,7 +75,8 @@ class NodeLabelNeighboursSequence(VectorSequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         nodes = super().__getitem__(idx)
-        neighbours = np.zeros((nodes.size, self._max_neighbours))
+        offset = int(self._include_central_node)
+        neighbours = np.zeros((nodes.size, self._max_neighbours + offset))
         for i, node in enumerate(nodes):
             node_neighbours = self._graph.get_filtered_neighbours(node)
             if node_neighbours.size > self._max_neighbours:
@@ -82,7 +88,9 @@ class NodeLabelNeighboursSequence(VectorSequence):
             # The plus one is needed to handle nodes with less than max neighbours
             # such nodes are represented with zeros and in the embedding layer
             # are masked.
-            neighbours[i, :node_neighbours.size] = node_neighbours + 1
+            neighbours[i, offset:offset+node_neighbours.size] = node_neighbours + 1
+        if self._include_central_node:
+            neighbours[:, 0] = nodes + 1
         if self._support_mirror_strategy:
             return neighbours.astype(float)
         return neighbours

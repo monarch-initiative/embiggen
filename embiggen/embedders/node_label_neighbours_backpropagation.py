@@ -6,16 +6,16 @@ import pandas as pd
 from ensmallen_graph import EnsmallenGraph
 from extra_keras_metrics import get_minimal_multiclass_metrics
 from keras_mixed_sequence import MixedSequence, VectorSequence
+from sklearn.preprocessing import RobustScaler
 from tensorflow.keras import regularizers
-from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import (Dense, Dropout, Embedding,
+from tensorflow.keras.layers import (Dense, Dropout, Embedding, Concatenate,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Optimizer
 
-from ..sequences import NodeLabelNeighboursSequence
-from .embedder import Embedder
+from embiggen.sequences import NodeLabelNeighboursSequence
+from embiggen.embedders import Embedder
 
 
 class NoLaN(Embedder):
@@ -28,73 +28,92 @@ class NoLaN(Embedder):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        labels_number: int,
-        embedding_size: int = None,
-        use_dropout: bool = True,
-        dropout_rate: float = 0.7,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        optimizer: Union[str, Optimizer] = None,
-        trainable_embedding: bool = True,
+        labels_number: int = None,
+        node_embedding_size: int = None,
+        use_node_embedding_dropout: bool = True,
+        node_embedding_dropout_rate: float = 0.5,
+        use_node_features_dropout: bool = True,
+        node_features_dropout_rate: float = 0.7,
+        node_embedding: Union[np.ndarray, pd.DataFrame] = None,
+        node_features: Union[np.ndarray, pd.DataFrame] = None,
+        optimizer: Union[str, Optimizer] = "nadam",
+        trainable_node_embedding: bool = False,
         support_mirror_strategy: bool = False,
+        scaler: "Scaler" = None
     ):
         """Create new NoLaN model.
 
         Parameters
         -------------------
-        graph: EnsmallenGraph,
-            Graph to be embedded.
-        labels_number: int,
-            Number of labels.
-        embedding_size: int = None,
-            Dimension of the embedding.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        use_dropout: bool = True,
-            Whether to use dropout.
-        dropout_rate: float = 0.5,
-            Dropout rate.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-            The seed embedding to be used.
-            Note that it is not possible to provide at once both
-            the embedding and either the vocabulary size or the embedding size.
-        optimizer: Union[str, Optimizer] = None,
-            The optimizer to be used during the training of the model.
-            By default, if None is provided, Nadam with learning rate
-            set at 0.01 is used.
-        trainable_embedding: bool = True,
-            Wether to allow for trainable embedding.
-            By default true.
-        support_mirror_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
+        TODO!
         """
         self._graph = graph
-        self._labels_number = labels_number
-        self._use_dropout = use_dropout
-        self._dropout_rate = dropout_rate
+        self._labels_number = self._graph.get_node_types_number(
+        ) if labels_number is None else labels_number
+        self._use_node_embedding_dropout = use_node_embedding_dropout
+        self._node_embedding_dropout_rate = node_embedding_dropout_rate
+        self._use_node_features_dropout = use_node_features_dropout
+        self._node_features_dropout_rate = node_features_dropout_rate
         self._support_mirror_strategy = support_mirror_strategy
+
+        if scaler is None:
+            scaler = RobustScaler()
+
+        if node_embedding is not None:
+            scaled_node_embedding = scaler.fit_transform(node_embedding)
+            if isinstance(node_embedding, pd.DataFrame):
+                node_embedding = pd.DataFrame(
+                    scaled_node_embedding,
+                    columns=node_embedding.columns,
+                    index=node_embedding.index,
+                )
+
         super().__init__(
-            vocabulary_size=graph.get_nodes_number() if embedding is None else None,
-            embedding_size=embedding_size if embedding is None else None,
-            embedding=embedding,
+            vocabulary_size=graph.get_nodes_number() if node_embedding is None else None,
+            embedding_size=node_embedding_size if node_embedding is None else None,
+            embedding=node_embedding,
             optimizer=optimizer,
-            trainable_embedding=trainable_embedding
+            trainable_embedding=trainable_node_embedding
         )
+
+        self._node_features_size = None
+
+        if node_features is not None:
+            if isinstance(node_features, pd.DataFrame) != isinstance(node_embedding, pd.DataFrame):
+                raise ValueError(
+                    "Node embedding and node features must either be both "
+                    "pandas DataFrames or both numpy arrays."
+                )
+            if node_features.shape[0] != self._vocabulary_size:
+                raise ValueError(
+                    (
+                        "Given node features must be available"
+                        " for each of the {} nodes.".format(
+                            self._vocabulary_size)
+                    )
+                )
+            if isinstance(node_features, pd.DataFrame) and node_features.index != node_embedding.index:
+                raise ValueError(
+                    "Index of node features and node embedding must match!"
+                )
+            if scaler is not None:
+                scaled_node_features = scaler.fit_transform(node_features)
+                if isinstance(node_features, pd.DataFrame):
+                    node_features = pd.DataFrame(
+                        scaled_node_features,
+                        columns=node_features.columns,
+                        index=node_features.index,
+                    )
+            self._node_features_size = node_features.shape[1]
+        self._node_features = node_features
 
     def _build_model(self):
         """Return NoLaN model."""
-        neighbours_input = Input((None,), name="NeighboursInput")
+        node_star_input = Input((None,), name="NodeStarInput")
 
         node_embedding_layer = Embedding(
             input_dim=self._vocabulary_size+1,
             output_dim=self._embedding_size,
-            embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            embeddings_constraint=UnitNorm(),
             weights=None if self._embedding is None else [np.vstack([
                 np.zeros(self._embedding_size),
                 self._embedding
@@ -103,26 +122,59 @@ class NoLaN(Embedder):
             name=Embedder.EMBEDDING_LAYER_NAME
         )
 
-        neighbours_embedding = GlobalAveragePooling1D()(
-            node_embedding_layer(neighbours_input),
-            mask=node_embedding_layer.compute_mask(neighbours_input)
+        mean_node_star_embedding = GlobalAveragePooling1D()(
+            node_embedding_layer(node_star_input),
+            mask=node_embedding_layer.compute_mask(node_star_input),
+            name="MeanNodeStarEmbedding"
         )
 
-        if self._use_dropout:
-            neighbours_embedding = Dropout(
-                self._dropout_rate
-            )(neighbours_embedding)
+        if self._use_node_embedding_dropout:
+            mean_node_star_embedding = Dropout(
+                self._node_embedding_dropout_rate,
+                name="NodeEmbeddingDropout"
+            )(mean_node_star_embedding)
+
+        if self._node_features is not None:
+            node_features_layer = Embedding(
+                input_dim=self._vocabulary_size+1,
+                output_dim=self._node_features_size,
+                weights=None if self._embedding is None else [np.vstack([
+                    np.zeros(self._node_features_size),
+                    self._node_features
+                ])],
+                mask_zero=True,
+                name="NodeFeatures"
+            )
+
+            mean_node_star_features = GlobalAveragePooling1D()(
+                node_features_layer(node_star_input),
+                mask=node_features_layer.compute_mask(node_star_input),
+                name="MeanNodeStarFeatures"
+            )
+
+            if self._use_node_features_dropout:
+                mean_node_star_features = Dropout(
+                    self._node_features_dropout_rate,
+                    name="NodeFeaturesDropout"
+                )(mean_node_star_features)
+
+            mean_node_star_embedding = Concatenate(
+                name="NodedataConcatenation"
+            )((
+                mean_node_star_embedding,
+                mean_node_star_features
+            ))
 
         output = Dense(
             self._labels_number,
-            kernel_regularizer=regularizers.l1_l2(l1=1e-4, l2=1e-4),
+            kernel_regularizer=regularizers.l1_l2(l1=1e-3, l2=1e-2),
             activation="softmax"
-        )(neighbours_embedding)
+        )(mean_node_star_embedding)
 
         model = Model(
-            inputs=neighbours_input,
+            inputs=node_star_input,
             outputs=output,
-            name="NodeLabelPredictor"
+            name="NoLaN"
         )
 
         return model
@@ -238,18 +290,18 @@ class NoLaN(Embedder):
         X_train: np.ndarray,
         y_train: np.ndarray,
         max_neighbours: int = None,
-        batch_size: int = 128,
+        batch_size: int = 512,
         epochs: int = 10000,
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0,
-        early_stopping_patience: int = 100,
+        early_stopping_patience: int = 50,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
         reduce_lr_min_delta: float = 0,
-        reduce_lr_patience: int = 20,
+        reduce_lr_patience: int = 10,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.95,
+        reduce_lr_factor: float = 0.9,
         verbose: int = 1,
         random_state: int = 42,
         **kwargs: Dict
@@ -324,6 +376,47 @@ class NoLaN(Embedder):
             reduce_lr_factor=reduce_lr_factor,
             verbose=verbose,
             **kwargs
+        )
+
+    def predict(self, *args, **kwargs):
+        """Run predict."""
+        return self._model.predict(*args, **kwargs)
+
+    def evaluate(
+        self,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        validation_data: Tuple = None,
+        verbose: int = 1,
+        batch_size=128,
+        random_state: int = 42
+    ) -> Dict[str, float]:
+        """Run predict.
+        
+        TODO! Update docstring!
+        """
+        train_sequence, validation_sequence = self.build_training_sequence(
+            X_train, y_train,
+            max_neighbours=self._graph.max_degree(),
+            batch_size=batch_size,
+            validation_data=validation_data,
+            random_state=random_state
+        )
+        return (
+            dict(zip(
+                self._model.metrics_names,
+                self._model.evaluate(
+                    train_sequence,
+                    verbose=verbose
+                )
+            )),
+            dict(zip(
+                self._model.metrics_names,
+                self._model.evaluate(
+                    validation_sequence,
+                    verbose=verbose
+                )
+            ))
         )
 
     @property
