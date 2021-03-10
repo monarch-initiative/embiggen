@@ -2,22 +2,21 @@
 from multiprocessing import cpu_count
 from typing import Dict, List, Tuple, Union
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-import matplotlib
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from matplotlib.legend_handler import HandlerBase
-from matplotlib.collections import Collection
-from matplotlib.colors import LogNorm, ListedColormap
-from matplotlib.legend_handler import HandlerTuple
 from ddd_subplots import subplots as subplots_3d
+from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from matplotlib.axes import Axes
+from matplotlib.collections import Collection
+from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.figure import Figure
+from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 from sklearn.preprocessing import RobustScaler
-from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -119,7 +118,9 @@ class GraphVisualization:
                 # 3D decomposition we need to switch to the MulticoreTSNE version.
                 if n_components != 2:
                     raise ModuleNotFoundError()
-                from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
+                from tsnecuda import \
+                    TSNE as \
+                    CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
                     random_state=random_state,
@@ -127,7 +128,8 @@ class GraphVisualization:
                 )
             except ModuleNotFoundError:
                 try:
-                    from MulticoreTSNE import MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                    from MulticoreTSNE import \
+                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
                     self._decomposition_method = MulticoreTSNE(
                         n_components=n_components,
                         n_jobs=cpu_count(),
@@ -136,7 +138,8 @@ class GraphVisualization:
                     )
                 except ModuleNotFoundError:
                     try:
-                        from sklearn.manifold import TSNE  # pylint: disable=import-outside-toplevel
+                        from sklearn.manifold import \
+                            TSNE  # pylint: disable=import-outside-toplevel
                         self._decomposition_method = TSNE(
                             n_components=n_components,
                             n_jobs=cpu_count(),
@@ -440,7 +443,7 @@ class GraphVisualization:
             **(
                 dict(linewidths=0)
                 if edgecolors is None
-                else dict(linewidths=1)
+                else dict(linewidths=0.5)
             ),
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
