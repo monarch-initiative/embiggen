@@ -526,8 +526,8 @@ class GraphVisualization:
 
         if all(
             e is not None
-            for e in (colors, train_indices, test_indices)
-        ) and len(legend_elements[0]) > 0:
+            for e in (colors, train_indices, test_indices, labels)
+        ):
             unique_train_colors = np.unique(colors[train_mask])
             unique_test_colors = np.unique(colors[test_mask])
             new_legend_elements = []
