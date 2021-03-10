@@ -488,7 +488,7 @@ class GraphVisualization:
             scatter = axes.scatter(
                 *points.T,
                 c=colors,
-                edgecolors=None if edgecolors is None else color_names[edgecolors],
+                edgecolors=None if edgecolors is None else cmap(edgecolors),
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -501,7 +501,7 @@ class GraphVisualization:
             train_scatter = axes.scatter(
                 *points[train_mask].T,
                 c=colors[train_mask],
-                edgecolors=None if edgecolors is None else color_names[edgecolors[train_mask]],
+                edgecolors=None if edgecolors is None else cmap(edgecolors[train_mask]),
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -514,7 +514,7 @@ class GraphVisualization:
             test_scatter = axes.scatter(
                 *points[test_mask].T,
                 c=colors[test_mask],
-                edgecolors=None if edgecolors is None else color_names[edgecolors[test_mask]],
+                edgecolors=None if edgecolors is None else cmap(edgecolors[test_mask]),
                 marker=test_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -999,7 +999,7 @@ class GraphVisualization:
             types=components,
             type_labels=np.array([
                 "Size {}".format(size)
-                for size in range(sizes)
+                for size in sizes
             ]),
             k=k,
             figure=figure,
