@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
 from matplotlib.collections import Collection
 from matplotlib.colors import LogNorm, ListedColormap
+from matplotlib.legend_handler import HandlerTuple
 from ddd_subplots import subplots as subplots_3d
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
@@ -247,7 +248,12 @@ class GraphVisualization:
         legend = axes.legend(
             handles=handles,
             labels=labels,
-            loc='best'
+            loc='best',
+            **(
+                dict(handler_map={tuple: HandlerTuple(ndivide=None)})
+                if isinstance(handles[0], tuple)
+                else {}
+            )
         )
         # Setting alpha level in the legend to avoid having a transparent
         # legend scatter dots.
