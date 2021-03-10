@@ -628,10 +628,19 @@ class GraphVisualization:
             )
 
         number_of_types = np.unique(types).size
+        type_labels = np.array(sanitize_ml_labels(list(type_labels)))
 
         counts = np.bincount(types, minlength=number_of_types)
-        top_counts = list(np.argsort(counts)[::-1][:k])
-        type_labels = sanitize_ml_labels(list(type_labels[top_counts]))
+        top_counts = [
+            index
+            for index, _ in sorted(
+                enumerate(zip(counts, type_labels)),
+                key=lambda x: x[1],
+                reverse=True
+            )[:k]
+        ]
+
+        type_labels = type_labels[top_counts]
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
