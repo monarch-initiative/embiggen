@@ -654,7 +654,7 @@ class GraphVisualization:
             )[:k]
         ]
 
-        type_labels = type_labels[top_counts]
+        type_labels = list(type_labels[top_counts])
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
