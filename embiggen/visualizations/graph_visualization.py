@@ -370,7 +370,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs
     ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
@@ -404,7 +404,7 @@ class GraphVisualization:
             training points.
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -596,7 +596,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -634,7 +634,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -721,7 +721,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -744,7 +744,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -786,7 +786,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -809,7 +809,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -854,7 +854,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -883,7 +883,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -941,7 +941,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -968,7 +968,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
@@ -1023,7 +1023,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1046,7 +1046,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Additional kwargs for the subplots.
@@ -1103,7 +1103,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1132,7 +1132,7 @@ class GraphVisualization:
             If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Additional kwargs for the subplots.
@@ -1190,7 +1190,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "s",
+        test_marker: str = "X",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1213,7 +1213,7 @@ class GraphVisualization:
             If None, while providing the train indices, 
         train_marker: str = "o",
             The marker to use to draw the training points.
-        test_marker: str = "s",
+        test_marker: str = "X",
             The marker to use to draw the test points.
         **kwargs: Dict,
             Additional kwargs for the subplots.
