@@ -91,7 +91,7 @@ class NoLaN(Embedder):
                                 self._vocabulary_size)
                         )
                     )
-                if isinstance(node_features, pd.DataFrame) and node_features.index != node_embedding.index:
+                if isinstance(node_features, pd.DataFrame) and (node_features.index != node_embedding.index).any():
                     raise ValueError(
                         "Index of node features and node embedding must match!"
                     )
