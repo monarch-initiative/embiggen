@@ -5,7 +5,6 @@ from .glove import GloVe
 from .graph_cbow import GraphCBOW
 from .graph_glove import GraphGloVe
 from .graph_skipgram import GraphSkipGram
-from .node_label_neighbours_backpropagation import NoLaN
 from .skipgram import SkipGram
 
 __all__ = [
@@ -15,6 +14,5 @@ __all__ = [
     "Embedder",
     "GraphCBOW",
     "GraphSkipGram",
-    "GraphGloVe",
-    "NoLaN"
+    "GraphGloVe"
 ]

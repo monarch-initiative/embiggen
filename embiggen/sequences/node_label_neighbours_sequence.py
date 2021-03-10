@@ -53,6 +53,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         if max_neighbours is None:
             max_neighbours = np.ceil(self._graph.degrees_mean()).astype(int)
         self._max_neighbours = max_neighbours
+        self._degrees = self._graph.degrees()
         self._include_central_node = include_central_node
         self._support_mirror_strategy = support_mirror_strategy
         super().__init__(
@@ -76,20 +77,30 @@ class NodeLabelNeighboursSequence(VectorSequence):
         """
         nodes = super().__getitem__(idx)
         offset = int(self._include_central_node)
-        neighbours = np.zeros((nodes.size, self._max_neighbours + offset))
+
+        # In order to avoid large batches with no added value
+        # we detect the maximum degrees.
+        max_degree = min(
+            self._degrees[nodes].max(),
+            self._max_neighbours
+        )
+        # Create the batch.
+        neighbours = np.zeros((nodes.size, max_degree + offset))
         for i, node in enumerate(nodes):
             node_neighbours = self._graph.get_filtered_neighbours(node)
-            if node_neighbours.size > self._max_neighbours:
+            if node_neighbours.size > max_degree:
                 node_neighbours = np.random.choice(
                     node_neighbours,
-                    size=self._max_neighbours,
+                    size=max_degree,
                     replace=False
                 )
             # The plus one is needed to handle nodes with less than max neighbours
             # such nodes are represented with zeros and in the embedding layer
             # are masked.
-            neighbours[i, offset:offset+node_neighbours.size] = node_neighbours + 1
+            neighbours[i, offset:offset +
+                       node_neighbours.size] = node_neighbours + 1
         if self._include_central_node:
+            # As above, the plus one is needed to reserve the zero for padding
             neighbours[:, 0] = nodes + 1
         if self._support_mirror_strategy:
             return neighbours.astype(float)

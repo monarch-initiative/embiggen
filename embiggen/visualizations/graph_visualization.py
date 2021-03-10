@@ -9,10 +9,12 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
+from matplotlib.collections import Collection
 from matplotlib.colors import LogNorm
 from ddd_subplots import subplots as subplots_3d
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import RobustScaler
 from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
 
 from ..transformers import GraphTransformer, NodeTransformer
@@ -22,12 +24,12 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=1,
-        marker=".",
+        s=2,
+        linewidths=1,
         alpha=0.7,
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(8, 8),
+        figsize=(7, 7),
         dpi=100
     )
 
@@ -35,6 +37,7 @@ class GraphVisualization:
         self,
         graph: EnsmallenGraph,
         decomposition_method: str = "TSNE",
+        scaler_method: "Scaler" = RobustScaler,
         n_components: int = 2,
         node_embedding_method: str = None,
         edge_embedding_method: str = "Hadamard",
@@ -50,6 +53,10 @@ class GraphVisualization:
         decomposition_method: str = "TSNE",
             The decomposition method to use.
             The supported methods are TSNE and PCA.
+        scaler_method: "Scaler" = RobustScaler,
+            The scaler object to use to normalize the embedding.
+            By default we use a Robust Scaler.
+            Pass None to not use any scaler.
         n_components: int = 2,
             Number of components to reduce the image to.
             Currently, we only support 2D decompositions but we plan
@@ -102,6 +109,7 @@ class GraphVisualization:
             )
 
         self._n_components = n_components
+        self._scaler_method = None if scaler_method is None else scaler_method()
 
         if decomposition_method == "TSNE":
             try:
@@ -113,6 +121,7 @@ class GraphVisualization:
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
+                    random_state=random_state,
                     verbose=True
                 )
             except ModuleNotFoundError:
@@ -121,6 +130,7 @@ class GraphVisualization:
                     self._decomposition_method = MulticoreTSNE(
                         n_components=n_components,
                         n_jobs=cpu_count(),
+                        random_state=random_state,
                         verbose=True
                     )
                 except ModuleNotFoundError:
@@ -129,6 +139,7 @@ class GraphVisualization:
                         self._decomposition_method = TSNE(
                             n_components=n_components,
                             n_jobs=cpu_count(),
+                            random_state=random_state,
                             verbose=True
                         )
                     except:
@@ -150,7 +161,8 @@ class GraphVisualization:
                         )
         elif decomposition_method == "PCA":
             self._decomposition_method = PCA(
-                n_components=n_components
+                n_components=n_components,
+                random_state=random_state
             )
         else:
             raise ValueError(
@@ -184,12 +196,24 @@ class GraphVisualization:
             )
         return self._decomposition_method.fit_transform(X)
 
-    def _shuffle(self, *args: List[Union[np.ndarray, pd.DataFrame, None]]) -> List[np.ndarray]:
+    def _shuffle(
+        self,
+        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+    ) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
 
         The reason to shuffle the points is mainly that this avoids for
         'fake' clusters to appear simply by stacking the points by class
         artifically according to how the points are sorted.
+
+        Parameters
+        ------------------------
+        *args: List[Union[np.ndarray, pd.DataFrame, None]],
+            The lists to shuffle.
+
+        Returns
+        ------------------------
+        Shuffled data using given random state.
         """
         index = np.arange(args[0].shape[0])
         random_state = np.random.RandomState(  # pylint: disable=no-member
@@ -235,13 +259,13 @@ class GraphVisualization:
 
     def fit_transform_nodes(
         self,
-        embedding: pd.DataFrame
+        node_embedding: pd.DataFrame
     ):
         """Executes fitting for plotting node embeddings.
 
         Parameters
         -------------------------
-        embedding: pd.DataFrame,
+        node_embedding: pd.DataFrame,
             Embedding of the graph nodes.
         """
         # Retrieve the nodes
@@ -267,7 +291,13 @@ class GraphVisualization:
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
-        self._node_transformer.fit(embedding)
+        if self._scaler_method is not None:
+            node_embedding = pd.DataFrame(
+                self._scaler_method.fit_transform(node_embedding),
+                columns=node_embedding.columns,
+                index=node_embedding.index,
+            )
+        self._node_transformer.fit(node_embedding)
         self._node_embedding = pd.DataFrame(
             self.decompose(
                 self._node_transformer.transform(node_names)
@@ -275,12 +305,12 @@ class GraphVisualization:
             index=node_names
         )
 
-    def fit_transform_edges(self, embedding: np.ndarray):
+    def fit_transform_edges(self, node_embedding: np.ndarray):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        embedding: np.ndarray,
+        node_embedding: np.ndarray,
             Embedding obtained from SkipGram, CBOW or GloVe.
         """
         # Retrieve the edges
@@ -306,7 +336,13 @@ class GraphVisualization:
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
 
-        self._graph_transformer.fit(embedding)
+        if self._scaler_method is not None:
+            node_embedding = pd.DataFrame(
+                self._scaler_method.fit_transform(node_embedding),
+                columns=node_embedding.columns,
+                index=node_embedding.index,
+            )
+        self._graph_transformer.fit(node_embedding)
         self._edge_embedding = pd.DataFrame(
             self.decompose(
                 self._graph_transformer.transform(edge_names),
@@ -319,12 +355,17 @@ class GraphVisualization:
         title: str,
         points: np.ndarray,
         colors: List[int] = None,
+        edgecolors: List[int] = None,
         labels: List[str] = None,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs
-    ) -> Tuple[Figure, Axes]:
+    ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
 
         Parameters
@@ -335,6 +376,8 @@ class GraphVisualization:
             Points to plot.
         colors: List[int] = None,
             List of the colors to use for the scatter plot.
+        edgecolors: List[int] = None,
+            List of the edge colors to use for the scatter plot.
         labels: List[str] = None,
             Labels for the different colors.
         figure: Figure = None,
@@ -345,13 +388,35 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, we only plot the
+            training points.
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
+        Raises
+        ------------------------------
+        ValueError,
+            If given train and test indices overlap.
+
         Returns
         ------------------------------
-        Figure and Axis of the plot.
+        Figure and Axis of the plot, followed by tuple of collections.
         """
+        if train_indices is not None and test_indices is not None:
+            if train_indices.isin(test_indices).any():
+                raise ValueError(
+                    "The train and test indices overlap."
+                )
+
         if figure is None or axes is None:
             if self._n_components == 2:
                 figure, axes = plt.subplots(
@@ -367,22 +432,74 @@ class GraphVisualization:
             **GraphVisualization.DEFAULT_SCATTER_KWARGS
         }
 
-        points, colors = self._shuffle(
+        train_test_mask = np.zeros((points.shape[0]))
+
+        if train_indices is not None:
+            train_test_mask[train_indices] = 1
+
+        if test_indices is not None:
+            train_test_mask[test_indices] = 2
+
+        points, colors, edgecolors, train_test_mask = self._shuffle(
             points,
-            colors
+            colors,
+            edgecolors,
+            train_test_mask
         )
 
-        scatter = axes.scatter(
-            *points.T,
-            c=colors,
-            **scatter_kwargs
-        )
+        legend_elements = []
+        collections = []
+
+        if train_indices is None and test_indices is None:
+            scatter = axes.scatter(
+                *points.T,
+                c=colors,
+                edgecolors=edgecolors,
+                marker=train_marker,
+                **scatter_kwargs
+            )
+            collections.append(scatter)
+            legend_elements += scatter.legend_elements()[0]
+
+        if train_indices is not None:
+            mask = train_test_mask == 1
+            train_scatter = axes.scatter(
+                *points[mask].T,
+                c=None if colors is None else colors[mask],
+                edgecolors=None if edgecolors is None else edgecolors[mask],
+                marker=train_marker,
+                **scatter_kwargs
+            )
+            collections.append(train_scatter)
+            if labels is not None:
+                labels = [
+                    "Train {}".format(label)
+                    for label in labels
+                ]
+            legend_elements += train_scatter.legend_elements()[0]
+
+        if test_indices is not None:
+            mask = train_test_mask == 2
+            test_scatter = axes.scatter(
+                *points[mask].T,
+                c=None if colors is None else colors[mask],
+                edgecolors=None if edgecolors is None else edgecolors[mask],
+                marker=test_marker,
+                **scatter_kwargs
+            )
+            collections.append(test_scatter)
+            if labels is not None:
+                labels += [
+                    "Test {}".format(label)
+                    for label in labels
+                ]
+            legend_elements += test_scatter.legend_elements()[0]
 
         if labels is not None:
             self._set_legend(
                 axes,
                 labels,
-                scatter.legend_elements()[0]
+                legend_elements
             )
 
         if self._n_components == 2:
@@ -402,7 +519,7 @@ class GraphVisualization:
         axes.set_title(title)
         figure.tight_layout()
 
-        return figure, axes, scatter
+        return figure, axes, collections
 
     def _plot_types(
         self,
@@ -410,11 +527,16 @@ class GraphVisualization:
         points: np.ndarray,
         types: List[int],
         type_labels: List[str],
+        predictions: List[int] = None,
         k: int = 10,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -429,6 +551,9 @@ class GraphVisualization:
             Types of the provided points.
         type_labels: List[str],
             List of the labels for the provided types.
+        predictions: List[int] = None,
+            List of the labels predicted.
+            If None, no prediction is visualized.
         k: int = 10,
             Number of node types to visualize.
         figure: Figure = None,
@@ -441,6 +566,16 @@ class GraphVisualization:
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -480,6 +615,13 @@ class GraphVisualization:
             else:
                 types[i] = top_counts.index(element_type)
 
+        if predictions is not None:
+            for i, element_type in enumerate(predictions):
+                if element_type not in top_counts:
+                    predictions[i] = k
+                else:
+                    predictions[i] = top_counts.index(element_type)
+
         if k < number_of_types:
             type_labels.append(other_label)
 
@@ -488,9 +630,14 @@ class GraphVisualization:
             points=points,
             colors=types,
             labels=type_labels,
+            predictions=predictions,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -501,6 +648,10 @@ class GraphVisualization:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -515,6 +666,16 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -538,6 +699,10 @@ class GraphVisualization:
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -548,6 +713,10 @@ class GraphVisualization:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -562,6 +731,16 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -585,6 +764,10 @@ class GraphVisualization:
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -592,29 +775,48 @@ class GraphVisualization:
 
     def plot_node_types(
         self,
+        node_type_predictions: List[int] = None,
         k: int = 10,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
 
         Parameters
         ------------------------------
+        node_type_predictions: List[int] = None,
+            Predictions of the node types.
         k: int = 10,
             Number of node types to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
-        axes: Axes = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
 
         Raises
         ------------------------------
@@ -646,11 +848,16 @@ class GraphVisualization:
             self._node_embedding.values,
             types=node_types,
             type_labels=np.array(self._graph.get_node_type_names()),
+            predictions=node_type_predictions,
             k=k,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
             other_label=other_label,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -661,6 +868,10 @@ class GraphVisualization:
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -672,13 +883,25 @@ class GraphVisualization:
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
-        axes: Axes = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
 
         Raises
         ------------------------------
@@ -710,6 +933,10 @@ class GraphVisualization:
             axes=axes,
             scatter_kwargs=scatter_kwargs,
             other_label=other_label,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -718,6 +945,10 @@ class GraphVisualization:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -732,6 +963,16 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -764,39 +1005,62 @@ class GraphVisualization:
                 "cmap": plt.cm.get_cmap('RdYlBu'),
                 "norm": LogNorm()
             },
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter, ax=axes)
+        color_bar = figure.colorbar(scatter[0], ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
         return figure, axes
 
     def plot_edge_types(
         self,
+        edge_type_predictions: List[int] = None,
         k: int = 10,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
 
         Parameters
         ------------------------------
+        edge_type_predictions: List[int] = None,
+            Predictions of the edge types.
         k: int = 10,
             Number of edge types to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
+        axes: Axes = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
         scatter_kwargs: Dict = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
-        axes: Axes = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices,
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
 
         Raises
         ------------------------------
@@ -830,11 +1094,16 @@ class GraphVisualization:
             self._edge_embedding.values,
             types=edge_types,
             type_labels=np.array(self._graph.get_edge_type_names()),
+            predictions=edge_type_predictions,
             k=k,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
             other_label=other_label,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 
@@ -843,6 +1112,10 @@ class GraphVisualization:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        train_indices: np.ndarray = None,
+        test_indices: np.ndarray = None,
+        train_marker: str = "o",
+        test_marker: str = "^",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -852,11 +1125,23 @@ class GraphVisualization:
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
-            Kwargs to pass to the scatter plot call.
         axes: Axes = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
+        scatter_kwargs: Dict = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: np.ndarray = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: np.ndarray = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "^",
+            The marker to use to draw the test points.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
 
         Raises
         ------------------------------
@@ -891,6 +1176,10 @@ class GraphVisualization:
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu')
             },
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
             **kwargs
         )
 

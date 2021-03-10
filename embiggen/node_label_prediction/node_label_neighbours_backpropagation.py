@@ -8,14 +8,20 @@ from extra_keras_metrics import get_minimal_multiclass_metrics
 from keras_mixed_sequence import MixedSequence, VectorSequence
 from sklearn.preprocessing import RobustScaler
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import (Dense, Dropout, Embedding, Concatenate,
-                                     GlobalAveragePooling1D, Input)
+from tensorflow.keras.layers import (
+    Dense,
+    Dropout,
+    Embedding,
+    Concatenate,
+    GlobalAveragePooling1D,
+    Input
+)
 from tensorflow.keras.models import Model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Optimizer
 
-from embiggen.sequences import NodeLabelNeighboursSequence
-from embiggen.embedders import Embedder
+from ..sequences import NodeLabelNeighboursSequence
+from ..embedders import Embedder
 
 
 class NoLaN(Embedder):
@@ -270,7 +276,7 @@ class NoLaN(Embedder):
             validation_sequence = MixedSequence(
                 x=NodeLabelNeighboursSequence(
                     self._graph, X_validation,
-                    max_neighbours=max_neighbours,
+                    max_neighbours=self._graph.max_degree(),
                     batch_size=batch_size,
                     random_state=random_state,
                     support_mirror_strategy=self._support_mirror_strategy
@@ -392,7 +398,7 @@ class NoLaN(Embedder):
         random_state: int = 42
     ) -> Dict[str, float]:
         """Run predict.
-        
+
         TODO! Update docstring!
         """
         train_sequence, validation_sequence = self.build_training_sequence(
