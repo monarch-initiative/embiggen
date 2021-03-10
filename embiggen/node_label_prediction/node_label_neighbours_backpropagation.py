@@ -40,7 +40,7 @@ class NoLaN(Embedder):
         use_node_embedding_dropout: bool = True,
         node_embedding_dropout_rate: float = 0.5,
         use_node_features_dropout: bool = True,
-        node_features_dropout_rate: float = 0.8,
+        node_features_dropout_rate: float = 0.7,
         use_batch_normalization: bool = True,
         node_embedding: Union[np.ndarray, pd.DataFrame] = None,
         node_features: Union[np.ndarray, pd.DataFrame] = None,
@@ -139,6 +139,9 @@ class NoLaN(Embedder):
             mask=node_embedding_layer.compute_mask(node_star_input),
         )
 
+        if self._use_batch_normalization:
+            mean_node_star_embedding = BatchNormalization()(mean_node_star_embedding)
+
         if self._use_node_embedding_dropout:
             mean_node_star_embedding = Dropout(
                 self._node_embedding_dropout_rate,
@@ -165,6 +168,10 @@ class NoLaN(Embedder):
                 mask=node_features_layer.compute_mask(node_star_input),
             )
 
+            if self._use_batch_normalization:
+                mean_node_star_features = BatchNormalization()(mean_node_star_features)
+
+
             if self._use_node_features_dropout:
                 mean_node_star_features = Dropout(
                     self._node_features_dropout_rate,
@@ -177,9 +184,6 @@ class NoLaN(Embedder):
                 mean_node_star_embedding,
                 mean_node_star_features
             ))
-
-        if self._use_batch_normalization:
-            mean_node_star_embedding = BatchNormalization()(mean_node_star_embedding)
 
         output = Dense(
             self._labels_number,
