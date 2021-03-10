@@ -951,10 +951,10 @@ class GraphVisualization:
             "Node components",
             self._node_embedding.values,
             types=components,
-            type_labels=[
-                "Comp. {}".format(component)
+            type_labels=np.array([
+                "Comp. n°{}".format(component)
                 for component in range(components_number)
-            ],
+            ]),
             k=k,
             figure=figure,
             axes=axes,
