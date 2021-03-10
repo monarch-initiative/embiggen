@@ -984,6 +984,8 @@ class GraphVisualization:
             )
 
         components, components_number, _, _ = self._graph.connected_components()
+        sizes = np.bincount(components, minlength=components_number)
+
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
@@ -992,8 +994,8 @@ class GraphVisualization:
             self._node_embedding.values,
             types=components,
             type_labels=np.array([
-                "Comp. n°{}".format(component)
-                for component in range(components_number)
+                "Size {}".format(size)
+                for size in range(sizes)
             ]),
             k=k,
             figure=figure,
