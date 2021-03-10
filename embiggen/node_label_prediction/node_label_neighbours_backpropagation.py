@@ -450,7 +450,7 @@ class NoLaN(Embedder):
                         verbose=False,
                         callbacks=[
                             *((TqdmCallback(
-                                verbose=2,
+                                verbose=1,
                                 epochs=1,
                                 data_size=train_sequence.sample_number,
                                 batch_size=batch_size,
@@ -469,7 +469,7 @@ class NoLaN(Embedder):
                             verbose=False,
                             callbacks=[
                                 *((TqdmCallback(
-                                    verbose=2,
+                                    verbose=1,
                                     epochs=1,
                                     data_size=validation_sequence.sample_number,
                                     batch_size=batch_size,
