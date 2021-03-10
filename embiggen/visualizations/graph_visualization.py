@@ -450,11 +450,24 @@ class GraphVisualization:
         legend_elements = []
         collections = []
 
+        color_names = np.array([
+            "tab:blue",
+            "tab:orange",
+            "tab:green",
+            "tab:red",
+            "tab:purple",
+            "tab:brown",
+            "tab:pink",
+            "tab:gray",
+            "tab:olive",
+            "tab:cyan",
+        ])
+
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                c=colors,
-                edgecolors=edgecolors,
+                c=color_names[colors],
+                edgecolors=color_names[edgecolors],
                 marker=train_marker,
                 **scatter_kwargs
             )
@@ -465,8 +478,8 @@ class GraphVisualization:
             mask = train_test_mask == 1
             train_scatter = axes.scatter(
                 *points[mask].T,
-                c=None if colors is None else colors[mask],
-                edgecolors=None if edgecolors is None else edgecolors[mask],
+                c=None if colors is None else color_names[colors[mask]],
+                edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=train_marker,
                 **scatter_kwargs
             )
@@ -482,8 +495,8 @@ class GraphVisualization:
             mask = train_test_mask == 2
             test_scatter = axes.scatter(
                 *points[mask].T,
-                c=None if colors is None else colors[mask],
-                edgecolors=None if edgecolors is None else edgecolors[mask],
+                c=None if colors is None else color_names[colors[mask]],
+                edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=test_marker,
                 **scatter_kwargs
             )
