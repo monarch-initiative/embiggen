@@ -398,9 +398,24 @@ class NoLaN(Embedder):
             **kwargs
         )
 
-    def predict(self, *args, **kwargs):
+    def predict(
+        self,
+        X: np.ndarray,
+        verbose: int = 1,
+        batch_size=128,
+        random_state: int = 42
+    ):
         """Run predict."""
-        return self._model.predict(*args, **kwargs)
+        return self._model.predict(
+            NodeLabelNeighboursSequence(
+                self._graph, X,
+                max_neighbours=self._graph.max_degree(),
+                batch_size=batch_size,
+                random_state=random_state,
+                support_mirror_strategy=self._support_mirror_strategy
+            ),
+            verbose=verbose
+        )
 
     def evaluate(
         self,
