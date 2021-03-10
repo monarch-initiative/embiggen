@@ -233,7 +233,8 @@ class GraphVisualization:
         self,
         axes: Axes,
         labels: List[str],
-        handles: List[HandlerBase]
+        handles: List[HandlerBase],
+        legend_title: str
     ):
         """Set the legend with the given values and handles transparency.
 
@@ -246,11 +247,14 @@ class GraphVisualization:
         handles: List,
             Handles to display in the legend (the curresponding matplotlib
             objects).
+        legend_title: str,
+            Title for the legend.
         """
         legend = axes.legend(
             handles=handles,
             labels=labels,
             loc='best',
+            title=legend_title,
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
                 if isinstance(handles[0], tuple)
@@ -364,6 +368,7 @@ class GraphVisualization:
         colors: List[int] = None,
         edgecolors: List[int] = None,
         labels: List[str] = None,
+        legend_title: str = "",
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -387,6 +392,8 @@ class GraphVisualization:
             List of the edge colors to use for the scatter plot.
         labels: List[str] = None,
             Labels for the different colors.
+        legend_title: str = "",
+            Title for the legend.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -559,7 +566,8 @@ class GraphVisualization:
             self._set_legend(
                 axes,
                 labels,
-                legend_elements
+                legend_elements,
+                legend_title
             )
 
         if self._n_components == 2:
@@ -587,6 +595,7 @@ class GraphVisualization:
         points: np.ndarray,
         types: List[int],
         type_labels: List[str],
+        legend_title: str,
         predictions: List[int] = None,
         k: int = 9,
         figure: Figure = None,
@@ -611,6 +620,8 @@ class GraphVisualization:
             Types of the provided points.
         type_labels: List[str],
             List of the labels for the provided types.
+        legend_title: str,
+            Title for the legend.
         predictions: List[int] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -701,6 +712,7 @@ class GraphVisualization:
             colors=types,
             edgecolors=predictions,
             labels=type_labels,
+            legend_title=legend_title,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -850,6 +862,7 @@ class GraphVisualization:
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
+        legend_title: str = "Node types",
         other_label: str = "Other",
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
@@ -918,6 +931,7 @@ class GraphVisualization:
             self._node_embedding.values,
             types=node_types,
             type_labels=np.array(self._graph.get_node_type_names()),
+            legend_title=legend_title,
             predictions=node_type_predictions,
             k=k,
             figure=figure,
@@ -938,6 +952,7 @@ class GraphVisualization:
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        legend_title: str = "Component sizes",
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
@@ -960,6 +975,8 @@ class GraphVisualization:
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
+        legend_title: str = "Component sizes",
+            Title for the legend.
         train_indices: np.ndarray = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
@@ -1003,6 +1020,7 @@ class GraphVisualization:
                 "Size {}".format(size)
                 for size in sizes
             ]),
+            legend_title=legend_title,
             k=k,
             figure=figure,
             axes=axes,
@@ -1024,6 +1042,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        use_log_scale: bool = True,
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1048,6 +1067,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1078,7 +1099,7 @@ class GraphVisualization:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": LogNorm()
+                **({"norm": LogNorm()} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -1100,6 +1121,7 @@ class GraphVisualization:
         axes: Axes = None,
         scatter_kwargs: Dict = None,
         other_label: str = "Other",
+        legend_title: str = "Edge types",
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
@@ -1124,6 +1146,8 @@ class GraphVisualization:
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
+        legend_title: str = "Edge types",
+            Title for the legend.
         train_indices: np.ndarray = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
@@ -1169,6 +1193,7 @@ class GraphVisualization:
             self._edge_embedding.values,
             types=edge_types,
             type_labels=np.array(self._graph.get_edge_type_names()),
+            legend_title=legend_title,
             predictions=edge_type_predictions,
             k=k,
             figure=figure,
