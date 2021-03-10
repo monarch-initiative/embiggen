@@ -452,12 +452,12 @@ class GraphVisualization:
         if test_indices is not None:
             train_test_mask[test_indices] = 2
 
-        points, colors, edgecolors, train_test_mask = self._shuffle(
-            points,
-            colors,
-            edgecolors,
-            train_test_mask
-        )
+        # points, colors, edgecolors, train_test_mask = self._shuffle(
+        #     points,
+        #     colors,
+        #     edgecolors,
+        #     train_test_mask
+        # )
 
         legend_elements = []
         collections = []
@@ -491,11 +491,11 @@ class GraphVisualization:
             legend_elements += scatter.legend_elements()[0]
 
         if train_indices is not None:
-            mask = train_test_mask == 1
+            train_mask = train_test_mask == 1
             train_scatter = axes.scatter(
-                *points[mask].T,
-                c=colors[mask],
-                edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
+                *points[train_mask].T,
+                c=colors[train_mask],
+                edgecolors=None if edgecolors is None else color_names[edgecolors[train_mask]],
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -504,11 +504,11 @@ class GraphVisualization:
             legend_elements.append(train_scatter.legend_elements()[0])
 
         if test_indices is not None:
-            mask = train_test_mask == 2
+            test_mask = train_test_mask == 2
             test_scatter = axes.scatter(
-                *points[mask].T,
-                c=colors[mask],
-                edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
+                *points[test_mask].T,
+                c=colors[test_mask],
+                edgecolors=None if edgecolors is None else color_names[edgecolors[test_mask]],
                 marker=test_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -517,7 +517,21 @@ class GraphVisualization:
             legend_elements.append(test_scatter.legend_elements()[0])
 
         if train_indices is not None and test_indices is not None:
-            legend_elements = list(zip(*legend_elements))
+            unique_train_colors = np.unique(colors[train_mask])
+            unique_test_colors = np.unique(colors[test_mask])
+            new_legend_elements = []
+            train_element_index = 0
+            test_element_index = 0
+            for color in np.unique(colors):
+                new_tuple = []
+                if color in unique_train_colors:
+                    new_tuple.append(legend_elements[0][train_element_index])
+                    train_element_index += 1
+                if color in unique_test_colors:
+                    new_tuple.append(legend_elements[1][test_element_index])
+                    test_element_index += 1
+                new_legend_elements.append(new_tuple)
+            legend_elements = new_legend_elements
 
         if labels is not None:
             self._set_legend(
