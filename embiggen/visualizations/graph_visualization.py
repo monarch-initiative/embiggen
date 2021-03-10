@@ -494,12 +494,7 @@ class GraphVisualization:
                 **scatter_kwargs
             )
             collections.append(train_scatter)
-            if labels is not None:
-                labels = [
-                    "Train {}".format(label)
-                    for label in labels
-                ]
-            legend_elements += train_scatter.legend_elements()[0]
+            legend_elements.append(train_scatter.legend_elements()[0])
 
         if test_indices is not None:
             mask = train_test_mask == 2
@@ -512,12 +507,10 @@ class GraphVisualization:
                 **scatter_kwargs
             )
             collections.append(test_scatter)
-            if labels is not None:
-                labels += [
-                    "Test {}".format(label)
-                    for label in labels
-                ]
-            legend_elements += test_scatter.legend_elements()[0]
+            legend_elements.append(test_scatter.legend_elements()[0])
+
+        if train_indices is not None and test_indices is not None:
+            legend_elements = list(zip(legend_elements))
 
         if labels is not None:
             self._set_legend(
