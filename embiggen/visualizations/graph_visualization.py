@@ -412,7 +412,7 @@ class GraphVisualization:
         Figure and Axis of the plot, followed by tuple of collections.
         """
         if train_indices is not None and test_indices is not None:
-            if train_indices.isin(test_indices).any():
+            if np.isin(train_indices, test_indices).any():
                 raise ValueError(
                     "The train and test indices overlap."
                 )
