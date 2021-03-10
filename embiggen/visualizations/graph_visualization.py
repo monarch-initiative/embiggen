@@ -419,17 +419,19 @@ class GraphVisualization:
 
         if figure is None or axes is None:
             if self._n_components == 2:
-                figure, axes = plt.subplots(
-                    **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
-                )
+                figure, axes = plt.subplots(**{
+                    **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                    **kwargs
+                })
             else:
-                figure, axes = subplots_3d(
-                    **(kwargs if kwargs else GraphVisualization.DEFAULT_SUBPLOT_KWARGS)
-                )
+                figure, axes = subplots_3d(**{
+                    **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                    **kwargs
+                })
 
         scatter_kwargs = {
-            **({} if scatter_kwargs is None else scatter_kwargs),
             **GraphVisualization.DEFAULT_SCATTER_KWARGS
+            **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
         train_test_mask = np.zeros((points.shape[0]))
