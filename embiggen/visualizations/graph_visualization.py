@@ -25,12 +25,12 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=10,
+        s=8,
         alpha=0.7
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(6, 6),
-        dpi=300
+        dpi=200
     )
 
     def __init__(
@@ -438,11 +438,6 @@ class GraphVisualization:
 
         scatter_kwargs = {
             **GraphVisualization.DEFAULT_SCATTER_KWARGS,
-            **(
-                dict(linewidths=0)
-                if edgecolors is None
-                else dict(linewidths=0.5)
-            ),
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
@@ -482,6 +477,9 @@ class GraphVisualization:
             ListedColormap(color_names[:colors.max() + 1])
         )
 
+        edges_scatter = scatter_kwargs.copy()
+        edges_size = edges_scatter.pop("s")
+
         if train_indices is None and test_indices is None:
             if edgecolors is not None:
                 axes.scatter(
@@ -489,8 +487,8 @@ class GraphVisualization:
                     c=edgecolors,
                     marker=train_marker,
                     cmap=cmap,
-                    s=scatter_kwargs.pop("s") + 1,
-                    **scatter_kwargs
+                    s=edges_size + 1,
+                    **edges_scatter
                 )
             scatter = axes.scatter(
                 *points.T,
@@ -510,8 +508,8 @@ class GraphVisualization:
                     c=edgecolors[train_mask],
                     marker=train_marker,
                     cmap=cmap,
-                    s=scatter_kwargs.pop("s") + 1,
-                    **scatter_kwargs
+                    s=edges_size + 1,
+                    **edges_scatter
                 )
             train_scatter = axes.scatter(
                 *points[train_mask].T,
@@ -531,8 +529,8 @@ class GraphVisualization:
                     c=edgecolors[test_mask],
                     marker=train_marker,
                     cmap=cmap,
-                    s=scatter_kwargs.pop("s") + 1,
-                    **scatter_kwargs
+                    s=edges_size + 1,
+                    **edges_scatter
                 )
             test_scatter = axes.scatter(
                 *points[test_mask].T,
