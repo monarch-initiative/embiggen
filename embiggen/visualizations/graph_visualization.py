@@ -685,6 +685,7 @@ class GraphVisualization:
                 types[i] = top_counts.index(element_type)
 
         if predictions is not None:
+            predictions = predictions.copy()
             for i, element_type in enumerate(predictions):
                 if element_type not in top_counts:
                     predictions[i] = k
