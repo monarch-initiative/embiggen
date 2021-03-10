@@ -635,14 +635,14 @@ class GraphVisualization:
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
-                types[i] = k
+                types[i] = k + 1
             else:
                 types[i] = top_counts.index(element_type)
 
         if predictions is not None:
             for i, element_type in enumerate(predictions):
                 if element_type not in top_counts:
-                    predictions[i] = k
+                    predictions[i] = k + 1
                 else:
                     predictions[i] = top_counts.index(element_type)
 
@@ -951,7 +951,10 @@ class GraphVisualization:
             "Node components",
             self._node_embedding.values,
             types=components,
-            type_labels=np.arange(components_number),
+            type_labels=[
+                "Comp. {}".format(component)
+                for component in range(components_number)
+            ],
             k=k,
             figure=figure,
             axes=axes,
