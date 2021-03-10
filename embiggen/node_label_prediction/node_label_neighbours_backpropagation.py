@@ -172,7 +172,6 @@ class NoLaN(Embedder):
             if self._use_batch_normalization:
                 mean_node_star_features = BatchNormalization()(mean_node_star_features)
 
-
             if self._use_node_features_dropout:
                 mean_node_star_features = Dropout(
                     self._node_features_dropout_rate,
@@ -443,32 +442,46 @@ class NoLaN(Embedder):
             random_state=random_state
         )
         return pd.DataFrame(
-            {
+            [{
                 **dict(zip(
                     self._model.metrics_names,
                     self._model.evaluate(
                         train_sequence,
                         verbose=False,
                         callbacks=[
-                            *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
+                            *((TqdmCallback(
+                                verbose=2,
+                                epochs=1,
+                                data_size=train_sequence.sample_number,
+                                batch_size=batch_size,
+                                leave=False
+                            ),) if verbose else ())
                         ]
                     )
                 )),
                 "run_type": "training"
             },
-            {
-                **dict(zip(
-                    self._model.metrics_names,
-                    self._model.evaluate(
-                        validation_sequence,
-                        verbose=False,
-                        callbacks=[
-                            *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
-                        ]
-                    )
-                )),
-                "run_type": "validation"
-            },
+                *(({
+                    **dict(zip(
+                        self._model.metrics_names,
+                        self._model.evaluate(
+                            validation_sequence,
+                            verbose=False,
+                            callbacks=[
+                                *((TqdmCallback(
+                                    verbose=2,
+                                    epochs=1,
+                                    data_size=validation_sequence.sample_number,
+                                    batch_size=batch_size,
+                                    leave=False
+                                ),) if verbose else ())
+                            ]
+                        )
+                    )),
+                    "run_type": "validation"
+                }) if validation_sequence is not None
+                else ()
+            )]
         )
 
     @property
