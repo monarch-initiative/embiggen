@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
@@ -516,6 +517,9 @@ class GraphVisualization:
             collections.append(test_scatter)
             legend_elements.append(test_scatter.legend_elements()[0])
 
+        r = matplotlib.patches.Rectangle((0, 0), 1, 1, fill=False, edgecolor='none',
+                                         visible=False)
+
         if train_indices is not None and test_indices is not None:
             unique_train_colors = np.unique(colors[train_mask])
             unique_test_colors = np.unique(colors[test_mask])
@@ -527,9 +531,14 @@ class GraphVisualization:
                 if color in unique_train_colors:
                     new_tuple.append(legend_elements[0][train_element_index])
                     train_element_index += 1
+                else:
+                    new_tuple.append(r)
                 if color in unique_test_colors:
                     new_tuple.append(legend_elements[1][test_element_index])
                     test_element_index += 1
+                else:
+                    new_tuple.append(r)
+
                 new_legend_elements.append(tuple(new_tuple))
             legend_elements = new_legend_elements
 
