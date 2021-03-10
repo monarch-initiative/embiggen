@@ -487,7 +487,7 @@ class GraphVisualization:
             mask = train_test_mask == 1
             train_scatter = axes.scatter(
                 *points[mask].T,
-                c=colors,
+                c=colors[mask],
                 edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=train_marker,
                 cmap=cmap,
@@ -505,7 +505,7 @@ class GraphVisualization:
             mask = train_test_mask == 2
             test_scatter = axes.scatter(
                 *points[mask].T,
-                c=colors,
+                c=colors[mask],
                 edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=test_marker,
                 cmap=cmap,
