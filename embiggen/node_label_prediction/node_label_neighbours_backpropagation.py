@@ -14,6 +14,7 @@ from tensorflow.keras.layers import (
     Embedding,
     Concatenate,
     GlobalAveragePooling1D,
+    BatchNormalization,
     Input
 )
 from tensorflow.keras.models import Model
@@ -39,7 +40,8 @@ class NoLaN(Embedder):
         use_node_embedding_dropout: bool = True,
         node_embedding_dropout_rate: float = 0.5,
         use_node_features_dropout: bool = True,
-        node_features_dropout_rate: float = 0.7,
+        node_features_dropout_rate: float = 0.8,
+        use_batch_normalization: bool = True,
         node_embedding: Union[np.ndarray, pd.DataFrame] = None,
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
@@ -60,6 +62,7 @@ class NoLaN(Embedder):
         self._node_embedding_dropout_rate = node_embedding_dropout_rate
         self._use_node_features_dropout = use_node_features_dropout
         self._node_features_dropout_rate = node_features_dropout_rate
+        self._use_batch_normalization = use_batch_normalization
         self._support_mirror_strategy = support_mirror_strategy
 
         if scaler is None:
@@ -173,6 +176,9 @@ class NoLaN(Embedder):
                 mean_node_star_embedding,
                 mean_node_star_features
             ))
+
+        if self._use_batch_normalization:
+            mean_node_star_embedding = BatchNormalization()(mean_node_star_embedding)
 
         output = Dense(
             self._labels_number,
