@@ -154,6 +154,7 @@ class NoLaN(Embedder):
                     self._node_features
                 ])],
                 mask_zero=True,
+                trainable=False,
                 name="NodeFeatures"
             )
 
