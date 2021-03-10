@@ -18,6 +18,7 @@ from tensorflow.keras.layers import (
     Input
 )
 from tensorflow.keras.models import Model
+from tqdm.keras import TqdmCallback
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Optimizer
 
@@ -401,7 +402,7 @@ class NoLaN(Embedder):
     def predict(
         self,
         X: np.ndarray,
-        verbose: int = 1,
+        verbose: bool = True,
         batch_size=128,
         random_state: int = 42
     ):
@@ -415,7 +416,10 @@ class NoLaN(Embedder):
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy
             ),
-            verbose=verbose
+            verbose=False,
+            callbacks=[
+                *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
+            ]
         )
 
     def evaluate(
@@ -423,10 +427,10 @@ class NoLaN(Embedder):
         X_train: np.ndarray,
         y_train: np.ndarray,
         validation_data: Tuple = None,
-        verbose: int = 1,
+        verbose: bool = True,
         batch_size=128,
         random_state: int = 42
-    ) -> Dict[str, float]:
+    ) -> pd.DataFrame:
         """Run predict.
 
         TODO! Update docstring!
@@ -438,21 +442,33 @@ class NoLaN(Embedder):
             validation_data=validation_data,
             random_state=random_state
         )
-        return (
-            dict(zip(
-                self._model.metrics_names,
-                self._model.evaluate(
-                    train_sequence,
-                    verbose=verbose
-                )
-            )),
-            dict(zip(
-                self._model.metrics_names,
-                self._model.evaluate(
-                    validation_sequence,
-                    verbose=verbose
-                )
-            ))
+        return pd.DataFrame(
+            {
+                **dict(zip(
+                    self._model.metrics_names,
+                    self._model.evaluate(
+                        train_sequence,
+                        verbose=False,
+                        callbacks=[
+                            *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
+                        ]
+                    )
+                )),
+                "run_type": "training"
+            },
+            {
+                **dict(zip(
+                    self._model.metrics_names,
+                    self._model.evaluate(
+                        validation_sequence,
+                        verbose=False,
+                        callbacks=[
+                            *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
+                        ]
+                    )
+                )),
+                "run_type": "validation"
+            },
         )
 
     @property
