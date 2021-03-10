@@ -26,7 +26,7 @@ class GraphVisualization:
 
     DEFAULT_SCATTER_KWARGS = dict(
         s=8,
-        alpha=0.7
+        alpha=0.8
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(6, 6),
@@ -438,6 +438,11 @@ class GraphVisualization:
 
         scatter_kwargs = {
             **GraphVisualization.DEFAULT_SCATTER_KWARGS,
+            **(
+                dict(linewidths=0)
+                if edgecolors is None
+                else dict(linewidths=0.5)
+            ),
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
@@ -477,22 +482,11 @@ class GraphVisualization:
             ListedColormap(color_names[:colors.max() + 1])
         )
 
-        edges_scatter = scatter_kwargs.copy()
-        edges_size = edges_scatter.pop("s")
-
         if train_indices is None and test_indices is None:
-            if edgecolors is not None:
-                axes.scatter(
-                    *points.T,
-                    c=edgecolors,
-                    marker=train_marker,
-                    cmap=cmap,
-                    s=edges_size + 1,
-                    **edges_scatter
-                )
             scatter = axes.scatter(
                 *points.T,
                 c=colors,
+                edgecolors=None if edgecolors is None else cmap(edgecolors),
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -502,18 +496,12 @@ class GraphVisualization:
 
         if train_indices is not None:
             train_mask = train_test_mask == 1
-            if edgecolors is not None:
-                axes.scatter(
-                    *points[train_mask].T,
-                    c=edgecolors[train_mask],
-                    marker=train_marker,
-                    cmap=cmap,
-                    s=edges_size + 1,
-                    **edges_scatter
-                )
             train_scatter = axes.scatter(
                 *points[train_mask].T,
                 c=colors[train_mask],
+                edgecolors=None if edgecolors is None else cmap(
+                    edgecolors[train_mask]
+                ),
                 marker=train_marker,
                 cmap=cmap,
                 **scatter_kwargs
@@ -523,18 +511,11 @@ class GraphVisualization:
 
         if test_indices is not None:
             test_mask = train_test_mask == 2
-            if edgecolors is not None:
-                axes.scatter(
-                    *points[test_mask].T,
-                    c=edgecolors[test_mask],
-                    marker=train_marker,
-                    cmap=cmap,
-                    s=edges_size + 1,
-                    **edges_scatter
-                )
             test_scatter = axes.scatter(
                 *points[test_mask].T,
                 c=colors[test_mask],
+                edgecolors=None if edgecolors is None else cmap(
+                    edgecolors[test_mask]),
                 marker=test_marker,
                 cmap=cmap,
                 **scatter_kwargs
