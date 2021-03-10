@@ -434,7 +434,7 @@ class GraphVisualization:
                 dict(linewidths=0)
                 if edgecolors is None
                 else dict(linewidths=1)
-            )
+            ),
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
