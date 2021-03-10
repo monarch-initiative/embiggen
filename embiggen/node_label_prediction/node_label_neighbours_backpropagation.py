@@ -74,34 +74,27 @@ class NoLaN(Embedder):
                     index=node_embedding.index,
                 )
 
-        super().__init__(
-            vocabulary_size=graph.get_nodes_number() if node_embedding is None else None,
-            embedding_size=node_embedding_size if node_embedding is None else None,
-            embedding=node_embedding,
-            optimizer=optimizer,
-            trainable_embedding=trainable_node_embedding
-        )
-
         self._node_features_size = None
 
         if node_features is not None:
-            if isinstance(node_features, pd.DataFrame) != isinstance(node_embedding, pd.DataFrame):
-                raise ValueError(
-                    "Node embedding and node features must either be both "
-                    "pandas DataFrames or both numpy arrays."
-                )
-            if node_features.shape[0] != self._vocabulary_size:
-                raise ValueError(
-                    (
-                        "Given node features must be available"
-                        " for each of the {} nodes.".format(
-                            self._vocabulary_size)
+            if node_embedding is not None:
+                if isinstance(node_features, pd.DataFrame) != isinstance(node_embedding, pd.DataFrame):
+                    raise ValueError(
+                        "Node embedding and node features must either be both "
+                        "pandas DataFrames or both numpy arrays."
                     )
-                )
-            if isinstance(node_features, pd.DataFrame) and node_features.index != node_embedding.index:
-                raise ValueError(
-                    "Index of node features and node embedding must match!"
-                )
+                if node_features.shape[0] != node_embedding.shape[0]:
+                    raise ValueError(
+                        (
+                            "Given node features must be available"
+                            " for each of the {} nodes.".format(
+                                self._vocabulary_size)
+                        )
+                    )
+                if isinstance(node_features, pd.DataFrame) and node_features.index != node_embedding.index:
+                    raise ValueError(
+                        "Index of node features and node embedding must match!"
+                    )
             if scaler is not None:
                 scaled_node_features = scaler.fit_transform(node_features)
                 if isinstance(node_features, pd.DataFrame):
@@ -112,6 +105,14 @@ class NoLaN(Embedder):
                     )
             self._node_features_size = node_features.shape[1]
         self._node_features = node_features
+
+        super().__init__(
+            vocabulary_size=graph.get_nodes_number() if node_embedding is None else None,
+            embedding_size=node_embedding_size if node_embedding is None else None,
+            embedding=node_embedding,
+            optimizer=optimizer,
+            trainable_embedding=trainable_node_embedding
+        )
 
     def _build_model(self):
         """Return NoLaN model."""
