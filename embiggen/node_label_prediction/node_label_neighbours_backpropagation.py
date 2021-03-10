@@ -401,7 +401,7 @@ class NoLaN(Embedder):
     def predict(
         self,
         X: np.ndarray,
-        verbose: bool = True,
+        verbose: bool = False,
         batch_size=128,
         random_state: int = 42
     ):
@@ -415,10 +415,7 @@ class NoLaN(Embedder):
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy
             ),
-            verbose=False,
-            callbacks=[
-                *((TqdmCallback(verbose=2, leave=False),) if verbose else ())
-            ]
+            verbose=verbose
         )
 
     def evaluate(
@@ -426,7 +423,7 @@ class NoLaN(Embedder):
         X_train: np.ndarray,
         y_train: np.ndarray,
         validation_data: Tuple = None,
-        verbose: bool = True,
+        verbose: bool = False,
         batch_size=128,
         random_state: int = 42
     ) -> pd.DataFrame:
@@ -447,16 +444,7 @@ class NoLaN(Embedder):
                     self._model.metrics_names,
                     self._model.evaluate(
                         train_sequence,
-                        verbose=False,
-                        callbacks=[
-                            *((TqdmCallback(
-                                verbose=1,
-                                epochs=1,
-                                data_size=train_sequence.sample_number,
-                                batch_size=batch_size,
-                                leave=False
-                            ),) if verbose else ())
-                        ]
+                        verbose=verbose
                     )
                 )),
                 "run_type": "training"
@@ -466,16 +454,7 @@ class NoLaN(Embedder):
                         self._model.metrics_names,
                         self._model.evaluate(
                             validation_sequence,
-                            verbose=False,
-                            callbacks=[
-                                *((TqdmCallback(
-                                    verbose=1,
-                                    epochs=1,
-                                    data_size=validation_sequence.sample_number,
-                                    batch_size=batch_size,
-                                    leave=False
-                                ),) if verbose else ())
-                            ]
+                            verbose=verbose
                         )
                     )),
                     "run_type": "validation"
