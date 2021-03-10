@@ -25,8 +25,6 @@ class Node2VecSequence(AbstractSequence):
         support_mirror_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
-        nodes_test_set: np.ndarray = None,
-        extra_features: np.ndarray = None
     ):
         """Create new Node2Vec Sequence object.
 
@@ -92,13 +90,6 @@ class Node2VecSequence(AbstractSequence):
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
             THIS IS AN EXPERIMENTAL FEATURE!
-        nodes_test_set: np.ndarray = None,
-            Nodes to filter out from the contexts when training the
-            multi-head version of Node2Vec.
-            THIS IS AN EXPERIMENTAL FEATURE!
-        extra_features: np.ndarray = None,
-            Vector of additional features for each node.
-            THIS IS AN EXPERIMENTAL FEATURE!
         """
         self._graph = graph
         self._walk_length = walk_length
@@ -109,10 +100,6 @@ class Node2VecSequence(AbstractSequence):
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
-        self._nodes_test_set = nodes_test_set
-        if self._nodes_test_set is not None:
-            self._node_types = graph.get_node_types()
-        self._extra_features = extra_features
 
         super().__init__(
             batch_size=batch_size,
@@ -171,19 +158,7 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-        if self._nodes_test_set is not None:
-            masks_batch = np.isin(contexts_batch, self._nodes_test_set)
-            contexts_batch_node_types = self._node_types[contexts_batch]
-
-            outputs = [
-                contexts_batch + 1,
-                words_batch + 1,
-                masks_batch,
-                contexts_batch_node_types
-            ]
-            
-        else:
-            outputs = [contexts_batch + 1, words_batch + 1]
+        outputs = [contexts_batch + 1, words_batch + 1]
 
         if self._support_mirror_strategy:
             outputs = [

@@ -27,10 +27,7 @@ class Word2Vec(Embedder):
         model_name: str = "Word2Vec",
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
-        negative_samples: int = 10,
-        classes_number: int = 0,
-        extra_features_number: int = 0,
-        siamese: bool = False
+        negative_samples: int = 10
     ):
         """Create new sequence Embedder model.
 
@@ -60,20 +57,10 @@ class Word2Vec(Embedder):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        classes_number: int = 0,
-            Number of classes that the elements may have.
-            This may be the number of node types in a graph for instance.
-        extra_features_number: int = 0,
-            Number of additional features provided for each term.
-        siamese: bool = False,
-            Whether to use a siamese connection for the NCE loss and embedding.
         """
         self._model_name = model_name
         self._window_size = window_size
         self._negative_samples = negative_samples
-        self._classes_number = classes_number
-        self._extra_features_number = extra_features_number
-        self._siamese = siamese
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -97,7 +84,7 @@ class Word2Vec(Embedder):
     def _sort_input_layers(
         self,
         true_input_layer: Layer,
-        *true_output_layers: Tuple[Layer]
+        true_output_layer: Layer
     ) -> Tuple[Layer]:
         """Return input layers for training with the same input sequence.
 
@@ -105,7 +92,7 @@ class Word2Vec(Embedder):
         ----------------------------
         true_input_layer: Layer,
             The input layer that will contain the true input.
-        *true_output_layers: Tuple[Layer]
+        true_output_layer: Layer
             The input layer that will contain the true output.
 
         Returns
@@ -126,30 +113,12 @@ class Word2Vec(Embedder):
             name="InputWords"
         )
 
-        # To handle the multi-head case we have a list
-        # of the output layers.
-        true_output_length = self._get_true_output_length()
         # Contextual nodes
-        true_output_layers = [
-            Input((true_output_length, ), dtype=tf.int64, name="InputContexts")
-        ]
-        if self._classes_number != 0:
-            true_output_layers += [
-                # Mask for training nodes
-                # The values in here == True are the nodes whose labels are
-                # reserved for the test.
-                Input((true_output_length, ), dtype=tf.bool,
-                      name="InputContextsMask"),
-                # Node types to be used to create the multiple outputs.
-                Input((true_output_length, ), dtype=tf.int64,
-                      name="InputContextualTypes")
-            ]
-
-        # If there are additional features for the nodes, we add an input
-        # for them.
-        if self._extra_features_number != 0:
-            features_input = Input(
-                (self._extra_features_number, ), name="InputFeatures")
+        true_output_layer = Input(
+            (self._get_true_output_length(), ),
+            dtype=tf.int64,
+            name="InputContexts"
+        )
 
         # Creating the embedding layer for the contexts
         embedding_layer = Embedding(
@@ -158,17 +127,12 @@ class Word2Vec(Embedder):
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
             name=Embedder.EMBEDDING_LAYER_NAME,
-            #embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
             # embeddings_constraint=UnitNorm(),
             mask_zero=True
         )
 
         embedding = embedding_layer(true_input_layer)
-
-        # We concatenate the additional features to the embedding
-        # if the features have been provided.
-        if self._extra_features_number != 0:
-            embedding = Concatenate()((embedding, features_input))
 
         # Executing average of the embeddings and features (if provided)
         mean_embedding = GlobalAveragePooling1D()(
@@ -183,44 +147,15 @@ class Word2Vec(Embedder):
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length(),
-            embedding_layer=embedding_layer if self._siamese else None
-        )
-
-        outputs = [
-            # Normal NCE loss output
-            nce_loss((mean_embedding, true_output_layers[0]))
-        ]
-        if self._classes_number != 0:
-            for class_id in range(self._classes_number):
-                # We compute the mask of values that need to be filtered out.
-                mask = tf.math.logical_and(
-                    # The class_id must be the class_id of this specific
-                    # head of the word2vec model.
-                    # We filter out all values that are not of that class.
-                    math_ops.not_equal(true_output_layers[2], class_id),
-                    true_output_layers[1],
-                    name="MaskForClass{}".format(class_id)
-                )
-                outputs.append(nce_loss((
-                    mean_embedding,
-                    tf.tensor_scatter_nd_update(
-                        true_output_layers[0],
-                        tf.where(mask),
-                        tf.zeros(
-                            (tf.math.reduce_sum(tf.cast(mask, tf.int64)), ),
-                            dtype=tf.int64,
-                            name="ZerosUpdatesForClass{}".format(class_id)
-                        )
-                    )
-                )))
+        )((mean_embedding, true_output_layer))
 
         # Creating the actual model
         model = Model(
             inputs=self._sort_input_layers(
                 true_input_layer,
-                *true_output_layers
+                true_output_layer
             ),
-            outputs=outputs,
+            outputs=nce_loss,
             name=self._model_name
         )
         return model

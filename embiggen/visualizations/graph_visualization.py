@@ -484,10 +484,11 @@ class GraphVisualization:
             "tab:cyan",
         ])
 
-        cmap = scatter_kwargs.pop(
-            "cmap",
-            ListedColormap(color_names[:colors.max() + 1])
-        )
+        if colors is not None:
+            cmap = scatter_kwargs.pop(
+                "cmap",
+                ListedColormap(color_names[:int(colors.max() + 1)])
+            )
 
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
@@ -1283,7 +1284,7 @@ class GraphVisualization:
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter, ax=axes)
+        color_bar = figure.colorbar(scatter[0], ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
         return figure, axes

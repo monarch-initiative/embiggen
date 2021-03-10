@@ -23,7 +23,6 @@ class GraphGloVe(GloVe):
         embedding_size: int = 100,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
-        shared_embedding_layers: bool = False,
         walk_length: int = 128,
         iterations: int = 16,
         window_size: int = 16,
@@ -52,11 +51,6 @@ class GraphGloVe(GloVe):
             set at 0.01 is used.
         alpha: float = 0.75,
             Alpha to use for the function.
-        shared_embedding_layers: bool = False,
-            Whether to share the embedding layers weights
-            for the center words and the contexts.
-            This will make the GloVe model more practical as it halves the number
-            of parameters of the model, but it is still to be studied properly.
         walk_length: int = 128,
             Maximal length of the walks.
         iterations: int = 16,
@@ -124,7 +118,6 @@ class GraphGloVe(GloVe):
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
             alpha=alpha,
-            shared_embedding_layers=shared_embedding_layers,
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             optimizer=optimizer

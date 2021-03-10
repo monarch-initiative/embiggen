@@ -21,7 +21,6 @@ class SkipGram(Word2Vec):
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
         negative_samples: int = 10,
-        classes_number: int = 0,
         extra_features_number: int = 0
     ):
         """Create new CBOW-based Embedder object.
@@ -46,11 +45,6 @@ class SkipGram(Word2Vec):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        classes_number: int = 0,
-            Number of classes that the elements may have.
-            This may be the number of node types in a graph for instance.
-        extra_features_number: int = 0,
-            Number of additional features provided for each term.
         """
         super().__init__(
             vocabulary_size=vocabulary_size,
@@ -59,8 +53,6 @@ class SkipGram(Word2Vec):
             optimizer=optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
-            classes_number=classes_number,
-            extra_features_number=extra_features_number
         )
 
     def _get_true_input_length(self) -> int:
@@ -74,7 +66,7 @@ class SkipGram(Word2Vec):
     def _sort_input_layers(
         self,
         true_input_layer: Layer,
-        *true_output_layers: Tuple[Layer]
+        true_output_layer: Layer
     ) -> Tuple[Layer]:
         """Return input layers for training with the same input sequence.
 
@@ -82,7 +74,7 @@ class SkipGram(Word2Vec):
         ----------------------------
         true_input_layer: Layer,
             The input layer that will contain the true input.
-        *true_output_layers: Tuple[Layer]
+        true_output_layer: Layer,
             The input layer that will contain the true output.
 
         Returns
@@ -90,7 +82,6 @@ class SkipGram(Word2Vec):
         Return tuple with the tuple of layers.
         """
         return (
-            true_output_layers[0],
-            true_input_layer,
-            *true_output_layers[1:]
+            true_output_layer,
+            true_input_layer
         )

@@ -26,7 +26,6 @@ class GloVe(Embedder):
         embedding_size: int,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
-        shared_embedding_layers: bool = False
     ):
         """Create new GloVe-based Embedder object.
 
@@ -44,14 +43,8 @@ class GloVe(Embedder):
             set at 0.01 is used.
         alpha: float = 0.75,
             Alpha to use for the function.
-        shared_embedding_layers: bool = False,
-            Whether to share the embedding layers weights
-            for the center words and the contexts.
-            This will make the GloVe model more practical as it halves the number
-            of parameters of the model, but it is still to be studied properly.
         """
         self._alpha = alpha
-        self._shared_embedding_layers = shared_embedding_layers
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -86,9 +79,8 @@ class GloVe(Embedder):
             Input((1,))
         ]
 
-        # Creating the embedding layer(s)
-        if self._shared_embedding_layers:
-            embedding_layer = Embedding(
+        embedding_layers = [
+            Embedding(
                 self._vocabulary_size,
                 self._embedding_size,
                 input_length=1,
@@ -96,28 +88,13 @@ class GloVe(Embedder):
                     self._embedding
                 ],
                 name=Embedder.EMBEDDING_LAYER_NAME
-            )
-            embedding_layers = [
-                embedding_layer(input_layer)
-                for input_layer in input_layers
-            ]
-        else:
-            embedding_layers = [
-                Embedding(
-                    self._vocabulary_size,
-                    self._embedding_size,
-                    input_length=1,
-                    weights=None if self._embedding is None else [
-                        self._embedding
-                    ],
-                    name=Embedder.EMBEDDING_LAYER_NAME
-                )(input_layers[0]),
-                Embedding(
-                    self._vocabulary_size,
-                    self._embedding_size,
-                    input_length=1,
-                )(input_layers[1])
-            ]
+            )(input_layers[0]),
+            Embedding(
+                self._vocabulary_size,
+                self._embedding_size,
+                input_length=1,
+            )(input_layers[1])
+        ]
 
         # Creating the dot product of the embedding layers
         dot_product_layer = Dot(axes=2)(embedding_layers)
