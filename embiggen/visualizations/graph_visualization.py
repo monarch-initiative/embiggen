@@ -26,8 +26,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=10,
-        alpha=0.7,
+        s=10
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(6, 6),
@@ -369,7 +368,7 @@ class GraphVisualization:
         train_indices: np.ndarray = None,
         test_indices: np.ndarray = None,
         train_marker: str = "o",
-        test_marker: str = "^",
+        test_marker: str = "s",
         **kwargs
     ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
@@ -477,7 +476,9 @@ class GraphVisualization:
         ])
 
         cmap = scatter_kwargs.pop(
-            "cmap", ListedColormap(color_names[:colors.max() + 1]))
+            "cmap",
+            ListedColormap(color_names[:colors.max() + 1])
+        )
 
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
@@ -987,7 +988,7 @@ class GraphVisualization:
             components = components[self._subsampled_node_ids]
 
         return self._plot_types(
-            "Node components",
+            "Components",
             self._node_embedding.values,
             types=components,
             type_labels=np.array([
