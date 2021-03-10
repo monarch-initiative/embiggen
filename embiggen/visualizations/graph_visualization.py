@@ -530,7 +530,7 @@ class GraphVisualization:
                 if color in unique_test_colors:
                     new_tuple.append(legend_elements[1][test_element_index])
                     test_element_index += 1
-                new_legend_elements.append(new_tuple)
+                new_legend_elements.append(tuple(new_tuple))
             legend_elements = new_legend_elements
 
         if labels is not None:
