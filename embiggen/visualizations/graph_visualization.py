@@ -552,7 +552,7 @@ class GraphVisualization:
         types: List[int],
         type_labels: List[str],
         predictions: List[int] = None,
-        k: int = 10,
+        k: int = 9,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -578,7 +578,7 @@ class GraphVisualization:
         predictions: List[int] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
-        k: int = 10,
+        k: int = 9,
             Number of node types to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
@@ -617,9 +617,9 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if k > 10:
+        if k > 9:
             raise ValueError(
-                "Values of k greater than 10 are not supported!"
+                "Values of k greater than 9 are not supported!"
             )
 
         if not isinstance(types, np.ndarray):
@@ -635,14 +635,14 @@ class GraphVisualization:
 
         for i, element_type in enumerate(types):
             if element_type not in top_counts:
-                types[i] = k + 1
+                types[i] = k
             else:
                 types[i] = top_counts.index(element_type)
 
         if predictions is not None:
             for i, element_type in enumerate(predictions):
                 if element_type not in top_counts:
-                    predictions[i] = k + 1
+                    predictions[i] = k
                 else:
                     predictions[i] = top_counts.index(element_type)
 
@@ -800,7 +800,7 @@ class GraphVisualization:
     def plot_node_types(
         self,
         node_type_predictions: List[int] = None,
-        k: int = 10,
+        k: int = 9,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -817,7 +817,7 @@ class GraphVisualization:
         ------------------------------
         node_type_predictions: List[int] = None,
             Predictions of the node types.
-        k: int = 10,
+        k: int = 9,
             Number of node types to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
@@ -887,7 +887,7 @@ class GraphVisualization:
 
     def plot_connected_components(
         self,
-        k: int = 10,
+        k: int = 9,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -902,7 +902,7 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        k: int = 10,
+        k: int = 9,
             Number of components to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
@@ -1047,7 +1047,7 @@ class GraphVisualization:
     def plot_edge_types(
         self,
         edge_type_predictions: List[int] = None,
-        k: int = 10,
+        k: int = 9,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -1064,7 +1064,7 @@ class GraphVisualization:
         ------------------------------
         edge_type_predictions: List[int] = None,
             Predictions of the edge types.
-        k: int = 10,
+        k: int = 9,
             Number of edge types to visualize.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
