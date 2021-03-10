@@ -479,7 +479,7 @@ class NoLaN(Embedder):
                         )
                     )),
                     "run_type": "validation"
-                }) if validation_sequence is not None
+                }, ) if validation_sequence is not None
                 else ()
             )]
         )
