@@ -17,6 +17,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         include_central_node: bool = True,
         batch_size: int = 2**8,
         elapsed_epochs: int = 0,
+        shuffle: bool = True,
         random_state: int = 42,
         support_mirror_strategy: bool = False
     ):
@@ -38,6 +39,8 @@ class NodeLabelNeighboursSequence(VectorSequence):
             The batch size to use.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
+        shuffle: bool = True,
+            Whether to shuffle data.
         random_state: int = 42,
             The random state to use to make extraction reproducible.
         support_mirror_strategy: bool = False,
@@ -60,6 +63,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
             vector=node_ids,
             batch_size=batch_size,
             random_state=random_state,
+            shuffle=shuffle,
             elapsed_epochs=elapsed_epochs,
         )
 

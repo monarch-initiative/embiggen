@@ -411,6 +411,7 @@ class NoLaN(Embedder):
                 self._graph, X,
                 max_neighbours=self._graph.max_degree(),
                 batch_size=batch_size,
+                shuffle=False,
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy
             ),
