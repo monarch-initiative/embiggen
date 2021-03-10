@@ -466,8 +466,8 @@ class GraphVisualization:
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                c=color_names[colors],
-                edgecolors=color_names[edgecolors],
+                c=None if colors is None else color_names[colors],
+                edgecolors=None if edgecolors is None else color_names[edgecolors],
                 marker=train_marker,
                 **scatter_kwargs
             )
