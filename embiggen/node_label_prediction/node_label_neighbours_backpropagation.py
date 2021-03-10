@@ -128,10 +128,11 @@ class NoLaN(Embedder):
             name=Embedder.EMBEDDING_LAYER_NAME
         )
 
-        mean_node_star_embedding = GlobalAveragePooling1D()(
+        mean_node_star_embedding = GlobalAveragePooling1D(
+            name="MeanNodeStarEmbedding"
+        )(
             node_embedding_layer(node_star_input),
             mask=node_embedding_layer.compute_mask(node_star_input),
-            name="MeanNodeStarEmbedding"
         )
 
         if self._use_node_embedding_dropout:
@@ -152,10 +153,11 @@ class NoLaN(Embedder):
                 name="NodeFeatures"
             )
 
-            mean_node_star_features = GlobalAveragePooling1D()(
+            mean_node_star_features = GlobalAveragePooling1D(
+                name="MeanNodeStarFeatures"
+            )(
                 node_features_layer(node_star_input),
                 mask=node_features_layer.compute_mask(node_star_input),
-                name="MeanNodeStarFeatures"
             )
 
             if self._use_node_features_dropout:
