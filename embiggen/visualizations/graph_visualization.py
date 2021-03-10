@@ -10,7 +10,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase
 from matplotlib.collections import Collection
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, ListedColormap
 from ddd_subplots import subplots as subplots_3d
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
@@ -469,12 +469,15 @@ class GraphVisualization:
             "tab:cyan",
         ])
 
+        cmap = ListedColormap(color_names[:colors.max()])
+
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                c=None if colors is None else color_names[colors],
+                c=colors,
                 edgecolors=None if edgecolors is None else color_names[edgecolors],
                 marker=train_marker,
+                cmap=cmap,
                 **scatter_kwargs
             )
             collections.append(scatter)
@@ -484,9 +487,10 @@ class GraphVisualization:
             mask = train_test_mask == 1
             train_scatter = axes.scatter(
                 *points[mask].T,
-                c=None if colors is None else color_names[colors[mask]],
+                c=colors,
                 edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=train_marker,
+                cmap=cmap,
                 **scatter_kwargs
             )
             collections.append(train_scatter)
@@ -501,9 +505,10 @@ class GraphVisualization:
             mask = train_test_mask == 2
             test_scatter = axes.scatter(
                 *points[mask].T,
-                c=None if colors is None else color_names[colors[mask]],
+                c=colors,
                 edgecolors=None if edgecolors is None else color_names[edgecolors[mask]],
                 marker=test_marker,
+                cmap=cmap,
                 **scatter_kwargs
             )
             collections.append(test_scatter)
