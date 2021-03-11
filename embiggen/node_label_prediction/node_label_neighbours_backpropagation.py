@@ -41,8 +41,10 @@ class NoLaN(Embedder):
         use_node_embedding_dropout: bool = True,
         node_embedding_dropout_rate: float = 0.3,
         use_node_features_dropout: bool = True,
-        node_features_dropout_rate: float = 0.6,
+        node_features_dropout_rate: float = 0.7,
         use_batch_normalization: bool = True,
+        l1_kernel_regularization: float = 1e-3,
+        l2_kernel_regularization: float = 1e-3,
         node_embedding: Union[np.ndarray, pd.DataFrame] = None,
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
@@ -65,6 +67,8 @@ class NoLaN(Embedder):
         self._node_features_dropout_rate = node_features_dropout_rate
         self._use_batch_normalization = use_batch_normalization
         self._support_mirror_strategy = support_mirror_strategy
+        self._l1_kernel_regularization = l1_kernel_regularization
+        self._l2_kernel_regularization = l2_kernel_regularization
 
         if scaler is None:
             scaler = RobustScaler()
@@ -187,7 +191,10 @@ class NoLaN(Embedder):
 
         output = Dense(
             self._labels_number,
-            kernel_regularizer=regularizers.l1_l2(l1=1e-3, l2=1e-2),
+            kernel_regularizer=regularizers.l1_l2(
+                l1=self._l1_kernel_regularization,
+                l2=self._l2_kernel_regularization
+            ),
             activation="softmax"
         )(mean_node_star_embedding)
 
@@ -212,7 +219,7 @@ class NoLaN(Embedder):
         X_train: np.ndarray,
         y_train: np.ndarray,
         max_neighbours: int = None,
-        batch_size: int = 128,
+        batch_size: int = 256,
         validation_data: Tuple = None,
         random_state: int = 42
     ) -> Tuple[MixedSequence, MixedSequence]:
@@ -227,7 +234,7 @@ class NoLaN(Embedder):
         max_neighbours: int = None,
             Number of neighbours to consider.
             If None, the graph median is used.
-        batch_size: int = 128,
+        batch_size: int = 256,
             Batch size for the sequence.
         validation_data: Tuple = None,
             Tuple containing:
@@ -310,8 +317,8 @@ class NoLaN(Embedder):
         X_train: np.ndarray,
         y_train: np.ndarray,
         max_neighbours: int = None,
-        batch_size: int = 512,
-        epochs: int = 10000,
+        batch_size: int = 256,
+        epochs: int = 1000,
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0,
@@ -402,7 +409,7 @@ class NoLaN(Embedder):
         self,
         X: np.ndarray,
         verbose: bool = False,
-        batch_size=128,
+        batch_size=256,
         random_state: int = 42
     ):
         """Run predict."""
@@ -424,7 +431,7 @@ class NoLaN(Embedder):
         y_train: np.ndarray,
         validation_data: Tuple = None,
         verbose: bool = False,
-        batch_size=128,
+        batch_size=256,
         random_state: int = 42
     ) -> pd.DataFrame:
         """Run predict.
