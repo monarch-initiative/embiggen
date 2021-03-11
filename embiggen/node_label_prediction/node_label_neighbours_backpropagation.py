@@ -154,11 +154,6 @@ class NoLaN(Embedder):
                 name="NodeEmbeddingDropout"
             )(mean_node_star_embedding)
 
-        if self._use_batch_normalization:
-            mean_node_star_embedding = BatchNormalization(
-                scale=False
-            )(mean_node_star_embedding)
-
         if self._node_features is not None:
             node_features_layer = Embedding(
                 input_dim=self._vocabulary_size+1,
@@ -185,17 +180,17 @@ class NoLaN(Embedder):
                     name="NodeFeaturesDropout"
                 )(mean_node_star_features)
 
-            if self._use_batch_normalization:
-                mean_node_star_features = BatchNormalization(
-                    scale=False
-                )(mean_node_star_features)
-
             mean_node_star_embedding = Concatenate(
                 name="NodedataConcatenation"
             )((
                 mean_node_star_embedding,
                 mean_node_star_features
             ))
+
+        if self._use_batch_normalization:
+            mean_node_star_embedding = BatchNormalization(
+                scale=False
+            )(mean_node_star_embedding)
 
         hidden = mean_node_star_embedding
 
