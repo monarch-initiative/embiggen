@@ -39,7 +39,7 @@ class NoLaN(Embedder):
         labels_number: int = None,
         node_embedding_size: int = None,
         use_node_embedding_dropout: bool = True,
-        node_embedding_dropout_rate: float = 0.2,
+        node_embedding_dropout_rate: float = 0.3,
         use_node_features_dropout: bool = True,
         node_features_dropout_rate: float = 0.6,
         use_batch_normalization: bool = True,
