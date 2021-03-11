@@ -148,13 +148,15 @@ class NoLaN(Embedder):
             mask=node_embedding_layer.compute_mask(node_star_input),
         )
 
-        if self._use_batch_normalization:
-            mean_node_star_embedding = BatchNormalization()(mean_node_star_embedding)
-
         if self._use_node_embedding_dropout:
             mean_node_star_embedding = Dropout(
                 self._node_embedding_dropout_rate,
                 name="NodeEmbeddingDropout"
+            )(mean_node_star_embedding)
+
+        if self._use_batch_normalization:
+            mean_node_star_embedding = BatchNormalization(
+                scale=False
             )(mean_node_star_embedding)
 
         if self._node_features is not None:
@@ -177,13 +179,15 @@ class NoLaN(Embedder):
                 mask=node_features_layer.compute_mask(node_star_input),
             )
 
-            if self._use_batch_normalization:
-                mean_node_star_features = BatchNormalization()(mean_node_star_features)
-
             if self._use_node_features_dropout:
                 mean_node_star_features = Dropout(
                     self._node_features_dropout_rate,
                     name="NodeFeaturesDropout"
+                )(mean_node_star_features)
+
+            if self._use_batch_normalization:
+                mean_node_star_features = BatchNormalization(
+                    scale=False
                 )(mean_node_star_features)
 
             mean_node_star_embedding = Concatenate(
