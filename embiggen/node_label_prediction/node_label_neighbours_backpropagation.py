@@ -45,7 +45,7 @@ class NoLaN(Embedder):
         use_batch_normalization: bool = True,
         l1_kernel_regularization: float = 1e-3,
         l2_kernel_regularization: float = 1e-3,
-        hidden_dense_layers: Tuple[int] = (),
+        hidden_dense_layers: Union[int, Tuple[int]] = (),
         node_embedding: Union[np.ndarray, pd.DataFrame] = None,
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
@@ -70,6 +70,8 @@ class NoLaN(Embedder):
         self._support_mirror_strategy = support_mirror_strategy
         self._l1_kernel_regularization = l1_kernel_regularization
         self._l2_kernel_regularization = l2_kernel_regularization
+        if isinstance(hidden_dense_layers, int):
+            hidden_dense_layers = (hidden_dense_layers, )
         self._hidden_dense_layers = hidden_dense_layers
 
         if scaler == "RobustScaler":
