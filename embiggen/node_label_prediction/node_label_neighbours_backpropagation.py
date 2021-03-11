@@ -338,7 +338,7 @@ class NoLaN(Embedder):
         validation_data: Tuple = None,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0,
-        early_stopping_patience: int = 30,
+        early_stopping_patience: int = 20,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
         reduce_lr_min_delta: float = 0,
