@@ -45,12 +45,13 @@ class NoLaN(Embedder):
         use_batch_normalization: bool = True,
         l1_kernel_regularization: float = 1e-3,
         l2_kernel_regularization: float = 1e-3,
+        hidden_dense_layers: Tuple[int] = (),
         node_embedding: Union[np.ndarray, pd.DataFrame] = None,
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
         trainable_node_embedding: bool = False,
         support_mirror_strategy: bool = False,
-        scaler: "Scaler" = None
+        scaler: "Scaler" = "RobustScaler"
     ):
         """Create new NoLaN model.
 
@@ -69,8 +70,9 @@ class NoLaN(Embedder):
         self._support_mirror_strategy = support_mirror_strategy
         self._l1_kernel_regularization = l1_kernel_regularization
         self._l2_kernel_regularization = l2_kernel_regularization
+        self._hidden_dense_layers = hidden_dense_layers
 
-        if scaler is None:
+        if scaler == "RobustScaler":
             scaler = RobustScaler()
 
         if node_embedding is not None:
@@ -189,6 +191,18 @@ class NoLaN(Embedder):
                 mean_node_star_features
             ))
 
+        hidden = mean_node_star_embedding
+
+        for units in self._hidden_dense_layers:
+            hidden = Dense(
+                units,
+                kernel_regularizer=regularizers.l1_l2(
+                    l1=self._l1_kernel_regularization,
+                    l2=self._l2_kernel_regularization
+                ),
+                activation="relu"
+            )(hidden)
+
         output = Dense(
             self._labels_number,
             kernel_regularizer=regularizers.l1_l2(
@@ -196,7 +210,7 @@ class NoLaN(Embedder):
                 l2=self._l2_kernel_regularization
             ),
             activation="softmax"
-        )(mean_node_star_embedding)
+        )(hidden)
 
         model = Model(
             inputs=node_star_input,
