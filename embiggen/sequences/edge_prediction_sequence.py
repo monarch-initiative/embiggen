@@ -1,4 +1,4 @@
-"""Keras Sequence for running Neural Network on graph link prediction."""
+"""Keras Sequence for running Neural Network on graph edge prediction."""
 from typing import Tuple
 
 import numpy as np
@@ -6,8 +6,8 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
 
-class LinkPredictionSequence(Sequence):
-    """Keras Sequence for running Neural Network on graph link prediction."""
+class EdgePredictionSequence(Sequence):
+    """Keras Sequence for running Neural Network on graph edge prediction."""
 
     def __init__(
         self,
@@ -21,7 +21,7 @@ class LinkPredictionSequence(Sequence):
         elapsed_epochs: int = 0,
         random_state: int = 42
     ):
-        """Create new LinkPredictionSequence object.
+        """Create new EdgePredictionSequence object.
 
         Parameters
         --------------------------------
@@ -47,7 +47,7 @@ class LinkPredictionSequence(Sequence):
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
         graph_to_avoid: EnsmallenGraph = None,
-            Graph to avoid when generating the links.
+            Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the EnsmallenGraph package.

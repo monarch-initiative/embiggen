@@ -1,5 +1,5 @@
 """Unit test for testing that Node2VecSequence works as expected."""
-from embiggen import Node2VecSequence
+from embiggen.sequences import Node2VecSequence
 from .test_node_sequences import TestNodeSequences
 
 class TestNode2VecSequence(TestNodeSequences):

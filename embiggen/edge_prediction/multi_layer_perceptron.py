@@ -1,14 +1,14 @@
-"""Class for creating a MultiLayerPerceptron model for link prediction tasks."""
+"""Class for creating a MultiLayerPerceptron model for edge prediction tasks."""
 from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, Layer
 
-from .link_prediction_model import LinkPredictionModel
+from .edge_prediction_model import EdgePredictionModel
 
 
-class MultiLayerPerceptron(LinkPredictionModel):
+class MultiLayerPerceptron(EdgePredictionModel):
 
     def _build_model_body(self, input_layer: Layer) -> Layer:
-        """Build new model body for link prediction."""
+        """Build new model body for edge prediction."""
         input_layer = Dense(
             units=32,
             activation="relu",

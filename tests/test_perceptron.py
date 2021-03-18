@@ -1,8 +1,8 @@
 import numpy as np
 from unittest import TestCase
 from ensmallen_graph.datasets.string import HomoSapiens
-from embiggen.link_prediction import Perceptron
-from embiggen.link_prediction.layers import edge_embedding_layer
+from embiggen.edge_prediction import Perceptron
+from embiggen.edge_prediction.layers import edge_embedding_layer
 
 
 class TestPerceptron(TestCase):
@@ -13,7 +13,7 @@ class TestPerceptron(TestCase):
             size=(self._string_ppi.get_nodes_number(), 10))
 
     def test_training(self):
-        for method in edge_embedding_layer.keys():
+        for method in edge_embedding_layer:
             model = Perceptron(
                 embedding=self._embedding,
                 edge_embedding_method=method

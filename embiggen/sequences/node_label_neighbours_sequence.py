@@ -21,7 +21,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         random_state: int = 42,
         support_mirror_strategy: bool = False
     ):
-        """Create new LinkPredictionSequence object.
+        """Create new NoLaN sequence.
 
         Parameters
         --------------------------------

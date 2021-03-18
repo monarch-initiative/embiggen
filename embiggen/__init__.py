@@ -1,24 +1,10 @@
 """Module with models for graph and text embedding and their Keras Sequences."""
-from .embedders import (
-    CBOW,
-    SkipGram,
-    GloVe,
-    GraphCBOW,
-    GraphSkipGram,
-    GraphGloVe
-)
-from .transformers import (
-    NodeTransformer,
-    EdgeTransformer,
-    GraphTransformer,
-    CorpusTransformer,
-    LinkPredictionTransformer
-)
-from .sequences import (
-    Node2VecSequence,
-    LinkPredictionSequence,
-    Word2VecSequence
-)
+from .embedders import (CBOW, GloVe, GraphCBOW, GraphGloVe, GraphSkipGram,
+                        SkipGram)
+from .sequences import Word2VecSequence
+from .transformers import (CorpusTransformer, EdgeTransformer,
+                           GraphTransformer, LinkPredictionTransformer,
+                           NodeTransformer)
 from .visualizations import GraphVisualization
 
 __all__ = [
@@ -28,8 +14,6 @@ __all__ = [
     "GraphCBOW",
     "GraphSkipGram",
     "GraphGloVe",
-    "LinkPredictionSequence",
-    "Node2VecSequence",
     "Word2VecSequence",
     "NodeTransformer",
     "EdgeTransformer",

@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Dense, Input, Concatenate
 from tensorflow.keras.models import Model
 from extra_keras_metrics import get_standard_binary_metrics
 
-from ..sequences import LinkPredictionDegreeSequence
+from ..sequences import EdgePredictionDegreeSequence
 
 
 class DegreePerceptron:
@@ -65,7 +65,7 @@ class DegreePerceptron:
         --------------------
         Dataframe with traininhg history.
         """
-        sequence = LinkPredictionDegreeSequence(
+        sequence = EdgePredictionDegreeSequence(
             graph,
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,

@@ -670,10 +670,11 @@ class GraphVisualization:
                 "Values of k greater than 9 are not supported!"
             )
 
-        if not isinstance(types, np.ndarray):
-            raise ValueError(
-                "Expecting types to be a numpy array."
-            )
+        # if not isinstance(types, np.ndarray):
+        #     raise ValueError(
+        #         "Expecting types to be a numpy array."
+        #     )
+        types = np.array(types)
 
         number_of_types = np.unique(types).size
         type_labels = np.array(sanitize_ml_labels(list(type_labels)))

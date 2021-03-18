@@ -180,7 +180,6 @@ class EdgePredictionModel(Embedder):
         """
         sequence = EdgePredictionSequence(
             graph,
-            method=None,
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples=negative_samples,

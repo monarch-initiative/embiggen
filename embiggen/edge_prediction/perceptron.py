@@ -2,13 +2,13 @@
 from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, Layer
 
-from .link_prediction_model import LinkPredictionModel
+from .edge_prediction_model import EdgePredictionModel
 
 
-class Perceptron(LinkPredictionModel):
+class Perceptron(EdgePredictionModel):
 
     def _build_model_body(self, input_layer: Layer) -> Layer:
-        """Build new model body for link prediction."""
+        """Build new model body for edge prediction."""
         return Dense(
             units=1,
             activation="sigmoid",
