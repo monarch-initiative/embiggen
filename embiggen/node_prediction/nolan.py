@@ -1,4 +1,4 @@
-"""Model implementing Node Label max_neighbours Backpropagation for graphs."""
+"""Model implementing Node Label Neighbour for graphs."""
 from typing import Dict, Tuple, Union
 
 import numpy as np
@@ -29,7 +29,7 @@ from ..embedders import Embedder
 class NoLaN(Embedder):
     """Class implementing NoLaN.
 
-    NoLaN is a Node-Label max_neighbours backpropagation model for graphs.
+    NoLaN is a Node-Label Neighbours model for graphs.
 
     """
 
