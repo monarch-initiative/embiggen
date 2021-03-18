@@ -1,4 +1,4 @@
-"""Keras Sequence for running Neural Network on graph link prediction."""
+"""Keras Sequence for running Neural Network on graph edge prediction."""
 from typing import Tuple
 
 import numpy as np
@@ -6,8 +6,8 @@ from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
 
-class LinkPredictionDegreeSequence(Sequence):
-    """Keras Sequence for running Neural Network on graph link prediction."""
+class EdgePredictionDegreeSequence(Sequence):
+    """Keras Sequence for running Neural Network on graph edge prediction."""
 
     def __init__(
         self,
@@ -20,7 +20,7 @@ class LinkPredictionDegreeSequence(Sequence):
         elapsed_epochs: int = 0,
         random_state: int = 42
     ):
-        """Create new LinkPredictionSequence object.
+        """Create new EdgePredictionSequence object.
 
         Parameters
         --------------------------------
@@ -38,7 +38,7 @@ class LinkPredictionDegreeSequence(Sequence):
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
         graph_to_avoid: EnsmallenGraph = None,
-            Graph to avoid when generating the links.
+            Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the EnsmallenGraph package.
@@ -73,7 +73,7 @@ class LinkPredictionDegreeSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        left, right, labels = self._graph.link_prediction_degrees(
+        left, right, labels = self._graph.edge_prediction_degrees(
             self._random_state + idx + self.elapsed_epochs,
             batch_size=self._batch_size,
             normalize=True,

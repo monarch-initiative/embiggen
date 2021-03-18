@@ -1,5 +1,5 @@
 """Keras Sequence for running Neural Network on graph link prediction."""
-from typing import Callable, Tuple, Union
+from typing import Tuple
 
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -12,8 +12,6 @@ class LinkPredictionSequence(Sequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        embedding: np.ndarray = None,
-        method: Union[str, Callable] = "Hadamard",
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
         avoid_false_negatives: bool = False,
@@ -29,13 +27,6 @@ class LinkPredictionSequence(Sequence):
         --------------------------------
         graph: EnsmallenGraph,
             The graph from which to sample the edges.
-        embedding: np.ndarray,
-            This is a numpy array and NOT a pandas DataFrame because we need
-            to quickly load the embedding for the nodes and a DataFrame is too slow.
-        method: str = "Hadamard",
-            Method to use for the embedding.
-            Use None for when you don't want to compute the edge embedding.
-            Can either be 'Hadamard', 'Average', 'L1', 'AbsoluteL1' or 'L2'.
         batch_size: int = 2**10,
             The batch size to use.
         negative_samples: float = 1.0,
@@ -68,13 +59,10 @@ class LinkPredictionSequence(Sequence):
             The random_state to use to make extraction reproducible.
         """
         self._graph = graph
-        if embedding is not None:
-            self._graph.set_embedding(embedding)
         self._negative_samples = negative_samples
         self._avoid_false_negatives = avoid_false_negatives
         self._support_mirror_strategy = support_mirror_strategy
         self._graph_to_avoid = graph_to_avoid
-        self._method = method
         self._random_state = random_state
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
@@ -95,23 +83,14 @@ class LinkPredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        if self._method is None:
-            left, right, labels = self._graph.link_prediction_ids(
-                self._random_state + idx + self.elapsed_epochs,
-                batch_size=self.batch_size,
-                negative_samples=self._negative_samples,
-                avoid_false_negatives=self._avoid_false_negatives,
-                graph_to_avoid=self._graph_to_avoid,
-            )
-            if self._support_mirror_strategy:
-                left = left.astype(float)
-                right = right.astype(float)
-            return (left, right), labels
-        return self._graph.link_prediction(
+        left, right, labels = self._graph.link_prediction_ids(
             self._random_state + idx + self.elapsed_epochs,
             batch_size=self.batch_size,
-            method=self._method,
             negative_samples=self._negative_samples,
             avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
+        if self._support_mirror_strategy:
+            left = left.astype(float)
+            right = right.astype(float)
+        return (left, right), labels

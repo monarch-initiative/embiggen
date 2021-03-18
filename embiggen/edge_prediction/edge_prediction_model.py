@@ -8,11 +8,11 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import Model
 
 from ..embedders import Embedder
-from ..sequences import LinkPredictionSequence
+from ..sequences import EdgePredictionSequence
 from .layers import edge_embedding_layer
 
 
-class LinkPredictionModel(Embedder):
+class EdgePredictionModel(Embedder):
 
     def __init__(
         self,
@@ -81,13 +81,13 @@ class LinkPredictionModel(Embedder):
         )
 
     def _build_model_body(self, input_layer: Layer) -> Layer:
-        """Build new model body for link prediction."""
+        """Build new model body for Edge prediction."""
         raise NotImplementedError(
             "The method _build_model_body must be implemented in the child classes."
         )
 
     def _build_model(self) -> Model:
-        """Build new model for link prediction."""
+        """Build new model for Edge prediction."""
         embedding_layer = edge_embedding_layer[self._edge_embedding_method](
             embedding=self._embedding,
             use_dropout=self._use_dropout,
@@ -178,7 +178,7 @@ class LinkPredictionModel(Embedder):
         --------------------
         Dataframe with traininhg history.
         """
-        sequence = LinkPredictionSequence(
+        sequence = EdgePredictionSequence(
             graph,
             method=None,
             batch_size=batch_size,
