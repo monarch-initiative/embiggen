@@ -12,7 +12,6 @@ class NodeLabelNeighboursSequence(VectorSequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        node_ids: np.ndarray,
         max_neighbours: int = None,
         include_central_node: bool = True,
         batch_size: int = 2**8,
@@ -27,8 +26,6 @@ class NodeLabelNeighboursSequence(VectorSequence):
         --------------------------------
         graph: EnsmallenGraph,
             The graph from which to sample the edges.
-        node_ids: np.ndarray = None,
-            IDs of the nodes to consider.
         max_neighbours: int = None,
             Number of neighbours to consider.
             If None, the graph mean is used.
@@ -56,12 +53,15 @@ class NodeLabelNeighboursSequence(VectorSequence):
         if max_neighbours is None:
             max_neighbours = np.ceil(self._graph.degrees_mean()).astype(int)
         self._max_neighbours = max_neighbours
-        self._degrees = self._graph.degrees()
         self._include_central_node = include_central_node
         self._support_mirror_strategy = support_mirror_strategy
         super().__init__(
-            vector=node_ids,
             batch_size=batch_size,
+            vector=np.array([
+                node_id
+                for node_id, node_type in enumerate(self._graph.get_node_types())
+                if node_type is not None
+            ]),
             random_state=random_state,
             shuffle=shuffle,
             elapsed_epochs=elapsed_epochs,
@@ -79,33 +79,14 @@ class NodeLabelNeighboursSequence(VectorSequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        nodes = super().__getitem__(idx)
-        offset = int(self._include_central_node)
-
-        # In order to avoid large batches with no added value
-        # we detect the maximum degrees.
-        max_degree = min(
-            self._degrees[nodes].max(),
-            self._max_neighbours
+        neighbours, labels = self._graph.get_node_label_prediction_tuple_by_node_ids(
+            node_ids=super().__getitem__(idx),
+            random_state=self._random_state,
+            include_central_node=self._include_central_node,
+            offset=1,
+            max_neighbours=self._max_neighbours
         )
-        # Create the batch.
-        neighbours = np.zeros((nodes.size, max_degree + offset))
-        for i, node in enumerate(nodes):
-            node_neighbours = self._graph.get_filtered_neighbours(node)
-            if node_neighbours.size > max_degree:
-                node_neighbours = np.random.choice(
-                    node_neighbours,
-                    size=max_degree,
-                    replace=False
-                )
-            # The plus one is needed to handle nodes with less than max neighbours
-            # such nodes are represented with zeros and in the embedding layer
-            # are masked.
-            neighbours[i, offset:offset +
-                       node_neighbours.size] = node_neighbours + 1
-        if self._include_central_node:
-            # As above, the plus one is needed to reserve the zero for padding
-            neighbours[:, 0] = nodes + 1
+
         if self._support_mirror_strategy:
-            return neighbours.astype(float)
-        return neighbours
+            return neighbours.astype(float), labels
+        return neighbours, labels

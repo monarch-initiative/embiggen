@@ -3,7 +3,7 @@ from typing import Tuple, Dict
 
 import numpy as np  # type: ignore
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from embiggen.sequences.abstract_sequence import AbstractSequence
+from .abstract_sequence import AbstractSequence
 
 
 class Node2VecSequence(AbstractSequence):

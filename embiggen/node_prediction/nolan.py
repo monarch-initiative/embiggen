@@ -232,31 +232,25 @@ class NoLaN(Embedder):
 
     def build_training_sequence(
         self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        train_graph: EnsmallenGraph,
         max_neighbours: int = None,
         batch_size: int = 256,
-        validation_data: Tuple = None,
+        validation_graph: EnsmallenGraph = None,
         random_state: int = 42
     ) -> Tuple[MixedSequence, MixedSequence]:
         """Return .
 
         Parameters
         --------------------
-        X_train: np.ndarray,
-            Node indices for training.
-        y_train: np.ndarray,
-            Labels to predict.
+        train_graph: EnsmallenGraph,
+            Training graph.
         max_neighbours: int = None,
             Number of neighbours to consider.
             If None, the graph median is used.
         batch_size: int = 256,
             Batch size for the sequence.
-        validation_data: Tuple = None,
-            Tuple containing:
-            - Node indices for validation
-            - Labels to predict
-            If None, no validation data are used.
+        validation_graph: EnsmallenGraph = None,
+            The graph whose nodes are to be predicted.
         random_state: int = 42,
             Random seed to reproduce.
 
@@ -264,65 +258,20 @@ class NoLaN(Embedder):
         --------------------
         Training and validation MixedSequence
         """
-        if (X_train < 0).any():
-            raise ValueError(
-                "There cannot be negative node indices in the training nodes."
-            )
-        if (X_train >= self._graph.get_nodes_number()).any():
-            raise ValueError(
-                "There cannot be node indices in the training nodes higher "
-                "than the number of nodes in the graph."
-            )
-        if (np.bincount(X_train, minlength=self._graph.get_nodes_number()) > 1).any():
-            raise ValueError(
-                "There cannot be duplicated node indices in the training nodes."
-            )
-        train_sequence = MixedSequence(
-            x=NodeLabelNeighboursSequence(
-                self._graph, X_train,
-                max_neighbours=max_neighbours,
+        train_sequence = NodeLabelNeighboursSequence(
+            train_graph,
+            max_neighbours=max_neighbours,
+            batch_size=batch_size,
+            random_state=random_state,
+            support_mirror_strategy=self._support_mirror_strategy
+        )
+        if validation_graph is not None:
+            validation_sequence = NodeLabelNeighboursSequence(
+                self._graph,
+                max_neighbours=train_graph,
                 batch_size=batch_size,
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy
-            ),
-            y=VectorSequence(
-                y_train,
-                batch_size=batch_size,
-                random_state=random_state
-            )
-        )
-        if validation_data is not None:
-            X_validation, y_validation = validation_data
-            if (X_validation < 0).any():
-                raise ValueError(
-                    "There cannot be negative node indices in the validation nodes."
-                )
-            if (X_validation >= self._graph.get_nodes_number()).any():
-                raise ValueError(
-                    "There cannot be node indices in the validation nodes higher "
-                    "than the number of nodes in the graph."
-                )
-            if (np.bincount(X_validation, minlength=self._graph.get_nodes_number()) > 1).any():
-                raise ValueError(
-                    "There cannot be duplicated node indices in the testing nodes."
-                )
-            if np.isin(X_train, X_validation, assume_unique=True).any():
-                raise ValueError(
-                    "Train and validation node indices cannot overlap!."
-                )
-            validation_sequence = MixedSequence(
-                x=NodeLabelNeighboursSequence(
-                    self._graph, X_validation,
-                    max_neighbours=self._graph.max_degree(),
-                    batch_size=batch_size,
-                    random_state=random_state,
-                    support_mirror_strategy=self._support_mirror_strategy
-                ),
-                y=VectorSequence(
-                    y_validation,
-                    batch_size=batch_size,
-                    random_state=random_state
-                )
             )
         else:
             validation_sequence = None
@@ -330,12 +279,11 @@ class NoLaN(Embedder):
 
     def fit(
         self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        train_graph: EnsmallenGraph,
         max_neighbours: int = None,
         batch_size: int = 256,
         epochs: int = 1000,
-        validation_data: Tuple = None,
+        validation_graph: EnsmallenGraph = None,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0,
         early_stopping_patience: int = 30,
@@ -353,16 +301,14 @@ class NoLaN(Embedder):
 
         Parameters
         -----------------------
-        X_train: np.ndarray,
-            Node IDs reserved for the training.
-        y_train: np.ndarray,
-            One-hot encoded categorical classes.
+        train_graph: EnsmallenGraph,
+            Training graphs.
         max_neighbours: int = None,
             Number of neighbours to consider.
             If None, the graph median is used.
         epochs: int = 10000,
             Epochs to train the model for.
-        validation_data: Tuple = None,
+        validation_graph: EnsmallenGraph = None,
             Data reserved for validation.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
@@ -398,16 +344,16 @@ class NoLaN(Embedder):
         Dataframe with training history.
         """
         train_sequence, validation_sequence = self.build_training_sequence(
-            X_train, y_train,
+            train_graph,
             max_neighbours=max_neighbours,
             batch_size=batch_size,
-            validation_data=validation_data,
+            validation_graph=validation_graph,
             random_state=random_state
         )
         return super().fit(
             train_sequence,
             epochs=epochs,
-            validation_data=validation_sequence,
+            validation_graph=validation_sequence,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -423,7 +369,7 @@ class NoLaN(Embedder):
 
     def predict(
         self,
-        X: np.ndarray,
+        X: EnsmallenGraph,
         verbose: bool = False,
         batch_size=256,
         random_state: int = 42
@@ -445,7 +391,7 @@ class NoLaN(Embedder):
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        validation_data: Tuple = None,
+        validation_graph: EnsmallenGraph = None,
         verbose: bool = False,
         batch_size=256,
         random_state: int = 42
@@ -458,7 +404,7 @@ class NoLaN(Embedder):
             X_train, y_train,
             max_neighbours=self._graph.max_degree(),
             batch_size=batch_size,
-            validation_data=validation_data,
+            validation_graph=validation_graph,
             random_state=random_state
         )
         return pd.DataFrame(
