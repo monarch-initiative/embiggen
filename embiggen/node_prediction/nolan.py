@@ -353,7 +353,7 @@ class NoLaN(Embedder):
         return super().fit(
             train_sequence,
             epochs=epochs,
-            validation_graph=validation_sequence,
+            validation_data=validation_sequence,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
