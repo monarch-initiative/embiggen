@@ -44,7 +44,10 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
 
 
 @Cache(
-    cache_path="node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}.csv.xz",
+    cache_path=[
+        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.csv.xz",
+        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz",
+    ],
     args_to_ignore=["devices"]
 )
 def _compute_node_embedding(
@@ -86,10 +89,10 @@ def _compute_node_embedding(
             **kwargs
         )
         # Fitting the node embedding model
-        model.fit(**fit_kwargs)
+        history = model.fit(**fit_kwargs)
         # Extracting computed embedding
         node_embedding = model.get_embedding_dataframe()
-    return node_embedding
+    return node_embedding, history
 
 
 def compute_node_embedding(
