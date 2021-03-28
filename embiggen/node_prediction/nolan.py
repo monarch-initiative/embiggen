@@ -100,7 +100,8 @@ class NoLaN(Embedder):
                         (
                             "Given node features must be available"
                             " for each of the {} nodes.".format(
-                                self._vocabulary_size)
+                                node_embedding.shape[0]
+                            )
                         )
                     )
                 if isinstance(node_features, pd.DataFrame) and (node_features.index != node_embedding.index).any():
