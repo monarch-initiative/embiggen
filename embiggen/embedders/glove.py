@@ -131,7 +131,7 @@ class GloVe(Embedder):
     def fit(
         self,
         *args: List,
-        epochs: int = 10000,
+        epochs: int = 1000,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -148,7 +148,7 @@ class GloVe(Embedder):
 
         Parameters
         -----------------------
-        epochs: int = 10000,
+        epochs: int = 1000,
             Epochs to train the model for.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.

@@ -129,7 +129,7 @@ class GraphGloVe(GloVe):
 
     def fit(
         self,
-        epochs: int = 10000,
+        epochs: int = 1000,
         batch_size: int = 2**18,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.00001,
@@ -147,7 +147,7 @@ class GraphGloVe(GloVe):
 
         Parameters
         -----------------------
-        epochs: int = 10000,
+        epochs: int = 1000,
             Epochs to train the model for.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
