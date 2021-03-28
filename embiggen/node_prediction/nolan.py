@@ -268,7 +268,7 @@ class NoLaN(Embedder):
         if validation_graph is not None:
             validation_sequence = NodeLabelNeighboursSequence(
                 validation_graph,
-                max_neighbours=max_neighbours,
+                max_neighbours=validation_graph.max_degree(),
                 batch_size=batch_size,
                 random_state=random_state,
                 support_mirror_strategy=self._support_mirror_strategy

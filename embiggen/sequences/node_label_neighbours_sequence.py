@@ -81,7 +81,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         """
         neighbours, labels = self._graph.get_node_label_prediction_tuple_by_node_ids(
             node_ids=super().__getitem__(idx),
-            random_state=self._random_state,
+            random_state=self._random_state + idx,
             include_central_node=self._include_central_node,
             offset=1,
             max_neighbours=self._max_neighbours
