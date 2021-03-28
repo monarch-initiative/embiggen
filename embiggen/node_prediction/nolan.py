@@ -369,7 +369,7 @@ class NoLaN(Embedder):
 
     def predict(
         self,
-        X: EnsmallenGraph,
+        graph_to_predict: EnsmallenGraph,
         verbose: bool = False,
         batch_size=256,
         random_state: int = 42
@@ -377,8 +377,8 @@ class NoLaN(Embedder):
         """Run predict."""
         return self._model.predict(
             NodeLabelNeighboursSequence(
-                self._graph, X,
-                max_neighbours=self._graph.max_degree(),
+                graph_to_predict,
+                max_neighbours=graph_to_predict.max_degree(),
                 batch_size=batch_size,
                 shuffle=False,
                 random_state=random_state,
@@ -389,8 +389,7 @@ class NoLaN(Embedder):
 
     def evaluate(
         self,
-        X_train: np.ndarray,
-        y_train: np.ndarray,
+        graph_to_evaluate: EnsmallenGraph,
         validation_graph: EnsmallenGraph = None,
         verbose: bool = False,
         batch_size=256,
@@ -401,7 +400,7 @@ class NoLaN(Embedder):
         TODO! Update docstring!
         """
         train_sequence, validation_sequence = self.build_training_sequence(
-            X_train, y_train,
+            graph_to_evaluate,
             max_neighbours=self._graph.max_degree(),
             batch_size=batch_size,
             validation_graph=validation_graph,
