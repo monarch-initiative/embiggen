@@ -106,7 +106,13 @@ class NoLaN(Embedder):
                     )
                 if isinstance(node_features, pd.DataFrame) and (node_features.index != node_embedding.index).any():
                     raise ValueError(
-                        "Index of node features and node embedding must match!"
+                        (
+                            "Index of node features and node embedding must match!\n"
+                            "The first values of the features index are {} while the first value sof the node embedding index are {}."
+                        ).format(
+                            node_features.index[:10],
+                            node_embedding.index[:10]
+                        )
                     )
             if scaler is not None:
                 scaled_node_features = scaler.fit_transform(node_features)
