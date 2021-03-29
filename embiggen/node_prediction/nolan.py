@@ -243,6 +243,7 @@ class NoLaN(Embedder):
         max_neighbours: int = None,
         batch_size: int = 256,
         validation_graph: EnsmallenGraph = None,
+        include_central_node: bool = True,
         random_state: int = 42
     ) -> Tuple[MixedSequence, MixedSequence]:
         """Return .
@@ -258,6 +259,8 @@ class NoLaN(Embedder):
             Batch size for the sequence.
         validation_graph: EnsmallenGraph = None,
             The graph whose nodes are to be predicted.
+        include_central_node: bool = True,
+            Whether to include the central nodes.
         random_state: int = 42,
             Random seed to reproduce.
 
@@ -270,6 +273,7 @@ class NoLaN(Embedder):
             max_neighbours=max_neighbours,
             batch_size=batch_size,
             random_state=random_state,
+            include_central_node=include_central_node,
             support_mirror_strategy=self._support_mirror_strategy
         )
         if validation_graph is not None:
@@ -288,6 +292,7 @@ class NoLaN(Embedder):
         self,
         train_graph: EnsmallenGraph,
         max_neighbours: int = None,
+        include_central_node: bool = True,
         batch_size: int = 256,
         epochs: int = 1000,
         validation_graph: EnsmallenGraph = None,
@@ -313,6 +318,8 @@ class NoLaN(Embedder):
         max_neighbours: int = None,
             Number of neighbours to consider.
             If None, the graph median is used.
+        include_central_node: bool = True,
+            Whether to include the central node.
         epochs: int = 10000,
             Epochs to train the model for.
         validation_graph: EnsmallenGraph = None,
@@ -353,6 +360,7 @@ class NoLaN(Embedder):
         train_sequence, validation_sequence = self.build_training_sequence(
             train_graph,
             max_neighbours=max_neighbours,
+            include_central_node=include_central_node,
             batch_size=batch_size,
             validation_graph=validation_graph,
             random_state=random_state
