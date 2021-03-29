@@ -83,20 +83,9 @@ class NodeLabelNeighboursSequence(VectorSequence):
             node_ids=super().__getitem__(idx),
             random_state=self._random_state + idx,
             include_central_node=self._include_central_node,
-            offset=0,
-            #max_neighbours=self._max_neighbours
+            offset=1,
+            max_neighbours=self._max_neighbours
         )
-
-        # PATCH!
-        # TODO: REMOVE THIS!
-        empty_neighbours = np.zeros((neighbours.shape[0], self._max_neighbours + 1))
-        empty_neighbours[:, 0] = neighbours[:, 0] + 1
-        for i, node_id in enumerate(neighbours[:, 0]):
-            values = np.array(self._graph.get_node_neighbours_by_node_id(node_id)) + 1
-            np.random.shuffle(values)
-            values = values[:self._max_neighbours]
-            empty_neighbours[i, 1:1+len(values)] = values
-        neighbours = empty_neighbours
 
         if self._support_mirror_strategy:
             return neighbours.astype(float), labels
