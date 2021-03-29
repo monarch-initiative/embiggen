@@ -51,7 +51,7 @@ class NodeLabelNeighboursSequence(VectorSequence):
         """
         self._graph = graph
         if max_neighbours is None:
-            max_neighbours = np.ceil(self._graph.degrees_mean()).astype(int)
+            max_neighbours = self._graph.degrees_median()
         self._max_neighbours = max_neighbours
         self._include_central_node = include_central_node
         self._support_mirror_strategy = support_mirror_strategy
