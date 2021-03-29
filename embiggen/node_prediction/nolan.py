@@ -196,8 +196,8 @@ class NoLaN(Embedder):
 
         if self._use_batch_normalization:
             mean_node_star_embedding = BatchNormalization(
-                scale=False,
-                center=False
+                # scale=False,
+                # center=False
             )(mean_node_star_embedding)
 
         hidden = mean_node_star_embedding
