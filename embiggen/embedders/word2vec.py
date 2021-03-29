@@ -4,14 +4,11 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Input, Layer, Concatenate, GlobalAveragePooling1D
+from tensorflow.keras.layers import Input, Layer, GlobalAveragePooling1D
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
-from tensorflow.keras import regularizers
-from tensorflow.keras.constraints import UnitNorm
 import tensorflow as tf
-from tensorflow.python.ops import math_ops  # pylint: disable=no-name-in-module
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
 

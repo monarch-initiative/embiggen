@@ -21,7 +21,6 @@ class SkipGram(Word2Vec):
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
         negative_samples: int = 10,
-        extra_features_number: int = 0
     ):
         """Create new CBOW-based Embedder object.
 
