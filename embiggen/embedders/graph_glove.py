@@ -197,7 +197,8 @@ class GraphGloVe(GloVe):
             change_node_type_weight=self._change_node_type_weight,
             dense_node_mapping=self._dense_node_mapping,
             max_neighbours=self._max_neighbours,
-            random_state=self._random_state
+            random_state=self._random_state,
+            verbose=verbose > 0
         )
         if self._support_mirror_strategy:
             words = words.astype(float)
