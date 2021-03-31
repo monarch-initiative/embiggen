@@ -189,10 +189,10 @@ class NoLaN(Embedder):
 
             mean_node_star_embedding = Concatenate(
                 name="NodedataConcatenation"
-            )((
+            )([
                 mean_node_star_embedding,
                 mean_node_star_features
-            ))
+            ])
 
         if self._use_batch_normalization:
             mean_node_star_embedding = BatchNormalization(
