@@ -39,9 +39,9 @@ class NoLaN(Embedder):
         labels_number: int = None,
         node_embedding_size: int = None,
         use_node_embedding_dropout: bool = True,
-        node_embedding_dropout_rate: float = 0.3,
+        node_embedding_dropout_rate: float = 0.4,
         use_node_features_dropout: bool = True,
-        node_features_dropout_rate: float = 0.6,
+        node_features_dropout_rate: float = 0.7,
         use_batch_normalization: bool = True,
         l1_kernel_regularization: float = 1e-3,
         l2_kernel_regularization: float = 1e-3,
@@ -175,6 +175,8 @@ class NoLaN(Embedder):
             mask=node_embedding_layer.compute_mask(node_star_input),
         )
 
+        mean_node_star_embedding = BatchNormalization()(mean_node_star_embedding)
+
         if self._use_node_embedding_dropout:
             mean_node_star_embedding = Dropout(
                 self._node_embedding_dropout_rate,
@@ -201,6 +203,8 @@ class NoLaN(Embedder):
                 mask=node_features_layer.compute_mask(node_star_input),
             )
 
+            mean_node_star_features = BatchNormalization()(mean_node_star_features)
+
             if self._use_node_features_dropout:
                 mean_node_star_features = Dropout(
                     self._node_features_dropout_rate,
@@ -214,22 +218,16 @@ class NoLaN(Embedder):
                 mean_node_star_features
             ])
 
-        if self._use_batch_normalization:
-            mean_node_star_embedding = BatchNormalization(
-                scale=False,
-                center=False
-            )(mean_node_star_embedding)
-
         hidden = mean_node_star_embedding
 
         for units in self._hidden_dense_layers:
             hidden = Dense(
                 units,
+                activation="relu",
                 kernel_regularizer=regularizers.l1_l2(
                     l1=self._l1_kernel_regularization,
                     l2=self._l2_kernel_regularization
                 ),
-                activation="relu"
             )(hidden)
 
         output = Dense(
