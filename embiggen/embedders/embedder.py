@@ -93,7 +93,7 @@ class Embedder:
         self._embedding = embedding
 
         if optimizer is None:
-            optimizer = Nadam(learning_rate=0.1)
+            optimizer = Nadam(learning_rate=0.01)
 
         self._optimizer = optimizer
         self._model = self._build_model()

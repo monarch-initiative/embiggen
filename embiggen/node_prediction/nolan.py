@@ -78,6 +78,16 @@ class NoLaN(Embedder):
             scaler = RobustScaler()
 
         if node_embedding is not None:
+            if not isinstance(node_embedding, (pd.DataFrame, np.ndarray)):
+                raise ValueError(
+                    (
+                        "The parameter node_embedding can be either None, ",
+                        "a numpy array or a pandas dataframe. The one provided ",
+                        "has type {}."
+                    ).format(
+                        type(node_embedding)
+                    )
+                )
             scaled_node_embedding = scaler.fit_transform(node_embedding)
             if isinstance(node_embedding, pd.DataFrame):
                 node_embedding = pd.DataFrame(
@@ -89,6 +99,16 @@ class NoLaN(Embedder):
         self._node_features_size = None
 
         if node_features is not None:
+            if not isinstance(node_features, (pd.DataFrame, np.ndarray)):
+                raise ValueError(
+                    (
+                        "The parameter node_features can be either None, ",
+                        "a numpy array or a pandas dataframe. The one provided ",
+                        "has type {}."
+                    ).format(
+                        type(node_features)
+                    )
+                )
             if node_embedding is not None:
                 if isinstance(node_features, pd.DataFrame) != isinstance(node_embedding, pd.DataFrame):
                     raise ValueError(
