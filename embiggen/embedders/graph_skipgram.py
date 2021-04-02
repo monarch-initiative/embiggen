@@ -2,7 +2,6 @@
 from typing import Union, Dict
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 from ensmallen_graph import EnsmallenGraph
-import numpy as np
 from .skipgram import SkipGram
 from .node2vec import Node2Vec
 
