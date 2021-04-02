@@ -115,6 +115,7 @@ def compute_node_embedding(
     fit_kwargs: Dict = None,
     verbose: bool = True,
     automatically_drop_unsupported_parameters: bool = False,
+    automatically_enable_time_memory_tradeoffs: bool = True,
     **kwargs: Dict
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Return embedding computed using SkipGram on given graph.
@@ -137,6 +138,11 @@ def compute_node_embedding(
         This may be useful when running a suite of experiments with a set of
         parameters and you do not want to bother in dropping the parameters
         that are only supported in a subset of methods.
+    automatically_enable_time_memory_tradeoffs: bool = True,
+        Whether to activate the time memory tradeoffs automatically.
+        Often case, this is something you want enabled on your graph object.
+        Since, generally, it is a good idea to enable these while
+        computing a node embedding we enable these by default.
     **kwargs: Dict,
         Arguments to pass to the node embedding method constructor.
         Read the documentation of the selected method to learn
@@ -176,6 +182,13 @@ def compute_node_embedding(
             for key, value in kwargs.items()
             if key in supported_parameter
         }
+
+    # If required we enable the time memory tradeoffs.
+    if automatically_enable_time_memory_tradeoffs:
+        graph.enable(
+            vector_destinations=True,
+            vector_outbounds=True
+        )
 
     # If devices are given as a single device we adapt this into a list.
     if isinstance(devices, str):
