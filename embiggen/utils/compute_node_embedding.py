@@ -1,6 +1,7 @@
 """Sub-module with methods to compute node-embedding with a one-liner."""
 from typing import Dict, List, Union, Tuple
 
+import inspect
 import pandas as pd
 import tensorflow as tf
 from cache_decorator import Cache
@@ -113,6 +114,7 @@ def compute_node_embedding(
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
     verbose: bool = True,
+    automatically_drop_unsupported_parameters: bool = False,
     **kwargs: Dict
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Return embedding computed using SkipGram on given graph.
@@ -130,9 +132,15 @@ def compute_node_embedding(
         Arguments to pass to the fit call.
     verbose: bool = True,
         Whether to show loading bars.
+    automatically_drop_unsupported_parameters: bool = False,
+        If required, we filter out the unsupported parameters.
+        This may be useful when running a suite of experiments with a set of
+        parameters and you do not want to bother in dropping the parameters
+        that are only supported in a subset of methods.
     **kwargs: Dict,
         Arguments to pass to the node embedding method constructor.
-        Read the documentation of the selected method.
+        Read the documentation of the selected method to learn
+        which methods are supported by the selected constructor.
 
     Returns
     --------------------------
@@ -152,6 +160,22 @@ def compute_node_embedding(
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
         fit_kwargs = {}
+
+    # If required, we filter out the unsupported parameters.
+    # This may be useful when running a suite of experiments with a set of
+    # parameters and you do not want to bother in dropping the parameters
+    # that are only supported in a subset of methods.
+    if automatically_drop_unsupported_parameters and kwargs:
+        # Get the list of supported parameters
+        supported_parameter = inspect.signature(
+            get_node_embedding_method(node_embedding_method_name).__init__
+        ).parameters
+        # Filter out the unsupported parameters
+        kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key in supported_parameter
+        }
 
     # If devices are given as a single device we adapt this into a list.
     if isinstance(devices, str):
