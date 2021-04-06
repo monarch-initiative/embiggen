@@ -10,7 +10,12 @@ from .graph_transformer import GraphTransformer
 class LinkPredictionTransformer:
     """LinkPredictionTransformer class to convert graphs to edge embeddings."""
 
-    def __init__(self, method: str = "Hadamard"):
+    def __init__(
+        self,
+        method: str = "Hadamard",
+        aligned_node_mapping: bool = False,
+        support_mirror_strategy: bool = False,
+    ):
         """Create new LinkPredictionTransformer object.
 
         Parameters
@@ -18,8 +23,25 @@ class LinkPredictionTransformer:
         method: str = "hadamard",
             Method to use for the embedding.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        aligned_node_mapping: bool = False,
+            This parameter specifies whether the mapping of the embeddings nodes
+            matches the internal node mapping of the given graph.
+            If these two mappings do not match, the generated edge embedding
+            will be meaningless.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         """
-        self._transformer = GraphTransformer(method=method)
+        self._transformer = GraphTransformer(
+            method=method,
+            aligned_node_mapping=aligned_node_mapping,
+            support_mirror_strategy=support_mirror_strategy
+        )
 
     def fit(self, embedding: pd.DataFrame):
         """Fit the model.
@@ -40,7 +62,6 @@ class LinkPredictionTransformer:
         self,
         positive_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
         negative_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
-        aligned_node_mapping: bool = False,
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
@@ -53,11 +74,6 @@ class LinkPredictionTransformer:
         negative_graph: Union[EnsmallenGraph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
             It can either be an EnsmallenGraph or a list of lists of edges.
-        aligned_node_mapping: bool = False,
-            This parameter specifies wheter the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
         random_state: int = 42,
             The random state to use to shuffle the labels.
 
@@ -70,8 +86,8 @@ class LinkPredictionTransformer:
         --------------------------
         Tuple with X and y values.
         """
-        positive_edge_embedding = self._transformer.transform(positive_graph, aligned_node_mapping)
-        negative_edge_embedding = self._transformer.transform(negative_graph, aligned_node_mapping)
+        positive_edge_embedding = self._transformer.transform(positive_graph)
+        negative_edge_embedding = self._transformer.transform(negative_graph)
         edge_embeddings = np.vstack([
             positive_edge_embedding,
             negative_edge_embedding

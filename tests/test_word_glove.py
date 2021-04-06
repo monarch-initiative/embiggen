@@ -30,8 +30,7 @@ class TestWordGloVe(TestWordSequences):
         self._model.fit(
             (self._words, self._ctxs),
             self._freq,
-            epochs=2,
-            verbose=False
+            epochs=2
         )
 
         self.assertEqual(

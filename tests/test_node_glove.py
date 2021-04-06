@@ -20,28 +20,25 @@ class TestNodeGloVe(TestNodeSequences):
 
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
-        for shared_embedding_layers in (True, False):
-            model = GloVe(
-                vocabulary_size=self._graph.get_nodes_number(),
-                embedding_size=self._embedding_size,
-                shared_embedding_layers=shared_embedding_layers
-            )
-            self.assertEqual("GloVe", model.name)
-            model.summary()
-            model.fit(
-                (self._words, self._ctxs),
-                self._freq,
-                epochs=2,
-                verbose=False
-            )
+        model = GloVe(
+            vocabulary_size=self._graph.get_nodes_number(),
+            embedding_size=self._embedding_size,
+        )
+        self.assertEqual("GloVe", model.name)
+        model.summary()
+        model.fit(
+            (self._words, self._ctxs),
+            self._freq,
+            epochs=2
+        )
 
-            self.assertEqual(
-                model.embedding.shape,
-                (self._graph.get_nodes_number(), self._embedding_size)
-            )
+        self.assertEqual(
+            model.embedding.shape,
+            (self._graph.get_nodes_number(), self._embedding_size)
+        )
 
-            self.assertFalse(np.isnan(model.embedding).any())
+        self.assertFalse(np.isnan(model.embedding).any())
 
-            model.save_weights(self._weights_path)
-            model.load_weights(self._weights_path)
-            os.remove(self._weights_path)
+        model.save_weights(self._weights_path)
+        model.load_weights(self._weights_path)
+        os.remove(self._weights_path)

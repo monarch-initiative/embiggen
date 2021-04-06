@@ -34,7 +34,8 @@ class CorpusTransformer:
         max_count: int = math.inf,
         to_lower_case: bool = True,
         verbose: bool = True,
-        processes: int = None
+        processes: int = None,
+        use_multiprocessing: bool = True
     ):
         """Create new CorpusTransformer object.
 
@@ -81,6 +82,8 @@ class CorpusTransformer:
             If given processes is None, all the available processes is used.
         verbose: bool = True,
             Whether to show loading bars and log process.
+        use_multiprocessing: bool = True,
+            Whether to use or not multiprocessing.
 
         Raises
         --------------------------
@@ -99,6 +102,7 @@ class CorpusTransformer:
         self._max_count = max_count
         self._min_sequence_length = min_sequence_length
         self._to_lower_case = to_lower_case
+        self._use_multiprocessing = use_multiprocessing
         self._processes = cpu_count() if processes is None else processes
         self._verbose = verbose
         self._stemmer = PorterStemmer() if apply_stemming else None
@@ -202,23 +206,38 @@ class CorpusTransformer:
         processes = min(cpu_count(), len(texts))
         chunks_number = processes*2
         chunk_size = max(len(texts) // chunks_number, 1)
-        with Pool(processes) as p:
+        tasks = (
+            texts[i:i + chunk_size]
+            for i in range(0, len(texts), chunk_size)
+        )
+        if self._use_multiprocessing:
+            with Pool(processes) as p:
+                all_tokens = [
+                    line
+                    for chunk in tqdm(
+                        p.imap(
+                            self.tokenize_lines,
+                            tasks
+                        ),
+                        desc="Tokenizing",
+                        total=chunks_number,
+                        disable=not self._verbose
+                    )
+                    for line in chunk
+                ]
+                p.close()
+                p.join()
+        else:
             all_tokens = [
                 line
                 for chunk in tqdm(
-                    p.imap(
-                        self.tokenize_lines,
-                        (texts[i:i + chunk_size]
-                         for i in range(0, len(texts), chunk_size))
-                    ),
+                    tasks,
                     desc="Tokenizing",
                     total=chunks_number,
                     disable=not self._verbose
                 )
-                for line in chunk
+                for line in self.tokenize_lines(chunk)
             ]
-            p.close()
-            p.join()
 
         if return_counts:
             counter = Counter((
@@ -324,7 +343,7 @@ class CorpusTransformer:
         """
         if isinstance(sequences, (list, tuple)):
             sequences = np.array(sequences)
-        return self._tokenizer.sequences_to_texts(sequences + 1)
+        return self._tokenizer.sequences_to_texts(sequences)
 
     def get_word_id(self, word: str) -> int:
         """Get the given words IDs.
@@ -338,7 +357,7 @@ class CorpusTransformer:
         ------------------------
         The word numeric ID.
         """
-        return self._tokenizer.word_index[word] - 1
+        return self._tokenizer.word_index[word]
 
     def transform(self, texts: List[str]) -> np.ndarray:
         """Transform given text.
@@ -368,7 +387,7 @@ class CorpusTransformer:
                 "There are not string values within the given texts."
             )
         return np.array([
-            np.array(tokens, dtype=np.uint64) - 1
+            np.array(tokens, dtype=np.uint64)
             for tokens in self._tokenizer.texts_to_sequences((
                 " ".join(tokens)
                 for tokens in tqdm(

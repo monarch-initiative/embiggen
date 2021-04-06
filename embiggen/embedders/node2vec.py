@@ -1,145 +1,276 @@
 """Abstract class for graph embedding models."""
-from typing import Union, Tuple
+from typing import Dict, Union
 
-from tensorflow.keras import backend as K   # pylint: disable=import-error
-from tensorflow.keras.layers import Embedding, Input, Lambda, Layer, Flatten   # pylint: disable=import-error
-from tensorflow.keras.models import Model   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+import numpy as np
+import pandas as pd
+from ensmallen_graph import EnsmallenGraph
+from tensorflow.keras.optimizers import Optimizer
 
-from .embedder import Embedder
-from .layers import NoiseContrastiveEstimation
+from ..sequences import Node2VecSequence
+from .word2vec import Word2Vec
 
 
-class Node2Vec(Embedder):
-    """Abstract class for graph embedding models."""
+class Node2Vec:
+    """Abstract class for sequence embedding models."""
 
     def __init__(
         self,
-        vocabulary_size: int,
-        embedding_size: int,
-        model_name: str,
-        optimizer: Union[str, Optimizer] = "nadam",
-        window_size: int = 4,
-        negative_samples: int = 10
+        graph: EnsmallenGraph,
+        word2vec_model: Word2Vec,
+        embedding_size: int = 100,
+        optimizer: Union[str, Optimizer] = None,
+        negative_samples: int = 10,
+        walk_length: int = 128,
+        batch_size: int = 256,
+        iterations: int = 16,
+        window_size: int = 16,
+        return_weight: float = 1.0,
+        explore_weight: float = 1.0,
+        change_node_type_weight: float = 1.0,
+        change_edge_type_weight: float = 1.0,
+        max_neighbours: int = None,
+        elapsed_epochs: int = 0,
+        support_mirror_strategy: bool = False,
+        random_state: int = 42,
+        dense_node_mapping: Dict[int, int] = None
     ):
-        """Create new Graph Embedder model.
+        """Create new sequence Embedder model.
 
         Parameters
         -------------------------------------------
-        vocabulary_size: int,
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-        embedding_size: int,
+        graph: EnsmallenGraph,
+            Graph to be embedded.
+        word2vec_model: Word2Vec,
+            Word2Vec model to use.
+        embedding_size: int = 100,
             Dimension of the embedding.
-        model_name: str,
-            Name of the model.
-        optimizer: Union[str, Optimizer] = "nadam",
+        optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
-        window_size: int = 4,
+            By default, if None is provided, Nadam with learning rate
+            set at 0.01 is used.
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int,
+        negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
+        walk_length: int = 128,
+            Maximal length of the walks.
+        batch_size: int = 256,
+            Number of nodes to include in a single batch.
+        iterations: int = 16,
+            Number of iterations of the single walks.
+        window_size: int = 16,
+            Window size for the local context.
+            On the borders the window size is trimmed.
+        return_weight: float = 1.0,
+            Weight on the probability of returning to the same node the walk just came from
+            Having this higher tends the walks to be
+            more like a Breadth-First Search.
+            Having this very high  (> 2) makes search very local.
+            Equal to the inverse of p in the Node2Vec paper.
+        explore_weight: float = 1.0,
+            Weight on the probability of visiting a neighbor node
+            to the one we're coming from in the random walk
+            Having this higher tends the walks to be
+            more like a Depth-First Search.
+            Having this very high makes search more outward.
+            Having this very low makes search very local.
+            Equal to the inverse of q in the Node2Vec paper.
+        change_node_type_weight: float = 1.0,
+            Weight on the probability of visiting a neighbor node of a
+            different type than the previous node. This only applies to
+            colored graphs, otherwise it has no impact.
+        change_edge_type_weight: float = 1.0,
+            Weight on the probability of visiting a neighbor edge of a
+            different type than the previous edge. This only applies to
+            multigraphs, otherwise it has no impact.
+        max_neighbours: int = None,
+            Number of maximum neighbours to consider when using approximated walks.
+            By default, None, we execute exact random walks.
+            This is mainly useful for graphs containing nodes with extremely high degrees.
+        elapsed_epochs: int = 0,
+            Number of elapsed epochs to init state of generator.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
+        random_state: int = 42,
+            The random state to reproduce the training sequence.
+        dense_node_mapping: Dict[int, int] = None,
+            Mapping to use for converting sparse walk space into a dense space.
+            This object can be created using the method (available from the
+            graph object created using EnsmallenGraph)
+            called `get_dense_node_mapping` that returns a mapping from
+            the non trap nodes (those from where a walk could start) and
+            maps these nodes into a dense range of values.
         """
-        self._model_name = model_name
-        self._window_size = window_size
-        self._negative_samples = negative_samples
-        super().__init__(
-            vocabulary_size=vocabulary_size,
+        self._graph = graph
+        self._sequence = Node2VecSequence(
+            self._graph,
+            walk_length=walk_length,
+            batch_size=batch_size,
+            iterations=iterations,
+            window_size=window_size,
+            return_weight=return_weight,
+            explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight,
+            max_neighbours=max_neighbours,
+            support_mirror_strategy=support_mirror_strategy,
+            elapsed_epochs=elapsed_epochs,
+            random_state=random_state,
+            dense_node_mapping=dense_node_mapping,
+        )
+        self._model = word2vec_model(
+            vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
-            optimizer=optimizer
+            model_name="Graph{}".format(word2vec_model.__name__),
+            optimizer=optimizer,
+            window_size=window_size,
+            negative_samples=negative_samples,
         )
 
-    def _get_true_input_length(self) -> int:
-        """Return length of true input layer."""
-        raise NotImplementedError((
-            "The method '_get_true_input_length' "
-            "must be implemented in child class."
-        ))
-
-    def _get_true_output_length(self) -> int:
-        """Return length of true output layer."""
-        raise NotImplementedError((
-            "The method '_get_true_output_length' "
-            "must be implemented in child class."
-        ))
-
-    def _sort_input_layers(
+    def fit(
         self,
-        true_input_layer: Layer,
-        true_output_layer: Layer
-    ) -> Tuple[Layer, Layer]:
-        """Return input layers for training with the same input sequence.
+        epochs: int = 100,
+        early_stopping_monitor: str = "loss",
+        early_stopping_min_delta: float = 0.5,
+        early_stopping_patience: int = 5,
+        early_stopping_mode: str = "min",
+        reduce_lr_monitor: str = "loss",
+        reduce_lr_min_delta: float = 0.5,
+        reduce_lr_patience: int = 3,
+        reduce_lr_mode: str = "min",
+        reduce_lr_factor: float = 0.9,
+        verbose: int = 2,
+        **kwargs: Dict
+    ) -> pd.DataFrame:
+        """Return pandas dataframe with training history.
 
         Parameters
-        ----------------------------
-        true_input_layer: Layer,
-            The input layer that will contain the true input.
-        true_output_layer: Layer,
-            The input layer that will contain the true output.
+        -----------------------
+        epochs: int = 10000,
+            Epochs to train the model for.
+        early_stopping_monitor: str = "loss",
+            Metric to monitor for early stopping.
+        early_stopping_min_delta: float = 0.1,
+            Minimum delta of metric to stop the training.
+        early_stopping_patience: int = 5,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which trigger early stopping.
+        early_stopping_mode: str = "min",
+            Direction of the variation of the monitored metric for early stopping.
+        reduce_lr_monitor: str = "loss",
+            Metric to monitor for reducing learning rate.
+        reduce_lr_min_delta: float = 1,
+            Minimum delta of metric to reduce learning rate.
+        reduce_lr_patience: int = 3,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which reducing learning rate.
+        reduce_lr_mode: str = "min",
+            Direction of the variation of the monitored metric for learning rate.
+        reduce_lr_factor: float = 0.9,
+            Factor for reduction of learning rate.
+        verbose: int = 2,
+            Wethever to show the loading bar.
+            Specifically, the options are:
+            * 0 or False: No loading bar.
+            * 1 or True: Showing only the loading bar for the epochs.
+            * 2: Showing loading bar for both epochs and batches.
+        **kwargs: Dict,
+            Additional kwargs to pass to the Keras fit call.
 
         Returns
-        ----------------------------
-        Return tuple with the tuple of layers.
+        -----------------------
+        Dataframe with training history.
         """
-        raise NotImplementedError((
-            "The method '_sort_input_layers' "
-            "must be implemented in child class."
-        ))
-
-    def _build_model(self):
-        """Return Node2Vec model."""
-        # Creating the inputs layers
-        true_input_layer = Input(
-            (self._get_true_input_length(), ),
-            name=Embedder.EMBEDDING_LAYER_NAME
-        )
-        true_output_layer = Input(
-            (self._get_true_output_length(), ),
-        )
-
-        # Creating the embedding layer for the contexts
-        embedding = Embedding(
-            input_dim=self._vocabulary_size,
-            output_dim=self._embedding_size,
-            input_length=self._get_true_input_length()
-        )(true_input_layer)
-
-        # If there is more than one value per single sample
-        # as there is for instance in CBOW-like models
-        if self._get_true_input_length() > 1:
-            # Computing mean of the embedding of all the contexts
-            mean_embedding = Lambda(
-                lambda x: K.mean(x, axis=1),
-                output_shape=(self._embedding_size,)
-            )(embedding)
-        else:
-            # Otherwise we passthrough the previous result with a simple flatten.
-            mean_embedding = Flatten()(embedding)
-
-        # Adding layer that also executes the loss function
-        nce_loss = NoiseContrastiveEstimation(
-            vocabulary_size=self._vocabulary_size,
-            embedding_size=self._embedding_size,
-            negative_samples=self._negative_samples,
-            positive_samples=self._get_true_output_length()
-        )((mean_embedding, true_output_layer))
-
-        # Creating the actual model
-        model = Model(
-            inputs=self._sort_input_layers(
-                true_input_layer,
-                true_output_layer
-            ),
-            outputs=nce_loss,
-            name=self._model_name
+        return self._model.fit(
+            self._sequence,
+            epochs=epochs,
+            early_stopping_monitor=early_stopping_monitor,
+            early_stopping_min_delta=early_stopping_min_delta,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_mode=early_stopping_mode,
+            reduce_lr_monitor=reduce_lr_monitor,
+            reduce_lr_min_delta=reduce_lr_min_delta,
+            reduce_lr_patience=reduce_lr_patience,
+            reduce_lr_mode=reduce_lr_mode,
+            reduce_lr_factor=reduce_lr_factor,
+            verbose=verbose,
+            **kwargs
         )
 
-        # No loss function is needed because it is already executed in
-        # the NCE loss layer.
-        model.compile(
-            optimizer=self._optimizer
-        )
-        return model
+    def summary(self):
+        """Print model summary."""
+        self._model.summary()
+
+    @property
+    def embedding(self) -> np.ndarray:
+        """Return model embeddings."""
+        return self._model.embedding
+
+    @property
+    def trainable(self) -> bool:
+        """Return whether the embedding layer can be trained.
+
+        Raises
+        -------------------
+        NotImplementedError,
+            If the current embedding model does not have an embedding layer.
+        """
+        return self._model.trainable
+
+    @trainable.setter
+    def trainable(self, trainable: bool):
+        """Set whether the embedding layer can be trained or not.
+
+        Parameters
+        -------------------
+        trainable: bool,
+            Whether the embedding layer can be trained or not.
+        """
+        self._model.trainable = trainable
+
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return self._model.get_embedding_dataframe(self._graph.get_node_names())
+
+    def save_embedding(self, path: str):
+        """Save terms embedding using given index names.
+
+        Parameters
+        -----------------------------
+        path: str,
+            Save embedding as csv to given path.
+        """
+        self._model.save_embedding(path, self._graph.get_node_names())
+
+    @property
+    def name(self) -> str:
+        """Return model name."""
+        return self._model.name
+
+    def save_weights(self, path: str):
+        """Save model weights to given path.
+
+        Parameters
+        ---------------------------
+        path: str,
+            Path where to save model weights.
+        """
+        self._model.save_weights(path)
+
+    def load_weights(self, path: str):
+        """Load model weights from given path.
+
+        Parameters
+        ---------------------------
+        path: str,
+            Path from where to load model weights.
+        """
+        self._model.load_weights(path)

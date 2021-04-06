@@ -1,7 +1,7 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
-from embiggen import GraphVisualizations, GloVe
+from embiggen import GraphVisualization, GloVe
 import pytest
 
 
@@ -23,24 +23,19 @@ class TestGraphVisualization(TestCase):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
         ).get_embedding_dataframe(self._graph.get_node_names())
-        self._visualization = GraphVisualizations()
+        self._visualization = GraphVisualization(
+            self._graph,
+            decomposition_method="PCA"
+        )
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        self._visualization.fit_transform_nodes(
-            self._graph,
-            self._embedding,
-            n_iter=100
-        )
-        self._visualization.fit_transform_edges(
-            self._graph,
-            self._embedding,
-            n_iter=100
-        )
-        self._visualization.plot_node_degrees(self._graph)
+        self._visualization.fit_transform_nodes(self._embedding)
+        self._visualization.fit_transform_edges(self._embedding)
+        self._visualization.plot_node_degrees()
         with pytest.raises(ValueError):
-            self._visualization.plot_node_types(self._graph)
-        self._visualization.plot_edge_types(self._graph)
-        self._visualization.plot_edge_weights(self._graph)
+            self._visualization.plot_node_types()
+        self._visualization.plot_edge_types()
+        self._visualization.plot_edge_weights()
         with pytest.raises(ValueError):
-            self._visualization.plot_edge_types(self._graph, k=15)
+            self._visualization.plot_edge_types(k=15)

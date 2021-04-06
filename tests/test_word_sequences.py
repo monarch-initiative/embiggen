@@ -19,7 +19,8 @@ class TestWordSequences(TestCase):
             )
         self._transformer = CorpusTransformer(
             verbose=False,
-            min_sequence_length=self._window_size*2+1
+            min_sequence_length=self._window_size*2+1,
+            use_multiprocessing=False
         )
         with open("./tests/data/short_bible.txt") as bible_file:
             lines = bible_file.readlines()

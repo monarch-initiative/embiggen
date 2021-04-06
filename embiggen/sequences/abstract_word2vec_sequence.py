@@ -14,10 +14,9 @@ class AbstractWord2VecSequence(AbstractSequence):
         self,
         sequences: List[np.ndarray],
         batch_size: int,
-        window_size: int = 4,
-        shuffle: bool = True,
+        window_size: int = 16,
         support_mirror_strategy: bool = False,
-        seed: int = 42,
+        random_state: int = 42,
         elapsed_epochs: int = 0,
     ):
         """Create new Node2Vec Sequence object.
@@ -28,11 +27,9 @@ class AbstractWord2VecSequence(AbstractSequence):
             List of sequences of integers.
         batch_size: int,
             Number of nodes to include in a single batch.
-        window_size: int = 4,
+        window_size: int = 16,
             Window size for the local context.
             On the borders the window size is trimmed.
-        shuffle: bool = True,
-            Whether to shuffle the vectors.
         support_mirror_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
@@ -41,8 +38,8 @@ class AbstractWord2VecSequence(AbstractSequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
-        seed: int = 42,
-            The seed to use to make extraction reproducible.
+        random_state: int = 42,
+            The random_state to use to make extraction reproducible.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         """
@@ -50,17 +47,16 @@ class AbstractWord2VecSequence(AbstractSequence):
         self._sequences = VectorSequence(
             sequences,
             batch_size,
-            seed=seed,
+            random_state=random_state,
             elapsed_epochs=elapsed_epochs
         )
         super().__init__(
             window_size=window_size,
-            shuffle=shuffle,
             sample_number=self._sequences.sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,
             support_mirror_strategy=support_mirror_strategy,
-            random_state=seed
+            random_state=random_state
         )
 
     def on_epoch_end(self):

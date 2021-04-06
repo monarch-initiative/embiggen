@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 import tensorflow as tf
 import tensorflow.keras.backend as K   # pylint: disable=import-error
-from tensorflow.keras.layers import Layer   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer, Embedding   # pylint: disable=import-error
 
 
 class NoiseContrastiveEstimation(Layer):
@@ -36,10 +36,10 @@ class NoiseContrastiveEstimation(Layer):
         positive_samples: int,
             The number of target classes per training example.
         """
-        self.vocabulary_size = vocabulary_size
-        self.embedding_size = embedding_size
-        self.negative_samples = negative_samples
-        self.positive_samples = positive_samples
+        self._vocabulary_size = vocabulary_size
+        self._embedding_size = embedding_size
+        self._negative_samples = negative_samples
+        self._positive_samples = positive_samples
         self._weights = None
         self._biases = None
         super().__init__(**kwargs)
@@ -54,19 +54,19 @@ class NoiseContrastiveEstimation(Layer):
         """
         self._weights = self.add_weight(
             name="approx_softmax_weights",
-            shape=(self.vocabulary_size, self.embedding_size),
+            shape=(self._vocabulary_size, self._embedding_size),
             initializer="glorot_normal",
         )
 
         self._biases = self.add_weight(
             name="approx_softmax_biases",
-            shape=(self.vocabulary_size,),
+            shape=(self._vocabulary_size,),
             initializer="zeros"
         )
 
         super().build(input_shape)
 
-    def call(self, inputs: Tuple[Layer], **kwargs):
+    def call(self, inputs: Tuple[Layer], **kwargs) -> Layer:
         """Create call graph for current layer.
 
         Parameters
@@ -84,11 +84,14 @@ class NoiseContrastiveEstimation(Layer):
                 self._biases,
                 labels=labels,
                 inputs=predictions,
-                num_sampled=self.negative_samples,
-                num_classes=self.vocabulary_size,
-                num_true=self.positive_samples
+                num_sampled=self._negative_samples,
+                num_classes=self._vocabulary_size,
+                num_true=self._positive_samples
             ), axis=0)
         )
 
         # Computing logits for closing TF graph
-        return K.dot(predictions, K.transpose(self._weights))
+        return K.dot(
+            predictions,
+            self._biases + K.transpose(self._weights)
+        )
