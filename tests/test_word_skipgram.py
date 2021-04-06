@@ -23,7 +23,6 @@ class TestWordSkipGram(TestWord2VecSequences):
             self._sequence,
             steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=2,
-            verbose=False
         )
 
         self.assertFalse(np.isnan(self._model.embedding).any())
