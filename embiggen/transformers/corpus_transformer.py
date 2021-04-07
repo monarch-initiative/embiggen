@@ -7,9 +7,12 @@ from typing import Dict, Generator, List, Set
 
 import numpy as np
 import pandas as pd
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
+try:
+    from nltk.corpus import stopwords
+    from nltk.stem import PorterStemmer
+    from nltk.tokenize import word_tokenize
+except ImportError:
+    pass
 from tensorflow.keras.preprocessing.text import \
     Tokenizer  # pylint: disable=import-error
 from tqdm.auto import tqdm
@@ -90,6 +93,17 @@ class CorpusTransformer:
         ValueError,
             If the given tokenizer method is not supported.
         """
+        try:
+            import nltk
+        except ImportError:
+            raise ImportError(
+                "The package nltk is not installed!\n"
+                "If you need to use the CorpusTransformer object, "
+                "please do install the nltk package.\n"
+                "This package has to be installed separetely because it "
+                "comes with added complexity that we prefer to spare the user "
+                "when their main interest lies within graph embedding."
+            )
         self._synonyms = {} if synonyms is None else synonyms
         self._stopwords = set() if extra_stop_words is None else extra_stop_words
         if remove_stop_words:

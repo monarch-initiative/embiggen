@@ -17,6 +17,10 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'nltk': [
+        "pytest",
+        "nltk"
+    ]
 }
 
 # TODO: Authors add your emails!!!
@@ -42,7 +46,6 @@ setup(
     install_requires=[
         'numpy',
         'pandas',
-        "nltk",
         "tqdm",
         "matplotlib",
         "sklearn",
