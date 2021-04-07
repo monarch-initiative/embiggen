@@ -33,7 +33,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.8.3',
+    version='0.8.4',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
@@ -41,7 +41,7 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    python_requires='>3.5.2',
+    python_requires='>3.6.0',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
