@@ -26,7 +26,7 @@ class GraphVisualization:
 
     DEFAULT_SCATTER_KWARGS = dict(
         s=5,
-        alpha=0.8
+        alpha=0.7
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(8, 8),
