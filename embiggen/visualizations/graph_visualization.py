@@ -29,7 +29,7 @@ class GraphVisualization:
         alpha=0.8
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(6, 6),
+        figsize=(8, 8),
         dpi=200
     )
 
