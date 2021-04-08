@@ -925,7 +925,12 @@ class GraphVisualization:
             )
 
         # TODO: update this to support multiple node types!
-        node_types = np.array(self._graph.get_node_types()).flatten()
+        # Currently we are using the following patch!
+        # TODO: add check for None node types!
+        node_types = np.array([
+            node_types[0]
+            for node_types in self._graph.get_node_types()
+        ])
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
 
