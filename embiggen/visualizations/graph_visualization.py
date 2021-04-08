@@ -121,7 +121,7 @@ class GraphVisualization:
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
-                    random_state=random_state,
+                    random_seed=random_state,
                     verbose=True
                 )
             except ModuleNotFoundError:
