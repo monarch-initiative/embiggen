@@ -25,7 +25,7 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=8,
+        s=5,
         alpha=0.8
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
