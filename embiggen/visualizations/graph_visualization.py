@@ -252,7 +252,7 @@ class GraphVisualization:
         """
         legend = axes.legend(
             handles=handles,
-            labels=labels,
+            labels=sanitize_ml_labels(labels),
             loc='best',
             title=legend_title,
             **(
@@ -677,7 +677,7 @@ class GraphVisualization:
         types = np.array(types)
 
         number_of_types = np.unique(types).size
-        type_labels = np.array(sanitize_ml_labels(list(type_labels)))
+        type_labels = np.array(type_labels)
 
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = [
