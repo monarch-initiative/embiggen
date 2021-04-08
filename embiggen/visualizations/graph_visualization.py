@@ -924,7 +924,8 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        node_types = self._graph.get_node_types()
+        # TODO: update this to support multiple node types!
+        node_types = np.array(self._graph.get_node_types()).flatten()
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
 
@@ -1186,7 +1187,7 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
-        edge_types = self._graph.get_edge_types()
+        edge_types = np.array(self._graph.get_edge_types())
         if self._subsampled_node_ids is not None:
             edge_types = edge_types[self._subsampled_edge_ids]
 
