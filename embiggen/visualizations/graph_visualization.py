@@ -1188,7 +1188,7 @@ class GraphVisualization:
             )
 
         edge_types = np.array(self._graph.get_edge_types())
-        if self._subsampled_node_ids is not None:
+        if self._subsampled_edge_ids is not None:
             edge_types = edge_types[self._subsampled_edge_ids]
 
         return self._plot_types(
@@ -1266,8 +1266,8 @@ class GraphVisualization:
             )
 
         weights = self._graph.get_weights()
-        if self._subsampled_node_ids is not None:
-            weights = weights[self._subsampled_node_ids]
+        if self._subsampled_edge_ids is not None:
+            weights = weights[self._subsampled_edge_ids]
 
         figure, axes, scatter = self._plot_scatter(
             "Edge weights",
