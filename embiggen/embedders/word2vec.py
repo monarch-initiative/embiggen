@@ -125,7 +125,7 @@ class Word2Vec(Embedder):
             name=Embedder.EMBEDDING_LAYER_NAME,
             # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
             # embeddings_constraint=UnitNorm(),
-        )
+        )(true_input_layer)
 
         # Executing average of the embeddings and features (if provided)
         mean_embedding = GlobalAveragePooling1D()(
@@ -168,11 +168,7 @@ class Word2Vec(Embedder):
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
-        # We need to drop the first column (feature) of the embedding
-        # curresponding to the indices 0, as this value is reserved for the
-        # masked values. The masked values are the values used to fill
-        # the batches of the neigbours of the nodes.
-        return Embedder.embedding.fget(self)[1:]  # pylint: disable=no-member
+        return Embedder.embedding.fget(self)  # pylint: disable=no-member
 
     def fit(
         self,
