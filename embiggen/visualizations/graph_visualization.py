@@ -29,7 +29,7 @@ class GraphVisualization:
         alpha=0.7
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(8, 8),
+        figsize=(7, 7),
         dpi=200
     )
 
@@ -369,6 +369,7 @@ class GraphVisualization:
         edgecolors: List[int] = None,
         labels: List[str] = None,
         legend_title: str = "",
+        show_title: bool = True,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -394,6 +395,8 @@ class GraphVisualization:
             Labels for the different colors.
         legend_title: str = "",
             Title for the legend.
+        show_title: bool = True,
+            Whether to show the figure title.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -584,8 +587,9 @@ class GraphVisualization:
                 title,
                 self._node_embedding_method
             )
-
-        axes.set_title(title)
+        
+        if show_title:
+            axes.set_title(title)
         figure.tight_layout()
 
         return figure, axes, collections
@@ -597,6 +601,7 @@ class GraphVisualization:
         types: List[int],
         type_labels: List[str],
         legend_title: str,
+        show_title: bool = True,
         predictions: List[int] = None,
         k: int = 9,
         figure: Figure = None,
@@ -623,6 +628,8 @@ class GraphVisualization:
             List of the labels for the provided types.
         legend_title: str,
             Title for the legend.
+        show_title: bool = True,
+            Whether to show the figure title.
         predictions: List[int] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -715,6 +722,7 @@ class GraphVisualization:
             edgecolors=predictions,
             labels=type_labels,
             legend_title=legend_title,
+            show_title=show_title,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -736,6 +744,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -760,6 +769,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -787,6 +798,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -801,6 +813,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -825,6 +838,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -852,6 +867,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -870,6 +886,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -900,6 +917,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -950,6 +969,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -965,6 +985,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -995,6 +1016,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1029,6 +1052,7 @@ class GraphVisualization:
                 for size in sizes
             ]),
             legend_title=legend_title,
+            show_title=show_title,
             k=k,
             figure=figure,
             axes=axes,
@@ -1051,6 +1075,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         use_log_scale: bool = True,
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1077,6 +1102,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         use_log_scale: bool = True,
             Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1113,6 +1140,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -1134,6 +1162,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1166,6 +1195,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1212,6 +1243,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -1224,6 +1256,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1248,6 +1281,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1288,6 +1323,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
