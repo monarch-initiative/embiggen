@@ -158,7 +158,7 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-        outputs = [contexts_batch + 1, words_batch + 1]
+        outputs = [contexts_batch, words_batch]
 
         if self._support_mirror_strategy:
             outputs = [
