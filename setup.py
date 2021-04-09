@@ -17,6 +17,10 @@ test_deps = [
 
 extras = {
     'test': test_deps,
+    'nltk': [
+        "pytest",
+        "nltk"
+    ]
 }
 
 # TODO: Authors add your emails!!!
@@ -29,7 +33,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.8.2',
+    version='0.8.5',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
@@ -37,21 +41,20 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    python_requires='>3.5.2',
+    python_requires='>3.6.0',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
         'pandas',
-        "nltk",
         "tqdm",
         "matplotlib",
         "sklearn",
         "ddd_subplots>=1.0.7",
-        "sanitize_ml_labels>=1.0.12",
+        "sanitize_ml_labels>=1.0.26",
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.20",
         "extra_keras_metrics>=2.0.0",
-        "ensmallen_graph>=0.5.2",
+        "ensmallen_graph>=0.6.0",
         "cache_decorator>=2.0.1"
     ],
     tests_require=test_deps,

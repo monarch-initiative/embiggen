@@ -25,11 +25,11 @@ class GraphVisualization:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
-        s=8,
-        alpha=0.8
+        s=5,
+        alpha=0.7
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
-        figsize=(6, 6),
+        figsize=(7, 7),
         dpi=200
     )
 
@@ -121,7 +121,7 @@ class GraphVisualization:
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
-                    random_state=random_state,
+                    random_seed=random_state,
                     verbose=True
                 )
             except ModuleNotFoundError:
@@ -252,7 +252,7 @@ class GraphVisualization:
         """
         legend = axes.legend(
             handles=handles,
-            labels=labels,
+            labels=sanitize_ml_labels(labels),
             loc='best',
             title=legend_title,
             **(
@@ -369,6 +369,7 @@ class GraphVisualization:
         edgecolors: List[int] = None,
         labels: List[str] = None,
         legend_title: str = "",
+        show_title: bool = True,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -394,6 +395,8 @@ class GraphVisualization:
             Labels for the different colors.
         legend_title: str = "",
             Title for the legend.
+        show_title: bool = True,
+            Whether to show the figure title.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -584,8 +587,9 @@ class GraphVisualization:
                 title,
                 self._node_embedding_method
             )
-
-        axes.set_title(title)
+        
+        if show_title:
+            axes.set_title(title)
         figure.tight_layout()
 
         return figure, axes, collections
@@ -597,6 +601,7 @@ class GraphVisualization:
         types: List[int],
         type_labels: List[str],
         legend_title: str,
+        show_title: bool = True,
         predictions: List[int] = None,
         k: int = 9,
         figure: Figure = None,
@@ -623,6 +628,8 @@ class GraphVisualization:
             List of the labels for the provided types.
         legend_title: str,
             Title for the legend.
+        show_title: bool = True,
+            Whether to show the figure title.
         predictions: List[int] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -677,7 +684,7 @@ class GraphVisualization:
         types = np.array(types)
 
         number_of_types = np.unique(types).size
-        type_labels = np.array(sanitize_ml_labels(list(type_labels)))
+        type_labels = np.array(type_labels)
 
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = [
@@ -715,6 +722,7 @@ class GraphVisualization:
             edgecolors=predictions,
             labels=type_labels,
             legend_title=legend_title,
+            show_title=show_title,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -736,6 +744,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -760,6 +769,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -787,6 +798,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -801,6 +813,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -825,6 +838,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -852,6 +867,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -870,6 +886,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -900,6 +917,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -924,7 +943,13 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        node_types = self._graph.get_node_types()
+        # TODO: update this to support multiple node types!
+        # Currently we are using the following patch!
+        # TODO: add check for None node types!
+        node_types = np.array([
+            node_types[0]
+            for node_types in self._graph.get_node_types()
+        ])
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
 
@@ -944,6 +969,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -959,6 +985,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -989,6 +1016,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1023,6 +1052,7 @@ class GraphVisualization:
                 for size in sizes
             ]),
             legend_title=legend_title,
+            show_title=show_title,
             k=k,
             figure=figure,
             axes=axes,
@@ -1045,6 +1075,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         use_log_scale: bool = True,
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1071,6 +1102,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         use_log_scale: bool = True,
             Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1107,6 +1140,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -1128,6 +1162,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1160,6 +1195,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1186,8 +1223,8 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
-        edge_types = self._graph.get_edge_types()
-        if self._subsampled_node_ids is not None:
+        edge_types = np.array(self._graph.get_edge_types())
+        if self._subsampled_edge_ids is not None:
             edge_types = edge_types[self._subsampled_edge_ids]
 
         return self._plot_types(
@@ -1206,6 +1243,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
@@ -1218,6 +1256,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        show_title: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1242,6 +1281,8 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1265,8 +1306,8 @@ class GraphVisualization:
             )
 
         weights = self._graph.get_weights()
-        if self._subsampled_node_ids is not None:
-            weights = weights[self._subsampled_node_ids]
+        if self._subsampled_edge_ids is not None:
+            weights = weights[self._subsampled_edge_ids]
 
         figure, axes, scatter = self._plot_scatter(
             "Edge weights",
@@ -1282,6 +1323,7 @@ class GraphVisualization:
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            show_title=show_title,
             **kwargs
         )
 
