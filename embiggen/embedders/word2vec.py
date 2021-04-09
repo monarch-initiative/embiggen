@@ -119,28 +119,22 @@ class Word2Vec(Embedder):
 
         # Creating the embedding layer for the contexts
         embedding_layer = Embedding(
-            # The plus one is needed for the zero padding!
-            input_dim=self._vocabulary_size + 1,
+            input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=self._get_true_input_length(),
             name=Embedder.EMBEDDING_LAYER_NAME,
             # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
             # embeddings_constraint=UnitNorm(),
-            mask_zero=True
         )
-
-        embedding = embedding_layer(true_input_layer)
 
         # Executing average of the embeddings and features (if provided)
         mean_embedding = GlobalAveragePooling1D()(
-            embedding,
-            mask=embedding_layer.compute_mask(true_input_layer)
+            embedding_layer
         )
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(
-            # The plus one is needed for the zero padding!
-            vocabulary_size=self._vocabulary_size + 1,
+            vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length(),
