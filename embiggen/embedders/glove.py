@@ -1,7 +1,8 @@
 """GloVe model for graph and words embedding."""
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 
 import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
@@ -9,6 +10,7 @@ from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
+from ..sequences import GloveSequence
 
 from .embedder import Embedder
 
@@ -26,6 +28,8 @@ class GloVe(Embedder):
         embedding_size: int,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
+        random_state: int = 42,
+        directed: bool = False
     ):
         """Create new GloVe-based Embedder object.
 
@@ -43,8 +47,14 @@ class GloVe(Embedder):
             set at 0.01 is used.
         alpha: float = 0.75,
             Alpha to use for the function.
+        random_state: int = 42,
+            The random state to reproduce the training sequence.
+        directed: bool = False,
+            Whether to treat the data as directed or not.
         """
         self._alpha = alpha
+        self._random_state = random_state
+        self._directed = directed
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -118,7 +128,7 @@ class GloVe(Embedder):
             outputs=prediction,
             name="GloVe"
         )
-        
+
         return glove
 
     def _compile_model(self) -> Model:
@@ -130,8 +140,11 @@ class GloVe(Embedder):
 
     def fit(
         self,
+        X: Tuple[np.ndarray, np.ndarray],
+        frequencies: np.ndarray,
         *args: List,
         epochs: int = 1000,
+        batch_size: int = 2**20,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -148,8 +161,17 @@ class GloVe(Embedder):
 
         Parameters
         -----------------------
+        X: Tuple[np.ndarray, np.ndarray],
+            Tuple with source and destinations.
+        frequencies: np.ndarray,
+            The frequencies to predict.
+        *args: List,
+            Other arguments to provide to the model.
         epochs: int = 1000,
             Epochs to train the model for.
+        batch_size: int = 2**20,
+            The batch size.
+            Tipically batch sizes for the GloVe model can be immense.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
         early_stopping_min_delta: float = 0.001,
@@ -189,6 +211,12 @@ class GloVe(Embedder):
         Dataframe with training history.
         """
         return super().fit(
+            GloveSequence(
+                *X, frequencies,
+                batch_size=batch_size,
+                directed=self._directed,
+                random_state=self._random_state
+            ),
             *args,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,

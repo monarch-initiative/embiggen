@@ -52,7 +52,7 @@ setup(
         "ddd_subplots>=1.0.7",
         "sanitize_ml_labels>=1.0.26",
         'tensorflow>=2.0.1',
-        "keras_mixed_sequence>=1.0.20",
+        "keras_mixed_sequence>=1.0.25",
         "extra_keras_metrics>=2.0.0",
         "ensmallen_graph>=0.6.0",
         "cache_decorator>=2.0.1"

@@ -587,7 +587,7 @@ class GraphVisualization:
                 title,
                 self._node_embedding_method
             )
-        
+
         if show_title:
             axes.set_title(title)
         figure.tight_layout()
@@ -650,7 +650,7 @@ class GraphVisualization:
             If None, all points are drawn using the training marker.
         test_indices: np.ndarray = None,
             Indices to draw using the test marker.
-            If None, while providing the train indices, 
+            If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
         test_marker: str = "X",
@@ -764,7 +764,7 @@ class GraphVisualization:
             If None, all points are drawn using the training marker.
         test_indices: np.ndarray = None,
             Indices to draw using the test marker.
-            If None, while providing the train indices, 
+            If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
         test_marker: str = "X",
@@ -833,7 +833,7 @@ class GraphVisualization:
             If None, all points are drawn using the training marker.
         test_indices: np.ndarray = None,
             Indices to draw using the test marker.
-            If None, while providing the train indices, 
+            If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
         test_marker: str = "X",
@@ -912,7 +912,7 @@ class GraphVisualization:
             If None, all points are drawn using the training marker.
         test_indices: np.ndarray = None,
             Indices to draw using the test marker.
-            If None, while providing the train indices, 
+            If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
         test_marker: str = "X",
@@ -943,11 +943,22 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        # TODO: update this to support multiple node types!
-        # Currently we are using the following patch!
-        # TODO: add check for None node types!
+        if self._graph.has_unknown_node_types():
+            raise ValueError(
+                "We do not currently support visualization of graphs with "
+                "unknown node types."
+            )
+
+        # The following is need to normalize the multiple types
+        node_types_counts = self._graph.get_node_type_counts()
+        # When we have multiple node types for a given node, we set it to
+        # the most common node type of the set.
         node_types = np.array([
-            node_types[0]
+            sorted(
+                node_types,
+                key=lambda node_type: node_types_counts[node_type],
+                reverse=True
+            )[0]
             for node_types in self._graph.get_node_types()
         ])
         if self._subsampled_node_ids is not None:
@@ -1011,7 +1022,7 @@ class GraphVisualization:
             If None, all points are drawn using the training marker.
         test_indices: np.ndarray = None,
             Indices to draw using the test marker.
-            If None, while providing the train indices, 
+            If None, while providing the train indices,
         train_marker: str = "o",
             The marker to use to draw the training points.
         test_marker: str = "X",
@@ -1221,6 +1232,12 @@ class GraphVisualization:
         if self._edge_embedding is None:
             raise ValueError(
                 "Edge fitting was not yet executed!"
+            )
+
+        if self._graph.has_unknown_edge_types():
+            raise ValueError(
+                "We do not currently support visualization of graphs with "
+                "unknown edge types."
             )
 
         edge_types = np.array(self._graph.get_edge_types())

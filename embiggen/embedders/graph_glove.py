@@ -23,6 +23,7 @@ class GraphGloVe(GloVe):
         embedding_size: int = 100,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
+        directed: bool = False,
         walk_length: int = 128,
         iterations: int = 16,
         window_size: int = 16,
@@ -51,6 +52,8 @@ class GraphGloVe(GloVe):
             set at 0.01 is used.
         alpha: float = 0.75,
             Alpha to use for the function.
+        directed: bool = False,
+            Whether to treat the data as directed or not.
         walk_length: int = 128,
             Maximal length of the walks.
         iterations: int = 16,
@@ -118,9 +121,10 @@ class GraphGloVe(GloVe):
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
             alpha=alpha,
+            random_state=random_state,
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
-            optimizer=optimizer
+            optimizer=optimizer,
         )
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
@@ -130,7 +134,7 @@ class GraphGloVe(GloVe):
     def fit(
         self,
         epochs: int = 1000,
-        batch_size: int = 2**18,
+        batch_size: int = 2**20,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.00001,
         early_stopping_patience: int = 100,
@@ -149,6 +153,9 @@ class GraphGloVe(GloVe):
         -----------------------
         epochs: int = 1000,
             Epochs to train the model for.
+        batch_size: int = 2**20,
+            The batch size.
+            Tipically batch sizes for the GloVe model can be immense.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
         early_stopping_min_delta: float = 0.001,
@@ -187,7 +194,7 @@ class GraphGloVe(GloVe):
         -----------------------
         Dataframe with training history.
         """
-        words, contexts, frequency = self._graph.cooccurence_matrix(
+        sources, destinations, frequencies = self._graph.cooccurence_matrix(
             walk_length=self._walk_length,
             window_size=self._window_size,
             iterations=self._iterations,
@@ -201,10 +208,10 @@ class GraphGloVe(GloVe):
             verbose=verbose > 0
         )
         if self._support_mirror_strategy:
-            words = words.astype(float)
-            contexts = contexts.astype(float)
+            sources = sources.astype(float)
+            destinations = destinations.astype(float)
         return super().fit(
-            (words, contexts), frequency,
+            (sources, destinations), frequencies,
             epochs=epochs,
             batch_size=batch_size,
             early_stopping_monitor=early_stopping_monitor,
