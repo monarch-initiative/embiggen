@@ -298,7 +298,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(node_names, self._graph.get_node_types()))
+            ).split(node_names, self._graph.get_node_type_ids()))
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
@@ -343,7 +343,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(edge_names, self._graph.get_edge_types()))
+            ).split(edge_names, self._graph.get_edge_type_ids()))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
 
@@ -959,7 +959,7 @@ class GraphVisualization:
                 key=lambda node_type: node_types_counts[node_type],
                 reverse=True
             )[0]
-            for node_types in self._graph.get_node_types()
+            for node_types in self._graph.get_node_type_ids()
         ])
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
