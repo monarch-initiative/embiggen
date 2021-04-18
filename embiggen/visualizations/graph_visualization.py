@@ -42,7 +42,8 @@ class GraphVisualization:
         node_embedding_method: str = None,
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
-        random_state: int = 42
+        random_state: int = 42,
+        decomposition_kwargs: Dict = None
     ):
         """Create new GraphVisualization object.
 
@@ -82,6 +83,8 @@ class GraphVisualization:
             If None is given, no subsampling is executed.
         random_state: int = 42,
             The random state to reproduce the visualizations.
+        decomposition_kwargs: Dict = None,
+            Kwargs to forward to the selected decomposition method.
 
         Raises
         ---------------------------
@@ -103,6 +106,9 @@ class GraphVisualization:
         self._subsample_points = subsample_points
         self._random_state = random_state
 
+        if decomposition_kwargs is None:
+            decomposition_kwargs = {}
+
         if n_components not in {2, 3}:
             raise ValueError(
                 "We currently only support 2D and 3D decomposition visualization."
@@ -122,7 +128,8 @@ class GraphVisualization:
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
                     random_seed=random_state,
-                    verbose=True
+                    verbose=True,
+                    **decomposition_kwargs
                 )
             except ModuleNotFoundError:
                 try:
@@ -132,7 +139,8 @@ class GraphVisualization:
                         n_components=n_components,
                         n_jobs=cpu_count(),
                         random_state=random_state,
-                        verbose=True
+                        verbose=True,
+                        **decomposition_kwargs
                     )
                 except ModuleNotFoundError:
                     try:
@@ -142,7 +150,8 @@ class GraphVisualization:
                             n_components=n_components,
                             n_jobs=cpu_count(),
                             random_state=random_state,
-                            verbose=True
+                            verbose=True,
+                            **decomposition_kwargs
                         )
                     except:
                         raise ModuleNotFoundError(
@@ -164,7 +173,8 @@ class GraphVisualization:
         elif decomposition_method == "PCA":
             self._decomposition_method = PCA(
                 n_components=n_components,
-                random_state=random_state
+                random_state=random_state,
+                **decomposition_kwargs
             )
         else:
             raise ValueError(
