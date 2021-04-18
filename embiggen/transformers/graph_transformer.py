@@ -92,9 +92,9 @@ class GraphTransformer:
         """
         if isinstance(graph, EnsmallenGraph):
             if self._aligned_node_mapping:
-                graph = graph.get_edges(directed=False)
+                graph = graph.get_edge__node_ids(directed=False)
             else:
-                graph = graph.get_edge_names(directed=False)
+                graph = graph.get_edge_node_names(directed=False)
         if isinstance(graph, List):
             graph = np.array(graph)
         if isinstance(graph, np.ndarray):
