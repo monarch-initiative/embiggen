@@ -953,14 +953,9 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        if self._graph.has_unknown_node_types():
-            raise ValueError(
-                "We do not currently support visualization of graphs with "
-                "unknown node types."
-            )
-
-        # The following is need to normalize the multiple types
+        # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_counts()
+        node_types_number = self._graph.get_node_types_number()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         node_types = np.array([
@@ -969,16 +964,26 @@ class GraphVisualization:
                 key=lambda node_type: node_types_counts[node_type],
                 reverse=True
             )[0]
+            if node_types is not None
+            else
+            node_types_number
             for node_types in self._graph.get_node_type_ids()
         ])
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
 
+        node_type_names = self._graph.get_node_type_names()
+
+        if self._graph.has_unknown_node_types():
+            node_type_names.append("Unknown")
+
+        node_type_names = np.array(node_type_names)
+
         return self._plot_types(
             "Node types",
             self._node_embedding.values,
             types=node_types,
-            type_labels=np.array(self._graph.get_node_type_names()),
+            type_labels=node_type_names,
             legend_title=legend_title,
             predictions=node_type_predictions,
             k=k,
@@ -1244,21 +1249,29 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
-        if self._graph.has_unknown_edge_types():
-            raise ValueError(
-                "We do not currently support visualization of graphs with "
-                "unknown edge types."
-            )
+        edge_type_number = self._graph.get_edge_types_number()
+        edge_types = np.array([
+            edge_type_id
+            if edge_type_id is not None
+            else edge_type_number
+            for edge_type_id in self._graph.get_edge_type_ids()
+        ])
 
-        edge_types = np.array(self._graph.get_edge_type_ids())
         if self._subsampled_edge_ids is not None:
             edge_types = edge_types[self._subsampled_edge_ids]
+
+        edge_type_names = self._graph.get_edge_type_names()
+
+        if self._graph.has_unknown_edge_types():
+            edge_type_names.append("Unknown")
+
+        edge_type_names = np.array(edge_type_names)
 
         return self._plot_types(
             "Edge types",
             self._edge_embedding.values,
             types=edge_types,
-            type_labels=np.array(self._graph.get_edge_type_names()),
+            type_labels=edge_type_names,
             legend_title=legend_title,
             predictions=edge_type_predictions,
             k=k,
