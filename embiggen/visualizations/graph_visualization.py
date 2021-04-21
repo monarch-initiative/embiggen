@@ -337,7 +337,7 @@ class GraphVisualization:
         # Retrieve the edges
         edge_names = np.array(self._graph.get_edge_node_names(directed=False))
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and self._graph.get_edges_number() > self._subsample_points:
+        if self._subsample_points is not None and len(edge_names) > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
             if self._graph.has_edge_types() and all(
@@ -960,14 +960,14 @@ class GraphVisualization:
         # the most common node type of the set.
         node_types = np.array([
             sorted(
-                node_types,
+                node_type_ids,
                 key=lambda node_type: node_types_counts[node_type],
                 reverse=True
             )[0]
-            if node_types is not None
+            if node_type_ids is not None
             else
             node_types_number
-            for node_types in self._graph.get_node_type_ids()
+            for node_type_ids in self._graph.get_node_type_ids()
         ])
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
