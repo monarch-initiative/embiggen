@@ -295,10 +295,7 @@ class GraphVisualization:
         if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
-            if self._graph.has_node_types() and all(
-                count > 1
-                for count in self._graph.get_node_type_counts().values()
-            ):
+            if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
@@ -340,10 +337,7 @@ class GraphVisualization:
         if self._subsample_points is not None and len(edge_names) > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types() and all(
-                count > 1
-                for count in self._graph.get_edge_type_counts().values()
-            ):
+            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types():
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
