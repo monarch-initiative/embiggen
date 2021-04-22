@@ -374,6 +374,7 @@ class GraphVisualization:
         labels: List[str] = None,
         legend_title: str = "",
         show_title: bool = True,
+        show_legend: bool = True,
         figure: Figure = None,
         axes: Axes = None,
         scatter_kwargs: Dict = None,
@@ -401,6 +402,8 @@ class GraphVisualization:
             Title for the legend.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         figure: Figure = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -570,7 +573,7 @@ class GraphVisualization:
                 new_legend_elements.append(tuple(new_tuple))
             legend_elements = new_legend_elements
 
-        if labels is not None:
+        if show_legend and labels is not None:
             self._set_legend(
                 axes,
                 labels,
@@ -606,6 +609,7 @@ class GraphVisualization:
         type_labels: List[str],
         legend_title: str,
         show_title: bool = True,
+        show_legend: bool = True,
         predictions: List[int] = None,
         k: int = 9,
         figure: Figure = None,
@@ -634,6 +638,8 @@ class GraphVisualization:
             Title for the legend.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         predictions: List[int] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -727,6 +733,7 @@ class GraphVisualization:
             labels=type_labels,
             legend_title=legend_title,
             show_title=show_title,
+            show_legend=show_legend,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -749,6 +756,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -775,6 +783,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -803,6 +813,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
@@ -818,6 +829,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -844,6 +856,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -872,6 +886,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
@@ -922,6 +937,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -954,6 +970,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1006,6 +1024,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
@@ -1022,6 +1041,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -1054,6 +1074,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1089,6 +1111,7 @@ class GraphVisualization:
             ]),
             legend_title=legend_title,
             show_title=show_title,
+            show_legend=show_legend,
             k=k,
             figure=figure,
             axes=axes,
@@ -1112,6 +1135,7 @@ class GraphVisualization:
         test_marker: str = "X",
         use_log_scale: bool = True,
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1140,6 +1164,8 @@ class GraphVisualization:
             Whether to use log scale.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1177,6 +1203,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
@@ -1199,6 +1226,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1233,6 +1261,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1294,6 +1324,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
@@ -1307,6 +1338,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
+        show_legend: bool = True,
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1333,6 +1365,8 @@ class GraphVisualization:
             The marker to use to draw the test points.
         show_title: bool = True,
             Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1345,7 +1379,7 @@ class GraphVisualization:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if not self._graph.has_weights():
+        if not self._graph.has_edge_weights():
             raise ValueError(
                 "The graph does not have edge weights!"
             )
@@ -1355,7 +1389,7 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        weights = self._graph.get_weights()
+        weights = self._graph.get_edge_weights()
         if self._subsampled_edge_ids is not None:
             weights = weights[self._subsampled_edge_ids]
 
@@ -1374,6 +1408,7 @@ class GraphVisualization:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            show_legend=show_legend,
             **kwargs
         )
 
