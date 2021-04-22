@@ -879,7 +879,7 @@ class GraphVisualization:
 
     def _flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
         # The following is needed to normalize the multiple types
-        node_types_counts = self._graph.get_node_type_counts()
+        node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         node_types_number = self._graph.get_node_types_number()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
@@ -1270,7 +1270,7 @@ class GraphVisualization:
         if self._subsampled_edge_ids is not None:
             edge_types = edge_types[self._subsampled_edge_ids]
 
-        edge_type_names = self._graph.get_edge_type_names()
+        edge_type_names = self._graph.get_unique_edge_type_names()
 
         if self._graph.has_unknown_edge_types():
             edge_type_names.append("Unknown")
