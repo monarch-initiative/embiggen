@@ -305,7 +305,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(node_names, self._graph.get_node_type_ids()))
+            ).split(node_names, self._flatten_multi_label_and_unknown_node_types()))
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
@@ -347,7 +347,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(edge_names, self._graph.get_edge_type_ids()))
+            ).split(edge_names, self._flatten_unknown_edge_types()))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
 
@@ -877,6 +877,37 @@ class GraphVisualization:
 
         return figure, axis
 
+    def _flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
+        # The following is needed to normalize the multiple types
+        node_types_counts = self._graph.get_node_type_counts()
+        node_types_number = self._graph.get_node_types_number()
+        # When we have multiple node types for a given node, we set it to
+        # the most common node type of the set.
+        return np.array([
+            sorted(
+                node_type_ids,
+                key=lambda node_type: node_types_counts[node_type],
+                reverse=True
+            )[0]
+            if node_type_ids is not None
+            else
+            node_types_number
+            for node_type_ids in self._graph.get_node_type_ids()
+        ])
+
+    def _flatten_unknown_edge_types(self) -> np.ndarray:
+        # The following is needed to normalize the multiple types
+        edge_types_number = self._graph.get_edge_types_number()
+        # When we have multiple node types for a given node, we set it to
+        # the most common node type of the set.
+        return np.array([
+            edge_type_id
+            if edge_type_id is not None
+            else
+            edge_types_number
+            for edge_type_id in self._graph.get_edge_type_ids()
+        ])
+
     def plot_node_types(
         self,
         node_type_predictions: List[int] = None,
@@ -947,26 +978,11 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        # The following is needed to normalize the multiple types
-        node_types_counts = self._graph.get_node_type_counts()
-        node_types_number = self._graph.get_node_types_number()
-        # When we have multiple node types for a given node, we set it to
-        # the most common node type of the set.
-        node_types = np.array([
-            sorted(
-                node_type_ids,
-                key=lambda node_type: node_types_counts[node_type],
-                reverse=True
-            )[0]
-            if node_type_ids is not None
-            else
-            node_types_number
-            for node_type_ids in self._graph.get_node_type_ids()
-        ])
+        node_types = self._flatten_multi_label_and_unknown_node_types()
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
 
-        node_type_names = self._graph.get_node_type_names()
+        node_type_names = self._graph.get_unique_node_type_names()
 
         if self._graph.has_unknown_node_types():
             node_type_names.append("Unknown")
