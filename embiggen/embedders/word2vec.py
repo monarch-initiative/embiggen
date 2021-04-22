@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Input, Layer, GlobalAveragePooling1D
+from tensorflow.keras.layers import Input, Layer
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
@@ -24,7 +24,7 @@ class Word2Vec(Embedder):
         model_name: str = "Word2Vec",
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
-        negative_samples: int = 10
+        negative_samples: int = 10,
     ):
         """Create new sequence Embedder model.
 
@@ -101,6 +101,23 @@ class Word2Vec(Embedder):
             "must be implemented in child class."
         ))
 
+    def _merging_layer(self, embedding_layer: Layer) -> Layer:
+        """Return layer to be used to compose the layer from the input node(s).
+
+        Parameters
+        ----------------------------
+        embedding_layer: Layer,
+            The embedding layer.
+
+        Returns
+        ----------------------------
+        Layer with composition of the embedding layers.
+        """
+        raise NotImplementedError((
+            "The method '_merging_layer' "
+            "must be implemented in child class."
+        ))
+
     def _build_model(self):
         """Return Node2Vec model."""
         # Creating the inputs layers
@@ -127,10 +144,8 @@ class Word2Vec(Embedder):
             # embeddings_constraint=UnitNorm(),
         )(true_input_layer)
 
-        # Executing average of the embeddings and features (if provided)
-        mean_embedding = GlobalAveragePooling1D()(
-            embedding_layer
-        )
+        # Executing average of the embeddings
+        mean_embedding = self._merging_layer(embedding_layer)
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(

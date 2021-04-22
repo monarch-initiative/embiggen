@@ -1,7 +1,7 @@
 """CBOW model for sequence embedding."""
 from typing import Union, Tuple
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.layers import Layer   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer, GlobalAveragePooling1D   # pylint: disable=import-error
 from .word2vec import Word2Vec
 
 
@@ -61,6 +61,20 @@ class CBOW(Word2Vec):
     def _get_true_output_length(self) -> int:
         """Return length of true output layer."""
         return 1
+
+    def _merging_layer(self, embedding_layer: Layer) -> Layer:
+        """Return layer to be used to compose the layer from the input node(s).
+
+        Parameters
+        ----------------------------
+        embedding_layer: Layer,
+            The embedding layer.
+
+        Returns
+        ----------------------------
+        Layer with composition of the embedding layers.
+        """
+        return GlobalAveragePooling1D()(embedding_layer)
 
     def _sort_input_layers(
         self,
