@@ -335,7 +335,7 @@ class GraphVisualization:
             Embedding obtained from SkipGram, CBOW or GloVe.
         """
         # Retrieve the edges
-        edge_names = np.array(self._graph.get_edge_node_names(directed=False))
+        edge_names = np.array(self._graph.get_edge_node_names(directed=True))
         # If necessary, we proceed with the subsampling
         if self._subsample_points is not None and len(edge_names) > self._subsample_points:
             # If there are edge types, we use a stratified
