@@ -2,6 +2,7 @@
 from typing import Dict, Union
 
 import pandas as pd
+import numpy as np
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
 
@@ -21,6 +22,8 @@ class GraphGloVe(GloVe):
         self,
         graph: EnsmallenGraph,
         embedding_size: int = 100,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         directed: bool = False,
@@ -46,6 +49,14 @@ class GraphGloVe(GloVe):
             number of the unique words.
         embedding_size: int,
             Dimension of the embedding.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -124,6 +135,8 @@ class GraphGloVe(GloVe):
             random_state=random_state,
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
+            embedding=embedding,
+            extra_features=extra_features,
             optimizer=optimizer,
         )
 

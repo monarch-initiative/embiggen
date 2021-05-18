@@ -26,6 +26,7 @@ class GloVe(Embedder):
         self,
         vocabulary_size: int,
         embedding_size: int,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
@@ -35,13 +36,17 @@ class GloVe(Embedder):
         """Create new GloVe-based Embedder object.
 
         Parameters
-        ----------------------------
+        -------------------------------
         vocabulary_size: int,
             Number of terms to embed.
             In a graph this is the number of nodes, while in a text is the
             number of the unique words.
         embedding_size: int,
             Dimension of the embedding.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
             Optional extra features to be used during the computation
             of the embedding. The features must be available for all the
@@ -63,6 +68,7 @@ class GloVe(Embedder):
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
+            embedding=embedding,
             extra_features=extra_features,
             optimizer=optimizer
         )

@@ -1,7 +1,12 @@
 """GraphCBOW model for graph embedding."""
-from typing import Union, Dict
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
+from typing import Dict, Union
+
+import numpy as np
+import pandas as pd
 from ensmallen_graph import EnsmallenGraph
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error
+
 from .cbow import CBOW
 from .node2vec import Node2Vec
 
@@ -18,6 +23,8 @@ class GraphCBOW(Node2Vec):
         self,
         graph: EnsmallenGraph,
         embedding_size: int = 100,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,
@@ -44,6 +51,14 @@ class GraphCBOW(Node2Vec):
             Word2Vec model to use.
         embedding_size: int = 100,
             Dimension of the embedding.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -113,6 +128,8 @@ class GraphCBOW(Node2Vec):
             graph=graph,
             word2vec_model=CBOW,
             embedding_size=embedding_size,
+            embedding=embedding,
+            extra_features=extra_features,
             optimizer=optimizer,
             negative_samples=negative_samples,
             walk_length=walk_length,

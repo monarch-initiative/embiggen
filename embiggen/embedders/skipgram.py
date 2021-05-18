@@ -1,7 +1,13 @@
 """SkipGram model for sequences embedding."""
-from typing import Union, Tuple
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.layers import Layer, Flatten   # pylint: disable=import-error
+from typing import Tuple, Union
+
+import numpy as np
+import pandas as pd
+from tensorflow.keras.layers import (Flatten,  # pylint: disable=import-error
+                                     Layer)
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error
+
 from .word2vec import Word2Vec
 
 
@@ -18,6 +24,8 @@ class SkipGram(Word2Vec):
         vocabulary_size: int,
         embedding_size: int,
         model_name: str = "SkipGram",
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
         negative_samples: int = 10,
@@ -34,6 +42,14 @@ class SkipGram(Word2Vec):
             Dimension of the embedding.
         model_name: str = "SkipGram",
             Name of the model.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -49,6 +65,8 @@ class SkipGram(Word2Vec):
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
             model_name=model_name,
+            embedding=embedding,
+            extra_features=extra_features,
             optimizer=optimizer,
             window_size=window_size,
             negative_samples=negative_samples,

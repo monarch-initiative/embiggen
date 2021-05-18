@@ -1,7 +1,13 @@
 """CBOW model for sequence embedding."""
-from typing import Union, Tuple
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.layers import Layer, GlobalAveragePooling1D   # pylint: disable=import-error
+from typing import Tuple, Union
+
+import numpy as np
+import pandas as pd
+from tensorflow.keras.layers import (  # pylint: disable=import-error
+    GlobalAveragePooling1D, Layer)
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error
+
 from .word2vec import Word2Vec
 
 
@@ -18,6 +24,8 @@ class CBOW(Word2Vec):
         vocabulary_size: int,
         embedding_size: int,
         model_name: str = "CBOW",
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
         negative_samples: int = 10
@@ -34,6 +42,14 @@ class CBOW(Word2Vec):
             Dimension of the embedding.
         model_name: str = "CBOW",
             Name of the model.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
