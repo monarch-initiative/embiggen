@@ -1,17 +1,17 @@
 """GloVe model for graph and words embedding."""
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Tuple, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.layers import (Add, Dot,  # pylint: disable=import-error
-                                     Embedding, Flatten, Input)
+from tensorflow.keras.layers import Add  # pylint: disable=import-error
+from tensorflow.keras.layers import Concatenate, Dot, Embedding, Flatten, Input
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
-from ..sequences import GloveSequence
 
+from ..sequences import GloveSequence
 from .embedder import Embedder
 
 
@@ -26,6 +26,7 @@ class GloVe(Embedder):
         self,
         vocabulary_size: int,
         embedding_size: int,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         random_state: int = 42,
@@ -41,6 +42,10 @@ class GloVe(Embedder):
             number of the unique words.
         embedding_size: int,
             Dimension of the embedding.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -58,6 +63,7 @@ class GloVe(Embedder):
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
+            extra_features=extra_features,
             optimizer=optimizer
         )
 
@@ -84,39 +90,52 @@ class GloVe(Embedder):
     def _build_model(self):
         """Create new Glove model."""
         # Creating the input layers
-        input_layers = [
-            Input((1,)),
-            Input((1,))
-        ]
+        left_input_layer = Input((1,), name="left_input_layer")
+        right_input_layer = Input((1,), name="right_input_layer")
 
-        embedding_layers = [
-            Embedding(
-                self._vocabulary_size,
-                self._embedding_size,
+        trainable_left_embedding = Embedding(
+            self._vocabulary_size,
+            self._embedding_size,
+            input_length=1,
+            weights=None if self._embedding is None else [
+                self._embedding
+            ],
+            name=Embedder.EMBEDDING_LAYER_NAME
+        )(left_input_layer)
+
+        trainable_right_embedding = Embedding(
+            self._vocabulary_size,
+            self._embedding_size,
+            input_length=1,
+        )(right_input_layer)
+
+        if self._extra_features is not None:
+            extra_features_matrix = Embedding(
+                *self._extra_features,
                 input_length=1,
-                weights=None if self._embedding is None else [
-                    self._embedding
-                ],
-                name=Embedder.EMBEDDING_LAYER_NAME
-            )(input_layers[0]),
-            Embedding(
-                self._vocabulary_size,
-                self._embedding_size,
-                input_length=1,
-            )(input_layers[1])
-        ]
+                weights=self._extra_features,
+                trainable=False,
+                name="extra_features_matrix"
+            )
+            trainable_left_embedding = Concatenate()([
+                extra_features_matrix(left_input_layer),
+                trainable_left_embedding
+            ])
+            trainable_right_embedding = Concatenate()([
+                extra_features_matrix(right_input_layer),
+                trainable_right_embedding
+            ])
 
         # Creating the dot product of the embedding layers
-        dot_product_layer = Dot(axes=2)(embedding_layers)
+        dot_product_layer = Dot(axes=2)([
+            trainable_left_embedding,
+            trainable_right_embedding
+        ])
 
         # Creating the biases layer
         biases = [
-            Embedding(
-                self._vocabulary_size,
-                1,
-                input_length=1
-            )(input_layer)
-            for input_layer in input_layers
+            Embedding(self._vocabulary_size, 1, input_length=1)(input_layer)
+            for input_layer in (left_input_layer, right_input_layer)
         ]
 
         # Concatenating with an add the three layers
@@ -124,7 +143,10 @@ class GloVe(Embedder):
 
         # Creating the model
         glove = Model(
-            inputs=input_layers,
+            inputs=[
+                left_input_layer,
+                right_input_layer
+            ],
             outputs=prediction,
             name="GloVe"
         )
