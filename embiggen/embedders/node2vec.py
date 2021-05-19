@@ -18,6 +18,8 @@ class Node2Vec:
         graph: EnsmallenGraph,
         word2vec_model: Word2Vec,
         embedding_size: int = 100,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,
@@ -44,6 +46,14 @@ class Node2Vec:
             Word2Vec model to use.
         embedding_size: int = 100,
             Dimension of the embedding.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate

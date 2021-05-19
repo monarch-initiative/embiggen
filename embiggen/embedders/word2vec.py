@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Input, Layer
+from tensorflow.keras.layers import Input, Layer, Concatenate
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
@@ -21,6 +21,7 @@ class Word2Vec(Embedder):
         vocabulary_size: int = None,
         embedding_size: int = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "Word2Vec",
         optimizer: Union[str, Optimizer] = None,
         window_size: int = 16,
@@ -44,6 +45,10 @@ class Word2Vec(Embedder):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         model_name: str = "Word2Vec",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -61,6 +66,8 @@ class Word2Vec(Embedder):
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
+            embedding=embedding,
+            extra_features=extra_features,
             optimizer=optimizer
         )
 
@@ -144,13 +151,32 @@ class Word2Vec(Embedder):
             # embeddings_constraint=UnitNorm(),
         )(true_input_layer)
 
+        if self._extra_features is not None:
+            extra_features_matrix = Embedding(
+                *self._extra_features,
+                input_length=1,
+                weights=self._extra_features,
+                trainable=False,
+                name="extra_features_matrix"
+            )
+            embedding_layer = Concatenate()([
+                extra_features_matrix(true_input_layer),
+                embedding_layer
+            ])
+
         # Executing average of the embeddings
         mean_embedding = self._merging_layer(embedding_layer)
+
+        if self._extra_features is None:
+            embedding_size = self._embedding_size
+        else:
+            embedding_size = self._embedding_size + \
+                self._extra_features.shape[1]
 
         # Adding layer that also executes the loss function
         nce_loss = NoiseContrastiveEstimation(
             vocabulary_size=self._vocabulary_size,
-            embedding_size=self._embedding_size,
+            embedding_size=embedding_size,
             negative_samples=self._negative_samples,
             positive_samples=self._get_true_output_length(),
         )((mean_embedding, true_output_layer))
