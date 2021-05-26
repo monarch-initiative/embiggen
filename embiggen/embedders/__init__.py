@@ -14,5 +14,5 @@ __all__ = [
     "Embedder",
     "GraphCBOW",
     "GraphSkipGram",
-    "GraphGloVe"
+    "GraphGloVe",
 ]

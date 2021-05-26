@@ -18,7 +18,7 @@ from .embedder import Embedder
 class GloVe(Embedder):
     """GloVe model for graph and words embedding.
 
-    The GloVe model for graoh embedding receives two words and is asked to
+    The GloVe model for graph embedding receives two words and is asked to
     predict its cooccurrence probability.
     """
 
