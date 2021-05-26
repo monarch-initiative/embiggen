@@ -1183,7 +1183,7 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        degrees = self._graph.degrees()
+        degrees = self._graph.get_node_degrees()
         if self._subsampled_node_ids is not None:
             degrees = degrees[self._subsampled_node_ids]
 
