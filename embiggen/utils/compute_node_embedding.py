@@ -187,7 +187,7 @@ def compute_node_embedding(
     if automatically_enable_time_memory_tradeoffs:
         graph.enable(
             vector_destinations=True,
-            vector_outbounds=True
+            vector_cumulative_node_degrees=True
         )
 
     # If devices are given as a single device we adapt this into a list.
