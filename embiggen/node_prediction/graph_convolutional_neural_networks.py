@@ -25,10 +25,8 @@ class GraphConvolutionalNeuralNetwork:
 
     def __init__(
         self,
+        graph: EnsmallenGraph,
         features_number: int,
-        number_of_outputs: int,
-        nodes_number: int,
-        multi_label: bool = False,
         number_of_hidden_layers: int = 1,
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
@@ -45,17 +43,12 @@ class GraphConvolutionalNeuralNetwork:
 
         Parameters
         -------------------------------
+        graph: EnsmallenGraph,
+            The data for which to build the model.
         features_number: int,
             Number of features.
-        number_of_outputs: int,
-            Number of output classes.
-        nodes_number: int,
-            Number of nodes of the considered graph.
-        multi_label: bool = False,
-            Whether to treat the prediction task as multilabel.
         number_of_hidden_layers: int = 1,
             Number of graph convolution layer.
-            CONSIDER WELL BEFORE USING MORE THAN ONE.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
             Number of units per hidden layer.
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
@@ -87,8 +80,8 @@ class GraphConvolutionalNeuralNetwork:
                 "the number of the hidden units per layer provided"
             )
         self._features_number = features_number
-        self._nodes_number = nodes_number
-        self._number_of_outputs = number_of_outputs
+        self._nodes_number = graph.get_nodes_number()
+        self._node_types_number = graph.get_node_types_number()
         self._number_of_hidden_layers = number_of_hidden_layers
         self._kernel_initializer = kernel_initializer
         self._bias_initializer = bias_initializer
@@ -99,7 +92,7 @@ class GraphConvolutionalNeuralNetwork:
         self._bias_constraint = bias_constraint
         self._dropout_rate = dropout_rate
         self._number_of_units_per_hidden_layer = number_of_units_per_hidden_layer
-        self._multi_label = multi_label
+        self._multi_label = graph.has_multilabel_node_types()
         self._optimizer = optimizer
         self._model = self._build_model()
         self._compile_model()
@@ -117,8 +110,8 @@ class GraphConvolutionalNeuralNetwork:
 
         for i, number_of_units in enumerate(self._number_of_units_per_hidden_layer):
             if i + 1 == self._number_of_hidden_layers:
-                number_of_units = self._number_of_outputs
-                if self._number_of_outputs == 1 or self._multi_label:
+                number_of_units = self._node_types_number
+                if self._node_types_number == 1 or self._multi_label:
                     activation = "sigmoid"
                 else:
                     activation = "softmax"
@@ -149,7 +142,7 @@ class GraphConvolutionalNeuralNetwork:
     def _compile_model(self) -> Model:
         """Compile model."""
         self._model.compile(
-            loss='binary_crossentropy' if self._number_of_outputs == 1 or self._multi_label else "categorical_crossentropy",
+            loss='binary_crossentropy' if self._node_types_number == 1 or self._multi_label else "categorical_crossentropy",
             optimizer=self._optimizer,
             weighted_metrics=get_minimal_multiclass_metrics()
         )
