@@ -242,6 +242,20 @@ class GraphConvolutionalNeuralNetwork:
                 'does not map to the given graph nodes.'
             )
 
+        if train_graph.has_singleton_nodes():
+            raise ValueError(
+                "The GCN model does not support operations on graph containing "
+                "singletons. You need to either drop the singleton nodes or "
+                "add to them a singleton."
+            )
+
+        if train_graph.is_multigraph():
+            raise ValueError(
+                "The GCN model does not support operations on a multigraph. "
+                "You need to drop the parallel edges in order to execute this "
+                "model."
+            )
+
         symmetrically_normalized_graph = train_graph.get_unweighted_symmetric_normalized_transformed_graph()
         symmetrically_normalized_adjacency_matrix = tf.SparseTensor(
             symmetrically_normalized_graph.get_edge_node_ids(directed=True),
