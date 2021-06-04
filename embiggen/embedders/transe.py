@@ -20,6 +20,8 @@ class TransE(Siamese):
         graph: EnsmallenGraph,
         embedding_size: int = 100,
         distance_metric: str = "COSINE",
+        use_node_types: Union[bool, str] = "auto",
+        node_types_combination: str = "Add",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransE",
@@ -64,7 +66,7 @@ class TransE(Siamese):
         self._distance_metric = distance_metric
         super().__init__(
             graph=graph,
-            use_node_types=False,
+            use_node_types=use_node_types,
             use_edge_types=True,
             node_embedding_size=embedding_size,
             edge_type_embedding_size=embedding_size,

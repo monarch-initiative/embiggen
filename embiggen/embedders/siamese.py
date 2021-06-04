@@ -26,7 +26,7 @@ class Siamese(Embedder):
         self,
         graph: EnsmallenGraph,
         use_node_types: Union[bool, str] = "auto",
-        node_types_combination: str = "Dot",
+        node_types_combination: str = "Add",
         use_edge_types: Union[bool, str] = "auto",
         node_embedding_size: int = 100,
         node_type_embedding_size: int = 100,
@@ -47,6 +47,16 @@ class Siamese(Embedder):
             number of the unique words.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
+        use_node_types: Union[bool, str] = "auto",
+            Whether to use node type.
+            By default, it will automatially use node types if the graph
+            contains node type and does not contain any unknown node type.
+        node_types_combination: str = "Add",
+            Method to combine the node embedding with the node type ambedding.
+        use_edge_types: Union[bool, str] = "auto",
+            Whether to use edge type.
+            By default, it will automatially use edge types if the graph
+            contains edge type and does not contain any unknown edge type.
         node_embedding_size: int = 100,
             Dimension of the embedding.
             If None, the seed embedding must be provided.
@@ -107,8 +117,9 @@ class Siamese(Embedder):
                     "already captured by the node embedding, and may be an error "
                     "in the pipeline you have used to create this graph."
                 )
+
             self._multilabel_node_types = graph.has_multilabel_node_types()
-            self._max_node_types = graph.get_maximum_node_types_number()
+            self._max_node_types = graph.get_maximum_multilabel_count()
             self._node_types_number = graph.get_node_types_number()
         if use_edge_types == "auto":
             use_edge_types = graph.has_edge_types() and not graph.has_unknown_edge_types()
@@ -180,13 +191,19 @@ class Siamese(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=1,
-            name=Embedder.EMBEDDING_LAYER_NAME,
+            name=Embedder.EMBEDDING_LAYER_NAME
         )
 
-        src_node_embedding = UnitNorm()(
-            Flatten()(node_embedding_layer(source_nodes_input)))
-        dst_node_embedding = UnitNorm()(
-            Flatten()(node_embedding_layer(destination_nodes_input)))
+        # Get the node embedding
+        source_node_embedding = node_embedding_layer(source_nodes_input)
+        destination_node_embedding = node_embedding_layer(
+            destination_nodes_input
+        )
+
+        # Appling UnitNorm to them
+        norm = UnitNorm(axis=-1)
+        source_node_embedding = norm(source_node_embedding)
+        destination_node_embedding = norm(destination_node_embedding)
 
         if self._use_node_types:
             node_type_embedding_layer = Embedding(
@@ -195,7 +212,6 @@ class Siamese(Embedder):
                 output_dim=self._node_type_embedding_size,
                 input_length=self._max_node_types,
                 name="node_type_embedding_layer",
-                embeddings_constraint=UnitNorm(),
                 mask_zero=self._multilabel_node_types
             )
             source_node_types_embedding = node_type_embedding_layer(
@@ -205,29 +221,27 @@ class Siamese(Embedder):
                 destination_node_types_input
             )
             global_average_layer = GlobalAveragePooling1D()
-            source_node_types_embedding = global_average_layer(
+            source_node_types_embedding = norm(global_average_layer(
                 source_node_types_embedding
-            )
-            destination_node_types_embedding = global_average_layer(
+            ))
+            destination_node_types_embedding = norm(global_average_layer(
                 destination_node_types_embedding
-            )
+            ))
 
-            if self._node_types_combination == "Dot":
-                node_types_concatenation = Dot(axes=2)
-            elif self._node_types_combination == "Add":
-                node_types_concatenation = Add(axes=2)
+            if self._node_types_combination == "Add":
+                node_types_concatenation = Add()
             elif self._node_types_combination == "Concatenate":
-                node_types_concatenation = Concatenate(axes=2)
+                node_types_concatenation = Concatenate()
             else:
                 raise ValueError(
                     "Supported node types concatenations are Dot, Add and Concatenate."
                 )
-            src_node_embedding = node_types_concatenation([
-                src_node_embedding,
+            source_node_embedding = node_types_concatenation([
+                source_node_embedding,
                 source_node_types_embedding
             ])
-            dst_node_embedding = node_types_concatenation([
-                dst_node_embedding,
+            destination_node_embedding = node_types_concatenation([
+                destination_node_embedding,
                 destination_node_types_embedding
             ])
 
@@ -238,7 +252,7 @@ class Siamese(Embedder):
                 input_length=1,
                 name="edge_type_embedding_layer",
             )(edge_types_input)
-            edge_type_embedding = UnitNorm()(Flatten()(edge_type_embedding))
+            edge_type_embedding = norm(edge_type_embedding)
         else:
             edge_type_embedding = None
 
@@ -246,8 +260,8 @@ class Siamese(Embedder):
         model = Model(
             inputs=input_layers,
             outputs=self._build_output(
-                src_node_embedding,
-                dst_node_embedding,
+                source_node_embedding,
+                destination_node_embedding,
                 edge_type_embedding,
                 edge_types_input
             ),
@@ -257,8 +271,8 @@ class Siamese(Embedder):
 
     def _build_output(
         self,
-        src_node_embedding: tf.Tensor,
-        dst_node_embedding: tf.Tensor,
+        source_node_embedding: tf.Tensor,
+        destination_node_embedding: tf.Tensor,
         edge_type_embedding: Optional[tf.Tensor] = None,
         edge_types_input: Optional[tf.Tensor] = None,
     ):

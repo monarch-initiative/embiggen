@@ -81,14 +81,14 @@ class TransR(TransE):
         """Return output of the model."""
         normal_edge_type_embedding = Embedding(
             input_dim=self._edge_types_number,
-            output_dim=self._edge_type_embedding_size*self._vocabulary_size,
+            output_dim=self._edge_type_embedding_size*self._embedding_size,
             input_length=1,
             name="normal_edge_type_embedding_layer",
         )(edge_types_input)
 
         normal_edge_type_embedding_matrix = Reshape((
             self._edge_type_embedding_size,
-            self._vocabulary_size
+            self._embedding_size
         ))(normal_edge_type_embedding)
 
         src_node_embedding = K.l2_normalize(
