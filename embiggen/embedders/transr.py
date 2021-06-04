@@ -7,7 +7,6 @@ import tensorflow as tf
 from embiggen.embedders.transe import TransE
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import Embedding, Reshape
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
@@ -20,6 +19,7 @@ class TransR(TransE):
         self,
         graph: EnsmallenGraph,
         embedding_size: int = 100,
+        distance_metric: str = "L2",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransR",
@@ -39,6 +39,9 @@ class TransR(TransE):
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
+        distance_metric: str = "L2",
+            The distance to use for the loss function.
+            Supported methods are L1, L2 and COSINE.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
             The seed embedding to be used.
             Note that it is not possible to provide at once both
@@ -60,10 +63,8 @@ class TransR(TransE):
         """
         super().__init__(
             graph=graph,
-            use_node_types=False,
-            use_edge_types=True,
-            node_embedding_size=embedding_size,
-            edge_type_embedding_size=embedding_size,
+            embedding_size=embedding_size,
+            distance_metric=distance_metric,
             embedding=embedding,
             extra_features=extra_features,
             model_name=model_name,
@@ -84,14 +85,20 @@ class TransR(TransE):
             input_length=1,
             name="normal_edge_type_embedding_layer",
         )(edge_types_input)
+
         normal_edge_type_embedding_matrix = Reshape((
             self._edge_type_embedding_size,
             self._vocabulary_size
         ))(normal_edge_type_embedding)
+
         src_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * src_node_embedding, axis=-1)
+            normal_edge_type_embedding_matrix * src_node_embedding,
+            axis=-1
+        )
         dst_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * dst_node_embedding, axis=-1)
+            normal_edge_type_embedding_matrix * dst_node_embedding,
+            axis=-1
+        )
 
         return super()._build_output(
             edge_type_embedding,

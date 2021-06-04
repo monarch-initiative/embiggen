@@ -22,6 +22,7 @@ class TransH(TransE):
         self,
         graph: EnsmallenGraph,
         embedding_size: int = 100,
+        distance_metric: str = "L2",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransH",
@@ -41,6 +42,9 @@ class TransH(TransE):
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
+        distance_metric: str = "L2",
+            The distance to use for the loss function.
+            Supported methods are L1, L2 and COSINE.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
             The seed embedding to be used.
             Note that it is not possible to provide at once both
@@ -62,10 +66,8 @@ class TransH(TransE):
         """
         super().__init__(
             graph=graph,
-            use_node_types=False,
-            use_edge_types=True,
-            node_embedding_size=embedding_size,
-            edge_type_embedding_size=embedding_size,
+            embedding_size=embedding_size,
+            distance_metric=distance_metric,
             embedding=embedding,
             extra_features=extra_features,
             model_name=model_name,
@@ -80,19 +82,17 @@ class TransH(TransE):
         edge_types_input: Optional[tf.Tensor] = None,
     ):
         """Return output of the model."""
-        if self._use_edge_types:
-            normal_edge_type_embedding = Embedding(
-                input_dim=self._edge_types_number,
-                output_dim=self._edge_type_embedding_size,
-                input_length=1,
-                name="normal_edge_type_embedding_layer",
-                # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-                embeddings_constraint=UnitNorm()
-            )(edge_types_input)
-            src_node_embedding -= K.transpose(normal_edge_type_embedding) * \
-                src_node_embedding * normal_edge_type_embedding
-            dst_node_embedding -= K.transpose(normal_edge_type_embedding) * \
-                dst_node_embedding * normal_edge_type_embedding
+        normal_edge_type_embedding = Embedding(
+            input_dim=self._edge_types_number,
+            output_dim=self._edge_type_embedding_size,
+            input_length=1,
+            name="normal_edge_type_embedding_layer",
+            embeddings_constraint=UnitNorm()
+        )(edge_types_input)
+        src_node_embedding -= K.transpose(normal_edge_type_embedding) * \
+            src_node_embedding * normal_edge_type_embedding
+        dst_node_embedding -= K.transpose(normal_edge_type_embedding) * \
+            dst_node_embedding * normal_edge_type_embedding
 
         return super()._build_output(
             edge_type_embedding,
