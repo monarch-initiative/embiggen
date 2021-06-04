@@ -8,7 +8,7 @@ import tensorflow as tf
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
+from tensorflow.keras.layers import Embedding, Flatten  # pylint: disable=import-error
 from tensorflow.keras.layers import (Add, Concatenate, Dot,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model  # pylint: disable=import-error
@@ -183,8 +183,10 @@ class Siamese(Embedder):
             name=Embedder.EMBEDDING_LAYER_NAME,
         )
 
-        src_node_embedding = UnitNorm()(node_embedding_layer(source_nodes_input))
-        dst_node_embedding = UnitNorm()(node_embedding_layer(destination_nodes_input))
+        src_node_embedding = UnitNorm()(
+            Flatten()(node_embedding_layer(source_nodes_input)))
+        dst_node_embedding = UnitNorm()(
+            Flatten()(node_embedding_layer(destination_nodes_input)))
 
         if self._use_node_types:
             node_type_embedding_layer = Embedding(
@@ -236,7 +238,7 @@ class Siamese(Embedder):
                 input_length=1,
                 name="edge_type_embedding_layer",
             )(edge_types_input)
-            edge_type_embedding = UnitNorm()(edge_type_embedding)
+            edge_type_embedding = UnitNorm()(Flatten()(edge_type_embedding))
         else:
             edge_type_embedding = None
 
@@ -282,10 +284,14 @@ class Siamese(Embedder):
         """
         # TODO: check what happens with and without relu
         y_true = tf.cast(y_true, "float32")
-        return self._relu_bias + K.sum(
+        return self._relu_bias + K.mean(
             (1 - y_true) * y_pred - y_true*y_pred,
             axis=-1
         )
+
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return super().get_embedding_dataframe(self._graph.get_node_names())
 
     def _compile_model(self) -> Model:
         """Compile model."""

@@ -22,7 +22,7 @@ class TransH(TransE):
         self,
         graph: EnsmallenGraph,
         embedding_size: int = 100,
-        distance_metric: str = "L2",
+        distance_metric: str = "COSINE",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransH",
@@ -42,7 +42,7 @@ class TransH(TransE):
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
-        distance_metric: str = "L2",
+        distance_metric: str = "COSINE",
             The distance to use for the loss function.
             Supported methods are L1, L2 and COSINE.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
