@@ -14,7 +14,7 @@ class AbstractWord2VecSequence(AbstractSequence):
         self,
         sequences: List[np.ndarray],
         batch_size: int,
-        window_size: int = 16,
+        window_size: int = 4,
         support_mirror_strategy: bool = False,
         random_state: int = 42,
         elapsed_epochs: int = 0,
@@ -27,7 +27,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             List of sequences of integers.
         batch_size: int,
             Number of nodes to include in a single batch.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         support_mirror_strategy: bool = False,

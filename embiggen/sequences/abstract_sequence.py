@@ -9,7 +9,7 @@ class AbstractSequence(Sequence):
         self,
         batch_size: int,
         sample_number: int,
-        window_size: int = 16,
+        window_size: int = 4,
         elapsed_epochs: int = 0,
         support_mirror_strategy: bool = False,
         random_state: int = 42
@@ -22,7 +22,7 @@ class AbstractSequence(Sequence):
             Number of nodes to include in a single batch.
         sample_number: int,
             Number of samples that compose this Sequence.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         elapsed_epochs: int = 0,

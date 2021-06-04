@@ -25,7 +25,7 @@ class Node2Vec:
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 16,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -58,7 +58,7 @@ class Node2Vec:
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,
@@ -70,7 +70,7 @@ class Node2Vec:
             Number of nodes to include in a single batch.
         iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0,

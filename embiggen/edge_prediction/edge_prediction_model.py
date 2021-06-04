@@ -106,8 +106,8 @@ class EdgePredictionModel(Embedder):
     def fit(
         self,
         graph: EnsmallenGraph,
-        batch_size: int = 2**16,
-        batches_per_epoch: int = 2**10,
+        batch_size: int = 2**10,
+        batches_per_epoch: Union[int, str] = "auto",
         negative_samples: float = 1.0,
         epochs: int = 10000,
         support_mirror_strategy: bool = False,

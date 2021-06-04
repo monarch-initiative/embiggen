@@ -1,5 +1,5 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
@@ -12,12 +12,14 @@ class EdgePredictionSequence(Sequence):
     def __init__(
         self,
         graph: EnsmallenGraph,
+        use_node_types: bool = False,
+        use_edge_types: bool = False,
         batch_size: int = 2**10,
         negative_samples: float = 1.0,
         avoid_false_negatives: bool = False,
         support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
-        batches_per_epoch: bool = 2**8,
+        batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         random_state: int = 42
     ):
@@ -27,6 +29,10 @@ class EdgePredictionSequence(Sequence):
         --------------------------------
         graph: EnsmallenGraph,
             The graph from which to sample the edges.
+        use_node_types: bool = False,
+            Whether to return the node types.
+        use_edge_types: bool = False,
+            Whether to return the edge types.
         batch_size: int = 2**10,
             The batch size to use.
         negative_samples: float = 1.0,
@@ -51,8 +57,9 @@ class EdgePredictionSequence(Sequence):
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the EnsmallenGraph package.
-        batches_per_epoch: bool = 2**8,
+        batches_per_epoch: Union[int, str] = "auto",
             Number of batches per epoch.
+            If auto, it is used: `10 * edges number /  batch size`
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
@@ -64,6 +71,14 @@ class EdgePredictionSequence(Sequence):
         self._support_mirror_strategy = support_mirror_strategy
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
+        self._use_node_types = use_node_types
+        self._use_edge_types = use_edge_types
+        if batches_per_epoch == "auto":
+            batches_per_epoch = max(
+                10 * graph.get_directed_edges_number() // batch_size,
+                1
+            )
+        self._batches_per_epoch = batches_per_epoch
         self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch*batch_size,
@@ -83,14 +98,27 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        left, right, labels = self._graph.link_prediction_ids(
-            self._random_state + idx + self.elapsed_epochs,
+        sources, source_node_types, destinations, destination_node_types, edge_types, labels = self._graph.link_prediction_ids(
+            (self._random_state + idx) * (1 + self.elapsed_epochs),
+            return_node_types=self._use_node_types,
+            return_edge_types=self._use_edge_types,
             batch_size=self.batch_size,
             negative_samples=self._negative_samples,
             avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
         if self._support_mirror_strategy:
-            left = left.astype(float)
-            right = right.astype(float)
-        return (left, right), labels
+            sources = sources.astype(float)
+            destinations = destinations.astype(float)
+            if self._use_node_types:
+                source_node_types = source_node_types.astype(float)
+                destination_node_types = destination_node_types.astype(float)
+            if self._use_edge_types:
+                edge_types = edge_types.astype(float)
+        return [
+            value
+            for value in (
+                sources, source_node_types, destinations, destination_node_types, edge_types,
+            )
+            if value is None
+        ], labels
