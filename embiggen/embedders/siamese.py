@@ -31,6 +31,7 @@ class Siamese(Embedder):
         node_embedding_size: int = 100,
         node_type_embedding_size: int = 100,
         edge_type_embedding_size: int = 100,
+        relu_bias: float = 1.0,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransE",
@@ -54,6 +55,8 @@ class Siamese(Embedder):
             Dimension of the embedding for the node types.
         edge_type_embedding_size: int = 100,
             Dimension of the embedding for the edge types.
+        relu_bias: float = 1.0,
+            The bias to use for the ReLu.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
             The seed embedding to be used.
             Note that it is not possible to provide at once both
@@ -138,6 +141,7 @@ class Siamese(Embedder):
         self._node_type_embedding_size = node_type_embedding_size
         self._edge_type_embedding_size = edge_type_embedding_size
         self._graph = graph
+        self._relu_bias = relu_bias
 
         super().__init__(
             vocabulary_size=graph.get_nodes_number(),
@@ -278,7 +282,7 @@ class Siamese(Embedder):
         """
         # TODO: check what happens with and without relu
         y_true = tf.cast(y_true, "float32")
-        return K.sum(
+        return self._relu_bias + K.sum(
             (1 - y_true) * y_pred - y_true*y_pred,
             axis=-1
         )
