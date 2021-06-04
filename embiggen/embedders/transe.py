@@ -83,9 +83,12 @@ class TransE(Siamese):
     ):
         """Return output of the model."""
         if self._distance_metric == "L1":
-            return K.sum(src_node_embedding + edge_type_embedding - dst_node_embedding)
+            return K.sum(
+                src_node_embedding + edge_type_embedding - dst_node_embedding,
+                axis=-1
+            )
         if self._distance_metric == "L2":
-            return K.sum(K.square(src_node_embedding + edge_type_embedding - dst_node_embedding))
+            return K.sum(K.square(src_node_embedding + edge_type_embedding - dst_node_embedding), axis=-1)
         if self._distance_metric == "COSINE":
             return 1.0 - tf.losses.cosine_similarity(src_node_embedding + edge_type_embedding, dst_node_embedding)
         raise ValueError(

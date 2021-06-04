@@ -285,7 +285,7 @@ class Siamese(Embedder):
         # TODO: check what happens with and without relu
         y_true = tf.cast(y_true, "float32")
         return self._relu_bias + K.mean(
-            (1 - y_true) * y_pred - y_true*y_pred,
+            (1 - 2 * y_true) * y_pred,
             axis=-1
         )
 
@@ -323,11 +323,11 @@ class Siamese(Embedder):
         elapsed_epochs: int = 0,
         epochs: int = 100,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0,
+        early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0,
+        reduce_lr_min_delta: float = 0.001,
         reduce_lr_patience: int = 2,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
