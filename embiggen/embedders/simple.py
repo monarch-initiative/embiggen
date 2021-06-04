@@ -4,16 +4,17 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from embiggen.embedders.transe import TransE
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras import backend as K  # pylint: disable=import-error
+from tensorflow.keras.layers import Embedding
 from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import Embedding, Reshape
+from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
 
+from .siamese import Siamese
 
-class TransR(TransE):
+
+class SimplE(Siamese):
     """Siamese network for node-embedding including optionally node types and edge types."""
 
     def __init__(
@@ -22,7 +23,7 @@ class TransR(TransE):
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
-        model_name: str = "TransR",
+        model_name: str = "SimplE",
         optimizer: Union[str, Optimizer] = None
     ):
         """Create new sequence Embedder model.
@@ -78,24 +79,12 @@ class TransR(TransE):
         edge_types_input: Optional[tf.Tensor] = None,
     ):
         """Return output of the model."""
-        normal_edge_type_embedding = Embedding(
+        reverse_edge_type_embedding = Embedding(
             input_dim=self._edge_types_number,
-            output_dim=self._edge_type_embedding_size*self._vocabulary_size,
+            output_dim=self._edge_type_embedding_size,
             input_length=1,
-            name="normal_edge_type_embedding_layer",
+            name="reverse_edge_type_embedding_layer",
+            # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            embeddings_constraint=UnitNorm()
         )(edge_types_input)
-        normal_edge_type_embedding_matrix = Reshape((
-            self._edge_type_embedding_size,
-            self._vocabulary_size
-        ))(normal_edge_type_embedding)
-        src_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * src_node_embedding, axis=-1)
-        dst_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * dst_node_embedding, axis=-1)
-
-        return super()._build_output(
-            edge_type_embedding,
-            dst_node_embedding,
-            edge_type_embedding,
-            edge_types_input
-        )
+        return (src_node_embedding * edge_type_embedding * dst_node_embedding).sum(axis=-1) + (dst_node_embedding * reverse_edge_type_embedding * src_node_embedding).sum(axis=-1)
