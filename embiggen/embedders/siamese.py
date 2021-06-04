@@ -69,7 +69,7 @@ class Siamese(Embedder):
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int = 10,
+        negative_samples_rate: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         """
@@ -177,12 +177,10 @@ class Siamese(Embedder):
             output_dim=self._embedding_size,
             input_length=1,
             name=Embedder.EMBEDDING_LAYER_NAME,
-            # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-            embeddings_constraint=UnitNorm(),
         )
 
-        src_node_embedding = node_embedding_layer(source_nodes_input)
-        dst_node_embedding = node_embedding_layer(destination_nodes_input)
+        src_node_embedding = UnitNorm()(node_embedding_layer(source_nodes_input))
+        dst_node_embedding = UnitNorm()(node_embedding_layer(destination_nodes_input))
 
         if self._use_node_types:
             node_type_embedding_layer = Embedding(
@@ -191,7 +189,6 @@ class Siamese(Embedder):
                 output_dim=self._node_type_embedding_size,
                 input_length=self._max_node_types,
                 name="node_type_embedding_layer",
-                # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                 embeddings_constraint=UnitNorm(),
                 mask_zero=self._multilabel_node_types
             )
@@ -234,9 +231,8 @@ class Siamese(Embedder):
                 output_dim=self._edge_type_embedding_size,
                 input_length=1,
                 name="edge_type_embedding_layer",
-                # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-                embeddings_constraint=UnitNorm()
             )(edge_types_input)
+            edge_type_embedding = UnitNorm()(edge_type_embedding)
         else:
             edge_type_embedding = None
 
@@ -281,6 +277,7 @@ class Siamese(Embedder):
         Loss function score related to this batch.
         """
         # TODO: check what happens with and without relu
+        y_true = tf.cast(y_true, "float32")
         return K.sum(
             (1 - y_true) * y_pred - y_true*y_pred,
             axis=-1
@@ -307,8 +304,8 @@ class Siamese(Embedder):
 
     def fit(
         self,
-        batch_size: int = 2**10,
-        negative_samples: float = 1.0,
+        batch_size: int = 2**12,
+        negative_samples_rate: float = 1.0,
         avoid_false_negatives: bool = False,
         support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
@@ -316,12 +313,12 @@ class Siamese(Embedder):
         elapsed_epochs: int = 0,
         epochs: int = 100,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 1,
-        early_stopping_patience: int = 2,
+        early_stopping_min_delta: float = 0,
+        early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 2,
-        reduce_lr_patience: int = 1,
+        reduce_lr_min_delta: float = 0,
+        reduce_lr_patience: int = 2,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         verbose: int = 2,
@@ -377,7 +374,7 @@ class Siamese(Embedder):
                 graph_to_avoid=graph_to_avoid,
                 use_node_types=self._use_node_types,
                 use_edge_types=self._use_edge_types,
-                negative_samples=negative_samples,
+                negative_samples_rate=negative_samples_rate,
                 elapsed_epochs=elapsed_epochs,
                 batches_per_epoch=batches_per_epoch
             ),

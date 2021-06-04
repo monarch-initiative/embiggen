@@ -6,6 +6,7 @@ from .graph_cbow import GraphCBOW
 from .graph_glove import GraphGloVe
 from .graph_skipgram import GraphSkipGram
 from .skipgram import SkipGram
+from .transe import TransE
 
 __all__ = [
     "GloVe",
@@ -15,4 +16,5 @@ __all__ = [
     "GraphCBOW",
     "GraphSkipGram",
     "GraphGloVe",
+    "TransE"
 ]

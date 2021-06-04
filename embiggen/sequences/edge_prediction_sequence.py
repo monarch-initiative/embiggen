@@ -15,7 +15,7 @@ class EdgePredictionSequence(Sequence):
         use_node_types: bool = False,
         use_edge_types: bool = False,
         batch_size: int = 2**10,
-        negative_samples: float = 1.0,
+        negative_samples_rate: float = 1.0,
         avoid_false_negatives: bool = False,
         support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
@@ -35,9 +35,9 @@ class EdgePredictionSequence(Sequence):
             Whether to return the edge types.
         batch_size: int = 2**10,
             The batch size to use.
-        negative_samples: float = 1.0,
+        negative_samples_rate: float = 1.0,
             Factor of negatives to use in every batch.
-            For example, with a batch size of 128 and negative_samples equal
+            For example, with a batch size of 128 and negative_samples_rate equal
             to 1.0, there will be 64 positives and 64 negatives.
         avoid_false_negatives: bool = False,
             Whether to filter out false negatives.
@@ -66,7 +66,7 @@ class EdgePredictionSequence(Sequence):
             The random_state to use to make extraction reproducible.
         """
         self._graph = graph
-        self._negative_samples = negative_samples
+        self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
         self._support_mirror_strategy = support_mirror_strategy
         self._graph_to_avoid = graph_to_avoid
@@ -103,7 +103,7 @@ class EdgePredictionSequence(Sequence):
             return_node_types=self._use_node_types,
             return_edge_types=self._use_edge_types,
             batch_size=self.batch_size,
-            negative_samples=self._negative_samples,
+            negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
@@ -120,5 +120,5 @@ class EdgePredictionSequence(Sequence):
             for value in (
                 sources, source_node_types, destinations, destination_node_types, edge_types,
             )
-            if value is None
+            if value is not None
         ], labels
