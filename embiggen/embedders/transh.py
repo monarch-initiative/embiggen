@@ -89,8 +89,10 @@ class TransH(TransE):
                 # embeddings_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                 embeddings_constraint=UnitNorm()
             )(edge_types_input)
-            src_node_embedding -= K.transpose(normal_edge_type_embedding) * src_node_embedding * normal_edge_type_embedding
-            dst_node_embedding -= K.transpose(normal_edge_type_embedding) * dst_node_embedding * normal_edge_type_embedding
+            src_node_embedding -= K.transpose(normal_edge_type_embedding) * \
+                src_node_embedding * normal_edge_type_embedding
+            dst_node_embedding -= K.transpose(normal_edge_type_embedding) * \
+                dst_node_embedding * normal_edge_type_embedding
 
         return super()._build_output(
             edge_type_embedding,

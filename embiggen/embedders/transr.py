@@ -91,8 +91,8 @@ class TransR(TransE):
                 self._edge_type_embedding_size,
                 self._vocabulary_size
             ))(normal_edge_type_embedding)
-            src_node_embedding = normal_edge_type_embedding_matrix * src_node_embedding
-            dst_node_embedding = normal_edge_type_embedding_matrix * dst_node_embedding
+            src_node_embedding = K.l2_normalize(normal_edge_type_embedding_matrix * src_node_embedding, axis=-1)
+            dst_node_embedding = K.l2_normalize(normal_edge_type_embedding_matrix * dst_node_embedding, axis=-1)
 
         return super()._build_output(
             edge_type_embedding,
