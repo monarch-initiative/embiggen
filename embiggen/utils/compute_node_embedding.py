@@ -9,11 +9,17 @@ from ensmallen_graph import EnsmallenGraph
 
 
 from ..embedders import GraphCBOW, GraphGloVe, GraphSkipGram, Embedder
+from ..embedders import Siamese, TransR, TransE, TransH, SimplE
 
 SUPPORTED_NODE_EMBEDDING_METHODS = {
     "CBOW": GraphCBOW,
     "GloVe": GraphGloVe,
-    "SkipGram": GraphSkipGram
+    "SkipGram": GraphSkipGram,
+    "Siamese": Siamese,
+    "TransR": TransR,
+    "TransE": TransE,
+    "TransH": TransH,
+    "Simpl": SimplE
 }
 
 

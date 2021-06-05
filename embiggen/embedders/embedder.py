@@ -310,7 +310,7 @@ class Embedder:
         Dataframe with training history.
         """
         if verbose == True:
-            verbose = 1
+            verbose = 2
         if verbose == False:
             verbose = 0
         if verbose not in {0, 1, 2}:
