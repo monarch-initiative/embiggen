@@ -84,6 +84,14 @@ class SimplE(Siamese):
             output_dim=self._edge_type_embedding_size,
             input_length=1,
             name="reverse_edge_type_embedding_layer",
-            embeddings_constraint=UnitNorm()
         )(edge_types_input)
-        return (source_node_embedding * edge_type_embedding * destination_node_embedding).sum(axis=-1) + (destination_node_embedding * reverse_edge_type_embedding * source_node_embedding).sum(axis=-1)
+        reverse_edge_type_embedding = UnitNorm(
+            axis=-1
+        )(reverse_edge_type_embedding)
+        return K.sum(
+            source_node_embedding * edge_type_embedding * destination_node_embedding,
+            axis=-1
+        ) + K.sum(
+            destination_node_embedding * reverse_edge_type_embedding * source_node_embedding,
+            axis=-1
+        )
