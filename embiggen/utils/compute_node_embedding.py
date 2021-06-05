@@ -52,7 +52,7 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
 
 @Cache(
     cache_path=[
-        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.xz",
+        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.gz",
         "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz",
     ],
     args_to_ignore=["devices", "verbose"]
