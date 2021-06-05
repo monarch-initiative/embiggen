@@ -73,8 +73,8 @@ class SimplE(Siamese):
 
     def _build_output(
         self,
-        src_node_embedding: tf.Tensor,
-        dst_node_embedding: tf.Tensor,
+        source_node_embedding: tf.Tensor,
+        destination_node_embedding: tf.Tensor,
         edge_type_embedding: Optional[tf.Tensor] = None,
         edge_types_input: Optional[tf.Tensor] = None,
     ):
@@ -86,4 +86,4 @@ class SimplE(Siamese):
             name="reverse_edge_type_embedding_layer",
             embeddings_constraint=UnitNorm()
         )(edge_types_input)
-        return (src_node_embedding * edge_type_embedding * dst_node_embedding).sum(axis=-1) + (dst_node_embedding * reverse_edge_type_embedding * src_node_embedding).sum(axis=-1)
+        return (source_node_embedding * edge_type_embedding * destination_node_embedding).sum(axis=-1) + (destination_node_embedding * reverse_edge_type_embedding * source_node_embedding).sum(axis=-1)

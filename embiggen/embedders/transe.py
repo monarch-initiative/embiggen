@@ -5,9 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error
 
 from .siamese import Siamese
 
@@ -44,6 +42,9 @@ class TransE(Siamese):
         distance_metric: str = "COSINE",
             The distance to use for the loss function.
             Supported methods are L1, L2 and COSINE.
+        node_types_combination: str = "Add",
+            Method to combine the node embedding with the node type ambedding.
+            The supported methods are "Add" and "Concatenate".
         embedding: Union[np.ndarray, pd.DataFrame] = None,
             The seed embedding to be used.
             Note that it is not possible to provide at once both
@@ -63,13 +64,14 @@ class TransE(Siamese):
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         """
-        self._distance_metric = distance_metric
         super().__init__(
             graph=graph,
             use_node_types=use_node_types,
+            node_types_combination=node_types_combination,
             use_edge_types=True,
             node_embedding_size=embedding_size,
             edge_type_embedding_size=embedding_size,
+            distance_metric=distance_metric,
             embedding=embedding,
             extra_features=extra_features,
             model_name=model_name,
@@ -78,20 +80,15 @@ class TransE(Siamese):
 
     def _build_output(
         self,
-        src_node_embedding: tf.Tensor,
-        dst_node_embedding: tf.Tensor,
+        source_node_embedding: tf.Tensor,
+        destination_node_embedding: tf.Tensor,
         edge_type_embedding: Optional[tf.Tensor] = None,
         edge_types_input: Optional[tf.Tensor] = None,
     ):
         """Return output of the model."""
-        if self._distance_metric == "L1":
-            return K.sum(
-                src_node_embedding + edge_type_embedding - dst_node_embedding,
-                axis=-1
-            )
-        if self._distance_metric == "L2":
-            return K.sum(K.square(src_node_embedding + edge_type_embedding - dst_node_embedding), axis=-1)
-        if self._distance_metric == "COSINE":
-            return 1.0 - tf.losses.cosine_similarity(src_node_embedding + edge_type_embedding, dst_node_embedding)
-        raise ValueError(
-            "Given distance metric {} is not supported.".format(self._distance_metric))
+        return super()._build_model(
+            source_node_embedding + edge_type_embedding,
+            destination_node_embedding,
+            edge_type_embedding,
+            edge_types_input
+        )

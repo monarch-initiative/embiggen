@@ -73,8 +73,8 @@ class TransR(TransE):
 
     def _build_output(
         self,
-        src_node_embedding: tf.Tensor,
-        dst_node_embedding: tf.Tensor,
+        source_node_embedding: tf.Tensor,
+        destination_node_embedding: tf.Tensor,
         edge_type_embedding: Optional[tf.Tensor] = None,
         edge_types_input: Optional[tf.Tensor] = None,
     ):
@@ -91,18 +91,18 @@ class TransR(TransE):
             self._embedding_size
         ))(normal_edge_type_embedding)
 
-        src_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * src_node_embedding,
+        source_node_embedding = K.l2_normalize(
+            normal_edge_type_embedding_matrix * source_node_embedding,
             axis=-1
         )
-        dst_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * dst_node_embedding,
+        destination_node_embedding = K.l2_normalize(
+            normal_edge_type_embedding_matrix * destination_node_embedding,
             axis=-1
         )
 
         return super()._build_output(
             edge_type_embedding,
-            dst_node_embedding,
+            destination_node_embedding,
             edge_type_embedding,
             edge_types_input
         )

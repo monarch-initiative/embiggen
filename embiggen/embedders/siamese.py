@@ -1,6 +1,6 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
 import warnings
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, List
 
 import numpy as np
 import pandas as pd
@@ -8,8 +8,8 @@ import tensorflow as tf
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras import backend as K  # pylint: disable=import-error
 from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import Embedding, Flatten  # pylint: disable=import-error
-from tensorflow.keras.layers import (Add, Concatenate, Dot,
+from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
+from tensorflow.keras.layers import (Add, Concatenate,
                                      GlobalAveragePooling1D, Input)
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
@@ -22,6 +22,9 @@ from .embedder import Embedder
 class Siamese(Embedder):
     """Siamese network for node-embedding including optionally node types and edge types."""
 
+    NODE_TYPE_EMBEDDING_LAYER_NAME = "node_type_embedding_layer"
+    EDGE_TYPE_EMBEDDING_LAYER_NAME = "edge_type_embedding_layer"
+
     def __init__(
         self,
         graph: EnsmallenGraph,
@@ -31,6 +34,7 @@ class Siamese(Embedder):
         node_embedding_size: int = 100,
         node_type_embedding_size: int = 100,
         edge_type_embedding_size: int = 100,
+        distance_metric: str = "COSINE",
         relu_bias: float = 1.0,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
@@ -53,6 +57,7 @@ class Siamese(Embedder):
             contains node type and does not contain any unknown node type.
         node_types_combination: str = "Add",
             Method to combine the node embedding with the node type ambedding.
+            The supported methods are "Add" and "Concatenate".
         use_edge_types: Union[bool, str] = "auto",
             Whether to use edge type.
             By default, it will automatially use edge types if the graph
@@ -65,6 +70,9 @@ class Siamese(Embedder):
             Dimension of the embedding for the node types.
         edge_type_embedding_size: int = 100,
             Dimension of the embedding for the edge types.
+        distance_metric: str = "COSINE",
+            The distance to use for the loss function.
+            Supported methods are L1, L2 and COSINE.
         relu_bias: float = 1.0,
             The bias to use for the ReLu.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
@@ -92,7 +100,7 @@ class Siamese(Embedder):
                 "The graph contains disconnected nodes: these nodes will "
                 "not be embedded in a semantically sensible way, but "
                 "will only obtain a random node embedding vector which is "
-                "from all other nodes."
+                "far from all other nodes."
             )
         if use_node_types == "auto":
             use_node_types = graph.has_node_types() and not graph.has_unknown_node_types()
@@ -116,6 +124,12 @@ class Siamese(Embedder):
                     "node types will not capture any characteristic that is not "
                     "already captured by the node embedding, and may be an error "
                     "in the pipeline you have used to create this graph."
+                )
+
+            if graph.has_homogeneous_node_types():
+                warnings.warn(
+                    "The graph contains exclusively nodes with a homogenous "
+                    "node type!"
                 )
 
             self._multilabel_node_types = graph.has_multilabel_node_types()
@@ -144,6 +158,13 @@ class Siamese(Embedder):
                     "already captured by the edge embedding, and may be an error "
                     "in the pipeline you have used to create this graph."
                 )
+
+            if graph.has_homogeneous_edge_types():
+                warnings.warn(
+                    "The graph contains exclusively edges with a homogenous "
+                    "edge type!"
+                )
+
             self._edge_types_number = graph.get_edge_types_number()
 
         self._node_types_combination = node_types_combination
@@ -152,6 +173,7 @@ class Siamese(Embedder):
         self._node_type_embedding_size = node_type_embedding_size
         self._edge_type_embedding_size = edge_type_embedding_size
         self._graph = graph
+        self._distance_metric = distance_metric
         self._relu_bias = relu_bias
 
         super().__init__(
@@ -191,7 +213,7 @@ class Siamese(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=1,
-            name=Embedder.EMBEDDING_LAYER_NAME
+            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
         )
 
         # Get the node embedding
@@ -211,7 +233,7 @@ class Siamese(Embedder):
                 int(self._multilabel_node_types),
                 output_dim=self._node_type_embedding_size,
                 input_length=self._max_node_types,
-                name="node_type_embedding_layer",
+                name=Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME,
                 mask_zero=self._multilabel_node_types
             )
             source_node_types_embedding = node_type_embedding_layer(
@@ -220,13 +242,21 @@ class Siamese(Embedder):
             destination_node_types_embedding = node_type_embedding_layer(
                 destination_node_types_input
             )
-            global_average_layer = GlobalAveragePooling1D()
-            source_node_types_embedding = norm(global_average_layer(
+            if self._multilabel_node_types:
+                global_average_layer = GlobalAveragePooling1D()
+                source_node_types_embedding = global_average_layer(
+                    source_node_types_embedding
+                )
+                destination_node_types_embedding = global_average_layer(
+                    destination_node_types_embedding
+                )
+
+            source_node_types_embedding = norm(
                 source_node_types_embedding
-            ))
-            destination_node_types_embedding = norm(global_average_layer(
+            )
+            destination_node_types_embedding = norm(
                 destination_node_types_embedding
-            ))
+            )
 
             if self._node_types_combination == "Add":
                 node_types_concatenation = Add()
@@ -236,21 +266,21 @@ class Siamese(Embedder):
                 raise ValueError(
                     "Supported node types concatenations are Dot, Add and Concatenate."
                 )
-            source_node_embedding = node_types_concatenation([
+            source_node_embedding = norm(node_types_concatenation([
                 source_node_embedding,
                 source_node_types_embedding
-            ])
-            destination_node_embedding = node_types_concatenation([
+            ]))
+            destination_node_embedding = norm(node_types_concatenation([
                 destination_node_embedding,
                 destination_node_types_embedding
-            ])
+            ]))
 
         if self._use_edge_types:
             edge_type_embedding = Embedding(
                 input_dim=self._edge_types_number,
                 output_dim=self._edge_type_embedding_size,
                 input_length=1,
-                name="edge_type_embedding_layer",
+                name=Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME,
             )(edge_types_input)
             edge_type_embedding = norm(edge_type_embedding)
         else:
@@ -277,10 +307,17 @@ class Siamese(Embedder):
         edge_types_input: Optional[tf.Tensor] = None,
     ):
         """Return output of the model."""
-        raise NotImplementedError(
-            "The method _build_output must be implemented in the "
-            "classes that extend the Siamese base class."
-        )
+        if self._distance_metric == "L1":
+            return K.sum(
+                source_node_embedding - destination_node_embedding,
+                axis=-1
+            )
+        if self._distance_metric == "L2":
+            return K.sum(K.square(source_node_embedding - destination_node_embedding), axis=-1)
+        if self._distance_metric == "COSINE":
+            return 1.0 - tf.losses.cosine_similarity(source_node_embedding, destination_node_embedding)
+        raise ValueError(
+            "Given distance metric {} is not supported.".format(self._distance_metric))
 
     def _siamese_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
         """Compute the siamese loss function.
@@ -303,9 +340,29 @@ class Siamese(Embedder):
             axis=-1
         )
 
-    def get_embedding_dataframe(self) -> pd.DataFrame:
+    def get_embedding_dataframe(self) -> List[pd.DataFrame]:
         """Return terms embedding using given index names."""
-        return super().get_embedding_dataframe(self._graph.get_node_names())
+        values = [
+            pd.DataFrame(
+                self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME),
+                index=self._graph.get_node_names(),
+            ),
+        ]
+        if self._use_node_types:
+            values.append(
+                pd.DataFrame(
+                    self.get_layer_weights(Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME),
+                    index=self._graph.get_unique_node_type_names(),
+                ),
+            )
+        if self._use_edge_types:
+            values.append(
+                pd.DataFrame(
+                    self.get_layer_weights(Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME),
+                    index=self._graph.get_unique_edge_type_names(),
+                ),
+            )
+        return values
 
     def _compile_model(self) -> Model:
         """Compile model."""
@@ -328,7 +385,7 @@ class Siamese(Embedder):
 
     def fit(
         self,
-        batch_size: int = 2**12,
+        batch_size: int = 2**20,
         negative_samples_rate: float = 1.0,
         avoid_false_negatives: bool = False,
         support_mirror_strategy: bool = False,

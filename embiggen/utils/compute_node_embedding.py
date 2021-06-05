@@ -46,7 +46,7 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
 
 @Cache(
     cache_path=[
-        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.csv.xz",
+        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.xz",
         "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz",
     ],
     args_to_ignore=["devices", "verbose"]
@@ -59,7 +59,7 @@ def _compute_node_embedding(
     verbose: bool = True,
     devices: Union[List[str], str] = None,
     **kwargs: Dict
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
     """Return embedding computed with required node embedding method.
 
     Specifically, this method also caches the embedding automatically.

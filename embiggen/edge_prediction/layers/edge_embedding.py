@@ -68,7 +68,7 @@ class EdgeEmbedding(Layer):
             self._embedding_layer = Embedding(
                 *self._embedding.shape,
                 input_length=1,
-                name=Embedder.EMBEDDING_LAYER_NAME,
+                name=Embedder.TERMS_EMBEDDING_LAYER_NAME,
                 weights=[self._embedding]
             )
 

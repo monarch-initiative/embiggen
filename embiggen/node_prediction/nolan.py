@@ -165,7 +165,7 @@ class NoLaN(Embedder):
                 self._embedding
             ])],
             mask_zero=True,
-            name=Embedder.EMBEDDING_LAYER_NAME
+            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
         )
 
         mean_node_star_embedding = GlobalAveragePooling1D(

@@ -1,4 +1,5 @@
 """Abstract Keras Model object for embedding models."""
+import re
 from typing import Union, List, Dict
 
 import numpy as np
@@ -13,7 +14,7 @@ from tqdm.keras import TqdmCallback
 class Embedder:
     """Abstract Keras Model object for embedding models."""
 
-    EMBEDDING_LAYER_NAME = "terms_embedding_layer"
+    TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
     def __init__(
         self,
@@ -140,33 +141,45 @@ class Embedder:
         """Print model summary."""
         self._model.summary()
 
+    def get_layer_weights(self, layer_name: str) -> np.ndarray:
+        """Return weights from the requested layer.
+
+        Parameters
+        -----------------------
+        layer_name: str,
+            Name of the layer to query for.
+        """
+        for layer in self._model.layers:
+            if layer.name == layer_name:
+                return layer.get_weights()[0]
+        raise NotImplementedError(
+            "This model does not have a layer called {}.".format(
+                layer_name
+            )
+        )
+
     @property
     def embedding(self) -> np.ndarray:
         """Return model embeddings.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
-        for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
-                return layer.get_weights()[0]
-        raise NotImplementedError(
-            "This embedding model does not have an embedding layer."
-        )
+        return self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME)
 
     @property
     def trainable(self) -> bool:
         """Return whether the embedding layer can be trained.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 return layer.trainable
         raise NotImplementedError(
             "This embedding model does not have an embedding layer."
@@ -175,14 +188,14 @@ class Embedder:
     @trainable.setter
     def trainable(self, trainable: bool):
         """Set whether the embedding layer can be trained or not.
-        
+
         Parameters
         -------------------
         trainable: bool,
             Whether the embedding layer can be trained or not.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
         self._compile_model()
 

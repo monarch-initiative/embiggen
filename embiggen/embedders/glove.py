@@ -106,7 +106,7 @@ class GloVe(Embedder):
             weights=None if self._embedding is None else [
                 self._embedding
             ],
-            name=Embedder.EMBEDDING_LAYER_NAME
+            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
         )(left_input_layer)
 
         trainable_right_embedding = Embedding(
