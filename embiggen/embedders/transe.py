@@ -90,7 +90,7 @@ class TransE(Siamese):
         edge_types_input: Optional[tf.Tensor] = None,
     ):
         """Return output of the model."""
-        return super()._build_model(
+        return super()._build_output(
             source_node_embedding + edge_type_embedding,
             destination_node_embedding,
             edge_type_embedding,
