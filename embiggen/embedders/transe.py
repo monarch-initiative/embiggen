@@ -23,7 +23,8 @@ class TransE(Siamese):
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransE",
-        optimizer: Union[str, Optimizer] = None
+        optimizer: Union[str, Optimizer] = None,
+        support_mirror_strategy: bool = False,
     ):
         """Create new sequence Embedder model.
 
@@ -53,16 +54,18 @@ class TransE(Siamese):
             Optional extra features to be used during the computation
             of the embedding. The features must be available for all the
             elements considered for the embedding.
-        model_name: str = "Word2Vec",
+        model_name: str = "TransE",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        window_size: int = 4,
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        negative_samples: int = 10,
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         """
         super().__init__(
             graph=graph,
@@ -76,6 +79,7 @@ class TransE(Siamese):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
+            support_mirror_strategy=support_mirror_strategy
         )
 
     def _build_output(

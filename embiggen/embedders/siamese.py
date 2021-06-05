@@ -38,8 +38,9 @@ class Siamese(Embedder):
         relu_bias: float = 1.0,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
-        model_name: str = "TransE",
-        optimizer: Union[str, Optimizer] = None
+        model_name: str = "Siamese",
+        optimizer: Union[str, Optimizer] = None,
+        support_mirror_strategy: bool = False,
     ):
         """Create new sequence Embedder model.
 
@@ -87,12 +88,14 @@ class Siamese(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        window_size: int = 4,
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        negative_samples_rate: int = 10,
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
+        support_mirror_strategy: bool = False,
+            Wethever to patch support for mirror strategy.
+            At the time of writing, TensorFlow's MirrorStrategy does not support
+            input values different from floats, therefore to support it we need
+            to convert the unsigned int 32 values that represent the indices of
+            the embedding layers we receive from Ensmallen to floats.
+            This will generally slow down performance, but in the context of
+            exploiting multiple GPUs it may be unnoticeable.
         """
         self._model_name = model_name
         if graph.has_disconnected_nodes():
@@ -175,6 +178,7 @@ class Siamese(Embedder):
         self._graph = graph
         self._distance_metric = distance_metric
         self._relu_bias = relu_bias
+        self._support_mirror_strategy = support_mirror_strategy
 
         super().__init__(
             vocabulary_size=graph.get_nodes_number(),
@@ -388,7 +392,6 @@ class Siamese(Embedder):
         batch_size: int = 2**20,
         negative_samples_rate: float = 1.0,
         avoid_false_negatives: bool = False,
-        support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
@@ -451,7 +454,7 @@ class Siamese(Embedder):
                 graph=self._graph,
                 batch_size=batch_size,
                 avoid_false_negatives=avoid_false_negatives,
-                support_mirror_strategy=support_mirror_strategy,
+                support_mirror_strategy=self._support_mirror_strategy,
                 graph_to_avoid=graph_to_avoid,
                 use_node_types=self._use_node_types,
                 use_edge_types=self._use_edge_types,
