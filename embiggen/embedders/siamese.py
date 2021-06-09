@@ -390,7 +390,7 @@ class Siamese(Embedder):
     def fit(
         self,
         batch_size: int = 2**20,
-        negative_samples_rate: float = 1.0,
+        negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: Union[int, str] = "auto",
@@ -449,19 +449,20 @@ class Siamese(Embedder):
         -----------------------
         Dataframe with training history.
         """
+        sequence = EdgePredictionSequence(
+            graph=self._graph,
+            batch_size=batch_size,
+            avoid_false_negatives=avoid_false_negatives,
+            support_mirror_strategy=self._support_mirror_strategy,
+            graph_to_avoid=graph_to_avoid,
+            use_node_types=self._use_node_types,
+            use_edge_types=self._use_edge_types,
+            negative_samples_rate=negative_samples_rate,
+            elapsed_epochs=elapsed_epochs,
+            batches_per_epoch=batches_per_epoch
+        )
         return super().fit(
-            EdgePredictionSequence(
-                graph=self._graph,
-                batch_size=batch_size,
-                avoid_false_negatives=avoid_false_negatives,
-                support_mirror_strategy=self._support_mirror_strategy,
-                graph_to_avoid=graph_to_avoid,
-                use_node_types=self._use_node_types,
-                use_edge_types=self._use_edge_types,
-                negative_samples_rate=negative_samples_rate,
-                elapsed_epochs=elapsed_epochs,
-                batches_per_epoch=batches_per_epoch
-            ),
+            sequence,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,

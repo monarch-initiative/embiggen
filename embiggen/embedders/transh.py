@@ -91,15 +91,15 @@ class TransH(TransE):
             output_dim=self._edge_type_embedding_size,
             input_length=1,
             name="normal_edge_type_embedding_layer",
-            embeddings_constraint=UnitNorm()
         )(edge_types_input)
+        normal_edge_type_embedding = UnitNorm(axis=-1)(normal_edge_type_embedding)
         source_node_embedding -= K.transpose(normal_edge_type_embedding) * \
             source_node_embedding * normal_edge_type_embedding
         destination_node_embedding -= K.transpose(normal_edge_type_embedding) * \
             destination_node_embedding * normal_edge_type_embedding
 
         return super()._build_output(
-            edge_type_embedding,
+            source_node_embedding + edge_type_embedding,
             destination_node_embedding,
             edge_type_embedding,
             edge_types_input

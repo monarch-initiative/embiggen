@@ -108,7 +108,7 @@ class EdgePredictionModel(Embedder):
         graph: EnsmallenGraph,
         batch_size: int = 2**10,
         batches_per_epoch: Union[int, str] = "auto",
-        negative_samples_rate: float = 1.0,
+        negative_samples_rate: float = 0.5,
         epochs: int = 10000,
         support_mirror_strategy: bool = False,
         early_stopping_monitor: str = "loss",
@@ -133,7 +133,7 @@ class EdgePredictionModel(Embedder):
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
-        negative_samples_rate: float = 1.0,
+        negative_samples_rate: float = 0.5,
             Rate of unbalancing in the batch.
         epochs: int = 10000,
             Epochs to train the model for.

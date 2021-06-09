@@ -14,8 +14,9 @@ class EdgePredictionSequence(Sequence):
         graph: EnsmallenGraph,
         use_node_types: bool = False,
         use_edge_types: bool = False,
+        use_edge_metrics: bool = False,
         batch_size: int = 2**10,
-        negative_samples_rate: float = 1.0,
+        negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         support_mirror_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
@@ -33,12 +34,14 @@ class EdgePredictionSequence(Sequence):
             Whether to return the node types.
         use_edge_types: bool = False,
             Whether to return the edge types.
+        use_edge_metrics: bool = False,
+            Whether to return the edge metrics.
         batch_size: int = 2**10,
             The batch size to use.
-        negative_samples_rate: float = 1.0,
+        negative_samples_rate: float = 0.5,
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples_rate equal
-            to 1.0, there will be 64 positives and 64 negatives.
+            to 0.5, there will be 64 positives and 64 negatives.
         avoid_false_negatives: bool = False,
             Whether to filter out false negatives.
             By default False.
@@ -73,6 +76,7 @@ class EdgePredictionSequence(Sequence):
         self._random_state = random_state
         self._use_node_types = use_node_types
         self._use_edge_types = use_edge_types
+        self._use_edge_metrics = use_edge_metrics
         if batches_per_epoch == "auto":
             batches_per_epoch = max(
                 10 * graph.get_directed_edges_number() // batch_size,
@@ -98,10 +102,11 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources, source_node_types, destinations, destination_node_types, edge_types, labels = self._graph.link_prediction_ids(
+        sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types, labels = self._graph.link_prediction_ids(
             (self._random_state + idx) * (1 + self.elapsed_epochs),
             return_node_types=self._use_node_types,
             return_edge_types=self._use_edge_types,
+            return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
@@ -115,10 +120,12 @@ class EdgePredictionSequence(Sequence):
                 destination_node_types = destination_node_types.astype(float)
             if self._use_edge_types:
                 edge_types = edge_types.astype(float)
+            if self._use_edge_metrics:
+                edge_metrics = edge_metrics.astype(float)
         return [
             value
             for value in (
-                sources, source_node_types, destinations, destination_node_types, edge_types,
+                sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types,
             )
             if value is not None
         ], labels
