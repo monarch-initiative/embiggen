@@ -73,6 +73,7 @@ class TransE(Siamese):
             node_types_combination=node_types_combination,
             use_edge_types=True,
             node_embedding_size=embedding_size,
+            node_type_embedding_size=embedding_size,
             edge_type_embedding_size=embedding_size,
             distance_metric=distance_metric,
             embedding=embedding,
