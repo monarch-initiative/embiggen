@@ -99,7 +99,7 @@ class TransH(TransE):
             destination_node_embedding * normal_edge_type_embedding
 
         return super()._build_output(
-            source_node_embedding + edge_type_embedding,
+            source_node_embedding,
             destination_node_embedding,
             edge_type_embedding,
             edge_types_input
