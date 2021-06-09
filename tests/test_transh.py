@@ -17,4 +17,4 @@ class TestTransH(TestCase):
         model = TransH(self._graph)
         self.assertEqual("TransH", model.name)
         model.summary()
-        model.fit(epochs=2)
+        model.fit(epochs=2, batches_per_epoch=2)

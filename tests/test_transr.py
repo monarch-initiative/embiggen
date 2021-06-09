@@ -17,4 +17,4 @@ class TestTransR(TestCase):
         model = TransR(self._graph)
         self.assertEqual("TransR", model.name)
         model.summary()
-        model.fit(epochs=2)
+        model.fit(epochs=2, batches_per_epoch=2)
