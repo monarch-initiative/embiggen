@@ -19,8 +19,25 @@ SUPPORTED_NODE_EMBEDDING_METHODS = {
     "TransR": TransR,
     "TransE": TransE,
     "TransH": TransH,
-    "Simpl": SimplE
+    "SimplE": SimplE
 }
+
+RANDOM_WALK_BASED_MODELS = [
+    "CBOW",
+    "GloVe",
+    "SkipGram"
+]
+
+LINK_PREDICTION_BASED_MODELS = [
+    "Siamese",
+    "TransR",
+    "TransE",
+    "TransH",
+    "SimplE"
+]
+
+assert set(RANDOM_WALK_BASED_MODELS +
+           LINK_PREDICTION_BASED_MODELS) == set(SUPPORTED_NODE_EMBEDDING_METHODS)
 
 
 def get_available_node_embedding_methods() -> List[str]:
@@ -191,10 +208,18 @@ def compute_node_embedding(
 
     # If required we enable the time memory tradeoffs.
     if automatically_enable_time_memory_tradeoffs:
-        graph.enable(
-            vector_destinations=True,
-            vector_cumulative_node_degrees=True
-        )
+        if node_embedding_method_name in RANDOM_WALK_BASED_MODELS:
+            graph.enable(
+                vector_sources=False,
+                vector_destinations=True,
+                vector_cumulative_node_degrees=True
+            )
+        if node_embedding_method_name in LINK_PREDICTION_BASED_MODELS:
+            graph.enable(
+                vector_sources=True,
+                vector_destinations=True,
+                vector_cumulative_node_degrees=False
+            )
 
     # If devices are given as a single device we adapt this into a list.
     if isinstance(devices, str):
