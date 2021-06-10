@@ -1,6 +1,5 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from platform import node
 from typing import Dict, List, Tuple, Union, Optional
 
 import matplotlib
