@@ -367,7 +367,7 @@ class GraphVisualization:
                     self._graph.get_nodes_number()
                 )
             )
-        if edge_embedding is not None and edge_embedding.shape[0] != self._graph.get_edges_number():
+        if edge_embedding is not None and edge_embedding.shape[0] != self._graph.get_directed_edges_number():
             raise ValueError(
                 ("The number of rows provided with the given edge embedding {} "
                  "does not match the number of directed edges in the graph {}.").format(
