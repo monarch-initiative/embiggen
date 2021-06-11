@@ -7,7 +7,8 @@ from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras.optimizers import Optimizer
 
 from ..sequences import Node2VecSequence
-from .word2vec import Word2Vec
+from .cbow import CBOW
+from .skipgram import SkipGram
 
 
 class Node2Vec:
@@ -16,10 +17,8 @@ class Node2Vec:
     def __init__(
         self,
         graph: EnsmallenGraph,
-        word2vec_model: Word2Vec,
+        word2vec_model: Union[CBOW, SkipGram],
         embedding_size: int = 100,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,

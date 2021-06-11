@@ -36,7 +36,6 @@ class NoLaN(Embedder):
     def __init__(
         self,
         graph: EnsmallenGraph,
-        labels_number: int = None,
         node_embedding_size: int = None,
         use_node_embedding_dropout: bool = True,
         node_embedding_dropout_rate: float = 0.4,
@@ -50,8 +49,7 @@ class NoLaN(Embedder):
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
         trainable_node_embedding: bool = False,
-        support_mirror_strategy: bool = False,
-        scaler: "Scaler" = "RobustScaler"
+        support_mirror_strategy: bool = False
     ):
         """Create new NoLaN model.
 
@@ -60,8 +58,7 @@ class NoLaN(Embedder):
         TODO!
         """
         self._graph = graph
-        self._labels_number = self._graph.get_node_types_number(
-        ) if labels_number is None else labels_number
+        self._labels_number = self._graph.get_node_types_number()
         self._use_node_embedding_dropout = use_node_embedding_dropout
         self._node_embedding_dropout_rate = node_embedding_dropout_rate
         self._use_node_features_dropout = use_node_features_dropout
@@ -73,9 +70,6 @@ class NoLaN(Embedder):
         if isinstance(hidden_dense_layers, int):
             hidden_dense_layers = (hidden_dense_layers, )
         self._hidden_dense_layers = hidden_dense_layers
-
-        if scaler == "RobustScaler":
-            scaler = RobustScaler()
 
         if node_embedding is not None:
             if not isinstance(node_embedding, (pd.DataFrame, np.ndarray)):

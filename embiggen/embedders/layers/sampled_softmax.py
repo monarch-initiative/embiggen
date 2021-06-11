@@ -1,4 +1,4 @@
-"""Layer for executing NCE loss in Keras models."""
+"""Layer for executing Sampled Softmax in Keras models."""
 from typing import Dict, Tuple
 
 import tensorflow as tf
@@ -6,20 +6,19 @@ import tensorflow.keras.backend as K   # pylint: disable=import-error
 from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 
 
-class NoiseContrastiveEstimation(Layer):
-    """Layer for executing NCE loss in Keras models."""
+class SampledSoftmax(Layer):
+    """Layer for executing Sampled Softmax in Keras models."""
 
     def __init__(
         self,
         vocabulary_size: int,
         embedding_size: int,
         negative_samples: int,
-        positive_samples: int,
         **kwargs: Dict
     ):
-        """Create new NoiseContrastiveEstimation layer.
+        """Create new SampledSoftmax layer.
 
-        This layer behaves as the NCE loss function.
+        This layer behaves as the Sampled Softmax function.
         No loss function is required when using this layer.
 
         Parameters
@@ -33,13 +32,10 @@ class NoiseContrastiveEstimation(Layer):
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        positive_samples: int,
-            The number of target classes per training example.
         """
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._negative_samples = negative_samples
-        self._positive_samples = positive_samples
         self._weights = None
         self._biases = None
         super().__init__(**kwargs)
@@ -77,15 +73,14 @@ class NoiseContrastiveEstimation(Layer):
 
         predictions, labels = inputs
 
-        # Computing NCE loss.
-        loss = K.mean(tf.nn.nce_loss(
+        # Computing Sampled Softmax.
+        loss = K.mean(tf.nn.sampled_softmax_loss(
             self._weights,
             self._biases,
             labels=labels,
             inputs=predictions,
             num_sampled=self._negative_samples,
-            num_classes=self._vocabulary_size,
-            num_true=self._positive_samples,
+            num_classes=self._vocabulary_size
         ), axis=0)
 
         self.add_loss(loss)
