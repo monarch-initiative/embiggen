@@ -84,7 +84,7 @@ class SkipGram(Embedder):
 
         # Creating the actual model
         model = Model(
-            inputs=[central_terms_input, contextual_terms_input],
+            inputs=[contextual_terms_input, central_terms_input],
             outputs=sampled_softmax,
             name="SkipGram"
         )
