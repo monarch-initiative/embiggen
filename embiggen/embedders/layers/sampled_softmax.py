@@ -14,6 +14,7 @@ class SampledSoftmax(Layer):
         vocabulary_size: int,
         embedding_size: int,
         negative_samples: int,
+        remove_accidental_hits: bool = False,
         **kwargs: Dict
     ):
         """Create new SampledSoftmax layer.
@@ -32,10 +33,13 @@ class SampledSoftmax(Layer):
         negative_samples: int,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
+        remove_accidental_hits: bool = False,
+            Whether to remove accidental hits.
         """
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._negative_samples = negative_samples
+        self._remove_accidental_hits = remove_accidental_hits
         self._weights = None
         self._biases = None
         super().__init__(**kwargs)
@@ -80,7 +84,8 @@ class SampledSoftmax(Layer):
             labels=labels,
             inputs=predictions,
             num_sampled=self._negative_samples,
-            num_classes=self._vocabulary_size
+            num_classes=self._vocabulary_size,
+            remove_accidental_hits=self._remove_accidental_hits
         ), axis=0)
 
         self.add_loss(loss)

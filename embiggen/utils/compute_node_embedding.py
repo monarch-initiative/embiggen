@@ -22,6 +22,11 @@ SUPPORTED_NODE_EMBEDDING_METHODS = {
     "SimplE": SimplE
 }
 
+REQUIRE_ZIPFIAN = [
+    "CBOW",
+    "SkipGram"
+]
+
 RANDOM_WALK_BASED_MODELS = [
     "CBOW",
     "GloVe",
@@ -196,7 +201,7 @@ def compute_node_embedding(
     # If the model requested is SkipGram and the given graph does not have sorted
     # node IDs according to decreasing outbound node degrees, we create the new graph
     # that has the node IDs sorted.
-    if automatically_sort_by_decreasing_outbound_node_degree and node_embedding_method_name == "SkipGram" and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
+    if automatically_sort_by_decreasing_outbound_node_degree and node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
         graph = graph.sort_by_decreasing_outbound_node_degree(verbose)
 
     # If required, we filter out the unsupported parameters.

@@ -85,7 +85,7 @@ class NoiseContrastiveEstimation(Layer):
             inputs=predictions,
             num_sampled=self._negative_samples,
             num_classes=self._vocabulary_size,
-            num_true=self._positive_samples,
+            num_true=self._positive_samples
         ), axis=0)
 
         self.add_loss(loss)

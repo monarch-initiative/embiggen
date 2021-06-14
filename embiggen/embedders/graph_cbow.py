@@ -124,6 +124,16 @@ class GraphCBOW(Node2Vec):
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
         """
+        if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
+            raise ValueError(
+                "The given graph does not have the nodes sorted by decreasing "
+                "order, therefore the NCE loss sampling (which follows a zipfian "
+                "distribution) would not approximate well the Softmax.\n"
+                "In order to sort the given graph in such a way that the node IDs "
+                "are sorted by decreasing outbound node degrees, you can use "
+                "the EnsmallenGraph method "
+                "`graph.sort_by_decreasing_outbound_node_degree()`"
+            )
         super().__init__(
             graph=graph,
             word2vec_model=CBOW,

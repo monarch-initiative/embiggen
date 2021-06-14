@@ -75,7 +75,7 @@ class SkipGram(Embedder):
         )
 
         # Adding layer that also executes the loss function
-        sampled_softmax = NoiseContrastiveEstimation(
+        output = NoiseContrastiveEstimation(
             vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
@@ -85,7 +85,7 @@ class SkipGram(Embedder):
         # Creating the actual model
         model = Model(
             inputs=[contextual_terms_input, central_terms_input],
-            outputs=sampled_softmax,
+            outputs=output,
             name="SkipGram"
         )
         return model
