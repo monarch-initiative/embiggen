@@ -7,7 +7,7 @@ In this version of the implementation, we allow for batch sizes of arbitrary siz
 """
 from typing import Tuple, Union, Dict
 import tensorflow as tf
-from tensorflow.keras.layers import Dropout, Layer, Dense
+from tensorflow.keras.layers import Dropout, Layer, Dense, Concatenate
 from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.initializers import Initializer
 from tensorflow.keras.regularizers import Regularizer
@@ -21,6 +21,7 @@ class GraphConvolution(Layer):
         self,
         units: int,
         activation: str = "relu",
+        num_split: int = 1,
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
         bias_initializer: Union[str, Initializer] = 'zeros',
         kernel_regularizer: Union[str, Regularizer] = None,
@@ -39,6 +40,11 @@ class GraphConvolution(Layer):
             The dimensionality of the output space (i.e. the number of output units).
         activation: str = "relu",
             Activation function to use. If you don't specify anything, relu is used.
+        num_split: int = 1,
+            Number of splits to use to distribute the steps of
+            the graph convolution. This is only needed on graphs
+            that have a incidence matrix that exeeds the dimension
+            of the GPU memory.
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
             Initializer for the kernel weights matrix.
         bias_initializer: Union[str, Initializer] = 'zeros',
@@ -61,6 +67,7 @@ class GraphConvolution(Layer):
         super().__init__(**kwargs)
         self._units = units
         self._activation = activation
+        self._num_split = num_split
         self._kernel_initializer = kernel_initializer
         self._bias_initializer = bias_initializer
         self._kernel_regularizer = kernel_regularizer
@@ -108,4 +115,12 @@ class GraphConvolution(Layer):
             Sparse weighted input matrix.
         """
         adjacency, features = inputs
-        return self._dense(tf.sparse.sparse_dense_matmul(adjacency, self._features_dropout(features)))
+        features = self._features_dropout(features)
+        if self._num_split > 1:
+            output = Concatenate(axis=0)([
+                tf.sparse.sparse_dense_matmul(batch, features)
+                for batch in tf.sparse.split(adjacency, num_split=self._num_split, axis=0, )
+            ])
+        else:
+            output = tf.sparse.sparse_dense_matmul(adjacency, features)
+        return self._dense(output)

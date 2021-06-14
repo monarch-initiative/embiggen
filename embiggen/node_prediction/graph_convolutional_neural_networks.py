@@ -25,7 +25,7 @@ class GraphConvolutionalNeuralNetwork:
     def __init__(
         self,
         graph: EnsmallenGraph,
-        splits: int = 1,
+        num_split: int = 1,
         use_weights: Union[str, bool] = "auto",
         node_features_number: Optional[int] = None,
         node_features: Optional[pd.DataFrame] = None,
@@ -47,8 +47,11 @@ class GraphConvolutionalNeuralNetwork:
         -------------------------------
         graph: EnsmallenGraph,
             The data for which to build the model.
-        splits: int = 1,
-            Number of splits to use.
+        num_split: int = 1,
+            Number of splits to use to distribute the steps of
+            the graph convolution. This is only needed on graphs
+            that have a incidence matrix that exeeds the dimension
+            of the GPU memory.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
             Number of units per hidden layer.
         use_weights: Union[str, bool] = "auto",
@@ -121,6 +124,7 @@ class GraphConvolutionalNeuralNetwork:
         if node_features is not None:
             node_features_number = node_features.shape[-1]
         self._use_weights = use_weights
+        self._num_split = num_split
         self._node_features_number = node_features_number
         self._node_features = node_features
         self._nodes_number = graph.get_nodes_number()
@@ -147,15 +151,26 @@ class GraphConvolutionalNeuralNetwork:
             sparse=True
         )
 
+        input_graph_convolution = GraphConvolution(
+            self._node_types_number,
+            activation="softmax",
+            num_split=self._num_split,
+            features_dropout_rate=self._features_dropout_rate,
+            kernel_initializer=self._kernel_initializer,
+            bias_initializer=self._bias_initializer,
+            kernel_regularizer=self._kernel_regularizer,
+            bias_regularizer=self._bias_regularizer,
+            activity_regularizer=self._activity_regularizer,
+            kernel_constraint=self._kernel_constraint,
+            bias_constraint=self._bias_constraint,
+        )
+
         if self._node_features is None:
-            node_features = tf.Variable(
-                initial_value=np.random.uniform(
-                    size=(self._nodes_number, self._node_features_number
-                )),
-                trainable=True,
-                validate_shape=True,
+            node_features = input_graph_convolution.add_weight(
                 name="node_features",
                 shape=(self._nodes_number, self._node_features_number),
+                trainable=True,
+                initializer="glorot_normal",
                 dtype=tf.float32
             )
         else:
@@ -168,19 +183,7 @@ class GraphConvolutionalNeuralNetwork:
                 dtype=tf.float32
             )
 
-        # TODO: update model with parametrization
-        hidden = GraphConvolution(
-            self._node_types_number,
-            activation="softmax",
-            features_dropout_rate=self._features_dropout_rate,
-            kernel_initializer=self._kernel_initializer,
-            bias_initializer=self._bias_initializer,
-            kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
-            activity_regularizer=self._activity_regularizer,
-            kernel_constraint=self._kernel_constraint,
-            bias_constraint=self._bias_constraint,
-        )((adjacency_matrix, node_features))
+        hidden = input_graph_convolution((adjacency_matrix, node_features))
 
         return Model(
             inputs=adjacency_matrix,
