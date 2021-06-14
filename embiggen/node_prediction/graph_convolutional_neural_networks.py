@@ -31,6 +31,7 @@ class GraphConvolutionalNeuralNetwork:
         node_features: Optional[pd.DataFrame] = None,
         number_of_hidden_layers: int = 1,
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
+        activations_per_hidden_layer: Union[str, List[str]] = "relu",
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
         bias_initializer: Union[str, Initializer] = 'zeros',
         kernel_regularizer: Union[str, Regularizer] = None,
@@ -96,10 +97,21 @@ class GraphConvolutionalNeuralNetwork:
                 number_of_units_per_hidden_layer
             ] * number_of_hidden_layers
 
+        if isinstance(activations_per_hidden_layer, str):
+            activations_per_hidden_layer = [
+                activations_per_hidden_layer
+            ] * number_of_hidden_layers
+
         if len(number_of_units_per_hidden_layer) != number_of_hidden_layers:
             raise ValueError(
                 "The number of hidden layers must match"
                 "the number of the hidden units per layer provided"
+            )
+
+        if len(activations_per_hidden_layer) != number_of_hidden_layers:
+            raise ValueError(
+                "The number of hidden layers must match"
+                "the number of the activations per layer provided"
             )
 
         use_weights_supported_values = ("auto", True, False)
@@ -129,6 +141,7 @@ class GraphConvolutionalNeuralNetwork:
         self._node_features = node_features
         self._nodes_number = graph.get_nodes_number()
         self._node_types_number = graph.get_node_types_number()
+        number_of_units_per_hidden_layer[-1] = self._node_types_number
         self._number_of_hidden_layers = number_of_hidden_layers
         self._kernel_initializer = kernel_initializer
         self._bias_initializer = bias_initializer
@@ -140,6 +153,8 @@ class GraphConvolutionalNeuralNetwork:
         self._features_dropout_rate = features_dropout_rate
         self._number_of_units_per_hidden_layer = number_of_units_per_hidden_layer
         self._multi_label = graph.has_multilabel_node_types()
+        activations_per_hidden_layer[-1] = "sigmoid" if self._multi_label or self._node_types_number == 1 else "softmax"
+        self._activations_per_hidden_layer = activations_per_hidden_layer
         self._optimizer = optimizer
         self._model = self._build_model()
         self._compile_model()
@@ -152,8 +167,8 @@ class GraphConvolutionalNeuralNetwork:
         )
 
         input_graph_convolution = GraphConvolution(
-            self._node_types_number,
-            activation="softmax",
+            self._number_of_units_per_hidden_layer[0],
+            activation=self._activations_per_hidden_layer[0],
             num_split=self._num_split,
             features_dropout_rate=self._features_dropout_rate,
             kernel_initializer=self._kernel_initializer,
@@ -184,6 +199,20 @@ class GraphConvolutionalNeuralNetwork:
             )
 
         hidden = input_graph_convolution((adjacency_matrix, node_features))
+        for i in range(1, self._number_of_hidden_layers):
+            hidden = GraphConvolution(
+                self._number_of_units_per_hidden_layer[i],
+                activation=self._activations_per_hidden_layer[i],
+                num_split=self._num_split,
+                features_dropout_rate=self._features_dropout_rate,
+                kernel_initializer=self._kernel_initializer,
+                bias_initializer=self._bias_initializer,
+                kernel_regularizer=self._kernel_regularizer,
+                bias_regularizer=self._bias_regularizer,
+                activity_regularizer=self._activity_regularizer,
+                kernel_constraint=self._kernel_constraint,
+                bias_constraint=self._bias_constraint,
+            )((adjacency_matrix, hidden))
 
         return Model(
             inputs=adjacency_matrix,
@@ -338,7 +367,6 @@ class GraphConvolutionalNeuralNetwork:
             sample_weight=train_graph.get_one_hot_encoded_node_types().any(axis=1),
             validation_data=validation_data,
             epochs=epochs,
-            shuffle=False,
             verbose=False,
             batch_size=batch_size,
             callbacks=[
