@@ -19,6 +19,8 @@ class Node2Vec:
         graph: EnsmallenGraph,
         word2vec_model: Union[CBOW, SkipGram],
         embedding_size: int = 100,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,
@@ -137,6 +139,8 @@ class Node2Vec:
         )
         self._model = word2vec_model(
             vocabulary_size=self._graph.get_nodes_number(),
+            embedding=embedding,
+            extra_features=extra_features,
             embedding_size=embedding_size,
             model_name="Graph{}".format(word2vec_model.__name__),
             optimizer=optimizer,
