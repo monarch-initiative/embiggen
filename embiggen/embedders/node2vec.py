@@ -142,7 +142,6 @@ class Node2Vec:
             embedding=embedding,
             extra_features=extra_features,
             embedding_size=embedding_size,
-            model_name="Graph{}".format(word2vec_model.__name__),
             optimizer=optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
