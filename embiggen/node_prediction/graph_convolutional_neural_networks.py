@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from extra_keras_metrics import get_minimal_multiclass_metrics
-from tensorflow.keras.layers import Input, Concatenate
+from tensorflow.keras.layers import Input
 from tensorflow.keras.initializers import Initializer
 from tensorflow.keras.regularizers import Regularizer
 from tensorflow.keras.constraints import Constraint
@@ -25,7 +25,6 @@ class GraphConvolutionalNeuralNetwork:
     def __init__(
         self,
         graph: EnsmallenGraph,
-        num_split: int = 1,
         use_weights: Union[str, bool] = "auto",
         node_features_number: Optional[int] = None,
         node_features: Optional[pd.DataFrame] = None,
@@ -136,7 +135,6 @@ class GraphConvolutionalNeuralNetwork:
         if node_features is not None:
             node_features_number = node_features.shape[-1]
         self._use_weights = use_weights
-        self._num_split = num_split
         self._node_features_number = node_features_number
         self._node_features = node_features
         self._nodes_number = graph.get_nodes_number()
@@ -169,7 +167,6 @@ class GraphConvolutionalNeuralNetwork:
         input_graph_convolution = GraphConvolution(
             self._number_of_units_per_hidden_layer[0],
             activation=self._activations_per_hidden_layer[0],
-            num_split=self._num_split,
             features_dropout_rate=self._features_dropout_rate,
             kernel_initializer=self._kernel_initializer,
             bias_initializer=self._bias_initializer,
@@ -203,7 +200,6 @@ class GraphConvolutionalNeuralNetwork:
             hidden = GraphConvolution(
                 self._number_of_units_per_hidden_layer[i],
                 activation=self._activations_per_hidden_layer[i],
-                num_split=self._num_split,
                 features_dropout_rate=self._features_dropout_rate,
                 kernel_initializer=self._kernel_initializer,
                 bias_initializer=self._bias_initializer,

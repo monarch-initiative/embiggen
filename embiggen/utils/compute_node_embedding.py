@@ -139,7 +139,7 @@ def compute_node_embedding(
     node_embedding_method_name: str,
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
-    verbose: bool = True,
+    verbose: Union[bool, int] = True,
     automatically_drop_unsupported_parameters: bool = False,
     automatically_enable_time_memory_tradeoffs: bool = True,
     automatically_sort_by_decreasing_outbound_node_degree: bool = True,
@@ -202,7 +202,7 @@ def compute_node_embedding(
     # node IDs according to decreasing outbound node degrees, we create the new graph
     # that has the node IDs sorted.
     if automatically_sort_by_decreasing_outbound_node_degree and node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-        graph = graph.sort_by_decreasing_outbound_node_degree(verbose)
+        graph = graph.sort_by_decreasing_outbound_node_degree(verbose > 0)
 
     # If required, we filter out the unsupported parameters.
     # This may be useful when running a suite of experiments with a set of
