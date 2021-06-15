@@ -102,7 +102,7 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types, labels = self._graph.link_prediction_ids(
+        sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types, labels = self._graph.get_edge_prediction_mini_batch(
             (self._random_state + idx) * (1 + self.elapsed_epochs),
             return_node_types=self._use_node_types,
             return_edge_types=self._use_edge_types,
