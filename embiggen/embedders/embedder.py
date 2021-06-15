@@ -8,7 +8,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.models import Model   # pylint: disable=import-error
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
 from tensorflow.keras.optimizers import Nadam
-from tqdm.keras import TqdmCallback
+#from tqdm.keras import TqdmCallback
 
 
 class Embedder:
@@ -322,7 +322,7 @@ class Embedder:
         return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
-            verbose=False,
+            verbose=True,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,
@@ -337,7 +337,7 @@ class Embedder:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
+                #*((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs
