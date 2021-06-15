@@ -16,7 +16,7 @@ from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
 
 from ensmallen_graph import EnsmallenGraph
-from ..embedders.layers import GraphConvolution
+from embiggen.embedders.layers import GraphConvolution
 
 
 class GraphConvolutionalNeuralNetwork:
@@ -198,7 +198,7 @@ class GraphConvolutionalNeuralNetwork:
                 dtype=tf.float32
             )
 
-        hidden = input_graph_convolution((adjacency_matrix, node_features))
+        hidden = input_graph_convolution(adjacency_matrix, node_features)
         for i in range(1, self._number_of_hidden_layers):
             hidden = GraphConvolution(
                 self._number_of_units_per_hidden_layer[i],
@@ -212,7 +212,7 @@ class GraphConvolutionalNeuralNetwork:
                 activity_regularizer=self._activity_regularizer,
                 kernel_constraint=self._kernel_constraint,
                 bias_constraint=self._bias_constraint,
-            )((adjacency_matrix, hidden))
+            )(adjacency_matrix, hidden)
 
         return Model(
             inputs=adjacency_matrix,

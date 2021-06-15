@@ -5,7 +5,7 @@ The layer is implemented as described in [Semi-Supervised Classification with Gr
 
 In this version of the implementation, we allow for batch sizes of arbitrary size.
 """
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional
 import tensorflow as tf
 from tensorflow.keras.layers import Dropout, Layer, Dense, Concatenate
 from tensorflow.keras.constraints import UnitNorm
@@ -106,7 +106,12 @@ class GraphConvolution(Layer):
 
         super().build(input_shape)
 
-    def call(self, inputs: Tuple[tf.SparseTensor, tf.Tensor], **kwargs: Dict) -> Layer:
+    def call(
+        self,
+        adjacency: tf.SparseTensor,
+        node_features: Optional[tf.Tensor] = None,
+        **kwargs: Dict
+    ) -> Layer:
         """Returns called Graph Convolution Layer.
 
         Parameters
@@ -114,8 +119,7 @@ class GraphConvolution(Layer):
         inputs: Tuple[tf.SparseTensor, tf.Tensor],
             Sparse weighted input matrix.
         """
-        adjacency, features = inputs
-        features = self._features_dropout(features)
+        features = self._features_dropout(node_features)
         if self._num_split > 1:
             output = Concatenate(axis=0)([
                 tf.sparse.sparse_dense_matmul(batch, features)
