@@ -1,13 +1,12 @@
 """Abstract Keras Model object for embedding models."""
-import re
 from typing import Union, List, Dict
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.models import Model   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Nadam
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
 #from tqdm.keras import TqdmCallback
 
 

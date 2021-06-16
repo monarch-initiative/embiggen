@@ -7,10 +7,10 @@ In this version of the implementation, we allow for batch sizes of arbitrary siz
 """
 from typing import Tuple, Union, Dict, Optional
 import tensorflow as tf
-from tensorflow.keras.layers import Dropout, Layer, Dense
-from tensorflow.keras.initializers import Initializer
-from tensorflow.keras.regularizers import Regularizer
-from tensorflow.keras.constraints import Constraint
+from tensorflow.keras.layers import Dropout, Layer, Dense # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.initializers import Initializer # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.regularizers import Regularizer # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import Constraint # pylint: disable=import-error,no-name-in-module
 
 
 class GraphConvolution(Layer):

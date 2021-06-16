@@ -4,7 +4,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.optimizers import Optimizer
+from tensorflow.keras.optimizers import Optimizer # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import Node2VecSequence
 from .cbow import CBOW

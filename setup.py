@@ -47,7 +47,6 @@ setup(
         'numpy',
         'pandas',
         "tqdm",
-        "toposort",
         "matplotlib",
         "sklearn",
         "ddd_subplots>=1.0.7",

@@ -1,19 +1,23 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
 import warnings
-from typing import Dict, Optional, Union, List
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import (Add, Concatenate,
-                                     GlobalAveragePooling1D, Input)
-from tensorflow.keras.models import Model  # pylint: disable=import-error
+from tensorflow.keras import \
+    backend as K  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import \
+    UnitNorm  # pylint: disable=import-error,no-name-in-module,no-name-in-module
+from tensorflow.keras.layers import \
+    Embedding  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
+    Add, Concatenate, GlobalAveragePooling1D, Input)
+from tensorflow.keras.models import \
+    Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import EdgePredictionSequence
 from .embedder import Embedder
@@ -36,8 +40,8 @@ class Siamese(Embedder):
         edge_type_embedding_size: int = 100,
         distance_metric: str = "COSINE",
         relu_bias: float = 1.0,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+        embedding: Optional[Union[np.ndarray, pd.DataFrame]] = None,
+        extra_features: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
         support_mirror_strategy: bool = False,
@@ -84,7 +88,7 @@ class Siamese(Embedder):
             Optional extra features to be used during the computation
             of the embedding. The features must be available for all the
             elements considered for the embedding.
-        model_name: str = "Word2Vec",
+        model_name: str = "Siamese",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
@@ -307,10 +311,28 @@ class Siamese(Embedder):
         self,
         source_node_embedding: tf.Tensor,
         destination_node_embedding: tf.Tensor,
-        edge_type_embedding: Optional[tf.Tensor] = None,
-        edge_types_input: Optional[tf.Tensor] = None,
+        *args: List[tf.Tensor],
+        **kwargs: Dict[str, tf.Tensor],
     ):
-        """Return output of the model."""
+        """Return output of the model.
+        
+        Parameters
+        ----------------------
+        source_node_embedding: tf.Tensor,
+            Embedding of the source node.
+        destination_node_embedding: tf.Tensor,
+            Embedding of the destination node.
+        args: List[tf.Tensor],
+            Additional tensors that may be used
+            in subclasses of this model.
+        kwargs: Dict[str, tf.Tensor],
+            Additional tensors that may be used
+            in subclasses of this model.
+        
+        Returns
+        ----------------------
+        The distance for the Siamese network.
+        """
         if self._distance_metric == "L1":
             return K.sum(
                 source_node_embedding - destination_node_embedding,
@@ -337,7 +359,7 @@ class Siamese(Embedder):
         ---------------------------
         Loss function score related to this batch.
         """
-        # TODO: check what happens with and without relu
+        # TODO: check what happens with and without relu cutoff
         y_true = tf.cast(y_true, "float32")
         return self._relu_bias + K.mean(
             (1 - 2 * y_true) * y_pred,
@@ -355,14 +377,16 @@ class Siamese(Embedder):
         if self._use_node_types:
             values.append(
                 pd.DataFrame(
-                    self.get_layer_weights(Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME),
+                    self.get_layer_weights(
+                        Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME),
                     index=self._graph.get_unique_node_type_names(),
                 ),
             )
         if self._use_edge_types:
             values.append(
                 pd.DataFrame(
-                    self.get_layer_weights(Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME),
+                    self.get_layer_weights(
+                        Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME),
                     index=self._graph.get_unique_edge_type_names(),
                 ),
             )
