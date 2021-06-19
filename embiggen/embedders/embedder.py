@@ -11,7 +11,10 @@ from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,n
 
 
 class Embedder:
-    """Abstract Keras Model object for embedding models."""
+    """Abstract Keras Model object for embedding models.
+    
+    TODO!: https://keras.io/examples/vision/gradient_centralization/
+    """
 
     TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
