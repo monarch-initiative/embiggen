@@ -295,7 +295,7 @@ class GraphConvolutionalNeuralNetwork:
         reduce_lr_monitor: str = "loss",
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
-        verbose: int = 1,
+        verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -374,7 +374,7 @@ class GraphConvolutionalNeuralNetwork:
             validation_data = (
                 adjacency_matrix,
                 validation_graph.get_one_hot_encoded_node_types(),
-                validation_graph.get_one_hot_encoded_node_types().any(axis=1)
+                validation_graph.get_known_node_types_mask()
             )
         else:
             validation_data = None
@@ -382,7 +382,7 @@ class GraphConvolutionalNeuralNetwork:
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
-            sample_weight=train_graph.get_one_hot_encoded_node_types().any(axis=1),
+            sample_weight=train_graph.get_known_node_types_mask(),
             validation_data=validation_data,
             epochs=epochs,
             verbose=False,
