@@ -4,8 +4,10 @@ from .compute_node_embedding import (
     compute_node_embedding,
     get_available_node_embedding_methods
 )
+from .graph_to_sparse_tensor import graph_to_sparse_tensor
 
 __all__ = [
     "compute_node_embedding",
-    "get_available_node_embedding_methods"
+    "get_available_node_embedding_methods",
+    "graph_to_sparse_tensor"
 ]

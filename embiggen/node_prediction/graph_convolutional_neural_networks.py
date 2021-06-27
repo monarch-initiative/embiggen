@@ -3,6 +3,7 @@ from typing import Dict, List, Union, Optional
 
 import pandas as pd
 import numpy as np
+from pandas.core.frame import DataFrame
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
 from extra_keras_metrics import get_minimal_multiclass_metrics
@@ -18,6 +19,7 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen_graph import EnsmallenGraph
 from embiggen.embedders.layers import GraphConvolution
+from ..utils import graph_to_sparse_tensor
 
 
 class GraphConvolutionalNeuralNetwork:
@@ -245,6 +247,38 @@ class GraphConvolutionalNeuralNetwork:
         """Print model summary."""
         self._model.summary()
 
+    def run_batch_size_check(self, batch_size: Union[int, str]) -> int:
+        """Runs check for valid batch size given the model.
+
+        Parameters
+        -----------------
+        batch_size: int,
+            The batch size to check.
+
+        Raises
+        -----------------
+        ValueError,
+            If the given batch size is not compatible with the
+            current model.
+
+        Returns
+        -----------------
+        Validated batch size.
+        """
+        if batch_size == "auto":
+            return self._nodes_number
+
+        if self._number_of_hidden_layers != 1 and not self._use_dense_hidden_layers and batch_size != self._nodes_number:
+            raise ValueError(
+                "If the number of GCN layers is greater than 1, "
+                "the batch size must be equal to the number of "
+                "nodes in the graph.\n"
+                "Alternatively you can use Dense layers for the "
+                "hidden layers."
+            )
+
+        return batch_size
+
     def fit(
         self,
         train_graph: EnsmallenGraph,
@@ -331,45 +365,9 @@ class GraphConvolutionalNeuralNetwork:
                 "a boolean value or 0, 1 or 2."
             )
 
-        if train_graph.has_singleton_nodes():
-            raise ValueError(
-                "The GCN model does not support operations on graph containing "
-                "singletons. You need to either drop the singleton nodes or "
-                "add to them a singleton."
-            )
-
-        if train_graph.is_multigraph():
-            raise ValueError(
-                "The GCN model does not support operations on a multigraph. "
-                "You need to drop the parallel edges in order to execute this "
-                "model."
-            )
-
-        if batch_size == "auto":
-            batch_size = train_graph.get_nodes_number()
-
-        if self._number_of_hidden_layers != 1 and batch_size != train_graph.get_nodes_number():
-            raise ValueError(
-                "If the number of GCN layers is greater than 1, "
-                "the batch size must be equal to the number of "
-                "nodes in the graph."
-            )
-
-        if not train_graph.has_edge_weights() and self._use_weights:
-            raise ValueError(
-                "The model expected a training graph with edge weights!"
-            )
-
-        if validation_graph is not None and not validation_graph.has_edge_weights() and self._use_weights:
-            raise ValueError(
-                "The model expected a validation graph with edge weights!"
-            )
-
-        adjacency_matrix = tf.SparseTensor(
-            train_graph.get_edge_node_ids(directed=True),
-            train_graph.get_edge_weights() if train_graph.has_edge_weights(
-            ) and self._use_weights else tf.ones(train_graph.get_directed_edges_number()),
-            (train_graph.get_nodes_number(), train_graph.get_nodes_number()),
+        adjacency_matrix = graph_to_sparse_tensor(
+            train_graph,
+            use_weights=self._use_weights
         )
 
         if validation_graph:
@@ -388,7 +386,7 @@ class GraphConvolutionalNeuralNetwork:
             validation_data=validation_data,
             epochs=epochs,
             verbose=False,
-            batch_size=batch_size,
+            batch_size=self.run_batch_size_check(batch_size),
             validation_freq=validation_freq,
             callbacks=[
                 EarlyStopping(
@@ -409,3 +407,49 @@ class GraphConvolutionalNeuralNetwork:
             ],
             **kwargs
         ).history)
+
+    def predict(
+        self,
+        graph: EnsmallenGraph,
+        *args: List,
+        batch_size: Union[int, str] = "auto",
+        **kwargs: Dict
+    ) -> pd.DataFrame:
+        """Run predictions on the provided graph."""
+        adjacency_matrix = graph_to_sparse_tensor(
+            graph,
+            use_weights=self._use_weights
+        )
+        predictions = self._model.predict(
+            adjacency_matrix,
+            *args,
+            batch_size=self.run_batch_size_check(batch_size),
+            **kwargs
+        )
+        return pd.DataFrame(
+            predictions,
+            columns=graph.get_unique_node_type_names(),
+            index=graph.get_node_names()
+        )
+
+    def evaluate(
+        self,
+        graph: EnsmallenGraph,
+        *args: List,
+        batch_size: Union[int, str] = "auto",
+        **kwargs: Dict
+    ) -> Dict[str, float]:
+        """Run predict."""
+        adjacency_matrix = graph_to_sparse_tensor(
+            graph,
+            use_weights=self._use_weights
+        )
+        return dict(zip(
+            self._model.metrics_names,
+            self._model.evaluate(
+                adjacency_matrix,
+                *args,
+                batch_size=self.run_batch_size_check(batch_size),
+                **kwargs
+            )
+        ))

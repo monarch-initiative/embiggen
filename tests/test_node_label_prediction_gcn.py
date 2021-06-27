@@ -35,3 +35,6 @@ class TestShallowNodeLabelPredictionGCN(TestCase):
             batch_size=256,
             epochs=2
         )
+        model.evaluate(test)
+        model.predict(train)
+        model.predict(test)
