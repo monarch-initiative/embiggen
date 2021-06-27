@@ -33,7 +33,7 @@ class Node2Vec:
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None
     ):
@@ -102,7 +102,7 @@ class Node2Vec:
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -132,7 +132,7 @@ class Node2Vec:
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,

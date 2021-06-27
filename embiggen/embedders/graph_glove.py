@@ -35,7 +35,7 @@ class GraphGloVe(GloVe):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None
     ):
@@ -100,7 +100,7 @@ class GraphGloVe(GloVe):
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -127,7 +127,7 @@ class GraphGloVe(GloVe):
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._max_neighbours = max_neighbours
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
         self._random_state = random_state
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
@@ -220,7 +220,7 @@ class GraphGloVe(GloVe):
             random_state=self._random_state,
             verbose=verbose > 0
         )
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             sources = sources.astype(float)
             destinations = destinations.astype(float)
         return super().fit(

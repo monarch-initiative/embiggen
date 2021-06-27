@@ -1,0 +1,36 @@
+{
+    "creation_time": 1624786010.879951,
+    "creation_time_human": "2021-06-27 11:26:50",
+    "time_delta": 13.8868408203125,
+    "time_delta_human": "13 seconds",
+    "file_dump_time": 0.004573822021484375,
+    "file_dump_time_human": "0 seconds",
+    "file_dump_size": 124,
+    "file_dump_size_human": "124 Bytes",
+    "load_kwargs": {},
+    "dump_kwargs": {},
+    "function_name": "_compute_node_embedding",
+    "function_file": "/Users/lucacappelletti/github/embiggen/embiggen/utils/compute_node_embedding.py:121",
+    "args_to_ignore": [
+        "devices",
+        "use_mirrored_strategy",
+        "verbose"
+    ],
+    "source": "@Cache(\n    cache_path=[\n        \"node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.gz\",\n        \"node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz\",\n    ],\n    args_to_ignore=[\"devices\", \"use_mirrored_strategy\", \"verbose\"]\n)\ndef _compute_node_embedding(\n    graph: EnsmallenGraph,\n    graph_name: str,  # pylint: disable=unused-argument\n    node_embedding_method_name: str,\n    fit_kwargs: Dict,\n    verbose: bool = True,\n    use_mirrored_strategy: bool = True,\n    devices: Union[List[str], str] = None,\n    **kwargs: Dict\n) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:\n    \"\"\"Return embedding computed with required node embedding method.\n\n    Specifically, this method also caches the embedding automatically.\n\n    Parameters\n    --------------------------\n    graph: EnsmallenGraph,\n        The graph to embed.\n    graph_name: str,\n        The name of the graph.\n    node_embedding_method_name: str,\n        The name of the node embedding method to use.\n    fit_kwargs: Dict,\n        Arguments to pass to the fit call.\n    verbose: bool = True,\n        Whether to show loading bars.\n    use_mirrored_strategy: bool = True,\n        Whether to use mirrored strategy.\n    devices: Union[List[str], str] = None,\n        The devices to use.\n        If None, all GPU devices available are used.\n    **kwargs: Dict,\n        Arguments to pass to the node embedding method constructor.\n        Read the documentation of the selected method.\n\n    Returns\n    --------------------------\n    Tuple with node embedding and training history.\n    \"\"\"\n    # Since the verbose kwarg may be provided also on the fit_kwargs\n    # we normalize the parameter to avoid collisions.\n    verbose = fit_kwargs.pop(\"verbose\", verbose)\n    kwargs = dict(\n        graph=graph,\n        node_embedding_method_name=node_embedding_method_name,\n        fit_kwargs=fit_kwargs,\n        verbose=verbose,\n        support_mirrored_strategy=use_mirrored_strategy,\n        **kwargs\n    )\n    if use_mirrored_strategy:\n        strategy = tf.distribute.MirroredStrategy(devices=devices)\n        with strategy.scope():\n            return _train_model(**kwargs)\n    return _train_model(**kwargs)\n",
+    "backend_metadata": {
+        "type": "pandas",
+        "columns_types": {
+            "loss": "float64",
+            "lr": "float64"
+        },
+        "index_type": "int64",
+        "columns_names_type": "str"
+    },
+    "parameters": {
+        "graph_name": "Cora",
+        "node_embedding_method_name": "TransE",
+        "fit_kwargs": {
+            "epochs": 2
+        }
+    }
+}

@@ -15,7 +15,7 @@ class AbstractWord2VecSequence(AbstractSequence):
         sequences: List[np.ndarray],
         batch_size: int,
         window_size: int = 4,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         elapsed_epochs: int = 0,
     ):
@@ -30,7 +30,7 @@ class AbstractWord2VecSequence(AbstractSequence):
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -55,7 +55,7 @@ class AbstractWord2VecSequence(AbstractSequence):
             sample_number=self._sequences.sample_number,
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             random_state=random_state
         )
 

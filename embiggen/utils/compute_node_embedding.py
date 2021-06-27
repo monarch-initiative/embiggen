@@ -2,10 +2,12 @@
 from typing import Dict, List, Union, Tuple
 
 import inspect
+import warnings
 import pandas as pd
 import tensorflow as tf
 from cache_decorator import Cache
 from ensmallen_graph import EnsmallenGraph
+from .gpu_utilities import has_gpus, has_nvidia_drivers, has_rocm_drivers, has_single_gpu
 
 
 from ..embedders import GraphCBOW, GraphGloVe, GraphSkipGram, Embedder
@@ -70,12 +72,58 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
     return node_embedding_method_name in get_available_node_embedding_methods()
 
 
+def _train_model(
+    graph: EnsmallenGraph,
+    node_embedding_method_name: str,
+    fit_kwargs: Dict,
+    verbose: bool,
+    support_mirrored_strategy: bool,
+    **kwargs: Dict
+) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
+    """Return embedding computed with required node embedding method.
+
+    Parameters
+    --------------------------
+    graph: EnsmallenGraph,
+        The graph to embed.
+    node_embedding_method_name: str,
+        The name of the node embedding method to use.
+    fit_kwargs: Dict,
+        Arguments to pass to the fit call.
+    verbose: bool = True,
+        Whether to show loading bars.
+    use_mirrored_strategy: bool = True,
+        Whether to use mirrored strategy.
+    **kwargs: Dict,
+        Arguments to pass to the node embedding method constructor.
+        Read the documentation of the selected method.
+
+    Returns
+    --------------------------
+    Tuple with node embedding and training history.
+    """
+    # Creating the node embedding model
+    model = get_node_embedding_method(node_embedding_method_name)(
+        graph,
+        support_mirrored_strategy=support_mirrored_strategy,
+        **kwargs
+    )
+    # Fitting the node embedding model
+    history = model.fit(
+        verbose=verbose,
+        **fit_kwargs
+    )
+    # Extracting computed embedding
+    node_embedding = model.get_embedding_dataframe()
+    return node_embedding, history
+
+
 @Cache(
     cache_path=[
         "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.gz",
         "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz",
     ],
-    args_to_ignore=["devices", "verbose"]
+    args_to_ignore=["devices", "use_mirrored_strategy", "verbose"]
 )
 def _compute_node_embedding(
     graph: EnsmallenGraph,
@@ -83,6 +131,7 @@ def _compute_node_embedding(
     node_embedding_method_name: str,
     fit_kwargs: Dict,
     verbose: bool = True,
+    use_mirrored_strategy: bool = True,
     devices: Union[List[str], str] = None,
     **kwargs: Dict
 ) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
@@ -102,6 +151,8 @@ def _compute_node_embedding(
         Arguments to pass to the fit call.
     verbose: bool = True,
         Whether to show loading bars.
+    use_mirrored_strategy: bool = True,
+        Whether to use mirrored strategy.
     devices: Union[List[str], str] = None,
         The devices to use.
         If None, all GPU devices available are used.
@@ -116,27 +167,25 @@ def _compute_node_embedding(
     # Since the verbose kwarg may be provided also on the fit_kwargs
     # we normalize the parameter to avoid collisions.
     verbose = fit_kwargs.pop("verbose", verbose)
-    strategy = tf.distribute.MirroredStrategy(devices=devices)
-    with strategy.scope():
-        # Creating the node embedding model
-        model = get_node_embedding_method(node_embedding_method_name)(
-            graph,
-            support_mirror_strategy=True,
-            **kwargs
-        )
-        # Fitting the node embedding model
-        history = model.fit(
-            verbose=verbose,
-            **fit_kwargs
-        )
-        # Extracting computed embedding
-        node_embedding = model.get_embedding_dataframe()
-    return node_embedding, history
+    kwargs = dict(
+        graph=graph,
+        node_embedding_method_name=node_embedding_method_name,
+        fit_kwargs=fit_kwargs,
+        verbose=verbose,
+        support_mirrored_strategy=use_mirrored_strategy,
+        **kwargs
+    )
+    if use_mirrored_strategy:
+        strategy = tf.distribute.MirroredStrategy(devices=devices)
+        with strategy.scope():
+            return _train_model(**kwargs)
+    return _train_model(**kwargs)
 
 
 def compute_node_embedding(
     graph: EnsmallenGraph,
     node_embedding_method_name: str,
+    use_mirrored_strategy: bool = True,
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
     verbose: Union[bool, int] = True,
@@ -153,6 +202,13 @@ def compute_node_embedding(
         Graph to embed.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
+    use_mirrored_strategy: bool = True,
+        Whether to use mirror strategy to distribute the
+        computation across multiple devices.
+        Note that this will be automatically disabled if the
+        set of devices detected is only composed of one,
+        since using MirroredStrategy adds a significant overhead
+        and may endup limiting the device usage.
     devices: Union[List[str], str] = None,
         The devices to use.
         If None, all GPU devices available are used.
@@ -193,6 +249,57 @@ def compute_node_embedding(
                 get_available_node_embedding_methods()
             )
         )
+
+    # To avoid some nighmares we check availability of GPUs.
+    if not has_gpus():
+        # If there are no GPUs, mirrored strategy makes no sense.
+        if use_mirrored_strategy:
+            use_mirrored_strategy = False
+            warnings.warn(
+                "It does not make sense to use mirrored strategy "
+                "when GPUs are not available.\n"
+                "The parameter has been disabled."
+            )
+        # We check for drivers to try and give a more explainatory
+        # warning about the absence of GPUs.
+        if has_nvidia_drivers():
+            warnings.warn(
+                "It was not possible to detect GPUs but the system "
+                "has NVIDIA drivers installed.\n"
+                "It is very likely there is some mis-configuration "
+                "with your TensorFlow instance.\n"
+                "The model will train a LOT faster if you figure "
+                "out what may be the cause of this issue on your "
+                "system: sometimes a simple reboot will do a lot of good."
+            )
+        elif has_rocm_drivers():
+            warnings.warn(
+                "It was not possible to detect GPUs but the system "
+                "has ROCM drivers installed.\n"
+                "It is very likely there is some mis-configuration "
+                "with your TensorFlow instance.\n"
+                "The model will train a LOT faster if you figure "
+                "out what may be the cause of this issue on your "
+                "system: sometimes a simple reboot will do a lot of good."
+            )
+        else:
+            warnings.warn(
+                "It was neither possible to detect GPUs nor GPU drivers "
+                "of any kind on your system (neither CUDA or ROCM).\n"
+                "The model will proceed with trainining, but it will be "
+                "significantly slower than what would be possible "
+                "with GPU acceleration."
+            )
+
+    # If the machine has only a GPU, it does not make sense to use
+    # mirror strategy as it would only add overhead to it.
+    if has_single_gpu() and use_mirrored_strategy:
+        warnings.warn(
+            "The `use_mirrored_strategy` parameter was provided but the "
+            "system has only a single GPU device, so to avoid unnecessary "
+            "overhead this feature has been automatically disabled."
+        )
+        use_mirrored_strategy = False
 
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
@@ -246,6 +353,7 @@ def compute_node_embedding(
         node_embedding_method_name=node_embedding_method_name,
         fit_kwargs=fit_kwargs,
         verbose=verbose,
+        use_mirrored_strategy=use_mirrored_strategy,
         devices=devices,
         **kwargs
     )

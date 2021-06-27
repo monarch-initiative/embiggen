@@ -25,7 +25,7 @@ class SimplE(Siamese):
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "SimplE",
         optimizer: Union[str, Optimizer] = None,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
     ):
         """Create new sequence Embedder model.
 
@@ -53,7 +53,7 @@ class SimplE(Siamese):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -72,7 +72,7 @@ class SimplE(Siamese):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
-            support_mirror_strategy=support_mirror_strategy
+            support_mirrored_strategy=support_mirrored_strategy
         )
 
     def _build_output(

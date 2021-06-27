@@ -123,7 +123,7 @@ class EdgePredictionModel(Embedder):
         batches_per_epoch: Union[int, str] = "auto",
         negative_samples_rate: float = 0.5,
         epochs: int = 10000,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.01,
         early_stopping_patience: int = 5,
@@ -150,7 +150,7 @@ class EdgePredictionModel(Embedder):
             Rate of unbalancing in the batch.
         epochs: int = 10000,
             Epochs to train the model for.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -196,7 +196,7 @@ class EdgePredictionModel(Embedder):
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
             negative_samples_rate=negative_samples_rate,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             use_edge_metrics=self._use_edge_metrics,
         )
         return super().fit(

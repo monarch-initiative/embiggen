@@ -4,12 +4,13 @@ from typing import Dict, List, Union, Optional
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
 from extra_keras_metrics import get_minimal_multiclass_metrics
-from tensorflow.keras.layers import Input # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.initializers import Initializer # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.regularizers import Regularizer # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import Constraint # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Input, Dense  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
+from tensorflow.python.keras import activations  # pylint: disable=import-error,no-name-in-module
 from tqdm.keras import TqdmCallback
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
@@ -30,6 +31,7 @@ class GraphConvolutionalNeuralNetwork:
         node_features: Optional[pd.DataFrame] = None,
         number_of_hidden_layers: int = 1,
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
+        use_dense_hidden_layers: bool = False,
         activations_per_hidden_layer: Union[str, List[str]] = "relu",
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
         bias_initializer: Union[str, Initializer] = 'zeros',
@@ -54,6 +56,10 @@ class GraphConvolutionalNeuralNetwork:
             of the GPU memory.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
             Number of units per hidden layer.
+        use_dense_hidden_layers: bool = False,
+            Whether to use dense layer for the hidden layers.
+            It is useful in the context of a shallow GCN, when it is not
+            feaseable to use the batch size equal to the number of nodes in the graph.
         use_weights: Union[str, bool] = "auto",
             Whether to expect weights in input to execute the graph convolution.
             The weights may be used in order to compute for instance a weighting
@@ -141,6 +147,7 @@ class GraphConvolutionalNeuralNetwork:
         self._node_types_number = graph.get_node_types_number()
         number_of_units_per_hidden_layer[-1] = self._node_types_number
         self._number_of_hidden_layers = number_of_hidden_layers
+        self._use_dense_hidden_layers = use_dense_hidden_layers
         self._kernel_initializer = kernel_initializer
         self._bias_initializer = bias_initializer
         self._kernel_regularizer = kernel_regularizer
@@ -197,18 +204,24 @@ class GraphConvolutionalNeuralNetwork:
 
         hidden = input_graph_convolution(adjacency_matrix, node_features)
         for i in range(1, self._number_of_hidden_layers):
-            hidden = GraphConvolution(
-                self._number_of_units_per_hidden_layer[i],
+            kwargs = dict(
+                units=self._number_of_units_per_hidden_layer[i],
                 activation=self._activations_per_hidden_layer[i],
-                features_dropout_rate=self._features_dropout_rate,
                 kernel_initializer=self._kernel_initializer,
                 bias_initializer=self._bias_initializer,
                 kernel_regularizer=self._kernel_regularizer,
                 bias_regularizer=self._bias_regularizer,
                 activity_regularizer=self._activity_regularizer,
                 kernel_constraint=self._kernel_constraint,
-                bias_constraint=self._bias_constraint,
-            )(adjacency_matrix, hidden)
+                bias_constraint=self._bias_constraint
+            )
+            if self._use_dense_hidden_layers:
+                hidden = Dense(**kwargs)(hidden)
+            else:
+                hidden = GraphConvolution(
+                    features_dropout_rate=self._features_dropout_rate,
+                    **kwargs,
+                )(adjacency_matrix, hidden)
 
         return Model(
             inputs=adjacency_matrix,
@@ -224,6 +237,10 @@ class GraphConvolutionalNeuralNetwork:
             weighted_metrics=get_minimal_multiclass_metrics()
         )
 
+    @property
+    def name(self) -> str:
+        return self._model.name
+
     def summary(self):
         """Print model summary."""
         self._model.summary()
@@ -232,6 +249,7 @@ class GraphConvolutionalNeuralNetwork:
         self,
         train_graph: EnsmallenGraph,
         batch_size: Union[int, str] = "auto",
+        validation_freq: int = 1,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
         reduce_lr_min_delta: float = 0.001,
@@ -256,6 +274,11 @@ class GraphConvolutionalNeuralNetwork:
             Batch size for the training epochs.
             If the model has a single GCN layer it is possible
             to specify a variable batch size.
+        validation_freq: int = 1,
+            The frequency when to run the validation.
+            Note that in sparse tensors, this step is apparently
+            extremely slow and seems to be happening in GPU.
+            You may want to increase it to a higher value than one.
         early_stopping_min_delta: float,
             Minimum delta of metric to stop the training.
         early_stopping_patience: int,
@@ -321,6 +344,7 @@ class GraphConvolutionalNeuralNetwork:
                 "You need to drop the parallel edges in order to execute this "
                 "model."
             )
+
         if batch_size == "auto":
             batch_size = train_graph.get_nodes_number()
 
@@ -365,6 +389,7 @@ class GraphConvolutionalNeuralNetwork:
             epochs=epochs,
             verbose=False,
             batch_size=batch_size,
+            validation_freq=validation_freq,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,

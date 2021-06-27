@@ -3,6 +3,7 @@ from .embedders import (
     CBOW, GloVe, GraphCBOW, GraphGloVe, GraphSkipGram,
     SkipGram, TransE, TransH, TransR, SimplE, Siamese
 )
+from .node_prediction import GraphConvolutionalNeuralNetwork
 from .sequences import Word2VecSequence
 from .transformers import (CorpusTransformer, EdgeTransformer,
                            GraphTransformer, LinkPredictionTransformer,
@@ -27,5 +28,6 @@ __all__ = [
     "TransH",
     "TransR",
     "SimplE",
-    "Siamese"
+    "Siamese",
+    "GraphConvolutionalNeuralNetwork"
 ]

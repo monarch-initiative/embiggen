@@ -44,7 +44,7 @@ class Siamese(Embedder):
         extra_features: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
     ):
         """Create new sequence Embedder model.
 
@@ -92,7 +92,7 @@ class Siamese(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -182,7 +182,7 @@ class Siamese(Embedder):
         self._graph = graph
         self._distance_metric = distance_metric
         self._relu_bias = relu_bias
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
 
         super().__init__(
             vocabulary_size=graph.get_nodes_number(),
@@ -315,7 +315,7 @@ class Siamese(Embedder):
         **kwargs: Dict[str, tf.Tensor],
     ):
         """Return output of the model.
-        
+
         Parameters
         ----------------------
         source_node_embedding: tf.Tensor,
@@ -328,7 +328,7 @@ class Siamese(Embedder):
         kwargs: Dict[str, tf.Tensor],
             Additional tensors that may be used
             in subclasses of this model.
-        
+
         Returns
         ----------------------
         The distance for the Siamese network.
@@ -383,13 +383,18 @@ class Siamese(Embedder):
                 ),
             )
         if self._use_edge_types:
-            values.append(
-                pd.DataFrame(
-                    self.get_layer_weights(
-                        Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME),
-                    index=self._graph.get_unique_edge_type_names(),
-                ),
-            )
+            try:
+                values.append(
+                    pd.DataFrame(
+                        self.get_layer_weights(
+                            Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME
+                        ),
+                        index=self._graph.get_unique_edge_type_names(),
+                    ),
+                )
+            except NotImplementedError:
+                pass
+
         return values
 
     def _compile_model(self) -> Model:
@@ -477,7 +482,7 @@ class Siamese(Embedder):
             graph=self._graph,
             batch_size=batch_size,
             avoid_false_negatives=avoid_false_negatives,
-            support_mirror_strategy=self._support_mirror_strategy,
+            support_mirrored_strategy=self._support_mirrored_strategy,
             graph_to_avoid=graph_to_avoid,
             use_node_types=self._use_node_types,
             use_edge_types=self._use_edge_types,

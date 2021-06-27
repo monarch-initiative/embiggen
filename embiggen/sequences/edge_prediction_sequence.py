@@ -18,7 +18,7 @@ class EdgePredictionSequence(Sequence):
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         graph_to_avoid: EnsmallenGraph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
@@ -47,7 +47,7 @@ class EdgePredictionSequence(Sequence):
             By default False.
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -71,7 +71,7 @@ class EdgePredictionSequence(Sequence):
         self._graph = graph
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
         self._use_node_types = use_node_types
@@ -112,7 +112,7 @@ class EdgePredictionSequence(Sequence):
             avoid_false_negatives=self._avoid_false_negatives,
             graph_to_avoid=self._graph_to_avoid,
         )
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             sources = sources.astype(float)
             destinations = destinations.astype(float)
             if self._use_node_types:

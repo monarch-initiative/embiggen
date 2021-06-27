@@ -19,7 +19,7 @@ class NodeLabelPredictionSequence(Sequence):
         batch_size: int = 2**8,
         elapsed_epochs: int = 0,
         random_state: int = 42,
-        support_mirror_strategy: bool = False
+        support_mirrored_strategy: bool = False
     ):
         """Create new Node Label Prediction Sequence.
         """
@@ -28,7 +28,7 @@ class NodeLabelPredictionSequence(Sequence):
         self._include_central_node = include_central_node
         self._return_edge_weights = return_edge_weights
         self._max_neighbours = max_neighbours
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
         super().__init__(
             sample_number=graph.get_directed_edges_number(),
             batch_size=batch_size,
@@ -55,7 +55,7 @@ class NodeLabelPredictionSequence(Sequence):
             max_neighbours=self._max_neighbours
         )
 
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             neighbours = neighbours.astype(float)
         if self._return_edge_weights:
             return (tf.ragged.constant(neighbours), tf.ragged.constant(weights)), labels
