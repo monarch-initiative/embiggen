@@ -374,7 +374,9 @@ class GraphConvolutionalNeuralNetwork:
             validation_data = (
                 adjacency_matrix,
                 validation_graph.get_one_hot_encoded_node_types(),
-                validation_graph.get_known_node_types_mask()
+                # This is a known hack to get around limitations from the current
+                # implementation that handles the sample weights in TensorFlow.
+                pd.Series(validation_graph.get_known_node_types_mask())
             )
         else:
             validation_data = None
@@ -382,7 +384,9 @@ class GraphConvolutionalNeuralNetwork:
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
-            sample_weight=train_graph.get_known_node_types_mask(),
+            # This is a known hack to get around limitations from the current
+            # implementation that handles the sample weights in TensorFlow.
+            sample_weight=pd.Series(train_graph.get_known_node_types_mask()),
             validation_data=validation_data,
             epochs=epochs,
             verbose=False,
