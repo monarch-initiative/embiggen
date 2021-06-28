@@ -163,6 +163,10 @@ class GraphConvolutionalNeuralNetwork:
         activations_per_hidden_layer[-1] = "sigmoid" if self._multi_label or self._node_types_number == 1 else "softmax"
         self._activations_per_hidden_layer = activations_per_hidden_layer
         self._optimizer = optimizer
+        self._adjacency_matrix = graph_to_sparse_tensor(
+            graph,
+            use_weights=self._use_weights
+        )
         self._model = self._build_model()
         self._compile_model()
 
@@ -365,14 +369,9 @@ class GraphConvolutionalNeuralNetwork:
                 "a boolean value or 0, 1 or 2."
             )
 
-        adjacency_matrix = graph_to_sparse_tensor(
-            train_graph,
-            use_weights=self._use_weights
-        )
-
         if validation_graph:
             validation_data = (
-                adjacency_matrix,
+                self._adjacency_matrix,
                 validation_graph.get_one_hot_encoded_node_types(),
                 # This is a known hack to get around limitations from the current
                 # implementation that handles the sample weights in TensorFlow.
@@ -383,7 +382,7 @@ class GraphConvolutionalNeuralNetwork:
 
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
-            adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
+            self._adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
             # This is a known hack to get around limitations from the current
             # implementation that handles the sample weights in TensorFlow.
             sample_weight=pd.Series(train_graph.get_known_node_types_mask()),
@@ -420,12 +419,8 @@ class GraphConvolutionalNeuralNetwork:
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
-        adjacency_matrix = graph_to_sparse_tensor(
-            graph,
-            use_weights=self._use_weights
-        )
         predictions = self._model.predict(
-            adjacency_matrix,
+            self._adjacency_matrix,
             *args,
             batch_size=self.run_batch_size_check(batch_size),
             **kwargs
@@ -444,15 +439,15 @@ class GraphConvolutionalNeuralNetwork:
         **kwargs: Dict
     ) -> Dict[str, float]:
         """Run predict."""
-        adjacency_matrix = graph_to_sparse_tensor(
-            graph,
-            use_weights=self._use_weights
-        )
         return dict(zip(
             self._model.metrics_names,
             self._model.evaluate(
-                adjacency_matrix,
-                *args,
+                self._adjacency_matrix,
+                graph.get_one_hot_encoded_node_types(),
+                * args,
+                # This is a known hack to get around limitations from the current
+                # implementation that handles the sample weights in TensorFlow.
+                sample_weight=pd.Series(graph.get_known_node_types_mask()),
                 batch_size=self.run_batch_size_check(batch_size),
                 **kwargs
             )
