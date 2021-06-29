@@ -19,7 +19,7 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen_graph import EnsmallenGraph
 from embiggen.embedders.layers import GraphConvolution
-from ..utils import graph_to_sparse_tensor
+from ..utils import graph_to_sparse_tensor, validate_verbose
 
 
 class GraphConvolutionalNeuralNetwork:
@@ -359,15 +359,7 @@ class GraphConvolutionalNeuralNetwork:
         -----------------------
         Dataframe with training history.
         """
-        if verbose == True:
-            verbose = 1
-        if verbose == False:
-            verbose = 0
-        if verbose not in {0, 1, 2}:
-            raise ValueError(
-                "Given verbose value is not valid, as it must be either "
-                "a boolean value or 0, 1 or 2."
-            )
+        verbose = validate_verbose(verbose)
 
         if validation_graph:
             validation_data = (
@@ -438,7 +430,7 @@ class GraphConvolutionalNeuralNetwork:
         batch_size: Union[int, str] = "auto",
         **kwargs: Dict
     ) -> Dict[str, float]:
-        """Run predict."""
+        """Run evaluation of the model over the provided graph."""
         return dict(zip(
             self._model.metrics_names,
             self._model.evaluate(

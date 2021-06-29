@@ -1,18 +1,19 @@
 """Abstract Keras Model object for embedding models."""
+from embiggen.utils.parameter_validators import validate_verbose
 from typing import Union, List, Dict
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
-#from tqdm.keras import TqdmCallback
+from tqdm.keras import TqdmCallback
 
 
 class Embedder:
     """Abstract Keras Model object for embedding models.
-    
+
     TODO!: https://keras.io/examples/vision/gradient_centralization/
     """
 
@@ -311,20 +312,12 @@ class Embedder:
         -----------------------
         Dataframe with training history.
         """
-        if verbose == True:
-            verbose = 2
-        if verbose == False:
-            verbose = 0
-        if verbose not in {0, 1, 2}:
-            raise ValueError(
-                "Given verbose value is not valid, as it must be either "
-                "a boolean value or 0, 1 or 2."
-            )
+        verbose = validate_verbose(verbose)
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
-            verbose=True,
+            verbose=False,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,
@@ -339,7 +332,7 @@ class Embedder:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                #*((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
+                *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs
