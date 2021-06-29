@@ -4,11 +4,12 @@ from typing import Dict, Union
 import pandas as pd
 import numpy as np
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer   # pylint: disable=import-error,no-name-in-module
 
 from ensmallen_graph import EnsmallenGraph
 
 from .glove import GloVe
+from ..utils import validate_window_size
 
 
 class GraphGloVe(GloVe):
@@ -121,7 +122,7 @@ class GraphGloVe(GloVe):
         self._graph = graph
         self._walk_length = walk_length
         self._iterations = iterations
-        self._window_size = window_size
+        self._window_size = validate_window_size(window_size)
         self._return_weight = return_weight
         self._explore_weight = explore_weight
         self._change_node_type_weight = change_node_type_weight

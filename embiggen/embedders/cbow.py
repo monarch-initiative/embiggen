@@ -1,13 +1,14 @@
 """CBOW model for sequence embedding."""
 from typing import Dict
-from tensorflow.keras.layers import (  # pylint: disable=import-error
+from tensorflow.keras.layers import (   # pylint: disable=import-error,no-name-in-module
     GlobalAveragePooling1D, Input, Embedding
 )
 import tensorflow as tf
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
 from .embedder import Embedder
 from .layers import SampledSoftmax
+from ..utils import validate_window_size
 
 
 class CBOW(Embedder):
@@ -40,7 +41,7 @@ class CBOW(Embedder):
         # TODO! Figure out a way to test for Zifian distribution in the
         # data used for the word2vec sampling! The values in the vocabulary
         # should have a decreasing node degree order!
-        self._window_size = window_size
+        self._window_size = validate_window_size(window_size)
         self._negative_samples = negative_samples
         super().__init__(**kwargs)
 

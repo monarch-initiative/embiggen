@@ -8,6 +8,7 @@ from tensorflow.keras.models import Model
 
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
+from ..utils import validate_window_size
 
 
 class SkipGram(Embedder):
@@ -40,7 +41,7 @@ class SkipGram(Embedder):
         # TODO! Figure out a way to test for Zifian distribution in the
         # data used for the word2vec sampling! The values in the vocabulary
         # should have a decreasing node degree order!
-        self._window_size = window_size
+        self._window_size = validate_window_size(window_size)
         self._negative_samples = negative_samples
         super().__init__(**kwargs)
 

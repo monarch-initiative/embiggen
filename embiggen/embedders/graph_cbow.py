@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer   # pylint: disable=import-error,no-name-in-module
 
 from .cbow import CBOW
 from .node2vec import Node2Vec
