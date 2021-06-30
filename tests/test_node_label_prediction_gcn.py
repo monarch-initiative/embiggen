@@ -14,13 +14,6 @@ class TestShallowNodeLabelPredictionGCN(TestCase):
 
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
-        model = GraphConvolutionalNeuralNetwork(
-            self._graph,
-            node_features_number=10
-        )
-        self.assertEqual("GCN", model.name)
-        model.summary()
-
         # Creating the normalized graph
         laplacian = self._graph.get_symmetric_normalized_transformed_graph().add_selfloops(weight=1.0)
         train, test = laplacian.node_label_holdout(
@@ -28,6 +21,13 @@ class TestShallowNodeLabelPredictionGCN(TestCase):
             use_stratification=False,
             random_state=42
         )
+
+        model = GraphConvolutionalNeuralNetwork(
+            train,
+            node_features_number=10
+        )
+        self.assertEqual("GCN", model.name)
+        model.summary()
 
         model.fit(
             train,

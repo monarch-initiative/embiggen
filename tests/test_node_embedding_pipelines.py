@@ -1,6 +1,6 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 from unittest import TestCase
-from embiggen.utils import compute_node_embedding, get_available_node_embedding_methods
+from embiggen.pipelines import compute_node_embedding, get_available_node_embedding_methods
 from ensmallen_graph.datasets.linqs import Cora
 
 

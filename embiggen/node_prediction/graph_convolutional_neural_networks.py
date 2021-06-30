@@ -29,6 +29,7 @@ class GraphConvolutionalNeuralNetwork:
         self,
         graph: EnsmallenGraph,
         use_weights: Union[str, bool] = "auto",
+        use_class_weights: bool = True,
         node_features_number: Optional[int] = None,
         node_features: Optional[pd.DataFrame] = None,
         number_of_hidden_layers: int = 1,
@@ -51,11 +52,9 @@ class GraphConvolutionalNeuralNetwork:
         -------------------------------
         graph: EnsmallenGraph,
             The data for which to build the model.
-        num_split: int = 1,
-            Number of splits to use to distribute the steps of
-            the graph convolution. This is only needed on graphs
-            that have a incidence matrix that exeeds the dimension
-            of the GPU memory.
+        use_class_weights: bool = True,
+            Whether to use class weights to rebalance the loss relative to unbalanced classes.
+            Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
         number_of_units_per_hidden_layer: Union[int, List[int]] = 16,
             Number of units per hidden layer.
         use_dense_hidden_layers: bool = False,
@@ -143,6 +142,7 @@ class GraphConvolutionalNeuralNetwork:
         if node_features is not None:
             node_features_number = node_features.shape[-1]
         self._use_weights = use_weights
+        self._use_class_weights = use_class_weights
         self._node_features_number = node_features_number
         self._node_features = node_features
         self._nodes_number = graph.get_nodes_number()
@@ -372,17 +372,26 @@ class GraphConvolutionalNeuralNetwork:
         else:
             validation_data = None
 
+        if self._use_class_weights:
+            class_weight = {
+                node_type_id: self._nodes_number / count / self._node_types_number
+                for node_type_id, count in train_graph.get_node_type_id_counts_hashmap().items()
+            }
+        else:
+            class_weight = None
+
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             self._adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
             # This is a known hack to get around limitations from the current
             # implementation that handles the sample weights in TensorFlow.
-            sample_weight=pd.Series(train_graph.get_known_node_types_mask()),
+            sample_weight=pd.Series(train_graph.get_known_node_types_mask().astype(float)),
             validation_data=validation_data,
             epochs=epochs,
             verbose=False,
             batch_size=self.run_batch_size_check(batch_size),
             validation_freq=validation_freq,
+            class_weight=class_weight,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,
@@ -439,7 +448,7 @@ class GraphConvolutionalNeuralNetwork:
                 * args,
                 # This is a known hack to get around limitations from the current
                 # implementation that handles the sample weights in TensorFlow.
-                sample_weight=pd.Series(graph.get_known_node_types_mask()),
+                sample_weight=pd.Series(graph.get_known_node_types_mask().astype(float)),
                 batch_size=self.run_batch_size_check(batch_size),
                 **kwargs
             )

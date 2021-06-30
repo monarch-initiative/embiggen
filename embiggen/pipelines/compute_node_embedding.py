@@ -7,7 +7,7 @@ import pandas as pd
 import tensorflow as tf
 from cache_decorator import Cache
 from ensmallen_graph import EnsmallenGraph
-from .gpu_utilities import has_gpus, has_nvidia_drivers, has_rocm_drivers, has_single_gpu
+from ..utils import has_gpus, has_nvidia_drivers, has_rocm_drivers, has_single_gpu
 
 
 from ..embedders import GraphCBOW, GraphGloVe, GraphSkipGram, Embedder
