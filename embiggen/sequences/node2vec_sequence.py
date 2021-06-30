@@ -15,14 +15,14 @@ class Node2VecSequence(AbstractSequence):
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 16,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
     ):
@@ -38,7 +38,7 @@ class Node2VecSequence(AbstractSequence):
             Number of nodes to include in a single batch.
         iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0,
@@ -72,7 +72,7 @@ class Node2VecSequence(AbstractSequence):
             THIS IS AN EXPERIMENTAL FEATURE!
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -106,7 +106,7 @@ class Node2VecSequence(AbstractSequence):
             sample_number=self._graph.get_unique_source_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             random_state=random_state
         )
 
@@ -160,7 +160,7 @@ class Node2VecSequence(AbstractSequence):
 
         outputs = [contexts_batch, words_batch]
 
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             outputs = [
                 output.astype(float)
                 for output in outputs

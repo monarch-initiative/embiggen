@@ -1,6 +1,6 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -323,14 +323,59 @@ class GraphVisualization:
             index=node_names
         )
 
-    def fit_transform_edges(self, node_embedding: np.ndarray):
+    def fit_transform_edges(
+        self,
+        node_embedding: Optional[pd.DataFrame] = None,
+        edge_embedding: Optional[pd.DataFrame] = None,
+    ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: np.ndarray,
-            Embedding obtained from SkipGram, CBOW or GloVe.
+        node_embedding: Optional[pd.DataFrame] = None,
+            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        node_embedding: Optional[pd.DataFrame] = None,
+            Edge embedding.
+
+        Raises
+        -------------------------
+        ValueError,
+            If neither the node embedding nor the edge embedding have
+            been provided. You need to provide exactly one of the two.
+        ValueError,
+            If the shape of the given node embedding does not match
+            the number of nodes in the graph.
+        ValueError,
+            If the shape of the given node embedding does not match
+            the number of edges in the graph.   
         """
+        if node_embedding is None and edge_embedding is None:
+            raise ValueError(
+                "You need to provide either the node embedding or the "
+                "edge embedding."
+            )
+        if node_embedding is not None and edge_embedding is not None:
+            raise ValueError(
+                "You need to provide either the node embedding or the "
+                "edge embedding. You cannot provide both at once."
+            )
+        if node_embedding is not None and node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+        if edge_embedding is not None and edge_embedding.shape[0] != self._graph.get_directed_edges_number():
+            raise ValueError(
+                ("The number of rows provided with the given edge embedding {} "
+                 "does not match the number of directed edges in the graph {}.").format(
+                    edge_embedding.shape[0],
+                    self._graph.get_directed_edges_number()
+                )
+            )
+
         # Retrieve the edges
         edge_names = np.array(self._graph.get_edge_node_names(directed=True))
         # If necessary, we proceed with the subsampling
@@ -350,18 +395,20 @@ class GraphVisualization:
             ).split(edge_names, self._flatten_unknown_edge_types()))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
+            if edge_embedding is not None:
+                edge_embedding = edge_embedding[self._subsampled_edge_ids]
 
-        if self._scaler_method is not None:
-            node_embedding = pd.DataFrame(
-                self._scaler_method.fit_transform(node_embedding),
-                columns=node_embedding.columns,
-                index=node_embedding.index,
-            )
-        self._graph_transformer.fit(node_embedding)
+        if node_embedding is not None:
+            if self._scaler_method is not None:
+                node_embedding = pd.DataFrame(
+                    self._scaler_method.fit_transform(node_embedding),
+                    columns=node_embedding.columns,
+                    index=node_embedding.index,
+                )
+            self._graph_transformer.fit(node_embedding)
+            edge_embedding = self._graph_transformer.transform(edge_names)
         self._edge_embedding = pd.DataFrame(
-            self.decompose(
-                self._graph_transformer.transform(edge_names),
-            ),
+            self.decompose(edge_embedding),
             index=edge_names
         )
 
@@ -1183,7 +1230,7 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        degrees = self._graph.degrees()
+        degrees = self._graph.get_node_degrees()
         if self._subsampled_node_ids is not None:
             degrees = degrees[self._subsampled_node_ids]
 

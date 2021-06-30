@@ -9,9 +9,9 @@ class AbstractSequence(Sequence):
         self,
         batch_size: int,
         sample_number: int,
-        window_size: int = 16,
+        window_size: int = 4,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42
     ):
         """Create new Sequence object.
@@ -22,12 +22,12 @@ class AbstractSequence(Sequence):
             Number of nodes to include in a single batch.
         sample_number: int,
             Number of samples that compose this Sequence.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -40,7 +40,7 @@ class AbstractSequence(Sequence):
         """
         self._window_size = window_size
         self._random_state = random_state
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
 
         super().__init__(
             sample_number=sample_number,

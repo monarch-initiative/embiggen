@@ -1,19 +1,23 @@
 """Abstract Keras Model object for embedding models."""
+from embiggen.utils.parameter_validators import validate_verbose
 from typing import Union, List, Dict
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.models import Model   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Nadam
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
 from tqdm.keras import TqdmCallback
 
 
 class Embedder:
-    """Abstract Keras Model object for embedding models."""
+    """Abstract Keras Model object for embedding models.
 
-    EMBEDDING_LAYER_NAME = "terms_embedding_layer"
+    TODO!: https://keras.io/examples/vision/gradient_centralization/
+    """
+
+    TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
     def __init__(
         self,
@@ -140,33 +144,45 @@ class Embedder:
         """Print model summary."""
         self._model.summary()
 
+    def get_layer_weights(self, layer_name: str) -> np.ndarray:
+        """Return weights from the requested layer.
+
+        Parameters
+        -----------------------
+        layer_name: str,
+            Name of the layer to query for.
+        """
+        for layer in self._model.layers:
+            if layer.name == layer_name:
+                return layer.get_weights()[0]
+        raise NotImplementedError(
+            "This model does not have a layer called {}.".format(
+                layer_name
+            )
+        )
+
     @property
     def embedding(self) -> np.ndarray:
         """Return model embeddings.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
-        for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
-                return layer.get_weights()[0]
-        raise NotImplementedError(
-            "This embedding model does not have an embedding layer."
-        )
+        return self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME)
 
     @property
     def trainable(self) -> bool:
         """Return whether the embedding layer can be trained.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 return layer.trainable
         raise NotImplementedError(
             "This embedding model does not have an embedding layer."
@@ -175,14 +191,14 @@ class Embedder:
     @trainable.setter
     def trainable(self, trainable: bool):
         """Set whether the embedding layer can be trained or not.
-        
+
         Parameters
         -------------------
         trainable: bool,
             Whether the embedding layer can be trained or not.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
         self._compile_model()
 
@@ -239,10 +255,10 @@ class Embedder:
     def fit(
         self,
         *args,
-        early_stopping_min_delta: float,
-        early_stopping_patience: int,
-        reduce_lr_min_delta: float,
-        reduce_lr_patience: int,
+        early_stopping_min_delta: float = 0.1,
+        early_stopping_patience: int = 3,
+        reduce_lr_min_delta: float = 1,
+        reduce_lr_patience: int = 1,
         epochs: int = 10000,
         early_stopping_monitor: str = "loss",
         early_stopping_mode: str = "min",
@@ -296,15 +312,7 @@ class Embedder:
         -----------------------
         Dataframe with training history.
         """
-        if verbose == True:
-            verbose = 1
-        if verbose == False:
-            verbose = 0
-        if verbose not in {0, 1, 2}:
-            raise ValueError(
-                "Given verbose value is not valid, as it must be either "
-                "a boolean value or 0, 1 or 2."
-            )
+        verbose = validate_verbose(verbose)
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             *args,

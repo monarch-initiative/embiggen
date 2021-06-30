@@ -4,11 +4,12 @@ from typing import Dict, Union
 import pandas as pd
 import numpy as np
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer   # pylint: disable=import-error,no-name-in-module
 
 from ensmallen_graph import EnsmallenGraph
 
 from .glove import GloVe
+from ..utils import validate_window_size
 
 
 class GraphGloVe(GloVe):
@@ -29,13 +30,13 @@ class GraphGloVe(GloVe):
         directed: bool = False,
         walk_length: int = 128,
         iterations: int = 16,
-        window_size: int = 16,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None
     ):
@@ -69,7 +70,7 @@ class GraphGloVe(GloVe):
             Maximal length of the walks.
         iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0,
@@ -100,7 +101,7 @@ class GraphGloVe(GloVe):
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -121,13 +122,13 @@ class GraphGloVe(GloVe):
         self._graph = graph
         self._walk_length = walk_length
         self._iterations = iterations
-        self._window_size = window_size
+        self._window_size = validate_window_size(window_size)
         self._return_weight = return_weight
         self._explore_weight = explore_weight
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._max_neighbours = max_neighbours
-        self._support_mirror_strategy = support_mirror_strategy
+        self._support_mirrored_strategy = support_mirrored_strategy
         self._random_state = random_state
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
@@ -220,7 +221,7 @@ class GraphGloVe(GloVe):
             random_state=self._random_state,
             verbose=verbose > 0
         )
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             sources = sources.astype(float)
             destinations = destinations.astype(float)
         return super().fit(

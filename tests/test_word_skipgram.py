@@ -12,7 +12,7 @@ class TestWordSkipGram(TestWord2VecSequences):
         super().setUp()
         self._embedding_size = 10
         self._model = SkipGram(
-            self._transformer.vocabulary_size,
+            vocabulary_size=self._transformer.vocabulary_size,
             embedding_size=self._embedding_size,
             window_size=self._window_size
         )

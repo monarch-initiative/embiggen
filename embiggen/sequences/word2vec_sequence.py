@@ -41,6 +41,6 @@ class Word2VecSequence(AbstractWord2VecSequence):
             window_size=self._window_size,
         )
 
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             return (contexts.astype(float), words.astype(float)), None
         return (contexts, words), None

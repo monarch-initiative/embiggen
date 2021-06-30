@@ -4,12 +4,12 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.layers import Add  # pylint: disable=import-error
-from tensorflow.keras.layers import Concatenate, Dot, Embedding, Flatten, Input
-from tensorflow.keras.models import Model  # pylint: disable=import-error
+from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Add  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Concatenate, Dot, Embedding, Flatten, Input  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import GloveSequence
 from .embedder import Embedder
@@ -18,7 +18,7 @@ from .embedder import Embedder
 class GloVe(Embedder):
     """GloVe model for graph and words embedding.
 
-    The GloVe model for graoh embedding receives two words and is asked to
+    The GloVe model for graph embedding receives two words and is asked to
     predict its cooccurrence probability.
     """
 
@@ -106,7 +106,7 @@ class GloVe(Embedder):
             weights=None if self._embedding is None else [
                 self._embedding
             ],
-            name=Embedder.EMBEDDING_LAYER_NAME
+            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
         )(left_input_layer)
 
         trainable_right_embedding = Embedding(

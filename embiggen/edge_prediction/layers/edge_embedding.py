@@ -42,10 +42,6 @@ class EdgeEmbedding(Layer):
         ValueError,
             If the given dropout rate is not a strictly positive real number.
         """
-        if embedding is None and embedding_layer is None:
-            raise ValueError(
-                "You must provide either the embedding or the embedding layer."
-            )
         if not isinstance(dropout_rate, float) or dropout_rate <= 0:
             raise ValueError(
                 "The dropout rate must be a strictly positive real number."
@@ -68,7 +64,7 @@ class EdgeEmbedding(Layer):
             self._embedding_layer = Embedding(
                 *self._embedding.shape,
                 input_length=1,
-                name=Embedder.EMBEDDING_LAYER_NAME,
+                name=Embedder.TERMS_EMBEDDING_LAYER_NAME,
                 weights=[self._embedding]
             )
 

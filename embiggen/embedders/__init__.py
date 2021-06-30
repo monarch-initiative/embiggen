@@ -6,6 +6,11 @@ from .graph_cbow import GraphCBOW
 from .graph_glove import GraphGloVe
 from .graph_skipgram import GraphSkipGram
 from .skipgram import SkipGram
+from .transe import TransE
+from .transh import TransH
+from .siamese import Siamese
+from .transr import TransR
+from .simple import SimplE
 
 __all__ = [
     "GloVe",
@@ -14,5 +19,10 @@ __all__ = [
     "Embedder",
     "GraphCBOW",
     "GraphSkipGram",
-    "GraphGloVe"
+    "GraphGloVe",
+    "TransE",
+    "TransH",
+    "TransR",
+    "Siamese",
+    "SimplE"
 ]

@@ -8,6 +8,7 @@ __pycache__
 \.vscode/
 .vscode
 .ipynb_checkpoints
+node_embeddings/*
 
 # data
 karate.embedded
