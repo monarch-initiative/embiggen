@@ -12,7 +12,6 @@ from tensorflow.keras.initializers import Initializer  # pylint: disable=import-
 from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 from tensorflow.python.keras import activations  # pylint: disable=import-error,no-name-in-module
-from tqdm.keras import TqdmCallback
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error
@@ -390,7 +389,8 @@ class GraphConvolutionalNeuralNetwork:
             self._adjacency_matrix, train_graph.get_one_hot_encoded_node_types(),
             # This is a known hack to get around limitations from the current
             # implementation that handles the sample weights in TensorFlow.
-            sample_weight=pd.Series(train_graph.get_known_node_types_mask().astype(float)),
+            sample_weight=pd.Series(
+                train_graph.get_known_node_types_mask().astype(float)),
             validation_data=validation_data,
             epochs=epochs,
             verbose=traditional_verbose and verbose > 0,
@@ -411,7 +411,8 @@ class GraphConvolutionalNeuralNetwork:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),) if not traditional_verbose and verbose > 0 else ()),
+                *((TqdmCallback(verbose=verbose-1),)
+                  if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs
@@ -453,7 +454,8 @@ class GraphConvolutionalNeuralNetwork:
                 * args,
                 # This is a known hack to get around limitations from the current
                 # implementation that handles the sample weights in TensorFlow.
-                sample_weight=pd.Series(graph.get_known_node_types_mask().astype(float)),
+                sample_weight=pd.Series(
+                    graph.get_known_node_types_mask().astype(float)),
                 batch_size=self.run_batch_size_check(batch_size),
                 **kwargs
             )
