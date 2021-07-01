@@ -1,21 +1,21 @@
 """Abstract Keras Model object for embedding models."""
+from tensorflow.keras import optimizers
 from embiggen.utils.parameter_validators import validate_verbose
 from typing import Union, List, Dict
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
 from tqdm.keras import TqdmCallback
+from .optimizers import centralize_gradients
 
 
 class Embedder:
-    """Abstract Keras Model object for embedding models.
-
-    TODO!: https://keras.io/examples/vision/gradient_centralization/
-    """
+    """Abstract Keras Model object for embedding models."""
 
     TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
@@ -26,7 +26,8 @@ class Embedder:
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        trainable_embedding: bool = True
+        trainable_embedding: bool = True,
+        use_gradient_centralization: bool = True
     ):
         """Create new Embedder object.
 
@@ -57,6 +58,10 @@ class Embedder:
         trainable_embedding: bool = True,
             Wether to allow for trainable embedding.
             By default true.
+        use_gradient_centralization: bool = True,
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
 
         Raises
         -----------------------------------
@@ -123,6 +128,15 @@ class Embedder:
 
         if optimizer is None:
             optimizer = Nadam(learning_rate=0.01)
+
+        if isinstance(optimizer, str):
+            optimizer = tf.keras.optimizers.get(optimizer)
+
+        if use_gradient_centralization:
+            # If the gradient centralization has been requested, with add it
+            # to the list of transformations applied to the gradient.
+            optimizer.gradient_transformers = optimizer.gradient_transformers + \
+                [centralize_gradients]
 
         self._optimizer = optimizer
         self._model = self._build_model()

@@ -1,10 +1,10 @@
 """SkipGram model for sequence embedding."""
 from typing import Dict
-from tensorflow.keras.layers import (  # pylint: disable=import-error
+from tensorflow.keras.layers import ( # pylint: disable=import-error,no-name-in-module
     Input, Embedding, Flatten
 )
-import tensorflow as tf
-from tensorflow.keras.models import Model
+import tensorflow as tf # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import Model # pylint: disable=import-error,no-name-in-module
 
 from .embedder import Embedder
 from .layers import NoiseContrastiveEstimation
