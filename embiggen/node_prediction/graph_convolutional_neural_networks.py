@@ -359,6 +359,11 @@ class GraphConvolutionalNeuralNetwork:
         -----------------------
         Dataframe with training history.
         """
+        try:
+            from tqdm.keras import TqdmCallback
+            traditional_verbose = False
+        except AttributeError:
+            traditional_verbose = True
         verbose = validate_verbose(verbose)
 
         if validation_graph:
@@ -388,7 +393,7 @@ class GraphConvolutionalNeuralNetwork:
             sample_weight=pd.Series(train_graph.get_known_node_types_mask().astype(float)),
             validation_data=validation_data,
             epochs=epochs,
-            verbose=False,
+            verbose=traditional_verbose and verbose > 0,
             batch_size=self.run_batch_size_check(batch_size),
             validation_freq=validation_freq,
             class_weight=class_weight,
@@ -406,7 +411,7 @@ class GraphConvolutionalNeuralNetwork:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
+                *((TqdmCallback(verbose=verbose-1),) if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs

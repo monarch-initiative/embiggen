@@ -10,7 +10,6 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylin
 from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
-from tqdm.keras import TqdmCallback
 from .optimizers import centralize_gradients
 
 
@@ -326,12 +325,17 @@ class Embedder:
         -----------------------
         Dataframe with training history.
         """
+        try:
+            from tqdm.keras import TqdmCallback
+            traditional_verbose = False
+        except AttributeError:
+            traditional_verbose = True
         verbose = validate_verbose(verbose)
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
-            verbose=False,
+            verbose=traditional_verbose and verbose > 0,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,
@@ -346,7 +350,8 @@ class Embedder:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
+                *((TqdmCallback(verbose=verbose-1),)
+                  if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs
