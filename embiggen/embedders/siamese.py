@@ -45,6 +45,7 @@ class Siamese(Embedder):
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
         support_mirrored_strategy: bool = False,
+        use_gradient_centralization: str = "auto"
     ):
         """Create new sequence Embedder model.
 
@@ -100,6 +101,12 @@ class Siamese(Embedder):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         self._model_name = model_name
         if graph.has_disconnected_nodes():
@@ -189,7 +196,8 @@ class Siamese(Embedder):
             embedding_size=node_embedding_size,
             embedding=embedding,
             extra_features=extra_features,
-            optimizer=optimizer
+            optimizer=optimizer,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def _build_model(self):

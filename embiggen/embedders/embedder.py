@@ -64,6 +64,8 @@ class Embedder:
         use_gradient_centralization: bool = "auto",
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
 
         Raises

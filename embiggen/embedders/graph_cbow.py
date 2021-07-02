@@ -39,7 +39,8 @@ class GraphCBOW(Node2Vec):
         elapsed_epochs: int = 0,
         support_mirrored_strategy: bool = False,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None
+        dense_node_mapping: Dict[int, int] = None,
+        use_gradient_centralization: bool = "auto",
     ):
         """Create new sequence Embedder model.
 
@@ -123,6 +124,12 @@ class GraphCBOW(Node2Vec):
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
             raise ValueError(
@@ -154,5 +161,6 @@ class GraphCBOW(Node2Vec):
             elapsed_epochs=elapsed_epochs,
             support_mirrored_strategy=support_mirrored_strategy,
             random_state=random_state,
-            dense_node_mapping=dense_node_mapping
+            dense_node_mapping=dense_node_mapping,
+            use_gradient_centralization=use_gradient_centralization
         )

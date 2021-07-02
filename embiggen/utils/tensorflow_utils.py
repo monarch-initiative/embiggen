@@ -28,7 +28,7 @@ def tensorflow_version_is_higher_or_equal_than(tensorflow_version: str) -> bool:
                 "is not a valid version code."
             ).format(tensorflow_version)
         )
-    return version.parse(tf.reduce_sum) >= version.parse(tensorflow_version)
+    return version.parse(tf.__version__) >= version.parse(tensorflow_version)
 
 
 def must_have_tensorflow_version_higher_or_equal_than(

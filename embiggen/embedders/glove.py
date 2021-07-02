@@ -31,7 +31,8 @@ class GloVe(Embedder):
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         random_state: int = 42,
-        directed: bool = False
+        directed: bool = False,
+        use_gradient_centralization: bool = "auto",
     ):
         """Create new GloVe-based Embedder object.
 
@@ -61,6 +62,12 @@ class GloVe(Embedder):
             The random state to reproduce the training sequence.
         directed: bool = False,
             Whether to treat the data as directed or not.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         self._alpha = alpha
         self._random_state = random_state
@@ -70,7 +77,8 @@ class GloVe(Embedder):
             embedding_size=embedding_size,
             embedding=embedding,
             extra_features=extra_features,
-            optimizer=optimizer
+            optimizer=optimizer,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def _glove_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:

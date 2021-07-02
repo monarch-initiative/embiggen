@@ -1,16 +1,19 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from embiggen.embedders.transe import TransE
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras import backend as K  # pylint: disable=import-error
-from tensorflow.keras.constraints import UnitNorm
-from tensorflow.keras.layers import Embedding
+from tensorflow.keras import \
+    backend as K  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import \
+    UnitNorm  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import \
+    Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from .transe import TransE
 
@@ -28,6 +31,7 @@ class TransH(TransE):
         model_name: str = "TransH",
         optimizer: Union[str, Optimizer] = None,
         support_mirrored_strategy: bool = False,
+        use_gradient_centralization: str = "auto"
     ):
         """Create new sequence Embedder model.
 
@@ -66,6 +70,12 @@ class TransH(TransE):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         super().__init__(
             graph=graph,
@@ -75,7 +85,8 @@ class TransH(TransE):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
-            support_mirrored_strategy=support_mirrored_strategy
+            support_mirrored_strategy=support_mirrored_strategy,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def _build_output(
@@ -92,7 +103,8 @@ class TransH(TransE):
             input_length=1,
             name="normal_edge_type_embedding_layer",
         )(edge_types_input)
-        normal_edge_type_embedding = UnitNorm(axis=-1)(normal_edge_type_embedding)
+        normal_edge_type_embedding = UnitNorm(
+            axis=-1)(normal_edge_type_embedding)
         source_node_embedding -= tf.transpose(normal_edge_type_embedding, perm=[0, 2, 1]) * \
             source_node_embedding * normal_edge_type_embedding
         destination_node_embedding -= tf.transpose(normal_edge_type_embedding, perm=[0, 2, 1]) * \

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error
+from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from .siamese import Siamese
 
@@ -25,6 +25,7 @@ class TransE(Siamese):
         model_name: str = "TransE",
         optimizer: Union[str, Optimizer] = None,
         support_mirrored_strategy: bool = False,
+        use_gradient_centralization: str = "auto"
     ):
         """Create new sequence Embedder model.
 
@@ -66,6 +67,12 @@ class TransE(Siamese):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         super().__init__(
             graph=graph,
@@ -80,7 +87,8 @@ class TransE(Siamese):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
-            support_mirrored_strategy=support_mirrored_strategy
+            support_mirrored_strategy=support_mirrored_strategy,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def _build_output(

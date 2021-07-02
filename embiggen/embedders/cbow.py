@@ -23,6 +23,7 @@ class CBOW(Embedder):
         self,
         window_size: int = 4,
         negative_samples: int = 10,
+        use_gradient_centralization: bool = "auto",
         **kwargs: Dict
     ):
         """Create new sequence Embedder model.
@@ -35,6 +36,12 @@ class CBOW(Embedder):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         **kwargs: Dict,
             Additional kwargs to pass to parent constructor.
         """
@@ -43,7 +50,10 @@ class CBOW(Embedder):
         # should have a decreasing node degree order!
         self._window_size = validate_window_size(window_size)
         self._negative_samples = negative_samples
-        super().__init__(**kwargs)
+        super().__init__(
+            use_gradient_centralization=use_gradient_centralization,
+            **kwargs
+        )
 
     def _build_model(self) -> Model:
         """Return CBOW model."""

@@ -38,7 +38,8 @@ class GraphGloVe(GloVe):
         max_neighbours: int = None,
         support_mirrored_strategy: bool = False,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None
+        dense_node_mapping: Dict[int, int] = None,
+        use_gradient_centralization: bool = "auto",
     ):
         """Create new GloVe-based Embedder object.
 
@@ -118,6 +119,12 @@ class GraphGloVe(GloVe):
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
+        use_gradient_centralization: bool = "auto",
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         self._graph = graph
         self._walk_length = walk_length
@@ -139,6 +146,7 @@ class GraphGloVe(GloVe):
             embedding=embedding,
             extra_features=extra_features,
             optimizer=optimizer,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
