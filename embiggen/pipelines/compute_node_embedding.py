@@ -291,16 +291,6 @@ def compute_node_embedding(
                 "with GPU acceleration."
             )
 
-    # If the machine has only a GPU, it does not make sense to use
-    # mirror strategy as it would only add overhead to it.
-    if has_single_gpu() and use_mirrored_strategy:
-        warnings.warn(
-            "The `use_mirrored_strategy` parameter was provided but the "
-            "system has only a single GPU device, so to avoid unnecessary "
-            "overhead this feature has been automatically disabled."
-        )
-        use_mirrored_strategy = False
-
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
         fit_kwargs = {}
