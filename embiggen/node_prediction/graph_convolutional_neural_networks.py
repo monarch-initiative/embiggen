@@ -12,9 +12,9 @@ from tensorflow.keras.initializers import Initializer  # pylint: disable=import-
 from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 from tensorflow.python.keras import activations  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.models import Model  # pylint: disable=import-error
+from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error
+    Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen_graph import EnsmallenGraph
 from embiggen.embedders.layers import GraphConvolution

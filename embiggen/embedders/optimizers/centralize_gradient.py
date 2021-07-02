@@ -12,10 +12,11 @@ def centralize_gradient(gradient: tf.Tensor) -> tf.Tensor:
         Gradient to centralize over zero mean.
     """
     if len(gradient.shape) > 1:
-        gradient -= tf.reduce_mean(
+        gradient -= tf.sparse.reduce_sum(
             gradient,
             axis=list(range(len(gradient.shape) - 1)),
-            keepdims=True
+            keepdims=True,
+            output_is_sparse=True
         )
     return gradient
 
