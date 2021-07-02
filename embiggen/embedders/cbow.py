@@ -1,5 +1,5 @@
 """CBOW model for sequence embedding."""
-from typing import Dict
+from typing import Dict, Union
 from tensorflow.keras.layers import (   # pylint: disable=import-error,no-name-in-module
     GlobalAveragePooling1D, Input, Embedding
 )

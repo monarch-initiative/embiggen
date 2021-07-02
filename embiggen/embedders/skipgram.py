@@ -1,5 +1,5 @@
 """SkipGram model for sequence embedding."""
-from typing import Dict
+from typing import Dict, Union
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Input, Embedding, Flatten
 )
@@ -23,7 +23,7 @@ class SkipGram(Embedder):
         self,
         window_size: int = 4,
         negative_samples: int = 10,
-        use_gradient_centralization: str = "auto",
+        use_gradient_centralization: Union[bool, str] = "auto",
         **kwargs: Dict
     ):
         """Create new sequence Embedder model.
