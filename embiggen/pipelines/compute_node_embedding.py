@@ -1,17 +1,16 @@
 """Sub-module with methods to compute node-embedding with a one-liner."""
-from typing import Dict, List, Union, Tuple
-
 import inspect
 import warnings
+from typing import Dict, List, Tuple, Union
+
 import pandas as pd
 import tensorflow as tf
 from cache_decorator import Cache
 from ensmallen_graph import EnsmallenGraph
-from ..utils import has_gpus, has_nvidia_drivers, has_rocm_drivers, has_single_gpu
 
-
-from ..embedders import GraphCBOW, GraphGloVe, GraphSkipGram, Embedder
-from ..embedders import Siamese, TransR, TransE, TransH, SimplE
+from ..embedders import (Embedder, GraphCBOW, GraphGloVe, GraphSkipGram,
+                         Siamese, SimplE, TransE, TransH, TransR)
+from ..utils import (has_gpus, has_nvidia_drivers, has_rocm_drivers)
 
 SUPPORTED_NODE_EMBEDDING_METHODS = {
     "CBOW": GraphCBOW,
