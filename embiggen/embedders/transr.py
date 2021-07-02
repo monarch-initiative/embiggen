@@ -79,7 +79,8 @@ class TransR(TransE):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
-            support_mirrored_strategy=support_mirrored_strategy
+            support_mirrored_strategy=support_mirrored_strategy,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def _build_output(
