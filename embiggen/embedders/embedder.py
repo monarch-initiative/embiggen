@@ -1,20 +1,23 @@
 """Abstract Keras Model object for embedding models."""
-from tensorflow.keras import optimizers
-from embiggen.utils.parameter_validators import validate_verbose
-from typing import Union, List, Dict
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.models import Model   # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import Nadam   # pylint: disable=import-error,no-name-in-module
+from embiggen.utils.parameter_validators import validate_verbose
+from tensorflow.keras import optimizers
+from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
+    EarlyStopping, ReduceLROnPlateau)
+from tensorflow.keras.models import \
+    Model  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import \
+    Nadam  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error,no-name-in-module
+
+from ..utils import (must_have_tensorflow_version_higher_or_equal_than,
+                     tensorflow_version_is_higher_or_equal_than)
 from .optimizers import centralize_gradients
-from ..utils import (
-    must_have_tensorflow_version_higher_or_equal_than,
-    tensorflow_version_is_higher_or_equal_than
-)
 
 
 class Embedder:
@@ -30,7 +33,7 @@ class Embedder:
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         trainable_embedding: bool = True,
-        use_gradient_centralization: bool = "auto"
+        use_gradient_centralization: Union[bool, str] = "auto"
     ):
         """Create new Embedder object.
 
@@ -61,7 +64,7 @@ class Embedder:
         trainable_embedding: bool = True,
             Wether to allow for trainable embedding.
             By default true.
-        use_gradient_centralization: bool = "auto",
+        use_gradient_centralization: Union[bool, str] = "auto",
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of

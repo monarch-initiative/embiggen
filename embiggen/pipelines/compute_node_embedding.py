@@ -10,7 +10,7 @@ from ensmallen_graph import EnsmallenGraph
 
 from ..embedders import (Embedder, GraphCBOW, GraphGloVe, GraphSkipGram,
                          Siamese, SimplE, TransE, TransH, TransR)
-from ..utils import (has_gpus, has_nvidia_drivers, has_rocm_drivers)
+from ..utils import has_gpus, has_nvidia_drivers, has_rocm_drivers
 
 SUPPORTED_NODE_EMBEDDING_METHODS = {
     "CBOW": GraphCBOW,

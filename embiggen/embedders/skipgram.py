@@ -36,7 +36,7 @@ class SkipGram(Embedder):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        use_gradient_centralization: bool = "auto",
+        use_gradient_centralization: Union[bool, str] = "auto",
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of

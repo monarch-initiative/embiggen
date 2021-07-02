@@ -36,7 +36,7 @@ class Node2Vec:
         support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
-        use_gradient_centralization: bool = "auto",
+        use_gradient_centralization: Union[bool, str] = "auto",
     ):
         """Create new sequence Embedder model.
 
@@ -120,7 +120,7 @@ class Node2Vec:
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
-        use_gradient_centralization: bool = "auto",
+        use_gradient_centralization: Union[bool, str] = "auto",
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
