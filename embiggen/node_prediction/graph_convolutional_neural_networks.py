@@ -232,7 +232,7 @@ class GraphConvolutionalNeuralNetwork:
 
                 hidden.build(self._number_of_units_per_hidden_layer[i-1])
 
-                hidden(adjacency_matrix, hidden)
+                hidden = hidden(adjacency_matrix, hidden)
 
         return Model(
             inputs=adjacency_matrix,
