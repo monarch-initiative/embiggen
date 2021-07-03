@@ -230,7 +230,7 @@ class GraphConvolutionalNeuralNetwork:
                     **kwargs,
                 )
 
-                hidden.build(self._activations_per_hidden_layer[i-1])
+                hidden.build(self._number_of_units_per_hidden_layer[i-1])
 
                 hidden(adjacency_matrix, hidden)
 
