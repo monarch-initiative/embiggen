@@ -225,14 +225,14 @@ class GraphConvolutionalNeuralNetwork:
             if self._use_dense_hidden_layers:
                 hidden = Dense(**kwargs)(hidden)
             else:
-                hidden = GraphConvolution(
+                gcn_hidden = GraphConvolution(
                     features_dropout_rate=self._features_dropout_rate,
                     **kwargs,
                 )
 
-                hidden.build(self._number_of_units_per_hidden_layer[i-1])
+                gcn_hidden.build(self._number_of_units_per_hidden_layer[i-1])
 
-                hidden = hidden(adjacency_matrix, hidden)
+                hidden = gcn_hidden(adjacency_matrix, hidden)
 
         return Model(
             inputs=adjacency_matrix,
