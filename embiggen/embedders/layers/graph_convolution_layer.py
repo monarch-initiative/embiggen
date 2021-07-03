@@ -152,7 +152,7 @@ class GraphConvolution(Layer):
                 self._dense(self._features_dropout(node_features)),
                 ids,
                 adjacency,
-                combiner='mean'
+                combiner='sum'
             )
             if self._use_bias:
                 result = nn_ops.bias_add(result, self._bias)
@@ -161,5 +161,5 @@ class GraphConvolution(Layer):
             self._features_dropout(node_features),
             ids,
             adjacency,
-            combiner='mean'
+            combiner='sum'
         ))
