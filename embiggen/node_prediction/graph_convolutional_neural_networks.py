@@ -377,7 +377,7 @@ class GraphConvolutionalNeuralNetwork:
                 validation_graph.get_one_hot_encoded_node_types(),
                 # This is a known hack to get around limitations from the current
                 # implementation that handles the sample weights in TensorFlow.
-                pd.Series(validation_graph.get_known_node_types_mask())
+                pd.Series(validation_graph.get_known_node_types_mask().astype(float))
             )
         else:
             validation_data = None
