@@ -15,9 +15,7 @@ from tensorflow.keras.optimizers import \
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ..utils import (must_have_tensorflow_version_higher_or_equal_than,
-                     tensorflow_version_is_higher_or_equal_than)
-from .optimizers import centralize_gradients
+from .optimizers import apply_centralized_gradients
 
 
 class Embedder:
@@ -33,7 +31,7 @@ class Embedder:
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         trainable_embedding: bool = True,
-        use_gradient_centralization: Union[bool, str] = "auto"
+        use_gradient_centralization: bool = True
     ):
         """Create new Embedder object.
 
@@ -64,7 +62,7 @@ class Embedder:
         trainable_embedding: bool = True,
             Wether to allow for trainable embedding.
             By default true.
-        use_gradient_centralization: Union[bool, str] = "auto",
+        use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
@@ -81,12 +79,6 @@ class Embedder:
             When both vocabulary size or embedding size are provided with also
             the seed embedding.
         """
-        if use_gradient_centralization == "auto":
-            # We automatically enable gradient centralization when TensorFlow
-            # version is high enough to support it.
-            use_gradient_centralization = tensorflow_version_is_higher_or_equal_than(
-                "2.4.0"
-            )
         if embedding is not None:
             if isinstance(embedding, pd.DataFrame):
                 embedding = embedding.values
@@ -147,15 +139,7 @@ class Embedder:
             optimizer = tf.keras.optimizers.get(optimizer)
 
         if use_gradient_centralization:
-            must_have_tensorflow_version_higher_or_equal_than(
-                "2.4.0",
-                "gradient_transformers"
-            )
-            # If the gradient centralization has been requested, with add it
-            # to the list of transformations applied to the gradient.
-            optimizer.gradient_transformers = optimizer.gradient_transformers + [
-                centralize_gradients
-            ]
+            apply_centralized_gradients(optimizer)
 
         self._optimizer = optimizer
         self._model = self._build_model()

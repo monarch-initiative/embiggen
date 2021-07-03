@@ -1,6 +1,6 @@
 """Submodule with useful optimizer utilities."""
-from .centralize_gradient import centralize_gradients
+from .centralize_gradient import apply_centralized_gradients
 
 __all__ = [
-    "centralize_gradients"
+    "apply_centralized_gradients"
 ]

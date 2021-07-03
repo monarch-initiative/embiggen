@@ -23,7 +23,7 @@ class CBOW(Embedder):
         self,
         window_size: int = 4,
         negative_samples: int = 10,
-        use_gradient_centralization: Union[bool, str] = "auto",
+        use_gradient_centralization: bool = True,
         **kwargs: Dict
     ):
         """Create new sequence Embedder model.
@@ -36,7 +36,7 @@ class CBOW(Embedder):
         negative_samples: int = 10,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        use_gradient_centralization: Union[bool, str] = "auto",
+        use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of

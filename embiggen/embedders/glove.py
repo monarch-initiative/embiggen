@@ -32,7 +32,7 @@ class GloVe(Embedder):
         alpha: float = 0.75,
         random_state: int = 42,
         directed: bool = False,
-        use_gradient_centralization: Union[bool, str] = "auto",
+        use_gradient_centralization: bool = True,
     ):
         """Create new GloVe-based Embedder object.
 
@@ -62,7 +62,7 @@ class GloVe(Embedder):
             The random state to reproduce the training sequence.
         directed: bool = False,
             Whether to treat the data as directed or not.
-        use_gradient_centralization: Union[bool, str] = "auto",
+        use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
