@@ -148,15 +148,8 @@ class GraphConvolution(Layer):
             dense_shape=adjacency.dense_shape
         )
         if self._internal_product:
-            result = embedding_ops.embedding_lookup_sparse_v2(
-                self._dense(self._features_dropout(node_features)),
-                ids,
-                adjacency,
-                combiner='sum'
-            )
-            if self._use_bias:
-                result = nn_ops.bias_add(result, self._bias)
-            return self._activation(result)
+            # TODO! implement internal product
+            pass
         return self._dense(embedding_ops.embedding_lookup_sparse_v2(
             self._features_dropout(node_features),
             ids,
