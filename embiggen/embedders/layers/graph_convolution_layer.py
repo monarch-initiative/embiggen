@@ -90,37 +90,20 @@ class GraphConvolution(Layer):
         """
         if self._units < input_shape:
             self._internal_product = True
-            if self._use_bias:
-                self._bias = self.add_weight(
-                    'bias',
-                    shape=[self._units, ],
-                    initializer=self._bias_initializer,
-                    regularizer=self._bias_regularizer,
-                    constraint=self._bias_constraint,
-                    trainable=True
-                )
-            self._activation = tf.keras.activations.get(self._activation)
-            self._dense = Dense(
-                units=self._units,
-                use_bias=False,
-                activation="linear",
-                kernel_initializer=self._kernel_initializer,
-                kernel_regularizer=self._kernel_regularizer,
-                kernel_constraint=self._kernel_constraint,
-            )
-        else:
-            self._dense = Dense(
-                units=self._units,
-                use_bias=self._use_bias,
-                activation=self._activation,
-                kernel_initializer=self._kernel_initializer,
-                bias_initializer=self._bias_initializer,
-                kernel_regularizer=self._kernel_regularizer,
-                bias_regularizer=self._bias_regularizer,
-                kernel_constraint=self._kernel_constraint,
-                bias_constraint=self._bias_constraint,
-                activity_regularizer=self._activity_regularizer,
-            )
+            # TODO! implement internal product
+            pass
+        self._dense = Dense(
+            units=self._units,
+            use_bias=self._use_bias,
+            activation=self._activation,
+            kernel_initializer=self._kernel_initializer,
+            bias_initializer=self._bias_initializer,
+            kernel_regularizer=self._kernel_regularizer,
+            bias_regularizer=self._bias_regularizer,
+            kernel_constraint=self._kernel_constraint,
+            bias_constraint=self._bias_constraint,
+            activity_regularizer=self._activity_regularizer,
+        )
 
         self._dense.build(input_shape)
         # Create the layer activation
