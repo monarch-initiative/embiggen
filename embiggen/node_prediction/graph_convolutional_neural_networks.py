@@ -396,7 +396,8 @@ class GraphConvolutionalNeuralNetwork:
             # This is a known hack to get around limitations from the current
             # implementation that handles the sample weights in TensorFlow.
             sample_weight=pd.Series(
-                train_graph.get_known_node_types_mask().astype(float)),
+                train_graph.get_known_node_types_mask().astype(float)
+            ),
             validation_data=validation_data,
             epochs=epochs,
             verbose=traditional_verbose and verbose > 0,

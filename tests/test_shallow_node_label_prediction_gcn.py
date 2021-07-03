@@ -16,7 +16,7 @@ class TestShallowNodeLabelPredictionGCN(TestCase):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
         # Creating the normalized graph
         laplacian = self._graph.get_symmetric_normalized_transformed_graph().add_selfloops(weight=1.0)
-        train, test = laplacian.node_label_holdout(
+        train, test = laplacian.get_node_label_random_holdout(
             0.8,
             use_stratification=False,
             random_state=42
