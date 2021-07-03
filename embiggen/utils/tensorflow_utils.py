@@ -31,6 +31,33 @@ def tensorflow_version_is_higher_or_equal_than(tensorflow_version: str) -> bool:
     return version.parse(tf.__version__) >= version.parse(tensorflow_version)
 
 
+def tensorflow_version_is_less_or_equal_than(tensorflow_version: str) -> bool:
+    """Returns boolean if the TensorFlow version is less or equal than provided one.
+
+    Parameters
+    ----------------------
+    tensorflow_version: str,
+        The version of TensorFlow to check against.
+
+    Raises
+    ----------------------
+    ValueError,
+        If the provided version code is not a valid one.
+
+    Returns
+    ----------------------
+    Boolean representing if installed TensorFlow version is less or equal than given one.
+    """
+    if not validate_version_code(tensorflow_version):
+        raise ValueError(
+            (
+                "The provided TensorFlow version code `{}` "
+                "is not a valid version code."
+            ).format(tensorflow_version)
+        )
+    return version.parse(tf.__version__) <= version.parse(tensorflow_version)
+
+
 def must_have_tensorflow_version_higher_or_equal_than(
     tensorflow_version: str,
     feature_name: str = None
