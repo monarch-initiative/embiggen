@@ -22,19 +22,19 @@ class TestShallowNodeLabelPredictionGCN(TestCase):
             random_state=42
         )
 
-        model = GraphConvolutionalNeuralNetwork(
+        shallow_model = GraphConvolutionalNeuralNetwork(
             train,
             node_features_number=10
         )
-        self.assertEqual("GCN", model.name)
-        model.summary()
+        self.assertEqual("GCN", shallow_model.name)
+        shallow_model.summary()
 
-        model.fit(
+        shallow_model.fit(
             train,
             validation_graph=test,
             batch_size=256,
             epochs=2
         )
-        model.evaluate(test)
-        model.predict(train)
-        model.predict(test)
+        shallow_model.evaluate(test)
+        shallow_model.predict(train)
+        shallow_model.predict(test)

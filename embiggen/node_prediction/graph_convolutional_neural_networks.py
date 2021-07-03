@@ -189,6 +189,8 @@ class GraphConvolutionalNeuralNetwork:
             bias_constraint=self._bias_constraint,
         )
 
+        input_graph_convolution.build(self._node_features_number)
+
         if self._node_features is None:
             node_features = input_graph_convolution.add_weight(
                 name="node_features",
@@ -226,7 +228,11 @@ class GraphConvolutionalNeuralNetwork:
                 hidden = GraphConvolution(
                     features_dropout_rate=self._features_dropout_rate,
                     **kwargs,
-                )(adjacency_matrix, hidden)
+                )
+
+                hidden.build(self._activations_per_hidden_layer[i-1])
+
+                hidden(adjacency_matrix, hidden)
 
         return Model(
             inputs=adjacency_matrix,

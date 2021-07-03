@@ -7,10 +7,12 @@ In this version of the implementation, we allow for batch sizes of arbitrary siz
 """
 from typing import Tuple, Union, Dict, Optional
 import tensorflow as tf
-from tensorflow.keras.layers import Dropout, Layer, Dense # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.initializers import Initializer # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.regularizers import Regularizer # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import Constraint # pylint: disable=import-error,no-name-in-module
+from tensorflow.python.ops import nn_ops  # pylint: disable=import-error,no-name-in-module
+from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Dropout, Layer, Dense  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 
 
 class GraphConvolution(Layer):
@@ -20,6 +22,7 @@ class GraphConvolution(Layer):
         self,
         units: int,
         activation: str = "relu",
+        use_bias: bool = True,
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
         bias_initializer: Union[str, Initializer] = 'zeros',
         kernel_regularizer: Union[str, Regularizer] = None,
@@ -38,6 +41,8 @@ class GraphConvolution(Layer):
             The dimensionality of the output space (i.e. the number of output units).
         activation: str = "relu",
             Activation function to use. If you don't specify anything, relu is used.
+        use_bias: bool = True,
+            Whether to use bias in the layer.
         kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
             Initializer for the kernel weights matrix.
         bias_initializer: Union[str, Initializer] = 'zeros',
@@ -68,7 +73,10 @@ class GraphConvolution(Layer):
         self._kernel_constraint = kernel_constraint
         self._bias_constraint = bias_constraint
         self._features_dropout_rate = features_dropout_rate
+        self._internal_product = False
         self._dense = None
+        self._use_bias = use_bias
+        self._bias = None
         self._features_dropout = None
         self._norm = None
 
@@ -80,32 +88,78 @@ class GraphConvolution(Layer):
         input_shape: Tuple[int, int],
             Shape of the output of the previous layer.
         """
-        self._dense = Dense(
-            units=self._units,
-            activation=self._activation,
-            kernel_initializer=self._kernel_initializer,
-            bias_initializer=self._bias_initializer,
-            kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
-            kernel_constraint=self._kernel_constraint,
-            bias_constraint=self._bias_constraint,
-            activity_regularizer=self._activity_regularizer,
-        )
+        if self._units < input_shape:
+            self._internal_product = True
+            if self._use_bias:
+                self._bias = self.add_weight(
+                    'bias',
+                    shape=[self._units, ],
+                    initializer=self._bias_initializer,
+                    regularizer=self._bias_regularizer,
+                    constraint=self._bias_constraint,
+                    trainable=True
+                )
+            self._activation = tf.keras.activations.get(self._activation)
+            self._dense = Dense(
+                units=self._units,
+                use_bias=False,
+                activation="linear",
+                kernel_initializer=self._kernel_initializer,
+                kernel_regularizer=self._kernel_regularizer,
+                kernel_constraint=self._kernel_constraint,
+            )
+        else:
+            self._dense = Dense(
+                units=self._units,
+                use_bias=self._use_bias,
+                activation=self._activation,
+                kernel_initializer=self._kernel_initializer,
+                bias_initializer=self._bias_initializer,
+                kernel_regularizer=self._kernel_regularizer,
+                bias_regularizer=self._bias_regularizer,
+                kernel_constraint=self._kernel_constraint,
+                bias_constraint=self._bias_constraint,
+                activity_regularizer=self._activity_regularizer,
+            )
+
+        self._dense.build(input_shape)
         # Create the layer activation
         self._features_dropout = Dropout(self._features_dropout_rate)
+        self._features_dropout.build(input_shape)
 
         super().build(input_shape)
 
     def call(
         self,
         adjacency: tf.SparseTensor,
-        node_features: Optional[tf.Tensor]
+        node_features: tf.Tensor
     ) -> tf.Tensor:
         """Returns called Graph Convolution Layer.
 
         Parameters
         ---------------------------
-        inputs: Tuple[tf.SparseTensor, tf.Tensor],
+        adjaceny: Tuple[tf.SparseTensor, tf.Tensor],
             Sparse weighted input matrix.
+        node_features: tf.Tensor
         """
-        return self._dense(tf.sparse.sparse_dense_matmul(adjacency, self._features_dropout(node_features)))
+        ids = tf.SparseTensor(
+            indices=adjacency.indices,
+            values=adjacency.indices[:, 1],
+            dense_shape=adjacency.dense_shape
+        )
+        if self._internal_product:
+            result = embedding_ops.embedding_lookup_sparse_v2(
+                self._dense(self._features_dropout(node_features)),
+                ids,
+                adjacency,
+                combiner='mean'
+            )
+            if self._use_bias:
+                result = nn_ops.bias_add(result, self._bias)
+            return self._activation(result)
+        return self._dense(embedding_ops.embedding_lookup_sparse_v2(
+            self._features_dropout(node_features),
+            ids,
+            adjacency,
+            combiner='mean'
+        ))
