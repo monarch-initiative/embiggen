@@ -12,8 +12,8 @@ class TestNodeTransformer(TestCase):
         """Setup objects for running tests on NodeTransformer object."""
         self._embedding_size = 50
         self._nodes_number = 100
-        self._graph: EnsmallenGraph = EnsmallenGraph.from_unsorted_csv(
-            edge_path=f"tests/data/small_ppi.tsv",
+        self._graph: EnsmallenGraph = EnsmallenGraph.from_csv(
+            edge_path="tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",
             directed=False,

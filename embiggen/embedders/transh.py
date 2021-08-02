@@ -4,10 +4,7 @@ from typing import Dict, Optional, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from embiggen.embedders.transe import TransE
 from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras import \
-    backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import \
     UnitNorm  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import \
@@ -103,12 +100,20 @@ class TransH(TransE):
             input_length=1,
             name="normal_edge_type_embedding_layer",
         )(edge_types_input)
+
         normal_edge_type_embedding = UnitNorm(
-            axis=-1)(normal_edge_type_embedding)
-        source_node_embedding -= tf.transpose(normal_edge_type_embedding, perm=[0, 2, 1]) * \
-            source_node_embedding * normal_edge_type_embedding
-        destination_node_embedding -= tf.transpose(normal_edge_type_embedding, perm=[0, 2, 1]) * \
-            destination_node_embedding * normal_edge_type_embedding
+            axis=-1
+        )(normal_edge_type_embedding)
+
+        source_node_embedding -= tf.transpose(
+            normal_edge_type_embedding,
+            perm=[0, 2, 1]
+        ) * source_node_embedding * normal_edge_type_embedding
+
+        destination_node_embedding -= tf.transpose(
+            normal_edge_type_embedding,
+            perm=[0, 2, 1]
+        ) * destination_node_embedding * normal_edge_type_embedding
 
         return super()._build_output(
             source_node_embedding,

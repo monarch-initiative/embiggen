@@ -386,7 +386,8 @@ class Siamese(Embedder):
             values.append(
                 pd.DataFrame(
                     self.get_layer_weights(
-                        Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME),
+                        Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME
+                    ),
                     index=self._graph.get_unique_node_type_names(),
                 ),
             )

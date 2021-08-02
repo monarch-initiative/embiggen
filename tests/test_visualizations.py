@@ -11,13 +11,13 @@ class TestGraphVisualization(TestCase):
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._embedding_size = 50
-        self._graph = EnsmallenGraph.from_unsorted_csv(
-            edge_path=f"tests/data/small_ppi.tsv",
+        self._graph = EnsmallenGraph.from_csv(
+            edge_path="tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",
             directed=False,
             weights_column="weight",
-            edge_types_column="edge_label"
+            edge_list_edge_types_column="edge_label"
         )
         self._embedding = GloVe(
             vocabulary_size=self._graph.get_nodes_number(),

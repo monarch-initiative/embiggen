@@ -4,13 +4,12 @@ from typing import Optional, Union, Dict
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from embiggen.embedders.transe import TransE
 from ensmallen_graph import EnsmallenGraph
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Embedding, Reshape  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
-
+from .transe import TransE
 
 class TransR(TransE):
     """Siamese network for node-embedding including optionally node types and edge types."""
@@ -107,10 +106,10 @@ class TransR(TransE):
             normal_edge_type_embedding_matrix * source_node_embedding,
             axis=-1
         )
-        destination_node_embedding = K.l2_normalize(
-            normal_edge_type_embedding_matrix * destination_node_embedding,
-            axis=-1
-        )
+        # destination_node_embedding = K.l2_normalize(
+        #     normal_edge_type_embedding_matrix * destination_node_embedding,
+        #     axis=-1
+        # )
 
         return super()._build_output(
             source_node_embedding,

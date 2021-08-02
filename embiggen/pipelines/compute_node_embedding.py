@@ -17,10 +17,10 @@ SUPPORTED_NODE_EMBEDDING_METHODS = {
     "GloVe": GraphGloVe,
     "SkipGram": GraphSkipGram,
     "Siamese": Siamese,
-    "TransR": TransR,
     "TransE": TransE,
+    "SimplE": SimplE,
     "TransH": TransH,
-    "SimplE": SimplE
+    "TransR": TransR,
 }
 
 REQUIRE_ZIPFIAN = [
@@ -298,7 +298,7 @@ def compute_node_embedding(
     # node IDs according to decreasing outbound node degrees, we create the new graph
     # that has the node IDs sorted.
     if automatically_sort_by_decreasing_outbound_node_degree and node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-        graph = graph.sort_by_decreasing_outbound_node_degree(verbose > 0)
+        graph = graph.sort_by_decreasing_outbound_node_degree()
 
     # If required, we filter out the unsupported parameters.
     # This may be useful when running a suite of experiments with a set of
