@@ -239,9 +239,8 @@ class Siamese(Embedder):
         )
 
         # Appling UnitNorm to them
-        norm = UnitNorm(axis=-1)
-        source_node_embedding = norm(source_node_embedding)
-        destination_node_embedding = norm(destination_node_embedding)
+        source_node_embedding = UnitNorm(axis=-1)(source_node_embedding)
+        destination_node_embedding = UnitNorm(axis=-1)(destination_node_embedding)
 
         if self._use_node_types:
             node_type_embedding_layer = Embedding(
@@ -258,6 +257,7 @@ class Siamese(Embedder):
             destination_node_types_embedding = node_type_embedding_layer(
                 destination_node_types_input
             )
+            
             if self._multilabel_node_types:
                 global_average_layer = GlobalAveragePooling1D()
                 source_node_types_embedding = global_average_layer(
@@ -267,10 +267,10 @@ class Siamese(Embedder):
                     destination_node_types_embedding
                 )
 
-            source_node_types_embedding = norm(
+            source_node_types_embedding = UnitNorm(axis=-1)(
                 source_node_types_embedding
             )
-            destination_node_types_embedding = norm(
+            destination_node_types_embedding = UnitNorm(axis=-1)(
                 destination_node_types_embedding
             )
 
@@ -282,14 +282,15 @@ class Siamese(Embedder):
                 raise ValueError(
                     "Supported node types concatenations are Dot, Add and Concatenate."
                 )
-            source_node_embedding = norm(node_types_concatenation([
+            
+            source_node_embedding = node_types_concatenation([
                 source_node_embedding,
                 source_node_types_embedding
-            ]))
-            destination_node_embedding = norm(node_types_concatenation([
+            ])
+            destination_node_embedding = node_types_concatenation([
                 destination_node_embedding,
                 destination_node_types_embedding
-            ]))
+            ])
 
         if self._use_edge_types:
             edge_type_embedding = Embedding(
@@ -298,7 +299,7 @@ class Siamese(Embedder):
                 input_length=1,
                 name=Siamese.EDGE_TYPE_EMBEDDING_LAYER_NAME,
             )(edge_types_input)
-            edge_type_embedding = norm(edge_type_embedding)
+            edge_type_embedding = UnitNorm(axis=-1)(edge_type_embedding)
         else:
             edge_type_embedding = None
 

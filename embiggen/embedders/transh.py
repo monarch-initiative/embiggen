@@ -11,6 +11,7 @@ from tensorflow.keras.layers import \
     Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.python.keras.layers.core import Flatten, Reshape  # pylint: disable=import-error,no-name-in-module
 
 from .transe import TransE
 
