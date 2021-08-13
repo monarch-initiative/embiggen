@@ -57,6 +57,7 @@ setup(
         "ensmallen_graph>=0.6.0",
         "cache_decorator>=2.0.2",
         "validate_version_code"
+        "packaging"
     ],
     tests_require=test_deps,
     include_package_data=True,
