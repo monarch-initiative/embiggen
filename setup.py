@@ -56,7 +56,7 @@ setup(
         "extra_keras_metrics>=2.0.1",
         "ensmallen_graph>=0.6.0",
         "cache_decorator>=2.0.2",
-        "validate_version_code"
+        "validate_version_code",
         "packaging"
     ],
     tests_require=test_deps,
