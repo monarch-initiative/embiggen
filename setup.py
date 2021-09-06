@@ -33,7 +33,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.8.5',
+    version='0.9.0',
     description='Extended implementation of node2vec with several word2vec family algorithms',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
