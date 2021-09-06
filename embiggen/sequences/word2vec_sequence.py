@@ -2,7 +2,7 @@
 from typing import Tuple
 
 import numpy as np  # type: ignore
-from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
+from ensmallen import preprocessing  # pylint: disable=no-name-in-module
 
 from .abstract_word2vec_sequence import AbstractWord2VecSequence
 

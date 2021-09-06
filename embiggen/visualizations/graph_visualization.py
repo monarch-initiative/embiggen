@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from ddd_subplots import subplots as subplots_3d
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.axes import Axes
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -35,7 +35,7 @@ class GraphVisualization:
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         decomposition_method: str = "TSNE",
         scaler_method: "Scaler" = RobustScaler,
         n_components: int = 2,
@@ -49,7 +49,7 @@ class GraphVisualization:
 
         Parameters
         --------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             The graph to visualize.
         decomposition_method: str = "TSNE",
             The decomposition method to use.

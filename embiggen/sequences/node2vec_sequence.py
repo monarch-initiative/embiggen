@@ -2,7 +2,7 @@
 from typing import Tuple, Dict
 
 import numpy as np  # type: ignore
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 from .abstract_sequence import AbstractSequence
 
 
@@ -11,7 +11,7 @@ class Node2VecSequence(AbstractSequence):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
@@ -30,7 +30,7 @@ class Node2VecSequence(AbstractSequence):
 
         Parameters
         -----------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             The graph from from where to extract the walks.
         walk_length: int = 128,
             Maximal length of the walks.
@@ -85,7 +85,7 @@ class Node2VecSequence(AbstractSequence):
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
-            graph object created using EnsmallenGraph)
+            graph object created using Graph)
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.

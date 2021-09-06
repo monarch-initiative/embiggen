@@ -2,7 +2,7 @@
 from typing import Tuple, Union
 
 import numpy as np
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 
 
@@ -11,7 +11,7 @@ class EdgePredictionSequence(Sequence):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         use_node_types: bool = False,
         use_edge_types: bool = False,
         use_edge_metrics: bool = False,
@@ -19,7 +19,7 @@ class EdgePredictionSequence(Sequence):
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         support_mirrored_strategy: bool = False,
-        graph_to_avoid: EnsmallenGraph = None,
+        graph_to_avoid: Graph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         random_state: int = 42
@@ -28,7 +28,7 @@ class EdgePredictionSequence(Sequence):
 
         Parameters
         --------------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             The graph from which to sample the edges.
         use_node_types: bool = False,
             Whether to return the node types.
@@ -55,11 +55,11 @@ class EdgePredictionSequence(Sequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
-        graph_to_avoid: EnsmallenGraph = None,
+        graph_to_avoid: Graph = None,
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
-            in the EnsmallenGraph package.
+            in the Graph package.
         batches_per_epoch: Union[int, str] = "auto",
             Number of batches per epoch.
             If auto, it is used: `10 * edges number /  batch size`

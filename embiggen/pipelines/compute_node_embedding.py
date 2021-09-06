@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple, Union
 import pandas as pd
 import tensorflow as tf
 from cache_decorator import Cache
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 
 from ..embedders import (Embedder, GraphCBOW, GraphGloVe, GraphSkipGram,
                          Siamese, SimplE, TransE, TransH, TransR)
@@ -72,7 +72,7 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
 
 
 def _train_model(
-    graph: EnsmallenGraph,
+    graph: Graph,
     node_embedding_method_name: str,
     fit_kwargs: Dict,
     verbose: bool,
@@ -83,7 +83,7 @@ def _train_model(
 
     Parameters
     --------------------------
-    graph: EnsmallenGraph,
+    graph: Graph,
         The graph to embed.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
@@ -125,7 +125,7 @@ def _train_model(
     args_to_ignore=["devices", "use_mirrored_strategy", "verbose"]
 )
 def _compute_node_embedding(
-    graph: EnsmallenGraph,
+    graph: Graph,
     graph_name: str,  # pylint: disable=unused-argument
     node_embedding_method_name: str,
     fit_kwargs: Dict,
@@ -140,7 +140,7 @@ def _compute_node_embedding(
 
     Parameters
     --------------------------
-    graph: EnsmallenGraph,
+    graph: Graph,
         The graph to embed.
     graph_name: str,
         The name of the graph.
@@ -182,7 +182,7 @@ def _compute_node_embedding(
 
 
 def compute_node_embedding(
-    graph: EnsmallenGraph,
+    graph: Graph,
     node_embedding_method_name: str,
     use_mirrored_strategy: bool = True,
     devices: Union[List[str], str] = None,
@@ -197,7 +197,7 @@ def compute_node_embedding(
 
     Parameters
     --------------------------
-    graph: EnsmallenGraph,
+    graph: Graph,
         Graph to embed.
     node_embedding_method_name: str,
         The name of the node embedding method to use.

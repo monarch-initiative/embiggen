@@ -4,7 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import UnitNorm  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
@@ -19,7 +19,7 @@ class SimplE(Siamese):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,

@@ -1,6 +1,6 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 from embiggen import GraphVisualization, GloVe
 import pytest
 
@@ -11,7 +11,7 @@ class TestGraphVisualization(TestCase):
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._embedding_size = 50
-        self._graph = EnsmallenGraph.from_csv(
+        self._graph = Graph.from_csv(
             edge_path="tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",

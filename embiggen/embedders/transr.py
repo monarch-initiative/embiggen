@@ -4,7 +4,7 @@ from typing import Optional, Union, Dict
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Embedding, Reshape  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
@@ -17,7 +17,7 @@ class TransR(TransE):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         embedding_size: int = 100,
         distance_metric: str = "COSINE",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
@@ -124,7 +124,7 @@ class TransR(TransE):
         batch_size: int = 2**15,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
-        graph_to_avoid: EnsmallenGraph = None,
+        graph_to_avoid: Graph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         epochs: int = 1000,
@@ -144,7 +144,7 @@ class TransR(TransE):
 
         Parameters
         -----------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             Graph to embed.
         epochs: int = 100,
             Epochs to train the model for.

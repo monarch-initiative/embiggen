@@ -3,7 +3,7 @@ from typing import Tuple, Union
 
 import numpy as np
 import tensorflow as tf
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from keras_mixed_sequence import Sequence
 
 
@@ -12,7 +12,7 @@ class NodeLabelPredictionSequence(Sequence):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         max_neighbours: int = None,
         include_central_node: bool = False,
         return_edge_weights: bool = False,

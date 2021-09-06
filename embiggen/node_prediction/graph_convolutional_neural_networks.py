@@ -16,7 +16,7 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from embiggen.embedders.layers import GraphConvolution
 from ..utils import graph_to_sparse_tensor, validate_verbose
 
@@ -26,7 +26,7 @@ class GraphConvolutionalNeuralNetwork:
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         use_weights: Union[str, bool] = "auto",
         use_class_weights: bool = True,
         node_features_number: Optional[int] = None,
@@ -49,7 +49,7 @@ class GraphConvolutionalNeuralNetwork:
 
         Parameters
         -------------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             The data for which to build the model.
         use_class_weights: bool = True,
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
@@ -290,14 +290,14 @@ class GraphConvolutionalNeuralNetwork:
 
     def fit(
         self,
-        train_graph: EnsmallenGraph,
+        train_graph: Graph,
         batch_size: Union[int, str] = "auto",
         validation_freq: int = 1,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
         reduce_lr_min_delta: float = 0.001,
         reduce_lr_patience: int = 5,
-        validation_graph: EnsmallenGraph = None,
+        validation_graph: Graph = None,
         epochs: int = 1000,
         early_stopping_monitor: str = "loss",
         early_stopping_mode: str = "min",
@@ -311,7 +311,7 @@ class GraphConvolutionalNeuralNetwork:
 
         Parameters
         -----------------------
-        train_graph: EnsmallenGraph,
+        train_graph: Graph,
             Graph to use for the training.
         batch_size: Union[int, str] = "auto",
             Batch size for the training epochs.
@@ -332,7 +332,7 @@ class GraphConvolutionalNeuralNetwork:
         reduce_lr_patience: int,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which reducing learning rate.
-        validation_graph: EnsmallenGraph = None,
+        validation_graph: Graph = None,
             Tuple to use for the validation.
         epochs: int = 10000,
             Epochs to train the model for.
@@ -425,7 +425,7 @@ class GraphConvolutionalNeuralNetwork:
 
     def predict(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         *args: List,
         batch_size: Union[int, str] = "auto",
         **kwargs: Dict
@@ -445,7 +445,7 @@ class GraphConvolutionalNeuralNetwork:
 
     def evaluate(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         *args: List,
         batch_size: Union[int, str] = "auto",
         **kwargs: Dict

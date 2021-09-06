@@ -1,17 +1,17 @@
 """Submodule with utility to convert graph to sparse tensor."""
 import tensorflow as tf
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 
 
 def graph_to_sparse_tensor(
-    graph: EnsmallenGraph,
+    graph: Graph,
     use_weights: bool
 ) -> tf.SparseTensor:
     """Returns provided graph as sparse Tensor.
 
     Parameters
     -------------------
-    graph: EnsmallenGraph,
+    graph: Graph,
         The graph to convert.
     use_weights: bool,
         Whether to load the graph weights.

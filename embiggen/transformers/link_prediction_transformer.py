@@ -2,7 +2,7 @@
 from typing import Tuple, Union, List
 import pandas as pd
 import numpy as np
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 from .graph_transformer import GraphTransformer
 
@@ -60,20 +60,20 @@ class LinkPredictionTransformer:
 
     def transform(
         self,
-        positive_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
-        negative_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        positive_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
+        negative_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        positive_graph: Union[EnsmallenGraph, List[List[str]], List[List[int]]],
+        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
-            It can either be an EnsmallenGraph or a list of lists of edges.
-        negative_graph: Union[EnsmallenGraph, List[List[str]], List[List[int]]],
+            It can either be an Graph or a list of lists of edges.
+        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
-            It can either be an EnsmallenGraph or a list of lists of edges.
+            It can either be an Graph or a list of lists of edges.
         random_state: int = 42,
             The random state to use to shuffle the labels.
 

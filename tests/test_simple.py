@@ -1,7 +1,7 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 from embiggen import SimplE
 from unittest import TestCase
-from ensmallen_graph.datasets.linqs import Cora
+from ensmallen.datasets.linqs import Cora
 
 
 class TestSimplE(TestCase):

@@ -3,7 +3,7 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
@@ -21,7 +21,7 @@ class GraphSkipGram(Node2Vec):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
@@ -46,7 +46,7 @@ class GraphSkipGram(Node2Vec):
 
         Parameters
         -------------------------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             Graph to be embedded.
         word2vec_model: Word2Vec,
             Word2Vec model to use.
@@ -120,7 +120,7 @@ class GraphSkipGram(Node2Vec):
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
-            graph object created using EnsmallenGraph)
+            graph object created using Graph)
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
@@ -138,7 +138,7 @@ class GraphSkipGram(Node2Vec):
                 "distribution) would not approximate well the Softmax.\n"
                 "In order to sort the given graph in such a way that the node IDs "
                 "are sorted by decreasing outbound node degrees, you can use "
-                "the EnsmallenGraph method "
+                "the Graph method "
                 "`graph.sort_by_decreasing_outbound_node_degree()`"
             )
 

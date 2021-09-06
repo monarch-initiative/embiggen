@@ -1,5 +1,5 @@
 """Test to validate that the model GloVe works properly with words sequences."""
-from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
+from ensmallen import preprocessing  # pylint: disable=no-name-in-module
 import numpy as np
 from embiggen import GloVe
 

@@ -4,7 +4,7 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from .siamese import Siamese
@@ -15,7 +15,7 @@ class TransE(Siamese):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         embedding_size: int = 100,
         distance_metric: str = "COSINE",
         use_node_types: Union[bool, str] = "auto",

@@ -54,7 +54,7 @@ setup(
         'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.26",
         "extra_keras_metrics>=2.0.1",
-        "ensmallen_graph>=0.6.0",
+        "ensmallen>=0.6.0",
         "cache_decorator>=2.0.2",
         "validate_version_code",
         "packaging"

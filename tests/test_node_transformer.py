@@ -2,7 +2,7 @@
 from unittest import TestCase
 import pytest
 from embiggen import NodeTransformer, GloVe
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 
 class TestNodeTransformer(TestCase):
@@ -12,7 +12,7 @@ class TestNodeTransformer(TestCase):
         """Setup objects for running tests on NodeTransformer object."""
         self._embedding_size = 50
         self._nodes_number = 100
-        self._graph: EnsmallenGraph = EnsmallenGraph.from_csv(
+        self._graph: Graph = Graph.from_csv(
             edge_path="tests/data/small_ppi.tsv",
             sources_column="subject",
             destinations_column="object",

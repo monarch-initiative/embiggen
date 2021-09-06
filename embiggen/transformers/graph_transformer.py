@@ -2,7 +2,7 @@
 from typing import List, Union
 import pandas as pd
 import numpy as np
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 from .edge_transformer import EdgeTransformer
 
@@ -71,15 +71,15 @@ class GraphTransformer:
 
     def transform(
         self,
-        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
-            It can either be an EnsmallenGraph or a list of lists of edges.
+            It can either be an Graph or a list of lists of edges.
 
         Raises
         --------------------------
@@ -90,7 +90,7 @@ class GraphTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if isinstance(graph, EnsmallenGraph):
+        if isinstance(graph, Graph):
             if self._aligned_node_mapping:
                 graph = graph.get_edge__node_ids(directed=False)
             else:

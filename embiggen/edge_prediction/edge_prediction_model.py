@@ -2,7 +2,7 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from extra_keras_metrics import get_standard_binary_metrics
 from tensorflow.keras.layers import Layer, Input, Concatenate
 from tensorflow.keras.models import Model
@@ -118,7 +118,7 @@ class EdgePredictionModel(Embedder):
 
     def fit(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         batch_size: int = 2**10,
         batches_per_epoch: Union[int, str] = "auto",
         negative_samples_rate: float = 0.5,
@@ -140,7 +140,7 @@ class EdgePredictionModel(Embedder):
 
         Parameters
         -------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             Graph object to use for training.
         batch_size: int = 2**16,
             Batch size for the training process.
