@@ -1,27 +1,37 @@
 """Abstract Keras Model object for embedding models."""
-from typing import Union, List, Dict
+from typing import Dict, List, Union
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from tensorflow.keras.models import Model   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Optimizer   # pylint: disable=import-error
-from tensorflow.keras.optimizers import Nadam
-from tqdm.keras import TqdmCallback
+import tensorflow as tf
+from embiggen.utils.parameter_validators import validate_verbose
+from tensorflow.keras import optimizers
+from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
+    EarlyStopping, ReduceLROnPlateau)
+from tensorflow.keras.models import \
+    Model  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import \
+    Nadam  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error,no-name-in-module
+
+from .optimizers import apply_centralized_gradients
 
 
 class Embedder:
     """Abstract Keras Model object for embedding models."""
 
-    EMBEDDING_LAYER_NAME = "terms_embedding_layer"
+    TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
     def __init__(
         self,
         vocabulary_size: int = None,
         embedding_size: int = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        trainable_embedding: bool = True
+        trainable_embedding: bool = True,
+        use_gradient_centralization: bool = True
     ):
         """Create new Embedder object.
 
@@ -41,6 +51,10 @@ class Embedder:
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -48,6 +62,12 @@ class Embedder:
         trainable_embedding: bool = True,
             Wether to allow for trainable embedding.
             By default true.
+        use_gradient_centralization: bool = True,
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
 
         Raises
         -----------------------------------
@@ -74,6 +94,25 @@ class Embedder:
             embedding_size = embedding.shape[1]
             vocabulary_size = embedding.shape[0]
 
+        if extra_features is not None:
+            if isinstance(extra_features, pd.DataFrame):
+                extra_features = extra_features.values
+            if not isinstance(extra_features, np.ndarray):
+                raise ValueError(
+                    "Given extra features is not a numpy array."
+                )
+            if vocabulary_size != extra_features.shape[0]:
+                raise ValueError(
+                    (
+                        "The number of samples in the extra features should "
+                        "be the same as the provided vocabulary size {} "
+                        "but was {}."
+                    ).format(
+                        vocabulary_size,
+                        extra_features.shape[0]
+                    )
+                )
+
         if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
             raise ValueError((
                 "The given vocabulary size ({}) "
@@ -91,9 +130,16 @@ class Embedder:
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._embedding = embedding
+        self._extra_features = extra_features
 
         if optimizer is None:
             optimizer = Nadam(learning_rate=0.01)
+
+        if isinstance(optimizer, str):
+            optimizer = tf.keras.optimizers.get(optimizer)
+
+        if use_gradient_centralization:
+            apply_centralized_gradients(optimizer)
 
         self._optimizer = optimizer
         self._model = self._build_model()
@@ -115,33 +161,45 @@ class Embedder:
         """Print model summary."""
         self._model.summary()
 
+    def get_layer_weights(self, layer_name: str) -> np.ndarray:
+        """Return weights from the requested layer.
+
+        Parameters
+        -----------------------
+        layer_name: str,
+            Name of the layer to query for.
+        """
+        for layer in self._model.layers:
+            if layer.name == layer_name:
+                return layer.get_weights()[0]
+        raise NotImplementedError(
+            "This model does not have a layer called {}.".format(
+                layer_name
+            )
+        )
+
     @property
     def embedding(self) -> np.ndarray:
         """Return model embeddings.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
-        for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
-                return layer.get_weights()[0]
-        raise NotImplementedError(
-            "This embedding model does not have an embedding layer."
-        )
+        return self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME)
 
     @property
     def trainable(self) -> bool:
         """Return whether the embedding layer can be trained.
-        
+
         Raises
         -------------------
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 return layer.trainable
         raise NotImplementedError(
             "This embedding model does not have an embedding layer."
@@ -150,14 +208,14 @@ class Embedder:
     @trainable.setter
     def trainable(self, trainable: bool):
         """Set whether the embedding layer can be trained or not.
-        
+
         Parameters
         -------------------
         trainable: bool,
             Whether the embedding layer can be trained or not.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.EMBEDDING_LAYER_NAME:
+            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
         self._compile_model()
 
@@ -214,10 +272,10 @@ class Embedder:
     def fit(
         self,
         *args,
-        early_stopping_min_delta: float,
-        early_stopping_patience: int,
-        reduce_lr_min_delta: float,
-        reduce_lr_patience: int,
+        early_stopping_min_delta: float = 0.1,
+        early_stopping_patience: int = 3,
+        reduce_lr_min_delta: float = 1,
+        reduce_lr_patience: int = 1,
         epochs: int = 10000,
         early_stopping_monitor: str = "loss",
         early_stopping_mode: str = "min",
@@ -271,20 +329,17 @@ class Embedder:
         -----------------------
         Dataframe with training history.
         """
-        if verbose == True:
-            verbose = 1
-        if verbose == False:
-            verbose = 0
-        if verbose not in {0, 1, 2}:
-            raise ValueError(
-                "Given verbose value is not valid, as it must be either "
-                "a boolean value or 0, 1 or 2."
-            )
+        try:
+            from tqdm.keras import TqdmCallback
+            traditional_verbose = False
+        except AttributeError:
+            traditional_verbose = True
+        verbose = validate_verbose(verbose)
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             *args,
             epochs=epochs,
-            verbose=False,
+            verbose=traditional_verbose and verbose > 0,
             callbacks=[
                 EarlyStopping(
                     monitor=early_stopping_monitor,
@@ -299,7 +354,8 @@ class Embedder:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),) if verbose > 0 else ()),
+                *((TqdmCallback(verbose=verbose-1),)
+                  if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs

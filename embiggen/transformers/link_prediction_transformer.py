@@ -2,7 +2,7 @@
 from typing import Tuple, Union, List
 import pandas as pd
 import numpy as np
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 from .graph_transformer import GraphTransformer
 
@@ -14,7 +14,7 @@ class LinkPredictionTransformer:
         self,
         method: str = "Hadamard",
         aligned_node_mapping: bool = False,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
     ):
         """Create new LinkPredictionTransformer object.
 
@@ -28,7 +28,7 @@ class LinkPredictionTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -40,7 +40,7 @@ class LinkPredictionTransformer:
         self._transformer = GraphTransformer(
             method=method,
             aligned_node_mapping=aligned_node_mapping,
-            support_mirror_strategy=support_mirror_strategy
+            support_mirrored_strategy=support_mirrored_strategy
         )
 
     def fit(self, embedding: pd.DataFrame):
@@ -60,20 +60,20 @@ class LinkPredictionTransformer:
 
     def transform(
         self,
-        positive_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
-        negative_graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        positive_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
+        negative_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        positive_graph: Union[EnsmallenGraph, List[List[str]], List[List[int]]],
+        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
-            It can either be an EnsmallenGraph or a list of lists of edges.
-        negative_graph: Union[EnsmallenGraph, List[List[str]], List[List[int]]],
+            It can either be an Graph or a list of lists of edges.
+        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
-            It can either be an EnsmallenGraph or a list of lists of edges.
+            It can either be an Graph or a list of lists of edges.
         random_state: int = 42,
             The random state to use to shuffle the labels.
 

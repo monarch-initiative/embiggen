@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 
 import tensorflow as tf
 import tensorflow.keras.backend as K   # pylint: disable=import-error
-from tensorflow.keras.layers import Layer, Embedding   # pylint: disable=import-error
+from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 
 
 class NoiseContrastiveEstimation(Layer):
@@ -78,20 +78,17 @@ class NoiseContrastiveEstimation(Layer):
         predictions, labels = inputs
 
         # Computing NCE loss.
-        self.add_loss(
-            K.mean(tf.nn.nce_loss(
-                self._weights,
-                self._biases,
-                labels=labels,
-                inputs=predictions,
-                num_sampled=self._negative_samples,
-                num_classes=self._vocabulary_size,
-                num_true=self._positive_samples
-            ), axis=0)
-        )
+        loss = K.mean(tf.nn.nce_loss(
+            self._weights,
+            self._biases,
+            labels=labels,
+            inputs=predictions,
+            num_sampled=self._negative_samples,
+            num_classes=self._vocabulary_size,
+            num_true=self._positive_samples
+        ), axis=0)
+
+        self.add_loss(loss)
 
         # Computing logits for closing TF graph
-        return K.dot(
-            predictions,
-            self._biases + K.transpose(self._weights)
-        )
+        return loss

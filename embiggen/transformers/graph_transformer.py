@@ -2,7 +2,7 @@
 from typing import List, Union
 import pandas as pd
 import numpy as np
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 from .edge_transformer import EdgeTransformer
 
@@ -14,7 +14,7 @@ class GraphTransformer:
         self,
         method: str = "Hadamard",
         aligned_node_mapping: bool = False,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
     ):
         """Create new GraphTransformer object.
 
@@ -28,7 +28,7 @@ class GraphTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -40,7 +40,7 @@ class GraphTransformer:
         self._transformer = EdgeTransformer(
             method=method,
             aligned_node_mapping=aligned_node_mapping,
-            support_mirror_strategy=support_mirror_strategy
+            support_mirrored_strategy=support_mirrored_strategy
         )
         self._aligned_node_mapping = aligned_node_mapping
 
@@ -71,15 +71,15 @@ class GraphTransformer:
 
     def transform(
         self,
-        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
         Parameters
         --------------------------
-        graph: Union[EnsmallenGraph, np.ndarray, List[List[str]], List[List[int]]],
+        graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
-            It can either be an EnsmallenGraph or a list of lists of edges.
+            It can either be an Graph or a list of lists of edges.
 
         Raises
         --------------------------
@@ -90,11 +90,11 @@ class GraphTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if isinstance(graph, EnsmallenGraph):
+        if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = graph.get_edges(directed=False)
+                graph = graph.get_edge__node_ids(directed=False)
             else:
-                graph = graph.get_edge_names(directed=False)
+                graph = graph.get_edge_node_names(directed=False)
         if isinstance(graph, List):
             graph = np.array(graph)
         if isinstance(graph, np.ndarray):

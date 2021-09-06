@@ -2,7 +2,7 @@
 from typing import Tuple, Dict
 
 import numpy as np  # type: ignore
-from ensmallen_graph import EnsmallenGraph  # pylint: disable=no-name-in-module
+from ensmallen import Graph  # pylint: disable=no-name-in-module
 from .abstract_sequence import AbstractSequence
 
 
@@ -11,18 +11,18 @@ class Node2VecSequence(AbstractSequence):
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
+        graph: Graph,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 16,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
     ):
@@ -30,7 +30,7 @@ class Node2VecSequence(AbstractSequence):
 
         Parameters
         -----------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             The graph from from where to extract the walks.
         walk_length: int = 128,
             Maximal length of the walks.
@@ -38,7 +38,7 @@ class Node2VecSequence(AbstractSequence):
             Number of nodes to include in a single batch.
         iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0,
@@ -72,7 +72,7 @@ class Node2VecSequence(AbstractSequence):
             THIS IS AN EXPERIMENTAL FEATURE!
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -85,7 +85,7 @@ class Node2VecSequence(AbstractSequence):
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
-            graph object created using EnsmallenGraph)
+            graph object created using Graph)
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
@@ -103,10 +103,10 @@ class Node2VecSequence(AbstractSequence):
 
         super().__init__(
             batch_size=batch_size,
-            sample_number=self._graph.get_unique_sources_number(),
+            sample_number=self._graph.get_unique_source_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             random_state=random_state
         )
 
@@ -158,9 +158,9 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-        outputs = [contexts_batch + 1, words_batch + 1]
+        outputs = [contexts_batch, words_batch]
 
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             outputs = [
                 output.astype(float)
                 for output in outputs

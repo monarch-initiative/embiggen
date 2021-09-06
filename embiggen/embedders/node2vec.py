@@ -3,11 +3,12 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from ensmallen_graph import EnsmallenGraph
-from tensorflow.keras.optimizers import Optimizer
+from ensmallen import Graph
+from tensorflow.keras.optimizers import Optimizer # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import Node2VecSequence
-from .word2vec import Word2Vec
+from .cbow import CBOW
+from .skipgram import SkipGram
 
 
 class Node2Vec:
@@ -15,40 +16,51 @@ class Node2Vec:
 
     def __init__(
         self,
-        graph: EnsmallenGraph,
-        word2vec_model: Word2Vec,
+        graph: Graph,
+        word2vec_model: Union[CBOW, SkipGram],
         embedding_size: int = 100,
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 16,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None
+        dense_node_mapping: Dict[int, int] = None,
+        use_gradient_centralization: bool = True,
     ):
         """Create new sequence Embedder model.
 
         Parameters
         -------------------------------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             Graph to be embedded.
         word2vec_model: Word2Vec,
             Word2Vec model to use.
         embedding_size: int = 100,
             Dimension of the embedding.
+        embedding: Union[np.ndarray, pd.DataFrame] = None,
+            The seed embedding to be used.
+            Note that it is not possible to provide at once both
+            the embedding and either the vocabulary size or the embedding size.
+        extra_features: Union[np.ndarray, pd.DataFrame] = None,
+            Optional extra features to be used during the computation
+            of the embedding. The features must be available for all the
+            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         negative_samples: int = 10,
@@ -60,7 +72,7 @@ class Node2Vec:
             Number of nodes to include in a single batch.
         iterations: int = 16,
             Number of iterations of the single walks.
-        window_size: int = 16,
+        window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0,
@@ -91,7 +103,7 @@ class Node2Vec:
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -104,10 +116,16 @@ class Node2Vec:
         dense_node_mapping: Dict[int, int] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
-            graph object created using EnsmallenGraph)
+            graph object created using Graph)
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
+        use_gradient_centralization: bool = True,
+            Whether to wrap the provided optimizer into a normalized
+            one that centralizes the gradient.
+            It is automatically enabled if the current version of
+            TensorFlow supports gradient transformers.
+            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         """
         self._graph = graph
         self._sequence = Node2VecSequence(
@@ -121,18 +139,20 @@ class Node2Vec:
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
-            support_mirror_strategy=support_mirror_strategy,
+            support_mirrored_strategy=support_mirrored_strategy,
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
         )
         self._model = word2vec_model(
             vocabulary_size=self._graph.get_nodes_number(),
+            embedding=embedding,
+            extra_features=extra_features,
             embedding_size=embedding_size,
-            model_name="Graph{}".format(word2vec_model.__name__),
             optimizer=optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
+            use_gradient_centralization=use_gradient_centralization
         )
 
     def fit(

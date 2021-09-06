@@ -2,7 +2,7 @@
 from typing import Tuple
 
 import numpy as np  # type: ignore
-from ensmallen_graph import preprocessing  # pylint: disable=no-name-in-module
+from ensmallen import preprocessing  # pylint: disable=no-name-in-module
 
 from .abstract_word2vec_sequence import AbstractWord2VecSequence
 
@@ -41,6 +41,6 @@ class Word2VecSequence(AbstractWord2VecSequence):
             window_size=self._window_size,
         )
 
-        if self._support_mirror_strategy:
+        if self._support_mirrored_strategy:
             return (contexts.astype(float), words.astype(float)), None
         return (contexts, words), None

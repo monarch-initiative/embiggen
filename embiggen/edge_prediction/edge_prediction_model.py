@@ -2,9 +2,9 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from ensmallen_graph import EnsmallenGraph
+from ensmallen import Graph
 from extra_keras_metrics import get_standard_binary_metrics
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Layer, Input, Concatenate
 from tensorflow.keras.models import Model
 
 from ..embedders import Embedder
@@ -16,7 +16,7 @@ class EdgePredictionModel(Embedder):
 
     def __init__(
         self,
-        vocabulary_size: int = None,
+        nodes_number: int = None,
         embedding_size: int = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         edge_embedding_method: str = "Concatenate",
@@ -24,12 +24,13 @@ class EdgePredictionModel(Embedder):
         trainable_embedding: bool = True,
         use_dropout: bool = True,
         dropout_rate: float = 0.5,
+        use_edge_metrics: bool = False,
     ):
         """Create new Perceptron object.
 
         Parameters
         --------------------
-        vocabulary_size: int = None,
+        nodes_number: int = None,
             Number of terms to embed.
             In a graph this is the number of nodes, while in a text is the
             number of the unique words.
@@ -53,6 +54,8 @@ class EdgePredictionModel(Embedder):
             Whether to use dropout.
         dropout_rate: float = 0.5,
             Dropout rate.
+        use_edge_metrics: bool = False,
+            Whether to return the edge metrics.
         """
         if edge_embedding_method not in edge_embedding_layer:
             raise ValueError(
@@ -60,12 +63,13 @@ class EdgePredictionModel(Embedder):
                     edge_embedding_method
                 )
             )
+        self._use_edge_metrics = use_edge_metrics
         self._edge_embedding_method = edge_embedding_method
         self._model_name = self.__class__.__name__
         self._use_dropout = use_dropout
         self._dropout_rate = dropout_rate
         super().__init__(
-            vocabulary_size=vocabulary_size,
+            vocabulary_size=nodes_number,
             embedding_size=embedding_size,
             optimizer=optimizer,
             embedding=embedding,
@@ -94,9 +98,18 @@ class EdgePredictionModel(Embedder):
             dropout_rate=self._dropout_rate
         )
 
+        inputs = [*embedding_layer.inputs]
+        edge_embedding = embedding_layer(None)
+
+        if self._use_edge_metrics:
+            # TODO! update the shape using an ensmallen method
+            edge_metrics_input = Input((4,), name="EdgeMetrics")
+            inputs.append(edge_metrics_input)
+            edge_embedding = Concatenate()([edge_embedding, edge_metrics_input])
+
         return Model(
-            inputs=embedding_layer.inputs,
-            outputs=self._build_model_body(embedding_layer(None)),
+            inputs=inputs,
+            outputs=self._build_model_body(edge_embedding),
             name="{}_{}".format(
                 self._model_name,
                 self._edge_embedding_method
@@ -105,12 +118,12 @@ class EdgePredictionModel(Embedder):
 
     def fit(
         self,
-        graph: EnsmallenGraph,
-        batch_size: int = 2**16,
-        batches_per_epoch: int = 2**10,
-        negative_samples: float = 1.0,
+        graph: Graph,
+        batch_size: int = 2**10,
+        batches_per_epoch: Union[int, str] = "auto",
+        negative_samples_rate: float = 0.5,
         epochs: int = 10000,
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.01,
         early_stopping_patience: int = 5,
@@ -127,17 +140,17 @@ class EdgePredictionModel(Embedder):
 
         Parameters
         -------------------
-        graph: EnsmallenGraph,
+        graph: Graph,
             Graph object to use for training.
         batch_size: int = 2**16,
             Batch size for the training process.
         batches_per_epoch: int = 2**10,
             Number of batches to train for in each epoch.
-        negative_samples: float = 1.0,
+        negative_samples_rate: float = 0.5,
             Rate of unbalancing in the batch.
         epochs: int = 10000,
             Epochs to train the model for.
-        support_mirror_strategy: bool = False,
+        support_mirrored_strategy: bool = False,
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -182,8 +195,9 @@ class EdgePredictionModel(Embedder):
             graph,
             batch_size=batch_size,
             batches_per_epoch=batches_per_epoch,
-            negative_samples=negative_samples,
-            support_mirror_strategy=support_mirror_strategy
+            negative_samples_rate=negative_samples_rate,
+            support_mirrored_strategy=support_mirrored_strategy,
+            use_edge_metrics=self._use_edge_metrics,
         )
         return super().fit(
             sequence,
