@@ -41,7 +41,7 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    python_requires='>3.6.0',
+    python_requires='>=3.6.0',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
@@ -51,7 +51,6 @@ setup(
         "sklearn",
         "ddd_subplots>=1.0.7",
         "sanitize_ml_labels>=1.0.26",
-        'tensorflow>=2.0.1',
         "keras_mixed_sequence>=1.0.26",
         "extra_keras_metrics>=2.0.1",
         "ensmallen>=0.6.1",
