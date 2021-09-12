@@ -384,11 +384,14 @@ class Siamese(Embedder):
             ),
         ]
         if self._use_node_types:
+            node_types_embedding = self.get_layer_weights(
+                Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME
+            )
+            if self._multilabel_node_types:
+                node_types_embedding = node_types_embedding[1:]
             values.append(
                 pd.DataFrame(
-                    self.get_layer_weights(
-                        Siamese.NODE_TYPE_EMBEDDING_LAYER_NAME
-                    ),
+                    node_types_embedding,
                     index=self._graph.get_unique_node_type_names(),
                 ),
             )

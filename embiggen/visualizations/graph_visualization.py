@@ -8,11 +8,12 @@ import numpy as np
 import pandas as pd
 from ddd_subplots import subplots as subplots_3d
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from matplotlib.axes import Axes
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
+from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
@@ -39,7 +40,7 @@ class GraphVisualization:
         decomposition_method: str = "TSNE",
         scaler_method: "Scaler" = RobustScaler,
         n_components: int = 2,
-        node_embedding_method: str = None,
+        node_embedding_method_name: str = None,
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
         random_state: int = 42,
@@ -62,7 +63,7 @@ class GraphVisualization:
             Number of components to reduce the image to.
             Currently, we only support 2D decompositions but we plan
             to add support for also 3D decompositions.
-        node_embedding_method: str = None,
+        node_embedding_method_name: str = None,
             Name of the node embedding method used.
             If provided, it is added to the images titles.
         edge_embedding_method: str = "Hadamard",
@@ -99,7 +100,7 @@ class GraphVisualization:
             method=edge_embedding_method
         )
         self._node_transformer = NodeTransformer()
-        self._node_embedding_method = node_embedding_method
+        self._node_embedding_method_name = node_embedding_method_name
         self._node_mapping = self._node_embedding = self._edge_embedding = None
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
@@ -412,6 +413,23 @@ class GraphVisualization:
             index=edge_names
         )
 
+    def _get_figure_and_axes(
+        self,
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Return tuple with figure and axes built using provided kwargs and defaults."""
+        if self._n_components == 2:
+            figure, axes = plt.subplots(**{
+                **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                **kwargs
+            })
+        else:
+            figure, axes = subplots_3d(**{
+                **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                **kwargs
+            })
+        return figure, axes
+
     def _plot_scatter(
         self,
         title: str,
@@ -489,16 +507,7 @@ class GraphVisualization:
                 )
 
         if figure is None or axes is None:
-            if self._n_components == 2:
-                figure, axes = plt.subplots(**{
-                    **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
-                    **kwargs
-                })
-            else:
-                figure, axes = subplots_3d(**{
-                    **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
-                    **kwargs
-                })
+            figure, axes = self._get_figure_and_axes(**kwargs)
 
         scatter_kwargs = {
             **GraphVisualization.DEFAULT_SCATTER_KWARGS,
@@ -546,6 +555,8 @@ class GraphVisualization:
                 "cmap",
                 ListedColormap(color_names[:int(colors.max() + 1)])
             )
+        else:
+            cmap = None
 
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
@@ -636,10 +647,10 @@ class GraphVisualization:
             self._graph.get_name(),
         )
 
-        if self._node_embedding_method is not None:
+        if self._node_embedding_method_name is not None:
             title = "{} - {}".format(
                 title,
-                self._node_embedding_method
+                self._node_embedding_method_name
             )
 
         if show_title:
@@ -793,6 +804,36 @@ class GraphVisualization:
 
         return figure, axis
 
+    def plot_edge_segments(
+        self,
+        points: np.ndarray,
+        figure: Figure = None,
+        axes: Axes = None,
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        if figure is None or axes is None:
+            figure, axes = self._get_figure_and_axes(**kwargs)
+
+        if self._subsampled_node_ids is not None:
+            edge_node_ids = self._graph.get_edge_ids_from_node_ids(
+                node_ids=self._subsampled_node_ids,
+                add_selfloops_where_missing=False,
+                complete=False,
+            )
+        else:
+            edge_node_ids = self._graph.get_edge_node_ids(
+                directed=False
+            )
+
+        lines_collection = mc.LineCollection(
+            points[edge_node_ids],
+            linewidths=1,
+            zorder=0
+        )
+        axes.add_collection(lines_collection)
+
+        return figure, axes
+
     def plot_nodes(
         self,
         figure: Figure = None,
@@ -804,6 +845,8 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: bool = False,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
@@ -832,6 +875,11 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        annotate_nodes: Union[str, bool] = "auto",
+            Whether to show the node name when scattering them.
+            The default behaviour, "auto", means that it will
+            enable this feature automatically when the graph has
+            less than 100 nodes.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -849,9 +897,20 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        figure, axis, _ = self._plot_scatter(
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_nodes_number() < 100
+
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                self._node_embedding.values,
+                figure,
+                axes,
+                **kwargs
+            )
+
+        figure, axes, _ = self._plot_scatter(
             "Nodes embedding",
-            self._node_embedding,
+            self._node_embedding.values,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -864,7 +923,31 @@ class GraphVisualization:
             **kwargs
         )
 
-        return figure, axis
+        if annotate_nodes:
+            figure, axes = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_embedding.values,
+            )
+
+        return figure, axes
+
+    def annotate_nodes(
+        self,
+        figure: Figure,
+        axes: Axes,
+        points: np.ndarray
+    ) -> Tuple[Figure, Axes]:
+        if self._subsampled_node_ids is not None:
+            node_names = [
+                self._graph.get_node_name_from_node_id(node_id)
+                for node_id in self._subsampled_node_ids
+            ]
+        else:
+            node_names = self._graph.get_node_names()
+        for i, txt in enumerate(node_names):
+            axes.annotate(txt, points[i])
+        return (figure, axes)
 
     def plot_edges(
         self,
@@ -985,6 +1068,8 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        show_edges: bool = False,
+        annotate_nodes: Union[str, bool] = "auto",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -1043,6 +1128,17 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                self._node_embedding.values,
+                figure,
+                axes,
+                **kwargs
+            )
+
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_nodes_number() < 100
+
         node_types = self._flatten_multi_label_and_unknown_node_types()
         if self._subsampled_node_ids is not None:
             node_types = node_types[self._subsampled_node_ids]
@@ -1054,7 +1150,7 @@ class GraphVisualization:
 
         node_type_names = np.array(node_type_names)
 
-        return self._plot_types(
+        figure, axes = self._plot_types(
             "Node types",
             self._node_embedding.values,
             types=node_types,
@@ -1075,6 +1171,15 @@ class GraphVisualization:
             **kwargs
         )
 
+        if annotate_nodes:
+            figure, axes = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_embedding.values,
+            )
+
+        return figure, axes
+
     def plot_connected_components(
         self,
         k: int = 9,
@@ -1089,6 +1194,8 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        show_edges: bool = False,
+        annotate_nodes: Union[str, bool] = "auto",
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -1142,13 +1249,24 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                self._node_embedding.values,
+                figure,
+                axes,
+                **kwargs
+            )
+
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_nodes_number() < 100
+
         components, components_number, _, _ = self._graph.connected_components()
         sizes = np.bincount(components, minlength=components_number)
 
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
-        return self._plot_types(
+        figure, axes = self._plot_types(
             "Components",
             self._node_embedding.values,
             types=components,
@@ -1171,6 +1289,15 @@ class GraphVisualization:
             **kwargs
         )
 
+        if annotate_nodes:
+            figure, axes = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_embedding.values,
+            )
+
+        return figure, axes
+
     def plot_node_degrees(
         self,
         figure: Figure = None,
@@ -1183,6 +1310,8 @@ class GraphVisualization:
         use_log_scale: bool = True,
         show_title: bool = True,
         show_legend: bool = True,
+        show_edges: bool = False,
+        annotate_nodes: Union[str, bool] = "auto",
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
@@ -1234,6 +1363,17 @@ class GraphVisualization:
         if self._subsampled_node_ids is not None:
             degrees = degrees[self._subsampled_node_ids]
 
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_nodes_number() < 100
+
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                self._node_embedding.values,
+                figure,
+                axes,
+                **kwargs
+            )
+
         figure, axes, scatter = self._plot_scatter(
             "Node degrees",
             self._node_embedding.values,
@@ -1257,6 +1397,14 @@ class GraphVisualization:
         color_bar = figure.colorbar(scatter[0], ax=axes)
         color_bar.set_alpha(1)
         color_bar.draw_all()
+
+        if annotate_nodes:
+            figure, axes = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_embedding.values,
+            )
+
         return figure, axes
 
     def plot_edge_types(
