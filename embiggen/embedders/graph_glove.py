@@ -158,14 +158,14 @@ class GraphGloVe(GloVe):
         epochs: int = 1000,
         batch_size: int = 2**20,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.00001,
-        early_stopping_patience: int = 100,
+        early_stopping_min_delta: float = 0.0001,
+        early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
         reduce_lr_min_delta: float = 0.0001,
-        reduce_lr_patience: int = 50,
+        reduce_lr_patience: int = 5,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.95,
+        reduce_lr_factor: float = 0.9,
         verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:

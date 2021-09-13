@@ -123,8 +123,11 @@ class GraphVisualization:
                 # We try to use CUDA tsne if available, but this does not
                 # currently support 3D decomposition. If the user has required a
                 # 3D decomposition we need to switch to the MulticoreTSNE version.
+                # Additionally, in the case that the desired decomposition
+                # uses some not available parameters, such as a cosine distance
+                # metric, we will capture that use case as a NotImplementedError.
                 if n_components != 2:
-                    raise ModuleNotFoundError()
+                    raise NotImplementedError()
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
                 self._decomposition_method = CUDATSNE(
                     n_components=2,
@@ -132,7 +135,7 @@ class GraphVisualization:
                     verbose=True,
                     **decomposition_kwargs
                 )
-            except ModuleNotFoundError:
+            except (ModuleNotFoundError, NotImplementedError):
                 try:
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
