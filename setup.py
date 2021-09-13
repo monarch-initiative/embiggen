@@ -53,7 +53,7 @@ setup(
         "sanitize_ml_labels>=1.0.26",
         "keras_mixed_sequence>=1.0.27",
         "extra_keras_metrics>=2.0.2",
-        "ensmallen>=0.6.1",
+        "ensmallen>=0.6.2",
         "cache_decorator>=2.0.2",
         "validate_version_code",
         "packaging"
