@@ -1615,12 +1615,12 @@ class GraphVisualization:
         color_bar.draw_all()
         return figure, axes
 
-    def plot_dot(self, engine: str = "circle"):
+    def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
         
         Parameters
         ------------------------------
-        engine: str = "circle",
+        engine: str = "circo",
             The engine to use to visualize the graph.
         
         Raises
