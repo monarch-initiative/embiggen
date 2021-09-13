@@ -1611,3 +1611,34 @@ class GraphVisualization:
         color_bar.set_alpha(1)
         color_bar.draw_all()
         return figure, axes
+
+    def plot_dot(self, engine: str = "circle"):
+        """Return dot plot of the current graph.
+        
+        Parameters
+        ------------------------------
+        engine: str = "circle",
+            The engine to use to visualize the graph.
+        
+        Raises
+        ------------------------------
+        ModuleNotFoundError,
+            If graphviz is not installed.
+        """
+        try:
+            import graphviz
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "In order to run the graph Dot visualization, "
+                "the graphviz library must be installed. This "
+                "library is not an explicit dependency of "
+                "Embiggen because it may be hard to install "
+                "on some systems and cause the Embiggen library "
+                "to fail the installation.\n"
+                "In order to install graphviz, try running "
+                "`pip install graphviz`."
+            )
+        return graphviz.Source(
+            self._graph.to_dot(),
+            engine=engine
+        )
