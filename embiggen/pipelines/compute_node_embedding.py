@@ -269,7 +269,9 @@ def compute_node_embedding(
                 "with your TensorFlow instance.\n"
                 "The model will train a LOT faster if you figure "
                 "out what may be the cause of this issue on your "
-                "system: sometimes a simple reboot will do a lot of good."
+                "system: sometimes a simple reboot will do a lot of good.\n"
+                "If you are currently on COLAB, remember to enable require "
+                "a GPU instance from the menu!"
             )
         elif has_rocm_drivers():
             warnings.warn(
