@@ -139,13 +139,15 @@ class GraphVisualization:
                 try:
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    self._decomposition_method = MulticoreTSNE(
-                        n_components=n_components,
-                        n_jobs=cpu_count(),
-                        random_state=random_state,
-                        verbose=True,
+                    self._decomposition_method = MulticoreTSNE(**{
+                        **dict(
+                            n_components=n_components,
+                            n_jobs=cpu_count(),
+                            random_state=random_state,
+                            verbose=True,
+                        ),
                         **decomposition_kwargs
-                    )
+                    })
                 except ModuleNotFoundError:
                     try:
                         from sklearn.manifold import \
