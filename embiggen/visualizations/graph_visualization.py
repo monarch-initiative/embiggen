@@ -129,12 +129,14 @@ class GraphVisualization:
                 if n_components != 2:
                     raise NotImplementedError()
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                self._decomposition_method = CUDATSNE(
-                    n_components=2,
-                    random_seed=random_state,
-                    verbose=True,
+                self._decomposition_method = CUDATSNE(**{
+                    **dict(
+                        n_components=2,
+                        random_seed=random_state,
+                        verbose=True,
+                    ),
                     **decomposition_kwargs
-                )
+                })
             except (ModuleNotFoundError, NotImplementedError):
                 try:
                     from MulticoreTSNE import \
@@ -152,13 +154,15 @@ class GraphVisualization:
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
-                        self._decomposition_method = TSNE(
-                            n_components=n_components,
-                            n_jobs=cpu_count(),
-                            random_state=random_state,
-                            verbose=True,
+                        self._decomposition_method = TSNE(**{
+                            **dict(
+                                n_components=n_components,
+                                n_jobs=cpu_count(),
+                                random_state=random_state,
+                                verbose=True,
+                            ),
                             **decomposition_kwargs
-                        )
+                        })
                     except:
                         raise ModuleNotFoundError(
                             "You do not have installed a supported TSNE "
@@ -177,11 +181,13 @@ class GraphVisualization:
                             "does not support them."
                         )
         elif decomposition_method == "PCA":
-            self._decomposition_method = PCA(
-                n_components=n_components,
-                random_state=random_state,
+            self._decomposition_method = PCA(**{
+                **dict(
+                    n_components=n_components,
+                    random_state=random_state,
+                ),
                 **decomposition_kwargs
-            )
+            })
         else:
             raise ValueError(
                 "We currently only support PCA and TSNE decomposition methods."
@@ -1619,12 +1625,12 @@ class GraphVisualization:
 
     def plot_dot(self, engine: str = "circle"):
         """Return dot plot of the current graph.
-        
+
         Parameters
         ------------------------------
         engine: str = "circle",
             The engine to use to visualize the graph.
-        
+
         Raises
         ------------------------------
         ModuleNotFoundError,
