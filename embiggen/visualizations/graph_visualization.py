@@ -458,6 +458,7 @@ class GraphVisualization:
         test_indices: np.ndarray = None,
         train_marker: str = "o",
         test_marker: str = "X",
+        apply_tight_layout: bool = True,
         **kwargs
     ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
@@ -499,6 +500,9 @@ class GraphVisualization:
             The marker to use to draw the training points.
         test_marker: str = "X",
             The marker to use to draw the test points.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -666,7 +670,9 @@ class GraphVisualization:
 
         if show_title:
             axes.set_title(title)
-        figure.tight_layout()
+
+        if apply_tight_layout:
+            figure.tight_layout()
 
         return figure, axes, collections
 
