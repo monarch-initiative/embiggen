@@ -434,7 +434,7 @@ class GraphVisualization:
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Return tuple with figure and axes built using provided kwargs and defaults.
-        
+
         Parameters
         ---------------------------
         figure: Optional[Figure] = None
@@ -445,7 +445,7 @@ class GraphVisualization:
             provided kwargs.
         **kwargs: Dict
             Dictionary of parameters to pass to the instantiation of the new figure and axes if one was not initially provided.
-        
+
         Raises
         ---------------------------
         ValueError
@@ -905,7 +905,7 @@ class GraphVisualization:
             )
 
         lines_collection = mc.LineCollection(
-            self._node_embedding[edge_node_ids],
+            self._node_embedding.values[edge_node_ids],
             linewidths=1,
             zorder=0,
             **{
@@ -994,7 +994,6 @@ class GraphVisualization:
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
-                self._node_embedding.values,
                 figure,
                 axes,
                 scatter_kwargs=edge_scatter_kwargs,
@@ -1230,7 +1229,6 @@ class GraphVisualization:
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
-                self._node_embedding.values,
                 figure,
                 axes,
                 scatter_kwargs=edge_scatter_kwargs,
@@ -1359,7 +1357,6 @@ class GraphVisualization:
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
-                self._node_embedding.values,
                 figure,
                 axes,
                 scatter_kwargs=edge_scatter_kwargs,
@@ -1484,7 +1481,6 @@ class GraphVisualization:
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
-                self._node_embedding.values,
                 figure,
                 axes,
                 scatter_kwargs=edge_scatter_kwargs,
