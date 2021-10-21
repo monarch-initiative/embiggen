@@ -455,6 +455,8 @@ class GraphVisualization:
         ---------------------------
         Tuple with the figure and axes.
         """
+        if figure is not None and axes is not None:
+            return (figure, axes)
         if figure is None and axes is not None or figure is not None and axes is None:
             raise ValueError((
                 "Either both figure and axes objects must be None "
