@@ -29,6 +29,9 @@ class GraphVisualization:
         s=5,
         alpha=0.7
     )
+    DEFAULT_EDGES_SCATTER_KWARGS = dict(
+        alpha=0.7
+    )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(7, 7),
         dpi=200
@@ -44,7 +47,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
         random_state: int = 42,
-        decomposition_kwargs: Dict = None
+        decomposition_kwargs: Optional[Dict] = None
     ):
         """Create new GraphVisualization object.
 
@@ -84,7 +87,7 @@ class GraphVisualization:
             If None is given, no subsampling is executed.
         random_state: int = 42,
             The random state to reproduce the visualizations.
-        decomposition_kwargs: Dict = None,
+        decomposition_kwargs: Optional[Dict] = None,
             Kwargs to forward to the selected decomposition method.
 
         Raises
@@ -426,9 +429,38 @@ class GraphVisualization:
 
     def _get_figure_and_axes(
         self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
-        """Return tuple with figure and axes built using provided kwargs and defaults."""
+        """Return tuple with figure and axes built using provided kwargs and defaults.
+        
+        Parameters
+        ---------------------------
+        figure: Optional[Figure] = None
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        **kwargs: Dict
+            Dictionary of parameters to pass to the instantiation of the new figure and axes if one was not initially provided.
+        
+        Raises
+        ---------------------------
+        ValueError
+            If the figure object is None but the axes is some or viceversa.
+
+        Returns
+        ---------------------------
+        Tuple with the figure and axes.
+        """
+        if figure is None and axes is not None or figure is not None and axes is None:
+            raise ValueError((
+                "Either both figure and axes objects must be None "
+                "and thefore new ones must be created or neither of "
+                "them can be None."
+            ))
         if self._n_components == 2:
             figure, axes = plt.subplots(**{
                 **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
@@ -445,17 +477,17 @@ class GraphVisualization:
         self,
         title: str,
         points: np.ndarray,
-        colors: List[int] = None,
-        edgecolors: List[int] = None,
+        colors: Optional[List[int]] = None,
+        edgecolors: Optional[List[int]] = None,
         labels: List[str] = None,
         legend_title: str = "",
         show_title: bool = True,
         show_legend: bool = True,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         apply_tight_layout: bool = True,
@@ -469,9 +501,9 @@ class GraphVisualization:
             Title to use for the plot.
         points: np.ndarray,
             Points to plot.
-        colors: List[int] = None,
+        colors: Optional[List[int]] = None,
             List of the colors to use for the scatter plot.
-        edgecolors: List[int] = None,
+        edgecolors: Optional[List[int]] = None,
             List of the edge colors to use for the scatter plot.
         labels: List[str] = None,
             Labels for the different colors.
@@ -481,18 +513,18 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices, we only plot the
             training points.
@@ -521,8 +553,11 @@ class GraphVisualization:
                     "The train and test indices overlap."
                 )
 
-        if figure is None or axes is None:
-            figure, axes = self._get_figure_and_axes(**kwargs)
+        figure, axes = self._get_figure_and_axes(
+            figure=figure,
+            axes=axes,
+            **kwargs
+        )
 
         scatter_kwargs = {
             **GraphVisualization.DEFAULT_SCATTER_KWARGS,
@@ -685,14 +720,14 @@ class GraphVisualization:
         legend_title: str,
         show_title: bool = True,
         show_legend: bool = True,
-        predictions: List[int] = None,
+        predictions: Optional[List[int]] = None,
         k: int = 9,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
         other_label: str = "Other",
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         **kwargs
@@ -715,25 +750,25 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
-        predictions: List[int] = None,
+        predictions: Optional[List[int]] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
         k: int = 9,
             Number of node types to visualize.
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -823,13 +858,40 @@ class GraphVisualization:
 
     def plot_edge_segments(
         self,
-        points: np.ndarray,
-        figure: Figure = None,
-        axes: Axes = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
-        if figure is None or axes is None:
-            figure, axes = self._get_figure_and_axes(**kwargs)
+        """Plot edge segments between the nodes of the graph.
+
+        Parameters
+        ------------------------
+        figure: Optional[Figure] = None
+            The figure object to plot over.
+            If None, a new figure is created automatically and returned.
+        axes: Optional[Axes] = None
+            The axes object to plot over.
+            If None, a new axes is created automatically and returned.
+        scatter_kwargs: Optional[Dict] = None
+            Dictionary of parameters to pass to the scattering of the edges.
+        **kwargs: Dict
+            Dictionary of parameters to pass to the instantiation of the new figure and axes if one was not initially provided.
+
+        Returns
+        ------------------------
+        Tuple with either the provided or created figure and axes.
+        """
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        figure, axes = self._get_figure_and_axes(
+            figure=figure,
+            axes=axes,
+            **kwargs
+        )
 
         if self._subsampled_node_ids is not None:
             edge_node_ids = self._graph.get_edge_ids_from_node_ids(
@@ -843,9 +905,15 @@ class GraphVisualization:
             )
 
         lines_collection = mc.LineCollection(
-            points[edge_node_ids],
+            self._node_embedding[edge_node_ids],
             linewidths=1,
-            zorder=0
+            zorder=0,
+            **{
+                **GraphVisualization.DEFAULT_EDGES_SCATTER_KWARGS,
+                **(
+                    {} if scatter_kwargs is None else scatter_kwargs
+                )
+            }
         )
         axes.add_collection(lines_collection)
 
@@ -853,35 +921,36 @@ class GraphVisualization:
 
     def plot_nodes(
         self,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
+        edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot nodes of provided graph.
 
         Parameters
         ------------------------------
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -897,6 +966,12 @@ class GraphVisualization:
             The default behaviour, "auto", means that it will
             enable this feature automatically when the graph has
             less than 100 nodes.
+        show_edges: bool = False,
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -922,6 +997,7 @@ class GraphVisualization:
                 self._node_embedding.values,
                 figure,
                 axes,
+                scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
 
@@ -968,11 +1044,11 @@ class GraphVisualization:
 
     def plot_edges(
         self,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
@@ -983,18 +1059,18 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -1072,20 +1148,21 @@ class GraphVisualization:
 
     def plot_node_types(
         self,
-        node_type_predictions: List[int] = None,
+        node_type_predictions: Optional[List[int]] = None,
         k: int = 9,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
         legend_title: str = "Node types",
         other_label: str = "Other",
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
         show_edges: bool = False,
+        edge_scatter_kwargs: Optional[Dict] = None,
         annotate_nodes: Union[str, bool] = "auto",
         **kwargs
     ) -> Tuple[Figure, Axes]:
@@ -1093,24 +1170,24 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        node_type_predictions: List[int] = None,
+        node_type_predictions: Optional[List[int]] = None,
             Predictions of the node types.
         k: int = 9,
             Number of node types to visualize.
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -1121,6 +1198,12 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        show_edges: bool = False,
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1150,6 +1233,7 @@ class GraphVisualization:
                 self._node_embedding.values,
                 figure,
                 axes,
+                scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
 
@@ -1200,19 +1284,20 @@ class GraphVisualization:
     def plot_connected_components(
         self,
         k: int = 9,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
         other_label: str = "Other",
         legend_title: str = "Component sizes",
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
-        show_edges: bool = False,
         annotate_nodes: Union[str, bool] = "auto",
+        show_edges: bool = False,
+        edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs
     ) -> Tuple[Figure, Axes]:
         """Plot common node types of provided graph.
@@ -1221,22 +1306,22 @@ class GraphVisualization:
         ------------------------------
         k: int = 9,
             Number of components to visualize.
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
         legend_title: str = "Component sizes",
             Title for the legend.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -1247,6 +1332,12 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        show_edges: bool = False,
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1271,6 +1362,7 @@ class GraphVisualization:
                 self._node_embedding.values,
                 figure,
                 axes,
+                scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
 
@@ -1317,36 +1409,37 @@ class GraphVisualization:
 
     def plot_node_degrees(
         self,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         use_log_scale: bool = True,
         show_title: bool = True,
         show_legend: bool = True,
-        show_edges: bool = False,
         annotate_nodes: Union[str, bool] = "auto",
+        show_edges: bool = False,
+        edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs: Dict
     ):
         """Plot node degrees heatmap.
 
         Parameters
         ------------------------------
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices, 
         train_marker: str = "o",
@@ -1359,6 +1452,12 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        show_edges: bool = False,
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1388,6 +1487,7 @@ class GraphVisualization:
                 self._node_embedding.values,
                 figure,
                 axes,
+                scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
 
@@ -1426,15 +1526,15 @@ class GraphVisualization:
 
     def plot_edge_types(
         self,
-        edge_type_predictions: List[int] = None,
+        edge_type_predictions: Optional[List[int]] = None,
         k: int = 9,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
         other_label: str = "Other",
         legend_title: str = "Edge types",
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
@@ -1445,26 +1545,26 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        edge_type_predictions: List[int] = None,
+        edge_type_predictions: Optional[List[int]] = None,
             Predictions of the edge types.
         k: int = 9,
             Number of edge types to visualize.
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other",
             Label to use for edges below the top k threshold.
         legend_title: str = "Edge types",
             Title for the legend.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices,
         train_marker: str = "o",
@@ -1542,11 +1642,11 @@ class GraphVisualization:
 
     def plot_edge_weights(
         self,
-        figure: Figure = None,
-        axes: Axes = None,
-        scatter_kwargs: Dict = None,
-        train_indices: np.ndarray = None,
-        test_indices: np.ndarray = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
@@ -1557,18 +1657,18 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        figure: Figure = None,
+        figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
-        axes: Axes = None,
+        axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        scatter_kwargs: Dict = None,
+        scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        train_indices: np.ndarray = None,
+        train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
-        test_indices: np.ndarray = None,
+        test_indices: Optional[np.ndarray] = None,
             Indices to draw using the test marker.
             If None, while providing the train indices, 
         train_marker: str = "o",
