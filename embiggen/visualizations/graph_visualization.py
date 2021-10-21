@@ -30,7 +30,7 @@ class GraphVisualization:
         alpha=0.7
     )
     DEFAULT_EDGES_SCATTER_KWARGS = dict(
-        alpha=0.7
+        alpha=0.5
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(7, 7),
