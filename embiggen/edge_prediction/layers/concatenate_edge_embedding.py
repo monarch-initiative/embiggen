@@ -1,5 +1,5 @@
 """Layer for executing Concatenation edge embedding."""
-from tensorflow.keras.layers import Concatenate, Layer
+from tensorflow.keras.layers import Concatenate, Layer  # pylint: disable=import-error,no-name-in-module
 from .edge_embedding import EdgeEmbedding
 
 

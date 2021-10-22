@@ -2,8 +2,8 @@
 from typing import Dict
 
 import numpy as np
-from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Flatten, Input, Layer, Dropout
+from tensorflow.keras.layers import Embedding  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Flatten, Input, Layer, Dropout  # pylint: disable=import-error,no-name-in-module
 
 from ...embedders import Embedder
 
@@ -51,7 +51,8 @@ class EdgeEmbedding(Layer):
         self._use_dropout = use_dropout
         self._dropout_rate = dropout_rate
         self._source_node_input = Input((1,), name="source_node_input")
-        self._destination_node_input = Input((1,), name="destination_node_input")
+        self._destination_node_input = Input(
+            (1,), name="destination_node_input")
         super(EdgeEmbedding, self).__init__(**kwargs)
 
     @property

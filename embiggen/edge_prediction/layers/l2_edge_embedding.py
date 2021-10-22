@@ -1,8 +1,6 @@
 """Layer for executing L2 edge embedding."""
-from typing import Dict, List
-
-from tensorflow.keras.layers import Lambda, Layer, Subtract
-from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Lambda, Layer, Subtract  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from .edge_embedding import EdgeEmbedding
 
 

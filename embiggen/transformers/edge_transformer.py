@@ -18,6 +18,8 @@ class EdgeTransformer:
         "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
         "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
         "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
+        "Min": lambda x1, x2: np.min(x1, x2, out=x1),
+        "Max": lambda x1, x2: np.max(x1, x2, out=x1),
         None: lambda x1, x2: np.vstack((x1, x2)).T,
     }
 
@@ -34,7 +36,7 @@ class EdgeTransformer:
         method: str = "Hadamard",
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
-            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+            Can either be 'Hadamard', 'Min', 'Max', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         aligned_node_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.

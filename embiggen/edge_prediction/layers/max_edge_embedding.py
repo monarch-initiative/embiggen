@@ -1,13 +1,12 @@
-"""Layer for executing Average edge embedding."""
-from tensorflow.keras.layers import Lambda, Layer  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
+"""Layer for executing Maximum edge embedding."""
+from tensorflow.keras.layers import Maximum, Layer  # pylint: disable=import-error,no-name-in-module
 from .edge_embedding import EdgeEmbedding
 
 
-class AverageEdgeEmbedding(EdgeEmbedding):
+class MaxEdgeEmbedding(EdgeEmbedding):
 
     def _call(self, source_node_embedding: Layer, destination_node_embedding: Layer) -> Layer:
-        """Compute the edge embedding layer.
+        """Compute the edge embedding layer using a maximum reduce method.
 
         Parameters
         --------------------------
@@ -20,4 +19,7 @@ class AverageEdgeEmbedding(EdgeEmbedding):
         --------------------------
         New output layer.
         """
-        return Lambda(lambda x: K.mean(x, axis=0))(source_node_embedding, destination_node_embedding)
+        return Maximum()([
+            source_node_embedding,
+            destination_node_embedding
+        ])

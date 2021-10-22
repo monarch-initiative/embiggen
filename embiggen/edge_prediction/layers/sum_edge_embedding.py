@@ -1,8 +1,6 @@
 """Layer for executing Sum edge embedding."""
-from typing import Dict, List
-
-from tensorflow.keras.layers import Lambda, Layer
-from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Lambda, Layer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from .edge_embedding import EdgeEmbedding
 
 
