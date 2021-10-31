@@ -81,8 +81,17 @@ class FeedForwardNeuralNetwork(EdgePredictionModel):
                 activation="relu",
                 kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
             )(input_layer)
-        return Dense(
-            units=1,
-            activation="sigmoid",
-            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-        )(input_layer)
+        if self._task_name == "EDGE_PREDICTION":
+            return Dense(
+                units=1,
+                activation="sigmoid",
+                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            )(input_layer)
+        elif self._task_name == "EDGE_LABEL_PREDICTION":
+            return Dense(
+                units=self._graph.get_edge_types_number(),
+                activation="softmax",
+                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            )(input_layer)
+        else:
+            ValueError("Unreacheable.")
