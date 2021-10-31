@@ -1,5 +1,6 @@
 """Class for an abstract edge prediction model."""
 from typing import Dict, Union
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -91,6 +92,13 @@ class EdgePredictionModel(Embedder):
                         task_name, edge_prediction_supported_tasks),
                     supported_tasks=", ".join(edge_prediction_supported_tasks),
                 )
+            )
+        if embedding is None and not trainable_embedding:
+            warnings.warn(
+                "The embedding was not provided, therefore a new random Normal embedding "
+                "will be allocated, but also the trainable embedding flag was left set to false.\n"
+                "This means that the embedding will not be trained, and the nodes will have "
+                "exclusively random features associated to them."
             )
         self._graph = graph
         self._task_name = task_name
