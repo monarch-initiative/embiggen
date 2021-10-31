@@ -139,6 +139,8 @@ class EdgePredictionModel(Embedder):
     def _build_model(self) -> Model:
         """Build new model for Edge prediction."""
         embedding_layer = edge_embedding_layer[self._edge_embedding_method](
+            nodes_number=self._graph.get_nodes_number(),
+            embedding_size=self._embedding_size,
             embedding=self._embedding,
             use_dropout=self._use_dropout,
             dropout_rate=self._dropout_rate
