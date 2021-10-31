@@ -22,7 +22,7 @@ from ..utils import graph_to_sparse_tensor, validate_verbose
 
 
 class GraphConvolutionalNeuralNetwork:
-    """Graph Convolutional Neural Network (GCNN) model for graph embedding."""
+    """Graph Convolutional Neural Network (GCNN) model for node-label prediction."""
 
     def __init__(
         self,

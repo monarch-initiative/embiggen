@@ -1,16 +1,21 @@
-"""Class for creating a Perceptron model for link prediction tasks."""
-from typing import Union
-import pandas as pd
-import numpy as np
+"""Class for creating a Feed-Forward Neural Network model for edge prediction tasks."""
+from typing import Union, List, Optional
 from ensmallen import Graph
-from .feed_forward_neural_network import FeedForwardNeuralNetwork
+from tensorflow.keras import regularizers  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Dense, Layer  # pylint: disable=import-error,no-name-in-module
+
+import numpy as np
+import pandas as pd
+
+from .edge_prediction_model import EdgePredictionModel
 
 
-class Perceptron(FeedForwardNeuralNetwork):
+class FeedForwardNeuralNetwork(EdgePredictionModel):
 
     def __init__(
         self,
         graph: Graph,
+        units: Optional[List[int]] = None,
         embedding_size: int = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         edge_embedding_method: str = "Concatenate",
@@ -21,17 +26,19 @@ class Perceptron(FeedForwardNeuralNetwork):
         use_edge_metrics: bool = False,
         task_name: str = "EDGE_PREDICTION"
     ):
-        """Create new edge prediction Perceptron model object.
+        """Create new Feed Forward Neural Network object.
 
         Parameters
         --------------------
         graph: Graph,
             The graph object to base the model on.
-        embedding_size: int = None,
+        units: Optional[List[int]] = None
+            Units to use to build the hidden layers of the model.
+        embedding_size: int = None
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        embedding: Union[np.ndarray, pd.DataFrame] = None
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
@@ -52,6 +59,7 @@ class Perceptron(FeedForwardNeuralNetwork):
             The currently supported task names are `EDGE_PREDICTION` and `EDGE_LABEL_PREDICTION`.
             The default task name is `EDGE_PREDICTION`.
         """
+        self._units = [] if units is None else units
         super().__init__(
             graph,
             embedding_size=embedding_size,
@@ -64,3 +72,17 @@ class Perceptron(FeedForwardNeuralNetwork):
             use_edge_metrics=use_edge_metrics,
             task_name=task_name
         )
+
+    def _build_model_body(self, input_layer: Layer) -> Layer:
+        """Build new model body for edge prediction."""
+        for unit in self._units:
+            input_layer = Dense(
+                units=unit,
+                activation="relu",
+                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+            )(input_layer)
+        return Dense(
+            units=1,
+            activation="sigmoid",
+            kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+        )(input_layer)

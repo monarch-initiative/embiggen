@@ -14,6 +14,7 @@ class EdgePredictionSequence(Sequence):
         graph: Graph,
         use_node_types: bool = False,
         use_edge_types: bool = False,
+        return_only_edges_with_known_edge_types: bool = False,
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
@@ -76,6 +77,7 @@ class EdgePredictionSequence(Sequence):
         self._random_state = random_state
         self._use_node_types = use_node_types
         self._use_edge_types = use_edge_types
+        self._return_only_edges_with_known_edge_types = return_only_edges_with_known_edge_types
         self._use_edge_metrics = use_edge_metrics
         if batches_per_epoch == "auto":
             batches_per_epoch = max(
@@ -106,6 +108,7 @@ class EdgePredictionSequence(Sequence):
             (self._random_state + idx) * (1 + self.elapsed_epochs),
             return_node_types=self._use_node_types,
             return_edge_types=self._use_edge_types,
+            return_only_edges_with_known_edge_types=self._return_only_edges_with_known_edge_types,
             return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
