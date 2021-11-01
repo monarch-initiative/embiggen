@@ -127,7 +127,7 @@ class EdgePredictionModel(Embedder):
             self._model.compile(
                 loss="sparse_categorical_crossentropy",
                 optimizer=self._optimizer,
-                metrics=get_minimal_multiclass_metrics(),
+                #metrics=get_minimal_multiclass_metrics(),
             )
         else:
             raise ValueError("Unreacheable!")
