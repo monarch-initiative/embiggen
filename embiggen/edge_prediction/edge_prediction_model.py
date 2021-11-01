@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from extra_keras_metrics import get_standard_binary_metrics, get_minimal_multiclass_metrics
+from extra_keras_metrics import get_standard_binary_metrics, get_sparse_multiclass_metrics
 from tensorflow.keras.layers import Layer, Input, Concatenate  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from userinput import set_validator
@@ -127,7 +127,7 @@ class EdgePredictionModel(Embedder):
             self._model.compile(
                 loss="sparse_categorical_crossentropy",
                 optimizer=self._optimizer,
-                #metrics=get_minimal_multiclass_metrics(),
+                metrics=get_sparse_multiclass_metrics(),
             )
         else:
             raise ValueError("Unreacheable!")
