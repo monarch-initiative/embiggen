@@ -125,7 +125,7 @@ class EdgePredictionModel(Embedder):
             )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             self._model.compile(
-                loss="categorical_crossentropy",
+                loss="sparse_categorical_crossentropy",
                 optimizer=self._optimizer,
                 metrics=get_minimal_multiclass_metrics(),
             )
