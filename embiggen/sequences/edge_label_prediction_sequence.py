@@ -57,7 +57,7 @@ class EdgeLabelPredictionSequence(EdgePredictionSequence):
         super().__init__(
             graph,
             use_node_types=use_node_types,
-            use_edge_types=False,
+            use_edge_types=True,
             return_only_edges_with_known_edge_types=True,
             use_edge_metrics=use_edge_metrics,
             batch_size=batch_size,
