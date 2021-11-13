@@ -407,7 +407,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(edge_names, self._flatten_unknown_edge_types()))
+            ).split(edge_names, self._flatten_unknown_edge_types() if self._graph.has_edge_types() else None))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
             if edge_embedding is not None:
