@@ -1705,7 +1705,7 @@ class GraphVisualization:
 
         figure, axes, scatter = self._plot_scatter(
             "Edge weights",
-            self._node_embedding.values,
+            self._edge_embedding.values,
             colors=weights,
             figure=figure,
             axes=axes,
