@@ -321,7 +321,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(node_names, self._flatten_multi_label_and_unknown_node_types()))
+            ).split(node_names, self._flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
