@@ -18,6 +18,7 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 from sklearn.preprocessing import RobustScaler
+from tqdm.auto import trange
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -305,7 +306,7 @@ class GraphVisualization:
             Embedding of the graph nodes.
         """
         # Retrieve the nodes
-        node_names = np.array(self._graph.get_node_names())
+        node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
         if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
             # If there are node types, we use a stratified
@@ -1122,17 +1123,24 @@ class GraphVisualization:
         node_types_number = self._graph.get_node_types_number()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
-        return np.array([
+        return np.fromiter(
+            node_types_number
+            if node_type_ids is None
+            else
             sorted(
                 node_type_ids,
                 key=lambda node_type: node_types_counts[node_type],
                 reverse=True
             )[0]
-            if node_type_ids is not None
-            else
-            node_types_number
-            for node_type_ids in self._graph.get_node_type_ids()
-        ])
+            for node_type_ids in (
+                self._graph.get_node_type_ids_from_node_id(node_id)
+                for node_id in trange(
+                    self._graph.get_nodes_number(),
+                    total=self._graph.get_nodes_number(),
+                    desc="Computing flattened multi-label and unknown node types"
+                )
+            )
+        )
 
     def _flatten_unknown_edge_types(self) -> np.ndarray:
         # The following is needed to normalize the multiple types
