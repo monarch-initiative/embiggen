@@ -1124,22 +1124,25 @@ class GraphVisualization:
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
-            node_types_number
-            if node_type_ids is None
-            else
-            sorted(
-                node_type_ids,
-                key=lambda node_type: node_types_counts[node_type],
-                reverse=True
-            )[0]
-            for node_type_ids in (
-                self._graph.get_node_type_ids_from_node_id(node_id)
-                for node_id in trange(
-                    self._graph.get_nodes_number(),
-                    total=self._graph.get_nodes_number(),
-                    desc="Computing flattened multi-label and unknown node types"
+            (
+                node_types_number
+                if node_type_ids is None
+                else
+                sorted(
+                    node_type_ids,
+                    key=lambda node_type: node_types_counts[node_type],
+                    reverse=True
+                )[0]
+                for node_type_ids in (
+                    self._graph.get_node_type_ids_from_node_id(node_id)
+                    for node_id in trange(
+                        self._graph.get_nodes_number(),
+                        total=self._graph.get_nodes_number(),
+                        desc="Computing flattened multi-label and unknown node types"
+                    )
                 )
-            )
+            ),
+            dtype=np.uint32
         )
 
     def _flatten_unknown_edge_types(self) -> np.ndarray:
