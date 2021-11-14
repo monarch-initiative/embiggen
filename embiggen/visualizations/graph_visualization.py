@@ -398,7 +398,7 @@ class GraphVisualization:
         if self._subsample_points is not None and len(edge_names) > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types():
+            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types() and self._subsample_points > self._graph.get_edge_types_number():
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
