@@ -1161,8 +1161,8 @@ class GraphVisualization:
                     for edge_type_id in (
                         self._graph.get_edge_type_id_from_edge_id(edge_id)
                         for edge_id in trange(
-                            self._graph.get_edges_number(),
-                            total=self._graph.get_edges_number(),
+                            self._graph.get_directed_edges_number(),
+                            total=self._graph.get_directed_edges_number(),
                             desc="Computing flattened unknown edge types"
                         )
                     )
