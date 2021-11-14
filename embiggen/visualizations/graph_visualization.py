@@ -1150,13 +1150,26 @@ class GraphVisualization:
         edge_types_number = self._graph.get_edge_types_number()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
-        return np.array([
-            edge_type_id
-            if edge_type_id is not None
-            else
-            edge_types_number
-            for edge_type_id in self._graph.get_edge_type_ids()
-        ])
+        return np.fromiter(
+            (
+                edge_type_id
+                if edge_type_id is not None
+                else
+                edge_types_number
+                for edge_type_id in (
+                    edge_type_id
+                    for edge_type_id in (
+                        self._graph.get_edge_type_id_from_edge_id(edge_id)
+                        for edge_id in trange(
+                            self._graph.get_edges_number(),
+                            total=self._graph.get_edges_number(),
+                            desc="Computing flattened unknown edge types"
+                        )
+                    )
+                )
+            ),
+            dtype=np.uint32
+        )
 
     def plot_node_types(
         self,
