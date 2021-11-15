@@ -818,10 +818,8 @@ class GraphVisualization:
                 ).format(type(types))
             )
 
-        _, number_of_types = np.unique(types, return_counts=True)
-        print(types)
-        print(number_of_types)
-        counts = np.bincount(types, minlength=number_of_types)
+        counts = np.bincount(types)
+        number_of_types = len(counts)
         top_counts = [
             index
             for index, _ in sorted(
