@@ -311,7 +311,7 @@ class GraphVisualization:
         if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
-            if self._graph.has_node_types() and not self._graph.has_singleton_node_types() and self._subsample_points > self._graph.get_node_types_number():
+            if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
@@ -398,7 +398,7 @@ class GraphVisualization:
         if self._subsample_points is not None and len(edge_names) > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types() and self._subsample_points > self._graph.get_edge_types_number():
+            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types():
                 Splitter = StratifiedShuffleSplit
             else:
                 # Otherwise there is no need to stratify.
@@ -1121,12 +1121,19 @@ class GraphVisualization:
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         node_types_number = self._graph.get_node_types_number()
+        if node_types_number > 10:
+            node_type_count_threshold = sorted(
+                list(node_types_counts.values()),
+                reverse=True
+            )[10]
+        else:
+            node_type_count_threshold = min(node_types_counts.values())
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
             (
                 node_types_number
-                if node_type_ids is None
+                if node_type_ids is None or node_types_counts[node_type_ids[0]] < node_type_count_threshold
                 else
                 sorted(
                     node_type_ids,
@@ -1147,13 +1154,21 @@ class GraphVisualization:
 
     def _flatten_unknown_edge_types(self) -> np.ndarray:
         # The following is needed to normalize the multiple types
+        edge_types_counts = self._graph.get_edge_type_id_counts_hashmap()
         edge_types_number = self._graph.get_edge_types_number()
+        if edge_types_number > 10:
+            edge_type_count_threshold = sorted(
+                list(edge_types_counts.values()),
+                reverse=True
+            )[10]
+        else:
+            edge_type_count_threshold = min(edge_types_counts.values())
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
             (
                 edge_type_id
-                if edge_type_id is not None
+                if edge_type_id is not None or edge_types_counts[edge_type_id] < edge_type_count_threshold
                 else
                 edge_types_number
                 for edge_type_id in (
