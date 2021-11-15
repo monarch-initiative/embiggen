@@ -102,6 +102,7 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
+        self._edge_embedding_method = edge_embedding_method
         self._graph_transformer = GraphTransformer(
             method=edge_embedding_method
         )
@@ -1724,7 +1725,7 @@ class GraphVisualization:
         edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         return self._plot_types(
-            "Edge types",
+            "Edge types - {}".format(self._edge_embedding_method),
             self._edge_embedding.values,
             types=edge_types,
             type_labels=edge_type_names,
@@ -1817,7 +1818,7 @@ class GraphVisualization:
             )
 
         figure, axes, scatter = self._plot_scatter(
-            "Edge weights",
+            "Edge weights - {}".format(self._edge_embedding_method),
             self._edge_embedding.values,
             colors=weights,
             figure=figure,
