@@ -1122,6 +1122,7 @@ class GraphVisualization:
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         node_types_number = self._graph.get_node_types_number()
         if node_types_number > 10:
+            node_types_number = 11
             node_type_count_threshold = sorted(
                 list(node_types_counts.values()),
                 reverse=True
@@ -1157,6 +1158,7 @@ class GraphVisualization:
         edge_types_counts = self._graph.get_edge_type_id_counts_hashmap()
         edge_types_number = self._graph.get_edge_types_number()
         if edge_types_number > 10:
+            edge_types_number = 11
             edge_type_count_threshold = sorted(
                 list(edge_types_counts.values()),
                 reverse=True
