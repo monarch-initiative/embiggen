@@ -1811,7 +1811,7 @@ class GraphVisualization:
         else:
             weights = np.fromiter(
                 (
-                    self._graph.get_edge_degree_from_edge_id(edge_id)
+                    self._graph.get_edge_weight_from_edge_id(edge_id)
                     for edge_id in self._subsampled_edge_ids
                 ),
                 dtype=np.uint32
