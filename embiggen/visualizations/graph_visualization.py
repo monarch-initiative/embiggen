@@ -819,6 +819,8 @@ class GraphVisualization:
             )
 
         _, number_of_types = np.unique(types, return_counts=True)
+        print(types)
+        print(number_of_types)
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = [
             index
