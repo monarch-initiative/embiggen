@@ -1340,7 +1340,10 @@ class GraphVisualization:
                 iter(("Unknown",))
             )
 
-        node_type_names = np.fromiter(node_type_names_iter, dtype=str)
+        node_type_names = np.array(
+            list(node_type_names_iter),
+            dtype=str,
+        )
 
         figure, axes = self._plot_types(
             "Node types",
@@ -1469,11 +1472,11 @@ class GraphVisualization:
             "Components",
             self._node_embedding.values,
             types=components,
-            type_labels=np.fromiter(
-                (
+            type_labels=np.array(
+                [
                     "Size {}".format(size)
                     for size in sizes
-                ),
+                ],
                 dtype=str
             ),
             legend_title=legend_title,
@@ -1718,7 +1721,7 @@ class GraphVisualization:
                 iter(("Unknown",))
             )
 
-        edge_type_names = np.fromiter(edge_type_names_iter, dtype=str)
+        edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         return self._plot_types(
             "Edge types",
