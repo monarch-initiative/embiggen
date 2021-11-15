@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Union, Optional
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.lib.arraysetops import isin
 import pandas as pd
 from ddd_subplots import subplots as subplots_3d
 from ensmallen import Graph  # pylint: disable=no-name-in-module
@@ -18,7 +19,8 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 from sklearn.preprocessing import RobustScaler
-from tqdm.auto import trange
+from tqdm.auto import trange, tqdm
+import itertools
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -321,7 +323,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(node_names, self._flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
+            ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
@@ -408,7 +410,7 @@ class GraphVisualization:
                 n_splits=1,
                 train_size=self._subsample_points,
                 random_state=self._random_state
-            ).split(edge_names, self._flatten_unknown_edge_types() if self._graph.has_edge_types() else None))
+            ).split(edge_names, self._get_flatten_unknown_edge_types() if self._graph.has_edge_types() else None))
             # And sample the edges
             edge_names = edge_names[self._subsampled_edge_ids]
             if edge_embedding is not None:
@@ -800,15 +802,23 @@ class GraphVisualization:
                 "Values of k greater than 9 are not supported!"
             )
 
-        # if not isinstance(types, np.ndarray):
-        #     raise ValueError(
-        #         "Expecting types to be a numpy array."
-        #     )
-        types = np.array(types)
+        if not isinstance(type_labels, np.ndarray):
+            raise ValueError(
+                (
+                    "The parameter type_labels was expected to be a numpy array, "
+                    "but an object of type `{}` was provided."
+                ).format(type(type_labels))
+            )
 
-        number_of_types = np.unique(types).size
-        type_labels = np.array(type_labels)
+        if not isinstance(types, np.ndarray):
+            raise ValueError(
+                (
+                    "The parameter types was expected to be a numpy array, "
+                    "but an object of type `{}` was provided."
+                ).format(type(types))
+            )
 
+        _, number_of_types = np.unique(types, return_counts=True)
         counts = np.bincount(types, minlength=number_of_types)
         top_counts = [
             index
@@ -1117,24 +1127,45 @@ class GraphVisualization:
 
         return figure, axis
 
-    def _flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
+    def _get_flatten_multi_label_and_unknown_node_types(
+        self,
+        subsampled_node_ids: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Returns flattened node type IDs adjusted for the current instance.
+
+        Implementative details
+        ---------------------------------
+        If the subsampled node IDs are provided, only those nodes will be taken into account.
+
+        Parameters
+        ---------------------------------
+        subsampled_node_ids: np.ndarray = None
+            If provided, only samples these node IDs.
+        """
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         node_types_number = self._graph.get_node_types_number()
-        if node_types_number > 10:
-            node_types_number = 11
-            node_type_count_threshold = sorted(
-                list(node_types_counts.values()),
-                reverse=True
-            )[10]
+        unknown_node_types_id = node_types_number
+
+        # According to whether the subsampled node IDs were given,
+        # we iterate on them or on the complete set of nodes of the graph.
+        if subsampled_node_ids is None:
+            nodes_iterator = trange(
+                self._graph.get_nodes_number(),
+                desc="Computing flattened multi-label and unknown node types"
+            )
         else:
-            node_type_count_threshold = min(node_types_counts.values())
+            nodes_iterator = tqdm(
+                subsampled_node_ids,
+                desc="Computing subsampled flattened multi-label and unknown node types"
+            )
+
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
             (
-                node_types_number
-                if node_type_ids is None or node_types_counts[node_type_ids[0]] < node_type_count_threshold
+                unknown_node_types_id
+                if node_type_ids is None
                 else
                 sorted(
                     node_type_ids,
@@ -1143,45 +1174,55 @@ class GraphVisualization:
                 )[0]
                 for node_type_ids in (
                     self._graph.get_node_type_ids_from_node_id(node_id)
-                    for node_id in trange(
-                        self._graph.get_nodes_number(),
-                        total=self._graph.get_nodes_number(),
-                        desc="Computing flattened multi-label and unknown node types"
-                    )
+                    for node_id in nodes_iterator
                 )
             ),
             dtype=np.uint32
         )
 
-    def _flatten_unknown_edge_types(self) -> np.ndarray:
+    def _get_flatten_unknown_edge_types(
+        self,
+        subsampled_edge_id: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Returns flattened edge type IDs adjusted for the current instance.
+
+        Implementative details
+        ---------------------------------
+        If the subsampled edge IDs are provided, only those edges will be taken into account.
+
+        Parameters
+        ---------------------------------
+        subsampled_edge_ids: np.ndarray = None
+            If provided, only samples these edge IDs.
+        """
         # The following is needed to normalize the multiple types
-        edge_types_counts = self._graph.get_edge_type_id_counts_hashmap()
         edge_types_number = self._graph.get_edge_types_number()
-        if edge_types_number > 10:
-            edge_types_number = 11
-            edge_type_count_threshold = sorted(
-                list(edge_types_counts.values()),
-                reverse=True
-            )[10]
+        unknown_edge_types_id = edge_types_number
+        # According to whether the subsampled node IDs were given,
+        # we iterate on them or on the complete set of nodes of the graph.
+        if subsampled_edge_id is None:
+            edges_iterator = trange(
+                self._graph.get_directed_edges_number(),
+                desc="Computing flattened unknown edge types"
+            )
         else:
-            edge_type_count_threshold = min(edge_types_counts.values())
+            edges_iterator = tqdm(
+                subsampled_edge_id,
+                desc="Computing subsampled flattened unknown edge types"
+            )
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
             (
-                edge_type_id
-                if edge_type_id is not None or edge_types_counts[edge_type_id] < edge_type_count_threshold
+                unknown_edge_types_id
+                if edge_type_id is None
                 else
-                edge_types_number
+                edge_type_id
                 for edge_type_id in (
                     edge_type_id
                     for edge_type_id in (
                         self._graph.get_edge_type_id_from_edge_id(edge_id)
-                        for edge_id in trange(
-                            self._graph.get_directed_edges_number(),
-                            total=self._graph.get_directed_edges_number(),
-                            desc="Computing flattened unknown edge types"
-                        )
+                        for edge_id in edges_iterator
                     )
                 )
             ),
@@ -1281,16 +1322,25 @@ class GraphVisualization:
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100
 
-        node_types = self._flatten_multi_label_and_unknown_node_types()
-        if self._subsampled_node_ids is not None:
-            node_types = node_types[self._subsampled_node_ids]
+        node_types = self._get_flatten_multi_label_and_unknown_node_types(
+            self._subsampled_node_ids
+        )
 
-        node_type_names = self._graph.get_unique_node_type_names()
+        node_type_names_iter = (
+            self._graph.get_node_type_name_from_node_type_id(node_id)
+            for node_id in trange(
+                self._graph.get_node_types_number(),
+                desc="Retrieving graph node types"
+            )
+        )
 
         if self._graph.has_unknown_node_types():
-            node_type_names.append("Unknown")
+            node_type_names_iter = itertools.chain(
+                node_type_names_iter,
+                iter(("Unknown",))
+            )
 
-        node_type_names = np.array(node_type_names)
+        node_type_names = np.fromiter(node_type_names_iter, dtype=str)
 
         figure, axes = self._plot_types(
             "Node types",
@@ -1419,10 +1469,13 @@ class GraphVisualization:
             "Components",
             self._node_embedding.values,
             types=components,
-            type_labels=np.array([
-                "Size {}".format(size)
-                for size in sizes
-            ]),
+            type_labels=np.fromiter(
+                (
+                    "Size {}".format(size)
+                    for size in sizes
+                ),
+                dtype=str
+            ),
             legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
@@ -1515,9 +1568,16 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        degrees = self._graph.get_node_degrees()
-        if self._subsampled_node_ids is not None:
-            degrees = degrees[self._subsampled_node_ids]
+        if self._subsampled_node_ids is None:
+            degrees = self._graph.get_node_degrees()
+        else:
+            degrees = np.fromiter(
+                (
+                    self._graph.get_node_degree_from_node_id(node_id)
+                    for node_id in self._subsampled_node_ids
+                ),
+                dtype=np.uint32
+            )
 
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100
@@ -1640,23 +1700,25 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
-        edge_type_number = self._graph.get_edge_types_number()
-        edge_types = np.array([
-            edge_type_id
-            if edge_type_id is not None
-            else edge_type_number
-            for edge_type_id in self._graph.get_edge_type_ids()
-        ])
+        edge_types = self._get_flatten_unknown_edge_types(
+            self._subsampled_edge_ids
+        )
 
-        if self._subsampled_edge_ids is not None:
-            edge_types = edge_types[self._subsampled_edge_ids]
-
-        edge_type_names = self._graph.get_unique_edge_type_names()
+        edge_type_names_iter = (
+            self._graph.get_edge_type_name_from_edge_type_id(edge_id)
+            for edge_id in trange(
+                self._graph.get_edge_types_number(),
+                desc="Retrieving graph edge types"
+            )
+        )
 
         if self._graph.has_unknown_edge_types():
-            edge_type_names.append("Unknown")
+            edge_type_names_iter = itertools.chain(
+                edge_type_names_iter,
+                iter(("Unknown",))
+            )
 
-        edge_type_names = np.array(edge_type_names)
+        edge_type_names = np.fromiter(edge_type_names_iter, dtype=str)
 
         return self._plot_types(
             "Edge types",
@@ -1740,9 +1802,16 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        weights = self._graph.get_edge_weights()
-        if self._subsampled_edge_ids is not None:
-            weights = weights[self._subsampled_edge_ids]
+        if self._subsampled_edge_ids is None:
+            weights = self._graph.get_edge_weights()
+        else:
+            weights = np.fromiter(
+                (
+                    self._graph.get_edge_degree_from_edge_id(edge_id)
+                    for edge_id in self._subsampled_edge_ids
+                ),
+                dtype=np.uint32
+            )
 
         figure, axes, scatter = self._plot_scatter(
             "Edge weights",
@@ -1768,12 +1837,12 @@ class GraphVisualization:
         color_bar.draw_all()
         return figure, axes
 
-    def plot_dot(self, engine: str = "circle"):
+    def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
 
         Parameters
         ------------------------------
-        engine: str = "circle",
+        engine: str = "neato",
             The engine to use to visualize the graph.
 
         Raises
