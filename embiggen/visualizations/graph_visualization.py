@@ -396,7 +396,7 @@ class GraphVisualization:
                 size=self._subsample_points
             )
             edge_names = np.array([
-                self._graph.get_edge_node_names_from_edge_id(edge_id)
+                self._graph.get_node_names_from_edge_id(edge_id)
                 for edge_id in tqdm(
                     self._subsampled_edge_ids,
                     desc="Retrieving edge node names"
