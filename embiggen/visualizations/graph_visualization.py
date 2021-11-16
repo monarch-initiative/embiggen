@@ -18,7 +18,6 @@ from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
-from sklearn.preprocessing import RobustScaler
 from tqdm.auto import trange, tqdm
 import itertools
 
@@ -44,7 +43,6 @@ class GraphVisualization:
         self,
         graph: Graph,
         decomposition_method: str = "TSNE",
-        scaler_method: "Scaler" = RobustScaler,
         n_components: int = 2,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Hadamard",
@@ -61,10 +59,6 @@ class GraphVisualization:
         decomposition_method: str = "TSNE",
             The decomposition method to use.
             The supported methods are TSNE and PCA.
-        scaler_method: "Scaler" = RobustScaler,
-            The scaler object to use to normalize the embedding.
-            By default we use a Robust Scaler.
-            Pass None to not use any scaler.
         n_components: int = 2,
             Number of components to reduce the image to.
             Currently, we only support 2D decompositions but we plan
@@ -123,7 +117,6 @@ class GraphVisualization:
             )
 
         self._n_components = n_components
-        self._scaler_method = None if scaler_method is None else scaler_method()
 
         if decomposition_method == "TSNE":
             try:
@@ -315,25 +308,23 @@ class GraphVisualization:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
             if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
-                Splitter = StratifiedShuffleSplit
+                # We compute the indices
+                self._subsampled_node_ids, _ = next(StratifiedShuffleSplit(
+                    n_splits=1,
+                    train_size=self._subsample_points,
+                    random_state=self._random_state
+                ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             else:
                 # Otherwise there is no need to stratify.
-                Splitter = ShuffleSplit
-            # We compute the indices
-            self._subsampled_node_ids, _ = next(Splitter(
-                n_splits=1,
-                train_size=self._subsample_points,
-                random_state=self._random_state
-            ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
+                self._subsampled_node_ids = np.random.randint(
+                    low=0,
+                    high=self._graph.get_nodes_number(),
+                    size=self._subsample_points
+                )
+
             # And sample the nodes
             node_names = node_names[self._subsampled_node_ids]
 
-        if self._scaler_method is not None:
-            node_embedding = pd.DataFrame(
-                self._scaler_method.fit_transform(node_embedding),
-                columns=node_embedding.columns,
-                index=node_embedding.index,
-            )
         self._node_transformer.fit(node_embedding)
         self._node_embedding = pd.DataFrame(
             self.decompose(
@@ -395,37 +386,25 @@ class GraphVisualization:
                 )
             )
 
-        # Retrieve the edges
-        edge_names = np.array(self._graph.get_edge_node_names(directed=True))
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and len(edge_names) > self._subsample_points:
+        if self._subsample_points is not None and self._graph.get_directed_edges_number() > self._subsample_points:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types():
-                Splitter = StratifiedShuffleSplit
-            else:
-                # Otherwise there is no need to stratify.
-                Splitter = ShuffleSplit
-            # We compute the indices
-            self._subsampled_edge_ids, _ = next(Splitter(
-                n_splits=1,
-                train_size=self._subsample_points,
-                random_state=self._random_state
-            ).split(edge_names, self._get_flatten_unknown_edge_types() if self._graph.has_edge_types() else None))
-            # And sample the edges
-            edge_names = edge_names[self._subsampled_edge_ids]
-            if edge_embedding is not None:
-                edge_embedding = edge_embedding[self._subsampled_edge_ids]
-
-        if node_embedding is not None:
-            if self._scaler_method is not None:
-                node_embedding = pd.DataFrame(
-                    self._scaler_method.fit_transform(node_embedding),
-                    columns=node_embedding.columns,
-                    index=node_embedding.index,
+            self._subsampled_edge_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_directed_edges_number(),
+                size=self._subsample_points
+            )
+            edge_names = np.array([
+                self._graph.get_edge_node_names_from_edge_id(edge_id)
+                for edge_id in tqdm(
+                    self._subsampled_edge_ids,
+                    desc="Retrieving edge node names"
                 )
-            self._graph_transformer.fit(node_embedding)
-            edge_embedding = self._graph_transformer.transform(edge_names)
+            ])
+
+        self._graph_transformer.fit(node_embedding)
+        edge_embedding = self._graph_transformer.transform(edge_names)
         self._edge_embedding = pd.DataFrame(
             self.decompose(edge_embedding),
             index=edge_names
