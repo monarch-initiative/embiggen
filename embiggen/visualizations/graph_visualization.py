@@ -95,6 +95,7 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
+        self._graph_name = self._graph.get_name()
         self._edge_embedding_method = edge_embedding_method
         self._graph_transformer = GraphTransformer(
             method=edge_embedding_method
@@ -679,7 +680,7 @@ class GraphVisualization:
 
         title = "{} - {}".format(
             title,
-            self._graph.get_name(),
+            self._graph_name,
         )
 
         if self._node_embedding_method_name is not None:
