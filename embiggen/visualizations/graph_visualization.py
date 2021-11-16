@@ -459,6 +459,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         apply_tight_layout: bool = True,
+        return_collections: bool = False,
         **kwargs
     ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
@@ -505,6 +506,8 @@ class GraphVisualization:
         apply_tight_layout: bool = True,
             Whether to apply the tight layout on the matplotlib
             Figure object.
+        return_collections: bool = False,
+            Whether to return the scatter plot collections.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -673,7 +676,9 @@ class GraphVisualization:
         if apply_tight_layout:
             figure.tight_layout()
 
-        return figure, axes, collections
+        if return_collections and not self._rotate:
+            return figure, axes, collections
+        return figure, axes
 
     def _plot_types(
         self,
@@ -856,7 +861,7 @@ class GraphVisualization:
             self._graph_transformer = graph_transformer
             figure, axis = None, None
         else:
-            figure, axis, _ = self._plot_scatter(**arguments)
+            figure, axis = self._plot_scatter(**arguments)
 
         return figure, axis
 
@@ -1007,7 +1012,7 @@ class GraphVisualization:
                 **kwargs
             )
 
-        figure, axes, _ = self._plot_scatter(
+        figure, axes = self._plot_scatter(
             "Nodes embedding",
             self._node_embedding.values,
             figure=figure,
@@ -1108,7 +1113,7 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        figure, axis, _ = self._plot_scatter(
+        figure, axis = self._plot_scatter(
             "Edges embedding",
             self._edge_embedding,
             figure=figure,
@@ -1603,7 +1608,7 @@ class GraphVisualization:
                 **kwargs
             )
 
-        figure, axes, scatter = self._plot_scatter(
+        returned_values = self._plot_scatter(
             "Node degrees",
             self._node_embedding.values,
             colors=degrees,
@@ -1621,12 +1626,17 @@ class GraphVisualization:
             show_title=show_title,
             show_legend=show_legend,
             loc=loc,
+            return_collections=True,
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter[0], ax=axes)
-        color_bar.set_alpha(1)
-        color_bar.draw_all()
+        if not self._rotate:
+            figure, axes, scatter = returned_values                
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
+        else:
+            return None
 
         if annotate_nodes:
             figure, axes = self.annotate_nodes(
@@ -1834,7 +1844,7 @@ class GraphVisualization:
                 dtype=np.uint32
             )
 
-        figure, axes, scatter = self._plot_scatter(
+        returned_values = self._plot_scatter(
             "Edge weights - {}".format(self._edge_embedding_method),
             self._edge_embedding.values,
             colors=weights,
@@ -1851,13 +1861,16 @@ class GraphVisualization:
             show_title=show_title,
             show_legend=show_legend,
             loc=loc,
+            return_collections=True,
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter[0], ax=axes)
-        color_bar.set_alpha(1)
-        color_bar.draw_all()
-        return figure, axes
+        if not self._rotate:
+            figure, axes, scatter = returned_values
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
+            return figure, axes
 
     def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
