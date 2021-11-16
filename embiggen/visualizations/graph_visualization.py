@@ -5,9 +5,8 @@ from typing import Dict, List, Tuple, Union, Optional
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.lib.arraysetops import isin
 import pandas as pd
-from ddd_subplots import subplots as subplots_3d
+from ddd_subplots import subplots as subplots_3d, rotate
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -160,6 +159,7 @@ class GraphVisualization:
                                 n_jobs=cpu_count(),
                                 random_state=random_state,
                                 verbose=True,
+                                square_distances=True,
                             ),
                             **decomposition_kwargs
                         })
