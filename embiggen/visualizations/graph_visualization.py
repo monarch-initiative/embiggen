@@ -159,7 +159,7 @@ class GraphVisualization:
                         ),
                         **decomposition_kwargs
                     })
-                except (ModuleNotFoundError, OSError):
+                except (ModuleNotFoundError, OSError, RuntimeError):
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
