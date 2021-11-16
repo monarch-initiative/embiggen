@@ -43,6 +43,7 @@ class GraphVisualization:
         graph: Graph,
         decomposition_method: str = "TSNE",
         n_components: int = 2,
+        rotate: bool = False,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
@@ -62,6 +63,8 @@ class GraphVisualization:
             Number of components to reduce the image to.
             Currently, we only support 2D decompositions but we plan
             to add support for also 3D decompositions.
+        rotate: bool = False,
+            Whether to create a rotating animation.
         node_embedding_method_name: str = None,
             Name of the node embedding method used.
             If provided, it is added to the images titles.
@@ -95,6 +98,7 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
+        self._rotate = rotate
         self._graph_name = self._graph.get_name()
         self._edge_embedding_method = edge_embedding_method
         self._graph_transformer = GraphTransformer(
@@ -433,8 +437,8 @@ class GraphVisualization:
 
     def _plot_scatter(
         self,
-        title: str,
         points: np.ndarray,
+        title: str,
         colors: Optional[List[int]] = None,
         edgecolors: Optional[List[int]] = None,
         labels: List[str] = None,
@@ -456,10 +460,10 @@ class GraphVisualization:
 
         Parameters
         ------------------------------
-        title: str,
-            Title to use for the plot.
         points: np.ndarray,
             Points to plot.
+        title: str,
+            Title to use for the plot.
         colors: Optional[List[int]] = None,
             List of the colors to use for the scatter plot.
         edgecolors: Optional[List[int]] = None,
@@ -801,25 +805,42 @@ class GraphVisualization:
         if k < number_of_types:
             type_labels.append(other_label)
 
-        figure, axis, _ = self._plot_scatter(
-            title=title,
-            points=points,
-            colors=types,
-            edgecolors=predictions,
-            labels=type_labels,
-            legend_title=legend_title,
-            show_title=show_title,
-            show_legend=show_legend,
-            loc=loc,
-            figure=figure,
-            axes=axes,
-            scatter_kwargs=scatter_kwargs,
-            train_indices=train_indices,
-            test_indices=test_indices,
-            train_marker=train_marker,
-            test_marker=test_marker,
+        arguments = {
+            **dict(
+                points=points,
+                title=title,
+                colors=types,
+                edgecolors=predictions,
+                labels=type_labels,
+                legend_title=legend_title,
+                show_title=show_title,
+                show_legend=show_legend,
+                loc=loc,
+                figure=figure,
+                axes=axes,
+                scatter_kwargs=scatter_kwargs,
+                train_indices=train_indices,
+                test_indices=test_indices,
+                train_marker=train_marker,
+                test_marker=test_marker,
+            ),
             **kwargs
-        )
+        }
+
+        if self._rotate:
+            rotate(
+                self._plot_scatter,
+                path="{}.gif".format(title.lower().replace(" ", "_")),
+                loc="upper right",
+                duration=10,
+                fps=24,
+                verbose=True,
+                parallelize=True,
+                **arguments
+            )
+            figure, axis = None, None
+        else:
+            figure, axis, _ = self._plot_scatter(**arguments)
 
         return figure, axis
 
