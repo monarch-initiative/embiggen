@@ -442,6 +442,20 @@ class GraphVisualization:
             })
         return figure, axes
 
+    def _get_complete_title(self, initial_title: str) -> str:
+        title = "{} - {}".format(
+            initial_title,
+            self._graph_name,
+        )
+
+        if self._node_embedding_method_name is not None:
+            title = "{} - {}".format(
+                title,
+                self._node_embedding_method_name
+            )
+
+        return title
+
     def _plot_scatter(
         self,
         points: np.ndarray,
@@ -660,17 +674,6 @@ class GraphVisualization:
 
         if self._n_components == 2:
             axes.set_axis_off()
-
-        title = "{} - {}".format(
-            title,
-            self._graph_name,
-        )
-
-        if self._node_embedding_method_name is not None:
-            title = "{} - {}".format(
-                title,
-                self._node_embedding_method_name
-            )
 
         if show_title:
             axes.set_title(title)
@@ -1015,7 +1018,7 @@ class GraphVisualization:
             )
 
         figure, axes = self._plot_scatter(
-            "Nodes embedding",
+            self._get_complete_title("Nodes embedding"),
             self._node_embedding.values,
             figure=figure,
             axes=axes,
@@ -1116,7 +1119,7 @@ class GraphVisualization:
             )
 
         figure, axis = self._plot_scatter(
-            "Edges embedding",
+            self._get_complete_title("Edges embedding"),
             self._edge_embedding,
             figure=figure,
             axes=axes,
@@ -1364,7 +1367,7 @@ class GraphVisualization:
 
         figure, axes = self._plot_types(
             self._node_embedding.values,
-            "Node types",
+            self._get_complete_title("Node types"),
             types=node_types,
             type_labels=node_type_names,
             legend_title=legend_title,
@@ -1491,7 +1494,7 @@ class GraphVisualization:
 
         figure, axes = self._plot_types(
             self._node_embedding.values,
-            "Components",
+            self._get_complete_title("Components"),
             types=components,
             type_labels=np.array(
                 [
@@ -1619,7 +1622,7 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
-            "Node degrees",
+            self._get_complete_title("Node degrees"),
             self._node_embedding.values,
             colors=degrees,
             figure=figure,
@@ -1759,7 +1762,7 @@ class GraphVisualization:
 
         return self._plot_types(
             self._edge_embedding.values,
-            "Edge types - {}".format(self._edge_embedding_method),
+            self._get_complete_title("Edge types - {}".format(self._edge_embedding_method)),
             types=edge_types,
             type_labels=edge_type_names,
             legend_title=legend_title,
@@ -1855,7 +1858,7 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
-            "Edge weights - {}".format(self._edge_embedding_method),
+            self._get_complete_title("Edge weights - {}".format(self._edge_embedding_method)),
             self._edge_embedding.values,
             colors=weights,
             figure=figure,
