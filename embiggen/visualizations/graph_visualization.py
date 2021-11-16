@@ -1631,7 +1631,7 @@ class GraphVisualization:
         )
 
         if not self._rotate:
-            figure, axes, scatter = returned_values                
+            figure, axes, scatter = returned_values
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
