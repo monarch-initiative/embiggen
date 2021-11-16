@@ -698,8 +698,8 @@ class GraphVisualization:
 
     def _plot_types(
         self,
-        title: str,
         points: np.ndarray,
+        title: str,
         types: List[int],
         type_labels: List[str],
         legend_title: str,
@@ -1326,8 +1326,8 @@ class GraphVisualization:
         )
 
         figure, axes = self._plot_types(
-            "Node types",
             self._node_embedding.values,
+            "Node types",
             types=node_types,
             type_labels=node_type_names,
             legend_title=legend_title,
@@ -1449,8 +1449,8 @@ class GraphVisualization:
             components = components[self._subsampled_node_ids]
 
         figure, axes = self._plot_types(
-            "Components",
             self._node_embedding.values,
+            "Components",
             types=components,
             type_labels=np.array(
                 [
@@ -1704,8 +1704,8 @@ class GraphVisualization:
         edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         return self._plot_types(
-            "Edge types - {}".format(self._edge_embedding_method),
             self._edge_embedding.values,
+            "Edge types - {}".format(self._edge_embedding_method),
             types=edge_types,
             type_labels=edge_type_names,
             legend_title=legend_title,
