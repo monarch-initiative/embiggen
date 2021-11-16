@@ -17,7 +17,7 @@ from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
-from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
 
