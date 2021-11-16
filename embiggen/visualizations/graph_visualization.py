@@ -98,6 +98,11 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
+        if rotate and n_components != 3:
+            raise ValueError(
+                "The rotation animation is only available when the scatter plot "
+                "is 3D."
+            )
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
         self._edge_embedding_method = edge_embedding_method
@@ -833,7 +838,7 @@ class GraphVisualization:
             self._graph = None
             self._graph_transformer = None
             try:
-                arguments["loc"]="upper right"
+                arguments["loc"] = "upper right"
                 rotate(
                     self._plot_scatter,
                     path="{}.gif".format(title.lower().replace(" ", "_")),
@@ -992,7 +997,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -1317,7 +1322,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         node_types = self._get_flatten_multi_label_and_unknown_node_types(
             self._subsampled_node_ids
@@ -1461,7 +1466,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         components, components_number, _, _ = self._graph.connected_components()
         sizes = np.bincount(components, minlength=components_number)
@@ -1588,7 +1593,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
