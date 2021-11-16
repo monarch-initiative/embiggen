@@ -381,7 +381,9 @@ class GraphVisualization:
                 self._graph.get_node_names_from_edge_id(edge_id)
                 for edge_id in tqdm(
                     self._subsampled_edge_ids,
-                    desc="Retrieving edge node names"
+                    desc="Retrieving edge node names",
+                    leave=False,
+                    dynamic_ncols=True
                 )
             ])
 
@@ -1156,12 +1158,16 @@ class GraphVisualization:
         if subsampled_node_ids is None:
             nodes_iterator = trange(
                 self._graph.get_nodes_number(),
-                desc="Computing flattened multi-label and unknown node types"
+                desc="Computing flattened multi-label and unknown node types",
+                leave=False,
+                dynamic_ncols=True
             )
         else:
             nodes_iterator = tqdm(
                 subsampled_node_ids,
-                desc="Computing subsampled flattened multi-label and unknown node types"
+                desc="Computing subsampled flattened multi-label and unknown node types",
+                leave=False,
+                dynamic_ncols=True
             )
 
         # When we have multiple node types for a given node, we set it to
@@ -1207,12 +1213,16 @@ class GraphVisualization:
         if subsampled_edge_id is None:
             edges_iterator = trange(
                 self._graph.get_directed_edges_number(),
-                desc="Computing flattened unknown edge types"
+                desc="Computing flattened unknown edge types",
+                leave=False,
+                dynamic_ncols=True
             )
         else:
             edges_iterator = tqdm(
                 subsampled_edge_id,
-                desc="Computing subsampled flattened unknown edge types"
+                desc="Computing subsampled flattened unknown edge types",
+                leave=False,
+                dynamic_ncols=True
             )
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
