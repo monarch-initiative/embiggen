@@ -35,7 +35,7 @@ class GraphVisualization:
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(7, 7),
-        dpi=200
+        dpi=120
     )
 
     def __init__(
@@ -220,37 +220,6 @@ class GraphVisualization:
                 "the decomposition target."
             )
         return self._decomposition_method.fit_transform(X)
-
-    def _shuffle(
-        self,
-        *args: List[Union[np.ndarray, pd.DataFrame, None]]
-    ) -> List[np.ndarray]:
-        """Return given arrays shuffled synchronously.
-
-        The reason to shuffle the points is mainly that this avoids for
-        'fake' clusters to appear simply by stacking the points by class
-        artifically according to how the points are sorted.
-
-        Parameters
-        ------------------------
-        *args: List[Union[np.ndarray, pd.DataFrame, None]],
-            The lists to shuffle.
-
-        Returns
-        ------------------------
-        Shuffled data using given random state.
-        """
-        index = np.arange(args[0].shape[0])
-        random_state = np.random.RandomState(  # pylint: disable=no-member
-            seed=self._random_state
-        )
-        random_state.shuffle(index)
-        return [
-            arg[index] if isinstance(arg, np.ndarray)
-            else arg.iloc[index] if isinstance(arg, pd.DataFrame)
-            else None
-            for arg in args
-        ]
 
     def _set_legend(
         self,
@@ -568,13 +537,6 @@ class GraphVisualization:
 
         if test_indices is not None:
             train_test_mask[test_indices] = 2
-
-        points, colors, edgecolors, train_test_mask = self._shuffle(
-            points,
-            colors,
-            edgecolors,
-            train_test_mask
-        )
 
         legend_elements = []
         collections = []
