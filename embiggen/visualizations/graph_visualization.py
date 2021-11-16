@@ -35,7 +35,7 @@ class GraphVisualization:
     )
     DEFAULT_SUBPLOT_KWARGS = dict(
         figsize=(7, 7),
-        dpi=120
+        dpi=200
     )
 
     def __init__(
