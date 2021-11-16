@@ -1350,7 +1350,9 @@ class GraphVisualization:
             self._graph.get_node_type_name_from_node_type_id(node_id)
             for node_id in trange(
                 self._graph.get_node_types_number(),
-                desc="Retrieving graph node types"
+                desc="Retrieving graph node types",
+                leave=False,
+                dynamic_ncols=True
             )
         )
 
@@ -1748,7 +1750,9 @@ class GraphVisualization:
             self._graph.get_edge_type_name_from_edge_type_id(edge_id)
             for edge_id in trange(
                 self._graph.get_edge_types_number(),
-                desc="Retrieving graph edge types"
+                desc="Retrieving graph edge types",
+                leave=False,
+                dynamic_ncols=True
             )
         )
 
