@@ -828,16 +828,27 @@ class GraphVisualization:
         }
 
         if self._rotate:
-            rotate(
-                self._plot_scatter,
-                path="{}.gif".format(title.lower().replace(" ", "_")),
-                loc="upper right",
-                duration=10,
-                fps=24,
-                verbose=True,
-                parallelize=True,
-                **arguments
-            )
+            graph_backup = self._graph
+            graph_transformer = self._graph_transformer
+            self._graph = None
+            self._graph_transformer = None
+            try:
+                rotate(
+                    self._plot_scatter,
+                    path="{}.gif".format(title.lower().replace(" ", "_")),
+                    loc="upper right",
+                    duration=10,
+                    fps=24,
+                    verbose=True,
+                    parallelize=True,
+                    **arguments
+                )
+            except (Exception, KeyboardInterrupt) as e:
+                self._graph = graph_backup
+                self._graph_transformer = graph_transformer
+                raise e
+            self._graph = graph_backup
+            self._graph_transformer = graph_transformer
             figure, axis = None, None
         else:
             figure, axis, _ = self._plot_scatter(**arguments)
