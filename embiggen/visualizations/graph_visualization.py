@@ -257,7 +257,8 @@ class GraphVisualization:
         axes: Axes,
         labels: List[str],
         handles: List[HandlerBase],
-        legend_title: str
+        legend_title: str,
+        loc: str = 'best',
     ):
         """Set the legend with the given values and handles transparency.
 
@@ -272,11 +273,13 @@ class GraphVisualization:
             objects).
         legend_title: str,
             Title for the legend.
+        loc: str = 'best'
+            Position for the legend.
         """
         legend = axes.legend(
             handles=handles,
             labels=sanitize_ml_labels(labels),
-            loc='best',
+            loc=loc,
             title=legend_title,
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
@@ -469,6 +472,7 @@ class GraphVisualization:
         legend_title: str = "",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -499,6 +503,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -672,7 +678,8 @@ class GraphVisualization:
                 axes,
                 labels,
                 legend_elements,
-                legend_title
+                legend_title,
+                loc=loc
             )
 
         if self._n_components == 2:
@@ -706,6 +713,7 @@ class GraphVisualization:
         legend_title: str,
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         predictions: Optional[List[int]] = None,
         k: int = 9,
         figure: Optional[Figure] = None,
@@ -736,6 +744,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         predictions: Optional[List[int]] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -838,6 +848,7 @@ class GraphVisualization:
             legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -924,6 +935,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -955,6 +967,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         annotate_nodes: Union[str, bool] = "auto",
             Whether to show the node name when scattering them.
             The default behaviour, "auto", means that it will
@@ -1006,6 +1020,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1046,6 +1061,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -1074,6 +1090,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1103,6 +1121,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1225,6 +1244,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
         annotate_nodes: Union[str, bool] = "auto",
@@ -1262,6 +1282,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1344,6 +1366,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1370,6 +1393,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -1407,6 +1431,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1463,6 +1489,7 @@ class GraphVisualization:
             legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             k=k,
             figure=figure,
             axes=axes,
@@ -1496,6 +1523,7 @@ class GraphVisualization:
         use_log_scale: bool = True,
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -1529,6 +1557,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1591,6 +1621,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1622,6 +1653,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1658,6 +1690,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1722,6 +1756,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1736,6 +1771,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1764,6 +1800,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1813,6 +1851,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
