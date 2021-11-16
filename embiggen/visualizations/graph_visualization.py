@@ -833,10 +833,10 @@ class GraphVisualization:
             self._graph = None
             self._graph_transformer = None
             try:
+                arguments["loc"]="upper right"
                 rotate(
                     self._plot_scatter,
                     path="{}.gif".format(title.lower().replace(" ", "_")),
-                    loc="upper right",
                     duration=10,
                     fps=24,
                     verbose=True,
