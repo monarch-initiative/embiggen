@@ -61,8 +61,7 @@ class GraphVisualization:
             The supported methods are TSNE and PCA.
         n_components: int = 2,
             Number of components to reduce the image to.
-            Currently, we only support 2D decompositions but we plan
-            to add support for also 3D decompositions.
+            Currently we support 2D, 3D and 4D visualizations.
         rotate: bool = False,
             Whether to create a rotating animation.
         node_embedding_method_name: str = None,
@@ -98,10 +97,10 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
-        if rotate and n_components != 3:
+        if rotate and n_components not in (3, 4):
             raise ValueError(
                 "The rotation animation is only available when the scatter plot "
-                "is 3D."
+                "is 3D and 4D."
             )
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
@@ -120,9 +119,9 @@ class GraphVisualization:
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
 
-        if n_components not in {2, 3}:
+        if n_components not in {2, 3, 4}:
             raise ValueError(
-                "We currently only support 2D and 3D decomposition visualization."
+                "We currently only support 2D, 3D and 4D decomposition visualization."
             )
 
         self._n_components = n_components
