@@ -147,7 +147,7 @@ class GraphVisualization:
                         verbose=True,
                     ),
                     **self._decomposition_kwargs
-                })
+                }).fit_transform
             except (ModuleNotFoundError, NotImplementedError):
                 try:
                     #
@@ -177,7 +177,7 @@ class GraphVisualization:
                                 verbose=True,
                             ),
                             **self._decomposition_kwargs
-                        })
+                        }).fit_transform
                     except (ModuleNotFoundError, OSError, RuntimeError):
                         try:
                             from sklearn.manifold import \
@@ -192,7 +192,7 @@ class GraphVisualization:
                                     square_distances=True,
                                 ),
                                 **self._decomposition_kwargs
-                            })
+                            }).fit_transform
                         except:
                             raise ModuleNotFoundError(
                                 "You do not have installed a supported TSNE "
@@ -217,7 +217,7 @@ class GraphVisualization:
                     random_state=self._random_state,
                 ),
                 **self._decomposition_kwargs
-            })
+            }).fit_transform
         else:
             raise ValueError(
                 "We currently only support PCA and TSNE decomposition methods."
@@ -248,7 +248,7 @@ class GraphVisualization:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
-        return self.get_decomposition_method().fit_transform(X)
+        return self.get_decomposition_method()(X)
 
     def _set_legend(
         self,
