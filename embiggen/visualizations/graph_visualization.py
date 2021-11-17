@@ -168,6 +168,7 @@ class GraphVisualization:
                                 n_jobs=cpu_count(),
                                 random_state=random_state,
                                 verbose=True,
+                                method = "exact" if n_components == 4 else "barnes_hut",
                                 square_distances=True,
                             ),
                             **decomposition_kwargs
