@@ -97,11 +97,6 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
-        if rotate and n_components not in (3, 4):
-            raise ValueError(
-                "The rotation animation is only available when the scatter plot "
-                "is 3D and 4D."
-            )
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
         self._edge_embedding_method = edge_embedding_method
@@ -118,11 +113,6 @@ class GraphVisualization:
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
-
-        if n_components not in {2, 3, 4}:
-            raise ValueError(
-                "We currently only support 2D, 3D and 4D decomposition visualization."
-            )
 
         self._n_components = n_components
         self._decomposition_method = decomposition_method
