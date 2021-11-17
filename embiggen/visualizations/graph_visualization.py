@@ -1,6 +1,6 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional, Callable
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -125,8 +125,11 @@ class GraphVisualization:
             )
 
         self._n_components = n_components
+        self._decomposition_method = decomposition_method
+        self._decomposition_kwargs = decomposition_kwargs
 
-        if decomposition_method == "TSNE":
+    def get_decomposition_method(self) -> Callable:
+        if self._decomposition_method == "TSNE":
             try:
                 # We try to use CUDA tsne if available, but this does not
                 # currently support 3D decomposition. If the user has required a
@@ -134,44 +137,44 @@ class GraphVisualization:
                 # Additionally, in the case that the desired decomposition
                 # uses some not available parameters, such as a cosine distance
                 # metric, we will capture that use case as a NotImplementedError.
-                if n_components != 2:
+                if self._n_components != 2:
                     raise NotImplementedError()
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                self._decomposition_method = CUDATSNE(**{
+                return CUDATSNE(**{
                     **dict(
                         n_components=2,
-                        random_seed=random_state,
+                        random_seed=self._random_state,
                         verbose=True,
                     ),
-                    **decomposition_kwargs
+                    **self._decomposition_kwargs
                 })
             except (ModuleNotFoundError, NotImplementedError):
                 try:
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    self._decomposition_method = MulticoreTSNE(**{
+                    return MulticoreTSNE(**{
                         **dict(
-                            n_components=n_components,
+                            n_components=self._n_components,
                             n_jobs=cpu_count(),
-                            random_state=random_state,
+                            random_state=self._random_state,
                             verbose=True,
                         ),
-                        **decomposition_kwargs
+                        **self._decomposition_kwargs
                     })
                 except (ModuleNotFoundError, OSError, RuntimeError):
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
-                        self._decomposition_method = TSNE(**{
+                        return TSNE(**{
                             **dict(
-                                n_components=n_components,
+                                n_components=self._n_components,
                                 n_jobs=cpu_count(),
-                                random_state=random_state,
+                                random_state=self._random_state,
                                 verbose=True,
-                                method = "exact" if n_components == 4 else "barnes_hut",
+                                method="exact" if self._n_components == 4 else "barnes_hut",
                                 square_distances=True,
                             ),
-                            **decomposition_kwargs
+                            **self._decomposition_kwargs
                         })
                     except:
                         raise ModuleNotFoundError(
@@ -190,13 +193,13 @@ class GraphVisualization:
                             "remember that tsne-cuda, at the time of writing, "
                             "does not support them."
                         )
-        elif decomposition_method == "PCA":
-            self._decomposition_method = PCA(**{
+        elif self._decomposition_method == "PCA":
+            return PCA(**{
                 **dict(
-                    n_components=n_components,
-                    random_state=random_state,
+                    n_components=self._n_components,
+                    random_state=self._random_state,
                 ),
-                **decomposition_kwargs
+                **self._decomposition_kwargs
             })
         else:
             raise ValueError(
@@ -228,7 +231,7 @@ class GraphVisualization:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
-        return self._decomposition_method.fit_transform(X)
+        return self.get_decomposition_method().fit_transform(X)
 
     def _set_legend(
         self,
@@ -1766,7 +1769,8 @@ class GraphVisualization:
 
         return self._plot_types(
             self._edge_embedding.values,
-            self._get_complete_title("Edge types - {}".format(self._edge_embedding_method)),
+            self._get_complete_title(
+                "Edge types - {}".format(self._edge_embedding_method)),
             types=edge_types,
             type_labels=edge_type_names,
             legend_title=legend_title,
@@ -1862,7 +1866,8 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
-            self._get_complete_title("Edge weights - {}".format(self._edge_embedding_method)),
+            self._get_complete_title(
+                "Edge weights - {}".format(self._edge_embedding_method)),
             self._edge_embedding.values,
             colors=weights,
             figure=figure,
