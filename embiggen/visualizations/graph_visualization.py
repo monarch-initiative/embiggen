@@ -159,7 +159,7 @@ class GraphVisualization:
                     #
                     from fitsne import FItSNE
                     return lambda X: FItSNE(
-                        X=X,
+                        X=X.astype(np.float64),
                         no_dims=4,
                         nthreads=cpu_count(),
                         rand_seed=self._random_state,
