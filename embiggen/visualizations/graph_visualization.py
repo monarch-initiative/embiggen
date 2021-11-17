@@ -150,6 +150,13 @@ class GraphVisualization:
                 })
             except (ModuleNotFoundError, NotImplementedError):
                 try:
+                    #
+                    # Fit TSNE can be installed by running:
+                    # 
+                    # conda config --add channels conda-forge #if not already in your channels. Needed for fftw.
+                    # conda install cython numpy fftw
+                    # pip install fitsne
+                    #
                     from fitsne import FItSNE
                     return lambda X: FItSNE(
                         X=X,
