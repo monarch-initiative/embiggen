@@ -150,66 +150,49 @@ class GraphVisualization:
                 }).fit_transform
             except (ModuleNotFoundError, NotImplementedError):
                 try:
-                    #
-                    # Fit TSNE can be installed by running:
-                    # 
-                    # conda config --add channels conda-forge #if not already in your channels. Needed for fftw.
-                    # conda install cython numpy fftw
-                    # pip install fitsne
-                    #
-                    from fitsne import FItSNE
-                    return lambda X: FItSNE(
-                        X=X.astype(np.float64),
-                        no_dims=4,
-                        nthreads=cpu_count(),
-                        rand_seed=self._random_state,
-                        max_iter=1000,
-                    )
-                except:
+                    from MulticoreTSNE import \
+                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                    return MulticoreTSNE(**{
+                        **dict(
+                            n_components=self._n_components,
+                            n_jobs=cpu_count(),
+                            random_state=self._random_state,
+                            verbose=True,
+                        ),
+                        **self._decomposition_kwargs
+                    }).fit_transform
+                except (ModuleNotFoundError, OSError, RuntimeError):
                     try:
-                        from MulticoreTSNE import \
-                            MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                        return MulticoreTSNE(**{
+                        from sklearn.manifold import \
+                            TSNE  # pylint: disable=import-outside-toplevel
+                        return TSNE(**{
                             **dict(
                                 n_components=self._n_components,
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
                                 verbose=True,
+                                method="exact" if self._n_components == 4 else "barnes_hut",
+                                square_distances=True,
                             ),
                             **self._decomposition_kwargs
                         }).fit_transform
-                    except (ModuleNotFoundError, OSError, RuntimeError):
-                        try:
-                            from sklearn.manifold import \
-                                TSNE  # pylint: disable=import-outside-toplevel
-                            return TSNE(**{
-                                **dict(
-                                    n_components=self._n_components,
-                                    n_jobs=cpu_count(),
-                                    random_state=self._random_state,
-                                    verbose=True,
-                                    method="exact" if self._n_components == 4 else "barnes_hut",
-                                    square_distances=True,
-                                ),
-                                **self._decomposition_kwargs
-                            }).fit_transform
-                        except:
-                            raise ModuleNotFoundError(
-                                "You do not have installed a supported TSNE "
-                                "decomposition algorithm. Depending on your use case, "
-                                "we suggest you install tsne-cuda if your graph is "
-                                "very big (in the millions of nodes) if you have access "
-                                "to a compatible GPU system.\n"
-                                "Alternatively, we suggest (and support) MulticoreTSNE, "
-                                "which tends to be easier to install, and is significantly "
-                                "faster than the Sklearn implementation.\n"
-                                "Alternatively, we suggest (and support) MulticoreTSNE, "
-                                "which tends to be easier to install, and is significantly "
-                                "faster than the Sklearn implementation.\n"
-                                "If you intend to do 3D decompositions, "
-                                "remember that tsne-cuda, at the time of writing, "
-                                "does not support them."
-                            )
+                    except:
+                        raise ModuleNotFoundError(
+                            "You do not have installed a supported TSNE "
+                            "decomposition algorithm. Depending on your use case, "
+                            "we suggest you install tsne-cuda if your graph is "
+                            "very big (in the millions of nodes) if you have access "
+                            "to a compatible GPU system.\n"
+                            "Alternatively, we suggest (and support) MulticoreTSNE, "
+                            "which tends to be easier to install, and is significantly "
+                            "faster than the Sklearn implementation.\n"
+                            "Alternatively, we suggest (and support) MulticoreTSNE, "
+                            "which tends to be easier to install, and is significantly "
+                            "faster than the Sklearn implementation.\n"
+                            "If you intend to do 3D decompositions, "
+                            "remember that tsne-cuda, at the time of writing, "
+                            "does not support them."
+                        )
         elif self._decomposition_method == "PCA":
             return PCA(**{
                 **dict(
