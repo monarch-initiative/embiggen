@@ -872,7 +872,7 @@ class GraphVisualization:
                 rotate(
                     self._plot_scatter,
                     path="{}.gif".format(title.lower().replace(" ", "")),
-                    duration=10,
+                    duration=15,
                     fps=24,
                     verbose=True,
                     parallelize=True,
