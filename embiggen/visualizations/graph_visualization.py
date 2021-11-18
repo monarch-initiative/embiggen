@@ -567,7 +567,7 @@ class GraphVisualization:
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
-        train_test_mask = np.zeros((points.shape[0]))
+        train_test_mask = np.zeros((points.shape[0], ))
 
         if train_indices is not None:
             train_test_mask[train_indices] = 1
@@ -1029,8 +1029,8 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
-            self._get_complete_title("Nodes embedding"),
             self._node_embedding.values,
+            self._get_complete_title("Nodes embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1131,8 +1131,8 @@ class GraphVisualization:
             )
 
         figure, axis = self._plot_scatter(
-            self._get_complete_title("Edges embedding"),
             self._edge_embedding,
+            self._get_complete_title("Edges embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1638,8 +1638,8 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
-            self._get_complete_title("Node degrees"),
             self._node_embedding.values,
+            self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
             axes=axes,
@@ -1877,9 +1877,9 @@ class GraphVisualization:
             )
 
         returned_values = self._plot_scatter(
+            self._edge_embedding.values,
             self._get_complete_title(
                 "Edge weights - {}".format(self._edge_embedding_method)),
-            self._edge_embedding.values,
             colors=weights,
             figure=figure,
             axes=axes,
