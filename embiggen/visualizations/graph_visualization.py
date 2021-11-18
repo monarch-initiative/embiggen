@@ -707,7 +707,7 @@ class GraphVisualization:
                     self._video_format
                 )
                 rotate(
-                    self._wrapped_plot_scatter,
+                    self._plot_scatter,
                     path=path,
                     duration=self._duration,
                     fps=self._fps,
