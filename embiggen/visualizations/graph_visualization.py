@@ -722,8 +722,7 @@ class GraphVisualization:
             self._graph = graph_backup
             self._graph_transformer = graph_transformer
             return display_video_at_path(path)
-        else:
-            return self._wrapped_plot_scatter(**kwargs)
+        return self._wrapped_plot_scatter(**kwargs)
 
     def _plot_types(
         self,
@@ -1131,7 +1130,7 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        figure, axis = self._wrapped_plot_scatter(
+        return self._wrapped_plot_scatter(
             points=self._edge_embedding,
             title=self._get_complete_title("Edges embedding"),
             figure=figure,
@@ -1146,8 +1145,6 @@ class GraphVisualization:
             loc=loc,
             **kwargs
         )
-
-        return figure, axis
 
     def _get_flatten_multi_label_and_unknown_node_types(
         self,
@@ -1665,17 +1662,15 @@ class GraphVisualization:
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
-        else:
-            return None
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_edge_types(
         self,
@@ -1904,7 +1899,9 @@ class GraphVisualization:
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
-            return figure, axes
+            returned_values = figure, axes
+
+        return returned_values
 
     def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
