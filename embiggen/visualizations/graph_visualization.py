@@ -1030,8 +1030,8 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            self._node_embedding.values,
-            self._get_complete_title("Nodes embedding"),
+            points=self._node_embedding.values,
+            title=self._get_complete_title("Nodes embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1132,8 +1132,8 @@ class GraphVisualization:
             )
 
         figure, axis = self._wrapped_plot_scatter(
-            self._edge_embedding,
-            self._get_complete_title("Edges embedding"),
+            points=self._edge_embedding,
+            title=self._get_complete_title("Edges embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1639,8 +1639,8 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            self._node_embedding.values,
-            self._get_complete_title("Node degrees"),
+            points=self._node_embedding.values,
+            title=self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
             axes=axes,
@@ -1878,8 +1878,8 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            self._edge_embedding.values,
-            self._get_complete_title(
+            points=self._edge_embedding.values,
+            title=self._get_complete_title(
                 "Edge weights - {}".format(self._edge_embedding_method)),
             colors=weights,
             figure=figure,
