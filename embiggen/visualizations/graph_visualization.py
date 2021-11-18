@@ -694,6 +694,37 @@ class GraphVisualization:
             return figure, axes, collections
         return figure, axes
 
+    def _wrapped_plot_scatter(self, **kwargs):
+        if self._rotate:
+            graph_backup = self._graph
+            graph_transformer = self._graph_transformer
+            self._graph = None
+            self._graph_transformer = None
+            try:
+                kwargs["loc"] = "upper right"
+                path = "{}.{}".format(
+                    kwargs["title"].lower().replace(" ", ""),
+                    self._video_format
+                )
+                rotate(
+                    self._wrapped_plot_scatter,
+                    path=path,
+                    duration=self._duration,
+                    fps=self._fps,
+                    verbose=True,
+                    parallelize=self._compute_frames_in_parallel,
+                    **kwargs
+                )
+            except (Exception, KeyboardInterrupt) as e:
+                self._graph = graph_backup
+                self._graph_transformer = graph_transformer
+                raise e
+            self._graph = graph_backup
+            self._graph_transformer = graph_transformer
+            return display_video_at_path(path)
+        else:
+            return self._wrapped_plot_scatter(**kwargs)
+
     def _plot_types(
         self,
         points: np.ndarray,
@@ -829,7 +860,7 @@ class GraphVisualization:
         if k < number_of_types:
             type_labels.append(other_label)
 
-        arguments = {
+        return self._wrapped_plot_scatter(**{
             **dict(
                 points=points,
                 title=title,
@@ -849,37 +880,7 @@ class GraphVisualization:
                 test_marker=test_marker,
             ),
             **kwargs
-        }
-
-        if self._rotate:
-            graph_backup = self._graph
-            graph_transformer = self._graph_transformer
-            self._graph = None
-            self._graph_transformer = None
-            try:
-                arguments["loc"] = "upper right"
-                path = "{}.{}".format(
-                    title.lower().replace(" ", ""),
-                    self._video_format
-                )
-                rotate(
-                    self._plot_scatter,
-                    path=path,
-                    duration=self._duration,
-                    fps=self._fps,
-                    verbose=True,
-                    parallelize=self._compute_frames_in_parallel,
-                    **arguments
-                )
-            except (Exception, KeyboardInterrupt) as e:
-                self._graph = graph_backup
-                self._graph_transformer = graph_transformer
-                raise e
-            self._graph = graph_backup
-            self._graph_transformer = graph_transformer
-            return display_video_at_path(path)
-        else:
-            return self._plot_scatter(**arguments)
+        })
 
     def plot_edge_segments(
         self,
@@ -1028,7 +1029,7 @@ class GraphVisualization:
                 **kwargs
             )
 
-        returned_values = self._plot_scatter(
+        returned_values = self._wrapped_plot_scatter(
             self._node_embedding.values,
             self._get_complete_title("Nodes embedding"),
             figure=figure,
@@ -1130,7 +1131,7 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        figure, axis = self._plot_scatter(
+        figure, axis = self._wrapped_plot_scatter(
             self._edge_embedding,
             self._get_complete_title("Edges embedding"),
             figure=figure,
@@ -1637,7 +1638,7 @@ class GraphVisualization:
                 **kwargs
             )
 
-        returned_values = self._plot_scatter(
+        returned_values = self._wrapped_plot_scatter(
             self._node_embedding.values,
             self._get_complete_title("Node degrees"),
             colors=degrees,
@@ -1876,7 +1877,7 @@ class GraphVisualization:
                 dtype=np.uint32
             )
 
-        returned_values = self._plot_scatter(
+        returned_values = self._wrapped_plot_scatter(
             self._edge_embedding.values,
             self._get_complete_title(
                 "Edge weights - {}".format(self._edge_embedding_method)),
