@@ -49,7 +49,7 @@ setup(
         "tqdm",
         "matplotlib",
         "sklearn",
-        "ddd_subplots>=1.0.15",
+        "ddd_subplots>=1.0.16",
         "sanitize_ml_labels>=1.0.27",
         "keras_mixed_sequence>=1.0.27",
         "extra_keras_metrics>=2.0.3",
