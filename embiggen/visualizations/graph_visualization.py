@@ -49,7 +49,7 @@ class GraphVisualization:
         duration: int = 15,
         fps: int = 24,
         node_embedding_method_name: str = None,
-        edge_embedding_method: str = "Hadamard",
+        edge_embedding_method: str = "Concatenate",
         subsample_points: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
@@ -79,7 +79,7 @@ class GraphVisualization:
         node_embedding_method_name: str = None,
             Name of the node embedding method used.
             If provided, it is added to the images titles.
-        edge_embedding_method: str = "Hadamard",
+        edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         subsample_points: int = 20_000,
