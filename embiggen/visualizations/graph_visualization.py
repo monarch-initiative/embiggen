@@ -44,6 +44,7 @@ class GraphVisualization:
         decomposition_method: str = "TSNE",
         n_components: int = 2,
         rotate: bool = False,
+        video_format: str = "mp4",
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
@@ -64,6 +65,8 @@ class GraphVisualization:
             Currently we support 2D, 3D and 4D visualizations.
         rotate: bool = False,
             Whether to create a rotating animation.
+        video_format: str = "mp4"
+            What video format to use for the animations.
         node_embedding_method_name: str = None,
             Name of the node embedding method used.
             If provided, it is added to the images titles.
@@ -110,6 +113,7 @@ class GraphVisualization:
         self._subsampled_edge_ids = None
         self._subsample_points = subsample_points
         self._random_state = random_state
+        self._video_format = video_format
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -844,7 +848,10 @@ class GraphVisualization:
                 arguments["loc"] = "upper right"
                 rotate(
                     self._plot_scatter,
-                    path="{}.webm".format(title.lower().replace(" ", "")),
+                    path="{}.{}".format(
+                        title.lower().replace(" ", ""),
+                        self._video_format
+                    ),
                     duration=15,
                     fps=24,
                     verbose=True,
