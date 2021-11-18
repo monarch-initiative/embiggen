@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from ddd_subplots import subplots as subplots_3d, rotate
+from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -46,6 +46,8 @@ class GraphVisualization:
         rotate: bool = False,
         video_format: str = "webm",
         compute_frames_in_parallel: bool = True,
+        duration: int = 15,
+        fps: int = 24,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Hadamard",
         subsample_points: int = 20_000,
@@ -70,6 +72,10 @@ class GraphVisualization:
             What video format to use for the animations.
         compute_frames_in_parallel: bool = True
             Whether to compute the frames in parallel.
+        duration: int = 15,
+            Duration of the animation in seconds.
+        fps: int = 24,
+            Number of frames per second in animations.
         node_embedding_method_name: str = None,
             Name of the node embedding method used.
             If provided, it is added to the images titles.
@@ -118,6 +124,8 @@ class GraphVisualization:
         self._random_state = random_state
         self._video_format = video_format
         self._compute_frames_in_parallel = compute_frames_in_parallel
+        self._duration = duration
+        self._fps = fps
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -707,7 +715,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         **kwargs
-    ) -> Tuple[Figure, Axes]:
+    ) -> Optional[Tuple[Figure, Axes]]:
         """Plot common node types of provided graph.
 
         Parameters
@@ -850,14 +858,15 @@ class GraphVisualization:
             self._graph_transformer = None
             try:
                 arguments["loc"] = "upper right"
+                path = "{}.{}".format(
+                    title.lower().replace(" ", ""),
+                    self._video_format
+                )
                 rotate(
                     self._plot_scatter,
-                    path="{}.{}".format(
-                        title.lower().replace(" ", ""),
-                        self._video_format
-                    ),
-                    duration=15,
-                    fps=24,
+                    path=path,
+                    duration=self._duration,
+                    fps=self._fps,
                     verbose=True,
                     parallelize=self._compute_frames_in_parallel,
                     **arguments
@@ -868,11 +877,9 @@ class GraphVisualization:
                 raise e
             self._graph = graph_backup
             self._graph_transformer = graph_transformer
-            figure, axis = None, None
+            return display_video_at_path(path)
         else:
-            figure, axis = self._plot_scatter(**arguments)
-
-        return figure, axis
+            return self._plot_scatter(**arguments)
 
     def plot_edge_segments(
         self,
@@ -1021,7 +1028,7 @@ class GraphVisualization:
                 **kwargs
             )
 
-        figure, axes = self._plot_scatter(
+        returned_values = self._plot_scatter(
             self._get_complete_title("Nodes embedding"),
             self._node_embedding.values,
             figure=figure,
@@ -1038,13 +1045,14 @@ class GraphVisualization:
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def annotate_nodes(
         self,
@@ -1371,7 +1379,7 @@ class GraphVisualization:
             dtype=str,
         )
 
-        figure, axes = self._plot_types(
+        returned_values = self._plot_types(
             self._node_embedding.values,
             self._get_complete_title("Node types"),
             types=node_types,
@@ -1394,13 +1402,14 @@ class GraphVisualization:
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_connected_components(
         self,
@@ -1498,7 +1507,7 @@ class GraphVisualization:
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
-        figure, axes = self._plot_types(
+        returned_values = self._plot_types(
             self._node_embedding.values,
             self._get_complete_title("Components"),
             types=components,
@@ -1526,13 +1535,14 @@ class GraphVisualization:
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_node_degrees(
         self,
