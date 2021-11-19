@@ -424,7 +424,7 @@ class GraphVisualization:
         ])
 
         self._graph_transformer.fit(node_embedding)
-        edge_embedding = self._graph_transformer.transform(self._subsampled_negative_edge_node_ids)
+        edge_embedding = self._graph_transformer.transform(edge_names)
         self._negative_edge_embedding = pd.DataFrame(
             self.decompose(edge_embedding),
             index=edge_names
