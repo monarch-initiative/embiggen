@@ -1225,8 +1225,8 @@ class GraphVisualization:
             ]),
             title=self._get_complete_title("Positive and negative edges"),
             types=np.concatenate([
-                np.ones(self._edge_embedding.shape[0]),
-                np.zeros(self._negative_edge_embedding.shape[0]),
+                np.ones(self._edge_embedding.shape[0], dtype="int64"),
+                np.zeros(self._negative_edge_embedding.shape[0], dtype="int64"),
             ]),
             type_labels=np.array([
                 "Positive edges",
