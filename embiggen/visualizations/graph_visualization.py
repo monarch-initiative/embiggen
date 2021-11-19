@@ -50,7 +50,8 @@ class GraphVisualization:
         fps: int = 24,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Concatenate",
-        subsample_points: int = 20_000,
+        subsample_nodes_number: int = 20_000,
+        subsample_edges_number: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -82,7 +83,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        subsample_points: int = 20_000,
+        subsample_nodes_number: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
@@ -95,6 +96,12 @@ class GraphVisualization:
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
             If None is given, no subsampling is executed.
+        subsample_edges_number: int = 20_000,
+            Number of edges to subsample.
+            Note that this is used both for the positive and negative edges.
+            The same considerations described for the subsampled nodes number
+            also apply for the edges number.
+            Not subsampling the edges in most graphs is a poor life choice.
         random_state: int = 42,
             The random state to reproduce the visualizations.
         decomposition_kwargs: Optional[Dict] = None,
@@ -117,10 +124,12 @@ class GraphVisualization:
         )
         self._node_transformer = NodeTransformer()
         self._node_embedding_method_name = node_embedding_method_name
-        self._node_mapping = self._node_embedding = self._edge_embedding = None
+        self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
-        self._subsample_points = subsample_points
+        self._subsampled_negative_edge_node_ids = None
+        self._subsample_nodes_number = subsample_nodes_number
+        self._subsample_edges_number = subsample_edges_number
         self._random_state = random_state
         self._video_format = video_format
         self._compute_frames_in_parallel = compute_frames_in_parallel
@@ -295,14 +304,14 @@ class GraphVisualization:
         # Retrieve the nodes
         node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
+        if self._subsample_nodes_number is not None and self._graph.get_nodes_number() > self._subsample_nodes_number:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
             if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
                 # We compute the indices
                 self._subsampled_node_ids, _ = next(StratifiedShuffleSplit(
                     n_splits=1,
-                    train_size=self._subsample_points,
+                    train_size=self._subsample_nodes_number,
                     random_state=self._random_state
                 ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             else:
@@ -310,7 +319,7 @@ class GraphVisualization:
                 self._subsampled_node_ids = np.random.randint(
                     low=0,
                     high=self._graph.get_nodes_number(),
-                    size=self._subsample_points
+                    size=self._subsample_nodes_number
                 )
 
             # And sample the nodes
@@ -326,41 +335,16 @@ class GraphVisualization:
 
     def fit_transform_edges(
         self,
-        node_embedding: Optional[pd.DataFrame] = None,
-        edge_embedding: Optional[pd.DataFrame] = None,
+        node_embedding: pd.DataFrame
     ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Optional[pd.DataFrame] = None,
+        node_embedding: pd.DataFrame
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
-        node_embedding: Optional[pd.DataFrame] = None,
-            Edge embedding.
-
-        Raises
-        -------------------------
-        ValueError,
-            If neither the node embedding nor the edge embedding have
-            been provided. You need to provide exactly one of the two.
-        ValueError,
-            If the shape of the given node embedding does not match
-            the number of nodes in the graph.
-        ValueError,
-            If the shape of the given node embedding does not match
-            the number of edges in the graph.   
         """
-        if node_embedding is None and edge_embedding is None:
-            raise ValueError(
-                "You need to provide either the node embedding or the "
-                "edge embedding."
-            )
-        if node_embedding is not None and edge_embedding is not None:
-            raise ValueError(
-                "You need to provide either the node embedding or the "
-                "edge embedding. You cannot provide both at once."
-            )
-        if node_embedding is not None and node_embedding.shape[0] != self._graph.get_nodes_number():
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
                  "does not match the number of nodes in the graph {}.").format(
@@ -368,23 +352,14 @@ class GraphVisualization:
                     self._graph.get_nodes_number()
                 )
             )
-        if edge_embedding is not None and edge_embedding.shape[0] != self._graph.get_directed_edges_number():
-            raise ValueError(
-                ("The number of rows provided with the given edge embedding {} "
-                 "does not match the number of directed edges in the graph {}.").format(
-                    edge_embedding.shape[0],
-                    self._graph.get_directed_edges_number()
-                )
-            )
-
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and self._graph.get_directed_edges_number() > self._subsample_points:
+        if self._subsample_edges_number is not None and self._graph.get_directed_edges_number() > self._subsample_edges_number:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
             self._subsampled_edge_ids = np.random.randint(
                 low=0,
                 high=self._graph.get_directed_edges_number(),
-                size=self._subsample_points
+                size=self._subsample_edges_number
             )
             edge_names = np.array([
                 self._graph.get_node_names_from_edge_id(edge_id)
@@ -399,6 +374,52 @@ class GraphVisualization:
         self._graph_transformer.fit(node_embedding)
         edge_embedding = self._graph_transformer.transform(edge_names)
         self._edge_embedding = pd.DataFrame(
+            self.decompose(edge_embedding),
+            index=edge_names
+        )
+
+    def fit_transform_negative_edges(
+        self,
+        node_embedding: pd.DataFrame,
+    ):
+        """Executes fitting for plotting negative edge embeddings.
+
+        Parameters
+        -------------------------
+        node_embedding: pd.DataFrame
+            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        """
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+        # If necessary, we proceed with the subsampling
+        self._subsampled_negative_edge_node_ids = np.random.randint(
+            low=0,
+            high=self._graph.get_nodes_number(),
+            size=(self._subsampled_negative_edge_node_ids, 2)
+        )
+
+        edge_names = np.array([
+            (
+                self._graph.get_node_name_from_node_id(src_node_id),
+                self._graph.get_node_name_from_node_id(dst_node_id),
+            )
+            for (src_node_id, dst_node_id) in tqdm(
+                self._subsampled_negative_edge_node_ids,
+                desc="Retrieving negative edge node names",
+                leave=False,
+                dynamic_ncols=True
+            )
+        ])
+
+        self._graph_transformer.fit(node_embedding)
+        edge_embedding = self._graph_transformer.transform(self._subsampled_negative_edge_node_ids)
+        self._negative_edge_embedding = pd.DataFrame(
             self.decompose(edge_embedding),
             index=edge_names
         )
@@ -1146,6 +1167,75 @@ class GraphVisualization:
             **kwargs
         )
 
+    def plot_positive_and_negative_edges(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Plot edge embedding of provided graph.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._edge_embedding is None or self._negative_edge_embedding is None:
+            raise ValueError(
+                "Positive and negative edge fitting must be executed before plot."
+            )
+
+        return self._plot_types(
+            points=np.vstack([
+                self._edge_embedding.values,
+                self._negative_edge_embedding.values
+            ]),
+            title=self._get_complete_title("Positive and negative edges"),
+            types=np.concatenate([
+                np.ones(self._edge_embedding.shape[0]),
+                np.zeros(self._negative_edge_embedding.shape[0]),
+            ]),
+            type_labels=np.array([
+                "Positive edges",
+                "Negative edges"
+            ]),
+            legend_title="Edges",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs
+        )
+
     def _get_flatten_multi_label_and_unknown_node_types(
         self,
         subsampled_node_ids: Optional[np.ndarray] = None
@@ -1796,6 +1886,8 @@ class GraphVisualization:
             loc=loc,
             **kwargs
         )
+
+    
 
     def plot_edge_weights(
         self,
