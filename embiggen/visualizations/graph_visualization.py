@@ -722,7 +722,7 @@ class GraphVisualization:
             self._graph = graph_backup
             self._graph_transformer = graph_transformer
             return display_video_at_path(path)
-        return self._wrapped_plot_scatter(**kwargs)
+        return self._plot_scatter(**kwargs)
 
     def _plot_types(
         self,
