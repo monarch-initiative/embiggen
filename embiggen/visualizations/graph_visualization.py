@@ -728,7 +728,7 @@ class GraphVisualization:
             self._graph = None
             self._graph_transformer = None
             try:
-                kwargs["loc"] = "upper right"
+                kwargs["loc"] = "lower right"
                 path = "{}.{}".format(
                     kwargs["title"].lower().replace(" ", ""),
                     self._video_format
@@ -1223,7 +1223,7 @@ class GraphVisualization:
                 self._edge_embedding.values,
                 self._negative_edge_embedding.values
             ]),
-            title=self._get_complete_title("Positive and negative edges"),
+            title=self._get_complete_title("Positive & negative edges"),
             types=np.concatenate([
                 np.ones(self._edge_embedding.shape[0], dtype="int64"),
                 np.zeros(self._negative_edge_embedding.shape[0], dtype="int64"),
