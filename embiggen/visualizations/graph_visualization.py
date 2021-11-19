@@ -52,6 +52,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Concatenate",
         subsample_nodes_number: int = 20_000,
         subsample_edges_number: int = 20_000,
+        subsample_negative_edges_number: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -98,7 +99,11 @@ class GraphVisualization:
             If None is given, no subsampling is executed.
         subsample_edges_number: int = 20_000,
             Number of edges to subsample.
-            Note that this is used both for the positive and negative edges.
+            The same considerations described for the subsampled nodes number
+            also apply for the edges number.
+            Not subsampling the edges in most graphs is a poor life choice.
+        subsample_negative_edges_number: int = 20_000,
+            Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
@@ -130,6 +135,7 @@ class GraphVisualization:
         self._subsampled_negative_edge_node_ids = None
         self._subsample_nodes_number = subsample_nodes_number
         self._subsample_edges_number = subsample_edges_number
+        self._subsample_negative_edges_number = subsample_negative_edges_number
         self._random_state = random_state
         self._video_format = video_format
         self._compute_frames_in_parallel = compute_frames_in_parallel
@@ -401,7 +407,7 @@ class GraphVisualization:
         self._subsampled_negative_edge_node_ids = np.random.randint(
             low=0,
             high=self._graph.get_nodes_number(),
-            size=(self._subsampled_negative_edge_node_ids, 2)
+            size=(self._subsample_negative_edges_number, 2)
         )
 
         edge_names = np.array([
