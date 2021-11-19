@@ -723,8 +723,19 @@ class GraphVisualization:
 
     def _wrapped_plot_scatter(self, **kwargs):
         if self._rotate:
+            # These backups are needed for two reasons:
+            # 1) Processes in python necessarily copy the instance objects for each process
+            #    and this can cause a considerable memery peak to occour.
+            # 2) Some of the objects considered are not picklable, such as, at the time of writing
+            #    the lambdas used in the graph transformer or the graph object itself.
             graph_backup = self._graph
             graph_transformer = self._graph_transformer
+            node_embedding = self._node_embedding
+            edge_embedding = self._edge_embedding
+            negative_edge_embedding = self._negative_edge_embedding
+            self._node_embedding = None
+            self._edge_embedding = None
+            self._negative_edge_embedding = None
             self._graph = None
             self._graph_transformer = None
             try:
@@ -743,9 +754,15 @@ class GraphVisualization:
                     **kwargs
                 )
             except (Exception, KeyboardInterrupt) as e:
+                self._node_embedding = node_embedding
+                self._edge_embedding = edge_embedding
+                self._negative_edge_embedding = negative_edge_embedding
                 self._graph = graph_backup
                 self._graph_transformer = graph_transformer
                 raise e
+            self._node_embedding = node_embedding
+            self._edge_embedding = edge_embedding
+            self._negative_edge_embedding = negative_edge_embedding
             self._graph = graph_backup
             self._graph_transformer = graph_transformer
             return display_video_at_path(path)
