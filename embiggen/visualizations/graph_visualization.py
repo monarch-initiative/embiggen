@@ -233,6 +233,34 @@ class GraphVisualization:
                 "We currently only support PCA and TSNE decomposition methods."
             )
 
+    def _shuffle(
+        self,
+        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+    ) -> List[np.ndarray]:
+        """Return given arrays shuffled synchronously.
+        The reason to shuffle the points is mainly that this avoids for
+        'fake' clusters to appear simply by stacking the points by class
+        artifically according to how the points are sorted.
+        Parameters
+        ------------------------
+        *args: List[Union[np.ndarray, pd.DataFrame, None]],
+            The lists to shuffle.
+        Returns
+        ------------------------
+        Shuffled data using given random state.
+        """
+        index = np.arange(args[0].shape[0])
+        random_state = np.random.RandomState(  # pylint: disable=no-member
+            seed=self._random_state
+        )
+        random_state.shuffle(index)
+        return [
+            arg[index] if isinstance(arg, np.ndarray)
+            else arg.iloc[index] if isinstance(arg, pd.DataFrame)
+            else None
+            for arg in args
+        ]
+
     def decompose(self, X: np.ndarray) -> np.ndarray:
         """Return requested decomposition of given array.
 
@@ -1241,16 +1269,26 @@ class GraphVisualization:
                 "Positive and negative edge fitting must be executed before plot."
             )
 
+        points = np.vstack([
+            self._edge_embedding.values,
+            self._negative_edge_embedding.values
+        ])
+
+        types = np.concatenate([
+            np.ones(self._edge_embedding.shape[0], dtype="int64"),
+            np.zeros(
+                self._negative_edge_embedding.shape[0], dtype="int64"),
+        ])
+
+        points, types = self._shuffle(points, types)
+
         return self._plot_types(
             points=np.vstack([
                 self._edge_embedding.values,
                 self._negative_edge_embedding.values
             ]),
             title=self._get_complete_title("Positive & negative edges"),
-            types=np.concatenate([
-                np.ones(self._edge_embedding.shape[0], dtype="int64"),
-                np.zeros(self._negative_edge_embedding.shape[0], dtype="int64"),
-            ]),
+            types=types,
             type_labels=np.array([
                 "Positive edges",
                 "Negative edges"
@@ -1917,8 +1955,6 @@ class GraphVisualization:
             loc=loc,
             **kwargs
         )
-
-    
 
     def plot_edge_weights(
         self,
