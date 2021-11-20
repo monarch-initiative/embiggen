@@ -169,7 +169,7 @@ class GraphVisualization:
             return UMAP(**{
                 **dict(
                     n_components=self._n_components,
-                    random_seed=self._random_state,
+                    random_state=self._random_state,
                     transform_seed=self._random_state,
                     n_jobs=cpu_count(),
                     tqdm_kwds=dict(
