@@ -167,7 +167,7 @@ class GraphVisualization:
             # ````
             from umap import UMAP
             return UMAP(**{
-                dict(
+                **dict(
                     n_components=self._n_components,
                     random_seed=self._random_state,
                     transform_seed=self._random_state,
