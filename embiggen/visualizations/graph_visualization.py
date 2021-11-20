@@ -65,7 +65,7 @@ class GraphVisualization:
             The graph to visualize.
         decomposition_method: str = "TSNE",
             The decomposition method to use.
-            The supported methods are TSNE and PCA.
+            The supported methods are UMAP, TSNE and PCA.
         n_components: int = 2,
             Number of components to reduce the image to.
             Currently we support 2D, 3D and 4D visualizations.
@@ -161,21 +161,21 @@ class GraphVisualization:
             # with the Embiggen package because it has multiple possible
             # installation options that are left to the user.
             # It can be, generally speaking, installed using:
-            # 
+            #
             # ```bash
             # pip install umap-learn
             # ````
             from umap import UMAP
-            return UMAP(**{
+            return UMAP(**dict(
                 n_components=self._n_components,
                 random_seed=self._random_state,
                 transform_seed=self._random_state,
                 n_jobs=cpu_count(),
-                tqdm_kwds={
+                tqdm_kwds=dict(
                     desc="Computing UMAP",
                     leave=False,
                     dynamic_ncols=True
-                },
+                ),
                 verbose=True,
             }).fit_transform
         elif self._decomposition_method == "TSNE":
