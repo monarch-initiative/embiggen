@@ -166,17 +166,20 @@ class GraphVisualization:
             # pip install umap-learn
             # ````
             from umap import UMAP
-            return UMAP(**dict(
-                n_components=self._n_components,
-                random_seed=self._random_state,
-                transform_seed=self._random_state,
-                n_jobs=cpu_count(),
-                tqdm_kwds=dict(
-                    desc="Computing UMAP",
-                    leave=False,
-                    dynamic_ncols=True
+            return UMAP(**{
+                dict(
+                    n_components=self._n_components,
+                    random_seed=self._random_state,
+                    transform_seed=self._random_state,
+                    n_jobs=cpu_count(),
+                    tqdm_kwds=dict(
+                        desc="Computing UMAP",
+                        leave=False,
+                        dynamic_ncols=True
+                    ),
+                    verbose=True,
                 ),
-                verbose=True,
+                **self._decomposition_kwargs
             }).fit_transform
         elif self._decomposition_method == "TSNE":
             try:
