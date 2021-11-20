@@ -545,6 +545,13 @@ class GraphVisualization:
         return figure, axes
 
     def _get_complete_title(self, initial_title: str) -> str:
+        """Return the complete title for the figure.
+        
+        Parameters
+        -------------------
+        initial_title: str
+            Initial title to incorporate.
+        """
         title = "{} - {}".format(
             initial_title,
             self._graph_name,
