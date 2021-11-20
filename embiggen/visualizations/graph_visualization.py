@@ -551,8 +551,9 @@ class GraphVisualization:
         )
 
         if self._node_embedding_method_name is not None:
-            title = "{} - {}".format(
+            title = "{} ({})- {}".format(
                 title,
+                self._decomposition_method,
                 self._node_embedding_method_name
             )
 
