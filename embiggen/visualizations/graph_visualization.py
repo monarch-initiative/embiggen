@@ -2169,7 +2169,8 @@ class GraphVisualization:
     def plot_node_degree_distribution(
         self,
         fig: Optional[Figure] = None,
-        axis: Optional[Figure] = None
+        axis: Optional[Figure] = None,
+        apply_tight_layout: bool = True
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
 
@@ -2181,7 +2182,9 @@ class GraphVisualization:
         axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
         """
         if axis is None:
             fig, axis = plt.subplots(figsize=(5, 5))
@@ -2190,13 +2193,15 @@ class GraphVisualization:
         axis.set_xlabel("Nodes sorted by degree")
         axis.set_title("Degrees distribution for {}".format(self._graph_name))
         self._annotate_top_nodes(axis)
-        fig.tight_layout()
+        if apply_tight_layout:
+            fig.tight_layout()
         return fig, axis
 
     def plot_edge_weight_distribution(
         self,
         fig: Optional[Figure] = None,
-        axis: Optional[Figure] = None
+        axis: Optional[Figure] = None,
+        apply_tight_layout: bool = True
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
 
@@ -2208,7 +2213,9 @@ class GraphVisualization:
         axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
         """
         if axis is None:
             fig, axis = plt.subplots(figsize=(5,5))
@@ -2216,5 +2223,6 @@ class GraphVisualization:
         axis.set_ylabel("Number of edges")
         axis.set_xlabel("Sorted weights")
         axis.set_title("Weights distribution for {}".format(self._graph_name))
-        fig.tight_layout()
+        if apply_tight_layout:
+            fig.tight_layout()
         return fig, axis
