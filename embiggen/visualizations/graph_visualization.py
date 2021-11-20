@@ -156,7 +156,29 @@ class GraphVisualization:
         self._decomposition_kwargs = decomposition_kwargs
 
     def get_decomposition_method(self) -> Callable:
-        if self._decomposition_method == "TSNE":
+        if self._decomposition_method == "UMAP":
+            # The UMAP package graph is not automatically installed
+            # with the Embiggen package because it has multiple possible
+            # installation options that are left to the user.
+            # It can be, generally speaking, installed using:
+            # 
+            # ```bash
+            # pip install umap-learn
+            # ````
+            from umap import UMAP
+            return UMAP(**{
+                n_components=self._n_components,
+                random_seed=self._random_state,
+                transform_seed=self._random_state,
+                n_jobs=cpu_count(),
+                tqdm_kwds={
+                    desc="Computing UMAP",
+                    leave=False,
+                    dynamic_ncols=True
+                },
+                verbose=True,
+            }).fit_transform
+        elif self._decomposition_method == "TSNE":
             try:
                 # We try to use CUDA tsne if available, but this does not
                 # currently support 3D decomposition. If the user has required a
@@ -183,6 +205,7 @@ class GraphVisualization:
                         **dict(
                             n_components=self._n_components,
                             n_jobs=cpu_count(),
+                            metric="cosine",
                             random_state=self._random_state,
                             verbose=True,
                         ),
@@ -198,6 +221,7 @@ class GraphVisualization:
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
                                 verbose=True,
+                                metric="cosine",
                                 method="exact" if self._n_components == 4 else "barnes_hut",
                                 square_distances=True,
                             ),
@@ -286,6 +310,11 @@ class GraphVisualization:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
+        if self._decomposition_method == "TSNE" and X.shape[1] > 50:
+            X = PCA(
+                n_components=50,
+                random_state=self._random_state
+            ).fit_transform(X)
         return self.get_decomposition_method()(X)
 
     def _set_legend(
