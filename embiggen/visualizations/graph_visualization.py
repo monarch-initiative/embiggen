@@ -2149,7 +2149,7 @@ class GraphVisualization:
             By default, 5.
         """
         sorted_node_degrees = np.sort(self._graph.get_node_degrees())
-        for i, node_id in enumerate(self._graph.get_top_k_central_nodes(k)):
+        for i, node_id in enumerate(self._graph.get_top_k_central_node_ids(k)):
             node_degree = self._graph.get_node_degree_from_node_id(node_id)
             axis.annotate(
                 self._graph.get_node_name_from_node_id(node_id),
