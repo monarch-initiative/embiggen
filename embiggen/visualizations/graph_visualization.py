@@ -546,7 +546,7 @@ class GraphVisualization:
 
     def _get_complete_title(self, initial_title: str) -> str:
         """Return the complete title for the figure.
-        
+
         Parameters
         -------------------
         initial_title: str
@@ -2132,3 +2132,89 @@ class GraphVisualization:
             self._graph.to_dot(),
             engine=engine
         )
+
+    def _annotate_top_nodes(
+        self,
+        axis: Axes,
+        k: int = 5
+    ):
+        """Add textual label with position of central node to plots.
+
+        Parameters
+        ----------------------
+        axis: Axis
+            The axis where to plot the annotations
+        k: int = 5
+            The number of top degree nodes to visualize
+            By default, 5.
+        """
+        sorted_node_degrees = np.sort(self._graph.get_node_degrees())
+        for i, node_id in enumerate(self._graph.get_top_k_central_nodes(k)):
+            node_degree = self._graph.get_node_degree_from_node_id(node_id)
+            axis.annotate(
+                self._graph.get_node_name_from_node_id(node_id),
+                (
+                    np.where(sorted_node_degrees == node_degree)[0],
+                    node_degree
+                ),
+                xytext=(40*(1 if i % 2 else -1), -5),
+                textcoords='offset points',
+                ha='center', va='bottom',
+                bbox=dict(boxstyle='round,pad=0.2',
+                          fc='tab:orange', alpha=0.3),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0',
+                                color='tab:red')
+            )
+
+    def plot_node_degree_distribution(
+        self,
+        fig: Optional[Figure] = None,
+        axis: Optional[Figure] = None
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node degree distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        """
+        if axis is None:
+            fig, axis = plt.subplots(figsize=(5, 5))
+        axis.plot(np.sort(self._graph.get_node_degrees()), '.')
+        axis.set_ylabel("Node degree")
+        axis.set_xlabel("Nodes sorted by degree")
+        axis.set_title("Degrees distribution for {}".format(self._graph_name))
+        self._annotate_top_nodes(axis)
+        fig.tight_layout()
+        return fig, axis
+
+    def plot_edge_weight_distribution(
+        self,
+        fig: Optional[Figure] = None,
+        axis: Optional[Figure] = None
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node degree distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+
+        """
+        if axis is None:
+            fig, axis = plt.subplots(figsize=(5,5))
+        axis.hist(self._graph.get_edge_weights(), bins=50)
+        axis.set_ylabel("Number of edges")
+        axis.set_xlabel("Sorted weights")
+        axis.set_title("Weights distribution for {}".format(self._graph_name))
+        fig.tight_layout()
+        return fig, axis
