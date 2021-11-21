@@ -478,8 +478,6 @@ class EdgePredictionGraphNeuralNetwork:
                 bias_constraint_per_hidden_layer
             ) in zip(
                 input_features,
-                self._node_features_number,
-                self._number_of_submodule_hidden_layers,
                 self._number_of_units_per_submodule_hidden_layer,
                 self._activation_per_submodule_hidden_layer,
                 self._dropout_rate_per_submodule_hidden_layer,
@@ -534,9 +532,7 @@ class EdgePredictionGraphNeuralNetwork:
 
             # Now that we have created all the submodules, we need to concatenate
             # the various submodules.
-            node_features = Concatenate()(
-                input_submodules
-            )
+            node_features = Concatenate()(input_submodules)
         else:
             node_features = input_features[0]
 
