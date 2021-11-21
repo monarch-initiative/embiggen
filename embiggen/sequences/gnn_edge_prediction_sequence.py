@@ -114,7 +114,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         ] + [
             value
             for value in (
-                sources, source_node_types, destinations, destination_node_types
+                sources, destinations, source_node_types, destination_node_types
             )
-            if self._filter_none_values and value is not None
+            if value is not None
         ], labels
