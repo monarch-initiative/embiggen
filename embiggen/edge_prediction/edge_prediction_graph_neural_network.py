@@ -450,7 +450,8 @@ class EdgePredictionGraphNeuralNetwork:
                 name="NodeTypes"
             )
             node_types_embedding = Embedding(
-                self._node_types_number, self._node_type_embedding_size,
+                self._node_types_number + 1, self._node_type_embedding_size,
+                mask_zero=True,
                 input_length=None,
                 name="NodeTypeEmbedding"
             )
