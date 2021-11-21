@@ -109,12 +109,18 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             node_feature[sources]
             for node_feature in self._node_features
         ] + [
+            value
+            for value in (
+                sources, source_node_types
+            )
+            if value is not None
+        ] + [
             node_feature[destinations]
             for node_feature in self._node_features
         ] + [
             value
             for value in (
-                sources, destinations, source_node_types, destination_node_types
+                destinations, destination_node_types
             )
             if value is not None
         ], labels
