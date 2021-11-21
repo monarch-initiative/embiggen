@@ -644,11 +644,11 @@ class EdgePredictionGraphNeuralNetwork:
 
         if self._use_node_embedding:
             subject_input_layers.append(Input(
-                shape=None,
+                shape=(None,),
                 name="SubjectNodeTypes"
             ))
             object_input_layers.append(Input(
-                shape=None,
+                shape=(None,),
                 name="ObjectNodeTypes"
             ))
 
