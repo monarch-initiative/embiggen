@@ -739,9 +739,9 @@ class EdgePredictionGraphNeuralNetwork:
     def name(self) -> str:
         return self._model.name
 
-    def summary(self):
+    def summary(self, *args, **kwargs):
         """Print model summary."""
-        self._model.summary()
+        self._model.summary(*args, **kwargs)
 
     def plot(
         self,
