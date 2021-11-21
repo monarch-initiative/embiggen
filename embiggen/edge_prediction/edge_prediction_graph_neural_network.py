@@ -587,7 +587,7 @@ class EdgePredictionGraphNeuralNetwork:
         return Model(
             inputs=input_layers,
             outputs=hidden,
-            name=self._model_name
+            name="{}Submodule".format(self._model_name)
         )
 
     def _build_model(self):
