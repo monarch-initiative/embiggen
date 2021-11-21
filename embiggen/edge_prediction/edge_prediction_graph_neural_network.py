@@ -43,9 +43,9 @@ class EdgePredictionGraphNeuralNetwork:
         activation_per_submodule_hidden_layer: Optional[Union[str, List[str]]] = "relu",
         activation_per_body_hidden_layer: Union[str, List[str]] = "relu",
         activation_per_header_hidden_layer: Optional[Union[str, List[str]]] = "relu",
-        dropout_rate_per_submodule_hidden_layer: Optional[Union[float, List[float]]] = 0.5,
-        dropout_rate_per_body_hidden_layer: Union[float, List[float]] = 0.5,
-        dropout_rate_per_header_hidden_layer: Optional[Union[float, List[float]]] = 0.5,
+        dropout_rate_per_submodule_hidden_layer: Optional[Union[float, List[float]]] = 0.3,
+        dropout_rate_per_body_hidden_layer: Union[float, List[float]] = 0.3,
+        dropout_rate_per_header_hidden_layer: Optional[Union[float, List[float]]] = 0.3,
         kernel_initializer_per_submodule_hidden_layer: Optional[Union[Union[str, Initializer], List[Union[str, Initializer]], List[List[Union[str, Initializer]]]]] = "glorot_uniform",
         kernel_initializer_per_body_hidden_layer: Union[Union[str, Initializer], List[Union[str, Initializer]]] = 'glorot_uniform',
         kernel_initializer_per_header_hidden_layer: Optional[Union[Union[str, Initializer], List[Union[str, Initializer]]]] = "glorot_uniform",
@@ -126,7 +126,7 @@ class EdgePredictionGraphNeuralNetwork:
 
         self._node_feature_names = node_feature_names
 
-        submodules_number = len(node_features)
+        submodules_number = len(node_features) + int(self._use_node_embedding) + int(self._use_node_type_embedding)
 
         self._node_features = node_features
 
