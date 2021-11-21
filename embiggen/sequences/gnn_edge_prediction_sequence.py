@@ -20,6 +20,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         support_mirrored_strategy: bool = False,
+        graph_to_avoid: Optional[Graph] = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         random_state: int = 42
@@ -55,8 +56,6 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
-        filter_none_values: bool = True
-            Whether to filter None values.
         graph_to_avoid: Graph = None,
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
@@ -86,9 +85,10 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             avoid_false_negatives=avoid_false_negatives,
             support_mirrored_strategy=support_mirrored_strategy,
             filter_none_values=False,
+            graph_to_avoid=graph_to_avoid,
             batches_per_epoch=batches_per_epoch,
             elapsed_epochs=elapsed_epochs,
-            random_state=random_state
+            random_state=random_state,
         )
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:

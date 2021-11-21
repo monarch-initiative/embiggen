@@ -9,9 +9,9 @@ from extra_keras_metrics import get_complete_binary_metrics
 from tensorflow.keras.layers import Input, Dense, Dropout, Concatenate, Embedding, Flatten, GlobalAveragePooling1D, BatchNormalization  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import Constraint # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import Optimizer # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 import math
 
 from embiggen.sequences import GNNEdgePredictionSequence
@@ -769,7 +769,7 @@ class EdgePredictionGraphNeuralNetwork:
         reduce_lr_min_delta: float = 0.00001,
         reduce_lr_patience: int = 5,
         validation_graph: Optional[Graph] = None,
-        validation_batch_size: Optional[int] = None,
+        validation_batch_size: int = 2**15,
         epochs: int = 1000,
         early_stopping_monitor: str = "loss",
         early_stopping_mode: str = "min",
@@ -795,14 +795,24 @@ class EdgePredictionGraphNeuralNetwork:
             batch_size=batch_size,
         )
 
+        if validation_graph is not None:
+            validation_data = GNNEdgePredictionSequence(
+                validation_graph,
+                self._node_features,
+                use_node_types=self._use_node_type_embedding,
+                use_edge_metrics=False,
+                batch_size=validation_batch_size,
+                graph_to_avoid=training_graph
+            )
+        else:
+            validation_data = None
+
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             training_sequence,
             epochs=epochs,
-            steps_per_epoch=math.ceil(self._nodes_number / batch_size),
             verbose=traditional_verbose and verbose > 0,
-            # validation_batch_size=validation_batch_size,
-            # validation_data=validation_data,
+            validation_data=validation_data,
             shuffle=False,
             callbacks=[
                 EarlyStopping(
