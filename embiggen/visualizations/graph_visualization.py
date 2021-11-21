@@ -2154,7 +2154,7 @@ class GraphVisualization:
             axis.annotate(
                 self._graph.get_node_name_from_node_id(node_id),
                 (
-                    np.where(sorted_node_degrees == node_degree)[0],
+                    np.where(sorted_node_degrees == node_degree)[0][0],
                     node_degree
                 ),
                 xytext=(40*(1 if i % 2 else -1), -5),

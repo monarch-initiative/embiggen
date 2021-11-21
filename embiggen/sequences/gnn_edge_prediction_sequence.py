@@ -1,32 +1,30 @@
-"""Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Tuple, Union
+"""Keras Sequence for running GNN on graph edge prediction."""
+from typing import Tuple, Union, List, Optional
 
 import numpy as np
+import pandas as pd
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from keras_mixed_sequence import Sequence
+from .edge_prediction_sequence import EdgePredictionSequence
 
 
-class EdgePredictionSequence(Sequence):
-    """Keras Sequence for running Neural Network on graph edge prediction."""
+class GNNEdgePredictionSequence(EdgePredictionSequence):
+    """Keras Sequence for running GNN on graph edge prediction."""
 
     def __init__(
         self,
         graph: Graph,
+        node_features: Optional[Union[pd.DataFrame, List[pd.DataFrame], np.ndarray, List[np.ndarray]]] = None,
         use_node_types: bool = False,
-        use_edge_types: bool = False,
-        return_only_edges_with_known_edge_types: bool = False,
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         support_mirrored_strategy: bool = False,
-        filter_none_values: bool = True,
-        graph_to_avoid: Graph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         random_state: int = 42
     ):
-        """Create new EdgePredictionSequence object.
+        """Create new GNNEdgePredictionSequence object.
 
         Parameters
         --------------------------------
@@ -72,27 +70,25 @@ class EdgePredictionSequence(Sequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
-        self._graph = graph
-        self._negative_samples_rate = negative_samples_rate
-        self._avoid_false_negatives = avoid_false_negatives
-        self._support_mirrored_strategy = support_mirrored_strategy
-        self._graph_to_avoid = graph_to_avoid
-        self._random_state = random_state
-        self._use_node_types = use_node_types
-        self._use_edge_types = use_edge_types
-        self._filter_none_values = filter_none_values
-        self._return_only_edges_with_known_edge_types = return_only_edges_with_known_edge_types
-        self._use_edge_metrics = use_edge_metrics
-        if batches_per_epoch == "auto":
-            batches_per_epoch = max(
-                graph.get_directed_edges_number() // batch_size,
-                1
-            )
-        self._batches_per_epoch = batches_per_epoch
+        self._node_features = [
+            node_feature.values
+            if isinstance(node_feature, pd.DataFrame)
+            else node_feature
+            for node_feature in node_features
+        ]
         super().__init__(
-            sample_number=batches_per_epoch*batch_size,
+            graph,
+            use_node_types=use_node_types,
+            use_edge_types=False,
+            use_edge_metrics=use_edge_metrics,
             batch_size=batch_size,
-            elapsed_epochs=elapsed_epochs
+            negative_samples_rate=negative_samples_rate,
+            avoid_false_negatives=avoid_false_negatives,
+            support_mirrored_strategy=support_mirrored_strategy,
+            filter_none_values=False,
+            batches_per_epoch=batches_per_epoch,
+            elapsed_epochs=elapsed_epochs,
+            random_state=random_state
         )
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -107,31 +103,18 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types, labels = self._graph.get_edge_prediction_mini_batch(
-            (self._random_state + idx) * (1 + self.elapsed_epochs),
-            return_node_types=self._use_node_types,
-            return_edge_types=self._use_edge_types,
-            return_only_edges_with_known_edge_types=self._return_only_edges_with_known_edge_types,
-            return_edge_metrics=self._use_edge_metrics,
-            batch_size=self.batch_size,
-            negative_samples_rate=self._negative_samples_rate,
-            avoid_false_negatives=self._avoid_false_negatives,
-            graph_to_avoid=self._graph_to_avoid,
-        )
-        if self._support_mirrored_strategy:
-            sources = sources.astype(float)
-            destinations = destinations.astype(float)
-            if self._use_node_types:
-                source_node_types = source_node_types.astype(float)
-                destination_node_types = destination_node_types.astype(float)
-            if self._use_edge_types:
-                edge_types = edge_types.astype(float)
-            if self._use_edge_metrics:
-                edge_metrics = edge_metrics.astype(float)
+        (sources, source_node_types, destinations,
+         destination_node_types, _, _), labels = super().__getitem__(idx)
         return [
+            node_feature[sources]
+            for node_feature in self._node_features
+        ] + [
+            node_feature[destinations]
+            for node_feature in self._node_features
+        ] + [
             value
             for value in (
-                sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types,
+                sources, source_node_types, destinations, destination_node_types
             )
             if self._filter_none_values and value is not None
         ], labels
