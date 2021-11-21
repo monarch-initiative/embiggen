@@ -87,6 +87,11 @@ class EdgePredictionGraphNeuralNetwork:
             self._node_types_number = graph.get_node_types_number()
         else:
             self._node_types_number = None
+        self._use_node_embedding = use_node_embedding
+        if use_node_type_embedding == "auto":
+            use_node_type_embedding = graph.has_node_types(
+            ) and not graph.has_unknown_node_types()
+
         self._node_embedding_size = node_embedding_size
         self._node_type_embedding_size = node_type_embedding_size
 
@@ -364,10 +369,6 @@ class EdgePredictionGraphNeuralNetwork:
         # Handle the other parameters relative to the model. #
         ######################################################
 
-        self._use_node_embedding = use_node_embedding
-        if use_node_type_embedding == "auto":
-            use_node_type_embedding = graph.has_node_types(
-            ) and not graph.has_unknown_node_types()
         self._use_node_type_embedding = use_node_type_embedding
         self._use_class_weights = use_class_weights
 
