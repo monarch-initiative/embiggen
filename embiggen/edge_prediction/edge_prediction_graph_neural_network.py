@@ -523,7 +523,7 @@ class EdgePredictionGraphNeuralNetwork:
                         activity_regularizer=activity_regularizer,
                         kernel_constraint=kernel_constraint,
                         bias_constraint=bias_constraint,
-                    )()
+                    )(hidden)
                     hidden = BatchNormalization()(hidden)
                     if dropout_rate > 0:
                         hidden = Dropout(rate=dropout_rate)(hidden)
@@ -575,7 +575,7 @@ class EdgePredictionGraphNeuralNetwork:
                 activity_regularizer=activity_regularizer,
                 kernel_constraint=kernel_constraint,
                 bias_constraint=bias_constraint,
-            )()
+            )(hidden)
             hidden = BatchNormalization()(hidden)
             if dropout_rate > 0:
                 hidden = Dropout(rate=dropout_rate)(hidden)
@@ -707,7 +707,7 @@ class EdgePredictionGraphNeuralNetwork:
                 activity_regularizer=activity_regularizer,
                 kernel_constraint=kernel_constraint,
                 bias_constraint=bias_constraint,
-            )()
+            )(hidden)
             hidden = BatchNormalization()(hidden)
             if dropout_rate > 0:
                 hidden = Dropout(rate=dropout_rate)(hidden)
