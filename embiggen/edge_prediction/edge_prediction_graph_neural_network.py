@@ -444,7 +444,7 @@ class EdgePredictionGraphNeuralNetwork:
         # is enabled in this model                                   #
         ##############################################################
 
-        if self._use_node_embedding:
+        if self._use_node_type_embedding:
             node_type_ids = Input(
                 shape=(None,),
                 name="NodeTypes"
