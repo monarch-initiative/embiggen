@@ -133,5 +133,5 @@ class EdgePredictionSequence(Sequence):
             for value in (
                 sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types,
             )
-            if self._filter_none_values and value is not None
+            if not self._filter_none_values or value is not None
         ], labels
