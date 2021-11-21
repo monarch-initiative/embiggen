@@ -712,6 +712,8 @@ class EdgePredictionGraphNeuralNetwork:
             if dropout_rate > 0:
                 hidden = Dropout(rate=dropout_rate)(hidden)
 
+        hidden = Dense(1, activation="sigmoid")(hidden)
+
         ###########################
         # Finally build the model #
         ###########################
