@@ -444,7 +444,7 @@ class EdgePredictionGraphNeuralNetwork:
 
         if self._use_node_embedding:
             node_type_ids = Input(
-                shape=None,
+                shape=(None,),
                 name="NodeTypes"
             )
             node_types_embedding = Embedding(
