@@ -46,14 +46,14 @@ class GraphVisualization:
         rotate: bool = False,
         video_format: str = "webm",
         compute_frames_in_parallel: bool = True,
-        duration: int = 15,
-        fps: int = 24,
+        duration: int = 10,
+        fps: int = 12,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Concatenate",
         subsample_nodes_number: int = 20_000,
         subsample_edges_number: int = 20_000,
         subsample_negative_edges_number: int = 20_000,
-        black_listed_node_types: Tuple[str] = ("biolink:NamedThing", ),
+        black_listed_node_types: Tuple[str] = ("biolink:NamedThing", "biolink:ChemicalMixture", "biolink:MolecularMixture", "biolink:ChemicalEntity"),
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
