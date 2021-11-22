@@ -442,6 +442,8 @@ class GraphVisualization:
                     dynamic_ncols=True
                 )
             ])
+        else:
+            edge_names = self._graph.get_directed_edge_node_names()
 
         self._graph_transformer.fit(node_embedding)
         edge_embedding = self._graph_transformer.transform(edge_names)
