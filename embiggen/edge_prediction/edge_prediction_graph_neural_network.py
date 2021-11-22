@@ -872,21 +872,10 @@ class EdgePredictionGraphNeuralNetwork:
             use_node_types=self._use_node_type_embedding,
             return_node_ids=self._use_node_embedding,
         )
-        try:
-            from tqdm.keras import TqdmCallback
-            traditional_verbose = False
-        except AttributeError:
-            traditional_verbose = True
-        verbose = validate_verbose(verbose)
 
         predictions = self._model.predict(
             sequence,
-            callbacks=[
-                *((TqdmCallback(
-                    verbose=verbose-1,
-                ),)
-                    if not traditional_verbose and verbose > 0 else ())
-            ]
+            verbose=verbose
         )
 
         source_node_names = graph.get_node_names_from_node_type_name(
