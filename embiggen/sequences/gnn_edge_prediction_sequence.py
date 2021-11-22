@@ -16,6 +16,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         node_features: Optional[Union[pd.DataFrame, List[pd.DataFrame], np.ndarray, List[np.ndarray]]] = None,
         use_node_types: bool = False,
         use_edge_metrics: bool = False,
+        return_node_ids: bool = True,
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
@@ -37,6 +38,8 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             Whether to return the edge types.
         use_edge_metrics: bool = False,
             Whether to return the edge metrics.
+        return_node_ids: bool = True,
+            Whether to return the node IDs.
         batch_size: int = 2**10,
             The batch size to use.
         negative_samples_rate: float = 0.5,
@@ -75,6 +78,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             else node_feature
             for node_feature in node_features
         ]
+        self._return_node_ids = return_node_ids
         super().__init__(
             graph,
             use_node_types=use_node_types,
@@ -105,13 +109,22 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         """
         (sources, source_node_types, destinations,
          destination_node_types, _, _), labels = super().__getitem__(idx)
+
+        source_ids = None
+        if self._return_node_ids:
+            source_ids = sources
+
+        destination_ids = None
+        if self._return_node_ids:
+            destination_ids = destinations
+
         return [
             node_feature[sources]
             for node_feature in self._node_features
         ] + [
             value
             for value in (
-                sources, source_node_types
+                source_ids, source_node_types
             )
             if value is not None
         ] + [
@@ -120,7 +133,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         ] + [
             value
             for value in (
-                destinations, destination_node_types
+                destination_ids, destination_node_types
             )
             if value is not None
         ], labels

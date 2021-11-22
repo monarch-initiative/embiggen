@@ -795,6 +795,7 @@ class EdgePredictionGraphNeuralNetwork:
             self._node_features,
             use_node_types=self._use_node_type_embedding,
             use_edge_metrics=False,
+            return_node_ids=self._use_node_embedding,
             batch_size=batch_size,
         )
 
@@ -804,6 +805,7 @@ class EdgePredictionGraphNeuralNetwork:
                 self._node_features,
                 use_node_types=self._use_node_type_embedding,
                 use_edge_metrics=False,
+                return_node_ids=self._use_node_embedding,
                 batch_size=validation_batch_size,
                 graph_to_avoid=training_graph
             )
