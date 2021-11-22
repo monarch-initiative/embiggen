@@ -18,7 +18,7 @@ from embiggen.sequences import GNNEdgePredictionSequence, GNNBipartiteEdgePredic
 from ensmallen import Graph
 from embiggen.embedders.optimizers import apply_centralized_gradients
 from embiggen.utils import validate_verbose, normalize_model_ragged_list_parameter, normalize_model_list_parameter
-
+from tqdm.auto import tqdm
 import tensorflow as tf
 
 
@@ -876,7 +876,7 @@ class EdgePredictionGraphNeuralNetwork:
         predictions = self._model.predict(
             sequence,
             verbose=verbose
-        )
+        ).flatten()
 
         source_node_names = graph.get_node_names_from_node_type_name(
             source_node_type_name
@@ -897,10 +897,25 @@ class EdgePredictionGraphNeuralNetwork:
             for destination_node_name in destination_node_names
         ]
 
+        exists = [
+            graph.has_edge_from_node_names()
+            for source_node_name, destination_node_name in tqdm(
+                zip(
+                    tiled_source_node_names,
+                    tiled_destination_node_names
+                ),
+                total=len(tiled_source_node_names),
+                desc="Computing whether edge exists",
+                leave=False,
+                dynamic_ncols=True
+            )
+        ]
+
         return pd.DataFrame({
             "source_node_name": tiled_source_node_names,
             "destination_node_name": tiled_destination_node_names,
-            "predictions": predictions
+            "predictions": predictions,
+            "exists": exists
         })
 
     # def evaluate(
