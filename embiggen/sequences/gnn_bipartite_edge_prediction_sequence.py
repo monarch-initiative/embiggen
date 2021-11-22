@@ -101,6 +101,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                 self._source_node_type_ids[idx],
                 (1, self._destinations.size)
             )
+            print(source_node_types)
 
         source_ids = None
         if self._return_node_ids:
