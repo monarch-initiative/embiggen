@@ -898,7 +898,10 @@ class EdgePredictionGraphNeuralNetwork:
         ]
 
         exists = [
-            graph.has_edge_from_node_names()
+            graph.has_edge_from_node_names(
+                source_node_name,
+                destination_node_name
+            )
             for source_node_name, destination_node_name in tqdm(
                 zip(
                     tiled_source_node_names,
