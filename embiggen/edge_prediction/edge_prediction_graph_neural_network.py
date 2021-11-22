@@ -835,7 +835,6 @@ class EdgePredictionGraphNeuralNetwork:
                 ),
                 *((TqdmCallback(
                     verbose=verbose-1,
-                    dynamic_ncols=True
                 ),)
                     if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
@@ -885,7 +884,6 @@ class EdgePredictionGraphNeuralNetwork:
             callbacks=[
                 *((TqdmCallback(
                     verbose=verbose-1,
-                    dynamic_ncols=True
                 ),)
                     if not traditional_verbose and verbose > 0 else ())
             ]

@@ -67,7 +67,12 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                 for j, node_type_id in enumerate(node_type_ids):
                     self._destination_node_type_ids[i, j] = node_type_id
 
-        self._node_features = node_features
+        self._node_features = [
+            node_feature.values
+            if isinstance(node_feature, pd.DataFrame)
+            else node_feature
+            for node_feature in node_features
+        ]
         self._use_node_types = use_node_types
         self._return_node_ids = return_node_ids
         self._support_mirrored_strategy = support_mirrored_strategy
