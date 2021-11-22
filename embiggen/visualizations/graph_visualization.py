@@ -47,7 +47,7 @@ class GraphVisualization:
         video_format: str = "webm",
         compute_frames_in_parallel: bool = True,
         duration: int = 10,
-        fps: int = 12,
+        fps: int = 24,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Concatenate",
         subsample_nodes_number: int = 10_000,
