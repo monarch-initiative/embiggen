@@ -99,9 +99,8 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._source_node_type_ids is not None:
             source_node_types = np.tile(
                 self._source_node_type_ids[idx],
-                (1, self._destinations.size)
+                (self._destinations.size, 1)
             )
-            print(source_node_types)
 
         source_ids = None
         if self._return_node_ids:
