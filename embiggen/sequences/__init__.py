@@ -6,6 +6,7 @@ from .word2vec_sequence import Word2VecSequence
 from .node_label_prediction_sequence import NodeLabelPredictionSequence
 from .glove_sequence import GloveSequence
 from .gnn_edge_prediction_sequence import GNNEdgePredictionSequence
+from .gnn_bipartite_edge_prediction_sequence import GNNBipartiteEdgePredictionSequence
 
 __all__ = [
     "Node2VecSequence",
@@ -14,5 +15,6 @@ __all__ = [
     "Word2VecSequence",
     "NodeLabelPredictionSequence",
     "GloveSequence",
-    "GNNEdgePredictionSequence"
+    "GNNEdgePredictionSequence",
+    "GNNBipartiteEdgePredictionSequence"
 ]

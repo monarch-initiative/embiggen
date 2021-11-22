@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 import math
 
-from embiggen.sequences import GNNEdgePredictionSequence
+from embiggen.sequences import GNNEdgePredictionSequence, GNNBipartiteEdgePredictionSequence
 from ensmallen import Graph
 from embiggen.embedders.optimizers import apply_centralized_gradients
 from embiggen.utils import validate_verbose, normalize_model_ragged_list_parameter, normalize_model_list_parameter
@@ -833,42 +833,92 @@ class EdgePredictionGraphNeuralNetwork:
                     factor=reduce_lr_factor,
                     mode=reduce_lr_mode,
                 ),
-                *((TqdmCallback(verbose=verbose-1),)
-                  if not traditional_verbose and verbose > 0 else ()),
+                *((TqdmCallback(
+                    verbose=verbose-1,
+                    tqdm_kwargs=dict(
+                        dynamic_ncols=True
+                    )
+                ),)
+                    if not traditional_verbose and verbose > 0 else ()),
                 *callbacks
             ],
             **kwargs
         ).history)
 
-    # def predict(
-    #     self,
-    #     graph: Graph,
-    #     *args: List,
-    #     batch_size: Union[int, str] = "auto",
-    #     **kwargs: Dict
-    # ) -> pd.DataFrame:
-    #     """Run predictions on the provided graph."""
-    #     if not self._use_single_batch_validation:
-    #         raise ValueError(
-    #             (
-    #                 "Currently prediction is only supported when "
-    #                 "the use_single_batch_validation is enabled."
-    #             )
-    #         )
-    #     predictions = self._model.predict(
-    #         (
-    #             self._single_batch_kernels,
-    #             self._node_features
-    #         ),
-    #         *args,
-    #         batch_size=self.run_batch_size_check(batch_size),
-    #         **kwargs
-    #     )
-    #     return pd.DataFrame(
-    #         predictions,
-    #         columns=graph.get_unique_node_type_names(),
-    #         index=graph.get_node_names()
-    #     )
+    def predict_from_node_types(
+        self,
+        graph: Graph,
+        source_node_type_name: str,
+        destination_node_type_name: str,
+        verbose: bool = True
+    ) -> pd.DataFrame:
+        """Run predictions on the described bipartite graph.
+
+        Parameters
+        ---------------------------
+        graph: Graph
+            The graph from where to sample the nodes.
+        source_node_type_name: str
+            The node type describing the source nodes.
+        destination_node_type_name: str
+            The node type describing the destination nodes.
+        verbose: bool = True
+            Whether to show the loading bars.
+        """
+        sequence = GNNBipartiteEdgePredictionSequence(
+            graph,
+            sources=graph.get_node_ids_from_node_type_name(
+                source_node_type_name),
+            destinations=graph.get_node_ids_from_node_type_name(
+                destination_node_type_name),
+            node_features=self._node_features,
+            use_node_types=self._use_node_type_embedding,
+            return_node_ids=self._use_node_embedding,
+        )
+        try:
+            from tqdm.keras import TqdmCallback
+            traditional_verbose = False
+        except AttributeError:
+            traditional_verbose = True
+        verbose = validate_verbose(verbose)
+
+        predictions = self._model.predict(
+            sequence,
+            callbacks=[
+                *((TqdmCallback(
+                    verbose=verbose-1,
+                    tqdm_kwargs=dict(
+                        dynamic_ncols=True
+                    )
+                ),)
+                    if not traditional_verbose and verbose > 0 else ())
+            ]
+        )
+
+        source_node_names = graph.get_node_names_from_node_type_name(
+            source_node_type_name
+        )
+        destination_node_names = graph.get_node_names_from_node_type_name(
+            destination_node_type_name
+        )
+
+        tiled_source_node_names = [
+            source_node_name
+            for source_node_name in source_node_names
+            for _ in range(len(destination_node_names))
+        ]
+
+        tiled_destination_node_names = [
+            destination_node_name
+            for _ in range(len(source_node_names))
+            for destination_node_name in destination_node_names
+        ]
+
+        return pd.DataFrame({
+            "source_node_name": tiled_source_node_names,
+            "destination_node_name": tiled_destination_node_names,
+            "predictions": predictions
+        })
 
     # def evaluate(
     #     self,
