@@ -645,7 +645,7 @@ class EdgePredictionGraphNeuralNetwork:
         # is enabled in this model                                   #
         ##############################################################
 
-        if self._use_node_embedding:
+        if self._use_node_type_embedding:
             subject_input_layers.append(Input(
                 shape=(None,),
                 name="SubjectNodeTypes"
