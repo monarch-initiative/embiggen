@@ -95,6 +95,12 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         sources = np.full_like(self._destinations, super().__getitem__(idx)[0])
+        source_node_types = None
+        if self._source_node_type_ids is not None:
+            source_node_types = np.tile(
+                self._source_node_type_ids[idx],
+                (1, self._destinations.size)
+            )
 
         source_ids = None
         if self._return_node_ids:
@@ -110,7 +116,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         ] + [
             value
             for value in (
-                source_ids, self._source_node_type_ids[sources]
+                source_ids, source_node_types
             )
             if value is not None
         ] + [
