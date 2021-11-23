@@ -81,6 +81,12 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         ]
         self._use_node_types = use_node_types
         self._return_node_ids = return_node_ids
+
+        if self._return_node_ids:
+            self._destination_node_features.append(self._destinations)
+        if self._use_node_types:
+            self._destination_node_features.append(
+                self._destination_node_type_ids)
         self._support_mirrored_strategy = support_mirrored_strategy
         super().__init__(
             sources,
@@ -112,10 +118,6 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._return_node_ids:
             source_ids = sources
 
-        destination_ids = None
-        if self._return_node_ids:
-            destination_ids = self._destinations
-
         return [
             node_feature[sources]
             for node_feature in self._node_features
@@ -125,10 +127,4 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                 source_ids, source_node_types
             )
             if value is not None
-        ] + self._destination_node_features + [
-            value
-            for value in (
-                destination_ids, self._destination_node_type_ids
-            )
-            if value is not None
-        ]
+        ] + self._destination_node_features

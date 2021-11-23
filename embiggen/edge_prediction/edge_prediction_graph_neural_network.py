@@ -991,10 +991,10 @@ class EdgePredictionGraphNeuralNetwork:
         """
         return self.predict_from_node_ids(
             graph,
-            graph.get_node_ids_from_node_type_name(
+            source_node_ids=graph.get_node_ids_from_node_type_name(
                 source_node_type_name
             ),
-            destinations=graph.get_node_ids_from_node_type_name(
+            destination_node_ids=graph.get_node_ids_from_node_type_name(
                 destination_node_type_name
             ),
             minimum_score=minimum_score,
