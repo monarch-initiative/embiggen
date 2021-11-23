@@ -65,7 +65,9 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                     destination_node_id
                 )
                 for j, node_type_id in enumerate(node_type_ids):
-                    self._destination_node_type_ids[i, j] = node_type_id
+                    # Here we need to offset the node type IDs by one
+                    # because we use the node type zero as the padding
+                    self._destination_node_type_ids[i, j] = node_type_id + 1
 
         self._node_features = [
             node_feature.values
