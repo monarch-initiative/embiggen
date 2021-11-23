@@ -847,6 +847,8 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_type_name: str,
         destination_node_type_name: str,
+        minimum_score: float = 0.6,
+        always_return_existing_edges: bool = True,
         verbose: bool = True
     ) -> pd.DataFrame:
         """Run predictions on the described bipartite graph.
@@ -859,6 +861,11 @@ class EdgePredictionGraphNeuralNetwork:
             The node type describing the source nodes.
         destination_node_type_name: str
             The node type describing the destination nodes.
+        minimum_score: float = 0.6
+            Since the edges to return are generally a very high
+            number, we usually want to filter.
+        always_return_existing_edges: bool = True
+            Whether to always return scores relative to existing edges.
         verbose: bool = True
             Whether to show the loading bars.
         """
@@ -913,6 +920,22 @@ class EdgePredictionGraphNeuralNetwork:
                 dynamic_ncols=True
             )
         ]
+
+        (
+            tiled_source_node_names,
+            tiled_destination_node_names,
+            predictions,
+            exists
+        ) = list(zip(*(
+            (src, dst, pred, exist)
+            for (src, dst, pred, exist) in zip(
+                tiled_source_node_names,
+                tiled_destination_node_names,
+                predictions,
+                exists
+            )
+            if pred > minimum_score or exist and always_return_existing_edges
+        )))
 
         return pd.DataFrame({
             "source_node_name": tiled_source_node_names,
