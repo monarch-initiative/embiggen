@@ -847,7 +847,7 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_type_name: str,
         destination_node_type_name: str,
-        minimum_score: float = 0.6,
+        minimum_score: float = 0.95,
         always_return_existing_edges: bool = True,
         verbose: bool = True
     ) -> pd.DataFrame:
@@ -861,7 +861,7 @@ class EdgePredictionGraphNeuralNetwork:
             The node type describing the source nodes.
         destination_node_type_name: str
             The node type describing the destination nodes.
-        minimum_score: float = 0.6
+        minimum_score: float = 0.95
             Since the edges to return are generally a very high
             number, we usually want to filter.
         always_return_existing_edges: bool = True
@@ -872,9 +872,11 @@ class EdgePredictionGraphNeuralNetwork:
         sequence = GNNBipartiteEdgePredictionSequence(
             graph,
             sources=graph.get_node_ids_from_node_type_name(
-                source_node_type_name),
+                source_node_type_name
+            ),
             destinations=graph.get_node_ids_from_node_type_name(
-                destination_node_type_name),
+                destination_node_type_name
+            ),
             node_features=self._node_features,
             use_node_types=self._use_node_type_embedding,
             return_node_ids=self._use_node_embedding,
@@ -928,11 +930,17 @@ class EdgePredictionGraphNeuralNetwork:
             exists
         ) = list(zip(*(
             (src, dst, pred, exist)
-            for (src, dst, pred, exist) in zip(
-                tiled_source_node_names,
-                tiled_destination_node_names,
-                predictions,
-                exists
+            for (src, dst, pred, exist) in tqdm(
+                zip(
+                    tiled_source_node_names,
+                    tiled_destination_node_names,
+                    predictions,
+                    exists
+                ),
+                total=len(tiled_source_node_names),
+                desc="Filtering edges",
+                leave=False,
+                dynamic_ncols=True
             )
             if pred > minimum_score or exist and always_return_existing_edges
         )))
