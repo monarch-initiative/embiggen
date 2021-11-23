@@ -888,7 +888,7 @@ class EdgePredictionGraphNeuralNetwork:
             for node_id in tqdm(
                 source_node_ids,
                 desc="Retrieving source node names",
-                dynamic_cols=True,
+                dynamic_ncols=True,
                 leave=False,
                 disable=not verbose
             )
@@ -898,7 +898,7 @@ class EdgePredictionGraphNeuralNetwork:
             for node_id in tqdm(
                 destination_node_ids,
                 desc="Retrieving destination node names",
-                dynamic_cols=True,
+                dynamic_ncols=True,
                 leave=False,
                 disable=not verbose
             )
