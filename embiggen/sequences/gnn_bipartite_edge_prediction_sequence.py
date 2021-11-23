@@ -75,6 +75,10 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
             else node_feature
             for node_feature in node_features
         ]
+        self._destination_node_features = [
+            node_feature[self._destinations]
+            for node_feature in self._node_features
+        ]
         self._use_node_types = use_node_types
         self._return_node_ids = return_node_ids
         self._support_mirrored_strategy = support_mirrored_strategy
@@ -121,10 +125,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                 source_ids, source_node_types
             )
             if value is not None
-        ] + [
-            node_feature[self._destinations]
-            for node_feature in self._node_features
-        ] + [
+        ] + self._destination_node_features + [
             value
             for value in (
                 destination_ids, self._destination_node_type_ids
