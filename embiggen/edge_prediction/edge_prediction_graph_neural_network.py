@@ -842,11 +842,11 @@ class EdgePredictionGraphNeuralNetwork:
             **kwargs
         ).history)
 
-    def predict_from_node_types(
+    def predict_from_node_ids(
         self,
         graph: Graph,
-        source_node_type_name: str,
-        destination_node_type_name: str,
+        source_node_ids: np.ndarray,
+        destination_node_ids: np.ndarray,
         minimum_score: float = 0.95,
         always_return_existing_edges: bool = True,
         verbose: bool = True
@@ -857,10 +857,10 @@ class EdgePredictionGraphNeuralNetwork:
         ---------------------------
         graph: Graph
             The graph from where to sample the nodes.
-        source_node_type_name: str
-            The node type describing the source nodes.
-        destination_node_type_name: str
-            The node type describing the destination nodes.
+        source_node_ids: np.ndarray
+            Vector of source node IDs in bipartite graph.
+        destination_node_ids: np.ndarray
+            Vector of destination node IDs in bipartite graph.
         minimum_score: float = 0.95
             Since the edges to return are generally a very high
             number, we usually want to filter.
@@ -871,12 +871,8 @@ class EdgePredictionGraphNeuralNetwork:
         """
         sequence = GNNBipartiteEdgePredictionSequence(
             graph,
-            sources=graph.get_node_ids_from_node_type_name(
-                source_node_type_name
-            ),
-            destinations=graph.get_node_ids_from_node_type_name(
-                destination_node_type_name
-            ),
+            sources=source_node_ids,
+            destinations=destination_node_ids,
             node_features=self._node_features,
             use_node_types=self._use_node_type_embedding,
             return_node_ids=self._use_node_embedding,
@@ -887,12 +883,26 @@ class EdgePredictionGraphNeuralNetwork:
             verbose=verbose
         ).flatten()
 
-        source_node_names = graph.get_node_names_from_node_type_name(
-            source_node_type_name
-        )
-        destination_node_names = graph.get_node_names_from_node_type_name(
-            destination_node_type_name
-        )
+        source_node_names = [
+            graph.get_node_name_from_node_id(node_id)
+            for node_id in tqdm(
+                source_node_ids,
+                desc="Retrieving source node names",
+                dynamic_cols=True,
+                leave=False,
+                disable=not verbose
+            )
+        ]
+        destination_node_names = [
+            graph.get_node_name_from_node_id(node_id)
+            for node_id in tqdm(
+                destination_node_ids,
+                desc="Retrieving destination node names",
+                dynamic_cols=True,
+                leave=False,
+                disable=not verbose
+            )
+        ]
 
         tiled_source_node_names = [
             source_node_name
@@ -951,6 +961,46 @@ class EdgePredictionGraphNeuralNetwork:
             "predictions": predictions,
             "exists": exists
         })
+
+    def predict_from_node_types(
+        self,
+        graph: Graph,
+        source_node_type_name: str,
+        destination_node_type_name: str,
+        minimum_score: float = 0.95,
+        always_return_existing_edges: bool = True,
+        verbose: bool = True
+    ) -> pd.DataFrame:
+        """Run predictions on the described bipartite graph.
+
+        Parameters
+        ---------------------------
+        graph: Graph
+            The graph from where to sample the nodes.
+        source_node_type_name: str
+            The node type describing the source nodes.
+        destination_node_type_name: str
+            The node type describing the destination nodes.
+        minimum_score: float = 0.95
+            Since the edges to return are generally a very high
+            number, we usually want to filter.
+        always_return_existing_edges: bool = True
+            Whether to always return scores relative to existing edges.
+        verbose: bool = True
+            Whether to show the loading bars.
+        """
+        return self.predict_from_node_ids(
+            graph,
+            graph.get_node_ids_from_node_type_name(
+                source_node_type_name
+            ),
+            destinations=graph.get_node_ids_from_node_type_name(
+                destination_node_type_name
+            ),
+            minimum_score=minimum_score,
+            always_return_existing_edges=always_return_existing_edges,
+            verbose=verbose
+        )
 
     # def evaluate(
     #     self,
