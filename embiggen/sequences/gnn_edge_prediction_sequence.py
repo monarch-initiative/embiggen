@@ -20,7 +20,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         use_edge_metrics: bool = False,
         return_node_ids: bool = True,
         batch_size: int = 2**15,
-        negative_samples_rate: float = 0.1,
+        negative_samples_rate: float = 0.9,
         avoid_false_negatives: bool = False,
         support_mirrored_strategy: bool = False,
         graph_to_avoid: Optional[Graph] = None,
@@ -44,7 +44,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             Whether to return the node IDs.
         batch_size: int = 2**15,
             The batch size to use.
-        negative_samples_rate: float = 0.1,
+        negative_samples_rate: float = 0.9,
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples_rate equal
             to 0.5, there will be 64 positives and 64 negatives.
