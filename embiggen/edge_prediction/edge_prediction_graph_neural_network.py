@@ -751,19 +751,19 @@ class EdgePredictionGraphNeuralNetwork:
         self,
         training_graph: Graph,
         batch_size: int = 2**15,
-        negative_samples_rate: float = 0.9,
+        negative_samples_rate: float = 0.8,
         early_stopping_min_delta: float = 0.00001,
-        early_stopping_patience: int = 30,
+        early_stopping_patience: int = 10,
         reduce_lr_min_delta: float = 0.00001,
         reduce_lr_patience: int = 5,
         validation_graph: Optional[Graph] = None,
         validation_batch_size: int = 2**15,
         epochs: int = 1000,
-        early_stopping_monitor: str = "loss",
+        early_stopping_monitor: str = "val_loss",
         early_stopping_mode: str = "min",
-        reduce_lr_monitor: str = "loss",
+        reduce_lr_monitor: str = "val_loss",
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.1,
         verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:
@@ -823,6 +823,7 @@ class EdgePredictionGraphNeuralNetwork:
                     min_delta=early_stopping_min_delta,
                     patience=early_stopping_patience,
                     mode=early_stopping_mode,
+                    restore_best_weights=True
                 ),
                 ReduceLROnPlateau(
                     monitor=reduce_lr_monitor,
