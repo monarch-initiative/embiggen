@@ -137,7 +137,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._return_labels:
             labels = np.fromiter(
                 (
-                    self._graph.has_edge_from_node_id(
+                    self._graph.has_edge_from_node_ids(
                         source_id,
                         destination_id
                     )
