@@ -234,7 +234,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         if self._return_node_ids:
             destination_ids = destinations
 
-        return (
+        return ((
             tuple([
                 node_feature[sources]
                 for node_feature in self._node_features
@@ -255,4 +255,4 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                 if value is not None
             ]),
             labels
-        )
+        ),)
