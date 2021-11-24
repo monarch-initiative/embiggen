@@ -142,103 +142,81 @@ class EdgePredictionGraphNeuralNetwork:
         # Normalize the provided parameters for submodules #
         ####################################################
 
-        if submodules_number == 1 and any(
-            submodule_parameter is not None
-            for submodule_parameter in (
-                number_of_submodule_hidden_layers,
-                number_of_units_per_submodule_hidden_layer,
-                kernel_regularizer_per_submodule_hidden_layer,
-                bias_regularizer_per_submodule_hidden_layer,
-                activity_regularizer_per_submodule_hidden_layer,
-                kernel_constraint_per_submodule_hidden_layer,
-                bias_constraint_per_submodule_hidden_layer
-            )
-        ):
-            raise ValueError(
-                "When the GCN has only one module it does not make sense "
-                "to provide the parameter for the submodules. "
-                "Just use the parameters for the body of the GCN instead."
-            )
-
-        if submodules_number > 1:
-            self._number_of_submodule_hidden_layers = normalize_model_list_parameter(
-                number_of_submodule_hidden_layers,
-                submodules_number,
-                int
-            )
-            self._number_of_units_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                number_of_units_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                int,
-                number_of_units_per_body_hidden_layer
-            )
-            self._activation_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                activation_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (str, type(None)),
-                activation_per_body_hidden_layer
-            )
-            self._dropout_rate_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                dropout_rate_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (float, type(None)),
-                dropout_rate_per_body_hidden_layer
-            )
-            self._kernel_initializer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                kernel_initializer_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Initializer, str, type(None)),
-                kernel_initializer_per_body_hidden_layer
-            )
-            self._bias_initializer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                bias_initializer_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Initializer, str, type(None)),
-                bias_initializer_per_body_hidden_layer
-            )
-            self._kernel_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                kernel_regularizer_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Regularizer, type(None)),
-                kernel_regularizer_per_submodule_hidden_layer
-            )
-            self._bias_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                bias_regularizer_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Regularizer, type(None)),
-                bias_regularizer_per_body_hidden_layer
-            )
-            self._activity_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                activity_regularizer_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Regularizer, type(None)),
-                activity_regularizer_per_body_hidden_layer
-            )
-            self._kernel_constraint_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                kernel_constraint_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Constraint, str, type(None)),
-                kernel_constraint_per_body_hidden_layer
-            )
-            self._bias_constraint_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
-                bias_constraint_per_submodule_hidden_layer,
-                submodules_number,
-                self._number_of_submodule_hidden_layers,
-                (Constraint, str, type(None)),
-                bias_constraint_per_body_hidden_layer
-            )
-
-        self._submodules_number = submodules_number
-        self._is_multilabel_task = graph.has_multilabel_node_types()
+        self._number_of_submodule_hidden_layers = normalize_model_list_parameter(
+            number_of_submodule_hidden_layers,
+            submodules_number,
+            int
+        )
+        self._number_of_units_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            number_of_units_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            int,
+            number_of_units_per_body_hidden_layer
+        )
+        self._activation_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            activation_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (str, type(None)),
+            activation_per_body_hidden_layer
+        )
+        self._dropout_rate_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            dropout_rate_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (float, type(None)),
+            dropout_rate_per_body_hidden_layer
+        )
+        self._kernel_initializer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            kernel_initializer_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Initializer, str, type(None)),
+            kernel_initializer_per_body_hidden_layer
+        )
+        self._bias_initializer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            bias_initializer_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Initializer, str, type(None)),
+            bias_initializer_per_body_hidden_layer
+        )
+        self._kernel_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            kernel_regularizer_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Regularizer, type(None)),
+            kernel_regularizer_per_submodule_hidden_layer
+        )
+        self._bias_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            bias_regularizer_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Regularizer, type(None)),
+            bias_regularizer_per_body_hidden_layer
+        )
+        self._activity_regularizer_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            activity_regularizer_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Regularizer, type(None)),
+            activity_regularizer_per_body_hidden_layer
+        )
+        self._kernel_constraint_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            kernel_constraint_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Constraint, str, type(None)),
+            kernel_constraint_per_body_hidden_layer
+        )
+        self._bias_constraint_per_submodule_hidden_layer = normalize_model_ragged_list_parameter(
+            bias_constraint_per_submodule_hidden_layer,
+            submodules_number,
+            self._number_of_submodule_hidden_layers,
+            (Constraint, str, type(None)),
+            bias_constraint_per_body_hidden_layer
+        )
 
         ##############################################
         # Normalize the provided parameters for body #
@@ -459,7 +437,8 @@ class EdgePredictionGraphNeuralNetwork:
             )
             global_average = GlobalAveragePooling1D()
             node_type_embedding = global_average(
-                node_types_embedding(node_type_ids))
+                node_types_embedding(node_type_ids)
+            )
             input_features.append(node_type_embedding)
             input_layers.append(node_type_ids)
 
