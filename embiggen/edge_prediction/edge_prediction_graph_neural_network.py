@@ -825,6 +825,10 @@ class EdgePredictionGraphNeuralNetwork:
             verbose=traditional_verbose and verbose > 0,
             validation_data=validation_data,
             validation_steps=validation_steps,
+            class_weight= {
+                False: training_graph.get_density(),
+                True: 1.0 - training_graph.get_density()
+            } if self._use_class_weights else None,
             shuffle=False,
             callbacks=[
                 EarlyStopping(
