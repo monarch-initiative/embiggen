@@ -122,7 +122,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                         shape=(self._batch_size, node_features.shape[1]),
                         dtype=node_features.dtypes[0]
                     )
-                    for node_features in range(self._node_features)
+                    for node_features in self._node_features
                 ],
                 * (
                     (tf.TensorSpec(shape=(self._batch_size, ), dtype=tf.uint32),)
@@ -153,7 +153,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         output_node_data_types = [
             *[
                 node_features.dtypes[0]
-                for node_features in range(self._node_features)
+                for node_features in self._node_features
             ],
             * (
                 (tf.uint32,)
@@ -170,7 +170,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                 tf.TensorShape(
                     [self._batch_size, node_features.shape[1]]
                 )
-                for node_features in range(self._node_features)
+                for node_features in self._node_features
             ],
             * (
                 (tf.TensorShape([self._batch_size, ]),)
