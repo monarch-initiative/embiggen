@@ -751,6 +751,7 @@ class EdgePredictionGraphNeuralNetwork:
         self,
         training_graph: Graph,
         batch_size: int = 2**15,
+        negative_samples_rate: float = 0.9,
         early_stopping_min_delta: float = 0.00001,
         early_stopping_patience: int = 30,
         reduce_lr_min_delta: float = 0.00001,
@@ -781,6 +782,7 @@ class EdgePredictionGraphNeuralNetwork:
             use_edge_metrics=False,
             return_node_ids=self._use_node_embedding,
             batch_size=batch_size,
+            negative_samples_rate=negative_samples_rate
         )
         training_steps = training_sequence.steps_per_epoch
         training_sequence = training_sequence.into_dataset().repeat()
@@ -793,6 +795,7 @@ class EdgePredictionGraphNeuralNetwork:
                 use_edge_metrics=False,
                 return_node_ids=self._use_node_embedding,
                 batch_size=validation_batch_size,
+                negative_samples_rate=negative_samples_rate,
                 graph_to_avoid=training_graph
             )
             validation_steps = validation_data.steps_per_epoch

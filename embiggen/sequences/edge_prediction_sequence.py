@@ -85,7 +85,7 @@ class EdgePredictionSequence(Sequence):
         self._use_edge_metrics = use_edge_metrics
         if batches_per_epoch == "auto":
             batches_per_epoch = max(
-                graph.get_directed_edges_number() // batch_size,
+                10 * graph.get_directed_edges_number() // batch_size,
                 1
             )
         self._batches_per_epoch = batches_per_epoch
