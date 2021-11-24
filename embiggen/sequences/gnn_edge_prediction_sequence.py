@@ -3,7 +3,9 @@ from typing import Tuple, Union, List, Optional
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
+from ..utils import tensorflow_version_is_higher_or_equal_than
 from .edge_prediction_sequence import EdgePredictionSequence
 
 
@@ -93,6 +95,114 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             batches_per_epoch=batches_per_epoch,
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
+        )
+
+    def into_dataset(self) -> tf.data.Dataset:
+        """Return dataset generated out of the current sequence instance.
+
+        Implementative details
+        ---------------------------------
+        This method handles the conversion of this Keras Sequence into
+        a TensorFlow dataset, also handling the proper dispatching according 
+        to what version of TensorFlow is installed in this system.
+
+        Returns
+        ----------------------------------
+        Dataset to be used for the training of a model
+        """
+
+        #################################################################
+        # Handling kernel creation when TensorFlow is a modern version. #
+        #################################################################
+
+        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
+            node_shapes = [
+                *[
+                    tf.TensorSpec(
+                        shape=(self._batch_size, node_features.shape[1]),
+                        dtype=node_features.dtypes[0]
+                    )
+                    for node_features in range(self._node_features)
+                ],
+                * (
+                    (tf.TensorSpec(shape=(self._batch_size, ), dtype=tf.uint32),)
+                    if self._return_node_ids else ()
+                ),
+                * (
+                    (tf.TensorSpec(
+                        shape=(self._batch_size, self._graph.get_maximum_multilabel_count()), dtype=tf.uint32),)
+                    if self._use_node_types else ()
+                )
+            ]
+            return tf.data.Dataset.from_generator(
+                self,
+                output_signature=(
+                    (
+                        # Node shapes relative to the source node
+                        *node_shapes,
+                        # Node shapes relative to the destination node
+                        *node_shapes
+                    ),
+                    tf.TensorSpec(
+                        shape=(self._batch_size, 1),
+                        dtype=tf.bool
+                    )
+                )
+            )
+
+        output_node_data_types = [
+            *[
+                node_features.dtypes[0]
+                for node_features in range(self._node_features)
+            ],
+            * (
+                (tf.uint32,)
+                if self._return_node_ids else ()
+            ),
+            * (
+                (tf.uint32,)
+                if self._use_node_types else ()
+            )
+        ]
+
+        output_node_shapes = [
+            *[
+                tf.TensorShape(
+                    [self._batch_size, node_features.shape[1]]
+                )
+                for node_features in range(self._node_features)
+            ],
+            * (
+                (tf.TensorShape([self._batch_size, ]),)
+                if self._return_node_ids else ()
+            ),
+            * (
+                (tf.TensorShape(
+                    [self._batch_size, self._graph.get_maximum_multilabel_count()]),)
+                if self._use_node_types else ()
+            )
+        ]
+
+        return tf.data.Dataset.from_generator(
+            self,
+            output_types=(
+                (
+                    # The source nodes
+                    *output_node_data_types,
+                    # The destination nodes
+                    *output_node_data_types
+                ),
+                tf.bool
+            ),
+            output_shapes=(
+                (
+                    # The source nodes shapes
+                    *output_node_shapes,
+                    # The destination nodes shapes
+                    *output_node_shapes,
+                ),
+                tf.TensorShape([self._batch_size, 1, ]),
+            )
         )
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:

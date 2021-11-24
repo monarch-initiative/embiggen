@@ -797,7 +797,7 @@ class EdgePredictionGraphNeuralNetwork:
             use_edge_metrics=False,
             return_node_ids=self._use_node_embedding,
             batch_size=batch_size,
-        )
+        ).into_dataset().repeat()
 
         if validation_graph is not None:
             validation_data = GNNEdgePredictionSequence(
@@ -808,7 +808,7 @@ class EdgePredictionGraphNeuralNetwork:
                 return_node_ids=self._use_node_embedding,
                 batch_size=validation_batch_size,
                 graph_to_avoid=training_graph
-            )
+            ).into_dataset().repeat()
         else:
             validation_data = None
 
