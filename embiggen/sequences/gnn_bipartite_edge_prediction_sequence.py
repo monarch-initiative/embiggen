@@ -19,6 +19,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         node_features: Optional[Union[pd.DataFrame, List[pd.DataFrame], np.ndarray, List[np.ndarray]]] = None,
         use_node_types: bool = False,
         return_node_ids: bool = True,
+        return_labels: bool = True,
         support_mirrored_strategy: bool = False,
         random_state: int = 42
     ):
@@ -81,6 +82,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         ]
         self._use_node_types = use_node_types
         self._return_node_ids = return_node_ids
+        self._return_labels = return_labels
 
         if self._return_node_ids:
             self._destination_node_features.append(self._destinations)
@@ -106,7 +108,10 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources = np.full_like(self._destinations, super().__getitem__(idx)[0])
+        sources = np.full_like(
+            self._destinations,
+            super().__getitem__(idx)[0]
+        )
         source_node_types = None
         if self._source_node_type_ids is not None:
             source_node_types = np.tile(
@@ -118,7 +123,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._return_node_ids:
             source_ids = sources
 
-        return [
+        X = [
             node_feature[sources]
             for node_feature in self._node_features
         ] + [
@@ -128,3 +133,20 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
             )
             if value is not None
         ] + self._destination_node_features
+
+        if self._return_labels:
+            labels = np.fromiter(
+                (
+                    self._graph.has_edge_from_node_id(
+                        source_id,
+                        destination_id
+                    )
+                    for source_id, destination_id in zip(
+                        self._sources,
+                        self._destinations
+                    )
+                ),
+                dtype=np.bool
+            )
+            return X, labels
+        return X

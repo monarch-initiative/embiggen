@@ -876,6 +876,7 @@ class EdgePredictionGraphNeuralNetwork:
             node_features=self._node_features,
             use_node_types=self._use_node_type_embedding,
             return_node_ids=self._use_node_embedding,
+            return_labels=False
         )
 
         predictions = self._model.predict(
@@ -1002,35 +1003,163 @@ class EdgePredictionGraphNeuralNetwork:
             verbose=verbose
         )
 
-    # def evaluate(
-    #     self,
-    #     graph: Graph,
-    #     *args: List,
-    #     batch_size: Union[int, str] = "auto",
-    #     **kwargs: Dict
-    # ) -> Dict[str, float]:
-    #     """Run evaluation of the model over the provided graph."""
-    #     if not self._use_single_batch_validation:
-    #         raise ValueError(
-    #             (
-    #                 "Currently evaluation is only supported when "
-    #                 "the use_single_batch_validation is enabled."
-    #             )
-    #         )
-    #     return dict(zip(
-    #         self._model.metrics_names,
-    #         self._model.evaluate(
-    #             (
-    #                 self._single_batch_kernels,
-    #                 self._node_features
-    #             ),
-    #             graph.get_one_hot_encoded_node_types(),
-    #             * args,
-    #             # This is a known hack to get around limitations from the current
-    #             # implementation that handles the sample weights in TensorFlow.
-    #             sample_weight=pd.Series(
-    #                 graph.get_known_node_types_mask().astype(float)),
-    #             batch_size=self.run_batch_size_check(batch_size),
-    #             **kwargs
-    #         )
-    #     ))
+    def evaluate_from_node_ids(
+        self,
+        graph: Graph,
+        source_node_ids: np.ndarray,
+        destination_node_ids: np.ndarray,
+        minimum_score: float = 0.95,
+        always_return_existing_edges: bool = True,
+        verbose: bool = True
+    ) -> pd.DataFrame:
+        """Run evaluations on the described bipartite graph.
+
+        Parameters
+        ---------------------------
+        graph: Graph
+            The graph from where to sample the nodes.
+        source_node_ids: np.ndarray
+            Vector of source node IDs in bipartite graph.
+        destination_node_ids: np.ndarray
+            Vector of destination node IDs in bipartite graph.
+        minimum_score: float = 0.95
+            Since the edges to return are generally a very high
+            number, we usually want to filter.
+        always_return_existing_edges: bool = True
+            Whether to always return scores relative to existing edges.
+        verbose: bool = True
+            Whether to show the loading bars.
+        """
+        sequence = GNNBipartiteEdgePredictionSequence(
+            graph,
+            sources=source_node_ids,
+            destinations=destination_node_ids,
+            node_features=self._node_features,
+            use_node_types=self._use_node_type_embedding,
+            return_node_ids=self._use_node_embedding,
+            return_labels=True
+        )
+
+        predictions = self._model.evaluate(
+            sequence,
+            verbose=verbose
+        ).flatten()
+
+        source_node_names = [
+            graph.get_node_name_from_node_id(node_id)
+            for node_id in tqdm(
+                source_node_ids,
+                desc="Retrieving source node names",
+                dynamic_ncols=True,
+                leave=False,
+                disable=not verbose
+            )
+        ]
+        destination_node_names = [
+            graph.get_node_name_from_node_id(node_id)
+            for node_id in tqdm(
+                destination_node_ids,
+                desc="Retrieving destination node names",
+                dynamic_ncols=True,
+                leave=False,
+                disable=not verbose
+            )
+        ]
+
+        tiled_source_node_names = [
+            source_node_name
+            for source_node_name in source_node_names
+            for _ in range(len(destination_node_names))
+        ]
+
+        tiled_destination_node_names = [
+            destination_node_name
+            for _ in range(len(source_node_names))
+            for destination_node_name in destination_node_names
+        ]
+
+        exists = [
+            graph.has_edge_from_node_names(
+                source_node_name,
+                destination_node_name
+            )
+            for source_node_name, destination_node_name in tqdm(
+                zip(
+                    tiled_source_node_names,
+                    tiled_destination_node_names
+                ),
+                total=len(tiled_source_node_names),
+                desc="Computing whether edge exists",
+                leave=False,
+                dynamic_ncols=True
+            )
+        ]
+
+        (
+            tiled_source_node_names,
+            tiled_destination_node_names,
+            predictions,
+            exists
+        ) = list(zip(*(
+            (src, dst, pred, exist)
+            for (src, dst, pred, exist) in tqdm(
+                zip(
+                    tiled_source_node_names,
+                    tiled_destination_node_names,
+                    predictions,
+                    exists
+                ),
+                total=len(tiled_source_node_names),
+                desc="Filtering edges",
+                leave=False,
+                dynamic_ncols=True
+            )
+            if pred > minimum_score or exist and always_return_existing_edges
+        )))
+
+        return pd.DataFrame({
+            "source_node_name": tiled_source_node_names,
+            "destination_node_name": tiled_destination_node_names,
+            "predictions": predictions,
+            "exists": exists
+        })
+
+    def evaluate_from_node_types(
+        self,
+        graph: Graph,
+        source_node_type_name: str,
+        destination_node_type_name: str,
+        minimum_score: float = 0.95,
+        always_return_existing_edges: bool = True,
+        verbose: bool = True
+    ) -> pd.DataFrame:
+        """Run predictions on the described bipartite graph.
+
+        Parameters
+        ---------------------------
+        graph: Graph
+            The graph from where to sample the nodes.
+        source_node_type_name: str
+            The node type describing the source nodes.
+        destination_node_type_name: str
+            The node type describing the destination nodes.
+        minimum_score: float = 0.95
+            Since the edges to return are generally a very high
+            number, we usually want to filter.
+        always_return_existing_edges: bool = True
+            Whether to always return scores relative to existing edges.
+        verbose: bool = True
+            Whether to show the loading bars.
+        """
+        return self.evaluate_from_node_ids(
+            graph,
+            source_node_ids=graph.get_node_ids_from_node_type_name(
+                source_node_type_name
+            ),
+            destination_node_ids=graph.get_node_ids_from_node_type_name(
+                destination_node_type_name
+            ),
+            minimum_score=minimum_score,
+            always_return_existing_edges=always_return_existing_edges,
+            verbose=verbose
+        )
