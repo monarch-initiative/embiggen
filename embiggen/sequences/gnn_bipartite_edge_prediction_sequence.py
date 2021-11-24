@@ -51,7 +51,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                     source_node_id
                 )
                 for j, node_type_id in enumerate(node_type_ids):
-                    self._source_node_type_ids[i, j] = node_type_id
+                    self._source_node_type_ids[i, j] = node_type_id + 1
             self._destination_node_type_ids = np.zeros((
                 destinations.size,
                 graph.get_maximum_multilabel_count()
