@@ -797,7 +797,9 @@ class EdgePredictionGraphNeuralNetwork:
             use_edge_metrics=False,
             return_node_ids=self._use_node_embedding,
             batch_size=batch_size,
-        ).into_dataset().repeat()
+        )
+        training_steps = training_sequence.steps_per_epoch
+        training_sequence = training_sequence.into_dataset().repeat()
 
         if validation_graph is not None:
             validation_data = GNNEdgePredictionSequence(
@@ -808,16 +810,21 @@ class EdgePredictionGraphNeuralNetwork:
                 return_node_ids=self._use_node_embedding,
                 batch_size=validation_batch_size,
                 graph_to_avoid=training_graph
-            ).into_dataset().repeat()
+            )
+            validation_steps = validation_data.steps_per_epoch
+            validation_data = validation_data.into_dataset().repeat()
         else:
+            validation_steps = None
             validation_data = None
 
         callbacks = kwargs.pop("callbacks", ())
         return pd.DataFrame(self._model.fit(
             training_sequence,
             epochs=epochs,
+            steps_per_epoch=training_steps,
             verbose=traditional_verbose and verbose > 0,
             validation_data=validation_data,
+            validation_steps=validation_steps,
             shuffle=False,
             callbacks=[
                 EarlyStopping(
