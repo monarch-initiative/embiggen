@@ -67,7 +67,8 @@ class EdgePredictionGraphNeuralNetwork:
         bias_constraint_per_submodule_hidden_layer: Optional[Union[Union[str, Constraint], List[Union[str, Constraint]], List[List[Union[str, Constraint]]]]] = None,
         bias_constraint_per_body_hidden_layer: Union[Union[str, Constraint], List[Union[str, Constraint]]] = None,
         bias_constraint_per_header_hidden_layer: Optional[Union[Union[str, Constraint], List[Union[str, Constraint]]]] = None,
-        use_class_weights: bool = True,
+        use_class_weights: bool = False,
+        use_batch_normalization: bool = True,
         use_gradient_centralization: bool = True,
         optimizer: Union[str, Optimizer] = "nadam",
         model_name: Optional[str] = None
@@ -372,6 +373,7 @@ class EdgePredictionGraphNeuralNetwork:
         ######################################################
 
         self._use_class_weights = use_class_weights
+        self._use_batch_normalization = use_batch_normalization
 
         #########################################
         # Create name of the model if necessary #
@@ -527,7 +529,8 @@ class EdgePredictionGraphNeuralNetwork:
                         kernel_constraint=kernel_constraint,
                         bias_constraint=bias_constraint,
                     )(hidden)
-                    hidden = BatchNormalization()(hidden)
+                    if self._use_batch_normalization:
+                        hidden = BatchNormalization()(hidden)
                     if dropout_rate > 0:
                         hidden = Dropout(rate=dropout_rate)(hidden)
 
@@ -579,7 +582,8 @@ class EdgePredictionGraphNeuralNetwork:
                 kernel_constraint=kernel_constraint,
                 bias_constraint=bias_constraint,
             )(hidden)
-            hidden = BatchNormalization()(hidden)
+            if self._use_batch_normalization:
+                hidden = BatchNormalization()(hidden)
             if dropout_rate > 0:
                 hidden = Dropout(rate=dropout_rate)(hidden)
 
@@ -711,7 +715,8 @@ class EdgePredictionGraphNeuralNetwork:
                 kernel_constraint=kernel_constraint,
                 bias_constraint=bias_constraint,
             )(hidden)
-            hidden = BatchNormalization()(hidden)
+            if self._use_batch_normalization:
+                hidden = BatchNormalization()(hidden)
             if dropout_rate > 0:
                 hidden = Dropout(rate=dropout_rate)(hidden)
 
