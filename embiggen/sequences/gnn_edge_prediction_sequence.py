@@ -150,7 +150,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                         *node_shapes
                     ),
                     tf.TensorSpec(
-                        shape=(self._batch_size, 1),
+                        shape=(self._batch_size,),
                         dtype=tf.bool
                     )
                 )
@@ -207,7 +207,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                     # The destination nodes shapes
                     *output_node_shapes,
                 ),
-                tf.TensorShape([self._batch_size, 1, ]),
+                tf.TensorShape([self._batch_size, ]),
             )
         )
 
