@@ -1008,10 +1008,8 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_ids: np.ndarray,
         destination_node_ids: np.ndarray,
-        minimum_score: float = 0.95,
-        always_return_existing_edges: bool = True,
         verbose: bool = True
-    ) -> pd.DataFrame:
+    ) -> Dict[str, float]:
         """Run evaluations on the described bipartite graph.
 
         Parameters
@@ -1022,11 +1020,6 @@ class EdgePredictionGraphNeuralNetwork:
             Vector of source node IDs in bipartite graph.
         destination_node_ids: np.ndarray
             Vector of destination node IDs in bipartite graph.
-        minimum_score: float = 0.95
-            Since the edges to return are generally a very high
-            number, we usually want to filter.
-        always_return_existing_edges: bool = True
-            Whether to always return scores relative to existing edges.
         verbose: bool = True
             Whether to show the loading bars.
         """
@@ -1040,99 +1033,21 @@ class EdgePredictionGraphNeuralNetwork:
             return_labels=True
         )
 
-        predictions = self._model.evaluate(
-            sequence,
-            verbose=verbose
-        ).flatten()
-
-        source_node_names = [
-            graph.get_node_name_from_node_id(node_id)
-            for node_id in tqdm(
-                source_node_ids,
-                desc="Retrieving source node names",
-                dynamic_ncols=True,
-                leave=False,
-                disable=not verbose
+        return dict(zip(
+            self._model.metrics_names,
+            self._model.evaluate(
+                sequence,
+                verbose=verbose
             )
-        ]
-        destination_node_names = [
-            graph.get_node_name_from_node_id(node_id)
-            for node_id in tqdm(
-                destination_node_ids,
-                desc="Retrieving destination node names",
-                dynamic_ncols=True,
-                leave=False,
-                disable=not verbose
-            )
-        ]
-
-        tiled_source_node_names = [
-            source_node_name
-            for source_node_name in source_node_names
-            for _ in range(len(destination_node_names))
-        ]
-
-        tiled_destination_node_names = [
-            destination_node_name
-            for _ in range(len(source_node_names))
-            for destination_node_name in destination_node_names
-        ]
-
-        exists = [
-            graph.has_edge_from_node_names(
-                source_node_name,
-                destination_node_name
-            )
-            for source_node_name, destination_node_name in tqdm(
-                zip(
-                    tiled_source_node_names,
-                    tiled_destination_node_names
-                ),
-                total=len(tiled_source_node_names),
-                desc="Computing whether edge exists",
-                leave=False,
-                dynamic_ncols=True
-            )
-        ]
-
-        (
-            tiled_source_node_names,
-            tiled_destination_node_names,
-            predictions,
-            exists
-        ) = list(zip(*(
-            (src, dst, pred, exist)
-            for (src, dst, pred, exist) in tqdm(
-                zip(
-                    tiled_source_node_names,
-                    tiled_destination_node_names,
-                    predictions,
-                    exists
-                ),
-                total=len(tiled_source_node_names),
-                desc="Filtering edges",
-                leave=False,
-                dynamic_ncols=True
-            )
-            if pred > minimum_score or exist and always_return_existing_edges
-        )))
-
-        return pd.DataFrame({
-            "source_node_name": tiled_source_node_names,
-            "destination_node_name": tiled_destination_node_names,
-            "predictions": predictions,
-            "exists": exists
-        })
+        ))
 
     def evaluate_from_node_types(
         self,
         graph: Graph,
         source_node_type_name: str,
         destination_node_type_name: str,
-        minimum_score: float = 0.95,
-        always_return_existing_edges: bool = True,
         verbose: bool = True
-    ) -> pd.DataFrame:
+    ) -> Dict[str, float]:
         """Run predictions on the described bipartite graph.
 
         Parameters
@@ -1143,11 +1058,6 @@ class EdgePredictionGraphNeuralNetwork:
             The node type describing the source nodes.
         destination_node_type_name: str
             The node type describing the destination nodes.
-        minimum_score: float = 0.95
-            Since the edges to return are generally a very high
-            number, we usually want to filter.
-        always_return_existing_edges: bool = True
-            Whether to always return scores relative to existing edges.
         verbose: bool = True
             Whether to show the loading bars.
         """
@@ -1159,7 +1069,5 @@ class EdgePredictionGraphNeuralNetwork:
             destination_node_ids=graph.get_node_ids_from_node_type_name(
                 destination_node_type_name
             ),
-            minimum_score=minimum_score,
-            always_return_existing_edges=always_return_existing_edges,
             verbose=verbose
         )
