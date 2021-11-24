@@ -142,7 +142,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
                         destination_id
                     )
                     for source_id, destination_id in zip(
-                        self._sources,
+                        sources,
                         self._destinations
                     )
                 ),

@@ -136,4 +136,4 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                 destination_ids, destination_node_types
             )
             if value is not None
-        ], labels.astype(float)
+        ], labels
