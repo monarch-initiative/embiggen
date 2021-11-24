@@ -842,7 +842,7 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_ids: np.ndarray,
         destination_node_ids: np.ndarray,
-        minimum_score: float = 0.95,
+        minimum_score: float = 0.9,
         always_return_existing_edges: bool = True,
         verbose: bool = True
     ) -> pd.DataFrame:
@@ -964,7 +964,7 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_type_name: str,
         destination_node_type_name: str,
-        minimum_score: float = 0.95,
+        minimum_score: float = 0.9,
         always_return_existing_edges: bool = True,
         verbose: bool = True
     ) -> pd.DataFrame:
