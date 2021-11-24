@@ -950,27 +950,28 @@ class EdgePredictionGraphNeuralNetwork:
             )
         ]
 
-        (
-            tiled_source_node_names,
-            tiled_destination_node_names,
-            predictions,
-            exists
-        ) = list(zip(*(
-            (src, dst, pred, exist)
-            for (src, dst, pred, exist) in tqdm(
-                zip(
-                    tiled_source_node_names,
-                    tiled_destination_node_names,
-                    predictions,
-                    exists
-                ),
-                total=len(tiled_source_node_names),
-                desc="Filtering edges",
-                leave=False,
-                dynamic_ncols=True
-            )
-            if pred > minimum_score or exist and always_return_existing_edges
-        )))
+        if minimum_score > 0:
+            (
+                tiled_source_node_names,
+                tiled_destination_node_names,
+                predictions,
+                exists
+            ) = list(zip(*(
+                (src, dst, pred, exist)
+                for (src, dst, pred, exist) in tqdm(
+                    zip(
+                        tiled_source_node_names,
+                        tiled_destination_node_names,
+                        predictions,
+                        exists
+                    ),
+                    total=len(tiled_source_node_names),
+                    desc="Filtering edges",
+                    leave=False,
+                    dynamic_ncols=True
+                )
+                if pred >= minimum_score or exist and always_return_existing_edges
+            )))
 
         return pd.DataFrame({
             "source_node_name": tiled_source_node_names,
