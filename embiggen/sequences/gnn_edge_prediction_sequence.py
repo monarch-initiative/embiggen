@@ -81,6 +81,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             for node_feature in node_features
         ]
         self._return_node_ids = return_node_ids
+        self._current_index = 0
         super().__init__(
             graph,
             use_node_types=use_node_types,
@@ -96,6 +97,11 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
         )
+
+    def __call__(self):
+        """Return next batch using an infinite generator model."""
+        self._current_index += 1
+        return self[self._current_index]
 
     def into_dataset(self) -> tf.data.Dataset:
         """Return dataset generated out of the current sequence instance.
