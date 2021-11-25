@@ -50,9 +50,9 @@ class GraphVisualization:
         fps: int = 24,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Concatenate",
-        subsample_nodes_number: int = 10_000,
-        subsample_edges_number: int = 10_000,
-        subsample_negative_edges_number: int = 10_000,
+        subsample_nodes_number: int = 20_000,
+        subsample_edges_number: int = 20_000,
+        subsample_negative_edges_number: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -84,7 +84,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        subsample_nodes_number: int = 10_000,
+        subsample_nodes_number: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
@@ -97,12 +97,12 @@ class GraphVisualization:
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
             If None is given, no subsampling is executed.
-        subsample_edges_number: int = 10_000,
+        subsample_edges_number: int = 20_000,
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
-        subsample_negative_edges_number: int = 10_000,
+        subsample_negative_edges_number: int = 20_000,
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
@@ -1357,7 +1357,7 @@ class GraphVisualization:
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         top_10_node_types = {
-            node_type: 10-i
+            node_type: 10 - i
             for i, node_type in enumerate(sorted(
                 node_types_counts.items(),
                 key=lambda x: x[1],
