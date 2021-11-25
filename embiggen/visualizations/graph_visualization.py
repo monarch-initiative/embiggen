@@ -1361,7 +1361,7 @@ class GraphVisualization:
             for i, node_type in enumerate(sorted(
                 node_types_counts.items(),
                 key=lambda x: x[1],
-                reversed=True
+                reverse=True
             )[:10])
         }
         node_types_counts = {
