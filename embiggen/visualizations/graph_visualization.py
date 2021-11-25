@@ -53,7 +53,6 @@ class GraphVisualization:
         subsample_nodes_number: int = 10_000,
         subsample_edges_number: int = 10_000,
         subsample_negative_edges_number: int = 10_000,
-        black_listed_node_types: Tuple[str] = ("biolink:NamedThing", "biolink:ChemicalMixture", "biolink:MolecularMixture", "biolink:ChemicalEntity"),
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -142,11 +141,6 @@ class GraphVisualization:
         self._compute_frames_in_parallel = compute_frames_in_parallel
         self._duration = duration
         self._fps = fps
-        self._black_listed_node_types = {
-            graph.get_node_type_id_from_node_type_name(node_type_name)
-            for node_type_name in black_listed_node_types
-            if graph.has_node_type_name(node_type_name)
-        }
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
@@ -1362,8 +1356,18 @@ class GraphVisualization:
         """
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
-        for node_type_id in self._black_listed_node_types:
-            node_types_counts[node_type_id] = 0
+        top_10_node_types = {
+            node_type: 10-i
+            for i, node_type in enumerate(sorted(
+                node_types_counts.items(),
+                key=lambda x: x[1],
+                reversed=True
+            )[:10])
+        }
+        node_types_counts = {
+            node_type: top_10_node_types.get(node_type, 0)
+            for node_type in node_types_counts
+        }
         node_types_number = self._graph.get_node_types_number()
         unknown_node_types_id = node_types_number
 
