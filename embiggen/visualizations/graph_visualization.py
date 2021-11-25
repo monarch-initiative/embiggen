@@ -50,9 +50,9 @@ class GraphVisualization:
         fps: int = 24,
         node_embedding_method_name: str = None,
         edge_embedding_method: str = "Concatenate",
-        subsample_nodes_number: int = 20_000,
-        subsample_edges_number: int = 20_000,
-        subsample_negative_edges_number: int = 20_000,
+        number_of_subsampled_nodes: int = 20_000,
+        number_of_subsampled_edges: int = 20_000,
+        number_of_subsampled_negative_edges: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -84,7 +84,7 @@ class GraphVisualization:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        subsample_nodes_number: int = 20_000,
+        number_of_subsampled_nodes: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
@@ -97,12 +97,12 @@ class GraphVisualization:
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
             If None is given, no subsampling is executed.
-        subsample_edges_number: int = 20_000,
+        number_of_subsampled_edges: int = 20_000,
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
-        subsample_negative_edges_number: int = 20_000,
+        number_of_subsampled_negative_edges: int = 20_000,
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
@@ -133,9 +133,9 @@ class GraphVisualization:
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
         self._subsampled_negative_edge_node_ids = None
-        self._subsample_nodes_number = subsample_nodes_number
-        self._subsample_edges_number = subsample_edges_number
-        self._subsample_negative_edges_number = subsample_negative_edges_number
+        self._number_of_subsampled_nodes = number_of_subsampled_nodes
+        self._number_of_subsampled_edges = number_of_subsampled_edges
+        self._number_of_subsampled_negative_edges = number_of_subsampled_negative_edges
         self._random_state = random_state
         self._video_format = video_format
         self._compute_frames_in_parallel = compute_frames_in_parallel
@@ -370,14 +370,14 @@ class GraphVisualization:
         # Retrieve the nodes
         node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
-        if self._subsample_nodes_number is not None and self._graph.get_nodes_number() > self._subsample_nodes_number:
+        if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
             if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
                 # We compute the indices
                 self._subsampled_node_ids, _ = next(StratifiedShuffleSplit(
                     n_splits=1,
-                    train_size=self._subsample_nodes_number,
+                    train_size=self._number_of_subsampled_nodes,
                     random_state=self._random_state
                 ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             else:
@@ -385,7 +385,7 @@ class GraphVisualization:
                 self._subsampled_node_ids = np.random.randint(
                     low=0,
                     high=self._graph.get_nodes_number(),
-                    size=self._subsample_nodes_number
+                    size=self._number_of_subsampled_nodes
                 )
 
             # And sample the nodes
@@ -419,13 +419,13 @@ class GraphVisualization:
                 )
             )
         # If necessary, we proceed with the subsampling
-        if self._subsample_edges_number is not None and self._graph.get_directed_edges_number() > self._subsample_edges_number:
+        if self._number_of_subsampled_edges is not None and self._graph.get_directed_edges_number() > self._number_of_subsampled_edges:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
             self._subsampled_edge_ids = np.random.randint(
                 low=0,
                 high=self._graph.get_directed_edges_number(),
-                size=self._subsample_edges_number
+                size=self._number_of_subsampled_edges
             )
             edge_names = np.array([
                 self._graph.get_node_names_from_edge_id(edge_id)
@@ -469,7 +469,7 @@ class GraphVisualization:
         self._subsampled_negative_edge_node_ids = np.random.randint(
             low=0,
             high=self._graph.get_nodes_number(),
-            size=(self._subsample_negative_edges_number, 2)
+            size=(self._number_of_subsampled_negative_edges, 2)
         )
 
         edge_names = np.array([
