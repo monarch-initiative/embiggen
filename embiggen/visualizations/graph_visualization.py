@@ -1357,12 +1357,12 @@ class GraphVisualization:
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         top_10_node_types = {
-            node_type: 10 - i
+            node_type: 50 - i
             for i, node_type in enumerate(sorted(
                 node_types_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:10])
+            )[:50])
         }
         node_types_counts = {
             node_type: top_10_node_types.get(node_type, 0)
