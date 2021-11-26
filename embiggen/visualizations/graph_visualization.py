@@ -49,7 +49,7 @@ class GraphVisualization:
         compute_frames_in_parallel: bool = True,
         duration: int = 10,
         fps: int = 24,
-        node_embedding_method_name: str = None,
+        node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
@@ -79,9 +79,11 @@ class GraphVisualization:
             Duration of the animation in seconds.
         fps: int = 24,
             Number of frames per second in animations.
-        node_embedding_method_name: str = None,
+        node_embedding_method_name: str = "auto",
             Name of the node embedding method used.
-            If provided, it is added to the images titles.
+            If "auto" is used, then we try to infer the type of
+            node embedding algorithm used, which in some cases is
+            recognizable automatically.
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
@@ -129,6 +131,7 @@ class GraphVisualization:
             method=edge_embedding_method
         )
         self._node_transformer = NodeTransformer()
+
         self._node_embedding_method_name = node_embedding_method_name
         self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
         self._subsampled_node_ids = None
@@ -387,6 +390,16 @@ class GraphVisualization:
                 1
             )
 
+    def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
+        """Detect node embedding method using heuristics, where possible."""
+        # Rules to detect SPINE embedding
+        if node_embedding.dtype == "uint8" and node_embedding.min() == 0:
+            return "SPINE"
+        # Rules to detect TFIDF/BERT embedding
+        if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
+            return "TFIDF-weighted BERT"
+        return None
+
     def fit_transform_nodes(
         self,
         node_embedding: pd.DataFrame
@@ -398,6 +411,18 @@ class GraphVisualization:
         node_embedding: pd.DataFrame,
             Embedding of the graph nodes.
         """
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+        if self._node_embedding_method_name == "auto":
+            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
+                node_embedding.values
+            )
         # Retrieve the nodes
         node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
@@ -448,6 +473,10 @@ class GraphVisualization:
                     node_embedding.shape[0],
                     self._graph.get_nodes_number()
                 )
+            )
+        if self._node_embedding_method_name == "auto":
+            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
+                node_embedding.values
             )
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_edges is not None and self._graph.get_directed_edges_number() > self._number_of_subsampled_edges:
@@ -584,7 +613,7 @@ class GraphVisualization:
             self._graph_name,
         )
 
-        if self._node_embedding_method_name is not None:
+        if self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
             title = "{} - {} ({})".format(
                 title,
                 self._node_embedding_method_name,
@@ -2255,7 +2284,7 @@ class GraphVisualization:
             Figure object.
         """
         if axis is None:
-            fig, axis = plt.subplots(figsize=(5,5))
+            fig, axis = plt.subplots(figsize=(5, 5))
         axis.hist(self._graph.get_edge_weights(), bins=50)
         axis.set_ylabel("Number of edges")
         axis.set_xlabel("Sorted weights")
