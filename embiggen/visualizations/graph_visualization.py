@@ -18,6 +18,7 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm.auto import trange, tqdm
+import warnings
 import itertools
 
 from ..transformers import GraphTransformer, NodeTransformer
@@ -133,6 +134,36 @@ class GraphVisualization:
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
         self._subsampled_negative_edge_node_ids = None
+
+        # Check if the number of subsamples are unreasonable.
+        if any(
+            isinstance(number_of_subsamples, int) and number_of_subsamples == 0
+            for number_of_subsamples in (
+                number_of_subsampled_nodes,
+                number_of_subsampled_edges,
+                number_of_subsampled_negative_edges
+            )
+        ):
+            raise ValueError(
+                "One of the number of subsamples provided is zero."
+            )
+        if any(
+            number_of_subsamples is None or number_of_subsamples > 100_000
+            for number_of_subsamples in (
+                number_of_subsampled_nodes,
+                number_of_subsampled_edges,
+                number_of_subsampled_negative_edges
+            )
+        ):
+            warnings.warn(
+                "One of the number of subsamples requested is either None "
+                "(so no subsampling is executed) or it is higher than "
+                "100k values. Note that all the available decomposition "
+                "algorithms supported do not scale too well on "
+                "datasets of this size and their visualization may "
+                "just produce Gaussian spheres, even though the data "
+                "is informative."
+            )
         self._number_of_subsampled_nodes = number_of_subsampled_nodes
         self._number_of_subsampled_edges = number_of_subsampled_edges
         self._number_of_subsampled_negative_edges = number_of_subsampled_negative_edges
