@@ -383,12 +383,6 @@ class GraphVisualization:
                 else {}
             )
         )
-        # Setting alpha level in the legend to avoid having a transparent
-        # legend scatter dots.
-        for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
-                1
-            )
 
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
