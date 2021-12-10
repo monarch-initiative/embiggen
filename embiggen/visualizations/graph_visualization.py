@@ -137,6 +137,7 @@ class GraphVisualization:
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
         self._subsampled_negative_edge_node_ids = None
+        self._has_autodetermined_node_embedding_name = False
 
         # Check if the number of subsamples are unreasonable.
         if any(
@@ -413,7 +414,8 @@ class GraphVisualization:
                     self._graph.get_nodes_number()
                 )
             )
-        if self._node_embedding_method_name == "auto":
+        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+            self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
             )
@@ -468,7 +470,8 @@ class GraphVisualization:
                     self._graph.get_nodes_number()
                 )
             )
-        if self._node_embedding_method_name == "auto":
+        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+            self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
             )
