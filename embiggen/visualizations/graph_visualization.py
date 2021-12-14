@@ -46,7 +46,6 @@ class GraphVisualization:
         n_components: int = 2,
         rotate: bool = False,
         video_format: str = "webm",
-        compute_frames_in_parallel: bool = True,
         duration: int = 10,
         fps: int = 24,
         node_embedding_method_name: str = "auto",
@@ -73,8 +72,6 @@ class GraphVisualization:
             Whether to create a rotating animation.
         video_format: str = "webm"
             What video format to use for the animations.
-        compute_frames_in_parallel: bool = True
-            Whether to compute the frames in parallel.
         duration: int = 15,
             Duration of the animation in seconds.
         fps: int = 24,
@@ -173,7 +170,6 @@ class GraphVisualization:
         self._number_of_subsampled_negative_edges = number_of_subsampled_negative_edges
         self._random_state = random_state
         self._video_format = video_format
-        self._compute_frames_in_parallel = compute_frames_in_parallel
         self._duration = duration
         self._fps = fps
 
@@ -877,7 +873,6 @@ class GraphVisualization:
                     duration=self._duration,
                     fps=self._fps,
                     verbose=True,
-                    parallelize=self._compute_frames_in_parallel,
                     **kwargs
                 )
             except (Exception, KeyboardInterrupt) as e:
