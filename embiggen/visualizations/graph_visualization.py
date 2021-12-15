@@ -290,13 +290,16 @@ class GraphVisualization:
         *args: List[Union[np.ndarray, pd.DataFrame, None]]
     ) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
+
         The reason to shuffle the points is mainly that this avoids for
         'fake' clusters to appear simply by stacking the points by class
         artifically according to how the points are sorted.
+
         Parameters
         ------------------------
-        *args: List[Union[np.ndarray, pd.DataFrame, None]],
+        *args: List[Union[np.ndarray, pd.DataFrame, None]]
             The lists to shuffle.
+
         Returns
         ------------------------
         Shuffled data using given random state.
@@ -381,6 +384,11 @@ class GraphVisualization:
             )
         )
 
+        # Setting maximum alpha to the visualization
+        # to avoid transparency in the dots.
+        for lh in legend.legendHandles:
+            lh.set_alpha(1)
+
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
         # Rules to detect SPINE embedding
@@ -415,7 +423,7 @@ class GraphVisualization:
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
             )
-        
+
         # Retrieve the nodes
         node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
@@ -1027,7 +1035,7 @@ class GraphVisualization:
                     predictions[i] = top_counts.index(element_type)
 
         if k < number_of_types:
-            type_labels.append(other_label)
+            type_labels.append(other_label.format(number_of_types - k))
 
         return self._wrapped_plot_scatter(**{
             **dict(
@@ -1525,7 +1533,7 @@ class GraphVisualization:
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
         legend_title: str = "Node types",
-        other_label: str = "Other",
+        other_label: str = "Other {} node types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
@@ -1554,7 +1562,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} node types"
             Label to use for edges below the top k threshold.
         train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
@@ -1676,7 +1684,7 @@ class GraphVisualization:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        other_label: str = "Other",
+        other_label: str = "Other {} components",
         legend_title: str = "Component sizes",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -1704,7 +1712,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} components",
             Label to use for edges below the top k threshold.
         legend_title: str = "Component sizes",
             Title for the legend.
@@ -1940,7 +1948,7 @@ class GraphVisualization:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        other_label: str = "Other",
+        other_label: str = "Other {} edge types",
         legend_title: str = "Edge types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -1967,7 +1975,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} edge types",
             Label to use for edges below the top k threshold.
         legend_title: str = "Edge types",
             Title for the legend.
