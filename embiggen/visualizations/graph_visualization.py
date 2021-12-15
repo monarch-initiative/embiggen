@@ -1,12 +1,12 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Tuple, Union, Optional, Callable
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from ddd_subplots import subplots as subplots_3d
+from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -16,8 +16,10 @@ from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
-from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
-from sklearn.preprocessing import RobustScaler
+from sklearn.model_selection import StratifiedShuffleSplit
+from tqdm.auto import trange, tqdm
+import warnings
+import itertools
 
 from ..transformers import GraphTransformer, NodeTransformer
 
@@ -41,11 +43,16 @@ class GraphVisualization:
         self,
         graph: Graph,
         decomposition_method: str = "TSNE",
-        scaler_method: "Scaler" = RobustScaler,
         n_components: int = 2,
-        node_embedding_method_name: str = None,
-        edge_embedding_method: str = "Hadamard",
-        subsample_points: int = 20_000,
+        rotate: bool = False,
+        video_format: str = "webm",
+        duration: int = 10,
+        fps: int = 24,
+        node_embedding_method_name: str = "auto",
+        edge_embedding_method: str = "Concatenate",
+        number_of_subsampled_nodes: int = 20_000,
+        number_of_subsampled_edges: int = 20_000,
+        number_of_subsampled_negative_edges: int = 20_000,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -57,22 +64,27 @@ class GraphVisualization:
             The graph to visualize.
         decomposition_method: str = "TSNE",
             The decomposition method to use.
-            The supported methods are TSNE and PCA.
-        scaler_method: "Scaler" = RobustScaler,
-            The scaler object to use to normalize the embedding.
-            By default we use a Robust Scaler.
-            Pass None to not use any scaler.
+            The supported methods are UMAP, TSNE and PCA.
         n_components: int = 2,
             Number of components to reduce the image to.
-            Currently, we only support 2D decompositions but we plan
-            to add support for also 3D decompositions.
-        node_embedding_method_name: str = None,
+            Currently we support 2D, 3D and 4D visualizations.
+        rotate: bool = False,
+            Whether to create a rotating animation.
+        video_format: str = "webm"
+            What video format to use for the animations.
+        duration: int = 15,
+            Duration of the animation in seconds.
+        fps: int = 24,
+            Number of frames per second in animations.
+        node_embedding_method_name: str = "auto",
             Name of the node embedding method used.
-            If provided, it is added to the images titles.
-        edge_embedding_method: str = "Hadamard",
+            If "auto" is used, then we try to infer the type of
+            node embedding algorithm used, which in some cases is
+            recognizable automatically.
+        edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        subsample_points: int = 20_000,
+        number_of_subsampled_nodes: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
@@ -85,6 +97,16 @@ class GraphVisualization:
             Split if there are node types or edge types.
             Otherwise, a normal train test split is used.
             If None is given, no subsampling is executed.
+        number_of_subsampled_edges: int = 20_000,
+            Number of edges to subsample.
+            The same considerations described for the subsampled nodes number
+            also apply for the edges number.
+            Not subsampling the edges in most graphs is a poor life choice.
+        number_of_subsampled_negative_edges: int = 20_000,
+            Number of edges to subsample.
+            The same considerations described for the subsampled nodes number
+            also apply for the edges number.
+            Not subsampling the edges in most graphs is a poor life choice.
         random_state: int = 42,
             The random state to reproduce the visualizations.
         decomposition_kwargs: Optional[Dict] = None,
@@ -99,29 +121,92 @@ class GraphVisualization:
             it is installed.
         """
         self._graph = graph
+        self._rotate = rotate
+        self._graph_name = self._graph.get_name()
+        self._edge_embedding_method = edge_embedding_method
         self._graph_transformer = GraphTransformer(
             method=edge_embedding_method
         )
         self._node_transformer = NodeTransformer()
+
         self._node_embedding_method_name = node_embedding_method_name
-        self._node_mapping = self._node_embedding = self._edge_embedding = None
+        self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
         self._subsampled_node_ids = None
         self._subsampled_edge_ids = None
-        self._subsample_points = subsample_points
+        self._subsampled_negative_edge_node_ids = None
+        self._has_autodetermined_node_embedding_name = False
+
+        # Check if the number of subsamples are unreasonable.
+        if any(
+            isinstance(number_of_subsamples, int) and number_of_subsamples == 0
+            for number_of_subsamples in (
+                number_of_subsampled_nodes,
+                number_of_subsampled_edges,
+                number_of_subsampled_negative_edges
+            )
+        ):
+            raise ValueError(
+                "One of the number of subsamples provided is zero."
+            )
+        if any(
+            number_of_subsamples is None or number_of_subsamples > 100_000
+            for number_of_subsamples in (
+                number_of_subsampled_nodes,
+                number_of_subsampled_edges,
+                number_of_subsampled_negative_edges
+            )
+        ):
+            warnings.warn(
+                "One of the number of subsamples requested is either None "
+                "(so no subsampling is executed) or it is higher than "
+                "100k values. Note that all the available decomposition "
+                "algorithms supported do not scale too well on "
+                "datasets of this size and their visualization may "
+                "just produce Gaussian spheres, even though the data "
+                "is informative."
+            )
+        self._number_of_subsampled_nodes = number_of_subsampled_nodes
+        self._number_of_subsampled_edges = number_of_subsampled_edges
+        self._number_of_subsampled_negative_edges = number_of_subsampled_negative_edges
         self._random_state = random_state
+        self._video_format = video_format
+        self._duration = duration
+        self._fps = fps
 
         if decomposition_kwargs is None:
             decomposition_kwargs = {}
 
-        if n_components not in {2, 3}:
-            raise ValueError(
-                "We currently only support 2D and 3D decomposition visualization."
-            )
-
         self._n_components = n_components
-        self._scaler_method = None if scaler_method is None else scaler_method()
+        self._decomposition_method = decomposition_method
+        self._decomposition_kwargs = decomposition_kwargs
 
-        if decomposition_method == "TSNE":
+    def get_decomposition_method(self) -> Callable:
+        if self._decomposition_method == "UMAP":
+            # The UMAP package graph is not automatically installed
+            # with the Embiggen package because it has multiple possible
+            # installation options that are left to the user.
+            # It can be, generally speaking, installed using:
+            #
+            # ```bash
+            # pip install umap-learn
+            # ````
+            from umap import UMAP
+            return UMAP(**{
+                **dict(
+                    n_components=self._n_components,
+                    random_state=self._random_state,
+                    transform_seed=self._random_state,
+                    n_jobs=cpu_count(),
+                    tqdm_kwds=dict(
+                        desc="Computing UMAP",
+                        leave=False,
+                        dynamic_ncols=True
+                    ),
+                    verbose=True,
+                ),
+                **self._decomposition_kwargs
+            }).fit_transform
+        elif self._decomposition_method == "TSNE":
             try:
                 # We try to use CUDA tsne if available, but this does not
                 # currently support 3D decomposition. If the user has required a
@@ -129,43 +214,47 @@ class GraphVisualization:
                 # Additionally, in the case that the desired decomposition
                 # uses some not available parameters, such as a cosine distance
                 # metric, we will capture that use case as a NotImplementedError.
-                if n_components != 2:
+                if self._n_components != 2:
                     raise NotImplementedError()
                 from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                self._decomposition_method = CUDATSNE(**{
+                return CUDATSNE(**{
                     **dict(
                         n_components=2,
-                        random_seed=random_state,
+                        random_seed=self._random_state,
                         verbose=True,
                     ),
-                    **decomposition_kwargs
-                })
+                    **self._decomposition_kwargs
+                }).fit_transform
             except (ModuleNotFoundError, NotImplementedError):
                 try:
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    self._decomposition_method = MulticoreTSNE(**{
+                    return MulticoreTSNE(**{
                         **dict(
-                            n_components=n_components,
+                            n_components=self._n_components,
                             n_jobs=cpu_count(),
-                            random_state=random_state,
+                            metric="cosine",
+                            random_state=self._random_state,
                             verbose=True,
                         ),
-                        **decomposition_kwargs
-                    })
-                except ModuleNotFoundError:
+                        **self._decomposition_kwargs
+                    }).fit_transform
+                except (ModuleNotFoundError, OSError, RuntimeError):
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
-                        self._decomposition_method = TSNE(**{
+                        return TSNE(**{
                             **dict(
-                                n_components=n_components,
+                                n_components=self._n_components,
                                 n_jobs=cpu_count(),
-                                random_state=random_state,
+                                random_state=self._random_state,
                                 verbose=True,
+                                metric="cosine",
+                                method="exact" if self._n_components == 4 else "barnes_hut",
+                                square_distances=True,
                             ),
-                            **decomposition_kwargs
-                        })
+                            **self._decomposition_kwargs
+                        }).fit_transform
                     except:
                         raise ModuleNotFoundError(
                             "You do not have installed a supported TSNE "
@@ -183,18 +272,49 @@ class GraphVisualization:
                             "remember that tsne-cuda, at the time of writing, "
                             "does not support them."
                         )
-        elif decomposition_method == "PCA":
-            self._decomposition_method = PCA(**{
+        elif self._decomposition_method == "PCA":
+            return PCA(**{
                 **dict(
-                    n_components=n_components,
-                    random_state=random_state,
+                    n_components=self._n_components,
+                    random_state=self._random_state,
                 ),
-                **decomposition_kwargs
-            })
+                **self._decomposition_kwargs
+            }).fit_transform
         else:
             raise ValueError(
                 "We currently only support PCA and TSNE decomposition methods."
             )
+
+    def _shuffle(
+        self,
+        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+    ) -> List[np.ndarray]:
+        """Return given arrays shuffled synchronously.
+
+        The reason to shuffle the points is mainly that this avoids for
+        'fake' clusters to appear simply by stacking the points by class
+        artifically according to how the points are sorted.
+
+        Parameters
+        ------------------------
+        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+            The lists to shuffle.
+
+        Returns
+        ------------------------
+        Shuffled data using given random state.
+        """
+        index = np.arange(args[0].shape[0])
+        random_state = np.random.RandomState(  # pylint: disable=no-member
+            seed=self._random_state
+        )
+        random_state.shuffle(index)
+        return [
+            arg[index] if isinstance(arg, np.ndarray)
+            else arg.iloc[index] if isinstance(arg, pd.DataFrame)
+            else None
+            for arg in args
+        ]
 
     def decompose(self, X: np.ndarray) -> np.ndarray:
         """Return requested decomposition of given array.
@@ -221,45 +341,20 @@ class GraphVisualization:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
-        return self._decomposition_method.fit_transform(X)
-
-    def _shuffle(
-        self,
-        *args: List[Union[np.ndarray, pd.DataFrame, None]]
-    ) -> List[np.ndarray]:
-        """Return given arrays shuffled synchronously.
-
-        The reason to shuffle the points is mainly that this avoids for
-        'fake' clusters to appear simply by stacking the points by class
-        artifically according to how the points are sorted.
-
-        Parameters
-        ------------------------
-        *args: List[Union[np.ndarray, pd.DataFrame, None]],
-            The lists to shuffle.
-
-        Returns
-        ------------------------
-        Shuffled data using given random state.
-        """
-        index = np.arange(args[0].shape[0])
-        random_state = np.random.RandomState(  # pylint: disable=no-member
-            seed=self._random_state
-        )
-        random_state.shuffle(index)
-        return [
-            arg[index] if isinstance(arg, np.ndarray)
-            else arg.iloc[index] if isinstance(arg, pd.DataFrame)
-            else None
-            for arg in args
-        ]
+        if self._decomposition_method == "TSNE" and X.shape[1] > 50:
+            X = PCA(
+                n_components=50,
+                random_state=self._random_state
+            ).fit_transform(X)
+        return self.get_decomposition_method()(X)
 
     def _set_legend(
         self,
         axes: Axes,
         labels: List[str],
         handles: List[HandlerBase],
-        legend_title: str
+        legend_title: str,
+        loc: str = 'best',
     ):
         """Set the legend with the given values and handles transparency.
 
@@ -274,11 +369,13 @@ class GraphVisualization:
             objects).
         legend_title: str,
             Title for the legend.
+        loc: str = 'best'
+            Position for the legend.
         """
         legend = axes.legend(
             handles=handles,
             labels=sanitize_ml_labels(labels),
-            loc='best',
+            loc=loc,
             title=legend_title,
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
@@ -286,12 +383,21 @@ class GraphVisualization:
                 else {}
             )
         )
-        # Setting alpha level in the legend to avoid having a transparent
-        # legend scatter dots.
-        for legend_handle in legend.legendHandles:
-            legend_handle._legmarker.set_alpha(  # pylint: disable=protected-access
-                1
-            )
+
+        # Setting maximum alpha to the visualization
+        # to avoid transparency in the dots.
+        for lh in legend.legendHandles:
+            lh.set_alpha(1)
+
+    def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
+        """Detect node embedding method using heuristics, where possible."""
+        # Rules to detect SPINE embedding
+        if node_embedding.dtype == "uint8" and node_embedding.min() == 0:
+            return "SPINE"
+        # Rules to detect TFIDF/BERT embedding
+        if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
+            return "TFIDF-weighted BERT"
+        return None
 
     def fit_transform_nodes(
         self,
@@ -304,32 +410,47 @@ class GraphVisualization:
         node_embedding: pd.DataFrame,
             Embedding of the graph nodes.
         """
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+            self._has_autodetermined_node_embedding_name = True
+            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
+                node_embedding.values
+            )
+
         # Retrieve the nodes
-        node_names = np.array(self._graph.get_node_names())
+        node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and self._graph.get_nodes_number() > self._subsample_points:
+        if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
             # If there are node types, we use a stratified
             # node sampling so that all the nodes types may be displayed.
             if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
-                Splitter = StratifiedShuffleSplit
+                # We compute the indices
+                self._subsampled_node_ids, _ = next(StratifiedShuffleSplit(
+                    n_splits=1,
+                    train_size=self._number_of_subsampled_nodes,
+                    random_state=self._random_state
+                ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
             else:
                 # Otherwise there is no need to stratify.
-                Splitter = ShuffleSplit
-            # We compute the indices
-            self._subsampled_node_ids, _ = next(Splitter(
-                n_splits=1,
-                train_size=self._subsample_points,
-                random_state=self._random_state
-            ).split(node_names, self._flatten_multi_label_and_unknown_node_types()))
-            # And sample the nodes
-            node_names = node_names[self._subsampled_node_ids]
+                self._subsampled_node_ids = np.random.randint(
+                    low=0,
+                    high=self._graph.get_nodes_number(),
+                    size=self._number_of_subsampled_nodes
+                )
 
-        if self._scaler_method is not None:
-            node_embedding = pd.DataFrame(
-                self._scaler_method.fit_transform(node_embedding),
-                columns=node_embedding.columns,
-                index=node_embedding.index,
-            )
+            # And sample the nodes
+            node_names = [
+                self._graph.get_node_name_from_node_id(node_id)
+                for node_id in self._subsampled_node_ids
+            ]
+
         self._node_transformer.fit(node_embedding)
         self._node_embedding = pd.DataFrame(
             self.decompose(
@@ -340,41 +461,16 @@ class GraphVisualization:
 
     def fit_transform_edges(
         self,
-        node_embedding: Optional[pd.DataFrame] = None,
-        edge_embedding: Optional[pd.DataFrame] = None,
+        node_embedding: pd.DataFrame
     ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Optional[pd.DataFrame] = None,
+        node_embedding: pd.DataFrame
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
-        node_embedding: Optional[pd.DataFrame] = None,
-            Edge embedding.
-
-        Raises
-        -------------------------
-        ValueError,
-            If neither the node embedding nor the edge embedding have
-            been provided. You need to provide exactly one of the two.
-        ValueError,
-            If the shape of the given node embedding does not match
-            the number of nodes in the graph.
-        ValueError,
-            If the shape of the given node embedding does not match
-            the number of edges in the graph.   
         """
-        if node_embedding is None and edge_embedding is None:
-            raise ValueError(
-                "You need to provide either the node embedding or the "
-                "edge embedding."
-            )
-        if node_embedding is not None and edge_embedding is not None:
-            raise ValueError(
-                "You need to provide either the node embedding or the "
-                "edge embedding. You cannot provide both at once."
-            )
-        if node_embedding is not None and node_embedding.shape[0] != self._graph.get_nodes_number():
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
                  "does not match the number of nodes in the graph {}.").format(
@@ -382,47 +478,81 @@ class GraphVisualization:
                     self._graph.get_nodes_number()
                 )
             )
-        if edge_embedding is not None and edge_embedding.shape[0] != self._graph.get_directed_edges_number():
-            raise ValueError(
-                ("The number of rows provided with the given edge embedding {} "
-                 "does not match the number of directed edges in the graph {}.").format(
-                    edge_embedding.shape[0],
-                    self._graph.get_directed_edges_number()
-                )
+        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+            self._has_autodetermined_node_embedding_name = True
+            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
+                node_embedding.values
             )
-
-        # Retrieve the edges
-        edge_names = np.array(self._graph.get_edge_node_names(directed=True))
         # If necessary, we proceed with the subsampling
-        if self._subsample_points is not None and len(edge_names) > self._subsample_points:
+        if self._number_of_subsampled_edges is not None and self._graph.get_directed_edges_number() > self._number_of_subsampled_edges:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
-            if self._graph.has_edge_types() and not self._graph.has_singleton_edge_types():
-                Splitter = StratifiedShuffleSplit
-            else:
-                # Otherwise there is no need to stratify.
-                Splitter = ShuffleSplit
-            # We compute the indices
-            self._subsampled_edge_ids, _ = next(Splitter(
-                n_splits=1,
-                train_size=self._subsample_points,
-                random_state=self._random_state
-            ).split(edge_names, self._flatten_unknown_edge_types()))
-            # And sample the edges
-            edge_names = edge_names[self._subsampled_edge_ids]
-            if edge_embedding is not None:
-                edge_embedding = edge_embedding[self._subsampled_edge_ids]
-
-        if node_embedding is not None:
-            if self._scaler_method is not None:
-                node_embedding = pd.DataFrame(
-                    self._scaler_method.fit_transform(node_embedding),
-                    columns=node_embedding.columns,
-                    index=node_embedding.index,
+            self._subsampled_edge_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_directed_edges_number(),
+                size=self._number_of_subsampled_edges
+            )
+            edge_names = [
+                self._graph.get_node_names_from_edge_id(edge_id)
+                for edge_id in tqdm(
+                    self._subsampled_edge_ids,
+                    desc="Retrieving edge node names",
+                    leave=False,
+                    dynamic_ncols=True
                 )
-            self._graph_transformer.fit(node_embedding)
-            edge_embedding = self._graph_transformer.transform(edge_names)
+            ]
+        else:
+            edge_names = self._graph.get_directed_edge_node_names()
+
+        self._graph_transformer.fit(node_embedding)
+        edge_embedding = self._graph_transformer.transform(edge_names)
         self._edge_embedding = pd.DataFrame(
+            self.decompose(edge_embedding),
+            index=edge_names
+        )
+
+    def fit_transform_negative_edges(
+        self,
+        node_embedding: pd.DataFrame,
+    ):
+        """Executes fitting for plotting negative edge embeddings.
+
+        Parameters
+        -------------------------
+        node_embedding: pd.DataFrame
+            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        """
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+        # If necessary, we proceed with the subsampling
+        self._subsampled_negative_edge_node_ids = np.random.randint(
+            low=0,
+            high=self._graph.get_nodes_number(),
+            size=(self._number_of_subsampled_negative_edges, 2)
+        )
+
+        edge_names = np.array([
+            (
+                self._graph.get_node_name_from_node_id(src_node_id),
+                self._graph.get_node_name_from_node_id(dst_node_id),
+            )
+            for (src_node_id, dst_node_id) in tqdm(
+                self._subsampled_negative_edge_node_ids,
+                desc="Retrieving negative edge node names",
+                leave=False,
+                dynamic_ncols=True
+            )
+        ])
+
+        self._graph_transformer.fit(node_embedding)
+        edge_embedding = self._graph_transformer.transform(edge_names)
+        self._negative_edge_embedding = pd.DataFrame(
             self.decompose(edge_embedding),
             index=edge_names
         )
@@ -475,16 +605,39 @@ class GraphVisualization:
             })
         return figure, axes
 
+    def _get_complete_title(self, initial_title: str) -> str:
+        """Return the complete title for the figure.
+
+        Parameters
+        -------------------
+        initial_title: str
+            Initial title to incorporate.
+        """
+        title = "{} - {}".format(
+            initial_title,
+            self._graph_name,
+        )
+
+        if self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
+            title = "{} - {} ({})".format(
+                title,
+                self._node_embedding_method_name,
+                self._decomposition_method,
+            )
+
+        return title
+
     def _plot_scatter(
         self,
-        title: str,
         points: np.ndarray,
+        title: str,
         colors: Optional[List[int]] = None,
         edgecolors: Optional[List[int]] = None,
         labels: List[str] = None,
         legend_title: str = "",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -493,16 +646,17 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         apply_tight_layout: bool = True,
+        return_collections: bool = False,
         **kwargs
     ) -> Tuple[Figure, Axes, Tuple[Collection]]:
         """Plot nodes of provided graph.
 
         Parameters
         ------------------------------
-        title: str,
-            Title to use for the plot.
         points: np.ndarray,
             Points to plot.
+        title: str,
+            Title to use for the plot.
         colors: Optional[List[int]] = None,
             List of the colors to use for the scatter plot.
         edgecolors: Optional[List[int]] = None,
@@ -515,6 +669,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -537,6 +693,8 @@ class GraphVisualization:
         apply_tight_layout: bool = True,
             Whether to apply the tight layout on the matplotlib
             Figure object.
+        return_collections: bool = False,
+            Whether to return the scatter plot collections.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -571,20 +729,13 @@ class GraphVisualization:
             **({} if scatter_kwargs is None else scatter_kwargs),
         }
 
-        train_test_mask = np.zeros((points.shape[0]))
+        train_test_mask = np.zeros((points.shape[0], ))
 
         if train_indices is not None:
             train_test_mask[train_indices] = 1
 
         if test_indices is not None:
             train_test_mask[test_indices] = 2
-
-        points, colors, edgecolors, train_test_mask = self._shuffle(
-            points,
-            colors,
-            edgecolors,
-            train_test_mask
-        )
 
         legend_elements = []
         collections = []
@@ -688,22 +839,12 @@ class GraphVisualization:
                 axes,
                 labels,
                 legend_elements,
-                legend_title
+                legend_title,
+                loc=loc
             )
 
         if self._n_components == 2:
             axes.set_axis_off()
-
-        title = "{} - {}".format(
-            title,
-            self._graph.get_name(),
-        )
-
-        if self._node_embedding_method_name is not None:
-            title = "{} - {}".format(
-                title,
-                self._node_embedding_method_name
-            )
 
         if show_title:
             axes.set_title(title)
@@ -711,17 +852,66 @@ class GraphVisualization:
         if apply_tight_layout:
             figure.tight_layout()
 
-        return figure, axes, collections
+        if return_collections and not self._rotate:
+            return figure, axes, collections
+        return figure, axes
+
+    def _wrapped_plot_scatter(self, **kwargs):
+        if self._rotate:
+            # These backups are needed for two reasons:
+            # 1) Processes in python necessarily copy the instance objects for each process
+            #    and this can cause a considerable memery peak to occour.
+            # 2) Some of the objects considered are not picklable, such as, at the time of writing
+            #    the lambdas used in the graph transformer or the graph object itself.
+            graph_backup = self._graph
+            graph_transformer = self._graph_transformer
+            node_embedding = self._node_embedding
+            edge_embedding = self._edge_embedding
+            negative_edge_embedding = self._negative_edge_embedding
+            self._node_embedding = None
+            self._edge_embedding = None
+            self._negative_edge_embedding = None
+            self._graph = None
+            self._graph_transformer = None
+            try:
+                kwargs["loc"] = "lower right"
+                path = "{}.{}".format(
+                    kwargs["title"].lower().replace(" ", ""),
+                    self._video_format
+                )
+                rotate(
+                    self._plot_scatter,
+                    path=path,
+                    duration=self._duration,
+                    fps=self._fps,
+                    verbose=True,
+                    **kwargs
+                )
+            except (Exception, KeyboardInterrupt) as e:
+                self._node_embedding = node_embedding
+                self._edge_embedding = edge_embedding
+                self._negative_edge_embedding = negative_edge_embedding
+                self._graph = graph_backup
+                self._graph_transformer = graph_transformer
+                raise e
+            self._node_embedding = node_embedding
+            self._edge_embedding = edge_embedding
+            self._negative_edge_embedding = negative_edge_embedding
+            self._graph = graph_backup
+            self._graph_transformer = graph_transformer
+            return display_video_at_path(path)
+        return self._plot_scatter(**kwargs)
 
     def _plot_types(
         self,
-        title: str,
         points: np.ndarray,
+        title: str,
         types: List[int],
         type_labels: List[str],
         legend_title: str,
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         predictions: Optional[List[int]] = None,
         k: int = 9,
         figure: Optional[Figure] = None,
@@ -733,7 +923,7 @@ class GraphVisualization:
         train_marker: str = "o",
         test_marker: str = "X",
         **kwargs
-    ) -> Tuple[Figure, Axes]:
+    ) -> Optional[Tuple[Figure, Axes]]:
         """Plot common node types of provided graph.
 
         Parameters
@@ -752,6 +942,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         predictions: Optional[List[int]] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
@@ -799,16 +991,24 @@ class GraphVisualization:
                 "Values of k greater than 9 are not supported!"
             )
 
-        # if not isinstance(types, np.ndarray):
-        #     raise ValueError(
-        #         "Expecting types to be a numpy array."
-        #     )
-        types = np.array(types)
+        if not isinstance(type_labels, np.ndarray):
+            raise ValueError(
+                (
+                    "The parameter type_labels was expected to be a numpy array, "
+                    "but an object of type `{}` was provided."
+                ).format(type(type_labels))
+            )
 
-        number_of_types = np.unique(types).size
-        type_labels = np.array(type_labels)
+        if not isinstance(types, np.ndarray):
+            raise ValueError(
+                (
+                    "The parameter types was expected to be a numpy array, "
+                    "but an object of type `{}` was provided."
+                ).format(type(types))
+            )
 
-        counts = np.bincount(types, minlength=number_of_types)
+        counts = np.bincount(types)
+        number_of_types = len(counts)
         top_counts = [
             index
             for index, _ in sorted(
@@ -835,28 +1035,29 @@ class GraphVisualization:
                     predictions[i] = top_counts.index(element_type)
 
         if k < number_of_types:
-            type_labels.append(other_label)
+            type_labels.append(other_label.format(number_of_types - k))
 
-        figure, axis, _ = self._plot_scatter(
-            title=title,
-            points=points,
-            colors=types,
-            edgecolors=predictions,
-            labels=type_labels,
-            legend_title=legend_title,
-            show_title=show_title,
-            show_legend=show_legend,
-            figure=figure,
-            axes=axes,
-            scatter_kwargs=scatter_kwargs,
-            train_indices=train_indices,
-            test_indices=test_indices,
-            train_marker=train_marker,
-            test_marker=test_marker,
+        return self._wrapped_plot_scatter(**{
+            **dict(
+                points=points,
+                title=title,
+                colors=types,
+                edgecolors=predictions,
+                labels=type_labels,
+                legend_title=legend_title,
+                show_title=show_title,
+                show_legend=show_legend,
+                loc=loc,
+                figure=figure,
+                axes=axes,
+                scatter_kwargs=scatter_kwargs,
+                train_indices=train_indices,
+                test_indices=test_indices,
+                train_marker=train_marker,
+                test_marker=test_marker,
+            ),
             **kwargs
-        )
-
-        return figure, axis
+        })
 
     def plot_edge_segments(
         self,
@@ -932,6 +1133,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -963,6 +1165,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         annotate_nodes: Union[str, bool] = "auto",
             Whether to show the node name when scattering them.
             The default behaviour, "auto", means that it will
@@ -992,7 +1196,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -1002,9 +1206,9 @@ class GraphVisualization:
                 **kwargs
             )
 
-        figure, axes, _ = self._plot_scatter(
-            "Nodes embedding",
-            self._node_embedding.values,
+        returned_values = self._wrapped_plot_scatter(
+            points=self._node_embedding.values,
+            title=self._get_complete_title("Nodes embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1014,17 +1218,19 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def annotate_nodes(
         self,
@@ -1054,6 +1260,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Plot edge embedding of provided graph.
@@ -1082,6 +1289,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Arguments to pass to the subplots.
 
@@ -1099,9 +1308,9 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        figure, axis, _ = self._plot_scatter(
-            "Edges embedding",
-            self._edge_embedding,
+        return self._wrapped_plot_scatter(
+            points=self._edge_embedding,
+            title=self._get_complete_title("Edges embedding"),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1111,41 +1320,210 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
-        return figure, axis
+    def plot_positive_and_negative_edges(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Plot edge embedding of provided graph.
 
-    def _flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._edge_embedding is None or self._negative_edge_embedding is None:
+            raise ValueError(
+                "Positive and negative edge fitting must be executed before plot."
+            )
+
+        points = np.vstack([
+            self._edge_embedding.values,
+            self._negative_edge_embedding.values
+        ])
+
+        types = np.concatenate([
+            np.ones(self._edge_embedding.shape[0], dtype="int64"),
+            np.zeros(
+                self._negative_edge_embedding.shape[0], dtype="int64"),
+        ])
+
+        points, types = self._shuffle(points, types)
+
+        return self._plot_types(
+            points=np.vstack([
+                self._edge_embedding.values,
+                self._negative_edge_embedding.values
+            ]),
+            title=self._get_complete_title("Positive & negative edges"),
+            types=types,
+            type_labels=np.array([
+                "Positive edges",
+                "Negative edges"
+            ]),
+            legend_title="Edges",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs
+        )
+
+    def _get_flatten_multi_label_and_unknown_node_types(
+        self,
+        subsampled_node_ids: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Returns flattened node type IDs adjusted for the current instance.
+
+        Implementative details
+        ---------------------------------
+        If the subsampled node IDs are provided, only those nodes will be taken into account.
+
+        Parameters
+        ---------------------------------
+        subsampled_node_ids: np.ndarray = None
+            If provided, only samples these node IDs.
+        """
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
+        top_10_node_types = {
+            node_type: 50 - i
+            for i, node_type in enumerate(sorted(
+                node_types_counts.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:50])
+        }
+        node_types_counts = {
+            node_type: top_10_node_types.get(node_type, 0)
+            for node_type in node_types_counts
+        }
         node_types_number = self._graph.get_node_types_number()
+        unknown_node_types_id = node_types_number
+
+        # According to whether the subsampled node IDs were given,
+        # we iterate on them or on the complete set of nodes of the graph.
+        if subsampled_node_ids is None:
+            nodes_iterator = trange(
+                self._graph.get_nodes_number(),
+                desc="Computing flattened multi-label and unknown node types",
+                leave=False,
+                dynamic_ncols=True
+            )
+        else:
+            nodes_iterator = tqdm(
+                subsampled_node_ids,
+                desc="Computing subsampled flattened multi-label and unknown node types",
+                leave=False,
+                dynamic_ncols=True
+            )
+
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
-        return np.array([
-            sorted(
-                node_type_ids,
-                key=lambda node_type: node_types_counts[node_type],
-                reverse=True
-            )[0]
-            if node_type_ids is not None
-            else
-            node_types_number
-            for node_type_ids in self._graph.get_node_type_ids()
-        ])
+        return np.fromiter(
+            (
+                unknown_node_types_id
+                if node_type_ids is None
+                else
+                sorted(
+                    node_type_ids,
+                    key=lambda node_type: node_types_counts[node_type],
+                    reverse=True
+                )[0]
+                for node_type_ids in (
+                    self._graph.get_node_type_ids_from_node_id(node_id)
+                    for node_id in nodes_iterator
+                )
+            ),
+            dtype=np.uint32
+        )
 
-    def _flatten_unknown_edge_types(self) -> np.ndarray:
+    def _get_flatten_unknown_edge_types(
+        self,
+        subsampled_edge_id: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Returns flattened edge type IDs adjusted for the current instance.
+
+        Implementative details
+        ---------------------------------
+        If the subsampled edge IDs are provided, only those edges will be taken into account.
+
+        Parameters
+        ---------------------------------
+        subsampled_edge_ids: np.ndarray = None
+            If provided, only samples these edge IDs.
+        """
         # The following is needed to normalize the multiple types
         edge_types_number = self._graph.get_edge_types_number()
+        unknown_edge_types_id = edge_types_number
+        # According to whether the subsampled node IDs were given,
+        # we iterate on them or on the complete set of nodes of the graph.
+        if subsampled_edge_id is None:
+            edges_iterator = trange(
+                self._graph.get_directed_edges_number(),
+                desc="Computing flattened unknown edge types",
+                leave=False,
+                dynamic_ncols=True
+            )
+        else:
+            edges_iterator = tqdm(
+                subsampled_edge_id,
+                desc="Computing subsampled flattened unknown edge types",
+                leave=False,
+                dynamic_ncols=True
+            )
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
-        return np.array([
-            edge_type_id
-            if edge_type_id is not None
-            else
-            edge_types_number
-            for edge_type_id in self._graph.get_edge_type_ids()
-        ])
+        return np.fromiter(
+            (
+                unknown_edge_types_id
+                if edge_type_id is None
+                else
+                edge_type_id
+                for edge_type_id in (
+                    edge_type_id
+                    for edge_type_id in (
+                        self._graph.get_edge_type_id_from_edge_id(edge_id)
+                        for edge_id in edges_iterator
+                    )
+                )
+            ),
+            dtype=np.uint32
+        )
 
     def plot_node_types(
         self,
@@ -1155,13 +1533,14 @@ class GraphVisualization:
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
         legend_title: str = "Node types",
-        other_label: str = "Other",
+        other_label: str = "Other {} node types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
         annotate_nodes: Union[str, bool] = "auto",
@@ -1183,7 +1562,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} node types"
             Label to use for edges below the top k threshold.
         train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
@@ -1199,6 +1578,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1238,22 +1619,36 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
-        node_types = self._flatten_multi_label_and_unknown_node_types()
-        if self._subsampled_node_ids is not None:
-            node_types = node_types[self._subsampled_node_ids]
+        node_types = self._get_flatten_multi_label_and_unknown_node_types(
+            self._subsampled_node_ids
+        )
 
-        node_type_names = self._graph.get_unique_node_type_names()
+        node_type_names_iter = (
+            self._graph.get_node_type_name_from_node_type_id(node_id)
+            for node_id in trange(
+                self._graph.get_node_types_number(),
+                desc="Retrieving graph node types",
+                leave=False,
+                dynamic_ncols=True
+            )
+        )
 
         if self._graph.has_unknown_node_types():
-            node_type_names.append("Unknown")
+            node_type_names_iter = itertools.chain(
+                node_type_names_iter,
+                iter(("Unknown",))
+            )
 
-        node_type_names = np.array(node_type_names)
+        node_type_names = np.array(
+            list(node_type_names_iter),
+            dtype=str,
+        )
 
-        figure, axes = self._plot_types(
-            "Node types",
+        returned_values = self._plot_types(
             self._node_embedding.values,
+            self._get_complete_title("Node types"),
             types=node_types,
             type_labels=node_type_names,
             legend_title=legend_title,
@@ -1269,17 +1664,19 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_connected_components(
         self,
@@ -1287,7 +1684,7 @@ class GraphVisualization:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        other_label: str = "Other",
+        other_label: str = "Other {} components",
         legend_title: str = "Component sizes",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -1295,6 +1692,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -1314,7 +1712,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} components",
             Label to use for edges below the top k threshold.
         legend_title: str = "Component sizes",
             Title for the legend.
@@ -1332,6 +1730,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1366,7 +1766,7 @@ class GraphVisualization:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         components, components_number, _, _ = self._graph.connected_components()
         sizes = np.bincount(components, minlength=components_number)
@@ -1374,17 +1774,21 @@ class GraphVisualization:
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
-        figure, axes = self._plot_types(
-            "Components",
+        returned_values = self._plot_types(
             self._node_embedding.values,
+            self._get_complete_title("Components"),
             types=components,
-            type_labels=np.array([
-                "Size {}".format(size)
-                for size in sizes
-            ]),
+            type_labels=np.array(
+                [
+                    "Size {}".format(size)
+                    for size in sizes
+                ],
+                dtype=str
+            ),
             legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             k=k,
             figure=figure,
             axes=axes,
@@ -1398,13 +1802,14 @@ class GraphVisualization:
         )
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_node_degrees(
         self,
@@ -1418,6 +1823,7 @@ class GraphVisualization:
         use_log_scale: bool = True,
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -1451,6 +1857,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         show_edges: bool = False,
             Whether to show edges between the different nodes
             shown in the scatter plot.
@@ -1474,12 +1882,19 @@ class GraphVisualization:
                 "Node fitting must be executed before plot."
             )
 
-        degrees = self._graph.get_node_degrees()
-        if self._subsampled_node_ids is not None:
-            degrees = degrees[self._subsampled_node_ids]
+        if self._subsampled_node_ids is None:
+            degrees = self._graph.get_node_degrees()
+        else:
+            degrees = np.fromiter(
+                (
+                    self._graph.get_node_degree_from_node_id(node_id)
+                    for node_id in self._subsampled_node_ids
+                ),
+                dtype=np.uint32
+            )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -1489,9 +1904,9 @@ class GraphVisualization:
                 **kwargs
             )
 
-        figure, axes, scatter = self._plot_scatter(
-            "Node degrees",
-            self._node_embedding.values,
+        returned_values = self._wrapped_plot_scatter(
+            points=self._node_embedding.values,
+            title=self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
             axes=axes,
@@ -1506,21 +1921,25 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
+            return_collections=True,
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter[0], ax=axes)
-        color_bar.set_alpha(1)
-        color_bar.draw_all()
+        if not self._rotate:
+            figure, axes, scatter = returned_values
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
 
         if annotate_nodes:
-            figure, axes = self.annotate_nodes(
+            returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding.values,
             )
 
-        return figure, axes
+        return returned_values
 
     def plot_edge_types(
         self,
@@ -1529,7 +1948,7 @@ class GraphVisualization:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        other_label: str = "Other",
+        other_label: str = "Other {} edge types",
         legend_title: str = "Edge types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -1537,6 +1956,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1555,7 +1975,7 @@ class GraphVisualization:
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other",
+        other_label: str = "Other {} edge types",
             Label to use for edges below the top k threshold.
         legend_title: str = "Edge types",
             Title for the legend.
@@ -1573,6 +1993,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1599,27 +2021,32 @@ class GraphVisualization:
                 "Edge fitting was not yet executed!"
             )
 
-        edge_type_number = self._graph.get_edge_types_number()
-        edge_types = np.array([
-            edge_type_id
-            if edge_type_id is not None
-            else edge_type_number
-            for edge_type_id in self._graph.get_edge_type_ids()
-        ])
+        edge_types = self._get_flatten_unknown_edge_types(
+            self._subsampled_edge_ids
+        )
 
-        if self._subsampled_edge_ids is not None:
-            edge_types = edge_types[self._subsampled_edge_ids]
-
-        edge_type_names = self._graph.get_unique_edge_type_names()
+        edge_type_names_iter = (
+            self._graph.get_edge_type_name_from_edge_type_id(edge_id)
+            for edge_id in trange(
+                self._graph.get_edge_types_number(),
+                desc="Retrieving graph edge types",
+                leave=False,
+                dynamic_ncols=True
+            )
+        )
 
         if self._graph.has_unknown_edge_types():
-            edge_type_names.append("Unknown")
+            edge_type_names_iter = itertools.chain(
+                edge_type_names_iter,
+                iter(("Unknown",))
+            )
 
-        edge_type_names = np.array(edge_type_names)
+        edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         return self._plot_types(
-            "Edge types",
             self._edge_embedding.values,
+            self._get_complete_title(
+                "Edge types - {}".format(self._edge_embedding_method)),
             types=edge_types,
             type_labels=edge_type_names,
             legend_title=legend_title,
@@ -1635,6 +2062,7 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
             **kwargs
         )
 
@@ -1649,6 +2077,7 @@ class GraphVisualization:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        loc: str = "best",
         **kwargs: Dict
     ):
         """Plot common edge types of provided graph.
@@ -1677,6 +2106,8 @@ class GraphVisualization:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
         **kwargs: Dict,
             Additional kwargs for the subplots.
 
@@ -1699,13 +2130,21 @@ class GraphVisualization:
                 "Edge fitting must be executed before plot."
             )
 
-        weights = self._graph.get_edge_weights()
-        if self._subsampled_edge_ids is not None:
-            weights = weights[self._subsampled_edge_ids]
+        if self._subsampled_edge_ids is None:
+            weights = self._graph.get_edge_weights()
+        else:
+            weights = np.fromiter(
+                (
+                    self._graph.get_edge_weight_from_edge_id(edge_id)
+                    for edge_id in self._subsampled_edge_ids
+                ),
+                dtype=np.uint32
+            )
 
-        figure, axes, scatter = self._plot_scatter(
-            "Edge weights",
-            self._node_embedding.values,
+        returned_values = self._wrapped_plot_scatter(
+            points=self._edge_embedding.values,
+            title=self._get_complete_title(
+                "Edge weights - {}".format(self._edge_embedding_method)),
             colors=weights,
             figure=figure,
             axes=axes,
@@ -1719,20 +2158,26 @@ class GraphVisualization:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            loc=loc,
+            return_collections=True,
             **kwargs
         )
 
-        color_bar = figure.colorbar(scatter[0], ax=axes)
-        color_bar.set_alpha(1)
-        color_bar.draw_all()
-        return figure, axes
+        if not self._rotate:
+            figure, axes, scatter = returned_values
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
+            returned_values = figure, axes
 
-    def plot_dot(self, engine: str = "circle"):
+        return returned_values
+
+    def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
 
         Parameters
         ------------------------------
-        engine: str = "circle",
+        engine: str = "neato",
             The engine to use to visualize the graph.
 
         Raises
@@ -1757,3 +2202,97 @@ class GraphVisualization:
             self._graph.to_dot(),
             engine=engine
         )
+
+    def _annotate_top_nodes(
+        self,
+        axis: Axes,
+        k: int = 5
+    ):
+        """Add textual label with position of central node to plots.
+
+        Parameters
+        ----------------------
+        axis: Axis
+            The axis where to plot the annotations
+        k: int = 5
+            The number of top degree nodes to visualize
+            By default, 5.
+        """
+        sorted_node_degrees = np.sort(self._graph.get_node_degrees())
+        for i, node_id in enumerate(self._graph.get_top_k_central_node_ids(k)):
+            node_degree = self._graph.get_node_degree_from_node_id(node_id)
+            axis.annotate(
+                self._graph.get_node_name_from_node_id(node_id),
+                (
+                    np.where(sorted_node_degrees == node_degree)[0][0],
+                    node_degree
+                ),
+                xytext=(40*(1 if i % 2 else -1), -5),
+                textcoords='offset points',
+                ha='center', va='bottom',
+                bbox=dict(boxstyle='round,pad=0.2',
+                          fc='tab:orange', alpha=0.3),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0',
+                                color='tab:red')
+            )
+
+    def plot_node_degree_distribution(
+        self,
+        fig: Optional[Figure] = None,
+        axis: Optional[Figure] = None,
+        apply_tight_layout: bool = True
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node degree distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        """
+        if axis is None:
+            fig, axis = plt.subplots(figsize=(5, 5))
+        axis.plot(np.sort(self._graph.get_node_degrees()), '.')
+        axis.set_ylabel("Node degree")
+        axis.set_xlabel("Nodes sorted by degree")
+        axis.set_title("Degrees distribution for {}".format(self._graph_name))
+        self._annotate_top_nodes(axis)
+        if apply_tight_layout:
+            fig.tight_layout()
+        return fig, axis
+
+    def plot_edge_weight_distribution(
+        self,
+        fig: Optional[Figure] = None,
+        axis: Optional[Figure] = None,
+        apply_tight_layout: bool = True
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node degree distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        """
+        if axis is None:
+            fig, axis = plt.subplots(figsize=(5, 5))
+        axis.hist(self._graph.get_edge_weights(), bins=50)
+        axis.set_ylabel("Number of edges")
+        axis.set_xlabel("Sorted weights")
+        axis.set_title("Weights distribution for {}".format(self._graph_name))
+        if apply_tight_layout:
+            fig.tight_layout()
+        return fig, axis

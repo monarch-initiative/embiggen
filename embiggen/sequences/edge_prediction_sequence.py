@@ -14,11 +14,13 @@ class EdgePredictionSequence(Sequence):
         graph: Graph,
         use_node_types: bool = False,
         use_edge_types: bool = False,
+        return_only_edges_with_known_edge_types: bool = False,
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         support_mirrored_strategy: bool = False,
+        filter_none_values: bool = True,
         graph_to_avoid: Graph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
@@ -48,13 +50,15 @@ class EdgePredictionSequence(Sequence):
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
         support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
+            Whether to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
             to convert the unsigned int 32 values that represent the indices of
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
+        filter_none_values: bool = True
+            Whether to filter None values.
         graph_to_avoid: Graph = None,
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
@@ -76,14 +80,15 @@ class EdgePredictionSequence(Sequence):
         self._random_state = random_state
         self._use_node_types = use_node_types
         self._use_edge_types = use_edge_types
+        self._filter_none_values = filter_none_values
+        self._return_only_edges_with_known_edge_types = return_only_edges_with_known_edge_types
         self._use_edge_metrics = use_edge_metrics
         if batches_per_epoch == "auto":
             batches_per_epoch = max(
-                5 * graph.get_directed_edges_number() // batch_size,
+                graph.get_edges_number() // batch_size,
                 1
             )
         self._batches_per_epoch = batches_per_epoch
-        self._nodes = np.array(self._graph.get_node_names())
         super().__init__(
             sample_number=batches_per_epoch*batch_size,
             batch_size=batch_size,
@@ -106,6 +111,7 @@ class EdgePredictionSequence(Sequence):
             (self._random_state + idx) * (1 + self.elapsed_epochs),
             return_node_types=self._use_node_types,
             return_edge_types=self._use_edge_types,
+            return_only_edges_with_known_edge_types=self._return_only_edges_with_known_edge_types,
             return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
@@ -127,5 +133,5 @@ class EdgePredictionSequence(Sequence):
             for value in (
                 sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types,
             )
-            if value is not None
+            if not self._filter_none_values or value is not None
         ], labels

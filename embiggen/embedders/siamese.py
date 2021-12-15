@@ -431,7 +431,7 @@ class Siamese(Embedder):
 
     def fit(
         self,
-        batch_size: int = 2**20,
+        batch_size: int = 2**15,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         graph_to_avoid: Graph = None,
@@ -439,11 +439,11 @@ class Siamese(Embedder):
         elapsed_epochs: int = 0,
         epochs: int = 1000,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.01,
+        early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 5,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.01,
+        reduce_lr_min_delta: float = 0.001,
         reduce_lr_patience: int = 2,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,

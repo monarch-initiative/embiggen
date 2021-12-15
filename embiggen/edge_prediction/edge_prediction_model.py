@@ -1,41 +1,47 @@
+"""Class for an abstract edge prediction model."""
 from typing import Dict, Union
+import warnings
 
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from extra_keras_metrics import get_standard_binary_metrics
-from tensorflow.keras.layers import Layer, Input, Concatenate
-from tensorflow.keras.models import Model
+from extra_keras_metrics import get_standard_binary_metrics, get_sparse_multiclass_metrics
+from tensorflow.keras.layers import Layer, Input, Concatenate  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
+from userinput import set_validator
+from userinput.utils import closest
 
 from ..embedders import Embedder
-from ..sequences import EdgePredictionSequence
+from ..sequences import EdgePredictionSequence, EdgeLabelPredictionSequence
 from .layers import edge_embedding_layer
+
+edge_prediction_supported_tasks = [
+    "EDGE_PREDICTION",
+    "EDGE_LABEL_PREDICTION"
+]
 
 
 class EdgePredictionModel(Embedder):
 
     def __init__(
         self,
-        nodes_number: int = None,
+        graph: Graph,
         embedding_size: int = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         edge_embedding_method: str = "Concatenate",
         optimizer: str = "nadam",
-        trainable_embedding: bool = True,
+        trainable_embedding: bool = False,
         use_dropout: bool = True,
         dropout_rate: float = 0.5,
         use_edge_metrics: bool = False,
+        task_name: str = "EDGE_PREDICTION"
     ):
-        """Create new Perceptron object.
+        """Create new abstract Edge Prediction Model object.
 
         Parameters
         --------------------
-        nodes_number: int = None,
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
+        graph: Graph,
+            The graph object to base the model on.
         embedding_size: int = None,
             Dimension of the embedding.
             If None, the seed embedding must be provided.
@@ -48,7 +54,7 @@ class EdgePredictionModel(Embedder):
             Method to use to create the edge embedding.
         optimizer: str = "nadam",
             Optimizer to use during the training.
-        trainable_embedding: bool = True,
+        trainable_embedding: bool = False,
             Whether to allow for trainable embedding.
         use_dropout: bool = True,
             Whether to use dropout.
@@ -56,20 +62,53 @@ class EdgePredictionModel(Embedder):
             Dropout rate.
         use_edge_metrics: bool = False,
             Whether to return the edge metrics.
+        task_name: str = "EDGE_PREDICTION",
+            The name of the task to build the model for.
+            The currently supported task names are `EDGE_PREDICTION` and `EDGE_LABEL_PREDICTION`.
+            The default task name is `EDGE_PREDICTION`.
         """
-        if edge_embedding_method not in edge_embedding_layer:
+        supported_edge_embedding_methods = list(edge_embedding_layer.keys())
+        if not set_validator(supported_edge_embedding_methods)(edge_embedding_method):
             raise ValueError(
-                "The given edge embedding method `{}` is not supported.".format(
-                    edge_embedding_method
+                (
+                    "The provided edge embedding method name `{edge_embedding_method}` is not supported. Did you mean {closest}?\n"
+                    "The supported edge embedding method names are: {supported_tasks}."
+                ).format(
+                    edge_embedding_method=edge_embedding_method,
+                    closest=closest(edge_embedding_method,
+                                    supported_edge_embedding_methods),
+                    supported_tasks=", ".join(
+                        supported_edge_embedding_methods),
                 )
             )
+        if not set_validator(edge_prediction_supported_tasks)(task_name):
+            raise ValueError(
+                (
+                    "The provided task name `{task_name}` is not supported. Did you mean {closest}?\n"
+                    "The supported task names are: {supported_tasks}."
+                ).format(
+                    task_name=task_name,
+                    closest=closest(
+                        task_name, edge_prediction_supported_tasks),
+                    supported_tasks=", ".join(edge_prediction_supported_tasks),
+                )
+            )
+        if embedding is None and not trainable_embedding:
+            warnings.warn(
+                "The embedding was not provided, therefore a new random Normal embedding "
+                "will be allocated, but also the trainable embedding flag was left set to false.\n"
+                "This means that the embedding will not be trained, and the nodes will have "
+                "exclusively random features associated to them."
+            )
+        self._graph = graph
+        self._task_name = task_name
         self._use_edge_metrics = use_edge_metrics
         self._edge_embedding_method = edge_embedding_method
         self._model_name = self.__class__.__name__
         self._use_dropout = use_dropout
         self._dropout_rate = dropout_rate
         super().__init__(
-            vocabulary_size=nodes_number,
+            vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             optimizer=optimizer,
             embedding=embedding,
@@ -78,14 +117,29 @@ class EdgePredictionModel(Embedder):
 
     def _compile_model(self) -> Model:
         """Compile model."""
-        self._model.compile(
-            loss="binary_crossentropy",
-            optimizer=self._optimizer,
-            metrics=get_standard_binary_metrics(),
-        )
+        if self._task_name == "EDGE_PREDICTION":
+            self._model.compile(
+                loss="binary_crossentropy",
+                optimizer=self._optimizer,
+                metrics=get_standard_binary_metrics(),
+            )
+        elif self._task_name == "EDGE_LABEL_PREDICTION":
+            self._model.compile(
+                loss="sparse_categorical_crossentropy",
+                optimizer=self._optimizer,
+                metrics=get_sparse_multiclass_metrics(),
+            )
+        else:
+            raise ValueError("Unreacheable!")
 
     def _build_model_body(self, input_layer: Layer) -> Layer:
-        """Build new model body for Edge prediction."""
+        """Build new model body for Edge prediction.
+
+        Parameters
+        --------------------
+        input_layer: Layer,
+            The previous layer to be used as input of the model.
+        """
         raise NotImplementedError(
             "The method _build_model_body must be implemented in the child classes."
         )
@@ -93,6 +147,8 @@ class EdgePredictionModel(Embedder):
     def _build_model(self) -> Model:
         """Build new model for Edge prediction."""
         embedding_layer = edge_embedding_layer[self._edge_embedding_method](
+            nodes_number=self._graph.get_nodes_number(),
+            embedding_size=self._embedding_size,
             embedding=self._embedding,
             use_dropout=self._use_dropout,
             dropout_rate=self._dropout_rate
@@ -105,7 +161,10 @@ class EdgePredictionModel(Embedder):
             # TODO! update the shape using an ensmallen method
             edge_metrics_input = Input((4,), name="EdgeMetrics")
             inputs.append(edge_metrics_input)
-            edge_embedding = Concatenate()([edge_embedding, edge_metrics_input])
+            edge_embedding = Concatenate()([
+                edge_embedding,
+                edge_metrics_input
+            ])
 
         return Model(
             inputs=inputs,
@@ -191,14 +250,25 @@ class EdgePredictionModel(Embedder):
         --------------------
         Dataframe with traininhg history.
         """
-        sequence = EdgePredictionSequence(
-            graph,
-            batch_size=batch_size,
-            batches_per_epoch=batches_per_epoch,
-            negative_samples_rate=negative_samples_rate,
-            support_mirrored_strategy=support_mirrored_strategy,
-            use_edge_metrics=self._use_edge_metrics,
-        )
+        if self._task_name == "EDGE_PREDICTION":
+            sequence = EdgePredictionSequence(
+                graph,
+                batch_size=batch_size,
+                batches_per_epoch=batches_per_epoch,
+                negative_samples_rate=negative_samples_rate,
+                support_mirrored_strategy=support_mirrored_strategy,
+                use_edge_metrics=self._use_edge_metrics,
+            )
+        elif self._task_name == "EDGE_LABEL_PREDICTION":
+            sequence = EdgeLabelPredictionSequence(
+                graph,
+                batch_size=batch_size,
+                batches_per_epoch=batches_per_epoch,
+                support_mirrored_strategy=support_mirrored_strategy,
+                use_edge_metrics=self._use_edge_metrics,
+            )
+        else:
+            raise ValueError("Unreacheable!")
         return super().fit(
             sequence,
             epochs=epochs,
