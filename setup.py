@@ -33,7 +33,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.10.0.dev1',
+    version='0.10.0.dev2',
     description='Graph machine learning and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
