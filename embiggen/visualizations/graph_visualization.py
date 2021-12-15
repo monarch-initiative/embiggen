@@ -415,6 +415,7 @@ class GraphVisualization:
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
             )
+        
         # Retrieve the nodes
         node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
@@ -437,7 +438,10 @@ class GraphVisualization:
                 )
 
             # And sample the nodes
-            node_names = node_names[self._subsampled_node_ids]
+            node_names = [
+                self._graph.get_node_name_from_node_id(node_id)
+                for node_id in self._subsampled_node_ids
+            ]
 
         self._node_transformer.fit(node_embedding)
         self._node_embedding = pd.DataFrame(
@@ -480,7 +484,7 @@ class GraphVisualization:
                 high=self._graph.get_directed_edges_number(),
                 size=self._number_of_subsampled_edges
             )
-            edge_names = np.array([
+            edge_names = [
                 self._graph.get_node_names_from_edge_id(edge_id)
                 for edge_id in tqdm(
                     self._subsampled_edge_ids,
@@ -488,7 +492,7 @@ class GraphVisualization:
                     leave=False,
                     dynamic_ncols=True
                 )
-            ])
+            ]
         else:
             edge_names = self._graph.get_directed_edge_node_names()
 

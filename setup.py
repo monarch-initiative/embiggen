@@ -33,8 +33,8 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.9.2',
-    description='Extended implementation of node2vec with several word2vec family algorithms',
+    version='0.10.0.dev1',
+    description='Graph machine learning and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
     keywords='node2vec,word2vec,CBOW,SkipGram,GloVe',
@@ -53,7 +53,7 @@ setup(
         "sanitize_ml_labels>=1.0.29",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.5",
-        "ensmallen>=0.6.1",
+        "ensmallen>=0.7.0.dev6",
         "validate_version_code",
         "packaging"
     ],
