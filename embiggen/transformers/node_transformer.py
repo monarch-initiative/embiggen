@@ -58,9 +58,12 @@ class NodeTransformer:
             Ensmallen's remap method but it may be less intuitive to users.
         """
         if not isinstance(embedding, pd.DataFrame):
-            raise ValueError("Given embedding is not a pandas DataFrame.")
-        self._embedding = embedding
-        self._embedding_numpy = embedding.to_numpy()
+            if not self._aligned_node_mapping:
+                raise ValueError("Given embedding is not a pandas DataFrame.")
+            self._embedding_numpy = embedding
+        else:
+            self._embedding = embedding
+            self._embedding_numpy = embedding.to_numpy()
 
     def transform(self, nodes: Union[List[str], List[int]]) -> np.ndarray:
         """Return embeddings from given node.
@@ -82,7 +85,7 @@ class NodeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if self._embedding is None and not self.numeric_node_ids:
+        if self._embedding_numpy is None and not self.numeric_node_ids:
             raise ValueError(
                 "Transformer was not fitted yet."
             )

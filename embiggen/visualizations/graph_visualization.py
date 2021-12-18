@@ -14,9 +14,9 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
+from pandas.core.frame import DataFrame
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
-from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm.auto import trange, tqdm
 import warnings
 import itertools
@@ -124,10 +124,6 @@ class GraphVisualization:
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
         self._edge_embedding_method = edge_embedding_method
-        self._graph_transformer = GraphTransformer(
-            method=edge_embedding_method
-        )
-        self._node_transformer = NodeTransformer()
 
         self._node_embedding_method_name = node_embedding_method_name
         self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
@@ -401,13 +397,13 @@ class GraphVisualization:
 
     def fit_transform_nodes(
         self,
-        node_embedding: pd.DataFrame
+        node_embedding: Union[pd.DataFrame, np.ndarray]
     ):
         """Executes fitting for plotting node embeddings.
 
         Parameters
         -------------------------
-        node_embedding: pd.DataFrame,
+        node_embedding: Union[pd.DataFrame, np.ndarray]
             Embedding of the graph nodes.
         """
         if node_embedding.shape[0] != self._graph.get_nodes_number():
@@ -422,52 +418,47 @@ class GraphVisualization:
             self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
+                if isinstance(node_embedding, pd.DataFrame)
+                else node_embedding
             )
 
-        # Retrieve the nodes
-        node_names = node_embedding.index
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
-            # If there are node types, we use a stratified
-            # node sampling so that all the nodes types may be displayed.
-            if self._graph.has_node_types() and not self._graph.has_singleton_node_types():
-                # We compute the indices
-                self._subsampled_node_ids, _ = next(StratifiedShuffleSplit(
-                    n_splits=1,
-                    train_size=self._number_of_subsampled_nodes,
-                    random_state=self._random_state
-                ).split(node_names, self._get_flatten_multi_label_and_unknown_node_types() if self._graph.has_node_types() else None))
+            # Otherwise there is no need to stratify.
+            node_indices = self._subsampled_node_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_nodes_number(),
+                size=self._number_of_subsampled_nodes
+            )
+
+            if not isinstance(node_embedding, np.ndarray):
+                node_indices = [
+                    self._graph.get_node_name_from_node_id(node_id)
+                    for node_id in self._subsampled_node_ids
+                ]
+        else:
+            if isinstance(node_embedding, np.ndarray):
+                node_indices = self._graph.get_node_ids()
             else:
-                # Otherwise there is no need to stratify.
-                self._subsampled_node_ids = np.random.randint(
-                    low=0,
-                    high=self._graph.get_nodes_number(),
-                    size=self._number_of_subsampled_nodes
-                )
+                node_indices = node_embedding.index
 
-            # And sample the nodes
-            node_names = [
-                self._graph.get_node_name_from_node_id(node_id)
-                for node_id in self._subsampled_node_ids
-            ]
-
-        self._node_transformer.fit(node_embedding)
-        self._node_embedding = pd.DataFrame(
-            self.decompose(
-                self._node_transformer.transform(node_names)
-            ),
-            index=node_names
+        node_transformer = NodeTransformer(
+            # If the node embedding provided is a numpy array, we assume
+            # that the provided embedding is aligned with the graph.
+            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
+        node_transformer.fit(node_embedding)
+        self._node_embedding = self.decompose(node_transformer.transform(node_indices))
 
     def fit_transform_edges(
         self,
-        node_embedding: pd.DataFrame
+        node_embedding: Union[pd.DataFrame, np.ndarray]
     ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: pd.DataFrame
+        node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         if node_embedding.shape[0] != self._graph.get_nodes_number():
@@ -482,6 +473,8 @@ class GraphVisualization:
             self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
                 node_embedding.values
+                if isinstance(node_embedding, pd.DataFrame)
+                else node_embedding
             )
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_edges is not None and self._graph.get_directed_edges_number() > self._number_of_subsampled_edges:
@@ -492,34 +485,51 @@ class GraphVisualization:
                 high=self._graph.get_directed_edges_number(),
                 size=self._number_of_subsampled_edges
             )
-            edge_names = [
-                self._graph.get_node_names_from_edge_id(edge_id)
-                for edge_id in tqdm(
-                    self._subsampled_edge_ids,
-                    desc="Retrieving edge node names",
-                    leave=False,
-                    dynamic_ncols=True
-                )
-            ]
+            if isinstance(node_embedding, np.ndarray):
+                edge_indices = [
+                    self._graph.get_node_ids_from_edge_id(edge_id)
+                    for edge_id in tqdm(
+                        self._subsampled_edge_ids,
+                        desc="Retrieving edge node ids",
+                        leave=False,
+                        dynamic_ncols=True
+                    )
+                ]
+            else:
+                edge_indices = [
+                    self._graph.get_node_names_from_edge_id(edge_id)
+                    for edge_id in tqdm(
+                        self._subsampled_edge_ids,
+                        desc="Retrieving edge node names",
+                        leave=False,
+                        dynamic_ncols=True
+                    )
+                ]
         else:
-            edge_names = self._graph.get_directed_edge_node_names()
+            if isinstance(node_embedding, np.ndarray):
+                edge_indices = self._graph.get_directed_edge_node_ids()
+            else:
+                edge_indices = self._graph.get_directed_edge_node_names()
 
-        self._graph_transformer.fit(node_embedding)
-        edge_embedding = self._graph_transformer.transform(edge_names)
-        self._edge_embedding = pd.DataFrame(
-            self.decompose(edge_embedding),
-            index=edge_names
+        graph_transformer = GraphTransformer(
+            method=self._edge_embedding_method,
+            # If the node embedding provided is a numpy array, we assume
+            # that the provided embedding is aligned with the graph.
+            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
+        graph_transformer.fit(node_embedding)
+        edge_embedding = graph_transformer.transform(edge_indices)
+        self._edge_embedding = self.decompose(edge_embedding)
 
     def fit_transform_negative_edges(
         self,
-        node_embedding: pd.DataFrame,
+        node_embedding: Union[pd.DataFrame, np.ndarray]
     ):
         """Executes fitting for plotting negative edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: pd.DataFrame
+        node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         if node_embedding.shape[0] != self._graph.get_nodes_number():
@@ -531,31 +541,35 @@ class GraphVisualization:
                 )
             )
         # If necessary, we proceed with the subsampling
-        self._subsampled_negative_edge_node_ids = np.random.randint(
+        edge_indices = self._subsampled_negative_edge_node_ids = np.random.randint(
             low=0,
             high=self._graph.get_nodes_number(),
             size=(self._number_of_subsampled_negative_edges, 2)
         )
 
-        edge_names = np.array([
-            (
-                self._graph.get_node_name_from_node_id(src_node_id),
-                self._graph.get_node_name_from_node_id(dst_node_id),
-            )
-            for (src_node_id, dst_node_id) in tqdm(
-                self._subsampled_negative_edge_node_ids,
-                desc="Retrieving negative edge node names",
-                leave=False,
-                dynamic_ncols=True
-            )
-        ])
+        if not isinstance(node_embedding, np.ndarray):
+            edge_indices = np.array([
+                (
+                    self._graph.get_node_name_from_node_id(src_node_id),
+                    self._graph.get_node_name_from_node_id(dst_node_id),
+                )
+                for (src_node_id, dst_node_id) in tqdm(
+                    self._subsampled_negative_edge_node_ids,
+                    desc="Retrieving negative edge node names",
+                    leave=False,
+                    dynamic_ncols=True
+                )
+            ])
 
-        self._graph_transformer.fit(node_embedding)
-        edge_embedding = self._graph_transformer.transform(edge_names)
-        self._negative_edge_embedding = pd.DataFrame(
-            self.decompose(edge_embedding),
-            index=edge_names
+        graph_transformer = GraphTransformer(
+            method=self._edge_embedding_method,
+            # If the node embedding provided is a numpy array, we assume
+            # that the provided embedding is aligned with the graph.
+            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
+        graph_transformer.fit(node_embedding)
+        edge_embedding = graph_transformer.transform(edge_indices)
+        self._negative_edge_embedding = self.decompose(edge_embedding)
 
     def _get_figure_and_axes(
         self,
@@ -864,7 +878,6 @@ class GraphVisualization:
             # 2) Some of the objects considered are not picklable, such as, at the time of writing
             #    the lambdas used in the graph transformer or the graph object itself.
             graph_backup = self._graph
-            graph_transformer = self._graph_transformer
             node_embedding = self._node_embedding
             edge_embedding = self._edge_embedding
             negative_edge_embedding = self._negative_edge_embedding
@@ -872,7 +885,6 @@ class GraphVisualization:
             self._edge_embedding = None
             self._negative_edge_embedding = None
             self._graph = None
-            self._graph_transformer = None
             try:
                 kwargs["loc"] = "lower right"
                 path = "{}.{}".format(
@@ -892,13 +904,11 @@ class GraphVisualization:
                 self._edge_embedding = edge_embedding
                 self._negative_edge_embedding = negative_edge_embedding
                 self._graph = graph_backup
-                self._graph_transformer = graph_transformer
                 raise e
             self._node_embedding = node_embedding
             self._edge_embedding = edge_embedding
             self._negative_edge_embedding = negative_edge_embedding
             self._graph = graph_backup
-            self._graph_transformer = graph_transformer
             return display_video_at_path(path)
         return self._plot_scatter(**kwargs)
 
@@ -1108,7 +1118,7 @@ class GraphVisualization:
             )
 
         lines_collection = mc.LineCollection(
-            self._node_embedding.values[edge_node_ids],
+            self._node_embedding[edge_node_ids],
             linewidths=1,
             zorder=0,
             **{
@@ -1207,7 +1217,7 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_embedding.values,
+            points=self._node_embedding,
             title=self._get_complete_title("Nodes embedding"),
             figure=figure,
             axes=axes,
@@ -1227,7 +1237,7 @@ class GraphVisualization:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding.values,
+                points=self._node_embedding,
             )
 
         return returned_values
@@ -1370,8 +1380,8 @@ class GraphVisualization:
             )
 
         points = np.vstack([
-            self._edge_embedding.values,
-            self._negative_edge_embedding.values
+            self._edge_embedding,
+            self._negative_edge_embedding
         ])
 
         types = np.concatenate([
@@ -1383,10 +1393,7 @@ class GraphVisualization:
         points, types = self._shuffle(points, types)
 
         return self._plot_types(
-            points=np.vstack([
-                self._edge_embedding.values,
-                self._negative_edge_embedding.values
-            ]),
+            points=points,
             title=self._get_complete_title("Positive & negative edges"),
             types=types,
             type_labels=np.array([
@@ -1647,7 +1654,7 @@ class GraphVisualization:
         )
 
         returned_values = self._plot_types(
-            self._node_embedding.values,
+            self._node_embedding,
             self._get_complete_title("Node types"),
             types=node_types,
             type_labels=node_type_names,
@@ -1673,7 +1680,7 @@ class GraphVisualization:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding.values,
+                points=self._node_embedding,
             )
 
         return returned_values
@@ -1775,7 +1782,7 @@ class GraphVisualization:
             components = components[self._subsampled_node_ids]
 
         returned_values = self._plot_types(
-            self._node_embedding.values,
+            self._node_embedding,
             self._get_complete_title("Components"),
             types=components,
             type_labels=np.array(
@@ -1806,7 +1813,7 @@ class GraphVisualization:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding.values,
+                points=self._node_embedding,
             )
 
         return returned_values
@@ -1905,7 +1912,7 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_embedding.values,
+            points=self._node_embedding,
             title=self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
@@ -1936,7 +1943,7 @@ class GraphVisualization:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding.values,
+                points=self._node_embedding,
             )
 
         return returned_values
@@ -2044,7 +2051,7 @@ class GraphVisualization:
         edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         return self._plot_types(
-            self._edge_embedding.values,
+            self._edge_embedding,
             self._get_complete_title(
                 "Edge types - {}".format(self._edge_embedding_method)),
             types=edge_types,
@@ -2142,7 +2149,7 @@ class GraphVisualization:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._edge_embedding.values,
+            points=self._edge_embedding,
             title=self._get_complete_title(
                 "Edge weights - {}".format(self._edge_embedding_method)),
             colors=weights,
