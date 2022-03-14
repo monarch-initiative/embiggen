@@ -1,5 +1,6 @@
 from setuptools import find_packages, setup
 
+
 def readme():
     with open('README.rst') as f:
         return f.read()
@@ -25,10 +26,10 @@ extras = {
 
 # TODO: Authors add your emails!!!
 authors = {
-    "Vida Ravanmehr":"vida.ravanmehr@jax.org",
-    "Peter Robinson":"peter.robinson@jax.org",
-    "Luca Cappelletti":"luca.cappelletti1@unimi.it",
-    "Tommaso Fontana":"tommaso.fontana@mail.polimi.it"
+    "Vida Ravanmehr": "vida.ravanmehr@jax.org",
+    "Peter Robinson": "peter.robinson@jax.org",
+    "Luca Cappelletti": "luca.cappelletti1@unimi.it",
+    "Tommaso Fontana": "tommaso.fontana@mail.polimi.it"
 }
 
 setup(
@@ -42,7 +43,8 @@ setup(
     author_email=", ".join(list(authors.values())),
     license='BSD3',
     python_requires='>=3.6.0',
-    packages=find_packages(exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
+    packages=find_packages(
+        exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
         'pandas',
