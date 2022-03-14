@@ -2177,14 +2177,12 @@ class GraphVisualization:
             color_bar.draw_all()
             returned_values = figure, axes
 
-        return returned_values
-
-    def plot_dot(self, engine: str = "neato"):
+    def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
 
         Parameters
         ------------------------------
-        engine: str = "neato",
+        engine: str = "circo",
             The engine to use to visualize the graph.
 
         Raises
