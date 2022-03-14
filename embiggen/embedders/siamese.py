@@ -431,7 +431,7 @@ class Siamese(Embedder):
 
     def fit(
         self,
-        batch_size: int = 2**20,
+        batch_size: int = 2**15,
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         graph_to_avoid: Graph = None,

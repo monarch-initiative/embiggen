@@ -175,9 +175,22 @@ def _compute_node_embedding(
         **kwargs
     )
     if use_mirrored_strategy:
-        strategy = tf.distribute.MirroredStrategy(devices=devices)
-        with strategy.scope():
-            return _train_model(**kwargs)
+        wrapped_results = []
+        # The following Try-Except statement is needed because of a
+        # weird IndexError exception raised in recent (> 2.6) versions
+        # of TensorFlow. According to the TensorFlow documentation,
+        # the usage of MirroredStrategy within this code snipped should
+        # be correct, nonetheless it raises the exception.
+        # Since the execution of the model is correct, we patch it
+        # this way to avoid loosing model training.
+        try:
+            strategy = tf.distribute.MirroredStrategy(devices=devices)
+            with strategy.scope():
+                # This is a candidate patch to a MirroredStrategy
+                wrapped_results.append(_train_model(**kwargs))
+        except IndexError:
+            pass
+        return wrapped_results.pop()
     return _train_model(**kwargs)
 
 

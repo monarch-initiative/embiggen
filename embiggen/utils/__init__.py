@@ -6,6 +6,7 @@ from .tensorflow_utils import (
     tensorflow_version_is_higher_or_equal_than,
     must_have_tensorflow_version_higher_or_equal_than
 )
+from .normalize_model_structural_parameters import normalize_model_list_parameter, normalize_model_ragged_list_parameter
 
 __all__ = [
     "graph_to_sparse_tensor",
@@ -16,5 +17,6 @@ __all__ = [
     "has_rocm_drivers",
     "has_single_gpu",
     "tensorflow_version_is_higher_or_equal_than",
-    "must_have_tensorflow_version_higher_or_equal_than"
+    "must_have_tensorflow_version_higher_or_equal_than",
+    "normalize_model_list_parameter", "normalize_model_ragged_list_parameter"
 ]

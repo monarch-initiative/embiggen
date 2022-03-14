@@ -30,7 +30,7 @@ class GraphSkipGram(Node2Vec):
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 3,
+        window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,

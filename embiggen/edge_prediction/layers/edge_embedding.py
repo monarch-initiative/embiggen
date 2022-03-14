@@ -1,9 +1,9 @@
 """Layer for executing Concatenation edge embedding."""
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
-from tensorflow.keras.layers import Embedding  # pylint: disable=import-error
-from tensorflow.keras.layers import Flatten, Input, Layer, Dropout
+from tensorflow.keras.layers import Embedding  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Flatten, Input, Layer, Dropout  # pylint: disable=import-error,no-name-in-module
 
 from ...embedders import Embedder
 
@@ -12,27 +12,33 @@ class EdgeEmbedding(Layer):
 
     def __init__(
         self,
-        embedding: np.ndarray = None,
-        embedding_layer: Embedding = None,
-        use_dropout: bool = True,
-        dropout_rate: float = 0.5,
+        nodes_number: Optional[int] = None,
+        embedding_size: Optional[int] = None,
+        embedding: Optional[np.ndarray] = None,
+        embedding_layer: Optional[Embedding] = None,
+        use_dropout: Optional[bool] = True,
+        dropout_rate: Optional[float] = 0.5,
         **kwargs: Dict
     ):
         """Create new EdgeEmbedding object.
 
         Parameters
         --------------------------
-        embedding: np.ndarray = None,
+        nodes_number: Optional[int] = None
+            Number of nodes in the graph to embed.
+        embedding_size: Optional[int] = None
+            Size of the embedding.
+        embedding: np.ndarray = None
             The embedding vector.
             Either this or the embedding layer MUST be provided.
-        embedding_layer: Embedding = None,
+        embedding_layer: Embedding = None
             The embedding layer.
             Either this or the embedding layer MUST be provided.
-        use_dropout: bool = True,
+        use_dropout: bool = True
             Wether to enable or not the Dropout layer after the embedding.
-        dropout_rate: float = 0.5,
+        dropout_rate: float = 0.5
             The rate for the dropout.
-        **kwargs: Dict,
+        **kwargs: Dict
             Kwargs to pass to super call.
 
         Raises
@@ -46,12 +52,20 @@ class EdgeEmbedding(Layer):
             raise ValueError(
                 "The dropout rate must be a strictly positive real number."
             )
+        if embedding is None and (nodes_number is None or embedding_size is None):
+            raise ValueError(
+                "If the embedding was not provided, the number of nodes or the embedding "
+                "size must be provided!"
+            )
         self._embedding_layer = embedding_layer
         self._embedding = embedding
+        self._nodes_number = nodes_number
+        self._embedding_size = embedding_size
         self._use_dropout = use_dropout
         self._dropout_rate = dropout_rate
         self._source_node_input = Input((1,), name="source_node_input")
-        self._destination_node_input = Input((1,), name="destination_node_input")
+        self._destination_node_input = Input(
+            (1,), name="destination_node_input")
         super(EdgeEmbedding, self).__init__(**kwargs)
 
     @property
@@ -66,6 +80,13 @@ class EdgeEmbedding(Layer):
                 input_length=1,
                 name=Embedder.TERMS_EMBEDDING_LAYER_NAME,
                 weights=[self._embedding]
+            )
+        else:
+            self._embedding_layer = Embedding(
+                self._nodes_number,
+                self._embedding_size,
+                input_length=1,
+                name=Embedder.TERMS_EMBEDDING_LAYER_NAME
             )
 
         self._embedding_layer.trainable = self._trainable
