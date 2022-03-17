@@ -86,11 +86,15 @@ class Embedder:
                 raise ValueError(
                     "Given embedding is not a numpy array."
                 )
-            if vocabulary_size is not None or embedding_size is not None:
-                raise ValueError(
-                    "Seed embedding was provided but also vocabulary size "
-                    "and/or embedding size was provided."
-                )
+            if (vocabulary_size is not None or embedding_size is not None) and vocabulary_size != embedding_size.shape[0]:
+                raise ValueError((
+                    "Both seed embedding and vocabulary size were provided but the two values "
+                    "are not compatible. Namely, the vocabulary size is {} while the embedding "
+                    "shape is {}."
+                ).format(
+                    vocabulary_size,
+                    embedding_size.shape
+                ))
             embedding_size = embedding.shape[1]
             vocabulary_size = embedding.shape[0]
 
