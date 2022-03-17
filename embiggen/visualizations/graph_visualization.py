@@ -450,10 +450,10 @@ class GraphVisualization:
         node_transformer.fit(node_embedding)
         self._node_embedding = self.decompose(node_transformer.transform(node_indices))
 
-    def fit_transform_edges(
+    def _get_positive_edges_embedding(
         self,
         node_embedding: Union[pd.DataFrame, np.ndarray]
-    ):
+    ) -> np.ndarray:
         """Executes fitting for plotting edge embeddings.
 
         Parameters
@@ -518,14 +518,30 @@ class GraphVisualization:
             aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
         graph_transformer.fit(node_embedding)
-        edge_embedding = graph_transformer.transform(edge_indices)
-        self._edge_embedding = self.decompose(edge_embedding)
+        return graph_transformer.transform(edge_indices)
 
-    def fit_transform_negative_edges(
+    def fit_transform_edges(
         self,
         node_embedding: Union[pd.DataFrame, np.ndarray]
     ):
-        """Executes fitting for plotting negative edge embeddings.
+        """Executes fitting for plotting edge embeddings.
+
+        Parameters
+        -------------------------
+        node_embedding: Union[pd.DataFrame, np.ndarray]
+            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        """
+        self._edge_embedding = self.decompose(
+            self._get_positive_edges_embedding(
+                node_embedding
+            )
+        )
+
+    def _get_negative_edge_embedding(
+        self,
+        node_embedding: Union[pd.DataFrame, np.ndarray]
+    ) -> np.ndarray:
+        """Executes aggregation of negative edge embeddings.
 
         Parameters
         -------------------------
@@ -568,8 +584,28 @@ class GraphVisualization:
             aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
         graph_transformer.fit(node_embedding)
-        edge_embedding = graph_transformer.transform(edge_indices)
-        self._negative_edge_embedding = self.decompose(edge_embedding)
+        return graph_transformer.transform(edge_indices)
+
+    def fit_transform_negative_and_positive_edges(
+        self,
+        node_embedding: Union[pd.DataFrame, np.ndarray]
+    ):
+        """Executes fitting for plotting negative edge embeddings.
+
+        Parameters
+        -------------------------
+        node_embedding: Union[pd.DataFrame, np.ndarray]
+            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        """
+        positive_edge_embedding = self._get_positive_edges_embedding(node_embedding)
+        negative_edge_embedding = self._get_negative_edge_embedding(node_embedding)
+        raw_edge_embedding = np.vstack([
+            positive_edge_embedding,
+            negative_edge_embedding
+        ])
+        edge_embedding = self.decompose(raw_edge_embedding)
+        self._edge_embedding = edge_embedding[:positive_edge_embedding.shape[0]]
+        self._negative_edge_embedding = edge_embedding[positive_edge_embedding.shape[0]:]
 
     def _get_figure_and_axes(
         self,
