@@ -1,5 +1,5 @@
 """Keras Sequence for running GNN on graph edge prediction."""
-from typing import Tuple, Union, List, Optional
+from typing import Union, List, Optional
 
 import numpy as np
 import pandas as pd
