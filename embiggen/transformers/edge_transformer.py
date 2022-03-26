@@ -7,20 +7,277 @@ import pandas as pd
 from .node_transformer import NodeTransformer
 
 
+def get_hadamard_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return Hadamard edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the Hadamard edge embedding.
+    """
+    return np.multiply(
+        source_node_embedding,
+        destination_node_embedding
+    )
+
+
+def get_sum_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return sum edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the sum edge embedding.
+    """
+    return np.add(
+        source_node_embedding,
+        destination_node_embedding
+    )
+
+
+def get_average_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return average edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the average edge embedding.
+    """
+    return np.divide(
+        get_sum_edge_embedding(
+            source_node_embedding,
+            destination_node_embedding
+        ),
+        2.0
+    )
+
+
+def get_l1_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return L1 edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the L1 edge embedding.
+    """
+    return np.subtract(
+        source_node_embedding,
+        destination_node_embedding
+    )
+
+
+def get_absolute_l1_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return Absolute L1 edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the Absolute L1 edge embedding.
+    """
+    return np.abs(
+        get_l1_edge_embedding(
+            source_node_embedding,
+            destination_node_embedding
+        )
+    )
+
+
+def get_squared_l2_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return Squared L2 edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the Squared L2 edge embedding.
+    """
+    return np.power(
+        get_l1_edge_embedding(
+            source_node_embedding,
+            destination_node_embedding
+        ),
+        2.0
+    )
+
+
+def get_l2_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return L2 edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the L2 edge embedding.
+    """
+    return np.sqrt(
+        get_squared_l2_edge_embedding(
+            source_node_embedding,
+            destination_node_embedding
+        )
+    )
+
+
+def get_concatenate_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return concatenate edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the concatenate edge embedding.
+    """
+    return np.hstack((
+        source_node_embedding,
+        destination_node_embedding
+    ))
+
+
+def get_min_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return min edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the min edge embedding.
+    """
+    return np.min(
+        [
+            source_node_embedding,
+            destination_node_embedding
+        ],
+        axis=0
+    )
+
+
+def get_max_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return max edge embedding of the two nodes
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the max edge embedding.
+    """
+    return np.max(
+        [
+            source_node_embedding,
+            destination_node_embedding
+        ],
+        axis=0
+    )
+
+def get_indices_edge_embedding(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Placeholder method."""
+    return np.vstack((
+        source_node_embedding,
+        destination_node_embedding
+    )).T
+
+
 class EdgeTransformer:
     """EdgeTransformer class to convert edges to edge embeddings."""
 
     methods = {
-        "Hadamard": lambda x1, x2: np.multiply(x1, x2, out=x1),
-        "Sum": lambda x1, x2: np.add(x1, x2, out=x1),
-        "Average": lambda x1, x2: np.divide(np.add(x1, x2, out=x1), 2, out=x1),
-        "L1": lambda x1, x2: np.subtract(x1, x2, out=x1),
-        "AbsoluteL1": lambda x1, x2: np.abs(np.subtract(x1, x2, out=x1), out=x1),
-        "L2": lambda x1, x2: np.power(np.subtract(x1, x2, out=x1), 2, out=x1),
-        "Concatenate": lambda x1, x2: np.hstack((x1, x2)),
-        "Min": lambda x1, x2: np.min([x1, x2], axis=0, out=x1),
-        "Max": lambda x1, x2: np.max([x1, x2], axis=0, out=x1),
-        None: lambda x1, x2: np.vstack((x1, x2)).T,
+        "Hadamard": get_hadamard_edge_embedding,
+        "Sum": get_sum_edge_embedding,
+        "Average": get_average_edge_embedding,
+        "L1": get_l1_edge_embedding,
+        "AbsoluteL1": get_absolute_l1_edge_embedding,
+        "SquaredL2": get_squared_l2_edge_embedding,
+        "L2": get_l2_edge_embedding,
+        "Concatenate": get_concatenate_edge_embedding,
+        "Min": get_min_edge_embedding,
+        "Max": get_max_edge_embedding,
+        None: get_indices_edge_embedding,
     }
 
     def __init__(
@@ -36,7 +293,8 @@ class EdgeTransformer:
         method: str = "Hadamard",
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
-            Can either be 'Hadamard', 'Min', 'Max', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+            Can either be 'Hadamard', 'Min', 'Max', 'Sum', 'Average',
+            'L1', 'AbsoluteL1', 'SquaredL2', 'L2' or 'Concatenate'.
         aligned_node_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
@@ -105,9 +363,9 @@ class EdgeTransformer:
 
         Parameters
         --------------------------
-        sources: List[str],
+        sources: List[str]
             List of source nodes whose embedding is to be returned.
-        destinations: List[str],
+        destinations: List[str]
             List of destination nodes whose embedding is to be returned.
 
         Raises
