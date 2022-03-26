@@ -1,7 +1,9 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from embiggen import GraphTransformer, GloVe
+from embiggen import GraphTransformer, GloVe, EdgeTransformer
+import pickle
+import os
 
 
 class TestGraphTransformer(TestCase):
@@ -25,10 +27,36 @@ class TestGraphTransformer(TestCase):
 
     def test_graph_transformer(self):
         """Test to verify that graph transformation returns expected shape."""
+        for aligned_node_mapping in (True, False):
+            for embedding_method in EdgeTransformer.methods:
+                self._transfomer = GraphTransformer(
+                    method=embedding_method,
+                    aligned_node_mapping=aligned_node_mapping
+                )
+                self._transfomer.fit(self._embedding)
+                embedded_edges = self._transfomer.transform(self._graph)
+                if embedding_method == "Concatenate":
+                    self.assertEqual(
+                        embedded_edges.shape,
+                        (self._graph.get_undirected_edges_number(), self._embedding_size*2)
+                    )
+                elif embedding_method is None:
+                    self.assertEqual(
+                        embedded_edges.shape,
+                        (self._graph.get_undirected_edges_number(), 2)
+                    )
+                else:
+                    self.assertEqual(
+                        embedded_edges.shape,
+                        (self._graph.get_undirected_edges_number(), self._embedding_size)
+                    )
+
+    def test_graph_transformer_picklability(self):
+        """Test to verify that graph transformation returns expected shape."""
         self._transfomer = GraphTransformer()
         self._transfomer.fit(self._embedding)
-        embedded_nodes = self._transfomer.transform(self._graph)
-        self.assertEqual(
-            embedded_nodes.shape,
-            (self._graph.get_undirected_edges_number(), self._embedding_size)
-        )
+        self._transfomer.transform(self._graph)
+        path = "test_pickled_object.pkl"
+        with open(path, "wb") as f:
+            pickle.dump(self._transfomer, f)
+        os.remove(path)

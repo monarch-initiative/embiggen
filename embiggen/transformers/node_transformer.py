@@ -98,9 +98,8 @@ class NodeTransformer:
             return self._embedding_numpy[nodes]
 
         if self.numeric_node_ids:
-            ids = np.where(self._embedding.index.isin(nodes))
+            ids = self._embedding.index.get_indexer(nodes)
             if self._support_mirrored_strategy:
                 return ids.astype(float)
             return ids
-
         return self._embedding.loc[nodes].to_numpy()
