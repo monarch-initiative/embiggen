@@ -1,6 +1,7 @@
 """Class for an abstract edge prediction model."""
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 import warnings
+from embiggen.sequences.binary_edge_label_prediction_sequence import BinaryEdgeLabelPredictionSequence
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,8 @@ from .layers import edge_embedding_layer
 
 edge_prediction_supported_tasks = [
     "EDGE_PREDICTION",
-    "EDGE_LABEL_PREDICTION"
+    "EDGE_LABEL_PREDICTION",
+    "BINARY_EDGE_LABEL_PREDICTION"
 ]
 
 
@@ -27,42 +29,48 @@ class EdgePredictionModel(Embedder):
         self,
         graph: Graph,
         embedding_size: int = None,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        embedding: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         edge_embedding_method: str = "Concatenate",
         optimizer: str = "nadam",
         trainable_embedding: bool = False,
         use_dropout: bool = True,
         dropout_rate: float = 0.5,
         use_edge_metrics: bool = False,
+        positive_edge_type: Optional[Union[str, int]] = None,
         task_name: str = "EDGE_PREDICTION"
     ):
         """Create new abstract Edge Prediction Model object.
 
         Parameters
         --------------------
-        graph: Graph,
+        graph: Graph
             The graph object to base the model on.
-        embedding_size: int = None,
+        embedding_size: int = None
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
+        embedding: Union[np.ndarray, pd.DataFrame] = None
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_method: str = "Concatenate"
             Method to use to create the edge embedding.
-        optimizer: str = "nadam",
+        optimizer: str = "nadam"
             Optimizer to use during the training.
-        trainable_embedding: bool = False,
+        trainable_embedding: bool = False
             Whether to allow for trainable embedding.
-        use_dropout: bool = True,
+        use_dropout: bool = True
             Whether to use dropout.
-        dropout_rate: float = 0.5,
+        dropout_rate: float = 0.5
             Dropout rate.
-        use_edge_metrics: bool = False,
+        use_edge_metrics: bool = False
             Whether to return the edge metrics.
-        task_name: str = "EDGE_PREDICTION",
+        positive_edge_type: Optional[Union[str, int]] = None
+            The type for the positive class.
+            If None, we check if the provided graph has two classes,
+            and if so we use the minority class as the positive class.
+            If the graph does not have two classes, we will raise an error.
+        task_name: str = "EDGE_PREDICTION"
             The name of the task to build the model for.
             The currently supported task names are `EDGE_PREDICTION` and `EDGE_LABEL_PREDICTION`.
             The default task name is `EDGE_PREDICTION`.
@@ -71,7 +79,8 @@ class EdgePredictionModel(Embedder):
         if not set_validator(supported_edge_embedding_methods)(edge_embedding_method):
             raise ValueError(
                 (
-                    "The provided edge embedding method name `{edge_embedding_method}` is not supported. Did you mean {closest}?\n"
+                    "The provided edge embedding method name `{edge_embedding_method}` "
+                    "is not supported. Did you mean {closest}?\n"
                     "The supported edge embedding method names are: {supported_tasks}."
                 ).format(
                     edge_embedding_method=edge_embedding_method,
@@ -100,6 +109,14 @@ class EdgePredictionModel(Embedder):
                 "This means that the embedding will not be trained, and the nodes will have "
                 "exclusively random features associated to them."
             )
+
+        if positive_edge_type is not None and task_name != "BINARY_EDGE_LABEL_PREDICTION":
+            raise ValueError(
+                "The parameter `positive_edge_type` was provided but the task "
+                "provided in not a binary edge-label prediction"
+            )
+
+        self._positive_edge_type = positive_edge_type
         self._graph = graph
         self._task_name = task_name
         self._use_edge_metrics = use_edge_metrics
@@ -117,7 +134,7 @@ class EdgePredictionModel(Embedder):
 
     def _compile_model(self) -> Model:
         """Compile model."""
-        if self._task_name == "EDGE_PREDICTION":
+        if self._task_name in ("EDGE_PREDICTION", "BINARY_EDGE_LABEL_PREDICTION"):
             self._model.compile(
                 loss="binary_crossentropy",
                 optimizer=self._optimizer,
@@ -262,6 +279,15 @@ class EdgePredictionModel(Embedder):
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             sequence = EdgeLabelPredictionSequence(
                 graph,
+                batch_size=batch_size,
+                batches_per_epoch=batches_per_epoch,
+                support_mirrored_strategy=support_mirrored_strategy,
+                use_edge_metrics=self._use_edge_metrics,
+            )
+        elif self._task_name == "BINARY_EDGE_LABEL_PREDICTION":
+            sequence = BinaryEdgeLabelPredictionSequence(
+                graph,
+                positive_edge_type=self._positive_edge_type,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
                 support_mirrored_strategy=support_mirrored_strategy,

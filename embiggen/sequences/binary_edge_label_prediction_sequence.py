@@ -1,5 +1,5 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional
 import numpy as np
 
 from ensmallen import Graph
@@ -13,7 +13,7 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
     def __init__(
         self,
         graph: Graph,
-        positive_edge_type: Union[str, int],
+        positive_edge_type: Optional[Union[str, int]] = None,
         use_node_types: bool = False,
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
@@ -29,8 +29,11 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
         --------------------------------
         graph: Graph,
             The graph from which to sample the edges.
-        positive_edge_type: Union[str, int]
+        positive_edge_type: Optional[Union[str, int]] = None
             The type for the positive class.
+            If None, we check if the provided graph has two classes,
+            and if so we use the minority class as the positive class.
+            If the graph does not have two classes, we will raise an error.
         use_node_types: bool = False,
             Whether to return the node types.
         use_edge_metrics: bool = False,
@@ -58,6 +61,22 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
+        if positive_edge_type is None:
+            if graph.get_edge_types_number() != 2:
+                raise ValueError(
+                    "The provided edge types number is None, so we would use "
+                    "as positive class the class with least edges, but the "
+                    "graph you have provided does not have two classes and "
+                    "therefore we cannot infer exactly which of the minority "
+                    "classes you would want to use."
+                )
+            else:
+                edge_types_counts = graph.get_edge_type_names_counts_hashmap()
+                positive_edge_type = min(
+                    edge_types_counts,
+                    key=edge_types_counts.get
+                )
+
         if not isinstance(positive_edge_type, (int, str)):
             raise ValueError(
                 (
@@ -76,7 +95,7 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
                     type(positive_edge_type)
                 )
             )
-        
+
         # If the provided positive edge type is a string, we need
         # to convert this into the corresponding numeric type.
         # Do note that within Ensmallen the type is checked for existance,
@@ -88,7 +107,7 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
             positive_edge_type = graph.get_edge_type_id_from_edge_type_name(
                 positive_edge_type
             )
-        
+
         # We check if the provided positive edge type
         if positive_edge_type >= graph.get_edge_types_number():
             raise ValueError(
@@ -100,7 +119,7 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
                     positive_edge_type
                 )
             )
-        
+
         self._positive_edge_type = positive_edge_type
         super().__init__(
             graph,

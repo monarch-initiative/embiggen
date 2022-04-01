@@ -90,6 +90,12 @@ class EdgeLabelPredictionSequence(EdgePredictionSequence):
                     number_of_elements_in_most_common=most_common_count
                 )
             )
+            if least_common_count * 1000 < most_common_count:
+                warnings.warn(
+                    "Please be advised that your task is extremely unbalanced. You may see an extremely "
+                    "high accuracy because the model is learning to predict the majority class. "
+                    "Do consider to use metrics that take into account this strong unbalance."
+                )
 
         super().__init__(
             graph,
