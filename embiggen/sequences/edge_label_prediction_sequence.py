@@ -1,5 +1,6 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
 from typing import Union, Tuple, List
+import warnings
 import numpy as np
 
 from ensmallen import Graph  # pylint: disable=no-name-in-module
@@ -54,6 +55,42 @@ class EdgeLabelPredictionSequence(EdgePredictionSequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
+        if graph.get_edge_types_number() == 1:
+            raise ValueError(
+                "It does not make sense to create a edge label prediction "
+                "when the graph has only a single edge type."
+            )
+
+        # If this is actually a binary task, but the class being used
+        # is not a child class of this one called `BinaryEdgeLabelPredictionSequence`
+        if graph.get_edge_types_number() == 2 and self.__class__.__name__ != "BinaryEdgeLabelPredictionSequence":
+            warnings.warn(
+                "Since your graph has exactly 2 edge types, you may be better off "
+                "defining your task as a binary edge label prediction task instead "
+                "than as a categorical edge label prediction task. "
+                "If you want to do this, just change the task from EDGE_LABEL_PREDICTION to "
+                "BINARY_EDGE_LABEL_PREDICTION."
+            )
+
+        edge_types_counts = graph.get_edge_type_names_counts_hashmap()
+
+        least_common_count = min(edge_types_counts.values())
+        most_common_count = max(edge_types_counts.values())
+
+        if least_common_count * 10 < most_common_count:
+            warnings.warn(
+                (
+                    "Please do be advised that your least common class has {number_of_elements_in_least_common} "
+                    "elements, while the most common class has {number_of_elements_in_most_common}, making this "
+                    "task an unbalanced task. We are not currently able to generate balanced mini-batch for "
+                    "an edge-label prediction task, so you may want to, for instance, use class weights as "
+                    "one of the possible methods to handle unbalanced classes."
+                ).format(
+                    number_of_elements_in_least_common=least_common_count,
+                    number_of_elements_in_most_common=most_common_count
+                )
+            )
+
         super().__init__(
             graph,
             use_node_types=use_node_types,
