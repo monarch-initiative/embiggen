@@ -10,11 +10,11 @@ class TestTransR(TestCase):
     def setUp(self):
         """Setting up objects to test CBOW model on graph walks."""
         super().setUp()
-        self._graph = Cora()
+        self._graph = Cora().random_holdout(train_size=0.2)[0]
 
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
-        model = TransR(self._graph)
+        model = TransR(self._graph, embedding_size=10)
         self.assertEqual("TransR", model.name)
         model.summary()
         model.fit(epochs=2, batches_per_epoch=2)

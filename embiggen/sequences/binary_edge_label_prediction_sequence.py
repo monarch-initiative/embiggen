@@ -27,20 +27,20 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
 
         Parameters
         --------------------------------
-        graph: Graph,
+        graph: Graph
             The graph from which to sample the edges.
         positive_edge_type: Optional[Union[str, int]] = None
             The type for the positive class.
             If None, we check if the provided graph has two classes,
             and if so we use the minority class as the positive class.
             If the graph does not have two classes, we will raise an error.
-        use_node_types: bool = False,
+        use_node_types: bool = False
             Whether to return the node types.
-        use_edge_metrics: bool = False,
+        use_edge_metrics: bool = False
             Whether to return the edge metrics.
-        batch_size: int = 2**10,
+        batch_size: int = 2**10
             The batch size to use.
-        support_mirrored_strategy: bool = False,
+        support_mirrored_strategy: bool = False
             Wethever to patch support for mirror strategy.
             At the time of writing, TensorFlow's MirrorStrategy does not support
             input values different from floats, therefore to support it we need
@@ -48,17 +48,17 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
             the embedding layers we receive from Ensmallen to floats.
             This will generally slow down performance, but in the context of
             exploiting multiple GPUs it may be unnoticeable.
-        graph_to_avoid: Graph = None,
+        graph_to_avoid: Graph = None
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the Graph package.
-        batches_per_epoch: Union[int, str] = "auto",
+        batches_per_epoch: Union[int, str] = "auto"
             Number of batches per epoch.
             If auto, it is used: `10 * edges number /  batch size`
-        elapsed_epochs: int = 0,
+        elapsed_epochs: int = 0
             Number of elapsed epochs to init state of generator.
-        random_state: int = 42,
+        random_state: int = 42
             The random_state to use to make extraction reproducible.
         """
         if positive_edge_type is None:

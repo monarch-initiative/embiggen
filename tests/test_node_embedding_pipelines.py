@@ -10,7 +10,7 @@ class TestNodeEmbeddingUtility(TestCase):
     def setUp(self):
         """Setting up objects to test CBOW model on graph walks."""
         super().setUp()
-        self._graph = Cora()
+        self._graph = Cora().random_holdout(train_size=0.1)[0]
 
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
@@ -18,7 +18,11 @@ class TestNodeEmbeddingUtility(TestCase):
             compute_node_embedding(
                 self._graph,
                 node_embedding_method_name=node_embedding_method,
+                automatically_drop_unsupported_parameters=True,
+                embedding_size=10,
+                node_type_embedding_size=10,
+                edge_type_embedding_size=10,
                 fit_kwargs=dict(
-                    epochs=2
+                    epochs=1
                 )
             )

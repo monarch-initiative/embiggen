@@ -35,7 +35,7 @@ class Siamese(Embedder):
         use_node_types: Union[bool, str] = "auto",
         node_types_combination: str = "Add",
         use_edge_types: Union[bool, str] = "auto",
-        node_embedding_size: int = 100,
+        embedding_size: int = 100,
         node_type_embedding_size: int = 100,
         edge_type_embedding_size: int = 100,
         distance_metric: str = "COSINE",
@@ -68,7 +68,7 @@ class Siamese(Embedder):
             Whether to use edge type.
             By default, it will automatially use edge types if the graph
             contains edge type and does not contain any unknown edge type.
-        node_embedding_size: int = 100,
+        embedding_size: int = 100,
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
@@ -193,7 +193,7 @@ class Siamese(Embedder):
 
         super().__init__(
             vocabulary_size=graph.get_nodes_number(),
-            embedding_size=node_embedding_size,
+            embedding_size=embedding_size,
             embedding=embedding,
             extra_features=extra_features,
             optimizer=optimizer,

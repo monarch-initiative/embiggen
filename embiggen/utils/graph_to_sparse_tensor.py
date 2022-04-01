@@ -54,7 +54,7 @@ def graph_to_sparse_tensor(
         (
             graph.get_edge_weights()
             if use_weights
-            else tf.ones(graph.get_directed_edges_number())
+            else tf.ones(graph.get_number_of_directed_edges())
         ),
         (graph.get_nodes_number(), graph.get_nodes_number()),
     )

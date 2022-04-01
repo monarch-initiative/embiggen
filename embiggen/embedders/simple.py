@@ -73,7 +73,7 @@ class SimplE(Siamese):
             graph=graph,
             use_node_types=False,
             use_edge_types=True,
-            node_embedding_size=embedding_size,
+            embedding_size=embedding_size,
             edge_type_embedding_size=embedding_size,
             embedding=embedding,
             extra_features=extra_features,

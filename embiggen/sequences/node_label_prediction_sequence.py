@@ -30,7 +30,7 @@ class NodeLabelPredictionSequence(Sequence):
         self._max_neighbours = max_neighbours
         self._support_mirrored_strategy = support_mirrored_strategy
         super().__init__(
-            sample_number=graph.get_directed_edges_number(),
+            sample_number=graph.get_number_of_directed_edges(),
             batch_size=batch_size,
             elapsed_epochs=elapsed_epochs
         )

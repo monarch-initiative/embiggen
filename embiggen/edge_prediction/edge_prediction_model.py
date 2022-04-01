@@ -1,7 +1,9 @@
 """Class for an abstract edge prediction model."""
+from multiprocessing.sharedctypes import Value
 from typing import Dict, Union, Optional
 import warnings
 from embiggen.sequences.binary_edge_label_prediction_sequence import BinaryEdgeLabelPredictionSequence
+from embiggen.sequences.edge_prediction_evaluation_sequence import EdgePredictionEvaluationSequence
 
 import numpy as np
 import pandas as pd
@@ -192,9 +194,28 @@ class EdgePredictionModel(Embedder):
             )
         )
 
+    def _validate_fit_parameters(
+        self,
+        valid_graph: Optional[Graph] = None,
+        negative_valid_graph: Optional[Graph] = None,
+    ):
+        if negative_valid_graph is not None:
+            if self._task_name != "EDGE_PREDICTION":
+                raise ValueError(
+                    "The negative validation graph was provided, but it is only used "
+                    "in edge prediction tasks and this is not an edge prediction task. "
+                )
+            if valid_graph is None:
+                raise ValueError(
+                    "The negative validation graph was provided, but the validation graph "
+                    "was not provided."
+                )
+
     def fit(
         self,
-        graph: Graph,
+        train_graph: Graph,
+        valid_graph: Optional[Graph] = None,
+        negative_valid_graph: Optional[Graph] = None,
         batch_size: int = 2**10,
         batches_per_epoch: Union[int, str] = "auto",
         negative_samples_rate: float = 0.5,
@@ -216,7 +237,7 @@ class EdgePredictionModel(Embedder):
 
         Parameters
         -------------------
-        graph: Graph,
+        train_graph: Graph
             Graph object to use for training.
         batch_size: int = 2**16,
             Batch size for the training process.
@@ -267,36 +288,62 @@ class EdgePredictionModel(Embedder):
         --------------------
         Dataframe with traininhg history.
         """
+        self._validate_fit_parameters(
+            negative_valid_graph=negative_valid_graph,
+            valid_graph=valid_graph
+        )
+                
+        validation_sequence = None
         if self._task_name == "EDGE_PREDICTION":
-            sequence = EdgePredictionSequence(
-                graph,
+            training_sequence = EdgePredictionSequence(
+                train_graph,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
                 negative_samples_rate=negative_samples_rate,
                 support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             )
+            if negative_valid_graph is not None:
+                validation_sequence = EdgePredictionEvaluationSequence(
+                    positive_graph=valid_graph,
+                    negative_graph=negative_valid_graph,
+                    batch_size=batch_size,
+                    support_mirrored_strategy=support_mirrored_strategy,
+                    use_edge_metrics=self._use_edge_metrics,
+                )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
-            sequence = EdgeLabelPredictionSequence(
-                graph,
+            training_sequence = EdgeLabelPredictionSequence(
+                train_graph,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
                 support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             )
+            if valid_graph is not None:
+                raise NotImplementedError(
+                    "The validation sequence for edge label prediction "
+                    "has not been implemented yet."
+                )
         elif self._task_name == "BINARY_EDGE_LABEL_PREDICTION":
-            sequence = BinaryEdgeLabelPredictionSequence(
-                graph,
+            training_sequence = BinaryEdgeLabelPredictionSequence(
+                train_graph,
                 positive_edge_type=self._positive_edge_type,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
                 support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             )
+            if valid_graph is not None:
+                raise NotImplementedError(
+                    "The validation sequence for binary edge label prediction "
+                    "has not been implemented yet."
+                )
         else:
             raise ValueError("Unreacheable!")
+        
         return super().fit(
-            sequence,
+            training_sequence,
+            validation_data=validation_sequence,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -315,9 +362,48 @@ class EdgePredictionModel(Embedder):
         """Run predict."""
         return self._model.predict(*args, **kwargs)
 
-    def evaluate(self, *args, **kwargs) -> Dict[str, float]:
+    def evaluate(
+        self,
+        graph: Graph,
+        negative_graph: Optional[Graph] = None,
+        batch_size: int = 2**10,
+        support_mirrored_strategy: bool = False,
+    ) -> Dict[str, float]:
         """Run predict."""
+        self._validate_fit_parameters(
+            negative_valid_graph=negative_graph,
+            valid_graph=graph
+        )
+        validation_sequence = None
+        if self._task_name == "EDGE_PREDICTION":
+            if negative_graph is None:
+                raise ValueError(
+                    "The negative graph was not provided."
+                )
+            validation_sequence = EdgePredictionEvaluationSequence(
+                positive_graph=graph,
+                negative_graph=negative_graph,
+                batch_size=batch_size,
+                support_mirrored_strategy=support_mirrored_strategy,
+                use_edge_metrics=self._use_edge_metrics,
+            )
+        elif self._task_name == "EDGE_LABEL_PREDICTION":
+            raise NotImplementedError(
+                "The validation sequence for edge label prediction "
+                "has not been implemented yet."
+            )
+        elif self._task_name == "BINARY_EDGE_LABEL_PREDICTION":
+            raise NotImplementedError(
+                "The validation sequence for binary edge label prediction "
+                "has not been implemented yet."
+            )
+        else:
+            raise ValueError("Unreacheable!")
+
         return dict(zip(
             self._model.metrics_names,
-            self._model.evaluate(*args, **kwargs)
+            self._model.evaluate(
+                validation_sequence,
+                batch_size=batch_size
+            )
         ))

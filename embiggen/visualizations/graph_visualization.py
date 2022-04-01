@@ -477,12 +477,12 @@ class GraphVisualization:
                 else node_embedding
             )
         # If necessary, we proceed with the subsampling
-        if self._number_of_subsampled_edges is not None and self._graph.get_directed_edges_number() > self._number_of_subsampled_edges:
+        if self._number_of_subsampled_edges is not None and self._graph.get_number_of_directed_edges() > self._number_of_subsampled_edges:
             # If there are edge types, we use a stratified
             # edge sampling so that all the edges types may be displayed.
             self._subsampled_edge_ids = np.random.randint(
                 low=0,
-                high=self._graph.get_directed_edges_number(),
+                high=self._graph.get_number_of_directed_edges(),
                 size=self._number_of_subsampled_edges
             )
             if isinstance(node_embedding, np.ndarray):
@@ -1537,7 +1537,7 @@ class GraphVisualization:
         # we iterate on them or on the complete set of nodes of the graph.
         if subsampled_edge_id is None:
             edges_iterator = trange(
-                self._graph.get_directed_edges_number(),
+                self._graph.get_number_of_directed_edges(),
                 desc="Computing flattened unknown edge types",
                 leave=False,
                 dynamic_ncols=True

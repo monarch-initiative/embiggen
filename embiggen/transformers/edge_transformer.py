@@ -11,7 +11,7 @@ def get_hadamard_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return Hadamard edge embedding of the two nodes
+    """Return Hadamard edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -34,7 +34,7 @@ def get_sum_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return sum edge embedding of the two nodes
+    """Return sum edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -57,7 +57,7 @@ def get_average_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return average edge embedding of the two nodes
+    """Return average edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -83,7 +83,7 @@ def get_l1_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return L1 edge embedding of the two nodes
+    """Return L1 edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -106,7 +106,7 @@ def get_absolute_l1_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return Absolute L1 edge embedding of the two nodes
+    """Return Absolute L1 edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -131,7 +131,7 @@ def get_squared_l2_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return Squared L2 edge embedding of the two nodes
+    """Return Squared L2 edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -157,7 +157,7 @@ def get_l2_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return L2 edge embedding of the two nodes
+    """Return L2 edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -182,7 +182,7 @@ def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return concatenate edge embedding of the two nodes
+    """Return concatenate edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -205,7 +205,7 @@ def get_min_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return min edge embedding of the two nodes
+    """Return min edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -231,7 +231,7 @@ def get_max_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return max edge embedding of the two nodes
+    """Return max edge embedding of the two nodes.
 
     Parameters
     --------------------------
