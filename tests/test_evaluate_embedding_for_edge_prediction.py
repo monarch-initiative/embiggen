@@ -6,30 +6,29 @@ import pytest
 from embiggen.pipelines import evaluate_embedding_for_edge_prediction
 from plot_keras_history import plot_history
 import matplotlib.pyplot as plt
+from ensmallen.datasets.networkrepository import Karate
+import shutil
+
 
 class TestEvaluateEmbeddingForEdgePrediction(TestCase):
     """Unit test class for GraphTransformer objects."""
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        self._embedding_size = 50
-        self._graph = Graph.from_csv(
-            edge_path="tests/data/small_ppi.tsv",
-            sources_column="subject",
-            destinations_column="object",
-            directed=False,
-            edge_list_edge_types_column="edge_label"
-        )
-        self._embedding = GloVe(
-            vocabulary_size=self._graph.get_nodes_number(),
-            embedding_size=self._embedding_size
-        ).get_embedding_dataframe(self._graph.get_node_names())
+        self._graph = Karate()
 
     def test_evaluate_embedding_for_edge_prediction(self):
         """Test graph visualization."""
+        shutil.rmtree("node_embeddings")
         evaluate_embedding_for_edge_prediction(
-            embedding=self._embedding,
+            embedding_method="GloVe",
             graph=self._graph,
             model_name="Perceptron",
             number_of_holdouts=3,
+            embedding_method_kwargs=dict(
+                embedding_size=10,
+            ),
+            embedding_method_fit_kwargs=dict(
+                epochs=1
+            )
         )

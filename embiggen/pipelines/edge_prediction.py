@@ -1,10 +1,11 @@
 """Submodule providing pipelines for edge prediction."""
-from typing import Union, Callable, Any, Tuple, List, Optional
+from typing import Union, Callable, Tuple, List, Optional, Dict
 import pandas as pd
 from ensmallen import Graph
 from tqdm.auto import trange
 from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
 from ..utils import execute_gpu_checks
+from .compute_node_embedding import compute_node_embedding
 
 edge_prediction_models = {
     "Perceptron": Perceptron,
@@ -13,7 +14,7 @@ edge_prediction_models = {
 
 
 def evaluate_embedding_for_edge_prediction(
-    embedding: pd.DataFrame,
+    embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graph: Graph,
     model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]],
     number_of_holdouts: int = 10,
@@ -21,7 +22,10 @@ def evaluate_embedding_for_edge_prediction(
     random_seed: int = 42,
     batch_size: int = 2**10,
     edge_types: Optional[List[str]] = None,
-    use_mirrored_strategy: bool = False
+    use_mirrored_strategy: bool = False,
+    only_execute_embeddings: bool = False,
+    embedding_method_fit_kwargs: Optional[Dict] = None,
+    embedding_method_kwargs: Optional[Dict] = None,
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
     """
@@ -35,7 +39,10 @@ def evaluate_embedding_for_edge_prediction(
                 edge_prediction_models
             )
         )
-    
+
+    if embedding_method_kwargs is None:
+        embedding_method_kwargs = {}
+
     execute_gpu_checks(use_mirrored_strategy)
     holdouts = []
     histories = []
@@ -50,10 +57,32 @@ def evaluate_embedding_for_edge_prediction(
             verbose=True
         )
 
+        if isinstance(embedding_method, str):
+            embedding, embedding_histories = compute_node_embedding(
+                graph=train_graph,
+                node_embedding_method_name=embedding_method,
+                use_mirrored_strategy=use_mirrored_strategy,
+                fit_kwargs=embedding_method_fit_kwargs,
+                **embedding_method_kwargs
+            )
+        else:
+            embedding = embedding_method(
+                train_graph,
+                holdout_number,
+                use_mirrored_strategy=use_mirrored_strategy,
+                **embedding_method_kwargs
+            )
+
+        # Force alignment
+        embedding = embedding.loc[graph.get_node_names()]
+
+        if only_execute_embeddings:
+            continue
+
         # Simplify the test graph if needed.
         if test_graph.has_edge_weights():
             test_graph.remove_inplace_edge_weights()
-        
+
         if test_graph.has_edge_types():
             test_graph.remove_inplace_edge_types()
 
