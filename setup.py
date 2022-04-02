@@ -55,7 +55,7 @@ setup(
         "sanitize_ml_labels>=1.0.29",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.5",
-        "ensmallen>=0.7.0.dev6",
+        "ensmallen>=0.7.0.dev8",
         "validate_version_code",
         "packaging"
     ],
