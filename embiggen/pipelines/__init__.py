@@ -7,4 +7,5 @@ from .edge_prediction import evaluate_embedding_for_edge_prediction
 __all__ = [
     "compute_node_embedding",
     "get_available_node_embedding_methods",
+    "evaluate_embedding_for_edge_prediction"
 ]
