@@ -6,7 +6,15 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
+import warnings
+try:
+    from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
+except ImportError:
+    warnings.warn(
+        "We were not able to detect the CV2 package and libGL.so, therefore "
+        "you will not be able to execute 3D animations with the visualization "
+        "pipeline."
+    )
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
