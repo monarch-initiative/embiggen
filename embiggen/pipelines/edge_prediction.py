@@ -58,7 +58,7 @@ def evaluate_embedding_for_edge_prediction(
         )
 
         if isinstance(embedding_method, str):
-            embedding, embedding_histories = compute_node_embedding(
+            embedding, _ = compute_node_embedding(
                 graph=train_graph,
                 node_embedding_method_name=embedding_method,
                 use_mirrored_strategy=use_mirrored_strategy,
