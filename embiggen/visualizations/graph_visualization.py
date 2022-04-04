@@ -26,7 +26,6 @@ from pandas.core.frame import DataFrame
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from tqdm.auto import trange, tqdm
-import warnings
 import itertools
 
 from ..transformers import GraphTransformer, NodeTransformer
