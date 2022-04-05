@@ -20,10 +20,11 @@ def _evaluate_embedding_for_edge_prediction(
     embedding: pd.DataFrame,
     train_graph: Graph,
     test_graph: Graph,
-    negative_graph: Graph,
+    train_negative_graph: Graph,
+    test_negative_graph: Graph,
     batch_size: int,
     use_mirrored_strategy: bool
-) -> Tuple[pd.DataFrame, Dict]:
+) -> Tuple[pd.DataFrame, Dict, Dict]:
     if isinstance(model_name, str):
         model = edge_prediction_models.get(model_name)(
             graph=graph,
@@ -32,21 +33,29 @@ def _evaluate_embedding_for_edge_prediction(
     else:
         model = model_name(graph, embedding)
 
-    return (
-        model.fit(
-            train_graph=train_graph,
-            valid_graph=test_graph,
-            negative_valid_graph=negative_graph,
-            batch_size=batch_size,
-            support_mirrored_strategy=use_mirrored_strategy
-        ),
-        model.evaluate(
-            graph=test_graph,
-            negative_graph=negative_graph,
-            batch_size=batch_size,
-            support_mirrored_strategy=use_mirrored_strategy
-        )
+    history = model.fit(
+        train_graph=train_graph,
+        valid_graph=test_graph,
+        negative_valid_graph=test_negative_graph,
+        batch_size=batch_size,
+        support_mirrored_strategy=use_mirrored_strategy
     )
+    train_performance = model.evaluate(
+        graph=train_graph,
+        negative_graph=train_negative_graph,
+        batch_size=batch_size,
+        support_mirrored_strategy=use_mirrored_strategy
+    )
+    train_performance["evaluation_type"] = "train"
+    test_performance = model.evaluate(
+        graph=test_graph,
+        negative_graph=test_negative_graph,
+        batch_size=batch_size,
+        support_mirrored_strategy=use_mirrored_strategy
+    )
+    test_performance["evaluation_type"] = "test"
+
+    return history, train_performance, test_performance
 
 
 def evaluate_embedding_for_edge_prediction(
@@ -193,7 +202,7 @@ def evaluate_embedding_for_edge_prediction(
             assert train_graph.has_edges()
             assert test_graph.has_edges()
 
-        negative_graph = (
+        graph_to_use_to_sample_negatives = (
             # We sample the negative edges from the entire graph
             graph
             # when no subgraph of interest has been provided
@@ -209,15 +218,36 @@ def evaluate_embedding_for_edge_prediction(
             # living in large metropolis we would both train the model on unrelevant data and evaluate
             # the model of a different task, which may be more or less difficult.
             else subgraph_of_interest_for_edge_prediction
-        ).sample_negatives(
-            negatives_number=test_graph.get_edges_number(),
+        )
+
+        # For both the training and the test set we sample the same
+        # number of negative edges are there are existing edges in the training and test graphs, respectively.
+        # This is done in order to avoid an excessive bias in the evaluation of the edge prediction.
+        # Across multiple holdouts, statistically it is unlikely to sample
+        # consistently unknown positive edges, and therefore we should be able
+        # to remove this negative bias from the evaluation.
+        # Of course, this only apply to graphs where we can assume that there is
+        # not a massive amount of unknown positive edges.
+        train_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
+            negatives_number=train_graph.get_edges_number(),
             random_state=random_seed*holdout_number,
             verbose=True
         )
 
+        test_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
+            negatives_number=test_graph.get_edges_number(),
+            # We add an arbitrary constant to the random state to make
+            # the initial sampling of the training graph different from
+            # the initial sampling of the test graph.
+            random_state=(random_seed + 23456787)*holdout_number,
+            verbose=True
+        )
+
         # Consinstency check on graph size
-        assert negative_graph.get_edges_number() == test_graph.get_edges_number()
-        assert negative_graph.get_nodes_number() == test_graph.get_nodes_number()
+        assert train_negative_graph.get_edges_number() == test_graph.get_edges_number()
+        assert train_negative_graph.get_nodes_number() == test_graph.get_nodes_number()
+        assert test_negative_graph.get_edges_number() == test_graph.get_edges_number()
+        assert test_negative_graph.get_nodes_number() == test_graph.get_nodes_number()
 
         # Force alignment
         embedding = embedding.loc[train_graph.get_node_names()]
@@ -241,32 +271,36 @@ def evaluate_embedding_for_edge_prediction(
                 strategy = tf.distribute.MirroredStrategy(devices=devices)
                 with strategy.scope():
                     # This is a candidate patch to a MirroredStrategy
-                    history, holdout = _evaluate_embedding_for_edge_prediction(
+                    history, train_performance, test_performance = _evaluate_embedding_for_edge_prediction(
                         model_name=model_name,
                         graph=graph,
                         embedding=embedding,
                         train_graph=train_graph,
                         test_graph=test_graph,
-                        negative_graph=negative_graph,
+                        train_negative_graph=train_negative_graph,
+                        test_negative_graph=test_negative_graph,
                         batch_size=batch_size,
                         use_mirrored_strategy=use_mirrored_strategy
                     )
-                    holdouts.append(holdout)
+                    holdouts.append(train_performance)
+                    holdouts.append(test_performance)
                     histories.append(history)
             except IndexError:
                 pass
         else:
-            history, holdout = _evaluate_embedding_for_edge_prediction(
+            history, train_performance, test_performance = _evaluate_embedding_for_edge_prediction(
                 model_name=model_name,
                 graph=graph,
                 embedding=embedding,
                 train_graph=train_graph,
                 test_graph=test_graph,
-                negative_graph=negative_graph,
+                train_negative_graph=train_negative_graph,
+                test_negative_graph=test_negative_graph,
                 batch_size=batch_size,
                 use_mirrored_strategy=use_mirrored_strategy
             )
-            holdouts.append(holdout)
+            holdouts.append(train_performance)
+            holdouts.append(test_performance)
             histories.append(history)
 
     return pd.DataFrame(holdouts), histories
