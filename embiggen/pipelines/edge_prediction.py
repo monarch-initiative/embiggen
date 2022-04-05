@@ -102,7 +102,7 @@ def evaluate_embedding_for_edge_prediction(
         or at different times.
     embedding_method_fit_kwargs: Optional[Dict] = None
         The kwargs to be forwarded to the embedding fit method
-    embedding_method_kwargs: Optional[Dict] = None 
+    embedding_method_kwargs: Optional[Dict] = None
         The kwargs to be forwarded to the embedding method
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
         The subgraph to use for the edge prediction training and evaluation, if any.

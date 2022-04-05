@@ -34,7 +34,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.10.0.dev5',
+    version='0.10.0.dev6',
     description='Graph machine learning and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
@@ -54,8 +54,8 @@ setup(
         "ddd_subplots>=1.0.19",
         "sanitize_ml_labels>=1.0.29",
         "keras_mixed_sequence>=1.0.28",
-        "extra_keras_metrics>=2.0.5",
-        "ensmallen>=0.7.0.dev8",
+        "extra_keras_metrics>=2.0.6",
+        "ensmallen>=0.7.0.dev10",
         "validate_version_code",
         "packaging"
     ],
