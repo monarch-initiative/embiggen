@@ -26,6 +26,7 @@ def evaluate_embedding_for_edge_prediction(
     only_execute_embeddings: bool = False,
     embedding_method_fit_kwargs: Optional[Dict] = None,
     embedding_method_kwargs: Optional[Dict] = None,
+    subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
     """
@@ -43,7 +44,17 @@ def evaluate_embedding_for_edge_prediction(
     if embedding_method_kwargs is None:
         embedding_method_kwargs = {}
 
-    execute_gpu_checks(use_mirrored_strategy)
+    if subgraph_of_interest_for_edge_prediction is not None and not graph.contains(subgraph_of_interest_for_edge_prediction):
+        raise ValueError(
+            "The provided subgraph of interest for the edge prediction task is NOT a subgraph "
+            "of the provided graph, and therefore cannot be used as a subgraph of interest."
+        )
+
+    # If the embedding method is a string, we execute this check also within
+    # the compute node embedding pipeline.
+    if isinstance(embedding_method, str):
+        execute_gpu_checks(use_mirrored_strategy)
+
     holdouts = []
     histories = []
     for holdout_number in trange(
@@ -73,11 +84,42 @@ def evaluate_embedding_for_edge_prediction(
                 **embedding_method_kwargs
             )
 
-        # Force alignment
-        embedding = embedding.loc[graph.get_node_names()]
-
         if only_execute_embeddings:
             continue
+
+        # If requested, we focus the training and test graphs
+        # into the area of interest.
+        if subgraph_of_interest_for_edge_prediction is not None:
+            train_graph = train_graph & subgraph_of_interest_for_edge_prediction
+            test_graph = test_graph & subgraph_of_interest_for_edge_prediction
+
+        negative_graph = (
+            # We sample the negative edges from the entire graph
+            graph
+            # when no subgraph of interest has been provided
+            if subgraph_of_interest_for_edge_prediction is None
+            # else, if the subgraph was provided, we only extract the negative
+            # edges from this portion of the graph, making the evaluation of the edge prediction task
+            # more significant for the actual desired task: often, when doing an edge predition
+            # in a graph, we actually intend to predict some type of edges of interest.
+            # When this is the case, we do not care to train or evaluate the model on edges that
+            # are not in the portion of the graph.
+            # Consider a graph representing a social network: if we are interested in learning the 
+            # connections between users living in small towns, if we also take into account users
+            # living in large metropolis we would both train the model on unrelevant data and evaluate
+            # the model of a different task, which may be more or less difficult.
+            else subgraph_of_interest_for_edge_prediction
+        ).sample_negatives(
+            negatives_number=test_graph.get_number_of_directed_edges(),
+            random_state=random_seed*holdout_number,
+            verbose=True
+        )
+
+        # Consinstency check on graph size
+        assert negative_graph.get_edges_number() == negative_graph.get_edges_number()
+
+        # Force alignment
+        embedding = embedding.loc[train_graph.get_node_names()]
 
         # Simplify the test graph if needed.
         if test_graph.has_edge_weights():
@@ -85,12 +127,6 @@ def evaluate_embedding_for_edge_prediction(
 
         if test_graph.has_edge_types():
             test_graph.remove_inplace_edge_types()
-
-        negative_graph = graph.sample_negatives(
-            negatives_number=test_graph.get_edges_number(),
-            random_state=random_seed*holdout_number,
-            verbose=True
-        )
 
         if isinstance(model_name, str):
             model = edge_prediction_models.get(model_name)(
