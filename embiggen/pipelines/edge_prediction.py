@@ -29,16 +29,27 @@ def evaluate_embedding_for_edge_prediction(
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
+
+    Parameters
+    ----------------------
+    embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
+    graph: Graph,
+    model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]],
+    number_of_holdouts: int = 10,
+    training_size: float = 0.8,
+    random_seed: int = 42,
+    batch_size: int = 2**10,
+    edge_types: Optional[List[str]] = None,
+    use_mirrored_strategy: bool = False,
+    only_execute_embeddings: bool = False,
+    embedding_method_fit_kwargs: Optional[Dict] = None,
+    embedding_method_kwargs: Optional[Dict] = None,
+    subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
     """
     if isinstance(model_name, str) and model_name not in edge_prediction_models:
         raise ValueError(
-            (
-                "The given edge prediction model `{}` is not supported. "
-                "The supported node embedding methods are `{}`."
-            ).format(
-                model_name,
-                edge_prediction_models
-            )
+            f"The given edge prediction model `{model_name}` is not supported. "
+            f"The supported node embedding methods are `{edge_prediction_models}`."
         )
 
     if embedding_method_kwargs is None:
@@ -90,8 +101,29 @@ def evaluate_embedding_for_edge_prediction(
         # If requested, we focus the training and test graphs
         # into the area of interest.
         if subgraph_of_interest_for_edge_prediction is not None:
+            # We remove all the edges from the training and test graphs
+            # which are not part of the subgraph of interest.
             train_graph = train_graph & subgraph_of_interest_for_edge_prediction
             test_graph = test_graph & subgraph_of_interest_for_edge_prediction
+
+            # We remove all the nodes from the training and test graphs
+            # which are not part of the subgraph of interest.
+            subgraph_node_names = subgraph_of_interest_for_edge_prediction.get_node_names()
+            train_graph = train_graph.filter_from_names(
+                node_names_to_keep=subgraph_node_names
+            )
+            test_graph = test_graph.filter_from_names(
+                node_names_to_keep=subgraph_node_names
+            )
+
+            # We realign the considered training and test graph with
+            # the provided subgraph of interest node names dictionary.
+            train_graph = train_graph.remap_from_graph(
+                subgraph_of_interest_for_edge_prediction
+            )
+            test_graph = test_graph.remap_from_graph(
+                subgraph_of_interest_for_edge_prediction
+            )
 
         negative_graph = (
             # We sample the negative edges from the entire graph
@@ -104,19 +136,20 @@ def evaluate_embedding_for_edge_prediction(
             # in a graph, we actually intend to predict some type of edges of interest.
             # When this is the case, we do not care to train or evaluate the model on edges that
             # are not in the portion of the graph.
-            # Consider a graph representing a social network: if we are interested in learning the 
+            # Consider a graph representing a social network: if we are interested in learning the
             # connections between users living in small towns, if we also take into account users
             # living in large metropolis we would both train the model on unrelevant data and evaluate
             # the model of a different task, which may be more or less difficult.
             else subgraph_of_interest_for_edge_prediction
         ).sample_negatives(
-            negatives_number=test_graph.get_number_of_directed_edges(),
+            negatives_number=test_graph.get_edges_number(),
             random_state=random_seed*holdout_number,
             verbose=True
         )
 
         # Consinstency check on graph size
-        assert negative_graph.get_edges_number() == negative_graph.get_edges_number()
+        assert negative_graph.get_edges_number() == test_graph.get_edges_number()
+        assert negative_graph.get_nodes_number() == test_graph.get_nodes_number()
 
         # Force alignment
         embedding = embedding.loc[train_graph.get_node_names()]
