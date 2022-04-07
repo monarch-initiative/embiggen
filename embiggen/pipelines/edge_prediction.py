@@ -65,7 +65,7 @@ def evaluate_embedding_for_edge_prediction(
     number_of_holdouts: int = 10,
     training_size: float = 0.8,
     random_seed: int = 42,
-    batch_size: int = 2**10,
+    batch_size: int = 2**16,
     edge_types: Optional[List[str]] = None,
     use_mirrored_strategy: bool = True,
     only_execute_embeddings: bool = False,
