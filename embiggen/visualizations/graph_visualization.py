@@ -7,14 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import warnings
-try:
-    from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
-except ImportError:
-    warnings.warn(
-        "We were not able to detect the CV2 package and libGL.so, therefore "
-        "you will not be able to execute 3D animations with the visualization "
-        "pipeline."
-    )
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -127,6 +119,17 @@ class GraphVisualization:
             If TSNE decomposition has been required and no module supporting
             it is installed.
         """
+
+        if rotate == True or n_components > 2:
+            try:
+                from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
+            except ImportError:
+                warnings.warn(
+                    "We were not able to detect the CV2 package and libGL.so, therefore "
+                    "you will not be able to execute 3D animations with the visualization "
+                    "pipeline."
+                )
+
         self._graph = graph
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
