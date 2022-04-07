@@ -404,6 +404,6 @@ class EdgePredictionModel(Embedder):
             self._model.metrics_names,
             self._model.evaluate(
                 validation_sequence,
-                batch_size=batch_size
+                batch_size=batch_size,
             )
         ))

@@ -146,7 +146,7 @@ def evaluate_embedding_for_edge_prediction(
             training_size,
             random_state=random_seed*holdout_number,
             edge_types=edge_types,
-            verbose=True
+            verbose=False
         )
 
         if isinstance(embedding_method, str):
