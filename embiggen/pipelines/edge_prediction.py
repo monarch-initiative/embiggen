@@ -231,7 +231,7 @@ def evaluate_embedding_for_edge_prediction(
         train_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
             negatives_number=train_graph.get_edges_number(),
             random_state=random_seed*holdout_number,
-            verbose=True
+            verbose=False
         )
 
         test_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
@@ -240,7 +240,7 @@ def evaluate_embedding_for_edge_prediction(
             # the initial sampling of the training graph different from
             # the initial sampling of the test graph.
             random_state=(random_seed + 23456787)*holdout_number,
-            verbose=True
+            verbose=False
         )
 
         # Consinstency check on graph size
