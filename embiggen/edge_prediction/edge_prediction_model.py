@@ -222,12 +222,12 @@ class EdgePredictionModel(Embedder):
         epochs: int = 10000,
         support_mirrored_strategy: bool = False,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.01,
-        early_stopping_patience: int = 5,
+        early_stopping_min_delta: float = 0.001,
+        early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.1,
-        reduce_lr_patience: int = 3,
+        reduce_lr_min_delta: float = 0.01,
+        reduce_lr_patience: int = 5,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         verbose: int = 2,
@@ -257,18 +257,18 @@ class EdgePredictionModel(Embedder):
             exploiting multiple GPUs it may be unnoticeable.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping. 
-        early_stopping_min_delta: float = 0.01,
+        early_stopping_min_delta: float = 0.001,
             Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 5,
+        early_stopping_patience: int = 10,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which trigger early stopping.
         early_stopping_mode: str = "min",
             Direction of the variation of the monitored metric for early stopping.
         reduce_lr_monitor: str = "loss",
             Metric to monitor for reducing learning rate.
-        reduce_lr_min_delta: float = 0.1,
+        reduce_lr_min_delta: float = 0.01,
             Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 3,
+        reduce_lr_patience: int = 5,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which reducing learning rate.
         reduce_lr_mode: str = "min",

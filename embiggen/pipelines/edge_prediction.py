@@ -67,7 +67,7 @@ def evaluate_embedding_for_edge_prediction(
     random_seed: int = 42,
     batch_size: int = 2**10,
     edge_types: Optional[List[str]] = None,
-    use_mirrored_strategy: bool = False,
+    use_mirrored_strategy: bool = True,
     only_execute_embeddings: bool = False,
     embedding_method_fit_kwargs: Optional[Dict] = None,
     embedding_method_kwargs: Optional[Dict] = None,
@@ -94,7 +94,7 @@ def evaluate_embedding_for_edge_prediction(
         Size of the batch to be considered.
     edge_types: Optional[List[str]] = None
         Edge types to focus the edge prediction on, if any.
-    use_mirrored_strategy: bool = False
+    use_mirrored_strategy: bool = True
         Whether to use mirrored strategy for the embedding and edge prediction models.
     only_execute_embeddings: bool = False
         Whether to only execute the computation of the embedding or also the edge prediction.
