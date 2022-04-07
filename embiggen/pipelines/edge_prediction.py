@@ -244,8 +244,8 @@ def evaluate_embedding_for_edge_prediction(
         )
 
         # Consinstency check on graph size
-        assert train_negative_graph.get_edges_number() == test_graph.get_edges_number()
-        assert train_negative_graph.get_nodes_number() == test_graph.get_nodes_number()
+        assert train_negative_graph.get_edges_number() == train_graph.get_edges_number()
+        assert train_negative_graph.get_nodes_number() == train_graph.get_nodes_number()
         assert test_negative_graph.get_edges_number() == test_graph.get_edges_number()
         assert test_negative_graph.get_nodes_number() == test_graph.get_nodes_number()
 
