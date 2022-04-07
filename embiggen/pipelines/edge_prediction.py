@@ -266,6 +266,12 @@ def evaluate_embedding_for_edge_prediction(
         if test_graph.has_edge_types():
             test_graph.remove_inplace_edge_types()
 
+        train_graph.enable(
+            vector_sources=True,
+            vector_destinations=True,
+            vector_cumulative_node_degrees=True
+        )
+
         if use_mirrored_strategy:
             # The following Try-Except statement is needed because of a
             # weird IndexError exception raised in recent (> 2.6) versions
