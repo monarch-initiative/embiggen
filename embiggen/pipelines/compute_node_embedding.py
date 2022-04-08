@@ -71,51 +71,6 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
     return node_embedding_method_name in get_available_node_embedding_methods()
 
 
-def _train_model(
-    graph: Graph,
-    node_embedding_method_name: str,
-    fit_kwargs: Dict,
-    verbose: bool,
-    support_mirrored_strategy: bool,
-    **kwargs: Dict
-) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
-    """Return embedding computed with required node embedding method.
-
-    Parameters
-    --------------------------
-    graph: Graph,
-        The graph to embed.
-    node_embedding_method_name: str,
-        The name of the node embedding method to use.
-    fit_kwargs: Dict,
-        Arguments to pass to the fit call.
-    verbose: bool = True,
-        Whether to show loading bars.
-    use_mirrored_strategy: bool = True,
-        Whether to use mirrored strategy.
-    **kwargs: Dict,
-        Arguments to pass to the node embedding method constructor.
-        Read the documentation of the selected method.
-
-    Returns
-    --------------------------
-    Tuple with node embedding and training history.
-    """
-    # Creating the node embedding model
-    model = get_node_embedding_method(node_embedding_method_name)(
-        graph,
-        **kwargs
-    )
-    # Fitting the node embedding model
-    history = model.fit(
-        verbose=verbose,
-        **fit_kwargs
-    )
-    # Extracting computed embedding
-    node_embedding = model.get_embedding_dataframe()
-    return node_embedding, history
-
-
 @Cache(
     cache_path=[
         "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.gz",
@@ -167,18 +122,24 @@ def _compute_node_embedding(
     verbose = fit_kwargs.pop("verbose", verbose)
     kwargs = dict(
         graph=graph,
-        node_embedding_method_name=node_embedding_method_name,
-        fit_kwargs=fit_kwargs,
-        verbose=verbose,
-        support_mirrored_strategy=use_mirrored_strategy,
         **kwargs
     )
-    if use_mirrored_strategy:
-        strategy = tf.distribute.MirroredStrategy(devices=devices)
-        with strategy.scope():
-            # This is a candidate patch to a MirroredStrategy
-            return _train_model(**kwargs)
-    return _train_model(**kwargs)
+
+    if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
+        strategy = tf.distribute.MirroredStrategy(devices)
+    else:
+        strategy = tf.distribute.get_strategy()
+
+    with strategy.scope():
+        # Creating the node embedding model
+        model = get_node_embedding_method(node_embedding_method_name)(**kwargs)
+
+    # Fitting the node embedding model
+    history = model.fit(
+        verbose=verbose,
+        **fit_kwargs
+    )
+    return model.get_embedding_dataframe(), history
 
 
 def compute_node_embedding(

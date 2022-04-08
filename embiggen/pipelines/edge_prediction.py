@@ -104,7 +104,9 @@ def evaluate_embedding_for_edge_prediction(
     histories = []
     for holdout_number in trange(
         number_of_holdouts,
-        desc="Executing holdouts"
+        desc="Executing holdouts",
+        dynamic_ncols=True,
+        leave=False
     ):
         train_graph, test_graph = graph.connected_holdout(
             training_size,
@@ -237,7 +239,7 @@ def evaluate_embedding_for_edge_prediction(
         )
 
         if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
-            strategy = tf.distribute.MirroredStrategy()
+            strategy = tf.distribute.MirroredStrategy(devices)
         else:
             # Use the Default Strategy
             strategy = tf.distribute.get_strategy()
@@ -263,12 +265,14 @@ def evaluate_embedding_for_edge_prediction(
             batch_size=batch_size,
             epochs=epochs
         ))
+
         train_performance = model.evaluate(
             graph=train_graph,
             negative_graph=train_negative_graph,
             batch_size=batch_size,
         )
         train_performance["evaluation_type"] = "train"
+        
         test_performance = model.evaluate(
             graph=test_graph,
             negative_graph=test_negative_graph,

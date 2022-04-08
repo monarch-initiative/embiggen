@@ -45,7 +45,6 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
         node_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = "nadam",
         trainable_node_embedding: bool = False,
-        support_mirrored_strategy: bool = False,
         scaler: "Scaler" = "RobustScaler"
     ):
         """Create new NoLaN model.
@@ -62,7 +61,6 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
         self._use_node_features_dropout = use_node_features_dropout
         self._node_features_dropout_rate = node_features_dropout_rate
         self._use_batch_normalization = use_batch_normalization
-        self._support_mirrored_strategy = support_mirrored_strategy
         self._l1_kernel_regularization = l1_kernel_regularization
         self._l2_kernel_regularization = l2_kernel_regularization
         if isinstance(hidden_dense_layers, int):
@@ -258,7 +256,6 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
             max_neighbours=max_neighbours,
             batch_size=batch_size,
             random_state=random_state,
-            support_mirrored_strategy=self._support_mirrored_strategy
         )
         if validation_graph is not None:
             validation_sequence = NodeLabelPredictionSequence(
@@ -266,7 +263,6 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
                 max_neighbours=validation_graph.get_max_degree(),
                 batch_size=batch_size,
                 random_state=random_state,
-                support_mirrored_strategy=self._support_mirrored_strategy
             )
         else:
             validation_sequence = None
@@ -376,7 +372,6 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
                 max_neighbours=self._graph.max_degree(),
                 batch_size=batch_size,
                 random_state=random_state,
-                support_mirrored_strategy=self._support_mirrored_strategy
             ),
             verbose=verbose
         )

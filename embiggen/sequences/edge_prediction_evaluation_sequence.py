@@ -40,14 +40,6 @@ class EdgePredictionEvaluationSequence(Sequence):
             Whether to return the edge metrics.
         batch_size: int = 2**10
             The batch size to use.
-        support_mirrored_strategy: bool = False
-            Whether to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         filter_none_values: bool = True
             Whether to filter None values.
         elapsed_epochs: int = 0

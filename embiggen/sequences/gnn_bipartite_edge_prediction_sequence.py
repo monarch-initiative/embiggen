@@ -20,7 +20,6 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         use_node_types: bool = False,
         return_node_ids: bool = True,
         return_labels: bool = True,
-        support_mirrored_strategy: bool = False,
         random_state: int = 42
     ):
         """Create new GNNEdgePredictionSequence object.
@@ -89,7 +88,6 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._use_node_types:
             self._destination_node_features.append(
                 self._destination_node_type_ids)
-        self._support_mirrored_strategy = support_mirrored_strategy
         super().__init__(
             sources,
             batch_size=1,

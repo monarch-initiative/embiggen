@@ -17,7 +17,6 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
         use_node_types: bool = False,
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
-        support_mirrored_strategy: bool = False,
         graph_to_avoid: Graph = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
@@ -40,14 +39,6 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
             Whether to return the edge metrics.
         batch_size: int = 2**10
             The batch size to use.
-        support_mirrored_strategy: bool = False
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         graph_to_avoid: Graph = None
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
@@ -126,7 +117,6 @@ class BinaryEdgeLabelPredictionSequence(EdgeLabelPredictionSequence):
             use_node_types=use_node_types,
             use_edge_metrics=use_edge_metrics,
             batch_size=batch_size,
-            support_mirrored_strategy=support_mirrored_strategy,
             graph_to_avoid=graph_to_avoid,
             batches_per_epoch=batches_per_epoch,
             elapsed_epochs=elapsed_epochs,

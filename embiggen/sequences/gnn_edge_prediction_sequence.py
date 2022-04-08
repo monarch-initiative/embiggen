@@ -22,7 +22,6 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         batch_size: int = 2**15,
         negative_samples_rate: float = 0.9,
         avoid_false_negatives: bool = False,
-        support_mirrored_strategy: bool = False,
         graph_to_avoid: Optional[Graph] = None,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
@@ -53,14 +52,6 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             By default False.
             Enabling this will slow down the batch generation while (likely) not
             introducing any significant gain to the model performance.
-        support_mirrored_strategy: bool = False,
-            Whether to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         graph_to_avoid: Graph = None,
             Graph to avoid when generating the edges.
             This can be the validation component of the graph, for example.
@@ -90,7 +81,6 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
             batch_size=batch_size,
             negative_samples_rate=negative_samples_rate,
             avoid_false_negatives=avoid_false_negatives,
-            support_mirrored_strategy=support_mirrored_strategy,
             filter_none_values=False,
             graph_to_avoid=graph_to_avoid,
             batches_per_epoch=batches_per_epoch,

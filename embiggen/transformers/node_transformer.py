@@ -11,7 +11,6 @@ class NodeTransformer:
         self,
         numeric_node_ids: bool = False,
         aligned_node_mapping: bool = False,
-        support_mirrored_strategy: bool = False,
     ):
         """Create new NodeTransformer object.
 
@@ -24,17 +23,8 @@ class NodeTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         """
         self._numeric_node_ids = numeric_node_ids
-        self._support_mirrored_strategy = support_mirrored_strategy
         self._embedding = None
         self._embedding_numpy = None
         self._aligned_node_mapping = aligned_node_mapping
@@ -92,14 +82,9 @@ class NodeTransformer:
 
         if self._aligned_node_mapping:
             if self.numeric_node_ids:
-                if self._support_mirrored_strategy:
-                    return nodes.astype(float)
                 return nodes
             return self._embedding_numpy[nodes]
 
         if self.numeric_node_ids:
-            ids = self._embedding.index.get_indexer(nodes)
-            if self._support_mirrored_strategy:
-                return ids.astype(float)
-            return ids
+            return self._embedding.index.get_indexer(nodes)
         return self._embedding.loc[nodes].to_numpy()

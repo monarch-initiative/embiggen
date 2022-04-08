@@ -24,7 +24,6 @@ class TransE(Siamese):
         extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransE",
         optimizer: Union[str, Optimizer] = None,
-        support_mirrored_strategy: bool = False,
         use_gradient_centralization: str = "auto"
     ):
         """Create new sequence Embedder model.

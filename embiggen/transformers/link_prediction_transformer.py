@@ -14,7 +14,6 @@ class LinkPredictionTransformer:
         self,
         method: str = "Hadamard",
         aligned_node_mapping: bool = False,
-        support_mirrored_strategy: bool = False,
     ):
         """Create new LinkPredictionTransformer object.
 
@@ -28,19 +27,10 @@ class LinkPredictionTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         """
         self._transformer = GraphTransformer(
             method=method,
             aligned_node_mapping=aligned_node_mapping,
-            support_mirrored_strategy=support_mirrored_strategy
         )
 
     def fit(self, embedding: pd.DataFrame):
