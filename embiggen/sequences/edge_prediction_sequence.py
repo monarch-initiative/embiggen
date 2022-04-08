@@ -134,7 +134,8 @@ class EdgePredictionSequence(Sequence):
                 if self._use_node_types:
                     # Shapes of the source and destination node type IDs
                     input_tensor_specs.append(tf.TensorSpec(
-                        shape=(self._batch_size, self._graph.get_maximum_multilabel_count()),
+                        shape=(self._batch_size,
+                               self._graph.get_maximum_multilabel_count()),
                         dtype=tf.uint32
                     ))
 
