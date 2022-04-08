@@ -155,12 +155,6 @@ class Embedder:
             "The method _build_model must be implemented in the child classes."
         )
 
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        raise NotImplementedError(
-            "The method _compile_model must be implemented in the child classes."
-        )
-
     def summary(self):
         """Print model summary."""
         self._model.summary()
@@ -221,7 +215,6 @@ class Embedder:
         for layer in self._model.layers:
             if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
-        self._compile_model()
 
     def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
         """Return terms embedding using given index names.

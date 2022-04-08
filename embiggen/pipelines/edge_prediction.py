@@ -246,6 +246,7 @@ def evaluate_embedding_for_edge_prediction(
                 )
             else:
                 model = model_name(graph, embedding)
+        model.compile()
         histories.append(model.fit(
             train_graph=train_graph,
             valid_graph=test_graph,
@@ -253,22 +254,22 @@ def evaluate_embedding_for_edge_prediction(
             batch_size=batch_size,
             support_mirrored_strategy=use_mirrored_strategy
         ))
-        train_performance = model.evaluate(
-            graph=train_graph,
-            negative_graph=train_negative_graph,
-            batch_size=batch_size,
-            support_mirrored_strategy=use_mirrored_strategy
-        )
-        train_performance["evaluation_type"] = "train"
-        test_performance = model.evaluate(
-            graph=test_graph,
-            negative_graph=test_negative_graph,
-            batch_size=batch_size,
-            support_mirrored_strategy=use_mirrored_strategy
-        )
-        test_performance["evaluation_type"] = "test"
+        # train_performance = model.evaluate(
+        #     graph=train_graph,
+        #     negative_graph=train_negative_graph,
+        #     batch_size=batch_size,
+        #     support_mirrored_strategy=use_mirrored_strategy
+        # )
+        # train_performance["evaluation_type"] = "train"
+        # test_performance = model.evaluate(
+        #     graph=test_graph,
+        #     negative_graph=test_negative_graph,
+        #     batch_size=batch_size,
+        #     support_mirrored_strategy=use_mirrored_strategy
+        # )
+        # test_performance["evaluation_type"] = "test"
 
-        holdouts.append(train_performance)
-        holdouts.append(test_performance)
+        # holdouts.append(train_performance)
+        # holdouts.append(test_performance)
 
     return pd.DataFrame(holdouts), histories

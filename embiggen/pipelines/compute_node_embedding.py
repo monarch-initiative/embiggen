@@ -107,6 +107,7 @@ def _train_model(
         support_mirrored_strategy=support_mirrored_strategy,
         **kwargs
     )
+    model.compile()
     # Fitting the node embedding model
     history = model.fit(
         verbose=verbose,

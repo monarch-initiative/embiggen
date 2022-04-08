@@ -167,7 +167,7 @@ class GloVe(Embedder):
 
         return glove
 
-    def _compile_model(self) -> Model:
+    def compile(self) -> Model:
         """Compile model."""
         self._model.compile(
             loss=self._glove_loss,

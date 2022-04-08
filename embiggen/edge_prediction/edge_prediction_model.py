@@ -134,19 +134,19 @@ class EdgePredictionModel(Embedder):
             trainable_embedding=trainable_embedding
         )
 
-    def _compile_model(self) -> Model:
+    def compile(self) -> Model:
         """Compile model."""
         if self._task_name in ("EDGE_PREDICTION", "BINARY_EDGE_LABEL_PREDICTION"):
             self._model.compile(
                 loss="binary_crossentropy",
                 optimizer=self._optimizer,
-                metrics=get_standard_binary_metrics(),
+                #metrics=get_standard_binary_metrics(),
             )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             self._model.compile(
                 loss="sparse_categorical_crossentropy",
                 optimizer=self._optimizer,
-                metrics=get_sparse_multiclass_metrics(),
+                #metrics=get_sparse_multiclass_metrics(),
             )
         else:
             raise ValueError("Unreacheable!")
@@ -177,8 +177,7 @@ class EdgePredictionModel(Embedder):
         edge_embedding = embedding_layer(None)
 
         if self._use_edge_metrics:
-            # TODO! update the shape using an ensmallen method
-            edge_metrics_input = Input((4,), name="EdgeMetrics")
+            edge_metrics_input = Input((self._graph.get_number_of_available_edge_metrics(),), name="EdgeMetrics")
             inputs.append(edge_metrics_input)
             edge_embedding = Concatenate()([
                 edge_embedding,
@@ -302,15 +301,16 @@ class EdgePredictionModel(Embedder):
                 negative_samples_rate=negative_samples_rate,
                 support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
-            )
+            ).into_dataset()
             if negative_valid_graph is not None:
-                validation_sequence = EdgePredictionEvaluationSequence(
-                    positive_graph=valid_graph,
-                    negative_graph=negative_valid_graph,
-                    batch_size=batch_size,
-                    support_mirrored_strategy=support_mirrored_strategy,
-                    use_edge_metrics=self._use_edge_metrics,
-                )
+                # validation_sequence = EdgePredictionEvaluationSequence(
+                #     positive_graph=valid_graph,
+                #     negative_graph=negative_valid_graph,
+                #     batch_size=batch_size,
+                #     support_mirrored_strategy=support_mirrored_strategy,
+                #     use_edge_metrics=self._use_edge_metrics,
+                # )
+                validation_sequence = None
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             training_sequence = EdgeLabelPredictionSequence(
                 train_graph,
