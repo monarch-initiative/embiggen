@@ -22,37 +22,41 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         """Test graph visualization."""
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
-        holdouts, histories = evaluate_embedding_for_edge_prediction(
-            embedding_method="GloVe",
-            graph=self._graph,
-            model_name="Perceptron",
-            number_of_holdouts=self._number_of_holdouts,
-            embedding_method_kwargs=dict(
-                embedding_size=10,
-            ),
-            embedding_method_fit_kwargs=dict(
-                epochs=1
+        for use_mirrored_strategy in (True, False):        
+            holdouts, histories = evaluate_embedding_for_edge_prediction(
+                embedding_method="GloVe",
+                graph=self._graph,
+                model_name="Perceptron",
+                number_of_holdouts=self._number_of_holdouts,
+                embedding_method_kwargs=dict(
+                    embedding_size=10,
+                ),
+                embedding_method_fit_kwargs=dict(
+                    epochs=1
+                ),
+                use_mirrored_strategy=use_mirrored_strategy
             )
-        )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts)
-        self.assertEqual(len(histories), self._number_of_holdouts)
+            self.assertEqual(holdouts.shape[0], self._number_of_holdouts)
+            self.assertEqual(len(histories), self._number_of_holdouts)
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):
         """Test graph visualization."""
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
-        holdouts, histories = evaluate_embedding_for_edge_prediction(
-            embedding_method="GloVe",
-            graph=self._graph,
-            model_name="Perceptron",
-            number_of_holdouts=self._number_of_holdouts,
-            embedding_method_kwargs=dict(
-                embedding_size=10,
-            ),
-            embedding_method_fit_kwargs=dict(
-                epochs=1
-            ),
-            subgraph_of_interest_for_edge_prediction=self._subgraph
-        )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts)
-        self.assertEqual(len(histories), self._number_of_holdouts)
+        for use_mirrored_strategy in (True, False):
+            holdouts, histories = evaluate_embedding_for_edge_prediction(
+                embedding_method="GloVe",
+                graph=self._graph,
+                model_name="Perceptron",
+                number_of_holdouts=self._number_of_holdouts,
+                embedding_method_kwargs=dict(
+                    embedding_size=10,
+                ),
+                embedding_method_fit_kwargs=dict(
+                    epochs=1
+                ),
+                subgraph_of_interest_for_edge_prediction=self._subgraph,
+                use_mirrored_strategy=use_mirrored_strategy
+            )
+            self.assertEqual(holdouts.shape[0], self._number_of_holdouts)
+            self.assertEqual(len(histories), self._number_of_holdouts)
