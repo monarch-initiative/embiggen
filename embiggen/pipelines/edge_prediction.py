@@ -14,50 +14,6 @@ edge_prediction_models = {
 }
 
 
-def _evaluate_embedding_for_edge_prediction(
-    model_name: str,
-    graph: Graph,
-    embedding: pd.DataFrame,
-    train_graph: Graph,
-    test_graph: Graph,
-    train_negative_graph: Graph,
-    test_negative_graph: Graph,
-    batch_size: int,
-    use_mirrored_strategy: bool
-) -> Tuple[pd.DataFrame, Dict, Dict]:
-    if isinstance(model_name, str):
-        model = edge_prediction_models.get(model_name)(
-            graph=graph,
-            embedding=embedding
-        )
-    else:
-        model = model_name(graph, embedding)
-
-    history = model.fit(
-        train_graph=train_graph,
-        valid_graph=test_graph,
-        negative_valid_graph=test_negative_graph,
-        batch_size=batch_size,
-        support_mirrored_strategy=use_mirrored_strategy
-    )
-    train_performance = model.evaluate(
-        graph=train_graph,
-        negative_graph=train_negative_graph,
-        batch_size=batch_size,
-        support_mirrored_strategy=use_mirrored_strategy
-    )
-    train_performance["evaluation_type"] = "train"
-    test_performance = model.evaluate(
-        graph=test_graph,
-        negative_graph=test_negative_graph,
-        batch_size=batch_size,
-        support_mirrored_strategy=use_mirrored_strategy
-    )
-    test_performance["evaluation_type"] = "test"
-
-    return history, train_performance, test_performance
-
-
 def evaluate_embedding_for_edge_prediction(
     embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graph: Graph,
@@ -258,7 +214,7 @@ def evaluate_embedding_for_edge_prediction(
 
         if train_graph.has_edge_types():
             train_graph.remove_inplace_edge_types()
-        
+
         # Simplify the test graph if needed.
         if test_graph.has_edge_weights():
             test_graph.remove_inplace_edge_weights()
@@ -273,47 +229,46 @@ def evaluate_embedding_for_edge_prediction(
         )
 
         if use_mirrored_strategy:
-            # The following Try-Except statement is needed because of a
-            # weird IndexError exception raised in recent (> 2.6) versions
-            # of TensorFlow. According to the TensorFlow documentation,
-            # the usage of MirroredStrategy within this code snipped should
-            # be correct, nonetheless it raises the exception.
-            # Since the execution of the model is correct, we patch it
-            # this way to avoid loosing model training.
-            try:
-                strategy = tf.distribute.MirroredStrategy(devices=devices)
-                with strategy.scope():
-                    # This is a candidate patch to a MirroredStrategy
-                    history, train_performance, test_performance = _evaluate_embedding_for_edge_prediction(
-                        model_name=model_name,
+            strategy = tf.distribute.MirroredStrategy(devices=devices)
+            with strategy.scope():
+                if isinstance(model_name, str):
+                    model = edge_prediction_models.get(model_name)(
                         graph=graph,
-                        embedding=embedding,
-                        train_graph=train_graph,
-                        test_graph=test_graph,
-                        train_negative_graph=train_negative_graph,
-                        test_negative_graph=test_negative_graph,
-                        batch_size=batch_size,
-                        use_mirrored_strategy=use_mirrored_strategy
+                        embedding=embedding
                     )
-                    holdouts.append(train_performance)
-                    holdouts.append(test_performance)
-                    histories.append(history)
-            except IndexError:
-                pass
+                else:
+                    model = model_name(graph, embedding)
         else:
-            history, train_performance, test_performance = _evaluate_embedding_for_edge_prediction(
-                model_name=model_name,
-                graph=graph,
-                embedding=embedding,
-                train_graph=train_graph,
-                test_graph=test_graph,
-                train_negative_graph=train_negative_graph,
-                test_negative_graph=test_negative_graph,
-                batch_size=batch_size,
-                use_mirrored_strategy=use_mirrored_strategy
-            )
-            holdouts.append(train_performance)
-            holdouts.append(test_performance)
-            histories.append(history)
+            if isinstance(model_name, str):
+                model = edge_prediction_models.get(model_name)(
+                    graph=graph,
+                    embedding=embedding
+                )
+            else:
+                model = model_name(graph, embedding)
+        histories.append(model.fit(
+            train_graph=train_graph,
+            valid_graph=test_graph,
+            negative_valid_graph=test_negative_graph,
+            batch_size=batch_size,
+            support_mirrored_strategy=use_mirrored_strategy
+        ))
+        train_performance = model.evaluate(
+            graph=train_graph,
+            negative_graph=train_negative_graph,
+            batch_size=batch_size,
+            support_mirrored_strategy=use_mirrored_strategy
+        )
+        train_performance["evaluation_type"] = "train"
+        test_performance = model.evaluate(
+            graph=test_graph,
+            negative_graph=test_negative_graph,
+            batch_size=batch_size,
+            support_mirrored_strategy=use_mirrored_strategy
+        )
+        test_performance["evaluation_type"] = "test"
+
+        holdouts.append(train_performance)
+        holdouts.append(test_performance)
 
     return pd.DataFrame(holdouts), histories
