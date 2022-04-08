@@ -134,19 +134,19 @@ class EdgePredictionModel(Embedder):
             trainable_embedding=trainable_embedding
         )
 
-    def compile(self) -> Model:
+    def _compile_model(self) -> Model:
         """Compile model."""
         if self._task_name in ("EDGE_PREDICTION", "BINARY_EDGE_LABEL_PREDICTION"):
             self._model.compile(
                 loss="binary_crossentropy",
                 optimizer=self._optimizer,
-                #metrics=get_standard_binary_metrics(),
+                metrics=get_standard_binary_metrics(),
             )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             self._model.compile(
                 loss="sparse_categorical_crossentropy",
                 optimizer=self._optimizer,
-                #metrics=get_sparse_multiclass_metrics(),
+                metrics=get_sparse_multiclass_metrics(),
             )
         else:
             raise ValueError("Unreacheable!")
@@ -215,11 +215,10 @@ class EdgePredictionModel(Embedder):
         train_graph: Graph,
         valid_graph: Optional[Graph] = None,
         negative_valid_graph: Optional[Graph] = None,
-        batch_size: int = 2**16,
+        batch_size: int = 2**15,
         batches_per_epoch: Union[int, str] = "auto",
         negative_samples_rate: float = 0.75,
         epochs: int = 10000,
-        support_mirrored_strategy: bool = False,
         early_stopping_monitor: str = "loss",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -246,14 +245,6 @@ class EdgePredictionModel(Embedder):
             Rate of unbalancing in the batch.
         epochs: int = 10000,
             Epochs to train the model for.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping. 
         early_stopping_min_delta: float = 0.001,
@@ -299,24 +290,20 @@ class EdgePredictionModel(Embedder):
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
                 negative_samples_rate=negative_samples_rate,
-                support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             ).into_dataset()
             if negative_valid_graph is not None:
-                # validation_sequence = EdgePredictionEvaluationSequence(
-                #     positive_graph=valid_graph,
-                #     negative_graph=negative_valid_graph,
-                #     batch_size=batch_size,
-                #     support_mirrored_strategy=support_mirrored_strategy,
-                #     use_edge_metrics=self._use_edge_metrics,
-                # )
-                validation_sequence = None
+                validation_sequence = EdgePredictionEvaluationSequence(
+                    positive_graph=valid_graph,
+                    negative_graph=negative_valid_graph,
+                    batch_size=batch_size,
+                    use_edge_metrics=self._use_edge_metrics,
+                ).into_dataset()
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             training_sequence = EdgeLabelPredictionSequence(
                 train_graph,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
-                support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             )
             if valid_graph is not None:
@@ -330,7 +317,6 @@ class EdgePredictionModel(Embedder):
                 positive_edge_type=self._positive_edge_type,
                 batch_size=batch_size,
                 batches_per_epoch=batches_per_epoch,
-                support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
             )
             if valid_graph is not None:
@@ -367,7 +353,6 @@ class EdgePredictionModel(Embedder):
         graph: Graph,
         negative_graph: Optional[Graph] = None,
         batch_size: int = 2**10,
-        support_mirrored_strategy: bool = False,
     ) -> Dict[str, float]:
         """Run predict."""
         self._validate_fit_parameters(
@@ -384,9 +369,8 @@ class EdgePredictionModel(Embedder):
                 positive_graph=graph,
                 negative_graph=negative_graph,
                 batch_size=batch_size,
-                support_mirrored_strategy=support_mirrored_strategy,
                 use_edge_metrics=self._use_edge_metrics,
-            )
+            ).into_dataset()
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             raise NotImplementedError(
                 "The validation sequence for edge label prediction "

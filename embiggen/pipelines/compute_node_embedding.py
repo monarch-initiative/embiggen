@@ -104,10 +104,8 @@ def _train_model(
     # Creating the node embedding model
     model = get_node_embedding_method(node_embedding_method_name)(
         graph,
-        support_mirrored_strategy=support_mirrored_strategy,
         **kwargs
     )
-    model.compile()
     # Fitting the node embedding model
     history = model.fit(
         verbose=verbose,
@@ -176,22 +174,10 @@ def _compute_node_embedding(
         **kwargs
     )
     if use_mirrored_strategy:
-        wrapped_results = []
-        # The following Try-Except statement is needed because of a
-        # weird IndexError exception raised in recent (> 2.6) versions
-        # of TensorFlow. According to the TensorFlow documentation,
-        # the usage of MirroredStrategy within this code snipped should
-        # be correct, nonetheless it raises the exception.
-        # Since the execution of the model is correct, we patch it
-        # this way to avoid loosing model training.
-        try:
-            strategy = tf.distribute.MirroredStrategy(devices=devices)
-            with strategy.scope():
-                # This is a candidate patch to a MirroredStrategy
-                wrapped_results.append(_train_model(**kwargs))
-        except IndexError:
-            pass
-        return wrapped_results.pop()
+        strategy = tf.distribute.MirroredStrategy(devices=devices)
+        with strategy.scope():
+            # This is a candidate patch to a MirroredStrategy
+            return _train_model(**kwargs)
     return _train_model(**kwargs)
 
 

@@ -59,14 +59,6 @@ class TransE(Siamese):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
@@ -87,7 +79,6 @@ class TransE(Siamese):
             extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
-            support_mirrored_strategy=support_mirrored_strategy,
             use_gradient_centralization=use_gradient_centralization
         )
 

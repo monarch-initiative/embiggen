@@ -18,10 +18,11 @@ def evaluate_embedding_for_edge_prediction(
     embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graph: Graph,
     model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]],
+    epochs: int = 1000,
     number_of_holdouts: int = 10,
     training_size: float = 0.8,
     random_seed: int = 42,
-    batch_size: int = 2**16,
+    batch_size: int = 2**15,
     edge_types: Optional[List[str]] = None,
     use_mirrored_strategy: bool = True,
     only_execute_embeddings: bool = False,
@@ -40,6 +41,8 @@ def evaluate_embedding_for_edge_prediction(
         The graph to run the embedding and edge prediction on.
     model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]]
         Either the name of the model or a method returning a model.
+    epochs: int = 1000
+        Number of epochs to train the perceptron model for.
     number_of_holdouts: int = 10
         The number of the holdouts to run.
     training_size: float = 0.8
@@ -246,30 +249,27 @@ def evaluate_embedding_for_edge_prediction(
                 )
             else:
                 model = model_name(graph, embedding)
-        model.compile()
         histories.append(model.fit(
             train_graph=train_graph,
             valid_graph=test_graph,
             negative_valid_graph=test_negative_graph,
             batch_size=batch_size,
-            support_mirrored_strategy=use_mirrored_strategy
+            epochs=epochs
         ))
-        # train_performance = model.evaluate(
-        #     graph=train_graph,
-        #     negative_graph=train_negative_graph,
-        #     batch_size=batch_size,
-        #     support_mirrored_strategy=use_mirrored_strategy
-        # )
-        # train_performance["evaluation_type"] = "train"
-        # test_performance = model.evaluate(
-        #     graph=test_graph,
-        #     negative_graph=test_negative_graph,
-        #     batch_size=batch_size,
-        #     support_mirrored_strategy=use_mirrored_strategy
-        # )
-        # test_performance["evaluation_type"] = "test"
+        train_performance = model.evaluate(
+            graph=train_graph,
+            negative_graph=train_negative_graph,
+            batch_size=batch_size,
+        )
+        train_performance["evaluation_type"] = "train"
+        test_performance = model.evaluate(
+            graph=test_graph,
+            negative_graph=test_negative_graph,
+            batch_size=batch_size,
+        )
+        test_performance["evaluation_type"] = "test"
 
-        # holdouts.append(train_performance)
-        # holdouts.append(test_performance)
+        holdouts.append(train_performance)
+        holdouts.append(test_performance)
 
     return pd.DataFrame(holdouts), histories

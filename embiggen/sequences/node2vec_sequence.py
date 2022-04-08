@@ -4,6 +4,8 @@ from typing import Tuple, Dict
 import numpy as np  # type: ignore
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from .abstract_sequence import AbstractSequence
+import tensorflow as tf
+from ..utils import tensorflow_version_is_higher_or_equal_than
 
 
 class Node2VecSequence(AbstractSequence):
@@ -22,7 +24,6 @@ class Node2VecSequence(AbstractSequence):
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
     ):
@@ -72,14 +73,6 @@ class Node2VecSequence(AbstractSequence):
             THIS IS AN EXPERIMENTAL FEATURE!
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         random_state: int = 42,
             The random state to reproduce the training sequence.
         dense_node_mapping: Dict[int, int] = None,
@@ -100,14 +93,78 @@ class Node2VecSequence(AbstractSequence):
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._dense_node_mapping = dense_node_mapping
+        self._current_index = 0
 
         super().__init__(
             batch_size=batch_size,
             sample_number=self._graph.get_unique_source_nodes_number(),
             window_size=window_size,
             elapsed_epochs=elapsed_epochs,
-            support_mirrored_strategy=support_mirrored_strategy,
             random_state=random_state
+        )
+
+    def __call__(self):
+        """Return next batch using an infinite generator model."""
+        self._current_index += 1
+        return self[self._current_index]
+
+    def into_dataset(self) -> tf.data.Dataset:
+        """Return dataset generated out of the current sequence instance.
+
+        Implementative details
+        ---------------------------------
+        This method handles the conversion of this Keras Sequence into
+        a TensorFlow dataset, also handling the proper dispatching according
+        to what version of TensorFlow is installed in this system.
+
+        Returns
+        ----------------------------------
+        Dataset to be used for the training of a model
+        """
+
+        #################################################################
+        # Handling kernel creation when TensorFlow is a modern version. #
+        #################################################################
+
+        number_of_skipgrams = self._batch_size * self._iterations * \
+            (self._walk_length - self._window_size * 2)
+        
+        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
+            input_tensor_specs = []
+
+            # Shapes of the source and destination node IDs
+            input_tensor_specs.append(tf.TensorSpec(
+                shape=(number_of_skipgrams, self._window_size*2),
+                dtype=tf.uint32
+            ))
+            input_tensor_specs.append(tf.TensorSpec(
+                shape=(number_of_skipgrams, ),
+                dtype=tf.uint32
+            ))
+
+            return tf.data.Dataset.from_generator(
+                self,
+                output_signature=(
+                    (
+                        *input_tensor_specs,
+                    ),
+                )
+            )
+
+        return tf.data.Dataset.from_generator(
+            self,
+            output_types=(
+                (
+                    tf.uint32,
+                    tf.uint32
+                ),
+            ),
+            output_shapes=(
+                (
+                    tf.TensorShape([number_of_skipgrams, self._window_size*2]),
+                    tf.TensorShape([number_of_skipgrams, ])
+                ),
+            )
         )
 
     def __getitem__(self, idx: int) -> Tuple[Tuple[np.ndarray, np.ndarray], None]:
@@ -158,12 +215,4 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-        outputs = [contexts_batch, words_batch]
-
-        if self._support_mirrored_strategy:
-            outputs = [
-                output.astype(float)
-                for output in outputs
-            ]
-
-        return outputs, None
+        return (((contexts_batch, words_batch), ), )

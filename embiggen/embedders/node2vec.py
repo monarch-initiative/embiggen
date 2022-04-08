@@ -33,7 +33,6 @@ class Node2Vec:
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
         elapsed_epochs: int = 0,
-        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
         use_gradient_centralization: bool = True,
@@ -103,14 +102,6 @@ class Node2Vec:
             This is mainly useful for graphs containing nodes with extremely high degrees.
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         random_state: int = 42,
             The random state to reproduce the training sequence.
         dense_node_mapping: Dict[int, int] = None,
@@ -139,11 +130,10 @@ class Node2Vec:
             change_node_type_weight=change_node_type_weight,
             change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
-            support_mirrored_strategy=support_mirrored_strategy,
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
-        )
+        ).into_dataset()
         self._model = word2vec_model(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding=embedding,

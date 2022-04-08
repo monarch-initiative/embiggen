@@ -62,14 +62,14 @@ class CBOW(Embedder):
         # Create first the input with the central terms
         central_terms_input = Input(
             (1, ),
-            dtype=tf.int32,
+            dtype=tf.uint32,
             name="CentralTermsInput"
         )
 
         # Then we create the input of the contextual terms
         contextual_terms_input = Input(
             (self._window_size*2, ),
-            dtype=tf.int32,
+            dtype=tf.uint32,
             name="ContextualTermsInput"
         )
 

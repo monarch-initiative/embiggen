@@ -104,8 +104,10 @@ class GloVe(Embedder):
     def _build_model(self):
         """Create new Glove model."""
         # Creating the input layers
-        left_input_layer = Input((1,), name="left_input_layer")
-        right_input_layer = Input((1,), name="right_input_layer")
+        left_input_layer = Input(
+            (1,), dtype=tf.uint32, name="left_input_layer")
+        right_input_layer = Input(
+            (1,), dtype=tf.uint32, name="right_input_layer")
 
         trainable_left_embedding = Embedding(
             self._vocabulary_size,
@@ -167,7 +169,7 @@ class GloVe(Embedder):
 
         return glove
 
-    def compile(self) -> Model:
+    def _compile_model(self) -> Model:
         """Compile model."""
         self._model.compile(
             loss=self._glove_loss,
@@ -252,7 +254,7 @@ class GloVe(Embedder):
                 batch_size=batch_size,
                 directed=self._directed,
                 random_state=self._random_state
-            ),
+            ).into_dataset(),
             *args,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,

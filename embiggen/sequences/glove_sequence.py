@@ -2,6 +2,8 @@
 from typing import Union, Tuple, Dict
 from keras_mixed_sequence import MixedSequence, VectorSequence
 import numpy as np
+import tensorflow as tf
+from ..utils import tensorflow_version_is_higher_or_equal_than
 
 
 class GloveSequence(MixedSequence):
@@ -41,7 +43,12 @@ class GloveSequence(MixedSequence):
             Random random_state to make the sequence reproducible.
         """
         self._directed = directed
-
+        batches_per_epoch = max(
+            sources.size // batch_size,
+            1
+        )
+        self._current_index = 0
+        self._batches_per_epoch = batches_per_epoch
         super().__init__(
             x=[
                 VectorSequence(
@@ -68,6 +75,68 @@ class GloveSequence(MixedSequence):
             )
         )
 
+    def __call__(self):
+        """Return next batch using an infinite generator model."""
+        self._current_index = (self._current_index + 1) % self._batches_per_epoch
+        return self[self._current_index]
+
+    def into_dataset(self) -> tf.data.Dataset:
+        """Return dataset generated out of the current sequence instance.
+
+        Implementative details
+        ---------------------------------
+        This method handles the conversion of this Keras Sequence into
+        a TensorFlow dataset, also handling the proper dispatching according
+        to what version of TensorFlow is installed in this system.
+
+        Returns
+        ----------------------------------
+        Dataset to be used for the training of a model
+        """
+
+        #################################################################
+        # Handling kernel creation when TensorFlow is a modern version. #
+        #################################################################
+
+        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
+            return tf.data.Dataset.from_generator(
+                self,
+                output_signature=(
+                    (
+                        tf.TensorSpec(
+                            shape=(None, ),
+                            dtype=tf.uint32
+                        ),
+                        tf.TensorSpec(
+                            shape=(None, ),
+                            dtype=tf.uint32
+                        )
+                    ),
+                    tf.TensorSpec(
+                        shape=(None, ),
+                        dtype=tf.float64
+                    )
+                )
+            )
+
+        return tf.data.Dataset.from_generator(
+            self,
+            output_types=(
+                (
+                    tf.uint32,
+                    tf.uint32,
+                ),
+                tf.float64
+            ),
+            output_shapes=(
+                (
+                    tf.TensorShape([None, ]),
+                    tf.TensorShape([None, ])
+                ),
+                tf.TensorShape([None, ])
+            )
+        )
+
     def __getitem__(self, idx: int) -> Tuple[
         Union[np.ndarray, Dict],
         Union[np.ndarray, Dict]
@@ -76,14 +145,14 @@ class GloveSequence(MixedSequence):
 
         Parameters
         ---------------
-        idx: int,
+        idx: int
             Index corresponding to batch to be rendered.
 
         Returns
         ---------------
         Return Tuple containing input and output batches.
         """
-        input_values, output_values = super().__getitem__(idx)
+        (sources, destinations), frequencies = super().__getitem__(idx)
         if self._directed or np.random.randint(2, dtype=bool):
-            return input_values, output_values
-        return (input_values[1], input_values[0]), output_values
+            return (((sources, destinations), frequencies,),)
+        return (((destinations, sources), frequencies,),)

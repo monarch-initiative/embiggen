@@ -50,7 +50,10 @@ class SkipGram(Embedder):
         # should have a decreasing node degree order!
         self._window_size = validate_window_size(window_size)
         self._negative_samples = negative_samples
-        super().__init__(**kwargs)
+        super().__init__(
+            use_gradient_centralization=use_gradient_centralization,
+            **kwargs
+        )
 
     def _build_model(self) -> Model:
         """Return SkipGram model."""

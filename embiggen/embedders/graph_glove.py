@@ -36,7 +36,6 @@ class GraphGloVe(GloVe):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: int = None,
-        support_mirrored_strategy: bool = False,
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
         use_gradient_centralization: bool = True,
@@ -135,7 +134,6 @@ class GraphGloVe(GloVe):
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
         self._max_neighbours = max_neighbours
-        self._support_mirrored_strategy = support_mirrored_strategy
         self._random_state = random_state
         self._dense_node_mapping = dense_node_mapping
         super().__init__(
@@ -229,9 +227,6 @@ class GraphGloVe(GloVe):
             random_state=self._random_state,
             verbose=verbose > 0
         )
-        if self._support_mirrored_strategy:
-            sources = sources.astype(float)
-            destinations = destinations.astype(float)
         return super().fit(
             (sources, destinations), frequencies,
             epochs=epochs,

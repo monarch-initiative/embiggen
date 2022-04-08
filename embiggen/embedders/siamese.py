@@ -44,7 +44,6 @@ class Siamese(Embedder):
         extra_features: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
-        support_mirrored_strategy: bool = False,
         use_gradient_centralization: str = "auto"
     ):
         """Create new sequence Embedder model.
@@ -93,14 +92,6 @@ class Siamese(Embedder):
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
@@ -189,7 +180,6 @@ class Siamese(Embedder):
         self._graph = graph
         self._distance_metric = distance_metric
         self._relu_bias = relu_bias
-        self._support_mirrored_strategy = support_mirrored_strategy
 
         super().__init__(
             vocabulary_size=graph.get_nodes_number(),
@@ -208,18 +198,22 @@ class Siamese(Embedder):
         input_layers.append(source_nodes_input)
         if self._use_node_types:
             source_node_types_input = Input(
-                (self._max_node_types,), name="source_node_types")
+                (self._max_node_types,),
+                name="source_node_types"
+            )
             input_layers.append(source_node_types_input)
 
         destination_nodes_input = Input((1,), name="destination_nodes")
         input_layers.append(destination_nodes_input)
         if self._use_node_types:
             destination_node_types_input = Input(
-                (self._max_node_types,), name="destination_node_types")
+                (self._max_node_types,),
+                name="destination_node_types"
+            )
             input_layers.append(destination_node_types_input)
 
         if self._use_edge_types:
-            edge_types_input = Input((1,), name="destination_edge_types")
+            edge_types_input = Input((1,), name="edge_types")
             input_layers.append(edge_types_input)
         else:
             edge_types_input = None
@@ -240,7 +234,8 @@ class Siamese(Embedder):
 
         # Appling UnitNorm to them
         source_node_embedding = UnitNorm(axis=-1)(source_node_embedding)
-        destination_node_embedding = UnitNorm(axis=-1)(destination_node_embedding)
+        destination_node_embedding = UnitNorm(
+            axis=-1)(destination_node_embedding)
 
         if self._use_node_types:
             node_type_embedding_layer = Embedding(
@@ -257,7 +252,7 @@ class Siamese(Embedder):
             destination_node_types_embedding = node_type_embedding_layer(
                 destination_node_types_input
             )
-            
+
             if self._multilabel_node_types:
                 global_average_layer = GlobalAveragePooling1D()
                 source_node_types_embedding = global_average_layer(
@@ -282,7 +277,7 @@ class Siamese(Embedder):
                 raise ValueError(
                     "Supported node types concatenations are Dot, Add and Concatenate."
                 )
-            
+
             source_node_embedding = node_types_concatenation([
                 source_node_embedding,
                 source_node_types_embedding
@@ -495,7 +490,6 @@ class Siamese(Embedder):
             graph=self._graph,
             batch_size=batch_size,
             avoid_false_negatives=avoid_false_negatives,
-            support_mirrored_strategy=self._support_mirrored_strategy,
             graph_to_avoid=graph_to_avoid,
             use_node_types=self._use_node_types,
             use_edge_types=self._use_edge_types,
@@ -504,7 +498,7 @@ class Siamese(Embedder):
             batches_per_epoch=batches_per_epoch
         )
         return super().fit(
-            sequence,
+            sequence.into_dataset(),
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,

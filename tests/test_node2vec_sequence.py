@@ -2,6 +2,7 @@
 from embiggen.sequences import Node2VecSequence
 from .test_node_sequences import TestNodeSequences
 
+
 class TestNode2VecSequence(TestNodeSequences):
     """Unit test for testing that Node2VecSequence works as expected."""
 
@@ -21,7 +22,7 @@ class TestNode2VecSequence(TestNodeSequences):
 
     def test_output_shape(self):
         """Test that object produced by sequence has correct shape."""
-        (context_vector, words_vector), _ = self._sequence[0]
+        (context_vector, words_vector) = self._sequence[0][0][0]
         self.assertEqual(
             context_vector.shape,
             ((self._walk_length - self._window_size*2)*self._batch_size, self._window_size*2))
@@ -30,7 +31,6 @@ class TestNode2VecSequence(TestNodeSequences):
     def test_nodes_range(self):
         """Test that range of node IDs is as expected."""
         self.assertTrue(self.check_nodes_range(
-            self._sequence[0][0][0].flatten())
+            self._sequence[0][0][0][0].flatten())
         )
-        self.assertTrue(self.check_nodes_range(self._sequence[0][0][1]))
-        self.assertTrue(self._sequence[0][1] is None)
+        self.assertTrue(self.check_nodes_range(self._sequence[0][0][0][1]))

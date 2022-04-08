@@ -22,7 +22,7 @@ class TestNodeCBOW(TestNode2VecSequence):
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
         self._model.fit(
-            self._sequence,
+            self._sequence.into_dataset(),
             steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=2
         )
