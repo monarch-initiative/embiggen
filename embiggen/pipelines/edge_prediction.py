@@ -23,6 +23,11 @@ def evaluate_embedding_for_edge_prediction(
     training_size: float = 0.8,
     random_seed: int = 42,
     batch_size: int = 2**15,
+    edge_embedding_method: str = "Concatenate",
+    trainable_embedding: bool = False,
+    use_dropout: bool = True,
+    dropout_rate: float = 0.5,
+    use_edge_metrics: bool = False,
     edge_types: Optional[List[str]] = None,
     use_mirrored_strategy: bool = True,
     only_execute_embeddings: bool = False,
@@ -231,24 +236,26 @@ def evaluate_embedding_for_edge_prediction(
             vector_cumulative_node_degrees=True
         )
 
-        if use_mirrored_strategy:
-            strategy = tf.distribute.MirroredStrategy(devices=devices)
-            with strategy.scope():
-                if isinstance(model_name, str):
-                    model = edge_prediction_models.get(model_name)(
-                        graph=graph,
-                        embedding=embedding
-                    )
-                else:
-                    model = model_name(graph, embedding)
+        if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
+            strategy = tf.distribute.MirroredStrategy()
         else:
+            # Use the Default Strategy
+            strategy = tf.distribute.get_strategy()
+
+        with strategy.scope():
             if isinstance(model_name, str):
                 model = edge_prediction_models.get(model_name)(
                     graph=graph,
-                    embedding=embedding
+                    embedding=embedding,
+                    edge_embedding_method=edge_embedding_method,
+                    trainable_embedding=trainable_embedding,
+                    use_dropout=use_dropout,
+                    dropout_rate=dropout_rate,
+                    use_edge_metrics=use_edge_metrics,
                 )
             else:
                 model = model_name(graph, embedding)
+
         histories.append(model.fit(
             train_graph=train_graph,
             valid_graph=test_graph,
