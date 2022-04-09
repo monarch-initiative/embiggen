@@ -5,8 +5,8 @@ Embiggen
 Python graph machine learning and visualization library, with TensorFlow models and graph
 processing based on Ensmallen.
 
-Setting up Embiggen
--------------------
+How to install Embiggen
+-------------------------
 As usual, you can install this package from Pypi by running:
 
 .. code:: bash
