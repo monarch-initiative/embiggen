@@ -1,4 +1,10 @@
+"""Module installing the Embiggen package."""
 from setuptools import find_packages, setup
+from codecs import open as copen
+import os
+import re
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 def readme():
@@ -24,6 +30,22 @@ extras = {
     ]
 }
 
+def read(*parts):
+    with copen(os.path.join(here, *parts), 'r') as fp:
+        return fp.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
+
+__version__ = find_version("grape", "__version__.py")
+
 # TODO: Authors add your emails!!!
 authors = {
     "Vida Ravanmehr": "vida.ravanmehr@jax.org",
@@ -34,7 +56,7 @@ authors = {
 
 setup(
     name='embiggen',
-    version='0.10.0.dev7',
+    version=__version__,
     description='Graph machine learning and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',

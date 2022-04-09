@@ -17,5 +17,5 @@ class TestWord2VecSequences(TestWordSequences):
 
     def test_output_shape(self):
         """Test that sequence output shape matches expectation."""
-        (context_vector, words_vector), _ = self._sequence[0]
+        context_vector, words_vector = self._sequence[0][0][0]
         self.assertEqual(context_vector.shape[0], words_vector.shape[0])

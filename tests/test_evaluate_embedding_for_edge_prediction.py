@@ -1,5 +1,4 @@
 """Unit test class for GraphTransformer objects."""
-import imp
 from unittest import TestCase
 from embiggen.pipelines import evaluate_embedding_for_edge_prediction
 from ensmallen.datasets.linqs import Cora
