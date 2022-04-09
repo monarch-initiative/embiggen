@@ -2,7 +2,7 @@ Embiggen
 =========================================================================================
 |pip| |downloads|
 
-Python graph machine learning and visualization library, with TensorFlow models and graph
+Python graph embedding, machine learning, and visualization library, with TensorFlow models and graph
 processing based on Ensmallen.
 
 How to install Embiggen

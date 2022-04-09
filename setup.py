@@ -57,7 +57,7 @@ authors = {
 setup(
     name='embiggen',
     version=__version__,
-    description='Graph machine learning and visualization library.',
+    description='Graph embedding, machine learning, and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
     keywords='node2vec,word2vec,CBOW,SkipGram,GloVe',
