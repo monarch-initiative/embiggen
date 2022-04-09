@@ -2,8 +2,6 @@
 from typing import Dict, List, Union, Optional
 
 import pandas as pd
-import numpy as np
-from pandas.core.frame import DataFrame
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
 from extra_keras_metrics import get_minimal_multiclass_metrics
@@ -11,7 +9,6 @@ from tensorflow.keras.layers import Input, Dense  # pylint: disable=import-error
 from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
-from tensorflow.python.keras import activations  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module

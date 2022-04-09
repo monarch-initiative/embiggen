@@ -61,13 +61,6 @@ def execute_gpu_checks(use_mirrored_strategy: bool):
     """
     # To avoid some nighmares we check availability of GPUs.
     if not has_gpus():
-        # If there are no GPUs, mirrored strategy makes no sense.
-        if use_mirrored_strategy:
-            warnings.warn(
-                "It does not make sense to use mirrored strategy "
-                "when GPUs are not available.\n"
-                "The parameter has been disabled."
-            )
         # We check for drivers to try and give a more explainatory
         # warning about the absence of GPUs.
         if has_nvidia_drivers():
