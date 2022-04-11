@@ -44,7 +44,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-__version__ = find_version("grape", "__version__.py")
+__version__ = find_version("embiggen", "__version__.py")
 
 # TODO: Authors add your emails!!!
 authors = {
