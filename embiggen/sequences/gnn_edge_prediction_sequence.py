@@ -214,7 +214,7 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         (sources, source_node_types, destinations,
-         destination_node_types, _, _), labels = super().__getitem__(idx)
+         destination_node_types, _, _), labels = super().__getitem__(idx)[0]
 
         source_ids = None
         if self._return_node_ids:

@@ -358,7 +358,7 @@ class EdgePredictionGraphNeuralNetwork:
         #########################################
 
         if model_name is None:
-            model_name = "{}EdgePredictionGNN".format(graph.get_name())
+            model_name = "{}EdgePredictionGNN".format(graph.get_name().replace(" ", "_"))
         self._model_name = model_name
 
         ###################
