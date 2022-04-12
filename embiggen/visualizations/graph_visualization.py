@@ -394,6 +394,10 @@ class GraphVisualization:
         # to avoid transparency in the dots.
         for lh in legend.legendHandles:
             lh.set_alpha(1)
+            try:
+                lh._legmarker.set_alpha(1)
+            except AttributeError:
+                pass
 
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
