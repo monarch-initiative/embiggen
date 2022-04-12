@@ -231,7 +231,7 @@ class GraphVisualization:
                     ),
                     **self._decomposition_kwargs
                 }).fit_transform
-            except (ModuleNotFoundError, NotImplementedError):
+            except (ModuleNotFoundError, OSError, NotImplementedError):
                 try:
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
