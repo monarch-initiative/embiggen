@@ -380,7 +380,7 @@ class GraphVisualization:
         """
         legend = axes.legend(
             handles=handles,
-            labels=sanitize_ml_labels(labels),
+            labels=sanitize_ml_labels(labels[:9]) + sanitize_ml_labels(labels)[9:],
             loc=loc,
             title=legend_title,
             **(
