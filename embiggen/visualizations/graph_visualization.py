@@ -1523,7 +1523,7 @@ class GraphVisualization:
                     for node_id in nodes_iterator
                 )
             ),
-            dtype=np.uint32
+            dtype=np.int32
         )
 
     def _get_flatten_unknown_edge_types(
@@ -1576,7 +1576,7 @@ class GraphVisualization:
                     )
                 )
             ),
-            dtype=np.uint32
+            dtype=np.int32
         )
 
     def plot_node_types(
@@ -1944,7 +1944,7 @@ class GraphVisualization:
                     self._graph.get_node_degree_from_node_id(node_id)
                     for node_id in self._subsampled_node_ids
                 ),
-                dtype=np.uint32
+                dtype=np.int32
             )
 
         if annotate_nodes == "auto":
@@ -2192,7 +2192,7 @@ class GraphVisualization:
                     self._graph.get_edge_weight_from_edge_id(edge_id)
                     for edge_id in self._subsampled_edge_ids
                 ),
-                dtype=np.uint32
+                dtype=np.int32
             )
 
         returned_values = self._wrapped_plot_scatter(

@@ -135,11 +135,11 @@ class Node2VecSequence(AbstractSequence):
             # Shapes of the source and destination node IDs
             input_tensor_specs.append(tf.TensorSpec(
                 shape=(number_of_skipgrams, self._window_size*2),
-                dtype=tf.uint32
+                dtype=tf.int32
             ))
             input_tensor_specs.append(tf.TensorSpec(
                 shape=(number_of_skipgrams, ),
-                dtype=tf.uint32
+                dtype=tf.int32
             ))
 
             return tf.data.Dataset.from_generator(
@@ -155,8 +155,8 @@ class Node2VecSequence(AbstractSequence):
             self,
             output_types=(
                 (
-                    tf.uint32,
-                    tf.uint32
+                    tf.int32,
+                    tf.int32
                 ),
             ),
             output_shapes=(

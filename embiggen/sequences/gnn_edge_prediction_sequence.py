@@ -121,12 +121,12 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                     for node_features in self._node_features
                 ],
                 * (
-                    (tf.TensorSpec(shape=(self._batch_size, ), dtype=tf.uint32),)
+                    (tf.TensorSpec(shape=(self._batch_size, ), dtype=tf.int32),)
                     if self._return_node_ids else ()
                 ),
                 * (
                     (tf.TensorSpec(
-                        shape=(self._batch_size, self._graph.get_maximum_multilabel_count()), dtype=tf.uint32),)
+                        shape=(self._batch_size, self._graph.get_maximum_multilabel_count()), dtype=tf.int32),)
                     if self._use_node_types else ()
                 )
             ]
@@ -152,11 +152,11 @@ class GNNEdgePredictionSequence(EdgePredictionSequence):
                 for node_features in self._node_features
             ],
             * (
-                (tf.uint32,)
+                (tf.int32,)
                 if self._return_node_ids else ()
             ),
             * (
-                (tf.uint32,)
+                (tf.int32,)
                 if self._use_node_types else ()
             )
         ]

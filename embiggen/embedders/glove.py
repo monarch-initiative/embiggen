@@ -105,9 +105,9 @@ class GloVe(Embedder):
         """Create new Glove model."""
         # Creating the input layers
         left_input_layer = Input(
-            (1,), dtype=tf.uint32, name="left_input_layer")
+            (1,), dtype=tf.int32, name="left_input_layer")
         right_input_layer = Input(
-            (1,), dtype=tf.uint32, name="right_input_layer")
+            (1,), dtype=tf.int32, name="right_input_layer")
 
         trainable_left_embedding = Embedding(
             self._vocabulary_size,

@@ -39,7 +39,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
             self._source_node_type_ids = np.zeros((
                 sources.size,
                 graph.get_maximum_multilabel_count()
-            ), dtype=np.uint32)
+            ), dtype=np.int32)
             for i, source_node_id in enumerate(tqdm(
                 sources,
                 desc="Computing source node types",
@@ -54,7 +54,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
             self._destination_node_type_ids = np.zeros((
                 destinations.size,
                 graph.get_maximum_multilabel_count()
-            ), dtype=np.uint32)
+            ), dtype=np.int32)
             for i, destination_node_id in enumerate(tqdm(
                 destinations,
                 desc="Computing destination node types",

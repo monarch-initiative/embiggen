@@ -118,7 +118,7 @@ class EdgePredictionSequence(Sequence):
                 # Shapes of the source and destination node IDs
                 input_tensor_specs.append(tf.TensorSpec(
                     shape=(self._batch_size, ),
-                    dtype=tf.uint32
+                    dtype=tf.int32
                 ))
 
                 if self._use_node_types:
@@ -126,7 +126,7 @@ class EdgePredictionSequence(Sequence):
                     input_tensor_specs.append(tf.TensorSpec(
                         shape=(self._batch_size,
                                self._graph.get_maximum_multilabel_count()),
-                        dtype=tf.uint32
+                        dtype=tf.int32
                     ))
 
             if self._use_edge_metrics:
@@ -141,7 +141,7 @@ class EdgePredictionSequence(Sequence):
                 # Shapes of the edge type IDs
                 input_tensor_specs.append(tf.TensorSpec(
                     shape=(self._batch_size,),
-                    dtype=tf.uint32
+                    dtype=tf.int32
                 ))
 
             return tf.data.Dataset.from_generator(
@@ -161,11 +161,11 @@ class EdgePredictionSequence(Sequence):
         input_tensor_shapes = []
 
         for _ in range(2):
-            input_tensor_types.append(tf.uint32,)
+            input_tensor_types.append(tf.int32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
             if self._use_node_types:
-                input_tensor_types.append(tf.uint32,)
+                input_tensor_types.append(tf.int32,)
                 input_tensor_shapes.append(
                     tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
 
@@ -175,7 +175,7 @@ class EdgePredictionSequence(Sequence):
                 [self._batch_size, self._graph.get_number_of_available_edge_metrics()]),)
 
         if self._use_edge_types:
-            input_tensor_types.append(tf.uint32,)
+            input_tensor_types.append(tf.int32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
         return tf.data.Dataset.from_generator(

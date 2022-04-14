@@ -87,11 +87,11 @@ class Word2VecSequence(AbstractSequence):
                     (
                         tf.TensorSpec(
                             shape=(None, self._window_size*2),
-                            dtype=tf.uint32
+                            dtype=tf.int32
                         ),
                         tf.TensorSpec(
                             shape=(None, ),
-                            dtype=tf.uint32
+                            dtype=tf.int32
                         )
                     ),
                 )
@@ -101,8 +101,8 @@ class Word2VecSequence(AbstractSequence):
             self,
             output_types=(
                 (
-                    tf.uint32,
-                    tf.uint32
+                    tf.int32,
+                    tf.int32
                 ),
             ),
             output_shapes=(
