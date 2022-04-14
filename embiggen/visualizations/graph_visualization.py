@@ -254,7 +254,6 @@ class GraphVisualization:
                                 verbose=True,
                                 metric="cosine",
                                 method="exact" if self._n_components == 4 else "barnes_hut",
-                                square_distances=True,
                             ),
                             **self._decomposition_kwargs
                         }).fit_transform
