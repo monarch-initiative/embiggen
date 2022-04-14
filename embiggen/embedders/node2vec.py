@@ -133,7 +133,7 @@ class Node2Vec:
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
-        ).into_dataset()
+        )
         self._model = word2vec_model(
             vocabulary_size=self._graph.get_nodes_number(),
             embedding=embedding,
@@ -200,7 +200,8 @@ class Node2Vec:
         Dataframe with training history.
         """
         return self._model.fit(
-            self._sequence,
+            self._sequence.into_dataset().repeat(),
+            steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
