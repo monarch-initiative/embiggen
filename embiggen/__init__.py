@@ -7,14 +7,14 @@ try:
     )
     from .node_prediction import GraphConvolutionalNeuralNetwork
     from .sequences import Word2VecSequence
-    from .transformers import (CorpusTransformer, EdgeTransformer,
-                           GraphTransformer, LinkPredictionTransformer,
-                           NodeTransformer)
 except ModuleNotFoundError:
     warnings.warn(
         "You do not have TensorFlow installed, all tensorflow models "
         "will not work."
     )
+from .transformers import (CorpusTransformer, EdgeTransformer,
+                           GraphTransformer, LinkPredictionTransformer,
+                           NodeTransformer)
 from .visualizations import GraphVisualization
 
 __all__ = [
