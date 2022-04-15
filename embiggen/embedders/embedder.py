@@ -261,7 +261,7 @@ class Embedder:
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.5,
         verbose: int = 1,
         **kwargs: Dict
     ) -> pd.DataFrame:
@@ -289,7 +289,7 @@ class Embedder:
             Metric to monitor for reducing learning rate.
         reduce_lr_mode: str = "min",
             Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.5,
             Factor for reduction of learning rate.
         verbose: int = 1,
             Wethever to show the loading bar.
