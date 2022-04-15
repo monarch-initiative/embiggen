@@ -126,7 +126,7 @@ def _compute_node_embedding(
     )
 
     if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
-        strategy = tf.distribute.MirroredStrategy(devices)
+        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(devices)
     else:
         strategy = tf.distribute.get_strategy()
 
