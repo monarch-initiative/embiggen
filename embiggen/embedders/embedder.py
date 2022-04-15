@@ -1,5 +1,5 @@
 """Abstract Keras Model object for embedding models."""
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,11 +25,10 @@ class Embedder:
 
     def __init__(
         self,
-        vocabulary_size: int = None,
-        embedding_size: int = None,
+        vocabulary_size: Optional[int] = None,
+        embedding_size: Optional[int] = None,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-        optimizer: Union[str, Optimizer] = None,
+        optimizer: Optional[Union[str, Optimizer]] = None,
         trainable_embedding: bool = True,
         use_gradient_centralization: bool = True
     ):
@@ -37,7 +36,7 @@ class Embedder:
 
         Parameters
         ----------------------------------
-        vocabulary_size: int = None,
+        vocabulary_size: int = None
             Number of terms to embed.
             In a graph this is the number of nodes, while in a text is the
             number of the unique words.
@@ -51,10 +50,6 @@ class Embedder:
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -98,24 +93,6 @@ class Embedder:
             embedding_size = embedding.shape[1]
             vocabulary_size = embedding.shape[0]
 
-        if extra_features is not None:
-            if isinstance(extra_features, pd.DataFrame):
-                extra_features = extra_features.values
-            if not isinstance(extra_features, np.ndarray):
-                raise ValueError(
-                    "Given extra features is not a numpy array."
-                )
-            if vocabulary_size != extra_features.shape[0]:
-                raise ValueError(
-                    (
-                        "The number of samples in the extra features should "
-                        "be the same as the provided vocabulary size {} "
-                        "but was {}."
-                    ).format(
-                        vocabulary_size,
-                        extra_features.shape[0]
-                    )
-                )
 
         if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
             raise ValueError((
@@ -134,7 +111,6 @@ class Embedder:
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._embedding = embedding
-        self._extra_features = extra_features
 
         if optimizer is None:
             optimizer = Nadam(learning_rate=0.01)

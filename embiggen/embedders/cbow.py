@@ -24,25 +24,29 @@ class CBOW(Embedder):
         window_size: int = 4,
         negative_samples: int = 10,
         use_gradient_centralization: bool = True,
+        siamese: bool = False,
         **kwargs: Dict
     ):
         """Create new sequence Embedder model.
 
         Parameters
         -------------------------------------------
-        window_size: int = 4,
+        window_size: int = 4
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int = 10,
+        negative_samples: int = 10
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        use_gradient_centralization: bool = True,
+        use_gradient_centralization: bool = True
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
-        **kwargs: Dict,
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the approximated output loss and the embedding layer.
+        **kwargs: Dict
             Additional kwargs to pass to parent constructor.
         """
         # TODO! Figure out a way to test for Zifian distribution in the
@@ -50,6 +54,7 @@ class CBOW(Embedder):
         # should have a decreasing node degree order!
         self._window_size = validate_window_size(window_size)
         self._negative_samples = negative_samples
+        self._siamese = siamese
         super().__init__(
             use_gradient_centralization=use_gradient_centralization,
             **kwargs
@@ -74,13 +79,19 @@ class CBOW(Embedder):
         )
 
         # Creating the embedding layer for the contexts
-        contextual_terms_embedding = Embedding(
+        contextual_terms_embedding_layer = Embedding(
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=self._window_size*2,
             name=Embedder.TERMS_EMBEDDING_LAYER_NAME,
-        )(contextual_terms_input)
+        )
 
+        # Query the embedding to get the embedding vector
+        # of the contextual terms provided as input.
+        contextual_terms_embedding = contextual_terms_embedding_layer(
+            contextual_terms_input)
+
+        # Compute the average of the context embedding
         contextual_embedding = GlobalAveragePooling1D()(
             contextual_terms_embedding
         )
@@ -90,6 +101,7 @@ class CBOW(Embedder):
             vocabulary_size=self._vocabulary_size,
             embedding_size=self._embedding_size,
             negative_samples=self._negative_samples,
+            embedding=contextual_terms_embedding_layer if self._siamese else None
         )((contextual_embedding, central_terms_input))
 
         # Creating the actual model

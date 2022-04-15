@@ -21,7 +21,6 @@ class TransE(Siamese):
         use_node_types: Union[bool, str] = "auto",
         node_types_combination: str = "Add",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransE",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
@@ -50,10 +49,6 @@ class TransE(Siamese):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         model_name: str = "TransE",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -75,7 +70,6 @@ class TransE(Siamese):
             edge_type_embedding_size=embedding_size,
             distance_metric=distance_metric,
             embedding=embedding,
-            extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization

@@ -34,6 +34,7 @@ def evaluate_embedding_for_edge_prediction(
     embedding_method_fit_kwargs: Optional[Dict] = None,
     embedding_method_kwargs: Optional[Dict] = None,
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None,
+    sample_only_edges_with_heterogeneous_node_types: bool = False,
     devices: Union[List[str], str] = None,
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
@@ -71,6 +72,10 @@ def evaluate_embedding_for_edge_prediction(
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
         The subgraph to use for the edge prediction training and evaluation, if any.
         If none are provided, we sample the negative edges from the entire graph.
+    sample_only_edges_with_heterogeneous_node_types: bool = False
+        Whether to only sample edges between heterogeneous node types.
+        This may be useful when training a model to predict between
+        two portions in a bipartite graph.
     devices: Union[List[str], str] = None
         The list of devices to use when training the embedding and edge prediction models
         in a MirroredStrategy, that is across multiple GPUs. Thise feature is mainly useful
@@ -197,6 +202,7 @@ def evaluate_embedding_for_edge_prediction(
         train_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
             negatives_number=train_graph.get_edges_number(),
             random_state=random_seed*holdout_number,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             verbose=False
         )
 
@@ -206,6 +212,7 @@ def evaluate_embedding_for_edge_prediction(
             # the initial sampling of the training graph different from
             # the initial sampling of the test graph.
             random_state=(random_seed + 23456787)*holdout_number,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             verbose=False
         )
 
@@ -263,7 +270,8 @@ def evaluate_embedding_for_edge_prediction(
             valid_graph=test_graph,
             negative_valid_graph=test_negative_graph,
             batch_size=batch_size,
-            epochs=epochs
+            epochs=epochs,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types
         ))
 
         train_performance = model.evaluate(

@@ -27,7 +27,6 @@ class GloVe(Embedder):
         vocabulary_size: int,
         embedding_size: int,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         random_state: int = 42,
@@ -48,10 +47,6 @@ class GloVe(Embedder):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -76,7 +71,6 @@ class GloVe(Embedder):
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
@@ -124,23 +118,6 @@ class GloVe(Embedder):
             self._embedding_size,
             input_length=1,
         )(right_input_layer)
-
-        if self._extra_features is not None:
-            extra_features_matrix = Embedding(
-                *self._extra_features,
-                input_length=1,
-                weights=self._extra_features,
-                trainable=False,
-                name="extra_features_matrix"
-            )
-            trainable_left_embedding = Concatenate()([
-                extra_features_matrix(left_input_layer),
-                trainable_left_embedding
-            ])
-            trainable_right_embedding = Concatenate()([
-                extra_features_matrix(right_input_layer),
-                trainable_right_embedding
-            ])
 
         # Creating the dot product of the embedding layers
         dot_product_layer = Dot(axes=2)([

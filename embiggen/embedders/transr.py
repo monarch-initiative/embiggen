@@ -21,7 +21,6 @@ class TransR(TransE):
         embedding_size: int = 100,
         distance_metric: str = "COSINE",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "TransR",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
@@ -47,10 +46,6 @@ class TransR(TransE):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         model_name: str = "TransR",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -67,7 +62,6 @@ class TransR(TransE):
             embedding_size=embedding_size,
             distance_metric=distance_metric,
             embedding=embedding,
-            extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization

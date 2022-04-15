@@ -23,6 +23,7 @@ class EdgePredictionSequence(Sequence):
         avoid_false_negatives: bool = False,
         filter_none_values: bool = True,
         graph_to_avoid: Graph = None,
+        sample_only_edges_with_heterogeneous_node_types: bool = False,
         batches_per_epoch: Union[int, str] = "auto",
         elapsed_epochs: int = 0,
         random_state: int = 42
@@ -57,9 +58,13 @@ class EdgePredictionSequence(Sequence):
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the Graph package.
+        sample_only_edges_with_heterogeneous_node_types: bool = False
+            Whether to only sample edges between heterogeneous node types.
+            This may be useful when training a model to predict between
+            two portions in a bipartite graph.
         batches_per_epoch: Union[int, str] = "auto",
             Number of batches per epoch.
-            If auto, it is used: `10 * edges number /  batch size`
+            If auto, it is used: `edges number //  batch size`
         elapsed_epochs: int = 0,
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
@@ -75,6 +80,7 @@ class EdgePredictionSequence(Sequence):
         self._filter_none_values = filter_none_values
         self._return_only_edges_with_known_edge_types = return_only_edges_with_known_edge_types
         self._use_edge_metrics = use_edge_metrics
+        self._sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types
         self._current_index = 0
         if batches_per_epoch == "auto":
             batches_per_epoch = max(
@@ -215,6 +221,7 @@ class EdgePredictionSequence(Sequence):
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
+            sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
             graph_to_avoid=self._graph_to_avoid,
         )
 

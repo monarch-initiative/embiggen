@@ -24,7 +24,6 @@ class GraphSkipGram(Node2Vec):
         graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         negative_samples: int = 10,
         walk_length: int = 128,
@@ -55,10 +54,6 @@ class GraphSkipGram(Node2Vec):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -138,7 +133,6 @@ class GraphSkipGram(Node2Vec):
             word2vec_model=SkipGram,
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
             negative_samples=negative_samples,
             walk_length=walk_length,

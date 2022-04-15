@@ -24,7 +24,6 @@ class GraphGloVe(GloVe):
         graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         directed: bool = False,
@@ -54,10 +53,6 @@ class GraphGloVe(GloVe):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -134,7 +129,6 @@ class GraphGloVe(GloVe):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization
         )

@@ -41,7 +41,6 @@ class Siamese(Embedder):
         distance_metric: str = "COSINE",
         relu_bias: float = 1.0,
         embedding: Optional[Union[np.ndarray, pd.DataFrame]] = None,
-        extra_features: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
@@ -84,10 +83,6 @@ class Siamese(Embedder):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         model_name: str = "Siamese",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -185,7 +180,6 @@ class Siamese(Embedder):
             vocabulary_size=graph.get_nodes_number(),
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
