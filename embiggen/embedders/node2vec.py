@@ -4,7 +4,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from tensorflow.keras.optimizers import Optimizer, Adam  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
 import tensorflow as tf
 from ..sequences import Node2VecSequence
 from .cbow import CBOW
@@ -53,7 +53,7 @@ class Node2Vec:
             the embedding and either the vocabulary size or the embedding size.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
-            By default, if None is provided, Adam with learning rate
+            By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
         window_size: int = 4,
             Window size for the local context.
@@ -137,14 +137,8 @@ class Node2Vec:
             vocabulary_size=self._graph.get_nodes_number(),
             embedding=embedding,
             embedding_size=embedding_size,
-            optimizer=Adam(
-                # Should go down to 0.001 in 2 epochs
-                tf.keras.optimizers.schedules.ExponentialDecay(
-                    1.0,
-                    decay_steps=2*self._sequence.steps_per_epoch,
-                    decay_rate=0.001,
-                    staircase=True
-                )
+            optimizer=Nadam(
+                learning_rate=0.02
             ) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
@@ -207,9 +201,9 @@ class Node2Vec:
         Dataframe with training history.
         """
         try:
-            AUTOTUNE = tf.data.AUTOTUNE
+            AUTOTUNE = tf.data.AUTOTUNE     
         except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE
+            AUTOTUNE = tf.data.experimental.AUTOTUNE 
         return self._model.fit(
             self._sequence
                 .into_dataset()
