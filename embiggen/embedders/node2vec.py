@@ -138,7 +138,8 @@ class Node2Vec:
             embedding=embedding,
             embedding_size=embedding_size,
             optimizer=Nadam(
-                learning_rate=1.0) if optimizer is None else optimizer,
+                learning_rate=0.1
+            ) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
             use_gradient_centralization=use_gradient_centralization,
