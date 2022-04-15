@@ -4,8 +4,8 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from tensorflow.keras.optimizers import Optimizer, Nadam # pylint: disable=import-error,no-name-in-module
-
+from tensorflow.keras.optimizers import Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
+import tensorflow as tf
 from ..sequences import Node2VecSequence
 from .cbow import CBOW
 from .skipgram import SkipGram
@@ -137,7 +137,8 @@ class Node2Vec:
             vocabulary_size=self._graph.get_nodes_number(),
             embedding=embedding,
             embedding_size=embedding_size,
-            optimizer=Nadam(learning_rate=1.0) if optimizer is None else optimizer,
+            optimizer=Nadam(
+                learning_rate=1.0) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
             use_gradient_centralization=use_gradient_centralization,
@@ -199,7 +200,12 @@ class Node2Vec:
         Dataframe with training history.
         """
         return self._model.fit(
-            self._sequence.into_dataset().repeat(),
+            self._sequence
+                .into_dataset()
+                .repeat()
+                .prefetch(  # Overlap producer and consumer works
+                    tf.data.AUTOTUNE
+                ),
             steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
