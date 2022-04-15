@@ -225,15 +225,17 @@ class GloVe(Embedder):
         -----------------------
         Dataframe with training history.
         """
+        sequence = GloveSequence(
+            *X, frequencies,
+            batch_size=batch_size,
+            directed=self._directed,
+            random_state=self._random_state
+        )
         return super().fit(
-            GloveSequence(
-                *X, frequencies,
-                batch_size=batch_size,
-                directed=self._directed,
-                random_state=self._random_state
-            ).into_dataset(),
+            sequence.into_dataset().repeat(),
             *args,
             epochs=epochs,
+            steps_per_epoch=sequence.steps_per_epoch,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,

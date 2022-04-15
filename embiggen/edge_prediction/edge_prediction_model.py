@@ -297,14 +297,14 @@ class EdgePredictionModel(Embedder):
                 negative_samples_rate=negative_samples_rate,
                 use_edge_metrics=self._use_edge_metrics,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types
-            ).into_dataset()
+            )
             if negative_valid_graph is not None:
                 validation_sequence = EdgePredictionEvaluationSequence(
                     positive_graph=valid_graph,
                     negative_graph=negative_valid_graph,
                     batch_size=batch_size,
                     use_edge_metrics=self._use_edge_metrics,
-                ).into_dataset()
+                )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             training_sequence = EdgeLabelPredictionSequence(
                 train_graph,
@@ -334,8 +334,10 @@ class EdgePredictionModel(Embedder):
             raise ValueError("Unreacheable!")
         
         return super().fit(
-            training_sequence,
-            validation_data=validation_sequence,
+            training_sequence.into_dataset().repeat(),
+            steps_per_epoch=training_sequence.steps_per_epoch,
+            validation_data=None if validation_sequence is None else validation_sequence.into_dataset().repeat(),
+            validation_steps=None if validation_sequence is None else validation_sequence.steps_per_epoch,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
