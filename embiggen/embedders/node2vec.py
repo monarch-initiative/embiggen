@@ -4,7 +4,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from tensorflow.keras.optimizers import Optimizer # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import Optimizer, Nadam # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import Node2VecSequence
 from .cbow import CBOW
@@ -133,7 +133,7 @@ class Node2Vec:
             vocabulary_size=self._graph.get_nodes_number(),
             embedding=embedding,
             embedding_size=embedding_size,
-            optimizer=optimizer,
+            optimizer=Nadam(learning_rate=1.0) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
             use_gradient_centralization=use_gradient_centralization

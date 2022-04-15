@@ -6,10 +6,10 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Add  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.layers import Concatenate, Dot, Embedding, Flatten, Input  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Dot, Embedding, Flatten, Input  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+    Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import GloveSequence
 from .embedder import Embedder
@@ -71,7 +71,7 @@ class GloVe(Embedder):
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
             embedding=embedding,
-            optimizer=optimizer,
+            optimizer=Nadam(learning_rate=1.0) if optimizer is None else optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
 
