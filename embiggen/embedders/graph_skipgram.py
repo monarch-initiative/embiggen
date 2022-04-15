@@ -211,7 +211,7 @@ class GraphSkipGram(Node2Vec):
         Dataframe with training history.
         """
        
-        return super()._model.fit(
+        return super().fit(
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
