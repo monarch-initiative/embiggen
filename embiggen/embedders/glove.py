@@ -31,7 +31,9 @@ class GloVe(Embedder):
         alpha: float = 0.75,
         random_state: int = 42,
         directed: bool = False,
+        use_bias: bool = True,
         use_gradient_centralization: bool = True,
+        siamese: bool = False,
     ):
         """Create new GloVe-based Embedder object.
 
@@ -57,16 +59,25 @@ class GloVe(Embedder):
             The random state to reproduce the training sequence.
         directed: bool = False,
             Whether to treat the data as directed or not.
+        use_bias: bool = True
+            Whether to use the bias in the GloVe model.
+            Consider that these weights are excluded from
+            the model embedding.
         use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
         self._alpha = alpha
         self._random_state = random_state
         self._directed = directed
+        self._siamese = siamese
+        self._use_bias = use_bias
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
@@ -99,11 +110,17 @@ class GloVe(Embedder):
         """Create new Glove model."""
         # Creating the input layers
         left_input_layer = Input(
-            (1,), dtype=tf.int32, name="left_input_layer")
+            (1,),
+            dtype=tf.int32,
+            name="left_input_layer"
+        )
         right_input_layer = Input(
-            (1,), dtype=tf.int32, name="right_input_layer")
+            (1,),
+            dtype=tf.int32,
+            name="right_input_layer"
+        )
 
-        trainable_left_embedding = Embedding(
+        trainable_left_embedding_layer = Embedding(
             self._vocabulary_size,
             self._embedding_size,
             input_length=1,
@@ -111,13 +128,17 @@ class GloVe(Embedder):
                 self._embedding
             ],
             name=Embedder.TERMS_EMBEDDING_LAYER_NAME
-        )(left_input_layer)
+        )
+        trainable_left_embedding = trainable_left_embedding_layer(left_input_layer)
 
-        trainable_right_embedding = Embedding(
-            self._vocabulary_size,
-            self._embedding_size,
-            input_length=1,
-        )(right_input_layer)
+        if self._siamese:
+            trainable_right_embedding = trainable_left_embedding_layer(right_input_layer)
+        else:
+            trainable_right_embedding = Embedding(
+                self._vocabulary_size,
+                self._embedding_size,
+                input_length=1,
+            )(right_input_layer)
 
         # Creating the dot product of the embedding layers
         dot_product_layer = Dot(axes=2)([
@@ -129,6 +150,7 @@ class GloVe(Embedder):
         biases = [
             Embedding(self._vocabulary_size, 1, input_length=1)(input_layer)
             for input_layer in (left_input_layer, right_input_layer)
+            if self._use_bias
         ]
 
         # Concatenating with an add the three layers

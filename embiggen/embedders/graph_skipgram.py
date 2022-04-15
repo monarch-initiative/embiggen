@@ -39,6 +39,7 @@ class GraphSkipGram(Node2Vec):
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
         use_gradient_centralization: bool = True,
+        siamese: bool = False
     ):
         """Create new sequence Embedder model.
 
@@ -116,6 +117,9 @@ class GraphSkipGram(Node2Vec):
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
         if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
             raise ValueError(
@@ -147,5 +151,6 @@ class GraphSkipGram(Node2Vec):
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
-            use_gradient_centralization=use_gradient_centralization
+            use_gradient_centralization=use_gradient_centralization,
+            siamese=siamese
         )

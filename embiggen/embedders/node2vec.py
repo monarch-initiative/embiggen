@@ -35,6 +35,7 @@ class Node2Vec:
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
         use_gradient_centralization: bool = True,
+        siamese: bool = False
     ):
         """Create new sequence Embedder model.
 
@@ -112,6 +113,9 @@ class Node2Vec:
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
         self._graph = graph
         self._sequence = Node2VecSequence(
@@ -136,7 +140,8 @@ class Node2Vec:
             optimizer=Nadam(learning_rate=1.0) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
-            use_gradient_centralization=use_gradient_centralization
+            use_gradient_centralization=use_gradient_centralization,
+            siamese=siamese,
         )
 
     def fit(

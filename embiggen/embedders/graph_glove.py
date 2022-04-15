@@ -38,6 +38,7 @@ class GraphGloVe(GloVe):
         random_state: int = 42,
         dense_node_mapping: Dict[int, int] = None,
         use_gradient_centralization: bool = True,
+        siamese: bool = False
     ):
         """Create new GloVe-based Embedder object.
 
@@ -105,12 +106,15 @@ class GraphGloVe(GloVe):
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
-        use_gradient_centralization: bool = True,
+        use_gradient_centralization: bool = True
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
         self._graph = graph
         self._walk_length = walk_length
@@ -126,11 +130,13 @@ class GraphGloVe(GloVe):
         super().__init__(
             alpha=alpha,
             random_state=random_state,
+            directed=directed,
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             embedding=embedding,
             optimizer=optimizer,
-            use_gradient_centralization=use_gradient_centralization
+            use_gradient_centralization=use_gradient_centralization,
+            siamese=siamese
         )
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
