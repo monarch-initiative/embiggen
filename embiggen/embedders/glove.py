@@ -82,7 +82,7 @@ class GloVe(Embedder):
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
             embedding=embedding,
-            optimizer=Nadam(learning_rate=1.0) if optimizer is None else optimizer,
+            optimizer=Nadam(learning_rate=0.1) if optimizer is None else optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
 
