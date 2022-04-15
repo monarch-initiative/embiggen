@@ -138,7 +138,13 @@ class Node2Vec:
             embedding=embedding,
             embedding_size=embedding_size,
             optimizer=Nadam(
-                learning_rate=0.1
+                # Should go down to 0.001 in 2 epochs
+                tf.keras.optimizers.schedules.ExponentialDecay(
+                    0.1,
+                    decay_steps=2*self._sequence.steps_per_epoch,
+                    decay_rate=0.01,
+                    staircase=True
+                )
             ) if optimizer is None else optimizer,
             window_size=window_size,
             negative_samples=negative_samples,
@@ -201,9 +207,9 @@ class Node2Vec:
         Dataframe with training history.
         """
         try:
-            AUTOTUNE = tf.data.AUTOTUNE     
+            AUTOTUNE = tf.data.AUTOTUNE
         except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE 
+            AUTOTUNE = tf.data.experimental.AUTOTUNE
         return self._model.fit(
             self._sequence
                 .into_dataset()

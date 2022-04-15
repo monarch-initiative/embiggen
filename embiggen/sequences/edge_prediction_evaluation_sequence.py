@@ -74,7 +74,7 @@ class EdgePredictionEvaluationSequence(Sequence):
                 raise ValueError(
                     "The provided negative graph is empty, that is, it has no edges."
                 )
-            if positive_graph.has_selfloops() ^ negative_graph.has_selfloops():
+            if positive_graph.has_selfloops() != negative_graph.has_selfloops():
                 warnings.warn(
                     "Please be advides that in either the provided positive "
                     "or negative graphs there are present selfloops. "
