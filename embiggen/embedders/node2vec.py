@@ -199,12 +199,16 @@ class Node2Vec:
         -----------------------
         Dataframe with training history.
         """
+        try:
+            AUTOTUNE = tf.data.AUTOTUNE     
+        except:
+            AUTOTUNE = tf.data.experimental.AUTOTUNE 
         return self._model.fit(
             self._sequence
                 .into_dataset()
                 .repeat()
                 .prefetch(  # Overlap producer and consumer works
-                    tf.data.AUTOTUNE
+                    AUTOTUNE
                 ),
             steps_per_epoch=self._sequence.steps_per_epoch,
             epochs=epochs,
