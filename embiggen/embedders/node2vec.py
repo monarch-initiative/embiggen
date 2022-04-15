@@ -140,9 +140,9 @@ class Node2Vec:
             optimizer=Nadam(
                 # Should go down to 0.001 in 2 epochs
                 tf.keras.optimizers.schedules.ExponentialDecay(
-                    0.1,
+                    1.0,
                     decay_steps=2*self._sequence.steps_per_epoch,
-                    decay_rate=0.01,
+                    decay_rate=0.001,
                     staircase=True
                 )
             ) if optimizer is None else optimizer,
