@@ -219,30 +219,44 @@ class GraphVisualization:
                 # metric, we will capture that use case as a NotImplementedError.
                 if self._n_components != 2:
                     raise NotImplementedError()
-                from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                return CUDATSNE(**{
-                    **dict(
-                        n_components=2,
-                        random_seed=self._random_state,
-                        verbose=True,
-                    ),
-                    **self._decomposition_kwargs
-                }).fit_transform
-            except (ModuleNotFoundError, OSError, NotImplementedError):
                 try:
-                    from MulticoreTSNE import \
-                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    return MulticoreTSNE(**{
+                    from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
+                    return CUDATSNE(**{
                         **dict(
-                            n_components=self._n_components,
-                            n_jobs=cpu_count(),
-                            metric="cosine",
-                            random_state=self._random_state,
+                            n_components=2,
+                            random_seed=self._random_state,
                             verbose=True,
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
-                except (ModuleNotFoundError, OSError, RuntimeError):
+                except OSError as e:
+                    warnings.warn(
+                        ("The tsnecuda module is installed, but we could not find "
+                        "some of the necessary libraries to make it run properly. "
+                        "Specifically, the error encountered was: {}").format(e)
+                    )
+            except (ModuleNotFoundError, NotImplementedError):
+                try:
+                    try:
+                        from MulticoreTSNE import \
+                            MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                        return MulticoreTSNE(**{
+                            **dict(
+                                n_components=self._n_components,
+                                n_jobs=cpu_count(),
+                                metric="cosine",
+                                random_state=self._random_state,
+                                verbose=True,
+                            ),
+                            **self._decomposition_kwargs
+                        }).fit_transform
+                    except OSError as e:
+                        warnings.warn(
+                            ("The MulticoreTSNE module is installed, but we could not find "
+                            "some of the necessary libraries to make it run properly. "
+                            "Specifically, the error encountered was: {}").format(e)
+                        )
+                except (ModuleNotFoundError, RuntimeError):
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
