@@ -1,5 +1,5 @@
 """Test to validate that the model GloVe works properly with graph walks."""
-from embiggen.embedders.transe import TransE
+from embiggen import TransE
 from unittest import TestCase
 from ensmallen.datasets.linqs import Cora
 

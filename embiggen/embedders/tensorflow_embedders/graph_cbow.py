@@ -1,5 +1,5 @@
 """GraphCBOW model for graph embedding."""
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -9,7 +9,6 @@ from tensorflow.keras.optimizers import \
 
 from .cbow import CBOW
 from .node2vec import Node2Vec
-
 
 class GraphCBOW(Node2Vec):
     """GraphCBOW model for graph embedding.
@@ -25,7 +24,7 @@ class GraphCBOW(Node2Vec):
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
@@ -34,14 +33,14 @@ class GraphCBOW(Node2Vec):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         elapsed_epochs: int = 0,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
         use_gradient_centralization: bool = True,
         siamese: bool = False
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -62,7 +61,7 @@ class GraphCBOW(Node2Vec):
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         walk_length: int = 128,
@@ -96,7 +95,7 @@ class GraphCBOW(Node2Vec):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
@@ -104,7 +103,7 @@ class GraphCBOW(Node2Vec):
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using Graph)
@@ -121,23 +120,13 @@ class GraphCBOW(Node2Vec):
             Whether to use the siamese modality and share the embedding
             weights between the source and destination nodes.
         """
-        if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-            raise ValueError(
-                "The given graph does not have the nodes sorted by decreasing "
-                "order, therefore the NCE loss sampling (which follows a zipfian "
-                "distribution) would not approximate well the Softmax.\n"
-                "In order to sort the given graph in such a way that the node IDs "
-                "are sorted by decreasing outbound node degrees, you can use "
-                "the Graph method "
-                "`graph.sort_by_decreasing_outbound_node_degree()`"
-            )
         super().__init__(
             graph=graph,
             word2vec_model=CBOW,
             embedding_size=embedding_size,
             embedding=embedding,
             optimizer=optimizer,
-            negative_samples=negative_samples,
+            number_of_negative_samples=number_of_negative_samples,
             walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,

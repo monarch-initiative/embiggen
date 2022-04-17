@@ -1,27 +1,15 @@
 """Sub-module with methods to compute node-embedding with a one-liner."""
 import inspect
-import warnings
 from typing import Dict, List, Tuple, Union
 
 import pandas as pd
-import tensorflow as tf
 from cache_decorator import Cache
 from ensmallen import Graph
 
-from ..embedders import (Embedder, GraphCBOW, GraphGloVe, GraphSkipGram,
-                         Siamese, SimplE, TransE, TransH, TransR)
-from ..utils import execute_gpu_checks
+from ..utils import execute_gpu_checks, get_available_gpus_number, has_gpus
 
-SUPPORTED_NODE_EMBEDDING_METHODS = {
-    "CBOW": GraphCBOW,
-    "GloVe": GraphGloVe,
-    "SkipGram": GraphSkipGram,
-    "Siamese": Siamese,
-    "TransE": TransE,
-    "SimplE": SimplE,
-    "TransH": TransH,
-    "TransR": TransR,
-}
+from ..embedders import SUPPORTED_NODE_EMBEDDING_METHODS
+from ..embedders.ensmallen_embedders import EnsmallenEmbedder
 
 REQUIRE_ZIPFIAN = [
     "CBOW",
@@ -42,18 +30,30 @@ LINK_PREDICTION_BASED_MODELS = [
     "SimplE"
 ]
 
-assert set(RANDOM_WALK_BASED_MODELS +
-           LINK_PREDICTION_BASED_MODELS) == set(SUPPORTED_NODE_EMBEDDING_METHODS)
-
 
 def get_available_node_embedding_methods() -> List[str]:
     """Return list of supported node embedding methods."""
     return list(SUPPORTED_NODE_EMBEDDING_METHODS.keys())
 
 
-def get_node_embedding_method(node_embedding_method_name: str) -> Embedder:
-    """Return node embedding method curresponding to given name."""
-    return SUPPORTED_NODE_EMBEDDING_METHODS[node_embedding_method_name]
+def get_node_embedding_method(
+    node_embedding_method_name: str,
+    use_only_cpu: bool
+):
+    """Return node embedding method curresponding to given name.
+    
+    Parameters
+    ---------------------
+    node_embedding_method_name: str
+        The name of the embedding method to retrieve
+    use_only_cpu: bool
+        Whether to retrieve CPU or GPU versions of the model, when available.
+    """
+    model = SUPPORTED_NODE_EMBEDDING_METHODS[node_embedding_method_name]
+    # If there is a further choice to be made for this model.
+    if isinstance(model, dict):
+        model = model["cpu"] if use_only_cpu else model["gpu"]
+    return model
 
 
 def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
@@ -73,66 +73,45 @@ def is_node_embedding_method_supported(node_embedding_method_name: str) -> bool:
 
 @Cache(
     cache_path=[
-        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_embedding.pkl.gz",
-        "node_embeddings/{node_embedding_method_name}/{graph_name}/{_hash}_training_history.csv.xz",
+        "node_embeddings/{node_embedding_method_name}/tensorflow/{graph_name}/{_hash}_embedding.pkl.gz",
+        "node_embeddings/{node_embedding_method_name}/tensorflow/{graph_name}/{_hash}_training_history.csv.xz",
     ],
     args_to_ignore=["devices", "use_mirrored_strategy", "verbose"]
 )
-def _compute_node_embedding(
+def _compute_node_tensorflow_embedding(
     graph: Graph,
     graph_name: str,  # pylint: disable=unused-argument
     node_embedding_method_name: str,
     fit_kwargs: Dict,
-    verbose: bool = True,
-    use_mirrored_strategy: bool = True,
-    devices: Union[List[str], str] = None,
+    verbose: bool,
+    use_mirrored_strategy: bool,
+    devices: Union[List[str], str],
     **kwargs: Dict
 ) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
-    """Return embedding computed with required node embedding method.
-
-    Specifically, this method also caches the embedding automatically.
-
-    Parameters
-    --------------------------
-    graph: Graph,
-        The graph to embed.
-    graph_name: str,
-        The name of the graph.
-    node_embedding_method_name: str,
-        The name of the node embedding method to use.
-    fit_kwargs: Dict,
-        Arguments to pass to the fit call.
-    verbose: bool = True,
-        Whether to show loading bars.
-    use_mirrored_strategy: bool = True,
-        Whether to use mirrored strategy.
-    devices: Union[List[str], str] = None,
-        The devices to use.
-        If None, all GPU devices available are used.
-    **kwargs: Dict,
-        Arguments to pass to the node embedding method constructor.
-        Read the documentation of the selected method.
-
-    Returns
-    --------------------------
-    Tuple with node embedding and training history.
-    """
+    """Wrapper for `compute_node_embedding` method."""
     # Since the verbose kwarg may be provided also on the fit_kwargs
     # we normalize the parameter to avoid collisions.
     verbose = fit_kwargs.pop("verbose", verbose)
-    kwargs = dict(
-        graph=graph,
-        **kwargs
-    )
 
+    node_embedding_model = get_node_embedding_method(
+        node_embedding_method_name,
+        False
+    )
+    # Otherwise it is a TensorFlow-based model.
+    import tensorflow as tf
     if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
-        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(devices)
+        strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+            devices
+        )
     else:
         strategy = tf.distribute.get_strategy()
 
     with strategy.scope():
         # Creating the node embedding model
-        model = get_node_embedding_method(node_embedding_method_name)(**kwargs)
+        model = node_embedding_model(
+            graph=graph,
+            **kwargs
+        )
 
     # Fitting the node embedding model
     history = model.fit(
@@ -142,10 +121,45 @@ def _compute_node_embedding(
     return model.get_embedding_dataframe(), history
 
 
+@Cache(
+    cache_path="node_embeddings/{node_embedding_method_name}/ensmallen/{graph_name}/{_hash}_embedding.csv.gz",
+    args_to_ignore=["verbose"]
+)
+def _compute_node_ensmallen_embedding(
+    graph: Graph,
+    graph_name: str,  # pylint: disable=unused-argument
+    node_embedding_method_name: str,
+    fit_kwargs: Dict,
+    verbose: bool,
+    **kwargs: Dict
+) -> Tuple[Union[pd.DataFrame, Tuple[pd.DataFrame]], pd.DataFrame]:
+    """Wrapper for `compute_node_embedding` method."""
+    # Since the verbose kwarg may be provided also on the fit_kwargs
+    # we normalize the parameter to avoid collisions.
+    verbose = fit_kwargs.pop("verbose", verbose)
+
+    node_embedding_model = get_node_embedding_method(
+        node_embedding_method_name,
+        True
+    )
+
+    # Create the Ensmallen-based model.
+    model = node_embedding_model(
+        verbose=verbose,
+        **kwargs
+    )
+    return model.fit_transform_graph(
+        graph,
+        **fit_kwargs
+    )
+
+
+
 def compute_node_embedding(
     graph: Graph,
     node_embedding_method_name: str,
-    use_mirrored_strategy: bool = True,
+    use_only_cpu: Union[bool, str] = "auto",
+    use_mirrored_strategy: Union[bool, str] = "auto",
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
     verbose: Union[bool, int] = True,
@@ -162,13 +176,18 @@ def compute_node_embedding(
         Graph to embed.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
-    use_mirrored_strategy: bool = True,
+    use_only_cpu: Union[bool, str] = "auto",
+        Whether to only use CPU.
+        Do note that for CBOW and SkipGram models,
+        this will switch the implementation from the
+        TensorFlow implementation and will use our Rust Ensmallen one.
+    use_mirrored_strategy: Union[bool, str] = "auto"
         Whether to use mirror strategy to distribute the
         computation across multiple devices.
-        Note that this will be automatically disabled if the
-        set of devices detected is only composed of one,
-        since using MirroredStrategy adds a significant overhead
-        and may endup limiting the device usage.
+        This is automatically enabled if more than one
+        GPU is detected and the flag `use_only_gpu` was
+        not provided, or if the list of devices to use
+        was provided and it includes at least a GPU.
     devices: Union[List[str], str] = None,
         The devices to use.
         If None, all GPU devices available are used.
@@ -210,6 +229,34 @@ def compute_node_embedding(
             )
         )
 
+    # If devices are given as a single device we adapt this into a list.
+    if isinstance(devices, str):
+        devices = [devices]
+
+    # If in the list of provided devices there is a GPU specified,
+    # and there are more than one GPU, we need to use the MirroredStrategy
+    # to distribute its computation.
+    if devices and any(
+        "GPU" in device
+        for device in devices
+    ) and get_available_gpus_number() > 1:
+        use_mirrored_strategy = True
+
+    # If the use only CPU parameter is set to auto,
+    # we automatically enable it when no GPUs are
+    # available.
+    if use_only_cpu == "auto" and not has_gpus():
+        use_only_cpu = True
+
+    if not use_only_cpu and use_mirrored_strategy == "auto" and get_available_gpus_number() > 1:
+        use_mirrored_strategy = True
+
+    if use_only_cpu and use_mirrored_strategy == True:
+        raise ValueError(
+            "It does not make sense to require to use only CPU "
+            "and require to use the mirrored strategy for GPUs."
+        )
+
     execute_gpu_checks(use_mirrored_strategy)
 
     # If the fit kwargs are not given we normalize them to an empty dictionary.
@@ -226,17 +273,41 @@ def compute_node_embedding(
     # This may be useful when running a suite of experiments with a set of
     # parameters and you do not want to bother in dropping the parameters
     # that are only supported in a subset of methods.
-    if automatically_drop_unsupported_parameters and kwargs:
-        # Get the list of supported parameters
-        supported_parameter = inspect.signature(
-            get_node_embedding_method(node_embedding_method_name).__init__
-        ).parameters
-        # Filter out the unsupported parameters
-        kwargs = {
-            key: value
-            for key, value in kwargs.items()
-            if key in supported_parameter
-        }
+    if automatically_drop_unsupported_parameters:
+        if kwargs:
+            # Get the list of supported parameters
+            supported_parameter = inspect.signature(
+                get_node_embedding_method(
+                    node_embedding_method_name,
+                    use_only_cpu
+                ).__init__
+            ).parameters
+            # Filter out the unsupported parameters
+            kwargs = {
+                key: value
+                for key, value in kwargs.items()
+                if key in supported_parameter
+            }
+        if fit_kwargs:
+            # Get the list of supported parameters
+            model = get_node_embedding_method(
+                node_embedding_method_name,
+                use_only_cpu
+            )
+            if issubclass(model, EnsmallenEmbedder):
+                supported_parameter = inspect.signature(
+                    model.fit_transform_graph
+                ).parameters
+            else:
+                supported_parameter = inspect.signature(
+                    model.fit
+                ).parameters
+            # Filter out the unsupported parameters
+            fit_kwargs = {
+                key: value
+                for key, value in kwargs.items()
+                if key in supported_parameter
+            }
 
     # If required we enable the time memory tradeoffs.
     if automatically_enable_time_memory_tradeoffs:
@@ -253,12 +324,20 @@ def compute_node_embedding(
                 vector_cumulative_node_degrees=False
             )
 
-    # If devices are given as a single device we adapt this into a list.
-    if isinstance(devices, str):
-        devices = [devices]
-
-    # Call the wrapper with cache.
-    return _compute_node_embedding(
+    if issubclass(get_node_embedding_method(
+        node_embedding_method_name,
+        use_only_cpu
+    ), EnsmallenEmbedder):
+        # Call the wrapper with cache.
+        return _compute_node_ensmallen_embedding(
+            graph,
+            graph_name=graph.get_name(),
+            node_embedding_method_name=node_embedding_method_name,
+            fit_kwargs=fit_kwargs,
+            verbose=verbose,
+            **kwargs
+        )
+    return _compute_node_tensorflow_embedding(
         graph,
         graph_name=graph.get_name(),
         node_embedding_method_name=node_embedding_method_name,

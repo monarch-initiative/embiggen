@@ -1,22 +1,23 @@
-"""GraphSkipGram model for graph embedding."""
-from typing import Dict, Union
+"""GloVe model for graph node embedding."""
+from typing import Dict, Union, Optional
 
-import numpy as np
 import pandas as pd
-from ensmallen import Graph
+import numpy as np
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+    Optimizer   # pylint: disable=import-error,no-name-in-module
 
-from .node2vec import Node2Vec
-from .skipgram import SkipGram
+from ensmallen import Graph
+
+from .glove import GloVe
+from ...utils import validate_window_size
+from ..embedders_utils import detect_graph_node_embedding_oddities
 
 
-class GraphSkipGram(Node2Vec):
-    """GraphSkipGram model for graph embedding.
+class GraphGloVe(GloVe):
+    """GloVe model for graph and words embedding.
 
-    The SkipGram model for graoh embedding receives a central word and tries
-    to predict its contexts. The model makes use of an NCE loss layer
-    during the training process to generate the negatives.
+    The GloVe model for graoh embedding receives two words and is asked to
+    predict its cooccurrence probability.
     """
 
     def __init__(
@@ -25,50 +26,45 @@ class GraphSkipGram(Node2Vec):
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        negative_samples: int = 10,
+        alpha: float = 0.75,
+        directed: bool = False,
         walk_length: int = 128,
-        batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 10,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int = None,
-        elapsed_epochs: int = 0,
+        max_neighbours: Optional[int] = 100,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
         use_gradient_centralization: bool = True,
         siamese: bool = False
     ):
-        """Create new sequence Embedder model.
+        """Create new GloVe-based TensorFlowEmbedder object.
 
         Parameters
-        -------------------------------------------
-        graph: Graph,
-            Graph to be embedded.
-        word2vec_model: Word2Vec,
-            Word2Vec model to use.
-        embedding_size: int = 100,
+        ----------------------------
+        vocabulary_size: int,
+            Number of terms to embed.
+            In a graph this is the number of nodes, while in a text is the
+            number of the unique words.
+        embedding_size: int,
             Dimension of the embedding.
         embedding: Union[np.ndarray, pd.DataFrame] = None,
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        optimizer: Union[str, Optimizer] = None,
+        optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
             set at 0.01 is used.
-        window_size: int = 4,
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        negative_samples: int = 10,
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
+        alpha: float = 0.75,
+            Alpha to use for the function.
+        directed: bool = False,
+            Whether to treat the data as directed or not.
         walk_length: int = 128,
             Maximal length of the walks.
-        batch_size: int = 256,
-            Number of nodes to include in a single batch.
         iterations: int = 16,
             Number of iterations of the single walks.
         window_size: int = 4,
@@ -96,7 +92,7 @@ class GraphSkipGram(Node2Vec):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
@@ -104,14 +100,14 @@ class GraphSkipGram(Node2Vec):
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using Graph)
             called `get_dense_node_mapping` that returns a mapping from
             the non trap nodes (those from where a walk could start) and
             maps these nodes into a dense range of values.
-        use_gradient_centralization: bool = True,
+        use_gradient_centralization: bool = True
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
@@ -121,53 +117,47 @@ class GraphSkipGram(Node2Vec):
             Whether to use the siamese modality and share the embedding
             weights between the source and destination nodes.
         """
-        if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-            raise ValueError(
-                "The given graph does not have the nodes sorted by decreasing "
-                "order, therefore the NCE loss sampling (which follows a zipfian "
-                "distribution) would not approximate well the Softmax.\n"
-                "In order to sort the given graph in such a way that the node IDs "
-                "are sorted by decreasing outbound node degrees, you can use "
-                "the Graph method "
-                "`graph.sort_by_decreasing_outbound_node_degree()`"
-            )
-
+        detect_graph_node_embedding_oddities(graph)
+        self._graph = graph
+        self._walk_length = walk_length
+        self._iterations = iterations
+        self._window_size = validate_window_size(window_size)
+        self._return_weight = return_weight
+        self._explore_weight = explore_weight
+        self._change_node_type_weight = change_node_type_weight
+        self._change_edge_type_weight = change_edge_type_weight
+        self._max_neighbours = max_neighbours
+        self._random_state = random_state
+        self._dense_node_mapping = dense_node_mapping
         super().__init__(
-            graph=graph,
-            word2vec_model=SkipGram,
+            alpha=alpha,
+            random_state=random_state,
+            directed=directed,
+            vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=embedding_size,
             embedding=embedding,
             optimizer=optimizer,
-            negative_samples=negative_samples,
-            walk_length=walk_length,
-            batch_size=batch_size,
-            iterations=iterations,
-            window_size=window_size,
-            return_weight=return_weight,
-            explore_weight=explore_weight,
-            change_node_type_weight=change_node_type_weight,
-            change_edge_type_weight=change_edge_type_weight,
-            max_neighbours=max_neighbours,
-            elapsed_epochs=elapsed_epochs,
-            random_state=random_state,
-            dense_node_mapping=dense_node_mapping,
             use_gradient_centralization=use_gradient_centralization,
             siamese=siamese
         )
 
+    def get_embedding_dataframe(self) -> pd.DataFrame:
+        """Return terms embedding using given index names."""
+        return super().get_embedding_dataframe(self._graph.get_node_names())
 
     def fit(
         self,
-        epochs: int = 100,
+        epochs: int = 1000,
+        batch_size: int = 2**20,
         early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.5,
-        early_stopping_patience: int = 2,
+        early_stopping_min_delta: float = 0.0001,
+        early_stopping_patience: int = 10,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 1.0,
-        reduce_lr_patience: int = 0,
+        reduce_lr_min_delta: float = 0.0001,
+        reduce_lr_patience: int = 5,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.1,
+        reduce_lr_factor: float = 0.9,
         verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:
@@ -175,27 +165,30 @@ class GraphSkipGram(Node2Vec):
 
         Parameters
         -----------------------
-        epochs: int = 10000,
+        epochs: int = 1000,
             Epochs to train the model for.
+        batch_size: int = 2**20,
+            The batch size.
+            Tipically batch sizes for the GloVe model can be immense.
         early_stopping_monitor: str = "loss",
             Metric to monitor for early stopping.
-        early_stopping_min_delta: float = 0.1,
+        early_stopping_min_delta: float = 0.001,
             Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 2,
+        early_stopping_patience: int = 10,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which trigger early stopping.
         early_stopping_mode: str = "min",
             Direction of the variation of the monitored metric for early stopping.
         reduce_lr_monitor: str = "loss",
             Metric to monitor for reducing learning rate.
-        reduce_lr_min_delta: float = 1,
+        reduce_lr_min_delta: float = 0.01,
             Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 1,
+        reduce_lr_patience: int = 10,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which reducing learning rate.
         reduce_lr_mode: str = "min",
             Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.1,
+        reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
         verbose: int = 2,
             Wethever to show the loading bar.
@@ -206,13 +199,32 @@ class GraphSkipGram(Node2Vec):
         **kwargs: Dict,
             Additional kwargs to pass to the Keras fit call.
 
+        Raises
+        -----------------------
+        ValueError,
+            If given verbose value is not within the available set (-1, 0, 1).
+
         Returns
         -----------------------
         Dataframe with training history.
         """
-       
+        sources, destinations, frequencies = self._graph.cooccurence_matrix(
+            walk_length=self._walk_length,
+            window_size=self._window_size,
+            iterations=self._iterations,
+            return_weight=self._return_weight,
+            explore_weight=self._explore_weight,
+            change_edge_type_weight=self._change_edge_type_weight,
+            change_node_type_weight=self._change_node_type_weight,
+            dense_node_mapping=self._dense_node_mapping,
+            max_neighbours=self._max_neighbours,
+            random_state=self._random_state,
+            verbose=verbose > 0
+        )
         return super().fit(
+            (sources, destinations), frequencies,
             epochs=epochs,
+            batch_size=batch_size,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,

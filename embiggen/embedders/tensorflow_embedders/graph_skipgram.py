@@ -1,43 +1,47 @@
-"""Abstract class for graph embedding models."""
-from typing import Dict, Union
+"""GraphSkipGram model for graph embedding."""
+from typing import Dict, Union, Optional
 
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
-from tensorflow.keras.optimizers import Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
-import tensorflow as tf
-from ..sequences import Node2VecSequence
-from .cbow import CBOW
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error,no-name-in-module
+
+from .node2vec import Node2Vec
 from .skipgram import SkipGram
 
 
-class Node2Vec:
-    """Abstract class for sequence embedding models."""
+class GraphSkipGram(Node2Vec):
+    """GraphSkipGram model for graph embedding.
+
+    The SkipGram model for graoh embedding receives a central word and tries
+    to predict its contexts. The model makes use of an NCE loss layer
+    during the training process to generate the negatives.
+    """
 
     def __init__(
         self,
         graph: Graph,
-        word2vec_model: Union[CBOW, SkipGram],
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
-        window_size: int = 4,
+        window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         elapsed_epochs: int = 0,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
         use_gradient_centralization: bool = True,
         siamese: bool = False
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -58,7 +62,7 @@ class Node2Vec:
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         walk_length: int = 128,
@@ -92,7 +96,7 @@ class Node2Vec:
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
@@ -100,7 +104,7 @@ class Node2Vec:
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using Graph)
@@ -117,9 +121,13 @@ class Node2Vec:
             Whether to use the siamese modality and share the embedding
             weights between the source and destination nodes.
         """
-        self._graph = graph
-        self._sequence = Node2VecSequence(
-            self._graph,
+        super().__init__(
+            graph=graph,
+            word2vec_model=SkipGram,
+            embedding_size=embedding_size,
+            embedding=embedding,
+            optimizer=optimizer,
+            number_of_negative_samples=number_of_negative_samples,
             walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,
@@ -132,19 +140,10 @@ class Node2Vec:
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
-        )
-        self._model = word2vec_model(
-            vocabulary_size=self._graph.get_nodes_number(),
-            embedding=embedding,
-            embedding_size=embedding_size,
-            optimizer=Nadam(
-                learning_rate=0.02
-            ) if optimizer is None else optimizer,
-            window_size=window_size,
-            negative_samples=negative_samples,
             use_gradient_centralization=use_gradient_centralization,
-            siamese=siamese,
+            siamese=siamese
         )
+
 
     def fit(
         self,
@@ -154,10 +153,10 @@ class Node2Vec:
         early_stopping_patience: int = 2,
         early_stopping_mode: str = "min",
         reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.1,
-        reduce_lr_patience: int = 2,
+        reduce_lr_min_delta: float = 1.0,
+        reduce_lr_patience: int = 0,
         reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.1,
         verbose: int = 2,
         **kwargs: Dict
     ) -> pd.DataFrame:
@@ -171,7 +170,7 @@ class Node2Vec:
             Metric to monitor for early stopping.
         early_stopping_min_delta: float = 0.1,
             Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 5,
+        early_stopping_patience: int = 2,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which trigger early stopping.
         early_stopping_mode: str = "min",
@@ -180,12 +179,12 @@ class Node2Vec:
             Metric to monitor for reducing learning rate.
         reduce_lr_min_delta: float = 1,
             Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 3,
+        reduce_lr_patience: int = 1,
             Number of epochs to wait for when the given minimum delta is not
             achieved after which reducing learning rate.
         reduce_lr_mode: str = "min",
             Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.9,
+        reduce_lr_factor: float = 0.1,
             Factor for reduction of learning rate.
         verbose: int = 2,
             Wethever to show the loading bar.
@@ -200,18 +199,8 @@ class Node2Vec:
         -----------------------
         Dataframe with training history.
         """
-        try:
-            AUTOTUNE = tf.data.AUTOTUNE     
-        except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE 
-        return self._model.fit(
-            self._sequence
-                .into_dataset()
-                .repeat()
-                .prefetch(  # Overlap producer and consumer works
-                    AUTOTUNE
-                ),
-            steps_per_epoch=self._sequence.steps_per_epoch,
+       
+        return super().fit(
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -225,73 +214,3 @@ class Node2Vec:
             verbose=verbose,
             **kwargs
         )
-
-    def summary(self):
-        """Print model summary."""
-        self._model.summary()
-
-    @property
-    def embedding(self) -> np.ndarray:
-        """Return model embeddings."""
-        return self._model.embedding
-
-    @property
-    def trainable(self) -> bool:
-        """Return whether the embedding layer can be trained.
-
-        Raises
-        -------------------
-        NotImplementedError,
-            If the current embedding model does not have an embedding layer.
-        """
-        return self._model.trainable
-
-    @trainable.setter
-    def trainable(self, trainable: bool):
-        """Set whether the embedding layer can be trained or not.
-
-        Parameters
-        -------------------
-        trainable: bool,
-            Whether the embedding layer can be trained or not.
-        """
-        self._model.trainable = trainable
-
-    def get_embedding_dataframe(self) -> pd.DataFrame:
-        """Return terms embedding using given index names."""
-        return self._model.get_embedding_dataframe(self._graph.get_node_names())
-
-    def save_embedding(self, path: str):
-        """Save terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        path: str,
-            Save embedding as csv to given path.
-        """
-        self._model.save_embedding(path, self._graph.get_node_names())
-
-    @property
-    def name(self) -> str:
-        """Return model name."""
-        return self._model.name
-
-    def save_weights(self, path: str):
-        """Save model weights to given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path where to save model weights.
-        """
-        self._model.save_weights(path)
-
-    def load_weights(self, path: str):
-        """Load model weights from given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path from where to load model weights.
-        """
-        self._model.load_weights(path)

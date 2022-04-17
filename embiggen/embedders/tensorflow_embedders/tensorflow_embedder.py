@@ -1,25 +1,22 @@
-"""Abstract Keras Model object for embedding models."""
+"""Abstract Keras Model wrapper for embedding models."""
 from typing import Dict, List, Union, Optional
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from embiggen.utils.parameter_validators import validate_verbose
-from tensorflow.keras import optimizers
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
     EarlyStopping, ReduceLROnPlateau)
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Nadam  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+    Nadam, Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from .optimizers import apply_centralized_gradients
 
 
-class Embedder:
-    """Abstract Keras Model object for embedding models."""
+class TensorFlowEmbedder:
+    """Abstract Keras Model wrapper for embedding models."""
 
     TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
@@ -32,7 +29,7 @@ class Embedder:
         trainable_embedding: bool = True,
         use_gradient_centralization: bool = True
     ):
-        """Create new Embedder object.
+        """Create new TensorFlowEmbedder object.
 
         Parameters
         ----------------------------------
@@ -167,7 +164,7 @@ class Embedder:
         NotImplementedError,
             If the current embedding model does not have an embedding layer.
         """
-        return self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME)
+        return self.get_layer_weights(TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME)
 
     @property
     def trainable(self) -> bool:
@@ -179,7 +176,7 @@ class Embedder:
             If the current embedding model does not have an embedding layer.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
+            if layer.name == TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME:
                 return layer.trainable
         raise NotImplementedError(
             "This embedding model does not have an embedding layer."
@@ -195,7 +192,7 @@ class Embedder:
             Whether the embedding layer can be trained or not.
         """
         for layer in self._model.layers:
-            if layer.name == Embedder.TERMS_EMBEDDING_LAYER_NAME:
+            if layer.name == TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME:
                 layer.trainable = trainable
         self._compile_model()
 

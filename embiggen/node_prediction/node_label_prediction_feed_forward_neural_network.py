@@ -1,5 +1,5 @@
 """Model implementing Node Label Neighbour for graphs."""
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -22,10 +22,10 @@ from tensorflow.keras.losses import CategoricalCrossentropy  # pylint: disable=i
 from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ..sequences import NodeLabelPredictionSequence
-from ..embedders import Embedder
+from ..embedders.tensorflow_embedders import TensorFlowEmbedder
 
 
-class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
+class NodeLabelPredictionfeedForwardNeuralNetwork(TensorFlowEmbedder):
     """Class implementing Feed-Forward Neural Network for node-label prediction."""
 
     def __init__(
@@ -131,7 +131,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
                 self._embedding
             ])],
             mask_zero=True,
-            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
+            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
         )
 
         mean_node_star_embedding = GlobalAveragePooling1D(
@@ -226,7 +226,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
     def build_training_sequence(
         self,
         train_graph: Graph,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         batch_size: int = 256,
         validation_graph: Graph = None,
         random_state: int = 42
@@ -237,7 +237,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
         --------------------
         train_graph: Graph
             Training graph.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of neighbours to consider.
             If None, the graph median is used.
         batch_size: int = 256,
@@ -271,7 +271,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
     def fit(
         self,
         train_graph: Graph,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         batch_size: int = 256,
         epochs: int = 1000,
         validation_graph: Graph = None,
@@ -294,7 +294,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
         -----------------------
         train_graph: Graph,
             Training graphs.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of neighbours to consider.
             If None, the graph median is used.
         epochs: int = 10000,
@@ -433,7 +433,7 @@ class NodeLabelPredictionfeedForwardNeuralNetwork(Embedder):
         # curresponding to the indices 0, as this value is reserved for the
         # masked values. The masked values are the values used to fill
         # the batches of the neigbours of the nodes.
-        return Embedder.embedding.fget(self)[1:]  # pylint: disable=no-member
+        return TensorFlowEmbedder.embedding.fget(self)[1:]  # pylint: disable=no-member
 
     def get_embedding_dataframe(self) -> pd.DataFrame:
         """Return terms embedding using given index names."""

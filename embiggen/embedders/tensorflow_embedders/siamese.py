@@ -19,11 +19,11 @@ from tensorflow.keras.models import \
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ..sequences import EdgePredictionSequence
-from .embedder import Embedder
+from ...sequences import EdgePredictionSequence
+from .tensorflow_embedder import TensorFlowEmbedder
 
 
-class Siamese(Embedder):
+class Siamese(TensorFlowEmbedder):
     """Siamese network for node-embedding including optionally node types and edge types."""
 
     NODE_TYPE_EMBEDDING_LAYER_NAME = "node_type_embedding_layer"
@@ -45,7 +45,7 @@ class Siamese(Embedder):
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -217,7 +217,7 @@ class Siamese(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=1,
-            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
+            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
         )
 
         # Get the node embedding
@@ -368,7 +368,7 @@ class Siamese(Embedder):
         """Return terms embedding using given index names."""
         values = [
             pd.DataFrame(
-                self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME),
+                self.get_layer_weights(TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME),
                 index=self._graph.get_node_names(),
             ),
         ]
@@ -416,7 +416,7 @@ class Siamese(Embedder):
             If the current embedding model does not have an embedding layer.
         """
         # TODO create multiple getters for the various embedding layers.
-        return Embedder.embedding.fget(self)  # pylint: disable=no-member
+        return TensorFlowEmbedder.embedding.fget(self)  # pylint: disable=no-member
 
     def fit(
         self,

@@ -11,11 +11,11 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from tensorflow.keras.optimizers import \
     Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
 
-from ..sequences import GloveSequence
-from .embedder import Embedder
+from ...sequences import GloveSequence
+from .tensorflow_embedder import TensorFlowEmbedder
 
 
-class GloVe(Embedder):
+class GloVe(TensorFlowEmbedder):
     """GloVe model for graph and words embedding.
 
     The GloVe model for graph embedding receives two words and is asked to
@@ -35,7 +35,7 @@ class GloVe(Embedder):
         use_gradient_centralization: bool = True,
         siamese: bool = False,
     ):
-        """Create new GloVe-based Embedder object.
+        """Create new GloVe-based TensorFlowEmbedder object.
 
         Parameters
         -------------------------------
@@ -127,7 +127,7 @@ class GloVe(Embedder):
             weights=None if self._embedding is None else [
                 self._embedding
             ],
-            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
+            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
         )
         trainable_left_embedding = trainable_left_embedding_layer(left_input_layer)
 

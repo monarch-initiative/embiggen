@@ -26,7 +26,7 @@ class SimplE(Siamese):
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------

@@ -1,6 +1,6 @@
 """Test to validate that the abstract model Node2Vec works properly."""
 import pytest
-from embiggen.embedders.node2vec import Node2Vec
+from embiggen.embedders.tensorflow_embedders.node2vec import Node2Vec
 from .test_node_sequences import TestNodeSequences
 
 

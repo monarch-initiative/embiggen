@@ -14,7 +14,6 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
-from pandas.core.frame import DataFrame
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from tqdm.auto import trange, tqdm
@@ -244,7 +243,6 @@ class GraphVisualization:
                             **dict(
                                 n_components=self._n_components,
                                 n_jobs=cpu_count(),
-                                metric="cosine",
                                 random_state=self._random_state,
                                 verbose=True,
                             ),
@@ -303,7 +301,7 @@ class GraphVisualization:
 
     def _shuffle(
         self,
-        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+        *args: List[Union[np.ndarray, pd.DataFrame, None]],
     ) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
 

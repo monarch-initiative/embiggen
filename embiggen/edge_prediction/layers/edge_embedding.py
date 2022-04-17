@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Flatten, Input, Layer, Dropout  # pylint: disable=import-error,no-name-in-module
 
-from ...embedders import Embedder
+from ...embedders.tensorflow_embedders import TensorFlowEmbedder
 
 
 class EdgeEmbedding(Layer):
@@ -78,7 +78,7 @@ class EdgeEmbedding(Layer):
             self._embedding_layer = Embedding(
                 *self._embedding.shape,
                 input_length=1,
-                name=Embedder.TERMS_EMBEDDING_LAYER_NAME,
+                name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME,
                 weights=[self._embedding]
             )
         else:
@@ -86,7 +86,7 @@ class EdgeEmbedding(Layer):
                 self._nodes_number,
                 self._embedding_size,
                 input_length=1,
-                name=Embedder.TERMS_EMBEDDING_LAYER_NAME
+                name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
             )
 
         self._embedding_layer.trainable = self._trainable
