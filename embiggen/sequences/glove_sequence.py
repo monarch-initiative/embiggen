@@ -105,11 +105,11 @@ class GloveSequence(MixedSequence):
                     (
                         tf.TensorSpec(
                             shape=(None, ),
-                            dtype=tf.uint32
+                            dtype=tf.int32
                         ),
                         tf.TensorSpec(
                             shape=(None, ),
-                            dtype=tf.uint32
+                            dtype=tf.int32
                         )
                     ),
                     tf.TensorSpec(
@@ -123,8 +123,8 @@ class GloveSequence(MixedSequence):
             self,
             output_types=(
                 (
-                    tf.uint32,
-                    tf.uint32,
+                    tf.int32,
+                    tf.int32,
                 ),
                 tf.float64
             ),

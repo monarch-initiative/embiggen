@@ -5,7 +5,7 @@ import tensorflow as tf
 from ensmallen import Graph
 from tqdm.auto import trange
 from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
-from ..utils import execute_gpu_checks
+from ..utils import execute_gpu_checks, get_available_gpus_number
 from .compute_node_embedding import compute_node_embedding
 
 edge_prediction_models = {
@@ -29,11 +29,12 @@ def evaluate_embedding_for_edge_prediction(
     dropout_rate: float = 0.5,
     use_edge_metrics: bool = False,
     edge_types: Optional[List[str]] = None,
-    use_mirrored_strategy: bool = True,
+    use_mirrored_strategy: Union[bool, str] = "auto",
     only_execute_embeddings: bool = False,
     embedding_method_fit_kwargs: Optional[Dict] = None,
     embedding_method_kwargs: Optional[Dict] = None,
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None,
+    sample_only_edges_with_heterogeneous_node_types: bool = False,
     devices: Union[List[str], str] = None,
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
@@ -58,8 +59,13 @@ def evaluate_embedding_for_edge_prediction(
         Size of the batch to be considered.
     edge_types: Optional[List[str]] = None
         Edge types to focus the edge prediction on, if any.
-    use_mirrored_strategy: bool = True
-        Whether to use mirrored strategy for the embedding and edge prediction models.
+    use_mirrored_strategy: Union[bool, str] = "auto"
+        Whether to use mirror strategy to distribute the
+        computation across multiple devices.
+        This is automatically enabled if more than one
+        GPU is detected and the flag `use_only_gpu` was
+        not provided, or if the list of devices to use
+        was provided and it includes at least a GPU.
     only_execute_embeddings: bool = False
         Whether to only execute the computation of the embedding or also the edge prediction.
         This flag can be useful when the two operations should be executed on different machines
@@ -71,6 +77,10 @@ def evaluate_embedding_for_edge_prediction(
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
         The subgraph to use for the edge prediction training and evaluation, if any.
         If none are provided, we sample the negative edges from the entire graph.
+    sample_only_edges_with_heterogeneous_node_types: bool = False
+        Whether to only sample edges between heterogeneous node types.
+        This may be useful when training a model to predict between
+        two portions in a bipartite graph.
     devices: Union[List[str], str] = None
         The list of devices to use when training the embedding and edge prediction models
         in a MirroredStrategy, that is across multiple GPUs. Thise feature is mainly useful
@@ -94,6 +104,15 @@ def evaluate_embedding_for_edge_prediction(
     # If devices are given as a single device we adapt this into a list.
     if isinstance(devices, str):
         devices = [devices]
+
+    # If in the list of provided devices there is a GPU specified,
+    # and there are more than one GPU, we need to use the MirroredStrategy
+    # to distribute its computation.
+    if devices and any(
+        "GPU" in device
+        for device in devices
+    ) and get_available_gpus_number() > 1:
+        use_mirrored_strategy = True
 
     # If the embedding method is a string, we execute this check also within
     # the compute node embedding pipeline.
@@ -195,17 +214,19 @@ def evaluate_embedding_for_edge_prediction(
         # Of course, this only apply to graphs where we can assume that there is
         # not a massive amount of unknown positive edges.
         train_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
-            negatives_number=train_graph.get_edges_number(),
+            number_of_negative_samples=train_graph.get_edges_number(),
             random_state=random_seed*holdout_number,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             verbose=False
         )
 
         test_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
-            negatives_number=test_graph.get_edges_number(),
+            number_of_negative_samples=test_graph.get_edges_number(),
             # We add an arbitrary constant to the random state to make
             # the initial sampling of the training graph different from
             # the initial sampling of the test graph.
             random_state=(random_seed + 23456787)*holdout_number,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             verbose=False
         )
 
@@ -263,7 +284,8 @@ def evaluate_embedding_for_edge_prediction(
             valid_graph=test_graph,
             negative_valid_graph=test_negative_graph,
             batch_size=batch_size,
-            epochs=epochs
+            epochs=epochs,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types
         ))
 
         train_performance = model.evaluate(

@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
-from embiggen.embedders.layers import GraphConvolution
+from embiggen.embedders.tensorflow_embedders.layers import GraphConvolution
 from ..utils import graph_to_sparse_tensor, validate_verbose
 
 
@@ -42,7 +42,7 @@ class GraphConvolutionalNeuralNetwork:
         features_dropout_rate: float = 0.5,
         optimizer: Union[str, Optimizer] = "nadam",
     ):
-        """Create new GloVe-based Embedder object.
+        """Create new GloVe-based TensorFlowEmbedder object.
 
         Parameters
         -------------------------------

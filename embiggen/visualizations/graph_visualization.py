@@ -14,7 +14,6 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
-from pandas.core.frame import DataFrame
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from tqdm.auto import trange, tqdm
@@ -219,30 +218,43 @@ class GraphVisualization:
                 # metric, we will capture that use case as a NotImplementedError.
                 if self._n_components != 2:
                     raise NotImplementedError()
-                from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                return CUDATSNE(**{
-                    **dict(
-                        n_components=2,
-                        random_seed=self._random_state,
-                        verbose=True,
-                    ),
-                    **self._decomposition_kwargs
-                }).fit_transform
-            except (ModuleNotFoundError, OSError, NotImplementedError):
                 try:
-                    from MulticoreTSNE import \
-                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    return MulticoreTSNE(**{
+                    from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
+                    return CUDATSNE(**{
                         **dict(
-                            n_components=self._n_components,
-                            n_jobs=cpu_count(),
-                            metric="cosine",
-                            random_state=self._random_state,
+                            n_components=2,
+                            random_seed=self._random_state,
                             verbose=True,
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
-                except (ModuleNotFoundError, OSError, RuntimeError):
+                except OSError as e:
+                    warnings.warn(
+                        ("The tsnecuda module is installed, but we could not find "
+                        "some of the necessary libraries to make it run properly. "
+                        "Specifically, the error encountered was: {}").format(e)
+                    )
+            except (ModuleNotFoundError, NotImplementedError):
+                try:
+                    try:
+                        from MulticoreTSNE import \
+                            MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                        return MulticoreTSNE(**{
+                            **dict(
+                                n_components=self._n_components,
+                                n_jobs=cpu_count(),
+                                random_state=self._random_state,
+                                verbose=True,
+                            ),
+                            **self._decomposition_kwargs
+                        }).fit_transform
+                    except OSError as e:
+                        warnings.warn(
+                            ("The MulticoreTSNE module is installed, but we could not find "
+                            "some of the necessary libraries to make it run properly. "
+                            "Specifically, the error encountered was: {}").format(e)
+                        )
+                except (ModuleNotFoundError, RuntimeError):
                     try:
                         from sklearn.manifold import \
                             TSNE  # pylint: disable=import-outside-toplevel
@@ -254,7 +266,6 @@ class GraphVisualization:
                                 verbose=True,
                                 metric="cosine",
                                 method="exact" if self._n_components == 4 else "barnes_hut",
-                                square_distances=True,
                             ),
                             **self._decomposition_kwargs
                         }).fit_transform
@@ -290,7 +301,7 @@ class GraphVisualization:
 
     def _shuffle(
         self,
-        *args: List[Union[np.ndarray, pd.DataFrame, None]]
+        *args: List[Union[np.ndarray, pd.DataFrame, None]],
     ) -> List[np.ndarray]:
         """Return given arrays shuffled synchronously.
 
@@ -1523,7 +1534,7 @@ class GraphVisualization:
                     for node_id in nodes_iterator
                 )
             ),
-            dtype=np.uint32
+            dtype=np.int32
         )
 
     def _get_flatten_unknown_edge_types(
@@ -1576,7 +1587,7 @@ class GraphVisualization:
                     )
                 )
             ),
-            dtype=np.uint32
+            dtype=np.int32
         )
 
     def plot_node_types(
@@ -1944,7 +1955,7 @@ class GraphVisualization:
                     self._graph.get_node_degree_from_node_id(node_id)
                     for node_id in self._subsampled_node_ids
                 ),
-                dtype=np.uint32
+                dtype=np.int32
             )
 
         if annotate_nodes == "auto":
@@ -2192,7 +2203,7 @@ class GraphVisualization:
                     self._graph.get_edge_weight_from_edge_id(edge_id)
                     for edge_id in self._subsampled_edge_ids
                 ),
-                dtype=np.uint32
+                dtype=np.int32
             )
 
         returned_values = self._wrapped_plot_scatter(

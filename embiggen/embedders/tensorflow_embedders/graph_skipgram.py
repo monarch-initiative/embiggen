@@ -1,5 +1,5 @@
 """GraphSkipGram model for graph embedding."""
-from typing import Dict, Union
+from typing import Dict, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -24,9 +24,8 @@ class GraphSkipGram(Node2Vec):
         graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
         walk_length: int = 128,
         batch_size: int = 256,
         iterations: int = 16,
@@ -35,13 +34,14 @@ class GraphSkipGram(Node2Vec):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         elapsed_epochs: int = 0,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
         use_gradient_centralization: bool = True,
+        siamese: bool = False
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -55,10 +55,6 @@ class GraphSkipGram(Node2Vec):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = None,
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -66,7 +62,7 @@ class GraphSkipGram(Node2Vec):
         window_size: int = 4,
             Window size for the local context.
             On the borders the window size is trimmed.
-        negative_samples: int = 10,
+        number_of_negative_samples: int = 5,
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         walk_length: int = 128,
@@ -100,7 +96,7 @@ class GraphSkipGram(Node2Vec):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
@@ -108,7 +104,7 @@ class GraphSkipGram(Node2Vec):
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using Graph)
@@ -121,26 +117,17 @@ class GraphSkipGram(Node2Vec):
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
-        if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-            raise ValueError(
-                "The given graph does not have the nodes sorted by decreasing "
-                "order, therefore the NCE loss sampling (which follows a zipfian "
-                "distribution) would not approximate well the Softmax.\n"
-                "In order to sort the given graph in such a way that the node IDs "
-                "are sorted by decreasing outbound node degrees, you can use "
-                "the Graph method "
-                "`graph.sort_by_decreasing_outbound_node_degree()`"
-            )
-
         super().__init__(
             graph=graph,
             word2vec_model=SkipGram,
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
-            negative_samples=negative_samples,
+            number_of_negative_samples=number_of_negative_samples,
             walk_length=walk_length,
             batch_size=batch_size,
             iterations=iterations,
@@ -153,5 +140,77 @@ class GraphSkipGram(Node2Vec):
             elapsed_epochs=elapsed_epochs,
             random_state=random_state,
             dense_node_mapping=dense_node_mapping,
-            use_gradient_centralization=use_gradient_centralization
+            use_gradient_centralization=use_gradient_centralization,
+            siamese=siamese
+        )
+
+
+    def fit(
+        self,
+        epochs: int = 100,
+        early_stopping_monitor: str = "loss",
+        early_stopping_min_delta: float = 0.5,
+        early_stopping_patience: int = 2,
+        early_stopping_mode: str = "min",
+        reduce_lr_monitor: str = "loss",
+        reduce_lr_min_delta: float = 1.0,
+        reduce_lr_patience: int = 0,
+        reduce_lr_mode: str = "min",
+        reduce_lr_factor: float = 0.1,
+        verbose: int = 2,
+        **kwargs: Dict
+    ) -> pd.DataFrame:
+        """Return pandas dataframe with training history.
+
+        Parameters
+        -----------------------
+        epochs: int = 10000,
+            Epochs to train the model for.
+        early_stopping_monitor: str = "loss",
+            Metric to monitor for early stopping.
+        early_stopping_min_delta: float = 0.1,
+            Minimum delta of metric to stop the training.
+        early_stopping_patience: int = 2,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which trigger early stopping.
+        early_stopping_mode: str = "min",
+            Direction of the variation of the monitored metric for early stopping.
+        reduce_lr_monitor: str = "loss",
+            Metric to monitor for reducing learning rate.
+        reduce_lr_min_delta: float = 1,
+            Minimum delta of metric to reduce learning rate.
+        reduce_lr_patience: int = 1,
+            Number of epochs to wait for when the given minimum delta is not
+            achieved after which reducing learning rate.
+        reduce_lr_mode: str = "min",
+            Direction of the variation of the monitored metric for learning rate.
+        reduce_lr_factor: float = 0.1,
+            Factor for reduction of learning rate.
+        verbose: int = 2,
+            Wethever to show the loading bar.
+            Specifically, the options are:
+            * 0 or False: No loading bar.
+            * 1 or True: Showing only the loading bar for the epochs.
+            * 2: Showing loading bar for both epochs and batches.
+        **kwargs: Dict,
+            Additional kwargs to pass to the Keras fit call.
+
+        Returns
+        -----------------------
+        Dataframe with training history.
+        """
+       
+        return super().fit(
+            epochs=epochs,
+            early_stopping_monitor=early_stopping_monitor,
+            early_stopping_min_delta=early_stopping_min_delta,
+            early_stopping_patience=early_stopping_patience,
+            early_stopping_mode=early_stopping_mode,
+            reduce_lr_monitor=reduce_lr_monitor,
+            reduce_lr_min_delta=reduce_lr_min_delta,
+            reduce_lr_patience=reduce_lr_patience,
+            reduce_lr_mode=reduce_lr_mode,
+            reduce_lr_factor=reduce_lr_factor,
+            verbose=verbose,
+            **kwargs
         )

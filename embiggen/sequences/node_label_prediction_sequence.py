@@ -1,5 +1,5 @@
 """Keras Sequence for running Neural Network on graph node-label embedding."""
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -13,7 +13,7 @@ class NodeLabelPredictionSequence(Sequence):
     def __init__(
         self,
         graph: Graph,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         include_central_node: bool = False,
         return_edge_weights: bool = False,
         batch_size: int = 2**8,

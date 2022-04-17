@@ -1,5 +1,5 @@
 """Layer for executing NCE loss in Keras models."""
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 import tensorflow as tf
 import tensorflow.keras.backend as K   # pylint: disable=import-error
@@ -13,8 +13,9 @@ class NoiseContrastiveEstimation(Layer):
         self,
         vocabulary_size: int,
         embedding_size: int,
-        negative_samples: int,
+        number_of_negative_samples: int,
         positive_samples: int,
+        embedding: Optional[Layer] = None,
         **kwargs: Dict
     ):
         """Create new NoiseContrastiveEstimation layer.
@@ -24,22 +25,26 @@ class NoiseContrastiveEstimation(Layer):
 
         Parameters
         -------------------------
-        vocabulary_size: int,
+        vocabulary_size: int
             Number of vectors in the embedding.
             In a graph this values are the number of nodes.
             In a text, this is the number of unique words.
-        embedding_size: int,
+        embedding_size: int
             Dimension of the embedding.
-        negative_samples: int,
+        number_of_negative_samples: int
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        positive_samples: int,
+        positive_samples: int
             The number of target classes per training example.
+        embedding: Optional[Layer]
+            The embedding layer from which to extract the weights
+            when training this model in a siamese mode.
         """
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
-        self._negative_samples = negative_samples
+        self._number_of_negative_samples = number_of_negative_samples
         self._positive_samples = positive_samples
+        self._embedding = embedding
         self._weights = None
         self._biases = None
         super().__init__(**kwargs)
@@ -52,7 +57,7 @@ class NoiseContrastiveEstimation(Layer):
         input_shape: Tuple[int, int],
             Shape of the output of the previous layer.
         """
-        self._weights = self.add_weight(
+        self._weights = self._embedding.weights[0] if self._embedding is not None else self.add_weight(
             name="approx_softmax_weights",
             shape=(self._vocabulary_size, self._embedding_size),
             initializer="glorot_normal",
@@ -78,12 +83,12 @@ class NoiseContrastiveEstimation(Layer):
         predictions, labels = inputs
 
         # Computing NCE loss.
-        loss = K.mean(tf.nn.nce_loss(
+        loss = tf.reduce_mean(tf.nn.nce_loss(
             self._weights,
             self._biases,
             labels=labels,
             inputs=predictions,
-            num_sampled=self._negative_samples,
+            num_sampled=self._number_of_negative_samples,
             num_classes=self._vocabulary_size,
             num_true=self._positive_samples
         ), axis=0)

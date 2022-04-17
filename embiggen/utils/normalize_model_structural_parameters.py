@@ -1,3 +1,4 @@
+"""Submodule providing utilities to normalize parameters for modular models."""
 from typing import List, Any, Union, Type
 
 

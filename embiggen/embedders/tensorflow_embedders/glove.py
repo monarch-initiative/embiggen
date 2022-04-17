@@ -6,16 +6,16 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Add  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.layers import Concatenate, Dot, Embedding, Flatten, Input  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Dot, Embedding, Flatten, Input  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+    Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
 
-from ..sequences import GloveSequence
-from .embedder import Embedder
+from ...sequences import GloveSequence
+from .tensorflow_embedder import TensorFlowEmbedder
 
 
-class GloVe(Embedder):
+class GloVe(TensorFlowEmbedder):
     """GloVe model for graph and words embedding.
 
     The GloVe model for graph embedding receives two words and is asked to
@@ -27,14 +27,15 @@ class GloVe(Embedder):
         vocabulary_size: int,
         embedding_size: int,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         optimizer: Union[str, Optimizer] = None,
         alpha: float = 0.75,
         random_state: int = 42,
         directed: bool = False,
+        use_bias: bool = True,
         use_gradient_centralization: bool = True,
+        siamese: bool = False,
     ):
-        """Create new GloVe-based Embedder object.
+        """Create new GloVe-based TensorFlowEmbedder object.
 
         Parameters
         -------------------------------
@@ -48,10 +49,6 @@ class GloVe(Embedder):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
             By default, if None is provided, Nadam with learning rate
@@ -62,22 +59,30 @@ class GloVe(Embedder):
             The random state to reproduce the training sequence.
         directed: bool = False,
             Whether to treat the data as directed or not.
+        use_bias: bool = True
+            Whether to use the bias in the GloVe model.
+            Consider that these weights are excluded from
+            the model embedding.
         use_gradient_centralization: bool = True,
             Whether to wrap the provided optimizer into a normalized
             one that centralizes the gradient.
             It is automatically enabled if the current version of
             TensorFlow supports gradient transformers.
             More detail here: https://arxiv.org/pdf/2004.01461.pdf
+        siamese: bool = False
+            Whether to use the siamese modality and share the embedding
+            weights between the source and destination nodes.
         """
         self._alpha = alpha
         self._random_state = random_state
         self._directed = directed
+        self._siamese = siamese
+        self._use_bias = use_bias
         super().__init__(
             vocabulary_size=vocabulary_size,
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
-            optimizer=optimizer,
+            optimizer=Nadam(learning_rate=0.1) if optimizer is None else optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
 
@@ -105,42 +110,35 @@ class GloVe(Embedder):
         """Create new Glove model."""
         # Creating the input layers
         left_input_layer = Input(
-            (1,), dtype=tf.uint32, name="left_input_layer")
+            (1,),
+            dtype=tf.int32,
+            name="left_input_layer"
+        )
         right_input_layer = Input(
-            (1,), dtype=tf.uint32, name="right_input_layer")
+            (1,),
+            dtype=tf.int32,
+            name="right_input_layer"
+        )
 
-        trainable_left_embedding = Embedding(
+        trainable_left_embedding_layer = Embedding(
             self._vocabulary_size,
             self._embedding_size,
             input_length=1,
             weights=None if self._embedding is None else [
                 self._embedding
             ],
-            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
-        )(left_input_layer)
+            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
+        )
+        trainable_left_embedding = trainable_left_embedding_layer(left_input_layer)
 
-        trainable_right_embedding = Embedding(
-            self._vocabulary_size,
-            self._embedding_size,
-            input_length=1,
-        )(right_input_layer)
-
-        if self._extra_features is not None:
-            extra_features_matrix = Embedding(
-                *self._extra_features,
+        if self._siamese:
+            trainable_right_embedding = trainable_left_embedding_layer(right_input_layer)
+        else:
+            trainable_right_embedding = Embedding(
+                self._vocabulary_size,
+                self._embedding_size,
                 input_length=1,
-                weights=self._extra_features,
-                trainable=False,
-                name="extra_features_matrix"
-            )
-            trainable_left_embedding = Concatenate()([
-                extra_features_matrix(left_input_layer),
-                trainable_left_embedding
-            ])
-            trainable_right_embedding = Concatenate()([
-                extra_features_matrix(right_input_layer),
-                trainable_right_embedding
-            ])
+            )(right_input_layer)
 
         # Creating the dot product of the embedding layers
         dot_product_layer = Dot(axes=2)([
@@ -152,6 +150,7 @@ class GloVe(Embedder):
         biases = [
             Embedding(self._vocabulary_size, 1, input_length=1)(input_layer)
             for input_layer in (left_input_layer, right_input_layer)
+            if self._use_bias
         ]
 
         # Concatenating with an add the three layers
@@ -248,15 +247,17 @@ class GloVe(Embedder):
         -----------------------
         Dataframe with training history.
         """
+        sequence = GloveSequence(
+            *X, frequencies,
+            batch_size=batch_size,
+            directed=self._directed,
+            random_state=self._random_state
+        )
         return super().fit(
-            GloveSequence(
-                *X, frequencies,
-                batch_size=batch_size,
-                directed=self._directed,
-                random_state=self._random_state
-            ).into_dataset(),
+            sequence.into_dataset().repeat(),
             *args,
             epochs=epochs,
+            steps_per_epoch=sequence.steps_per_epoch,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,

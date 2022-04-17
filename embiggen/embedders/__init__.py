@@ -1,28 +1,42 @@
-"""Module with graph and text embedding models."""
-from .cbow import CBOW
-from .embedder import Embedder
-from .glove import GloVe
-from .graph_cbow import GraphCBOW
-from .graph_glove import GraphGloVe
-from .graph_skipgram import GraphSkipGram
-from .skipgram import SkipGram
-from .transe import TransE
-from .transh import TransH
-from .siamese import Siamese
-from .transr import TransR
-from .simple import SimplE
+"""Submodule providing TensorFlow and Ensmallen-based embedders."""
+try:
+    from . import tensorflow_embedders
+    from . import ensmallen_embedders
 
-__all__ = [
-    "GloVe",
-    "SkipGram",
-    "CBOW",
-    "Embedder",
-    "GraphCBOW",
-    "GraphSkipGram",
-    "GraphGloVe",
-    "TransE",
-    "TransH",
-    "TransR",
-    "Siamese",
-    "SimplE"
-]
+    SUPPORTED_NODE_EMBEDDING_METHODS = {
+        "CBOW": {
+            "gpu": tensorflow_embedders.GraphCBOW,
+            "cpu": ensmallen_embedders.GraphCBOW,
+        },
+        "GloVe": tensorflow_embedders.GraphGloVe,
+        "SkipGram": {
+            "gpu": tensorflow_embedders.GraphSkipGram,
+            "cpu": ensmallen_embedders.GraphSkipGram,
+        },
+        "Siamese": tensorflow_embedders.Siamese,
+        "TransE": tensorflow_embedders.TransE,
+        "SimplE": tensorflow_embedders.SimplE,
+        "TransH": tensorflow_embedders.TransH,
+        "TransR": tensorflow_embedders.TransR,
+        "SPINE": ensmallen_embedders.SPINE
+    }
+
+    __all__ = [
+        "tensorflow_embedders",
+        "ensmallen_embedders",
+        "SUPPORTED_NODE_EMBEDDING_METHODS"
+    ]
+except ModuleNotFoundError as e:
+    print("Cactus", e)
+    from .ensmallen_embedders import *
+
+    SUPPORTED_NODE_EMBEDDING_METHODS = {
+        "CBOW": GraphCBOW,
+        "SkipGram": GraphSkipGram,
+        "SPINE": SPINE
+    }
+
+    __all__ = [
+        "ensmallen_embedders",
+        "SUPPORTED_NODE_EMBEDDING_METHODS"
+    ]

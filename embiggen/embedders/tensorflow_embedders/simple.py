@@ -22,12 +22,11 @@ class SimplE(Siamese):
         graph: Graph,
         embedding_size: int = 100,
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
         model_name: str = "SimplE",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -45,10 +44,6 @@ class SimplE(Siamese):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         model_name: str = "SimplE",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -67,7 +62,6 @@ class SimplE(Siamese):
             embedding_size=embedding_size,
             edge_type_embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization

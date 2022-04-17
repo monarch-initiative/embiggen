@@ -19,11 +19,11 @@ from tensorflow.keras.models import \
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ..sequences import EdgePredictionSequence
-from .embedder import Embedder
+from ...sequences import EdgePredictionSequence
+from .tensorflow_embedder import TensorFlowEmbedder
 
 
-class Siamese(Embedder):
+class Siamese(TensorFlowEmbedder):
     """Siamese network for node-embedding including optionally node types and edge types."""
 
     NODE_TYPE_EMBEDDING_LAYER_NAME = "node_type_embedding_layer"
@@ -41,12 +41,11 @@ class Siamese(Embedder):
         distance_metric: str = "COSINE",
         relu_bias: float = 1.0,
         embedding: Optional[Union[np.ndarray, pd.DataFrame]] = None,
-        extra_features: Optional[Union[np.ndarray, pd.DataFrame]] = None,
         model_name: str = "Siamese",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -84,10 +83,6 @@ class Siamese(Embedder):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
         model_name: str = "Siamese",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
@@ -185,7 +180,6 @@ class Siamese(Embedder):
             vocabulary_size=graph.get_nodes_number(),
             embedding_size=embedding_size,
             embedding=embedding,
-            extra_features=extra_features,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization
         )
@@ -223,7 +217,7 @@ class Siamese(Embedder):
             input_dim=self._vocabulary_size,
             output_dim=self._embedding_size,
             input_length=1,
-            name=Embedder.TERMS_EMBEDDING_LAYER_NAME
+            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
         )
 
         # Get the node embedding
@@ -374,7 +368,7 @@ class Siamese(Embedder):
         """Return terms embedding using given index names."""
         values = [
             pd.DataFrame(
-                self.get_layer_weights(Embedder.TERMS_EMBEDDING_LAYER_NAME),
+                self.get_layer_weights(TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME),
                 index=self._graph.get_node_names(),
             ),
         ]
@@ -422,7 +416,7 @@ class Siamese(Embedder):
             If the current embedding model does not have an embedding layer.
         """
         # TODO create multiple getters for the various embedding layers.
-        return Embedder.embedding.fget(self)  # pylint: disable=no-member
+        return TensorFlowEmbedder.embedding.fget(self)  # pylint: disable=no-member
 
     def fit(
         self,

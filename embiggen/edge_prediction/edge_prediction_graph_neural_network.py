@@ -16,7 +16,7 @@ import math
 
 from embiggen.sequences import GNNEdgePredictionSequence, GNNBipartiteEdgePredictionSequence
 from ensmallen import Graph
-from embiggen.embedders.optimizers import apply_centralized_gradients
+from embiggen.embedders.tensorflow_embedders.optimizers import apply_centralized_gradients
 from embiggen.utils import validate_verbose, normalize_model_ragged_list_parameter, normalize_model_list_parameter
 from tqdm.auto import tqdm
 import tensorflow as tf

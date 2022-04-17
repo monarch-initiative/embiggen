@@ -1,22 +1,18 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
-from typing import Dict, Optional, Union
+from typing import Optional, Union, Dict
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
-from tensorflow.keras.constraints import \
-    UnitNorm  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.layers import \
-    Embedding  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Embedding, Reshape  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
-from tensorflow.python.keras.layers.core import Flatten, Reshape  # pylint: disable=import-error,no-name-in-module
-
 from .transe import TransE
 
 
-class TransH(TransE):
+class TransR(TransE):
     """Siamese network for node-embedding including optionally node types and edge types."""
 
     def __init__(
@@ -25,12 +21,11 @@ class TransH(TransE):
         embedding_size: int = 100,
         distance_metric: str = "COSINE",
         embedding: Union[np.ndarray, pd.DataFrame] = None,
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-        model_name: str = "TransH",
+        model_name: str = "TransR",
         optimizer: Union[str, Optimizer] = None,
         use_gradient_centralization: str = "auto"
     ):
-        """Create new sequence Embedder model.
+        """Create new sequence TensorFlowEmbedder model.
 
         Parameters
         -------------------------------------------
@@ -51,11 +46,7 @@ class TransH(TransE):
             The seed embedding to be used.
             Note that it is not possible to provide at once both
             the embedding and either the vocabulary size or the embedding size.
-        extra_features: Union[np.ndarray, pd.DataFrame] = None,
-            Optional extra features to be used during the computation
-            of the embedding. The features must be available for all the
-            elements considered for the embedding.
-        model_name: str = "TransH",
+        model_name: str = "TransR",
             Name of the model.
         optimizer: Union[str, Optimizer] = "nadam",
             The optimizer to be used during the training of the model.
@@ -71,7 +62,6 @@ class TransH(TransE):
             embedding_size=embedding_size,
             distance_metric=distance_metric,
             embedding=embedding,
-            extra_features=extra_features,
             model_name=model_name,
             optimizer=optimizer,
             use_gradient_centralization=use_gradient_centralization
@@ -87,24 +77,24 @@ class TransH(TransE):
         """Return output of the model."""
         normal_edge_type_embedding = Embedding(
             input_dim=self._edge_types_number,
-            output_dim=self._edge_type_embedding_size,
+            output_dim=self._edge_type_embedding_size*self._embedding_size,
             input_length=1,
             name="normal_edge_type_embedding_layer",
         )(edge_types_input)
 
-        normal_edge_type_embedding = UnitNorm(
+        normal_edge_type_embedding_matrix = Reshape((
+            self._edge_type_embedding_size,
+            self._embedding_size
+        ))(normal_edge_type_embedding)
+
+        source_node_embedding = K.l2_normalize(
+            normal_edge_type_embedding_matrix * source_node_embedding,
             axis=-1
-        )(normal_edge_type_embedding)
-
-        source_node_embedding -= tf.transpose(
-            normal_edge_type_embedding,
-            perm=[0, 2, 1]
-        ) * source_node_embedding * normal_edge_type_embedding
-
-        destination_node_embedding -= tf.transpose(
-            normal_edge_type_embedding,
-            perm=[0, 2, 1]
-        ) * destination_node_embedding * normal_edge_type_embedding
+        )
+        destination_node_embedding = K.l2_normalize(
+            normal_edge_type_embedding_matrix * destination_node_embedding,
+            axis=-1
+        )
 
         return super()._build_output(
             source_node_embedding,

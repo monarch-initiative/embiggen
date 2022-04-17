@@ -1,5 +1,5 @@
 """Keras Sequence object for running CBOW and SkipGram on graph walks."""
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
 
 import numpy as np  # type: ignore
 from ensmallen import Graph  # pylint: disable=no-name-in-module
@@ -22,10 +22,10 @@ class Node2VecSequence(AbstractSequence):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
         elapsed_epochs: int = 0,
         random_state: int = 42,
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
     ):
         """Create new Node2Vec Sequence object.
 
@@ -66,7 +66,7 @@ class Node2VecSequence(AbstractSequence):
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
             THIS IS AN EXPERIMENTAL FEATURE!
-        max_neighbours: int = None,
+        max_neighbours: Optional[int] = 100,
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
@@ -75,7 +75,7 @@ class Node2VecSequence(AbstractSequence):
             Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Dict[int, int] = None,
+        dense_node_mapping: Optional[Dict[int, int]] = None,
             Mapping to use for converting sparse walk space into a dense space.
             This object can be created using the method (available from the
             graph object created using Graph)
@@ -135,11 +135,11 @@ class Node2VecSequence(AbstractSequence):
             # Shapes of the source and destination node IDs
             input_tensor_specs.append(tf.TensorSpec(
                 shape=(number_of_skipgrams, self._window_size*2),
-                dtype=tf.uint32
+                dtype=tf.int32
             ))
             input_tensor_specs.append(tf.TensorSpec(
                 shape=(number_of_skipgrams, ),
-                dtype=tf.uint32
+                dtype=tf.int32
             ))
 
             return tf.data.Dataset.from_generator(
@@ -155,8 +155,8 @@ class Node2VecSequence(AbstractSequence):
             self,
             output_types=(
                 (
-                    tf.uint32,
-                    tf.uint32
+                    tf.int32,
+                    tf.int32
                 ),
             ),
             output_shapes=(

@@ -3,12 +3,14 @@ from typing import List
 import shutil
 import warnings
 
-import tensorflow as tf
-
 
 def get_available_gpus() -> List[str]:
     """Return list with IDs of available GPU devices."""
-    return tf.config.experimental.list_physical_devices('GPU')
+    try:
+        import tensorflow as tf
+        return tf.config.experimental.list_physical_devices('GPU')
+    except ModuleNotFoundError:
+        return []
 
 
 def command_is_available(command_name: str) -> bool:
@@ -92,4 +94,9 @@ def execute_gpu_checks(use_mirrored_strategy: bool):
                 "The model will proceed with trainining, but it will be "
                 "significantly slower than what would be possible "
                 "with GPU acceleration."
+            )
+        if use_mirrored_strategy == True:
+            raise ValueError(
+                "You have required for the mirrored strategy to be used "
+                "but no GPU can be detected by TensorFlow."
             )

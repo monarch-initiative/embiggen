@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from userinput import set_validator
 from userinput.utils import closest
 
-from ..embedders import Embedder
+from ..embedders.tensorflow_embedders import TensorFlowEmbedder
 from ..sequences import EdgePredictionSequence, EdgeLabelPredictionSequence
 from .layers import edge_embedding_layer
 
@@ -25,7 +25,7 @@ edge_prediction_supported_tasks = [
 ]
 
 
-class EdgePredictionModel(Embedder):
+class EdgePredictionModel(TensorFlowEmbedder):
 
     def __init__(
         self,
@@ -228,6 +228,7 @@ class EdgePredictionModel(Embedder):
         reduce_lr_patience: int = 5,
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
+        sample_only_edges_with_heterogeneous_node_types: bool = False,
         verbose: int = 2,
         ** kwargs: Dict
     ) -> pd.DataFrame:
@@ -265,6 +266,10 @@ class EdgePredictionModel(Embedder):
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
+        sample_only_edges_with_heterogeneous_node_types: bool = False
+            Whether to only sample edges between heterogeneous node types.
+            This may be useful when training a model to predict between
+            two portions in a bipartite graph.
         verbose: int = 2,
             Wethever to show the loading bar.
             Specifically, the options are:
@@ -291,14 +296,15 @@ class EdgePredictionModel(Embedder):
                 batches_per_epoch=batches_per_epoch,
                 negative_samples_rate=negative_samples_rate,
                 use_edge_metrics=self._use_edge_metrics,
-            ).into_dataset()
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types
+            )
             if negative_valid_graph is not None:
                 validation_sequence = EdgePredictionEvaluationSequence(
                     positive_graph=valid_graph,
                     negative_graph=negative_valid_graph,
                     batch_size=batch_size,
                     use_edge_metrics=self._use_edge_metrics,
-                ).into_dataset()
+                )
         elif self._task_name == "EDGE_LABEL_PREDICTION":
             training_sequence = EdgeLabelPredictionSequence(
                 train_graph,
@@ -328,8 +334,10 @@ class EdgePredictionModel(Embedder):
             raise ValueError("Unreacheable!")
         
         return super().fit(
-            training_sequence,
-            validation_data=validation_sequence,
+            training_sequence.into_dataset().repeat(),
+            steps_per_epoch=training_sequence.steps_per_epoch,
+            validation_data=None if validation_sequence is None else validation_sequence.into_dataset().repeat(),
+            validation_steps=None if validation_sequence is None else validation_sequence.steps_per_epoch,
             epochs=epochs,
             early_stopping_monitor=early_stopping_monitor,
             early_stopping_min_delta=early_stopping_min_delta,
