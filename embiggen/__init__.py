@@ -14,7 +14,6 @@ try:
         "TransE", "TransH", "TransR", "SimplE", "Siamese", "GraphConvolutionalNeuralNetwork"
     ]
 except ModuleNotFoundError as e:
-    print("AYO!", e)
     from .embedders.ensmallen_embedders import *
     all_exports = []
     warnings.warn(

@@ -27,7 +27,6 @@ try:
         "SUPPORTED_NODE_EMBEDDING_METHODS"
     ]
 except ModuleNotFoundError as e:
-    print("Cactus", e)
     from .ensmallen_embedders import *
 
     SUPPORTED_NODE_EMBEDDING_METHODS = {
