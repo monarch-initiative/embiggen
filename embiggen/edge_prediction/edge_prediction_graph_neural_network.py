@@ -1008,6 +1008,7 @@ class EdgePredictionGraphNeuralNetwork:
         graph: Graph,
         source_node_ids: np.ndarray,
         destination_node_ids: np.ndarray,
+        batch_size: int = 2**12,
         verbose: bool = True
     ) -> Dict[str, float]:
         """Run evaluations on the described bipartite graph.
@@ -1020,6 +1021,8 @@ class EdgePredictionGraphNeuralNetwork:
             Vector of source node IDs in bipartite graph.
         destination_node_ids: np.ndarray
             Vector of destination node IDs in bipartite graph.
+        batch_size: int = 2**12
+            Size of the batch for the evaluation
         verbose: bool = True
             Whether to show the loading bars.
         """
@@ -1037,7 +1040,8 @@ class EdgePredictionGraphNeuralNetwork:
             self._model.metrics_names,
             self._model.evaluate(
                 sequence,
-                verbose=verbose
+                verbose=verbose,
+                batch_size=batch_size
             )
         ))
 
