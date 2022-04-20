@@ -88,6 +88,7 @@ class GNNBipartiteEdgePredictionSequence(VectorSequence):
         if self._use_node_types:
             self._destination_node_features.append(
                 self._destination_node_type_ids)
+        
         super().__init__(
             sources,
             batch_size=1,
