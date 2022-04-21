@@ -12,22 +12,22 @@ from ..embedders import SUPPORTED_NODE_EMBEDDING_METHODS
 from ..embedders.ensmallen_embedders import EnsmallenEmbedder
 
 REQUIRE_ZIPFIAN = [
-    "CBOW",
-    "SkipGram"
+    "cbow",
+    "skipgram"
 ]
 
 RANDOM_WALK_BASED_MODELS = [
-    "CBOW",
-    "GloVe",
-    "SkipGram"
+    "cbow",
+    "glove",
+    "skipgram"
 ]
 
 LINK_PREDICTION_BASED_MODELS = [
-    "Siamese",
-    "TransR",
-    "TransE",
-    "TransH",
-    "SimplE"
+    "siamese",
+    "transr",
+    "transe",
+    "transh",
+    "simple"
 ]
 
 
@@ -218,7 +218,8 @@ def compute_node_embedding(
     --------------------------
     Tuple with node embedding and training history.
     """
-    if not is_node_embedding_method_supported(node_embedding_method_name):
+    lower_node_embedding_method_name = node_embedding_method_name.lower()
+    if not is_node_embedding_method_supported(lower_node_embedding_method_name):
         raise ValueError(
             (
                 "The given node embedding method `{}` is not supported. "
@@ -266,7 +267,7 @@ def compute_node_embedding(
     # If the model requested is SkipGram and the given graph does not have sorted
     # node IDs according to decreasing outbound node degrees, we create the new graph
     # that has the node IDs sorted.
-    if automatically_sort_by_decreasing_outbound_node_degree and node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
+    if automatically_sort_by_decreasing_outbound_node_degree and lower_node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
         graph = graph.sort_by_decreasing_outbound_node_degree()
 
     # If required, we filter out the unsupported parameters.
@@ -278,7 +279,7 @@ def compute_node_embedding(
             # Get the list of supported parameters
             supported_parameter = inspect.signature(
                 get_node_embedding_method(
-                    node_embedding_method_name,
+                    lower_node_embedding_method_name,
                     use_only_cpu
                 ).__init__
             ).parameters
@@ -291,7 +292,7 @@ def compute_node_embedding(
         if fit_kwargs:
             # Get the list of supported parameters
             model = get_node_embedding_method(
-                node_embedding_method_name,
+                lower_node_embedding_method_name,
                 use_only_cpu
             )
             if issubclass(model, EnsmallenEmbedder):
@@ -311,13 +312,13 @@ def compute_node_embedding(
 
     # If required we enable the time memory tradeoffs.
     if automatically_enable_time_memory_tradeoffs:
-        if node_embedding_method_name in RANDOM_WALK_BASED_MODELS:
+        if lower_node_embedding_method_name in RANDOM_WALK_BASED_MODELS:
             graph.enable(
                 vector_sources=False,
                 vector_destinations=True,
                 vector_cumulative_node_degrees=True
             )
-        if node_embedding_method_name in LINK_PREDICTION_BASED_MODELS:
+        if lower_node_embedding_method_name in LINK_PREDICTION_BASED_MODELS:
             graph.enable(
                 vector_sources=True,
                 vector_destinations=True,
@@ -325,14 +326,14 @@ def compute_node_embedding(
             )
 
     if issubclass(get_node_embedding_method(
-        node_embedding_method_name,
+        lower_node_embedding_method_name,
         use_only_cpu
     ), EnsmallenEmbedder):
         # Call the wrapper with cache.
         return _compute_node_ensmallen_embedding(
             graph,
             graph_name=graph.get_name(),
-            node_embedding_method_name=node_embedding_method_name,
+            node_embedding_method_name=lower_node_embedding_method_name,
             fit_kwargs=fit_kwargs,
             verbose=verbose,
             **kwargs
@@ -340,7 +341,7 @@ def compute_node_embedding(
     return _compute_node_tensorflow_embedding(
         graph,
         graph_name=graph.get_name(),
-        node_embedding_method_name=node_embedding_method_name,
+        node_embedding_method_name=lower_node_embedding_method_name,
         fit_kwargs=fit_kwargs,
         verbose=verbose,
         use_mirrored_strategy=use_mirrored_strategy,

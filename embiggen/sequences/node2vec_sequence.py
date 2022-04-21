@@ -215,8 +215,4 @@ class Node2VecSequence(AbstractSequence):
             random_state=self._random_state + idx + self.elapsed_epochs
         )
 
-
-        contexts_batch = contexts_batch.astype(np.int32)
-        words_batch = words_batch.astype(np.int32)
-
         return (((contexts_batch, words_batch), ), )

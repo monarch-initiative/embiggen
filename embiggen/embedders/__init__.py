@@ -4,21 +4,21 @@ try:
     from . import ensmallen_embedders
 
     SUPPORTED_NODE_EMBEDDING_METHODS = {
-        "CBOW": {
+        "cbow": {
             "gpu": tensorflow_embedders.GraphCBOW,
             "cpu": ensmallen_embedders.GraphCBOW,
         },
-        "GloVe": tensorflow_embedders.GraphGloVe,
-        "SkipGram": {
+        "glove": tensorflow_embedders.GraphGloVe,
+        "skipgram": {
             "gpu": tensorflow_embedders.GraphSkipGram,
             "cpu": ensmallen_embedders.GraphSkipGram,
         },
-        "Siamese": tensorflow_embedders.Siamese,
-        "TransE": tensorflow_embedders.TransE,
-        "SimplE": tensorflow_embedders.SimplE,
-        "TransH": tensorflow_embedders.TransH,
-        "TransR": tensorflow_embedders.TransR,
-        "SPINE": ensmallen_embedders.SPINE
+        "siamese": tensorflow_embedders.Siamese,
+        "transe": tensorflow_embedders.TransE,
+        "simple": tensorflow_embedders.SimplE,
+        "transh": tensorflow_embedders.TransH,
+        "transr": tensorflow_embedders.TransR,
+        "spine": ensmallen_embedders.SPINE
     }
 
     __all__ = [
@@ -30,9 +30,9 @@ except ModuleNotFoundError as e:
     from .ensmallen_embedders import *
 
     SUPPORTED_NODE_EMBEDDING_METHODS = {
-        "CBOW": GraphCBOW,
-        "SkipGram": GraphSkipGram,
-        "SPINE": SPINE
+        "cbow": GraphCBOW,
+        "skipgram": GraphSkipGram,
+        "spine": SPINE
     }
 
     __all__ = [
