@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import warnings
+from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
@@ -264,6 +265,7 @@ class GraphVisualization:
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
                                 verbose=True,
+                                init="pca",
                                 metric="cosine",
                                 method="exact" if self._n_components == 4 else "barnes_hut",
                             ),
@@ -1537,6 +1539,67 @@ class GraphVisualization:
             dtype=np.int32
         )
 
+    def _get_flatten_unknown_node_ontologies(
+        self,
+        ontologies: List[Optional[str]],
+        subsampled_node_ids: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Returns flattened node ontologies adjusted for the current instance.
+
+        Implementative details
+        ---------------------------------
+        If the subsampled node IDs are provided, only those nodes will be taken into account.
+
+        Parameters
+        ---------------------------------
+        ontologies: List[Optional[str]]
+            List of the nodes ontologies.
+        subsampled_node_ids: Optional[np.ndarray] = None
+            If provided, only samples these node IDs.
+
+        Raises
+        ---------------------------------
+        ValueError
+            If the len of the ontologies is different of the provided subsampled_node_ids.
+        """
+        if subsampled_node_ids is not None and len(subsampled_node_ids) != len(ontologies):
+            raise ValueError(
+                (
+                    "The provided subsampled node IDs includes {len_subsampled_node_ids} elements "
+                    "but the provided ontologies have {len_ontologies} elements."
+                ).format(
+                    len_subsampled_node_ids = len(subsampled_node_ids),
+                    len_ontologies = len(ontologies),
+                )
+            )
+
+        # The following is needed to normalize the multiple types
+        ontologies_counts = Counter(ontologies)
+        ontologies_number = len(ontologies_counts)
+        top_10_ontologies = {
+            ontology: 50 - i
+            for i, ontology in enumerate(sorted(
+                ontologies_counts.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:50])
+        }
+        ontologies_counts = {
+            ontology: top_10_ontologies.get(ontology, 0)
+            for ontology in ontologies_counts
+        }
+        unknown_node_types_id = ontologies_number
+
+        # When we have multiple node types for a given node, we set it to
+        # the most common node type of the set.
+        return [
+            unknown_node_types_id
+            if ontology is None
+            else ontologies_counts[ontology]
+            for ontology in ontologies
+        ]
+
+
     def _get_flatten_unknown_edge_types(
         self,
         subsampled_edge_id: Optional[np.ndarray] = None
@@ -1719,6 +1782,154 @@ class GraphVisualization:
             legend_title=legend_title,
             predictions=node_type_predictions,
             k=k,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            other_label=other_label,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs
+        )
+
+        if annotate_nodes:
+            figure, axes = returned_values
+            returned_values = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_embedding,
+            )
+
+        return returned_values
+
+    def plot_node_ontologies(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        legend_title: str = "Ontologies",
+        other_label: str = "Other {} ontologies",
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        show_edges: bool = False,
+        edge_scatter_kwargs: Optional[Dict] = None,
+        annotate_nodes: Union[str, bool] = "auto",
+        **kwargs
+    ) -> Tuple[Figure, Axes]:
+        """Plot common node types of provided graph.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        legend_title: str = "Ontologies"
+            Title for the legend of the plot
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        other_label: str = "Other {} ontologies"
+            Label to use for edges below the top k threshold.
+        train_indices: Optional[np.ndarray] = None
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None
+            Indices to draw using the test marker.
+            If None, while providing the train indices,
+        train_marker: str = "o"
+            The marker to use to draw the training points.
+        test_marker: str = "X"
+            The marker to use to draw the test points.
+        show_title: bool = True
+            Whether to show the figure title.
+        show_legend: bool = True
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: bool = False,
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Arguments to pass to the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if not self._graph.has_node_types():
+            raise ValueError(
+                "The graph does not have node types!"
+            )
+
+        if self._node_embedding is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+            )
+
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                figure,
+                axes,
+                scatter_kwargs=edge_scatter_kwargs,
+                **kwargs
+            )
+
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+
+        node_types = self._get_flatten_multi_label_and_unknown_node_types(
+            self._subsampled_node_ids
+        )
+
+        node_type_names_iter = (
+            self._graph.get_node_type_name_from_node_type_id(node_id)
+            for node_id in trange(
+                self._graph.get_node_types_number(),
+                desc="Retrieving graph node types",
+                leave=False,
+                dynamic_ncols=True
+            )
+        )
+
+        if self._graph.has_unknown_node_types():
+            node_type_names_iter = itertools.chain(
+                node_type_names_iter,
+                iter(("Unknown",))
+            )
+
+        node_type_names = np.array(
+            list(node_type_names_iter),
+            dtype=str,
+        )
+
+        returned_values = self._plot_types(
+            self._node_embedding,
+            self._get_complete_title("Node types"),
+            types=node_types,
+            type_labels=node_type_names,
+            legend_title=legend_title,
+            k=9,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,

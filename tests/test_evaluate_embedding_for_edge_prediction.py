@@ -22,19 +22,18 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
         holdouts, histories = evaluate_embedding_for_edge_prediction(
-            embedding_method="GloVe",
+            embedding_method="CBOW",
             graph=self._graph,
             model_name="Perceptron",
             number_of_holdouts=self._number_of_holdouts,
+            unbalance_rates = (10.0, 100.0, ),
             embedding_method_kwargs=dict(
                 embedding_size=10,
-            ),
-            embedding_method_fit_kwargs=dict(
                 epochs=1
             ),
             epochs=5,
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2)
+        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*3)
         self.assertEqual(len(histories), self._number_of_holdouts)
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):
@@ -42,18 +41,17 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
         holdouts, histories = evaluate_embedding_for_edge_prediction(
-            embedding_method="GloVe",
+            embedding_method="CBOW",
             graph=self._graph,
             model_name="Perceptron",
+            unbalance_rates = (10.0, 100.0, ),
             number_of_holdouts=self._number_of_holdouts,
             embedding_method_kwargs=dict(
                 embedding_size=10,
-            ),
-            embedding_method_fit_kwargs=dict(
                 epochs=1
             ),
             epochs=5,
             subgraph_of_interest_for_edge_prediction=self._subgraph,
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2)
+        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*3)
         self.assertEqual(len(histories), self._number_of_holdouts)

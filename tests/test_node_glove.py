@@ -13,7 +13,7 @@ class TestNodeGloVe(TestNodeSequences):
         super().setUp()
         self._embedding_size = 50
         self._words, self._ctxs, self._freq = self._graph.cooccurence_matrix(
-            80,
+            walk_length=80,
             window_size=4,
             iterations=20
         )
