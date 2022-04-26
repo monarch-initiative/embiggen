@@ -19,7 +19,8 @@ REQUIRE_ZIPFIAN = [
 RANDOM_WALK_BASED_MODELS = [
     "cbow",
     "glove",
-    "skipgram"
+    "skipgram",
+    "spine"
 ]
 
 LINK_PREDICTION_BASED_MODELS = [

@@ -1,6 +1,7 @@
 """Submodule providing pipelines for edge prediction."""
 from faulthandler import disable
 from typing import Union, Callable, Tuple, List, Optional, Dict
+from numpy import isin
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
@@ -198,7 +199,7 @@ def evaluate_embedding_for_edge_prediction(
 
     # If the embedding method is a string, we execute this check also within
     # the compute node embedding pipeline.
-    if isinstance(embedding_method, str):
+    if not isinstance(embedding_method, str):
         execute_gpu_checks(use_mirrored_strategy)
 
     if isinstance(graphs, (Graph, str)):
@@ -372,6 +373,7 @@ def evaluate_embedding_for_edge_prediction(
                 graph=train_graph,
                 negative_graph=train_negative_graph,
                 batch_size=batch_size,
+                verbose=verbose
             )
             train_performance["evaluation_type"] = "train"
             train_performance["unbalance"] = 1.0
@@ -381,10 +383,15 @@ def evaluate_embedding_for_edge_prediction(
                 graph=test_graph,
                 negative_graph=test_negative_graph,
                 batch_size=batch_size,
+                verbose=verbose
             )
             test_performance["evaluation_type"] = "test"
             test_performance["unbalance"] = 1.0
             test_performance["graph_name"] = graph_name
+
+            if isinstance(embedding_method, str):
+                train_performance["embedding_method"] = embedding_method
+                test_performance["embedding_method"] = embedding_method
 
             holdouts.append(train_performance)
             holdouts.append(test_performance)
@@ -409,16 +416,17 @@ def evaluate_embedding_for_edge_prediction(
                     graph=train_graph,
                     negative_graph=train_negative_graph,
                     batch_size=batch_size,
+                    verbose=verbose
                 )
                 train_performance["evaluation_type"] = "train"
                 train_performance["unbalance"] = unbalance_rate
                 train_performance["graph_name"] = graph_name
-
-
+                
                 test_performance = model.evaluate(
                     graph=test_graph,
                     negative_graph=test_negative_graph,
                     batch_size=batch_size,
+                    verbose=verbose
                 )
                 test_performance["evaluation_type"] = "test"
                 test_performance["unbalance"] = unbalance_rate
@@ -426,5 +434,10 @@ def evaluate_embedding_for_edge_prediction(
 
                 holdouts.append(train_performance)
                 holdouts.append(test_performance)
+
+                if isinstance(embedding_method, str):
+                    train_performance["embedding_method"] = embedding_method
+                    test_performance["embedding_method"] = embedding_method
+
 
     return pd.DataFrame(holdouts), histories
