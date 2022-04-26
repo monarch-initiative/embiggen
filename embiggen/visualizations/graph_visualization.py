@@ -244,6 +244,7 @@ class GraphVisualization:
                             **dict(
                                 n_components=self._n_components,
                                 n_jobs=cpu_count(),
+                                n_iter=400,
                                 random_state=self._random_state,
                                 verbose=True,
                             ),
@@ -265,6 +266,7 @@ class GraphVisualization:
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
                                 verbose=True,
+                                n_iter=400,
                                 init="pca",
                                 metric="cosine",
                                 method="exact" if self._n_components == 4 else "barnes_hut",

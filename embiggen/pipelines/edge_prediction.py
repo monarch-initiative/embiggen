@@ -373,7 +373,7 @@ def evaluate_embedding_for_edge_prediction(
                 graph=train_graph,
                 negative_graph=train_negative_graph,
                 batch_size=batch_size,
-                verbose=verbose
+                verbose=False
             )
             train_performance["evaluation_type"] = "train"
             train_performance["unbalance"] = 1.0
@@ -383,7 +383,7 @@ def evaluate_embedding_for_edge_prediction(
                 graph=test_graph,
                 negative_graph=test_negative_graph,
                 batch_size=batch_size,
-                verbose=verbose
+                verbose=False
             )
             test_performance["evaluation_type"] = "test"
             test_performance["unbalance"] = 1.0
@@ -416,7 +416,7 @@ def evaluate_embedding_for_edge_prediction(
                     graph=train_graph,
                     negative_graph=train_negative_graph,
                     batch_size=batch_size,
-                    verbose=verbose
+                    verbose=False
                 )
                 train_performance["evaluation_type"] = "train"
                 train_performance["unbalance"] = unbalance_rate
@@ -426,7 +426,7 @@ def evaluate_embedding_for_edge_prediction(
                     graph=test_graph,
                     negative_graph=test_negative_graph,
                     batch_size=batch_size,
-                    verbose=verbose
+                    verbose=False
                 )
                 test_performance["evaluation_type"] = "test"
                 test_performance["unbalance"] = unbalance_rate
