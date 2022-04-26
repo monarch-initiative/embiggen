@@ -361,6 +361,7 @@ class EdgePredictionModel(TensorFlowEmbedder):
         graph: Graph,
         negative_graph: Optional[Graph] = None,
         batch_size: int = 2**10,
+        verbose: bool = True
     ) -> Dict[str, float]:
         """Run predict."""
         self._validate_fit_parameters(
@@ -392,10 +393,26 @@ class EdgePredictionModel(TensorFlowEmbedder):
         else:
             raise ValueError("Unreacheable!")
 
+        try:
+            from tqdm.keras import TqdmCallback
+            traditional_verbose = False
+        except AttributeError:
+            traditional_verbose = True
+
         return dict(zip(
             self._model.metrics_names,
             self._model.evaluate(
                 validation_sequence,
                 batch_size=batch_size,
+                verbose=traditional_verbose and verbose,
+                callbacks=[
+                    *((TqdmCallback(
+                        verbose=True,
+                        desc="Evaluating model",
+                        dynamic_ncols=True,
+                        leave=False
+                    ),)
+                  if not traditional_verbose and verbose else ())
+                ]
             )
         ))
