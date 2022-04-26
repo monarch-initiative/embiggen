@@ -62,12 +62,15 @@ def get_negative_graphs(
     # to remove this negative bias from the evaluation.
     # Of course, this only apply to graphs where we can assume that there is
     # not a massive amount of unknown positive edges.
-    return graph.sample_negatives(
+    graph.enable()
+    negative_graph = graph.sample_negatives(
         number_of_negative_samples=int(math.ceil(graph.get_edges_number()*unbalance_rate)),
         random_state=random_state,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
         verbose=False
-    ).random_holdout(
+    )
+    negative_graph.enable()
+    return negative_graph.random_holdout(
         train_size=train_size,
         random_state=random_state,
         verbose=verbose,
