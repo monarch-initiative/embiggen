@@ -2,7 +2,7 @@
 from typing import Optional
 from ensmallen import Graph
 import numpy as np
-from ensmallen.models import CBOW, SkipGram
+from ensmallen import models
 from .ensmallen_embedder import EnsmallenEmbedder
 
 
@@ -10,8 +10,8 @@ class Node2Vec(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
-        "cbow": CBOW,
-        "skipgram": SkipGram
+        "cbow": models.CBOW,
+        "skipgram": models.SkipGram
     }
 
     def __init__(
@@ -107,7 +107,7 @@ class Node2Vec(EnsmallenEmbedder):
         self._epochs = epochs
         self._learning_rate = learning_rate
 
-        self._model = Node2Vec.MODELS[model_name](
+        self._model = Node2Vec.MODELS[model_name.lower()](
             embedding_size=embedding_size,
             window_size=window_size,
             clipping_value=clipping_value,

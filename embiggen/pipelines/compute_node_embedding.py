@@ -330,6 +330,7 @@ def compute_node_embedding(
         use_only_cpu
     ), EnsmallenEmbedder):
         # Call the wrapper with cache.
+        # Do note that this model does not return any history.
         return _compute_node_ensmallen_embedding(
             graph,
             graph_name=graph.get_name(),
@@ -337,7 +338,7 @@ def compute_node_embedding(
             fit_kwargs=fit_kwargs,
             verbose=verbose,
             **kwargs
-        )
+        ), None
     return _compute_node_tensorflow_embedding(
         graph,
         graph_name=graph.get_name(),

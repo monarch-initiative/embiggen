@@ -3,7 +3,8 @@ from typing import Union, Callable, Tuple, List, Optional, Dict
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
-from tqdm.auto import trange
+from tqdm.auto import trange, tqdm
+import math
 from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
 from ..utils import execute_gpu_checks, get_available_gpus_number
 from .compute_node_embedding import compute_node_embedding
@@ -14,14 +15,72 @@ edge_prediction_models = {
 }
 
 
+def get_negative_graphs(
+    graph: Graph,
+    random_state: int,
+    sample_only_edges_with_heterogeneous_node_types: bool,
+    unbalance_rate: float,
+    train_size: float,
+    verbose: bool
+) -> Tuple[Graph, Graph]:
+    """Return tuple with training and test negative graphs.
+
+    Implementative details
+    ----------------------------
+    We generate first one larger graph of negative edges,
+    and then we split it into a training and test subgraphs
+    using the `random hodout` schema, that is we do not preserve
+    the number of connected components as we do not care about them
+    since we are not using the topology. Do note that this may
+    not be the same case when using a GCN for edge prediction.
+
+    Parameters
+    ----------------------------
+    graph: Graph
+        The graph from which to sample the negative edges.
+    random_state: int
+        Random state to sample the negatives and execute the random split.
+    sample_only_edges_with_heterogeneous_node_types: bool
+        Whether to only sample edges between heterogeneous node types.
+        This may be useful when training a model to predict between
+        two portions in a bipartite graph.
+    unbalance_rate: float
+        Quantity over over (or under) sampling for the negatives respectively
+        to the number of edges in the provided graph.
+    train_size: float
+        Split size of the training graph.
+    verbose: bool = True
+        Whether to show the loading bars.
+    """
+    # For both the training and the test set we sample the same
+    # number of negative edges are there are existing edges in the training and test graphs, respectively.
+    # This is done in order to avoid an excessive bias in the evaluation of the edge prediction.
+    # Across multiple holdouts, statistically it is unlikely to sample
+    # consistently unknown positive edges, and therefore we should be able
+    # to remove this negative bias from the evaluation.
+    # Of course, this only apply to graphs where we can assume that there is
+    # not a massive amount of unknown positive edges.
+    return graph.sample_negatives(
+        number_of_negative_samples=int(math.ceil(graph.get_edges_number()*unbalance_rate)),
+        random_state=random_state,
+        sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+        verbose=False
+    ).random_holdout(
+        train_size=train_size,
+        random_state=random_state,
+        verbose=verbose,
+    )
+
+
 def evaluate_embedding_for_edge_prediction(
     embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graph: Graph,
     model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]],
     epochs: int = 1000,
     number_of_holdouts: int = 10,
-    training_size: float = 0.8,
-    random_seed: int = 42,
+    train_size: float = 0.8,
+    unbalance_rates: Tuple[float] = (10.0, 100.0, 1000.0),
+    random_state: int = 42,
     batch_size: int = 2**15,
     edge_embedding_method: str = "Concatenate",
     trainable_embedding: bool = False,
@@ -30,12 +89,14 @@ def evaluate_embedding_for_edge_prediction(
     use_edge_metrics: bool = False,
     edge_types: Optional[List[str]] = None,
     use_mirrored_strategy: Union[bool, str] = "auto",
+    use_only_cpu: Union[bool, str] = "auto",
     only_execute_embeddings: bool = False,
     embedding_method_fit_kwargs: Optional[Dict] = None,
     embedding_method_kwargs: Optional[Dict] = None,
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None,
     sample_only_edges_with_heterogeneous_node_types: bool = False,
     devices: Union[List[str], str] = None,
+    verbose: bool = True
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
 
@@ -51,9 +112,9 @@ def evaluate_embedding_for_edge_prediction(
         Number of epochs to train the perceptron model for.
     number_of_holdouts: int = 10
         The number of the holdouts to run.
-    training_size: float = 0.8
+    train_size: float = 0.8
         Split size of the training graph.
-    random_seed: int = 42
+    random_state: int = 42
         The seed to be used to reproduce the holdout.
     batch_size: int = 2**10
         Size of the batch to be considered.
@@ -66,6 +127,11 @@ def evaluate_embedding_for_edge_prediction(
         GPU is detected and the flag `use_only_gpu` was
         not provided, or if the list of devices to use
         was provided and it includes at least a GPU.
+    use_only_cpu: Union[bool, str] = "auto",
+        Whether to only use CPU.
+        Do note that for CBOW and SkipGram models,
+        this will switch the implementation from the
+        TensorFlow implementation and will use our Rust Ensmallen one.
     only_execute_embeddings: bool = False
         Whether to only execute the computation of the embedding or also the edge prediction.
         This flag can be useful when the two operations should be executed on different machines
@@ -86,6 +152,8 @@ def evaluate_embedding_for_edge_prediction(
         in a MirroredStrategy, that is across multiple GPUs. Thise feature is mainly useful
         when there are multiple GPUs available AND the graph is large enough to actually
         use the GPUs (for instance when it has at least a few million nodes).
+    verbose: bool = True
+        Whether to show the loading bars.
     """
     if isinstance(model_name, str) and model_name not in edge_prediction_models:
         raise ValueError(
@@ -128,8 +196,8 @@ def evaluate_embedding_for_edge_prediction(
         leave=False
     ):
         train_graph, test_graph = graph.connected_holdout(
-            training_size,
-            random_state=random_seed*holdout_number,
+            train_size,
+            random_state=random_state*holdout_number,
             edge_types=edge_types,
             verbose=False
         )
@@ -139,6 +207,7 @@ def evaluate_embedding_for_edge_prediction(
                 graph=train_graph,
                 node_embedding_method_name=embedding_method,
                 use_mirrored_strategy=use_mirrored_strategy,
+                use_only_cpu=use_only_cpu,
                 fit_kwargs=embedding_method_fit_kwargs,
                 devices=devices,
                 **embedding_method_kwargs
@@ -205,37 +274,6 @@ def evaluate_embedding_for_edge_prediction(
             else subgraph_of_interest_for_edge_prediction
         )
 
-        # For both the training and the test set we sample the same
-        # number of negative edges are there are existing edges in the training and test graphs, respectively.
-        # This is done in order to avoid an excessive bias in the evaluation of the edge prediction.
-        # Across multiple holdouts, statistically it is unlikely to sample
-        # consistently unknown positive edges, and therefore we should be able
-        # to remove this negative bias from the evaluation.
-        # Of course, this only apply to graphs where we can assume that there is
-        # not a massive amount of unknown positive edges.
-        train_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
-            number_of_negative_samples=train_graph.get_edges_number(),
-            random_state=random_seed*holdout_number,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            verbose=False
-        )
-
-        test_negative_graph = graph_to_use_to_sample_negatives.sample_negatives(
-            number_of_negative_samples=test_graph.get_edges_number(),
-            # We add an arbitrary constant to the random state to make
-            # the initial sampling of the training graph different from
-            # the initial sampling of the test graph.
-            random_state=(random_seed + 23456787)*holdout_number,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            verbose=False
-        )
-
-        # Consinstency check on graph size
-        assert train_negative_graph.get_edges_number() == train_graph.get_edges_number()
-        assert train_negative_graph.get_nodes_number() == train_graph.get_nodes_number()
-        assert test_negative_graph.get_edges_number() == test_graph.get_edges_number()
-        assert test_negative_graph.get_nodes_number() == test_graph.get_nodes_number()
-
         # Force alignment
         embedding = embedding.loc[train_graph.get_node_names()]
 
@@ -257,6 +295,17 @@ def evaluate_embedding_for_edge_prediction(
             vector_sources=True,
             vector_destinations=True,
             vector_cumulative_node_degrees=True
+        )
+
+        train_negative_graph, test_negative_graph = get_negative_graphs(
+            graph_to_use_to_sample_negatives,
+            # Inside ensmallen we pass this number in a splitmix function
+            # therefore even a sum should have quite enough additional entropy.
+            random_state=random_state + holdout_number,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+            unbalance_rate=1.0,
+            train_size=train_size,
+            verbose=verbose
         )
 
         if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
@@ -294,15 +343,52 @@ def evaluate_embedding_for_edge_prediction(
             batch_size=batch_size,
         )
         train_performance["evaluation_type"] = "train"
-        
+        train_performance["unbalance"] = 1.0
+
         test_performance = model.evaluate(
             graph=test_graph,
             negative_graph=test_negative_graph,
             batch_size=batch_size,
         )
         test_performance["evaluation_type"] = "test"
+        test_performance["unbalance"] = 1.0
 
         holdouts.append(train_performance)
         holdouts.append(test_performance)
+
+        for i, unbalance_rate in enumerate(tqdm(
+            unbalance_rates,
+            desc="Evaluating on datasets with different unbalance",
+            dynamic_ncols=True,
+            leave=False
+        ), start=1):
+            train_negative_graph, test_negative_graph = get_negative_graphs(
+                graph_to_use_to_sample_negatives,
+                # Inside ensmallen we pass this number in a splitmix function
+                # therefore even a sum should have quite enough additional entropy.
+                random_state=random_state + holdout_number + i,
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                unbalance_rate=unbalance_rate,
+                train_size=train_size,
+                verbose=verbose
+            )
+            train_performance = model.evaluate(
+                graph=train_graph,
+                negative_graph=train_negative_graph,
+                batch_size=batch_size,
+            )
+            train_performance["evaluation_type"] = "train"
+            train_performance["unbalance"] = unbalance_rate
+
+            test_performance = model.evaluate(
+                graph=test_graph,
+                negative_graph=test_negative_graph,
+                batch_size=batch_size,
+            )
+            test_performance["evaluation_type"] = "test"
+            test_performance["unbalance"] = unbalance_rate
+
+            holdouts.append(train_performance)
+            holdouts.append(test_performance)
 
     return pd.DataFrame(holdouts), histories
