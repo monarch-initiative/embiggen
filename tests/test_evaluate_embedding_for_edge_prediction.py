@@ -23,7 +23,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             shutil.rmtree("node_embeddings")
         holdouts, histories = evaluate_embedding_for_edge_prediction(
             embedding_method="CBOW",
-            graph=self._graph,
+            graphs=self._graph,
             model_name="Perceptron",
             number_of_holdouts=self._number_of_holdouts,
             unbalance_rates = (10.0, 100.0, ),
@@ -42,7 +42,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             shutil.rmtree("node_embeddings")
         holdouts, histories = evaluate_embedding_for_edge_prediction(
             embedding_method="CBOW",
-            graph=self._graph,
+            graphs=self._graph,
             model_name="Perceptron",
             unbalance_rates = (10.0, 100.0, ),
             number_of_holdouts=self._number_of_holdouts,

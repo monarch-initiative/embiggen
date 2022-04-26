@@ -81,7 +81,7 @@ def evaluate_embedding_for_edge_prediction(
     epochs: int = 1000,
     number_of_holdouts: int = 10,
     train_size: float = 0.8,
-    unbalance_rates: Tuple[float] = (10.0, 100.0, 1000.0),
+    unbalance_rates: Tuple[float] = (10.0, 100.0),
     random_state: int = 42,
     batch_size: int = 2**15,
     edge_embedding_method: str = "Concatenate",
@@ -118,6 +118,9 @@ def evaluate_embedding_for_edge_prediction(
         The number of the holdouts to run.
     train_size: float = 0.8
         Split size of the training graph.
+    unbalance_rates: Tuple[float] = (10.0, 100.0)
+        List of unbalance to evaluate.
+        Do note that an unbalance of one is always included.
     random_state: int = 42
         The seed to be used to reproduce the holdout.
     batch_size: int = 2**10
