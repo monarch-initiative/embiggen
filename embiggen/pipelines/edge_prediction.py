@@ -98,6 +98,7 @@ def evaluate_embedding_for_edge_prediction(
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None,
     sample_only_edges_with_heterogeneous_node_types: bool = False,
     devices: Union[List[str], str] = None,
+    graph_normalization_callback: Callable[[Graph], Graph] = None,
     verbose: bool = True
 ) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
     """Return the evaluation of an embedding for edge prediction on the given model.
@@ -159,6 +160,9 @@ def evaluate_embedding_for_edge_prediction(
         in a MirroredStrategy, that is across multiple GPUs. Thise feature is mainly useful
         when there are multiple GPUs available AND the graph is large enough to actually
         use the GPUs (for instance when it has at least a few million nodes).
+    graph_normalization_callback: Callable[[Graph], Graph] = None
+        Graph normalization procedure to call on graphs that have been loaded from
+        the Ensmallen automatic retrieval.
     verbose: bool = True
         Whether to show the loading bars.
     """
@@ -208,6 +212,8 @@ def evaluate_embedding_for_edge_prediction(
     ):
         if isinstance(graph, str):
             graph = get_dataset(graph)()
+            if graph_normalization_callback is not None:
+                graph = graph_normalization_callback(graph)
         
         graph_name = graph.get_name()
 
