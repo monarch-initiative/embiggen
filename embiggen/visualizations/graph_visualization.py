@@ -2414,7 +2414,7 @@ class GraphVisualization:
                     self._graph.get_edge_weight_from_edge_id(edge_id)
                     for edge_id in self._subsampled_edge_ids
                 ),
-                dtype=np.int32
+                dtype=np.float32
             )
 
         returned_values = self._wrapped_plot_scatter(
