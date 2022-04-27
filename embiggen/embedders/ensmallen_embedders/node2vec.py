@@ -21,6 +21,8 @@ class Node2Vec(EnsmallenEmbedder):
         epochs: int = 10,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 5,
+        log_sigmoid: Optional[bool] = True,
+        siamese: Optional[bool] = False,
         walk_length: int = 128,
         iterations: int = 1,
         window_size: int = 4,
@@ -29,7 +31,7 @@ class Node2Vec(EnsmallenEmbedder):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.025,
+        learning_rate: float = 0.01,
         normalize_by_degree: bool = False,
         random_state: int = 42,
         verbose: bool = True
@@ -87,7 +89,7 @@ class Node2Vec(EnsmallenEmbedder):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.025
+        learning_rate: float = 0.01
             The learning rate to use to train the Node2Vec model.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
@@ -112,6 +114,8 @@ class Node2Vec(EnsmallenEmbedder):
             window_size=window_size,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
+            log_sigmoid=log_sigmoid,
+            siamese=siamese,
             walk_length=walk_length,
             return_weight=return_weight,
             explore_weight=explore_weight,

@@ -42,7 +42,7 @@ def get_node_embedding_method(
     use_only_cpu: bool
 ):
     """Return node embedding method curresponding to given name.
-    
+
     Parameters
     ---------------------
     node_embedding_method_name: str
@@ -155,7 +155,6 @@ def _compute_node_ensmallen_embedding(
     )
 
 
-
 def compute_node_embedding(
     graph: Graph,
     node_embedding_method_name: str,
@@ -166,7 +165,6 @@ def compute_node_embedding(
     verbose: Union[bool, int] = True,
     automatically_drop_unsupported_parameters: bool = False,
     automatically_enable_time_memory_tradeoffs: bool = True,
-    automatically_sort_by_decreasing_outbound_node_degree: bool = True,
     **kwargs: Dict
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Return embedding computed using SkipGram on given graph.
@@ -206,10 +204,6 @@ def compute_node_embedding(
         Often case, this is something you want enabled on your graph object.
         Since, generally, it is a good idea to enable these while
         computing a node embedding we enable these by default.
-    automatically_sort_by_decreasing_outbound_node_degree: bool = True,
-        Whether to automatically sort the nodes by the outbound node degree.
-        This is necessary in order to run SkipGram efficiently with the NCE loss.
-        It will ONLY be executed if the requested model is SkipGram.
     **kwargs: Dict,
         Arguments to pass to the node embedding method constructor.
         Read the documentation of the selected method to learn
@@ -264,12 +258,6 @@ def compute_node_embedding(
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
         fit_kwargs = {}
-
-    # If the model requested is SkipGram and the given graph does not have sorted
-    # node IDs according to decreasing outbound node degrees, we create the new graph
-    # that has the node IDs sorted.
-    if automatically_sort_by_decreasing_outbound_node_degree and lower_node_embedding_method_name in REQUIRE_ZIPFIAN and not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
-        graph = graph.sort_by_decreasing_outbound_node_degree()
 
     # If required, we filter out the unsupported parameters.
     # This may be useful when running a suite of experiments with a set of
