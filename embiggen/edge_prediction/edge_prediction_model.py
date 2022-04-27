@@ -177,7 +177,8 @@ class EdgePredictionModel(TensorFlowEmbedder):
         edge_embedding = embedding_layer(None)
 
         if self._use_edge_metrics:
-            edge_metrics_input = Input((self._graph.get_number_of_available_edge_metrics(),), name="EdgeMetrics")
+            edge_metrics_input = Input(
+                (self._graph.get_number_of_available_edge_metrics(),), name="EdgeMetrics")
             inputs.append(edge_metrics_input)
             edge_embedding = Concatenate()([
                 edge_embedding,
@@ -287,7 +288,7 @@ class EdgePredictionModel(TensorFlowEmbedder):
             negative_valid_graph=negative_valid_graph,
             valid_graph=valid_graph
         )
-                
+
         validation_sequence = None
         if self._task_name == "EDGE_PREDICTION":
             training_sequence = EdgePredictionSequence(
@@ -332,7 +333,7 @@ class EdgePredictionModel(TensorFlowEmbedder):
                 )
         else:
             raise ValueError("Unreacheable!")
-        
+
         return super().fit(
             training_sequence.into_dataset().repeat(),
             steps_per_epoch=training_sequence.steps_per_epoch,
@@ -393,26 +394,11 @@ class EdgePredictionModel(TensorFlowEmbedder):
         else:
             raise ValueError("Unreacheable!")
 
-        try:
-            from tqdm.keras import TqdmCallback
-            traditional_verbose = False
-        except AttributeError:
-            traditional_verbose = True
-
         return dict(zip(
             self._model.metrics_names,
             self._model.evaluate(
                 validation_sequence,
                 batch_size=batch_size,
-                verbose=traditional_verbose and verbose,
-                callbacks=[
-                    *((TqdmCallback(
-                        verbose=True,
-                        desc="Evaluating model",
-                        dynamic_ncols=True,
-                        leave=False
-                    ),)
-                  if not traditional_verbose and verbose else ())
-                ]
+                verbose=verbose,
             )
         ))
