@@ -32,6 +32,7 @@ class Node2Vec(EnsmallenEmbedder):
         change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
+        learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         random_state: int = 42,
         verbose: bool = True
@@ -91,6 +92,8 @@ class Node2Vec(EnsmallenEmbedder):
             This is mainly useful for graphs containing nodes with high degrees.
         learning_rate: float = 0.01
             The learning rate to use to train the Node2Vec model.
+        learning_rate_decay: float = 0.9
+            Factor to reduce the learning rate for at each epoch. By default 0.9.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -108,6 +111,7 @@ class Node2Vec(EnsmallenEmbedder):
             )
         self._epochs = epochs
         self._learning_rate = learning_rate
+        self._learning_rate_decay = learning_rate_decay
 
         self._model = Node2Vec.MODELS[model_name.lower()](
             embedding_size=embedding_size,
@@ -137,5 +141,6 @@ class Node2Vec(EnsmallenEmbedder):
             graph, 
             epochs=self._epochs,
             learning_rate=self._learning_rate,
+            learning_rate_decay=self._learning_rate_decay,
             verbose=self._verbose
         )

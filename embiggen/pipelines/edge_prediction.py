@@ -1,13 +1,12 @@
 """Submodule providing pipelines for edge prediction."""
-from faulthandler import disable
 from typing import Union, Callable, Tuple, List, Optional, Dict
-from numpy import isin
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
 from tqdm.auto import trange, tqdm
 import math
 from ensmallen.datasets import get_dataset
+from yaml import warnings
 from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
 from ..utils import execute_gpu_checks, get_available_gpus_number
 from .compute_node_embedding import compute_node_embedding
@@ -24,7 +23,6 @@ def get_negative_graphs(
     sample_only_edges_with_heterogeneous_node_types: bool,
     unbalance_rate: float,
     train_size: float,
-    verbose: bool
 ) -> Tuple[Graph, Graph]:
     """Return tuple with training and test negative graphs.
 
@@ -52,8 +50,6 @@ def get_negative_graphs(
         to the number of edges in the provided graph.
     train_size: float
         Split size of the training graph.
-    verbose: bool = True
-        Whether to show the loading bars.
     """
     # For both the training and the test set we sample the same
     # number of negative edges are there are existing edges in the training and test graphs, respectively.
@@ -74,7 +70,7 @@ def get_negative_graphs(
     return negative_graph.random_holdout(
         train_size=train_size,
         random_state=random_state,
-        verbose=verbose,
+        verbose=False,
     )
 
 
@@ -85,7 +81,7 @@ def evaluate_embedding_for_edge_prediction(
     epochs: int = 1000,
     number_of_holdouts: int = 10,
     train_size: float = 0.8,
-    unbalance_rates: Tuple[float] = (10.0, 100.0),
+    unbalance_rates: Tuple[Union[float, str]] = (10.0, 100.0, "auto"),
     random_state: int = 42,
     batch_size: int = 2**10,
     edge_embedding_method: str = "Concatenate",
@@ -123,9 +119,10 @@ def evaluate_embedding_for_edge_prediction(
         The number of the holdouts to run.
     train_size: float = 0.8
         Split size of the training graph.
-    unbalance_rates: Tuple[float] = (10.0, 100.0)
+    unbalance_rates: Tuple[Union[float, str]] = (10.0, 100.0, "auto")
         List of unbalance to evaluate.
         Do note that an unbalance of one is always included.
+        With "auto", we use the true unbalance of the graph.
     random_state: int = 42
         The seed to be used to reproduce the holdout.
     batch_size: int = 2**10
@@ -205,6 +202,7 @@ def evaluate_embedding_for_edge_prediction(
     if isinstance(graphs, (Graph, str)):
         graphs = [graphs]
 
+
     holdouts = []
     histories = []
     for graph in tqdm(
@@ -220,6 +218,26 @@ def evaluate_embedding_for_edge_prediction(
                 graph = graph_normalization_callback(graph)
         
         graph_name = graph.get_name()
+        graph_unbalance_rate = graph.get_nodes_number() * (graph.get_nodes_number() - 1) / graph.get_number_of_directed_edges()
+
+        unbalance_rates_for_graph = [
+            graph_unbalance_rate
+            if unbalance_rate == "auto"
+            else unbalance_rate
+            for unbalance_rate in unbalance_rates
+            if unbalance_rate != "auto" and unbalance_rate < graph_unbalance_rate
+        ]
+
+        if len(unbalance_rates_for_graph) < len(unbalance_rates):
+            warnings.warn(
+                (
+                    "Be advised that the provided unbalance rates included "
+                    "rates that were higher than the maximum possible unbalance rate "
+                    "possible in this graph {:4f}."
+                ).format(
+                    graph_unbalance_rate
+                )
+            )
 
         for holdout_number in trange(
             number_of_holdouts,
@@ -242,6 +260,7 @@ def evaluate_embedding_for_edge_prediction(
                     use_only_cpu=use_only_cpu,
                     fit_kwargs=embedding_method_fit_kwargs,
                     devices=devices,
+                    verbose=False,
                     **embedding_method_kwargs
                 )
             else:
@@ -337,7 +356,6 @@ def evaluate_embedding_for_edge_prediction(
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 unbalance_rate=1.0,
                 train_size=train_size,
-                verbose=verbose
             )
 
             if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
@@ -366,7 +384,8 @@ def evaluate_embedding_for_edge_prediction(
                 negative_valid_graph=test_negative_graph,
                 batch_size=batch_size,
                 epochs=epochs,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                verbose=False
             ))
 
             train_performance = model.evaluate(
@@ -397,7 +416,7 @@ def evaluate_embedding_for_edge_prediction(
             holdouts.append(test_performance)
 
             for i, unbalance_rate in enumerate(tqdm(
-                unbalance_rates,
+                unbalance_rates_for_graph,
                 desc="Evaluating on datasets with different unbalance",
                 dynamic_ncols=True,
                 leave=False
@@ -410,7 +429,6 @@ def evaluate_embedding_for_edge_prediction(
                     sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                     unbalance_rate=unbalance_rate,
                     train_size=train_size,
-                    verbose=verbose
                 )
                 train_performance = model.evaluate(
                     graph=train_graph,

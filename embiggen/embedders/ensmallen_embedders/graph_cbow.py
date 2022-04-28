@@ -23,6 +23,7 @@ class GraphCBOW(Node2Vec):
         change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
+        learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         random_state: int = 42,
         verbose: bool = True
@@ -82,7 +83,9 @@ class GraphCBOW(Node2Vec):
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
         learning_rate: float = 0.01
-            The learning rate to use to train the Node2Vec model.
+            The learning rate to use to train the Node2Vec model. By default 0.01.
+        learning_rate_decay: float = 0.9
+            Factor to reduce the learning rate for at each epoch. By default 0.9.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -108,6 +111,7 @@ class GraphCBOW(Node2Vec):
             change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay,
             normalize_by_degree=normalize_by_degree,
             random_state=random_state,
             verbose=verbose
