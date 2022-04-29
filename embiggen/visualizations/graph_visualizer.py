@@ -455,7 +455,7 @@ class GraphVisualizer:
                 for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
-            ncol=3,
+            ncol=2,
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
@@ -1197,7 +1197,8 @@ class GraphVisualizer:
         if k < number_of_types:
             type_labels.append(other_label.format(number_of_types - k))
 
-        type_labels = sanitize_ml_labels(type_labels[:k]) + sanitize_ml_labels(type_labels[k:])
+        type_labels = sanitize_ml_labels(
+            type_labels[:k]) + sanitize_ml_labels(type_labels[k:])
 
         return self._wrapped_plot_scatter(**{
             **dict(
@@ -2675,8 +2676,10 @@ class GraphVisualizer:
         self.fit_negative_and_positive_edges(
             node_embedding, **node_embedding_kwargs)
 
-        scatter_plot_methods_to_call = [
+        node_scatter_plot_methods_to_call = [
             self.plot_node_degrees,
+        ]
+        edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges
         ]
 
@@ -2685,27 +2688,27 @@ class GraphVisualizer:
         ]
 
         if self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
-            scatter_plot_methods_to_call.append(
+            node_scatter_plot_methods_to_call.append(
                 self.plot_node_types
             )
 
         if self._graph.has_node_ontologies() and not self._graph.has_homogeneous_node_ontologies():
-            scatter_plot_methods_to_call.append(
+            node_scatter_plot_methods_to_call.append(
                 self.plot_node_ontologies
             )
 
         if self._graph.has_disconnected_nodes():
-            scatter_plot_methods_to_call.append(
+            node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
 
         if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
-            scatter_plot_methods_to_call.append(
+            edge_scatter_plot_methods_to_call.append(
                 self.plot_edge_types
             )
 
         if self._graph.has_edge_weights() and not self._graph.has_constant_edge_weights():
-            scatter_plot_methods_to_call.append(
+            edge_scatter_plot_methods_to_call.append(
                 self.plot_edge_weights
             )
             distribution_plot_methods_to_call.append(
@@ -2715,8 +2718,8 @@ class GraphVisualizer:
         if not include_distribution_plots:
             distribution_plot_methods_to_call = []
 
-        number_of_total_plots = len(
-            scatter_plot_methods_to_call
+        number_of_total_plots = len(node_scatter_plot_methods_to_call) + len(
+            edge_scatter_plot_methods_to_call
         ) + len(distribution_plot_methods_to_call)
         nrows = max(
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
@@ -2736,7 +2739,8 @@ class GraphVisualizer:
         for ax, plot_callback, letter in zip(
             flat_axes,
             itertools.chain(
-                scatter_plot_methods_to_call,
+                node_scatter_plot_methods_to_call,
+                edge_scatter_plot_methods_to_call,
                 distribution_plot_methods_to_call
             ),
             "abcdefghjkilmnopqrstuvwxyz"
@@ -2769,7 +2773,7 @@ class GraphVisualizer:
 
         if self._show_graph_name:
             fig.suptitle(
-                self._get_complete_title(self._graph_name),
+                self._graph_name,
                 fontsize=20
             )
         else:
