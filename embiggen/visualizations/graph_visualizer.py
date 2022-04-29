@@ -494,7 +494,8 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        node_embedding = self._get_node_embedding(node_embedding, **node_embedding_kwargs)
+        node_embedding = self._get_node_embedding(
+            node_embedding, **node_embedding_kwargs)
         if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
@@ -628,7 +629,8 @@ class GraphVisualizer:
         """
         self._edge_embedding = self.decompose(
             self._get_positive_edges_embedding(
-                self._get_node_embedding(node_embedding, **node_embedding_kwargs)
+                self._get_node_embedding(
+                    node_embedding, **node_embedding_kwargs)
             )
         )
 
@@ -697,7 +699,8 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        node_embedding = self._get_node_embedding(node_embedding, **node_embedding_kwargs)
+        node_embedding = self._get_node_embedding(
+            node_embedding, **node_embedding_kwargs)
         positive_edge_embedding = self._get_positive_edges_embedding(
             node_embedding
         )
@@ -1540,11 +1543,11 @@ class GraphVisualizer:
 
         return self._plot_types(
             points=points,
-            title=self._get_complete_title("Positive & negative edges"),
+            title=self._get_complete_title("Existing & non-existing edges"),
             types=types,
             type_labels=np.array([
-                "Negative edges",
-                "Positive edges",
+                "Non-existing edges",
+                "Existing edges",
             ]),
             legend_title="Edges",
             figure=figure,
@@ -1656,9 +1659,10 @@ class GraphVisualizer:
         """Returns unique ontologies and edge ontologies adjusted for the current instance."""
         edge_ontology_names = [
             "{source_ontology} {direction} {destination_ontology}".format(
-                source_ontology= self._graph.get_ontology_from_node_id(src),
-                direction= "->" if self._graph.is_directed() else "-",
-                destination_ontology= self._graph.get_ontology_from_node_id(dst),
+                source_ontology=self._graph.get_ontology_from_node_id(src),
+                direction="->" if self._graph.is_directed() else "-",
+                destination_ontology=self._graph.get_ontology_from_node_id(
+                    dst),
             )
             for src, dst in (
                 self._graph.get_node_ids_from_edge_id(edge_id)
@@ -1898,8 +1902,8 @@ class GraphVisualizer:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        legend_title: str = "Ontologies",
-        other_label: str = "Other {} ontologies",
+        legend_title: str = "Node ontologies",
+        other_label: str = "Other {} node ontologies",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
@@ -1922,11 +1926,11 @@ class GraphVisualizer:
         axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        legend_title: str = "Ontologies"
+        legend_title: str = "Node Ontologies"
             Title for the legend of the plot
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
-        other_label: str = "Other {} ontologies"
+        other_label: str = "Other {} node ontologies"
             Label to use for edges below the top k threshold.
         train_indices: Optional[np.ndarray] = None
             Indices to draw using the training marker.
@@ -1996,7 +2000,7 @@ class GraphVisualizer:
 
         returned_values = self._plot_types(
             self._node_embedding,
-            self._get_complete_title("Ontologies"),
+            self._get_complete_title("Node ontologies"),
             types=ontology_ids,
             type_labels=unique_ontologies,
             legend_title=legend_title,
@@ -2161,18 +2165,21 @@ class GraphVisualizer:
 
         if self._graph.has_disconnected_nodes():
             labels.append(
-                "{} Singletons".format(self._graph.get_disconnected_nodes_number())
+                "{} Singletons".format(
+                    self._graph.get_disconnected_nodes_number())
             )
 
-            number_of_non_pathological_components = len(components_remapping) + int(tuples_number > 0)
+            number_of_non_pathological_components = len(
+                components_remapping) + int(tuples_number > 0)
 
             for i in range(len(components)):
                 if sizes[components[i]] == 1:
                     components[i] = number_of_non_pathological_components
 
-        # Remap all other components 
+        # Remap all other components
         for i in range(len(components)):
-            components[i] = components_remapping.get(components[i], components[i])
+            components[i] = components_remapping.get(
+                components[i], components[i])
 
         returned_values = self._plot_types(
             self._node_embedding,
@@ -2312,7 +2319,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=100)} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=50)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -2701,39 +2708,6 @@ class GraphVisualizer:
             engine=engine
         )
 
-    def _annotate_top_nodes(
-        self,
-        axis: Axes,
-        k: int = 5
-    ):
-        """Add textual label with position of central node to plots.
-
-        Parameters
-        ----------------------
-        axis: Axis
-            The axis where to plot the annotations
-        k: int = 5
-            The number of top degree nodes to visualize
-            By default, 5.
-        """
-        sorted_node_degrees = np.sort(self._graph.get_node_degrees())
-        for i, node_id in enumerate(self._graph.get_top_k_central_node_ids(k)):
-            node_degree = self._graph.get_node_degree_from_node_id(node_id)
-            axis.annotate(
-                self._graph.get_node_name_from_node_id(node_id),
-                (
-                    np.where(sorted_node_degrees == node_degree)[0][0],
-                    node_degree
-                ),
-                xytext=(40*(1 if i % 2 else -1), -5),
-                textcoords='offset points',
-                ha='center', va='bottom',
-                bbox=dict(boxstyle='round,pad=0.2',
-                          fc='tab:orange', alpha=0.3),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0',
-                                color='tab:red')
-            )
-
     def plot_node_degree_distribution(
         self,
         figure: Optional[Figure] = None,
@@ -2756,9 +2730,13 @@ class GraphVisualizer:
         """
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
-        node_degrees = self._graph.get_node_degrees()
-        node_degrees.sort()
-        axes.plot(node_degrees, '.')
+        axes.hist(
+            self._graph.get_node_degrees(),
+            bins=min(
+                100,
+                self._graph.get_nodes_number() // 10
+            )
+        )
         axes.set_ylabel("Node degree")
         axes.set_xlabel("Nodes sorted by degree")
         if self._show_graph_name:
@@ -2766,7 +2744,6 @@ class GraphVisualizer:
         else:
             title = "Degrees distribution"
         axes.set_title(title)
-        self._annotate_top_nodes(axes)
         if apply_tight_layout:
             figure.tight_layout()
         return figure, axes
@@ -2795,7 +2772,10 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
         axes.hist(
             self._graph.get_edge_weights(),
-            bins=50
+            bins=min(
+                100,
+                self._graph.get_number_of_directed_edges() // 10
+            )
         )
         axes.set_ylabel("Number of edges")
         axes.set_xlabel("Weights")
@@ -2817,7 +2797,7 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
-        
+
         Parameters
         -------------------------
         node_embedding: Union[pd.DataFrame, np.ndarray, str]
@@ -2835,7 +2815,8 @@ class GraphVisualizer:
             Kwargs to be forwarded to the node embedding algorithm.
         """
         self.fit_nodes(node_embedding, **node_embedding_kwargs)
-        self.fit_negative_and_positive_edges(node_embedding, **node_embedding_kwargs)
+        self.fit_negative_and_positive_edges(
+            node_embedding, **node_embedding_kwargs)
 
         scatter_plot_methods_to_call = [
             self.plot_node_degrees,
@@ -2850,7 +2831,7 @@ class GraphVisualizer:
             scatter_plot_methods_to_call.append(
                 self.plot_node_types
             )
-        
+
         if self._graph.has_node_ontologies() and not self._graph.has_homogeneous_node_ontologies():
             scatter_plot_methods_to_call.append(
                 self.plot_node_ontologies
@@ -2868,7 +2849,7 @@ class GraphVisualizer:
             scatter_plot_methods_to_call.append(
                 self.plot_edge_types
             )
-        
+
         if self._graph.has_edge_weights() and not self._graph.has_constant_edge_weights():
             scatter_plot_methods_to_call.append(
                 self.plot_edge_weights
@@ -2880,7 +2861,8 @@ class GraphVisualizer:
         if not include_distribution_plots:
             distribution_plot_methods_to_call = []
 
-        number_of_total_plots = len(scatter_plot_methods_to_call) + len(distribution_plot_methods_to_call)
+        number_of_total_plots = len(
+            scatter_plot_methods_to_call) + len(distribution_plot_methods_to_call)
         nrows = max(number_of_total_plots // number_of_columns, 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
@@ -2916,7 +2898,7 @@ class GraphVisualizer:
                     weight='bold',
                 )
         self._show_graph_name = show_name_backup
-        
+
         fig.tight_layout()
 
         return fig, axes
