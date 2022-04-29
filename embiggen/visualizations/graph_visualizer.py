@@ -450,9 +450,9 @@ class GraphVisualizer:
         legend = axes.legend(
             handles=handles,
             labels=[
-                label[:20]
-                for label in sanitize_ml_labels(
-                labels[:9]) + sanitize_ml_labels(labels)[9:]
+                "{}...".format(label[:30])
+                if len(label) > 27 else label
+                for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
             title=legend_title,
@@ -1198,6 +1198,8 @@ class GraphVisualizer:
 
         if k < number_of_types:
             type_labels.append(other_label.format(number_of_types - k))
+
+        type_labels = sanitize_ml_labels(type_labels[:k]) + sanitize_ml_labels(type_labels[k:])
 
         return self._wrapped_plot_scatter(**{
             **dict(
