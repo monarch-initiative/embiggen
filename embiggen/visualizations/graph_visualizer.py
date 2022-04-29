@@ -449,10 +449,14 @@ class GraphVisualizer:
         """
         legend = axes.legend(
             handles=handles,
-            labels=sanitize_ml_labels(
-                labels[:9]) + sanitize_ml_labels(labels)[9:],
+            labels=[
+                label[:20]
+                for label in sanitize_ml_labels(
+                labels[:9]) + sanitize_ml_labels(labels)[9:]
+            ],
             loc=loc,
             title=legend_title,
+            ncol=3,
             title_fontsize=8,
             prop={'size': 8},
             **(
@@ -1071,7 +1075,7 @@ class GraphVisualizer:
         show_legend: bool = True,
         loc: str = "best",
         predictions: Optional[List[int]] = None,
-        k: int = 9,
+        k: int = 6,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1105,7 +1109,7 @@ class GraphVisualizer:
         predictions: Optional[List[int]] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
-        k: int = 9,
+        k: int = 6,
             Number of node types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -1653,50 +1657,6 @@ class GraphVisualizer:
             )
         )
 
-    def _get_flatten_unknown_edge_ontologies(self) -> Tuple[List[str], np.ndarray]:
-        """Returns unique ontologies and edge ontologies adjusted for the current instance."""
-        edge_ontology_names = [
-            "{source_ontology} {direction} {destination_ontology}".format(
-                source_ontology=self._graph.get_ontology_from_node_id(src),
-                direction="->" if self._graph.is_directed() else "-",
-                destination_ontology=self._graph.get_ontology_from_node_id(
-                    dst),
-            )
-            for src, dst in (
-                self._graph.get_node_ids_from_edge_id(edge_id)
-                for edge_id in (
-                    0..self._graph.get_directed_ids()
-                    if self._subsampled_edge_ids is None
-                    else self._subsampled_edge_ids
-                )
-            )
-        ]
-
-        # The following is needed to normalize the multiple types
-        ontologies_counts = Counter(edge_ontology_names)
-        ontologies_by_frequencies = {
-            ontology: i
-            for i, (ontology, _) in enumerate(sorted(
-                ontologies_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            ))
-        }
-        unknown_ontology_id = len(ontologies_counts)
-
-        return (
-            list(ontologies_counts.keys()),
-            np.fromiter(
-                (
-                    unknown_ontology_id
-                    if ontology is None
-                    else ontologies_counts[ontology]
-                    for ontology in edge_ontology_names
-                ),
-                dtype=np.uint32
-            )
-        )
-
     def _get_flatten_unknown_edge_types(self) -> np.ndarray:
         """Returns flattened edge type IDs adjusted for the current instance."""
         # The following is needed to normalize the multiple types
@@ -1740,7 +1700,7 @@ class GraphVisualizer:
     def plot_node_types(
         self,
         node_type_predictions: Optional[List[int]] = None,
-        k: int = 9,
+        k: int = 6,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1764,7 +1724,7 @@ class GraphVisualizer:
         ------------------------------
         node_type_predictions: Optional[List[int]] = None,
             Predictions of the node types.
-        k: int = 9,
+        k: int = 6,
             Number of node types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -2024,7 +1984,7 @@ class GraphVisualizer:
 
     def plot_connected_components(
         self,
-        k: int = 9,
+        k: int = 6,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2046,7 +2006,7 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        k: int = 9,
+        k: int = 6,
             Number of components to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -2343,7 +2303,7 @@ class GraphVisualizer:
     def plot_edge_types(
         self,
         edge_type_predictions: Optional[List[int]] = None,
-        k: int = 9,
+        k: int = 6,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2364,7 +2324,7 @@ class GraphVisualizer:
         ------------------------------
         edge_type_predictions: Optional[List[int]] = None,
             Predictions of the edge types.
-        k: int = 9,
+        k: int = 6,
             Number of edge types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -2451,104 +2411,6 @@ class GraphVisualizer:
             legend_title=legend_title,
             predictions=edge_type_predictions,
             k=k,
-            figure=figure,
-            axes=axes,
-            scatter_kwargs=scatter_kwargs,
-            other_label=other_label,
-            train_indices=train_indices,
-            test_indices=test_indices,
-            train_marker=train_marker,
-            test_marker=test_marker,
-            show_title=show_title,
-            show_legend=show_legend,
-            loc=loc,
-            **kwargs
-        )
-
-    def plot_edge_ontologies(
-        self,
-        figure: Optional[Figure] = None,
-        axes: Optional[Axes] = None,
-        scatter_kwargs: Optional[Dict] = None,
-        other_label: str = "Other {} edge ontologies",
-        legend_title: str = "Edge ontologies",
-        train_indices: Optional[np.ndarray] = None,
-        test_indices: Optional[np.ndarray] = None,
-        train_marker: str = "o",
-        test_marker: str = "X",
-        show_title: bool = True,
-        show_legend: bool = True,
-        loc: str = "best",
-        **kwargs: Dict
-    ):
-        """Plot common edge ontologies of provided graph.
-
-        Parameters
-        ------------------------------
-        figure: Optional[Figure] = None,
-            Figure to use to plot. If None, a new one is created using the
-            provided kwargs.
-        axes: Optional[Axes] = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
-        scatter_kwargs: Optional[Dict] = None,
-            Kwargs to pass to the scatter plot call.
-        other_label: str = "Other {} edge ontologies",
-            Label to use for edges below the top k threshold.
-        legend_title: str = "Edge ontologies",
-            Title for the legend.
-        train_indices: Optional[np.ndarray] = None,
-            Indices to draw using the training marker.
-            If None, all points are drawn using the training marker.
-        test_indices: Optional[np.ndarray] = None,
-            Indices to draw using the test marker.
-            If None, while providing the train indices,
-        train_marker: str = "o",
-            The marker to use to draw the training points.
-        test_marker: str = "X",
-            The marker to use to draw the test points.
-        show_title: bool = True,
-            Whether to show the figure title.
-        show_legend: bool = True,
-            Whether to show the legend.
-        loc: str = 'best'
-            Position for the legend.
-        **kwargs: Dict,
-            Additional kwargs for the subplots.
-
-        Raises
-        ------------------------------
-        ValueError,
-            If the graph does not have node ontologies.
-        ValueError,
-            If edge fitting was not yet executed.
-        ValueError,
-            If given k is greater than maximum supported value (10).
-
-        Returns
-        ------------------------------
-        Figure and Axis of the plot.
-        """
-        self._graph.must_have_node_ontologies()
-
-        if self._edge_embedding is None:
-            raise ValueError(
-                "Edge fitting was not yet executed! "
-                "Please do call the `visualizer.fit_edges()` "
-                "method before plotting the nodes."
-            )
-
-        unique_edge_ontologies, edge_ontologies_ids = self._get_flatten_unknown_edge_ontologies()
-
-        unique_edge_ontologies = np.array(unique_edge_ontologies, dtype=str)
-
-        return self._plot_types(
-            self._edge_embedding,
-            self._get_complete_title(
-                "Edge ontologies - {}".format(self._edge_embedding_method)),
-            types=edge_ontologies_ids,
-            type_labels=unique_edge_ontologies,
-            legend_title=legend_title,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2773,7 +2635,7 @@ class GraphVisualizer:
             log=True
         )
         axes.set_ylabel("Number of edges (log scale)")
-        axes.set_xlabel("Weights")
+        axes.set_xlabel("Edge Weights")
         if self._show_graph_name:
             title = "Weights distribution of graph {}".format(self._graph_name)
         else:
@@ -2831,9 +2693,6 @@ class GraphVisualizer:
             scatter_plot_methods_to_call.append(
                 self.plot_node_ontologies
             )
-            scatter_plot_methods_to_call.append(
-                self.plot_edge_ontologies
-            )
 
         if self._graph.has_disconnected_nodes():
             scatter_plot_methods_to_call.append(
@@ -2859,7 +2718,8 @@ class GraphVisualizer:
         number_of_total_plots = len(
             scatter_plot_methods_to_call
         ) + len(distribution_plot_methods_to_call)
-        nrows = max(int(math.ceil(number_of_total_plots / number_of_columns)), 1)
+        nrows = max(
+            int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
         fig, axes = plt.subplots(
@@ -2885,26 +2745,26 @@ class GraphVisualizer:
             plot_callback(
                 figure=fig,
                 axes=ax,
-                **(dict(loc="upper right") if "loc" in inspect.signature(plot_callback).parameters else dict()),
+                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
             if show_letters:
                 ax.text(
                     -0.1,
-                    1.0,
+                    1.1,
                     letter,
                     size=18,
                     color='black',
                     weight='bold',
                     horizontalalignment='left',
                     verticalalignment='center',
-                    transform = ax.transAxes,
+                    transform=ax.transAxes,
 
                 )
-            
+
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
-        
+
         self._show_graph_name = show_name_backup
 
         fig.tight_layout()
