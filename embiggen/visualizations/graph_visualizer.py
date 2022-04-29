@@ -2750,6 +2750,7 @@ class GraphVisualizer:
         node_embedding: Union[pd.DataFrame, np.ndarray, str],
         number_of_columns: int = 4,
         show_letters: bool = True,
+        include_distribution_plots: bool = True,
         **node_embedding_kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
@@ -2764,6 +2765,9 @@ class GraphVisualizer:
             Number of columns to use for the layout.
         show_letters: bool = True
             Whether to show letters on the top left of the subplots.
+        include_distribution_plots: bool = True
+            Whether to include the distribution plots for the degrees
+            and the edge weights, if they are present.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
@@ -2809,6 +2813,9 @@ class GraphVisualizer:
             distribution_plot_methods_to_call.append(
                 self.plot_edge_weight_distribution
             )
+
+        if not include_distribution_plots:
+            distribution_plot_methods_to_call = []
 
         number_of_total_plots = len(scatter_plot_methods_to_call) + len(distribution_plot_methods_to_call)
         nrows = max(number_of_total_plots // number_of_columns, 1)
