@@ -8,12 +8,13 @@ import numpy as np
 import pandas as pd
 import warnings
 import math
+import sys
 import inspect
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, SymLogNorm
+from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -1639,7 +1640,7 @@ class GraphVisualizer:
 
         edge_metrics = np.fromiter(
             (
-                edge_metric_callback(src, dst)
+                edge_metric_callback(src, dst) + sys.float_info.epsilon
                 for src, dst in (
                     itertools.chain(
                         self._subsampled_negative_edge_node_ids,
@@ -1668,7 +1669,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
+                "norm": LogNorm()
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -3166,13 +3167,13 @@ class GraphVisualizer:
             plot_callback(
                 figure=fig,
                 axes=ax,
-                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
+                **(dict(loc=(0.5, -0.1)) if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
             if show_letters:
                 ax.text(
                     -0.1,
-                    1.1,
+                    1.15,
                     letter,
                     size=18,
                     color='black',
@@ -3191,8 +3192,7 @@ class GraphVisualizer:
                 self._get_complete_title(self._graph_name),
                 fontsize=20
             )
-        else:
-            fig.tight_layout()
+        fig.tight_layout()        
 
         self._show_graph_name = show_name_backup
 
