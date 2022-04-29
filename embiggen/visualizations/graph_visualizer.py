@@ -2524,9 +2524,6 @@ class GraphVisualizer:
         sizes = np.bincount(components, minlength=components_number).tolist()
         sizes_backup = list(sizes)
 
-        if self._subsampled_node_ids is not None:
-            components = components[self._subsampled_node_ids]
-
         labels = [
             "Size {}".format(size)
             for size in sorted([
@@ -2556,6 +2553,9 @@ class GraphVisualizer:
                 labels.append("{} {}".format(new_component_size, component_name))
                 sizes.append(new_component_size)
                 current_component_number += 1
+
+        if self._subsampled_node_ids is not None:
+            components = components[self._subsampled_node_ids]
 
         components_remapping = {
             old_component_id: new_component_id
