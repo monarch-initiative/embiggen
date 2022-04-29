@@ -3240,7 +3240,8 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-        fig.tight_layout()        
+        else:
+            fig.tight_layout()        
 
         self._show_graph_name = show_name_backup
 
