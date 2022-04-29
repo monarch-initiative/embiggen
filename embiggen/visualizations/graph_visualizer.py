@@ -60,7 +60,7 @@ class GraphVisualizer:
         duration: int = 10,
         fps: int = 24,
         node_embedding_method_name: str = "auto",
-        edge_embedding_method: str = "L1",
+        edge_embedding_method: str = "Concatenate",
         show_graph_name: Union[str, bool] = "auto",
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
