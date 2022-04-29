@@ -813,7 +813,7 @@ class GraphVisualizer:
         if show_edge_embedding and self._show_edge_embedding_method:
             title = "{} - {}".format(
                 title,
-                self.edge_embedding_method,
+                self._edge_embedding_method,
             )
 
         return title
@@ -3215,7 +3215,7 @@ class GraphVisualizer:
             )
             if show_letters:
                 ax.text(
-                    -0.2,
+                    -0.1,
                     1.0,
                     letter,
                     size=18,
