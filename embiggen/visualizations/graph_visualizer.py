@@ -2113,15 +2113,32 @@ class GraphVisualizer:
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
+        labels = [
+            "Size {}".format(size)
+            for size in sizes
+            if size > 1
+        ]
+
+        if self._graph.has_disconnected_nodes():
+            labels.append(
+                "{} Singletons".format(self._graph.get_disconnected_nodes_number())
+            )
+
+            for i, size in enumerate(sizes):
+                if size == 0:
+                    first_component_with_singletons = i
+                    break
+
+            for i, size in range(len(components)):
+                if size == 1:
+                    components[i] = first_component_with_singletons
+
         returned_values = self._plot_types(
             self._node_embedding,
             self._get_complete_title("Components"),
             types=components,
             type_labels=np.array(
-                [
-                    "Size {}".format(size)
-                    for size in sizes
-                ],
+                labels,
                 dtype=str
             ),
             legend_title=legend_title,
@@ -2254,7 +2271,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=0.01)} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=10)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
