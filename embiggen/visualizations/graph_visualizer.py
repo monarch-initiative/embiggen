@@ -2574,7 +2574,7 @@ class GraphVisualizer:
                 reverse=True
             ))
         }
-        
+        print(components_remapping)
         print(labels)
         labels = [
             labels[old_component_id]
