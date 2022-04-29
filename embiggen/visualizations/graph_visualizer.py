@@ -2824,7 +2824,7 @@ class GraphVisualizer:
         fig, axes = plt.subplots(
             nrows=nrows,
             ncols=ncols,
-            figsize=(5*nrows, 5*ncols),
+            figsize=(5*ncols, 5*nrows),
             dpi=96
         )
 
