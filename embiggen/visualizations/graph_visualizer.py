@@ -1631,7 +1631,7 @@ class GraphVisualizer:
         ontologies_counts = Counter(ontology_names)
         ontologies_by_frequencies = {
             ontology: i
-            for i, ontology in enumerate(sorted(
+            for i, (ontology, _) in enumerate(sorted(
                 ontologies_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
@@ -1639,16 +1639,13 @@ class GraphVisualizer:
         }
         unknown_ontology_id = len(ontologies_counts)
 
-        print(ontologies_by_frequencies)
-        print(ontology_names)
-
         return (
             list(ontologies_by_frequencies.keys()),
             np.fromiter(
                 (
                     unknown_ontology_id
                     if ontology is None
-                    else ontologies_by_frequencies.get(ontology)
+                    else ontologies_by_frequencies[ontology]
                     for ontology in ontology_names
                 ),
                 dtype=np.uint32
