@@ -1543,8 +1543,8 @@ class GraphVisualizer:
             title=self._get_complete_title("Positive & negative edges"),
             types=types,
             type_labels=np.array([
+                "Negative edges",
                 "Positive edges",
-                "Negative edges"
             ]),
             legend_title="Edges",
             figure=figure,
@@ -2312,7 +2312,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=1000)} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=100)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -2846,12 +2846,12 @@ class GraphVisualizer:
             self.plot_node_degree_distribution,
         ]
 
-        if self._graph.has_node_types():
+        if self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
             scatter_plot_methods_to_call.append(
                 self.plot_node_types
             )
         
-        if self._graph.has_node_ontologies():
+        if self._graph.has_node_ontologies() and not self._graph.has_homogeneous_node_ontologies():
             scatter_plot_methods_to_call.append(
                 self.plot_node_ontologies
             )
@@ -2864,12 +2864,12 @@ class GraphVisualizer:
                 self.plot_connected_components
             )
 
-        if self._graph.has_edge_types():
+        if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
             scatter_plot_methods_to_call.append(
                 self.plot_edge_types
             )
         
-        if self._graph.has_edge_weights():
+        if self._graph.has_edge_weights() and not self._graph.has_constant_edge_weights():
             scatter_plot_methods_to_call.append(
                 self.plot_edge_weights
             )
