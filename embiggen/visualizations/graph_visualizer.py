@@ -2319,7 +2319,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=50)} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=100, linscale=2)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -2862,7 +2862,8 @@ class GraphVisualizer:
             distribution_plot_methods_to_call = []
 
         number_of_total_plots = len(
-            scatter_plot_methods_to_call) + len(distribution_plot_methods_to_call)
+            scatter_plot_methods_to_call
+        ) + len(distribution_plot_methods_to_call)
         nrows = max(number_of_total_plots // number_of_columns, 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
