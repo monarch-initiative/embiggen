@@ -2535,7 +2535,7 @@ class GraphVisualizer:
         # Creating a new "component" with all the nodes of the
         # categories of `Triples`, `Tuples` and `Singletons`.
         current_component_number = components_number
-        for component_size, component_name in (
+        for expected_component_size, component_name in (
             (1, "Singletons"),
             (2, "Tuples"),
             (3, "Triples"),
@@ -2544,13 +2544,16 @@ class GraphVisualizer:
             for i in range(len(components)):
                 if components[i] >= components_number:
                     continue
-                if sizes_backup[components[i]] == component_size:
+                if sizes_backup[components[i]] == expected_component_size:
                     sizes[components[i]] -= 1
                     components[i] = current_component_number
                     new_component_size += 1
 
             if new_component_size > 0:
-                labels.append("{} {}".format(new_component_size, component_name))
+                labels.append("{} {}".format(
+                    new_component_size // expected_component_size,
+                    component_name
+                ))
                 sizes.append(new_component_size)
                 current_component_number += 1
 
