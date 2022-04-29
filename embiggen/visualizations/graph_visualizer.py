@@ -2521,7 +2521,7 @@ class GraphVisualizer:
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         components, components_number, _, _ = self._graph.get_connected_components()
-        sizes = np.bincount(components, minlength=components_number).lolist()
+        sizes = np.bincount(components, minlength=components_number).tolist()
         sizes_backup = list(sizes)
 
         if self._subsampled_node_ids is not None:
