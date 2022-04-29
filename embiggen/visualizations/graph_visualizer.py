@@ -2967,7 +2967,8 @@ class GraphVisualizer:
             axes=axes,
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
-                "cmap": plt.cm.get_cmap('RdYlBu')
+                "cmap": plt.cm.get_cmap('RdYlBu'),
+                "norm": LogNorm()
             },
             train_indices=train_indices,
             test_indices=test_indices,
