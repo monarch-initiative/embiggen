@@ -1673,20 +1673,15 @@ class GraphVisualizer:
 
         # The following is needed to normalize the multiple types
         ontologies_counts = Counter(edge_ontology_names)
-        ontologies_number = len(ontologies_counts)
-        top_10_ontologies = {
-            ontology: 10 - i
-            for i, ontology in enumerate(sorted(
+        ontologies_by_frequencies = {
+            ontology: i
+            for i, (ontology, _) in enumerate(sorted(
                 ontologies_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:10])
+            ))
         }
-        ontologies_counts = {
-            ontology: top_10_ontologies.get(ontology, 0)
-            for ontology in ontologies_counts
-        }
-        unknown_ontology_id = ontologies_number
+        unknown_ontology_id = len(ontologies_counts)
 
         return (
             list(ontologies_counts.keys()),
