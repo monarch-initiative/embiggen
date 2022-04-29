@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import warnings
+import math
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
@@ -2864,7 +2865,7 @@ class GraphVisualizer:
         number_of_total_plots = len(
             scatter_plot_methods_to_call
         ) + len(distribution_plot_methods_to_call)
-        nrows = max(number_of_total_plots // number_of_columns, 1)
+        nrows = max(int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
         fig, axes = plt.subplots(
