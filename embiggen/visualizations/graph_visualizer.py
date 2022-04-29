@@ -2580,6 +2580,8 @@ class GraphVisualizer:
             labels[old_component_id]
             for old_component_id in components_remapping.keys()
         ]
+        print(labels)
+
 
         # Remap all other components
         for i in range(len(components)):
