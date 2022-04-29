@@ -1,5 +1,4 @@
 """Submodule providing experiments pipelines."""
-import warnings
 from .compute_node_embedding import (
     compute_node_embedding,
     get_available_node_embedding_methods

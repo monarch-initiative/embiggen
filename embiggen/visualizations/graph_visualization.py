@@ -29,6 +29,7 @@ except ImportError:
     )
 
 from ..transformers import GraphTransformer, NodeTransformer
+from ..pipelines import compute_node_embedding
 
 
 class GraphVisualization:
@@ -232,8 +233,8 @@ class GraphVisualization:
                 except OSError as e:
                     warnings.warn(
                         ("The tsnecuda module is installed, but we could not find "
-                        "some of the necessary libraries to make it run properly. "
-                        "Specifically, the error encountered was: {}").format(e)
+                         "some of the necessary libraries to make it run properly. "
+                         "Specifically, the error encountered was: {}").format(e)
                     )
             except (ModuleNotFoundError, NotImplementedError):
                 try:
@@ -253,8 +254,8 @@ class GraphVisualization:
                     except OSError as e:
                         warnings.warn(
                             ("The MulticoreTSNE module is installed, but we could not find "
-                            "some of the necessary libraries to make it run properly. "
-                            "Specifically, the error encountered was: {}").format(e)
+                             "some of the necessary libraries to make it run properly. "
+                             "Specifically, the error encountered was: {}").format(e)
                         )
                 except (ModuleNotFoundError, RuntimeError):
                     try:
@@ -269,6 +270,7 @@ class GraphVisualization:
                                 n_iter=400,
                                 init="pca",
                                 metric="cosine",
+                                square_distances=True,
                                 method="exact" if self._n_components == 4 else "barnes_hut",
                             ),
                             **self._decomposition_kwargs
@@ -392,7 +394,8 @@ class GraphVisualization:
         """
         legend = axes.legend(
             handles=handles,
-            labels=sanitize_ml_labels(labels[:9]) + sanitize_ml_labels(labels)[9:],
+            labels=sanitize_ml_labels(
+                labels[:9]) + sanitize_ml_labels(labels)[9:],
             loc=loc,
             title=legend_title,
             **(
@@ -421,17 +424,31 @@ class GraphVisualization:
             return "TFIDF-weighted BERT"
         return None
 
-    def fit_transform_nodes(
+    def fit_nodes(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        node_embedding: Union[pd.DataFrame, np.ndarray, str]
             Embedding of the graph nodes.
+            If a string is provided, we will run the node embedding
+            from one of the available methods.
+        **node_embedding_kwargs: Dict
+            Kwargs to be forwarded to the node embedding algorithm.
         """
+        if isinstance(node_embedding, str):
+            if self._node_embedding_method_name == "auto":
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding
+            node_embedding, _ = compute_node_embedding(
+                graph=self._graph,
+                node_embedding_method_name=node_embedding,
+                **node_embedding_kwargs
+            )
         if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
@@ -474,7 +491,8 @@ class GraphVisualization:
             aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
         node_transformer.fit(node_embedding)
-        self._node_embedding = self.decompose(node_transformer.transform(node_indices))
+        self._node_embedding = self.decompose(
+            node_transformer.transform(node_indices))
 
     def _get_positive_edges_embedding(
         self,
@@ -546,17 +564,31 @@ class GraphVisualization:
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(edge_indices)
 
-    def fit_transform_edges(
+    def fit_edges(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray]
-            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+            Embedding of the graph nodes.
+            If a string is provided, we will run the node embedding
+            from one of the available methods.
+        **node_embedding_kwargs: Dict
+            Kwargs to be forwarded to the node embedding algorithm.
         """
+        if isinstance(node_embedding, str):
+            if self._node_embedding_method_name == "auto":
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding
+            node_embedding, _ = compute_node_embedding(
+                graph=self._graph,
+                node_embedding_method_name=node_embedding,
+                **node_embedding_kwargs
+            )
         self._edge_embedding = self.decompose(
             self._get_positive_edges_embedding(
                 node_embedding
@@ -612,25 +644,42 @@ class GraphVisualization:
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(edge_indices)
 
-    def fit_transform_negative_and_positive_edges(
+    def fit_negative_and_positive_edges(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting negative edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray]
-            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+            Embedding of the graph nodes.
+            If a string is provided, we will run the node embedding
+            from one of the available methods.
+        **node_embedding_kwargs: Dict
+            Kwargs to be forwarded to the node embedding algorithm.
         """
-        positive_edge_embedding = self._get_positive_edges_embedding(node_embedding)
-        negative_edge_embedding = self._get_negative_edge_embedding(node_embedding)
+        if isinstance(node_embedding, str):
+            if self._node_embedding_method_name == "auto":
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding
+            node_embedding, _ = compute_node_embedding(
+                graph=self._graph,
+                node_embedding_method_name=node_embedding,
+                **node_embedding_kwargs
+            )
+        positive_edge_embedding = self._get_positive_edges_embedding(
+            node_embedding)
+        negative_edge_embedding = self._get_negative_edge_embedding(
+            node_embedding)
         raw_edge_embedding = np.vstack([
             positive_edge_embedding,
             negative_edge_embedding
         ])
         edge_embedding = self.decompose(raw_edge_embedding)
-        self._edge_embedding = edge_embedding[:positive_edge_embedding.shape[0]]
+        self._edge_embedding = edge_embedding[:
+                                              positive_edge_embedding.shape[0]]
         self._negative_edge_embedding = edge_embedding[positive_edge_embedding.shape[0]:]
 
     def _get_figure_and_axes(
@@ -1472,30 +1521,17 @@ class GraphVisualization:
             **kwargs
         )
 
-    def _get_flatten_multi_label_and_unknown_node_types(
-        self,
-        subsampled_node_ids: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """Returns flattened node type IDs adjusted for the current instance.
-
-        Implementative details
-        ---------------------------------
-        If the subsampled node IDs are provided, only those nodes will be taken into account.
-
-        Parameters
-        ---------------------------------
-        subsampled_node_ids: np.ndarray = None
-            If provided, only samples these node IDs.
-        """
+    def _get_flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
+        """Returns flattened node type IDs adjusted for the current instance."""
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         top_10_node_types = {
-            node_type: 50 - i
+            node_type: 10 - i
             for i, node_type in enumerate(sorted(
                 node_types_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:50])
+            )[:10])
         }
         node_types_counts = {
             node_type: top_10_node_types.get(node_type, 0)
@@ -1506,7 +1542,7 @@ class GraphVisualization:
 
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
-        if subsampled_node_ids is None:
+        if self._subsampled_node_ids is None:
             nodes_iterator = trange(
                 self._graph.get_nodes_number(),
                 desc="Computing flattened multi-label and unknown node types",
@@ -1515,7 +1551,7 @@ class GraphVisualization:
             )
         else:
             nodes_iterator = tqdm(
-                subsampled_node_ids,
+                self._subsampled_node_ids,
                 desc="Computing subsampled flattened multi-label and unknown node types",
                 leave=False,
                 dynamic_ncols=True
@@ -1541,88 +1577,102 @@ class GraphVisualization:
             dtype=np.int32
         )
 
-    def _get_flatten_unknown_node_ontologies(
-        self,
-        ontologies: List[Optional[str]],
-        subsampled_node_ids: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """Returns flattened node ontologies adjusted for the current instance.
-
-        Implementative details
-        ---------------------------------
-        If the subsampled node IDs are provided, only those nodes will be taken into account.
-
-        Parameters
-        ---------------------------------
-        ontologies: List[Optional[str]]
-            List of the nodes ontologies.
-        subsampled_node_ids: Optional[np.ndarray] = None
-            If provided, only samples these node IDs.
-
-        Raises
-        ---------------------------------
-        ValueError
-            If the len of the ontologies is different of the provided subsampled_node_ids.
-        """
-        if subsampled_node_ids is not None and len(subsampled_node_ids) != len(ontologies):
-            raise ValueError(
-                (
-                    "The provided subsampled node IDs includes {len_subsampled_node_ids} elements "
-                    "but the provided ontologies have {len_ontologies} elements."
-                ).format(
-                    len_subsampled_node_ids = len(subsampled_node_ids),
-                    len_ontologies = len(ontologies),
-                )
-            )
+    def _get_flatten_unknown_node_ontologies(self) -> Tuple[List[str], np.ndarray]:
+        """Returns unique ontologies and node ontologies adjusted for the current instance."""
+        if self._subsampled_node_ids is None:
+            ontology_names = self._graph.get_node_ontologies()
+        else:
+            ontology_names = [
+                self._graph.get_ontology_from_node_id(node_id)
+                for node_id in self._subsampled_node_ids
+            ]
 
         # The following is needed to normalize the multiple types
-        ontologies_counts = Counter(ontologies)
+        ontologies_counts = Counter(ontology_names)
         ontologies_number = len(ontologies_counts)
         top_10_ontologies = {
-            ontology: 50 - i
+            ontology: 10 - i
             for i, ontology in enumerate(sorted(
                 ontologies_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:50])
+            )[:10])
         }
         ontologies_counts = {
             ontology: top_10_ontologies.get(ontology, 0)
             for ontology in ontologies_counts
         }
-        unknown_node_types_id = ontologies_number
+        unknown_ontology_id = ontologies_number
 
-        # When we have multiple node types for a given node, we set it to
-        # the most common node type of the set.
-        return [
-            unknown_node_types_id
-            if ontology is None
-            else ontologies_counts[ontology]
-            for ontology in ontologies
+        return (
+            list(ontologies_counts.keys()),
+            np.fromiter(
+                (
+                    unknown_ontology_id
+                    if ontology is None
+                    else ontologies_counts[ontology]
+                    for ontology in ontology_names
+                ),
+                dtype=np.uint32
+            )
+        )
+
+    def _get_flatten_unknown_edge_ontologies(self) -> Tuple[List[str], np.ndarray]:
+        """Returns unique ontologies and edge ontologies adjusted for the current instance."""
+        edge_ontology_names = [
+            "{source_ontology} {direction} {destination_ontology}".format(
+                source_ontology= self._graph.get_ontology_from_node_id(src),
+                direction= "->" if self._graph.is_directed() else "-",
+                destination_ontology= self._graph.get_ontology_from_node_id(dst),
+            )
+            for src, dst in (
+                self._graph.get_node_ids_from_edge_id(edge_id)
+                for edge_id in (
+                    0..self._graph.get_directed_ids()
+                    if self._subsampled_edge_ids is None
+                    else self._subsampled_edge_ids
+                )
+            )
         ]
 
+        # The following is needed to normalize the multiple types
+        ontologies_counts = Counter(edge_ontology_names)
+        ontologies_number = len(ontologies_counts)
+        top_10_ontologies = {
+            ontology: 10 - i
+            for i, ontology in enumerate(sorted(
+                ontologies_counts.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:10])
+        }
+        ontologies_counts = {
+            ontology: top_10_ontologies.get(ontology, 0)
+            for ontology in ontologies_counts
+        }
+        unknown_ontology_id = ontologies_number
 
-    def _get_flatten_unknown_edge_types(
-        self,
-        subsampled_edge_id: Optional[np.ndarray] = None
-    ) -> np.ndarray:
-        """Returns flattened edge type IDs adjusted for the current instance.
+        return (
+            list(ontologies_counts.keys()),
+            np.fromiter(
+                (
+                    unknown_ontology_id
+                    if ontology is None
+                    else ontologies_counts[ontology]
+                    for ontology in edge_ontology_names
+                ),
+                dtype=np.uint32
+            )
+        )
 
-        Implementative details
-        ---------------------------------
-        If the subsampled edge IDs are provided, only those edges will be taken into account.
-
-        Parameters
-        ---------------------------------
-        subsampled_edge_ids: np.ndarray = None
-            If provided, only samples these edge IDs.
-        """
+    def _get_flatten_unknown_edge_types(self) -> np.ndarray:
+        """Returns flattened edge type IDs adjusted for the current instance."""
         # The following is needed to normalize the multiple types
         edge_types_number = self._graph.get_edge_types_number()
         unknown_edge_types_id = edge_types_number
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
-        if subsampled_edge_id is None:
+        if self._subsampled_edge_ids is None:
             edges_iterator = trange(
                 self._graph.get_number_of_directed_edges(),
                 desc="Computing flattened unknown edge types",
@@ -1631,7 +1681,7 @@ class GraphVisualization:
             )
         else:
             edges_iterator = tqdm(
-                subsampled_edge_id,
+                self._subsampled_edge_ids,
                 desc="Computing subsampled flattened unknown edge types",
                 leave=False,
                 dynamic_ncols=True
@@ -1751,9 +1801,7 @@ class GraphVisualization:
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
-        node_types = self._get_flatten_multi_label_and_unknown_node_types(
-            self._subsampled_node_ids
-        )
+        node_types = self._get_flatten_multi_label_and_unknown_node_types()
 
         node_type_names_iter = (
             self._graph.get_node_type_name_from_node_type_id(node_id)
@@ -1870,23 +1918,22 @@ class GraphVisualization:
 
         Raises
         ------------------------------
-        ValueError,
-            If edge fitting was not yet executed.
-        ValueError,
-            If given k is greater than maximum supported value (10).
+        ValueError
+            If node fitting was not yet executed.
+        ValueError
+            If the graph does not have node ontologies.
 
         Returns
         ------------------------------
         Figure and Axis of the plot.
         """
-        if not self._graph.has_node_types():
-            raise ValueError(
-                "The graph does not have node types!"
-            )
+        self._graph.must_have_node_ontologies()
 
         if self._node_embedding is None:
             raise ValueError(
-                "Node fitting must be executed before plot."
+                "Node fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_nodes()` "
+                "method before plotting the nodes."
             )
 
         if show_edges:
@@ -1900,36 +1947,21 @@ class GraphVisualization:
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
-        node_types = self._get_flatten_multi_label_and_unknown_node_types(
-            self._subsampled_node_ids
-        )
+        unique_ontologies, ontology_ids = self._get_flatten_unknown_node_ontologies()
 
-        node_type_names_iter = (
-            self._graph.get_node_type_name_from_node_type_id(node_id)
-            for node_id in trange(
-                self._graph.get_node_types_number(),
-                desc="Retrieving graph node types",
-                leave=False,
-                dynamic_ncols=True
-            )
-        )
+        if self._graph.has_unknown_ontologies():
+            unique_ontologies.append("Unknown")
 
-        if self._graph.has_unknown_node_types():
-            node_type_names_iter = itertools.chain(
-                node_type_names_iter,
-                iter(("Unknown",))
-            )
-
-        node_type_names = np.array(
-            list(node_type_names_iter),
+        unique_ontologies = np.array(
+            unique_ontologies,
             dtype=str,
         )
 
         returned_values = self._plot_types(
             self._node_embedding,
-            self._get_complete_title("Node types"),
-            types=node_types,
-            type_labels=node_type_names,
+            self._get_complete_title("Ontologies"),
+            types=ontology_ids,
+            type_labels=unique_ontologies,
             legend_title=legend_title,
             k=9,
             figure=figure,
@@ -2344,6 +2376,105 @@ class GraphVisualization:
             **kwargs
         )
 
+    def plot_edge_ontologies(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        other_label: str = "Other {} edge ontologies",
+        legend_title: str = "Edge ontologies",
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot common edge ontologies of provided graph.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        other_label: str = "Other {} edge ontologies",
+            Label to use for edges below the top k threshold.
+        legend_title: str = "Edge ontologies",
+            Title for the legend.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices,
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If the graph does not have node ontologies.
+        ValueError,
+            If edge fitting was not yet executed.
+        ValueError,
+            If given k is greater than maximum supported value (10).
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        self._graph.must_have_node_ontologies()
+
+        if self._edge_embedding is None:
+            raise ValueError(
+                "Edge fitting was not yet executed!"
+            )
+
+        unique_edge_ontologies, edge_ontologies_ids = self._get_flatten_unknown_edge_ontologies()
+
+        if self._graph.has_unknown_ontologies():
+            unique_edge_ontologies.append("unknown")
+
+        unique_edge_ontologies = np.array(unique_edge_ontologies, dtype=str)
+
+        return self._plot_types(
+            self._edge_embedding,
+            self._get_complete_title(
+                "Edge types - {}".format(self._edge_embedding_method)),
+            types=edge_ontologies_ids,
+            type_labels=unique_edge_ontologies,
+            legend_title=legend_title,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            other_label=other_label,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs
+        )
+
     def plot_edge_weights(
         self,
         figure: Optional[Figure] = None,
@@ -2447,6 +2578,7 @@ class GraphVisualization:
             color_bar.set_alpha(1)
             color_bar.draw_all()
             returned_values = figure, axes
+        return returned_values
 
     def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
