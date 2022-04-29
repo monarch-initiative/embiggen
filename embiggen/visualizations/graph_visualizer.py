@@ -2847,9 +2847,7 @@ class GraphVisualizer:
                     0.9,
                     letter,
                     size=15,
-                    color='purple',
-                    horizontalalignment='center',
-                    verticalalignment='center',
+                    color='black',
                     weight='bold',
                 )
         
