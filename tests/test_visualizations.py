@@ -1,11 +1,11 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from embiggen import GraphVisualization, GloVe
+from embiggen import GraphVisualizer, GloVe
 import pytest
 
 
-class TestGraphVisualization(TestCase):
+class TestGraphVisualizer(TestCase):
     """Unit test class for GraphTransformer objects."""
 
     def setUp(self):
@@ -23,7 +23,7 @@ class TestGraphVisualization(TestCase):
             vocabulary_size=self._graph.get_nodes_number(),
             embedding_size=self._embedding_size
         ).get_embedding_dataframe(self._graph.get_node_names())
-        self._visualization = GraphVisualization(
+        self._visualization = GraphVisualizer(
             self._graph,
             decomposition_method="PCA"
         )

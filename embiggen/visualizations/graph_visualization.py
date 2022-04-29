@@ -33,7 +33,7 @@ from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
 
 
-class GraphVisualization:
+class GraphVisualizer:
     """Tools to visualize the graph embeddings."""
 
     DEFAULT_SCATTER_KWARGS = dict(
@@ -65,7 +65,7 @@ class GraphVisualization:
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
-        """Create new GraphVisualization object.
+        """Create new GraphVisualizer object.
 
         Parameters
         --------------------------
@@ -310,6 +310,47 @@ class GraphVisualization:
                 "We currently only support PCA and TSNE decomposition methods."
             )
 
+    def _get_node_embedding(
+        self,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
+        **node_embedding_kwargs: Dict
+    ):
+        """Computes the node embedding if it was not otherwise provided.
+
+        Parameters
+        -------------------------
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
+            Embedding of the graph nodes.
+            If a string is provided, we will run the node embedding
+            from one of the available methods.
+        **node_embedding_kwargs: Dict
+            Kwargs to be forwarded to the node embedding algorithm.
+        """
+        if node_embedding is None:
+            if self._node_embedding_method_name == "auto":
+                raise ValueError(
+                    "The node embedding provided to the fit method was left "
+                    "to None, and the `node_embedding_method_name` parameter "
+                    "of the constructor of the GraphVisualizer was also left "
+                    "to the default `'auto'` value, therefore it was not "
+                    "possible to infer which node embedding you desired to "
+                    "compute for this visualization. Do provide either "
+                    "a node embedding method, such as `CBOW` or `SPINE` "
+                    "or a pre-computed embedding."
+                )
+            else:
+                node_embedding = self._node_embedding_method_name
+        if isinstance(node_embedding, str):
+            if self._node_embedding_method_name == "auto":
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding
+            node_embedding, _ = compute_node_embedding(
+                graph=self._graph,
+                node_embedding_method_name=node_embedding,
+                **node_embedding_kwargs
+            )
+        return node_embedding
+
     def _shuffle(
         self,
         *args: List[Union[np.ndarray, pd.DataFrame, None]],
@@ -431,29 +472,21 @@ class GraphVisualization:
 
     def fit_nodes(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
             Embedding of the graph nodes.
             If a string is provided, we will run the node embedding
             from one of the available methods.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        if isinstance(node_embedding, str):
-            if self._node_embedding_method_name == "auto":
-                self._has_autodetermined_node_embedding_name = True
-                self._node_embedding_method_name = node_embedding
-            node_embedding, _ = compute_node_embedding(
-                graph=self._graph,
-                node_embedding_method_name=node_embedding,
-                **node_embedding_kwargs
-            )
+        node_embedding = self._get_node_embedding(node_embedding, **node_embedding_kwargs)
         if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
@@ -571,32 +604,23 @@ class GraphVisualization:
 
     def fit_edges(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
             Embedding of the graph nodes.
             If a string is provided, we will run the node embedding
             from one of the available methods.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        if isinstance(node_embedding, str):
-            if self._node_embedding_method_name == "auto":
-                self._has_autodetermined_node_embedding_name = True
-                self._node_embedding_method_name = node_embedding
-            node_embedding, _ = compute_node_embedding(
-                graph=self._graph,
-                node_embedding_method_name=node_embedding,
-                **node_embedding_kwargs
-            )
         self._edge_embedding = self.decompose(
             self._get_positive_edges_embedding(
-                node_embedding
+                self._get_node_embedding(node_embedding, **node_embedding_kwargs)
             )
         )
 
@@ -651,33 +675,27 @@ class GraphVisualization:
 
     def fit_negative_and_positive_edges(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting negative edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
             Embedding of the graph nodes.
             If a string is provided, we will run the node embedding
             from one of the available methods.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        if isinstance(node_embedding, str):
-            if self._node_embedding_method_name == "auto":
-                self._has_autodetermined_node_embedding_name = True
-                self._node_embedding_method_name = node_embedding
-            node_embedding, _ = compute_node_embedding(
-                graph=self._graph,
-                node_embedding_method_name=node_embedding,
-                **node_embedding_kwargs
-            )
+        node_embedding = self._get_node_embedding(node_embedding, **node_embedding_kwargs)
         positive_edge_embedding = self._get_positive_edges_embedding(
-            node_embedding)
+            node_embedding
+        )
         negative_edge_embedding = self._get_negative_edge_embedding(
-            node_embedding)
+            node_embedding
+        )
         raw_edge_embedding = np.vstack([
             positive_edge_embedding,
             negative_edge_embedding
@@ -725,12 +743,12 @@ class GraphVisualization:
             ))
         if self._n_components == 2:
             figure, axes = plt.subplots(**{
-                **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
                 **kwargs
             })
         else:
             figure, axes = subplots_3d(**{
-                **GraphVisualization.DEFAULT_SUBPLOT_KWARGS,
+                **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
                 **kwargs
             })
         return figure, axes
@@ -850,7 +868,7 @@ class GraphVisualization:
         )
 
         scatter_kwargs = {
-            **GraphVisualization.DEFAULT_SCATTER_KWARGS,
+            **GraphVisualizer.DEFAULT_SCATTER_KWARGS,
             **(
                 dict(linewidths=0)
                 if edgecolors is None
@@ -1238,7 +1256,7 @@ class GraphVisualization:
             linewidths=1,
             zorder=0,
             **{
-                **GraphVisualization.DEFAULT_EDGES_SCATTER_KWARGS,
+                **GraphVisualizer.DEFAULT_EDGES_SCATTER_KWARGS,
                 **(
                     {} if scatter_kwargs is None else scatter_kwargs
                 )

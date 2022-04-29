@@ -26,7 +26,7 @@ from .embedders.ensmallen_embedders import SPINE
 from .transformers import (EdgeTransformer,
                            GraphTransformer, LinkPredictionTransformer,
                            NodeTransformer)
-from .visualizations import GraphVisualization
+from .visualizations import GraphVisualizer
 
 __all__ = [
     "GraphCBOW",
@@ -35,7 +35,7 @@ __all__ = [
     "EdgeTransformer",
     "GraphTransformer",
     "LinkPredictionTransformer",
-    "GraphVisualization",
+    "GraphVisualizer",
     "SPINE",
     *all_exports
 ]
