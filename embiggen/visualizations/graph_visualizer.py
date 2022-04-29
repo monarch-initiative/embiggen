@@ -2304,7 +2304,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=10)} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=1000)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
