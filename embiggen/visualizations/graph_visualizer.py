@@ -2546,8 +2546,8 @@ class GraphVisualizer:
             new_component_size = 0
             for i in range(len(components)):
                 if sizes_backup[components[i]] == component_size:
-                    components[i] = current_component_number
                     sizes[components[i]] -= 1
+                    components[i] = current_component_number
                     new_component_size += 1
 
             if new_component_size > 0:
