@@ -1553,12 +1553,12 @@ class GraphVisualizer:
         # The following is needed to normalize the multiple types
         node_types_counts = self._graph.get_node_type_id_counts_hashmap()
         top_10_node_types = {
-            node_type: 10 - i
+            node_type: 50 - i
             for i, node_type in enumerate(sorted(
                 node_types_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:10])
+            )[:50])
         }
         node_types_counts = {
             node_type: top_10_node_types.get(node_type, 0)
@@ -2113,25 +2113,58 @@ class GraphVisualizer:
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
 
+        components_remapping = {
+            old_component_id: new_component_id
+            for new_component_id, old_component_id, _ in enumerate(sorted(
+                list([
+                    (old_component_id, size)
+                    for old_component_id, size in enumerate(sizes)
+                    if size > 2
+                ]),
+                key=lambda x: x[1],
+                reverse=True
+            )[:10])
+        }
+
+        tuples_number = sum(
+            int(size == 2)
+            for size in sizes
+        )
+
         labels = [
             "Size {}".format(size)
-            for size in sizes
-            if size > 1
+            for size in sorted([
+                size
+                for size in sizes
+                if size > 2
+            ], reverse=True)
         ]
+
+        if tuples_number > 0:
+            labels.append(
+                "{} Tuples".format(tuples_number)
+            )
+
+            number_of_non_pathological_components = len(components_remapping)
+
+            for i in range(len(components)):
+                if sizes[components[i]] == 2:
+                    components[i] = number_of_non_pathological_components
 
         if self._graph.has_disconnected_nodes():
             labels.append(
                 "{} Singletons".format(self._graph.get_disconnected_nodes_number())
             )
 
-            for i, size in enumerate(sizes):
-                if size == 0:
-                    first_component_with_singletons = i
-                    break
+            number_of_non_pathological_components = len(components_remapping) + int(tuples_number > 0)
 
-            for i, size in range(len(components)):
-                if size == 1:
-                    components[i] = first_component_with_singletons
+            for i in range(len(components)):
+                if sizes[components[i]] == 1:
+                    components[i] = number_of_non_pathological_components
+
+        # Remap all other components 
+        for i in range(len(components)):
+            components[i] = components_remapping.get(components[i], components[i])
 
         returned_values = self._plot_types(
             self._node_embedding,
