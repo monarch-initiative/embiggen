@@ -63,6 +63,8 @@ class GraphVisualizer:
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
         show_graph_name: Union[str, bool] = "auto",
+        show_node_embedding_method: bool = True,
+        show_edge_embedding_method: bool = True,
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
@@ -95,7 +97,7 @@ class GraphVisualizer:
             Name of the node embedding method used.
             If "auto" is used, then we try to infer the type of
             node embedding algorithm used, which in some cases is
-            recognizable automatically.
+            recognizable automatically.            
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
@@ -103,6 +105,12 @@ class GraphVisualizer:
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
             name such as `Graph`.
+        show_node_embedding_method: bool = True
+            Whether to show the node embedding method.
+            By default, we show it if we can detect it.
+        show_edge_embedding_method: bool = True
+            Whether to show the edge embedding method.
+            By default, we show it if we can detect it.
         number_of_subsampled_nodes: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
@@ -147,6 +155,8 @@ class GraphVisualizer:
         if show_graph_name == "auto":
             show_graph_name = self._graph_name.lower() != "graph"
         self._show_graph_name = show_graph_name
+        self._show_node_embedding_method = show_node_embedding_method
+        self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
 
         self._node_embedding_method_name = node_embedding_method_name
@@ -482,7 +492,7 @@ class GraphVisualizer:
         # Rules to detect TFIDF/BERT embedding
         if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
             return "TFIDF-weighted BERT"
-        return None
+        return self._node_embedding_method_name
 
     def fit_nodes(
         self,
@@ -501,7 +511,9 @@ class GraphVisualizer:
             Kwargs to be forwarded to the node embedding algorithm.
         """
         node_embedding = self._get_node_embedding(
-            node_embedding, **node_embedding_kwargs)
+            node_embedding,
+            **node_embedding_kwargs
+        )
         if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
@@ -706,7 +718,9 @@ class GraphVisualizer:
             Kwargs to be forwarded to the node embedding algorithm.
         """
         node_embedding = self._get_node_embedding(
-            node_embedding, **node_embedding_kwargs)
+            node_embedding,
+            **node_embedding_kwargs
+        )
         positive_edge_embedding = self._get_positive_edges_embedding(
             node_embedding
         )
@@ -770,13 +784,19 @@ class GraphVisualizer:
             })
         return figure, axes
 
-    def _get_complete_title(self, title: str) -> str:
+    def _get_complete_title(
+        self,
+        title: str,
+        show_edge_embedding: bool = False
+    ) -> str:
         """Return the complete title for the figure.
 
         Parameters
         -------------------
         title: str
             Initial title to incorporate.
+        show_edge_embedding: bool = False
+            Whether to add to the title the edge embedding.
         """
         if self._show_graph_name:
             title = "{} - {}".format(
@@ -784,10 +804,16 @@ class GraphVisualizer:
                 self._graph_name,
             )
 
-        if self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
+        if self._show_node_embedding_method and self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
             title = "{} - {}".format(
                 title,
                 self._node_embedding_method_name,
+            )
+
+        if show_edge_embedding and self._show_edge_embedding_method:
+            title = "{} - {}".format(
+                title,
+                self.edge_embedding_method,
             )
 
         return title
@@ -1476,7 +1502,10 @@ class GraphVisualizer:
 
         return self._wrapped_plot_scatter(
             points=self._edge_embedding,
-            title=self._get_complete_title("Edges embedding"),
+            title=self._get_complete_title(
+                "Edges embedding",
+                show_edge_embedding=True
+            ),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1552,7 +1581,10 @@ class GraphVisualizer:
 
         return self._plot_types(
             points=points,
-            title=self._get_complete_title("Existing & non-existing edges"),
+            title=self._get_complete_title(
+                "Existing & non-existing edges",
+                show_edge_embedding=True
+            ),
             types=types,
             type_labels=np.array([
                 "Non-existing edges",
@@ -1662,7 +1694,9 @@ class GraphVisualizer:
         returned_values = self._wrapped_plot_scatter(
             points=points,
             title=self._get_complete_title(
-                "{} - {}".format(metric_name, self._edge_embedding_method)),
+                metric_name,
+                show_edge_embedding=True
+            ),
             colors=edge_metrics,
             figure=figure,
             axes=axes,
@@ -2820,7 +2854,9 @@ class GraphVisualizer:
         return self._plot_types(
             self._edge_embedding,
             self._get_complete_title(
-                "Edge types - {}".format(self._edge_embedding_method)),
+                "Edge types",
+                show_edge_embedding=True
+            ),
             types=edge_types,
             type_labels=edge_type_names,
             legend_title=legend_title,
@@ -2920,7 +2956,9 @@ class GraphVisualizer:
         returned_values = self._wrapped_plot_scatter(
             points=self._edge_embedding,
             title=self._get_complete_title(
-                "Edge weights - {}".format(self._edge_embedding_method)),
+                "Edge weights",
+                show_edge_embedding=True
+            ),
             colors=weights,
             figure=figure,
             axes=axes,
@@ -3153,7 +3191,12 @@ class GraphVisualizer:
         flat_axes = np.array(axes).flatten()
 
         show_name_backup = self._show_graph_name
+        show_node_embedding_backup = self._show_node_embedding_method
+        show_edge_embedding_backup = self._show_edge_embedding_method
         self._show_graph_name = False
+        self._show_node_embedding_method = False
+        self._show_edge_embedding_method = False
+
         for ax, plot_callback, letter in zip(
             flat_axes,
             itertools.chain(
@@ -3172,8 +3215,8 @@ class GraphVisualizer:
             )
             if show_letters:
                 ax.text(
-                    -0.1,
-                    1.15,
+                    -0.2,
+                    1.0,
                     letter,
                     size=18,
                     color='black',
@@ -3181,20 +3224,24 @@ class GraphVisualizer:
                     horizontalalignment='left',
                     verticalalignment='center',
                     transform=ax.transAxes,
-
                 )
 
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
 
+        self._show_edge_embedding_method = show_edge_embedding_backup
+        self._show_node_embedding_method = show_node_embedding_backup
+
         if show_name_backup:
             fig.suptitle(
-                self._get_complete_title(self._graph_name),
+                self._get_complete_title(
+                    self._graph_name,
+                    show_edge_embedding=True
+                ),
                 fontsize=20
             )
         fig.tight_layout()        
 
         self._show_graph_name = show_name_backup
-
 
         return fig, axes
