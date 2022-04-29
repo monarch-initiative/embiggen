@@ -2739,7 +2739,7 @@ class GraphVisualizer:
             )
         )
         axes.set_ylabel("Node degree")
-        axes.set_xlabel("Nodes sorted by degree")
+        axes.set_xlabel("Degrees")
         if self._show_graph_name:
             title = "Degrees distribution of graph {}".format(self._graph_name)
         else:
@@ -2898,6 +2898,9 @@ class GraphVisualizer:
                     size=15,
                     color='black',
                     weight='bold',
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    transform = ax.transAxes
                 )
         self._show_graph_name = show_name_backup
 
