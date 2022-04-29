@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Union
 import pandas as pd
 from cache_decorator import Cache
 from ensmallen import Graph
+from ensmallen.datasets import get_dataset
 
 from ..utils import execute_gpu_checks, get_available_gpus_number, has_gpus
 
@@ -156,7 +157,7 @@ def _compute_node_ensmallen_embedding(
 
 
 def compute_node_embedding(
-    graph: Graph,
+    graph: Union[Graph, str],
     node_embedding_method_name: str,
     use_only_cpu: Union[bool, str] = "auto",
     use_mirrored_strategy: Union[bool, str] = "auto",
@@ -171,8 +172,10 @@ def compute_node_embedding(
 
     Parameters
     --------------------------
-    graph: Graph,
+    graph: Union[Graph, str],
         Graph to embed.
+        If a graph name is provided, we try to retrieve
+        it using the Ensmallen automatic retrieval.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
     use_only_cpu: Union[bool, str] = "auto",
@@ -224,6 +227,9 @@ def compute_node_embedding(
                 get_available_node_embedding_methods()
             )
         )
+    
+    if isinstance(graph, str):
+        graph = get_dataset(graph)()
 
     # If devices are given as a single device we adapt this into a list.
     if isinstance(devices, str):
