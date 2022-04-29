@@ -282,9 +282,9 @@ class GraphVisualizer:
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
                                 verbose=False,
-                                n_iter=400,
-                                init="pca",
-                                square_distances=True,
+                                n_iter=500,
+                                init="random",
+                                square_distances="legacy",
                                 method="exact" if self._n_components == 4 else "barnes_hut",
                             ),
                             **self._decomposition_kwargs
