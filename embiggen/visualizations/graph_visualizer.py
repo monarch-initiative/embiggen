@@ -2741,7 +2741,7 @@ class GraphVisualizer:
             ),
             log=True
         )
-        axes.set_ylabel("Node degree")
+        axes.set_ylabel("Node degree (log scale)")
         axes.set_xlabel("Degrees")
         if self._show_graph_name:
             title = "Degrees distribution of graph {}".format(self._graph_name)
@@ -2782,7 +2782,7 @@ class GraphVisualizer:
             ),
             log=True
         )
-        axes.set_ylabel("Number of edges")
+        axes.set_ylabel("Number of edges (log scale)")
         axes.set_xlabel("Weights")
         if self._show_graph_name:
             title = "Weights distribution of graph {}".format(self._graph_name)
