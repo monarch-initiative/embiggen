@@ -451,7 +451,7 @@ class GraphVisualizer:
             handles=handles,
             labels=[
                 "{}...".format(label[:20])
-                if len(label) > 17 else label
+                if len(label) > 20 else label
                 for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
@@ -1073,7 +1073,7 @@ class GraphVisualizer:
         show_legend: bool = True,
         loc: str = "best",
         predictions: Optional[List[int]] = None,
-        k: int = 6,
+        k: int = 7,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1107,7 +1107,7 @@ class GraphVisualizer:
         predictions: Optional[List[int]] = None,
             List of the labels predicted.
             If None, no prediction is visualized.
-        k: int = 6,
+        k: int = 7,
             Number of node types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -1567,6 +1567,406 @@ class GraphVisualizer:
             **kwargs
         )
 
+    def _plot_positive_and_negative_edges_metric(
+        self,
+        metric_name: str,
+        edge_metric_callback: Callable[[int, int], float],
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot provided edge metric heatmap for positive and negative edges.
+
+        Parameters
+        ------------------------------
+        metric_name: str
+            Name of the metric that will be computed.
+        edge_metric_callback: Callable[[int, int], float]
+            Callback to compute the metric given two nodes.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._edge_embedding is None:
+            raise ValueError(
+                "Positive and negative edge fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_negative_and_positive_edges()` "
+                "method before plotting the nodes."
+            )
+
+        edge_metrics = np.fromiter(
+            (
+                edge_metric_callback(src, dst)
+                for src, dst in (
+                    itertools.chain(
+                        self._subsampled_negative_edge_node_ids,
+                        (self._graph.get_node_ids_from_edge_id(edge_id)
+                         for edge_id in self._subsampled_edge_ids)
+                    )
+                )
+            ),
+            dtype=np.float32
+        )
+
+        points = np.vstack([
+            self._negative_edge_embedding,
+            self._edge_embedding,
+        ])
+
+        points, edge_metrics = self._shuffle(points, edge_metrics)
+
+        returned_values = self._wrapped_plot_scatter(
+            points=self._edge_embedding,
+            title=self._get_complete_title(
+                "{} - {}".format(metric_name, self._edge_embedding_method)),
+            colors=edge_metrics,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs={
+                **({} if scatter_kwargs is None else scatter_kwargs),
+                "cmap": plt.cm.get_cmap('RdYlBu'),
+                "norm": SymLogNorm(linthresh=10, linscale=1)
+            },
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            return_collections=True,
+            **kwargs
+        )
+
+        if not self._rotate:
+            figure, axes, scatter = returned_values
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
+            returned_values = figure, axes
+        return returned_values
+
+
+    def plot_positive_and_negative_edges_adamic_adar(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot Adamic Adar metric heatmap for sampled existing and non-existing edges.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric(
+            metric_name="Adamic-Adar",
+            edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_preferential_attachment(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot Preferential Attachment metric heatmap for sampled existing and non-existing edges.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric(
+            metric_name="Preferential Attachment",
+            edge_metric_callback=self._graph.get_preferential_attachment_from_node_ids,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_jaccard_coefficient(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot Jaccard Coefficient metric heatmap for sampled existing and non-existing edges.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric(
+            metric_name="Jaccard Coefficient",
+            edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_resource_allocation_index(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot Resource Allocation Index metric heatmap for sampled existing and non-existing edges.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric(
+            metric_name="Resource Allocation Index",
+            edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
+
     def _get_flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:
         """Returns flattened node type IDs adjusted for the current instance."""
         # The following is needed to normalize the multiple types
@@ -1701,7 +2101,7 @@ class GraphVisualizer:
     def plot_node_types(
         self,
         node_type_predictions: Optional[List[int]] = None,
-        k: int = 6,
+        k: int = 7,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1725,7 +2125,7 @@ class GraphVisualizer:
         ------------------------------
         node_type_predictions: Optional[List[int]] = None,
             Predictions of the node types.
-        k: int = 6,
+        k: int = 7,
             Number of node types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -1857,7 +2257,7 @@ class GraphVisualizer:
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
         legend_title: str = "Node ontologies",
-        other_label: str = "Other {} node ontologies",
+        other_label: str = "Other {} ontologies",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
@@ -1958,7 +2358,7 @@ class GraphVisualizer:
             types=ontology_ids,
             type_labels=unique_ontologies,
             legend_title=legend_title,
-            k=9,
+            k=7,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1985,7 +2385,7 @@ class GraphVisualizer:
 
     def plot_connected_components(
         self,
-        k: int = 6,
+        k: int = 7,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2007,7 +2407,7 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        k: int = 6,
+        k: int = 7,
             Number of components to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -2304,7 +2704,7 @@ class GraphVisualizer:
     def plot_edge_types(
         self,
         edge_type_predictions: Optional[List[int]] = None,
-        k: int = 6,
+        k: int = 7,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2325,7 +2725,7 @@ class GraphVisualizer:
         ------------------------------
         edge_type_predictions: Optional[List[int]] = None,
             Predictions of the edge types.
-        k: int = 6,
+        k: int = 7,
             Number of edge types to visualize.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
@@ -2680,7 +3080,11 @@ class GraphVisualizer:
             self.plot_node_degrees,
         ]
         edge_scatter_plot_methods_to_call = [
-            self.plot_positive_and_negative_edges
+            self.plot_positive_and_negative_edges,
+            self.plot_positive_and_negative_edges_adamic_adar,
+            self.plot_positive_and_negative_edges_jaccard_coefficient,
+            self.plot_positive_and_negative_edges_preferential_attachment,
+            self.plot_positive_and_negative_edges_resource_allocation_index
         ]
 
         distribution_plot_methods_to_call = [
