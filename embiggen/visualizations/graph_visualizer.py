@@ -2683,7 +2683,7 @@ class GraphVisualizer:
 
     def plot_node_degree_distribution(
         self,
-        fig: Optional[Figure] = None,
+        figure: Optional[Figure] = None,
         axis: Optional[Figure] = None,
         apply_tight_layout: bool = True
     ) -> Tuple[Figure, Axes]:
@@ -2702,22 +2702,22 @@ class GraphVisualizer:
             Figure object.
         """
         if axis is None:
-            fig, axis = plt.subplots(figsize=(5, 5))
+            figure, axes = plt.subplots(figsize=(5, 5))
         node_degrees = self._graph.get_node_degrees()
         node_degrees.sort()
-        axis.plot(node_degrees, '.')
-        axis.set_ylabel("Node degree")
-        axis.set_xlabel("Nodes sorted by degree")
-        axis.set_title("Degrees distribution for {}".format(self._graph_name))
-        self._annotate_top_nodes(axis)
+        axes.plot(node_degrees, '.')
+        axes.set_ylabel("Node degree")
+        axes.set_xlabel("Nodes sorted by degree")
+        axes.set_title("Degrees distribution for {}".format(self._graph_name))
+        self._annotate_top_nodes(axes)
         if apply_tight_layout:
-            fig.tight_layout()
-        return fig, axis
+            figure.tight_layout()
+        return figure, axes
 
     def plot_edge_weight_distribution(
         self,
-        fig: Optional[Figure] = None,
-        axis: Optional[Figure] = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
         apply_tight_layout: bool = True
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
@@ -2735,17 +2735,17 @@ class GraphVisualizer:
             Figure object.
         """
         if axis is None:
-            fig, axis = plt.subplots(figsize=(5, 5))
-        axis.hist(
+            figure, axes = plt.subplots(figsize=(5, 5))
+        axes.hist(
             self._graph.get_edge_weights(),
             bins=50
         )
-        axis.set_ylabel("Number of edges")
-        axis.set_xlabel("Weights")
-        axis.set_title("Weights distribution for {}".format(self._graph_name))
+        axes.set_ylabel("Number of edges")
+        axes.set_xlabel("Weights")
+        axes.set_title("Weights distribution for {}".format(self._graph_name))
         if apply_tight_layout:
-            fig.tight_layout()
-        return fig, axis
+            figure.tight_layout()
+        return figure, axes
 
     def fit_and_plot_all(
         self,
@@ -2839,8 +2839,8 @@ class GraphVisualizer:
             "abcdefghjkilmnopqrstuvwxyz"
         ):
             plot_callback(
-                fig,
-                ax,
+                figure=fig,
+                axes=ax,
                 apply_tight_layout=False
             )
             if show_letters:
