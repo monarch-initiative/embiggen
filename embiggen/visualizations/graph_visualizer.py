@@ -2539,11 +2539,10 @@ class GraphVisualizer:
         # categories of `Triples`, `Tuples` and `Singletons`.
         current_component_number = components_number
         for component_size, component_name in (
-            (3, "Triples"),
-            (2, "Tuples"),
             (1, "Singletons"),
+            (2, "Tuples"),
+            (3, "Triples"),
         ):
-            print(len(sizes), len(sizes_backup))
             new_component_size = 0
             for i in range(len(components)):
                 if sizes_backup[components[i]] == component_size:
