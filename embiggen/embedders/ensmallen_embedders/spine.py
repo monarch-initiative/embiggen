@@ -10,7 +10,7 @@ class SPINE(EnsmallenEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 400,
+        embedding_size: int = 100,
         dtype: Optional[str] = "u8",
         verbose: bool = True
     ):
@@ -18,11 +18,8 @@ class SPINE(EnsmallenEmbedder):
 
         Parameters
         --------------------------
-        embedding_size: int = 400
+        embedding_size: int = 100
             Dimension of the embedding.
-            Since the memory footprint of the SPINE algorithms
-            is so low, we can easily affort to creater larger embeddings
-            by default.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding. Note that an improper dtype may cause overflows.
         verbose: bool = True
