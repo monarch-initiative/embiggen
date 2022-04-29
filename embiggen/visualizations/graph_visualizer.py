@@ -14,7 +14,7 @@ from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
+from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -2715,13 +2715,13 @@ class GraphVisualizer:
         returned_values = self._wrapped_plot_scatter(
             points=self._node_embedding,
             title=self._get_complete_title("Node degrees"),
-            colors=degrees,
+            colors=degrees + sys.float_info.epsilon,
             figure=figure,
             axes=axes,
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
+                **({"norm": LogNorm()} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
