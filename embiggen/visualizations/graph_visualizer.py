@@ -1656,7 +1656,7 @@ class GraphVisualizer:
         points, edge_metrics = self._shuffle(points, edge_metrics)
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._edge_embedding,
+            points=points,
             title=self._get_complete_title(
                 "{} - {}".format(metric_name, self._edge_embedding_method)),
             colors=edge_metrics,
