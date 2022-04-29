@@ -2737,7 +2737,8 @@ class GraphVisualizer:
             bins=min(
                 100,
                 self._graph.get_nodes_number() // 10
-            )
+            ),
+            log=True
         )
         axes.set_ylabel("Node degree")
         axes.set_xlabel("Degrees")
@@ -2777,7 +2778,8 @@ class GraphVisualizer:
             bins=min(
                 100,
                 self._graph.get_number_of_directed_edges() // 10
-            )
+            ),
+            log=True
         )
         axes.set_ylabel("Number of edges")
         axes.set_xlabel("Weights")
