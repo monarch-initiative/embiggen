@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import warnings
 import math
+import inspect
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
@@ -2885,22 +2886,25 @@ class GraphVisualizer:
             ),
             "abcdefghjkilmnopqrstuvwxyz"
         ):
+            inspect.signature(plot_callback).parameters
             plot_callback(
                 figure=fig,
                 axes=ax,
+                **(dict(loc="upper right") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
             if show_letters:
                 ax.text(
-                    0.1,
-                    0.9,
+                    0.0,
+                    1.0,
                     letter,
-                    size=15,
+                    size=18,
                     color='black',
                     weight='bold',
                     horizontalalignment='center',
                     verticalalignment='center',
-                    transform = ax.transAxes
+                    transform = ax.transAxes,
+
                 )
         self._show_graph_name = show_name_backup
 
