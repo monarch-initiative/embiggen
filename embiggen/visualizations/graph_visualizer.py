@@ -453,7 +453,8 @@ class GraphVisualizer:
                 labels[:9]) + sanitize_ml_labels(labels)[9:],
             loc=loc,
             title=legend_title,
-            prop={'size': 10},
+            title_fontsize=8,
+            prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
                 if isinstance(handles[0], tuple)
