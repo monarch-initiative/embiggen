@@ -2682,7 +2682,7 @@ class GraphVisualizer:
     def plot_node_degree_distribution(
         self,
         figure: Optional[Figure] = None,
-        axis: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
         apply_tight_layout: bool = True
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
@@ -2699,7 +2699,7 @@ class GraphVisualizer:
             Whether to apply the tight layout on the matplotlib
             Figure object.
         """
-        if axis is None:
+        if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
         node_degrees = self._graph.get_node_degrees()
         node_degrees.sort()
@@ -2732,7 +2732,7 @@ class GraphVisualizer:
             Whether to apply the tight layout on the matplotlib
             Figure object.
         """
-        if axis is None:
+        if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
         axes.hist(
             self._graph.get_edge_weights(),
