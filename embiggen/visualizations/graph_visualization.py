@@ -9,6 +9,7 @@ import pandas as pd
 import warnings
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
+from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.axes import Axes
@@ -49,7 +50,7 @@ class GraphVisualization:
 
     def __init__(
         self,
-        graph: Graph,
+        graph: Union[Graph, str],
         decomposition_method: str = "TSNE",
         n_components: int = 2,
         rotate: bool = False,
@@ -68,8 +69,10 @@ class GraphVisualization:
 
         Parameters
         --------------------------
-        graph: Graph,
+        graph: Union[Graph, str],
             The graph to visualize.
+            If a string was provided, we try to retrieve the given
+            graph name using the Ensmallen automatic graph retrieval.
         decomposition_method: str = "TSNE",
             The decomposition method to use.
             The supported methods are UMAP, TSNE and PCA.
@@ -128,6 +131,8 @@ class GraphVisualization:
             If TSNE decomposition has been required and no module supporting
             it is installed.
         """
+        if isinstance(graph, str):
+            graph = get_dataset(graph)
         self._graph = graph
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
@@ -1426,7 +1431,9 @@ class GraphVisualization:
         """
         if self._edge_embedding is None:
             raise ValueError(
-                "Edge fitting must be executed before plot."
+                "Edge fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_edges()` "
+                "method before plotting the nodes."
             )
 
         return self._wrapped_plot_scatter(
@@ -1487,7 +1494,9 @@ class GraphVisualization:
         """
         if self._edge_embedding is None or self._negative_edge_embedding is None:
             raise ValueError(
-                "Positive and negative edge fitting must be executed before plot."
+                "Positive and negative edge fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_negative_and_positive_edges()` "
+                "method before plotting the nodes."
             )
 
         points = np.vstack([
@@ -1787,7 +1796,9 @@ class GraphVisualization:
 
         if self._node_embedding is None:
             raise ValueError(
-                "Node fitting must be executed before plot."
+                "Node fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_nodes()` "
+                "method before plotting the nodes."
             )
 
         if show_edges:
@@ -1949,7 +1960,7 @@ class GraphVisualization:
 
         unique_ontologies, ontology_ids = self._get_flatten_unknown_node_ontologies()
 
-        if self._graph.has_unknown_ontologies():
+        if self._graph.has_unknown_node_ontologies():
             unique_ontologies.append("Unknown")
 
         unique_ontologies = np.array(
@@ -2190,6 +2201,8 @@ class GraphVisualization:
         if self._node_embedding is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
+                "Please do call the `visualizer.fit_nodes()` "
+                "method before plotting the nodes."
             )
 
         if self._subsampled_node_ids is None:
@@ -2328,7 +2341,9 @@ class GraphVisualization:
 
         if self._edge_embedding is None:
             raise ValueError(
-                "Edge fitting was not yet executed!"
+                "Edge fitting was not yet executed! "
+                "Please do call the `visualizer.fit_edges()` "
+                "method before plotting the nodes."
             )
 
         edge_types = self._get_flatten_unknown_edge_types(
@@ -2444,12 +2459,14 @@ class GraphVisualization:
 
         if self._edge_embedding is None:
             raise ValueError(
-                "Edge fitting was not yet executed!"
+                "Edge fitting was not yet executed! "
+                "Please do call the `visualizer.fit_edges()` "
+                "method before plotting the nodes."
             )
 
         unique_edge_ontologies, edge_ontologies_ids = self._get_flatten_unknown_edge_ontologies()
 
-        if self._graph.has_unknown_ontologies():
+        if self._graph.has_unknown_node_ontologies():
             unique_edge_ontologies.append("unknown")
 
         unique_edge_ontologies = np.array(unique_edge_ontologies, dtype=str)
@@ -2536,7 +2553,9 @@ class GraphVisualization:
 
         if self._edge_embedding is None:
             raise ValueError(
-                "Edge fitting must be executed before plot."
+                "Edge fitting must be executed before plot. "
+                "Please do call the `visualizer.fit_edges()` "
+                "method before plotting the nodes."
             )
 
         if self._subsampled_edge_ids is None:
@@ -2697,10 +2716,118 @@ class GraphVisualization:
         """
         if axis is None:
             fig, axis = plt.subplots(figsize=(5, 5))
-        axis.hist(self._graph.get_edge_weights(), bins=50)
+        axis.hist(
+            self._graph.get_edge_weights(),
+            bins=50
+        )
         axis.set_ylabel("Number of edges")
         axis.set_xlabel("Sorted weights")
         axis.set_title("Weights distribution for {}".format(self._graph_name))
         if apply_tight_layout:
             fig.tight_layout()
         return fig, axis
+
+    def fit_and_plot_all(
+        self,
+        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        number_of_columns: int = 4,
+        show_letters: bool = True,
+        **node_embedding_kwargs: Dict
+    ) -> Tuple[Figure, Axes]:
+        """Fits and plots all available features of the graph.
+        
+        Parameters
+        -------------------------
+        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+            Embedding of the graph nodes.
+            If a string is provided, we will run the node embedding
+            from one of the available methods.
+        number_of_columns: int = 4
+            Number of columns to use for the layout.
+        show_letters: bool = True
+            Whether to show letters on the top left of the subplots.
+        **node_embedding_kwargs: Dict
+            Kwargs to be forwarded to the node embedding algorithm.
+        """
+        self.fit_nodes(node_embedding, **node_embedding_kwargs)
+        self.fit_negative_and_positive_edges(node_embedding, **node_embedding_kwargs)
+
+        scatter_plot_methods_to_call = [
+            self.plot_node_degrees,
+            self.plot_positive_and_negative_edges
+        ]
+
+        distribution_plot_methods_to_call = [
+            self.plot_node_degree_distribution,
+        ]
+
+        if self._graph.has_node_types():
+            scatter_plot_methods_to_call.append(
+                self.plot_node_types
+            )
+        
+        if self._graph.has_node_ontologies():
+            scatter_plot_methods_to_call.append(
+                self.plot_node_ontologies
+            )
+            scatter_plot_methods_to_call.append(
+                self.plot_edge_ontologies
+            )
+
+        if self._graph.has_disconnected_nodes():
+            scatter_plot_methods_to_call.append(
+                self.plot_connected_components
+            )
+
+        if self._graph.has_edge_types():
+            scatter_plot_methods_to_call.append(
+                self.plot_edge_types
+            )
+        
+        if self._graph.has_edge_weights():
+            scatter_plot_methods_to_call.append(
+                self.plot_edge_weights
+            )
+            distribution_plot_methods_to_call.append(
+                self.plot_edge_weight_distribution
+            )
+
+        number_of_total_plots = len(scatter_plot_methods_to_call) + len(distribution_plot_methods_to_call)
+        nrows = max(number_of_total_plots // number_of_columns, 1)
+        ncols = min(number_of_columns, number_of_total_plots)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(5*ncols, 5*ncols),
+            dpi=96
+        )
+
+        for ax, plot_callback, letter in zip(
+            np.array(axes).flatten(),
+            itertools.chain(
+                scatter_plot_methods_to_call,
+                distribution_plot_methods_to_call
+            ),
+            "abcdefghjkilmnopqrstuvwxyz"
+        ):
+            plot_callback(
+                fig,
+                ax,
+                apply_tight_layout=False
+            )
+            if show_letters:
+                ax.text(
+                    0.1,
+                    0.9,
+                    letter,
+                    size=15,
+                    color='purple',
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    weight='bold',
+                )
+        
+        fig.tight_layout()
+
+        return fig, axes
