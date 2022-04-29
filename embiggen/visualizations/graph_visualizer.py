@@ -2543,6 +2543,7 @@ class GraphVisualizer:
             (2, "Tuples"),
             (1, "Singletons"),
         ):
+            print(len(sizes), len(sizes_backup))
             new_component_size = 0
             for i in range(len(components)):
                 if sizes_backup[components[i]] == component_size:
