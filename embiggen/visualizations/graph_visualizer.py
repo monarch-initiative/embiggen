@@ -1747,7 +1747,7 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Adamic-Adar",
             edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
-            use_log_scale=False,
+            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1895,7 +1895,7 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Jaccard Coefficient",
             edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
-            use_log_scale=False,
+            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -3186,14 +3186,15 @@ class GraphVisualizer:
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
 
-        self._show_graph_name = show_name_backup
-
-        if self._show_graph_name:
+        if show_name_backup:
             fig.suptitle(
-                self._graph_name,
+                self._get_complete_title(self._graph_name),
                 fontsize=20
             )
         else:
             fig.tight_layout()
+
+        self._show_graph_name = show_name_backup
+
 
         return fig, axes
