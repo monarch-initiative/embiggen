@@ -1630,27 +1630,23 @@ class GraphVisualizer:
         # The following is needed to normalize the multiple types
         ontologies_counts = Counter(ontology_names)
         ontologies_number = len(ontologies_counts)
-        top_10_ontologies = {
-            ontology: 10 - i
+        ontologies_by_frequencies = {
+            ontology: i
             for i, ontology in enumerate(sorted(
                 ontologies_counts.items(),
                 key=lambda x: x[1],
                 reverse=True
-            )[:10])
-        }
-        ontologies_counts = {
-            ontology: top_10_ontologies.get(ontology, 0)
-            for ontology in ontologies_counts
+            ))
         }
         unknown_ontology_id = ontologies_number
 
         return (
-            list(ontologies_counts.keys()),
+            list(ontologies_by_frequencies.keys()),
             np.fromiter(
                 (
                     unknown_ontology_id
                     if ontology is None
-                    else ontologies_counts[ontology]
+                    else ontologies_by_frequencies.get(ontology)
                     for ontology in ontology_names
                 ),
                 dtype=np.uint32
