@@ -11,7 +11,7 @@ from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.colors import ListedColormap, SymLogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -2254,7 +2254,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": LogNorm()} if use_log_scale else {})
+                **({"norm": SymLogNorm()} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -2482,15 +2482,12 @@ class GraphVisualizer:
 
         unique_edge_ontologies, edge_ontologies_ids = self._get_flatten_unknown_edge_ontologies()
 
-        if self._graph.has_unknown_node_ontologies():
-            unique_edge_ontologies.append("unknown")
-
         unique_edge_ontologies = np.array(unique_edge_ontologies, dtype=str)
 
         return self._plot_types(
             self._edge_embedding,
             self._get_complete_title(
-                "Edge types - {}".format(self._edge_embedding_method)),
+                "Edge ontologies - {}".format(self._edge_embedding_method)),
             types=edge_ontologies_ids,
             type_labels=unique_edge_ontologies,
             legend_title=legend_title,
