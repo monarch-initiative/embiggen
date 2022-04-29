@@ -415,7 +415,7 @@ class GraphVisualizer:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
-        if self._decomposition_method == "TSNE" and X.shape[1] > 50:
+        if self._decomposition_method == "TSNE" and X.shape[1] > 50 and self._graph.get_nodes_number() > 50:
             X = PCA(
                 n_components=50,
                 random_state=self._random_state
