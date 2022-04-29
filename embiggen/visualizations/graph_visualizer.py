@@ -59,6 +59,7 @@ class GraphVisualizer:
         fps: int = 24,
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
+        show_graph_name: Union[str, bool] = "auto",
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
@@ -95,6 +96,10 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        show_graph_name: Union[str, bool] = "auto"
+            Whether to show the graph name in the plots.
+            By default, it is shown if the graph does not have a trivial
+            name such as `Graph`.
         number_of_subsampled_nodes: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
@@ -136,6 +141,9 @@ class GraphVisualizer:
         self._graph = graph
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
+        if show_graph_name == "auto":
+            show_graph_name = self._graph_name.lower() != "graph"
+        self._show_graph_name = show_graph_name
         self._edge_embedding_method = edge_embedding_method
 
         self._node_embedding_method_name = node_embedding_method_name
@@ -753,24 +761,24 @@ class GraphVisualizer:
             })
         return figure, axes
 
-    def _get_complete_title(self, initial_title: str) -> str:
+    def _get_complete_title(self, title: str) -> str:
         """Return the complete title for the figure.
 
         Parameters
         -------------------
-        initial_title: str
+        title: str
             Initial title to incorporate.
         """
-        title = "{} - {}".format(
-            initial_title,
-            self._graph_name,
-        )
+        if self._show_graph_name:
+            title = "{} - {}".format(
+                title,
+                self._graph_name,
+            )
 
         if self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
-            title = "{} - {} ({})".format(
+            title = "{} - {}".format(
                 title,
                 self._node_embedding_method_name,
-                self._decomposition_method,
             )
 
         return title
@@ -2753,7 +2761,11 @@ class GraphVisualizer:
         axes.plot(node_degrees, '.')
         axes.set_ylabel("Node degree")
         axes.set_xlabel("Nodes sorted by degree")
-        axes.set_title("Degrees distribution for {}".format(self._graph_name))
+        if self._show_graph_name:
+            title = "Degrees distribution of graph {}".format(self._graph_name)
+        else:
+            title = "Degrees distribution"
+        axes.set_title(title)
         self._annotate_top_nodes(axes)
         if apply_tight_layout:
             figure.tight_layout()
@@ -2787,7 +2799,11 @@ class GraphVisualizer:
         )
         axes.set_ylabel("Number of edges")
         axes.set_xlabel("Weights")
-        axes.set_title("Weights distribution for {}".format(self._graph_name))
+        if self._show_graph_name:
+            title = "Weights distribution of graph {}".format(self._graph_name)
+        else:
+            title = "Weights distribution"
+        axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
         return figure, axes
@@ -2875,6 +2891,8 @@ class GraphVisualizer:
             dpi=96
         )
 
+        show_name_backup = self._show_graph_name
+        self._show_graph_name = False
         for ax, plot_callback, letter in zip(
             np.array(axes).flatten(),
             itertools.chain(
@@ -2897,6 +2915,7 @@ class GraphVisualizer:
                     color='black',
                     weight='bold',
                 )
+        self._show_graph_name = show_name_backup
         
         fig.tight_layout()
 
