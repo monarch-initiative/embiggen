@@ -2879,10 +2879,12 @@ class GraphVisualizer:
             dpi=96
         )
 
+        flat_axes = np.array(axes).flatten()
+
         show_name_backup = self._show_graph_name
         self._show_graph_name = False
         for ax, plot_callback, letter in zip(
-            np.array(axes).flatten(),
+            flat_axes,
             itertools.chain(
                 scatter_plot_methods_to_call,
                 distribution_plot_methods_to_call
@@ -2898,7 +2900,7 @@ class GraphVisualizer:
             )
             if show_letters:
                 ax.text(
-                    0.0,
+                    -0.1,
                     1.0,
                     letter,
                     size=18,
@@ -2909,6 +2911,10 @@ class GraphVisualizer:
                     transform = ax.transAxes,
 
                 )
+            
+        for axis in flat_axes[len(number_of_total_plots):]:
+            axis.axis("off")
+        
         self._show_graph_name = show_name_backup
 
         fig.tight_layout()
