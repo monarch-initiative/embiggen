@@ -231,7 +231,7 @@ class GraphVisualizer:
                         **dict(
                             n_components=2,
                             random_seed=self._random_state,
-                            verbose=True,
+                            verbose=False,
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
@@ -252,7 +252,7 @@ class GraphVisualizer:
                                 n_jobs=cpu_count(),
                                 n_iter=400,
                                 random_state=self._random_state,
-                                verbose=True,
+                                verbose=False,
                             ),
                             **self._decomposition_kwargs
                         }).fit_transform
@@ -271,7 +271,7 @@ class GraphVisualizer:
                                 n_components=self._n_components,
                                 n_jobs=cpu_count(),
                                 random_state=self._random_state,
-                                verbose=True,
+                                verbose=False,
                                 n_iter=400,
                                 init="pca",
                                 metric="cosine",
@@ -2364,9 +2364,7 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        edge_types = self._get_flatten_unknown_edge_types(
-            self._subsampled_edge_ids
-        )
+        edge_types = self._get_flatten_unknown_edge_types()
 
         edge_type_names_iter = (
             self._graph.get_edge_type_name_from_edge_type_id(edge_id)
