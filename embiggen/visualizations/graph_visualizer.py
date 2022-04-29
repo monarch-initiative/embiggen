@@ -2703,7 +2703,9 @@ class GraphVisualizer:
         """
         if axis is None:
             fig, axis = plt.subplots(figsize=(5, 5))
-        axis.plot(np.sort(self._graph.get_node_degrees()), '.')
+        node_degrees = self._graph.get_node_degrees()
+        node_degrees.sort()
+        axis.plot(node_degrees, '.')
         axis.set_ylabel("Node degree")
         axis.set_xlabel("Nodes sorted by degree")
         axis.set_title("Degrees distribution for {}".format(self._graph_name))
@@ -2739,7 +2741,7 @@ class GraphVisualizer:
             bins=50
         )
         axis.set_ylabel("Number of edges")
-        axis.set_xlabel("Sorted weights")
+        axis.set_xlabel("Weights")
         axis.set_title("Weights distribution for {}".format(self._graph_name))
         if apply_tight_layout:
             fig.tight_layout()
