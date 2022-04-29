@@ -2904,7 +2904,7 @@ class GraphVisualizer:
                     size=18,
                     color='black',
                     weight='bold',
-                    horizontalalignment='center',
+                    horizontalalignment='left',
                     verticalalignment='center',
                     transform = ax.transAxes,
 
