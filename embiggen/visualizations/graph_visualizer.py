@@ -2526,10 +2526,10 @@ class GraphVisualizer:
 
         labels = [
             "Size {}".format(size)
-            for size in sorted([
+            for size in [
                 size
                 for size in sizes
-            ], reverse=True)
+            ]
         ]
 
         # Creating a new "component" with all the nodes of the
@@ -2539,6 +2539,8 @@ class GraphVisualizer:
             (1, "Singletons"),
             (2, "Tuples"),
             (3, "Triples"),
+            (4, "Quadruples"),
+            (5, "Quintuple"),
         ):
             new_component_size = 0
             for i in range(len(components)):
@@ -2574,14 +2576,11 @@ class GraphVisualizer:
                 reverse=True
             ))
         }
-        print(components_remapping)
-        print(labels)
+
         labels = [
             labels[old_component_id]
             for old_component_id in components_remapping.keys()
         ]
-        print(labels)
-
 
         # Remap all other components
         for i in range(len(components)):
