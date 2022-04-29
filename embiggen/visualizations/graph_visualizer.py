@@ -450,14 +450,12 @@ class GraphVisualizer:
         legend = axes.legend(
             handles=handles,
             labels=[
-                "{}...".format(label[:30])
-                if len(label) > 27 else label
+                "{}...".format(label[:20])
+                if len(label) > 17 else label
                 for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
-            title=legend_title,
             ncol=3,
-            title_fontsize=8,
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
