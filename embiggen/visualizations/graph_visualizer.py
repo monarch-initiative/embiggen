@@ -2911,7 +2911,7 @@ class GraphVisualizer:
 
                 )
             
-        for axis in flat_axes[len(number_of_total_plots):]:
+        for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
         
         self._show_graph_name = show_name_backup
