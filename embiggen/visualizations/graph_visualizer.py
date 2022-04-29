@@ -132,7 +132,7 @@ class GraphVisualizer:
             it is installed.
         """
         if isinstance(graph, str):
-            graph = get_dataset(graph)
+            graph = get_dataset(graph)()
         self._graph = graph
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
