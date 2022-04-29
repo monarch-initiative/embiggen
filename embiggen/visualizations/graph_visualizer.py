@@ -14,7 +14,7 @@ from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -2529,15 +2529,15 @@ class GraphVisualizer:
 
         components_remapping = {
             old_component_id: new_component_id
-            for new_component_id, old_component_id in enumerate(sorted(
-                list([
+            for new_component_id, (old_component_id, _) in enumerate(sorted(
+                [
                     (old_component_id, size)
                     for old_component_id, size in enumerate(sizes)
                     if size > 2
-                ]),
+                ],
                 key=lambda x: x[1],
                 reverse=True
-            )[:10])
+            ))
         }
 
         tuples_number = sum(
@@ -2581,7 +2581,9 @@ class GraphVisualizer:
         # Remap all other components
         for i in range(len(components)):
             components[i] = components_remapping.get(
-                components[i], components[i])
+                components[i],
+                components[i]
+            )
 
         returned_values = self._plot_types(
             self._node_embedding,
@@ -2715,13 +2717,13 @@ class GraphVisualizer:
         returned_values = self._wrapped_plot_scatter(
             points=self._node_embedding,
             title=self._get_complete_title("Node degrees"),
-            colors=degrees + sys.float_info.epsilon,
+            colors=degrees,
             figure=figure,
             axes=axes,
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": LogNorm()} if use_log_scale else {})
+                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
