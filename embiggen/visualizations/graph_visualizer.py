@@ -2542,6 +2542,8 @@ class GraphVisualizer:
         ):
             new_component_size = 0
             for i in range(len(components)):
+                # If this is one of the newly created components
+                # we skip it.
                 if components[i] >= components_number:
                     continue
                 if sizes_backup[components[i]] == expected_component_size:
@@ -2572,7 +2574,8 @@ class GraphVisualizer:
                 reverse=True
             ))
         }
-
+        
+        print(labels)
         labels = [
             labels[old_component_id]
             for old_component_id in components_remapping.keys()
