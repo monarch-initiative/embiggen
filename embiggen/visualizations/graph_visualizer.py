@@ -2767,6 +2767,12 @@ class GraphVisualizer:
 
         self._show_graph_name = show_name_backup
 
-        fig.tight_layout()
+        if self._show_graph_name:
+            fig.suptitle(
+                self._get_complete_title(self._graph_name),
+                fontsize=20
+            )
+        else:
+            fig.tight_layout()
 
         return fig, axes
