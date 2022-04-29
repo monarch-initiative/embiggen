@@ -3167,7 +3167,7 @@ class GraphVisualizer:
             plot_callback(
                 figure=fig,
                 axes=ax,
-                **(dict(loc=(0.5, -0.1)) if "loc" in inspect.signature(plot_callback).parameters else dict()),
+                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
             if show_letters:
