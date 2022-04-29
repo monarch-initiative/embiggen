@@ -1724,7 +1724,6 @@ class GraphVisualizer:
             returned_values = figure, axes
         return returned_values
 
-
     def plot_positive_and_negative_edges_adamic_adar(
         self,
         figure: Optional[Figure] = None,
@@ -2522,10 +2521,39 @@ class GraphVisualizer:
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
         components, components_number, _, _ = self._graph.get_connected_components()
-        sizes = np.bincount(components, minlength=components_number)
+        sizes = np.bincount(components, minlength=components_number).lolist()
+        sizes_backup = list(sizes)
 
         if self._subsampled_node_ids is not None:
             components = components[self._subsampled_node_ids]
+
+        labels = [
+            "Size {}".format(size)
+            for size in sorted([
+                size
+                for size in sizes
+            ], reverse=True)
+        ]
+
+        # Creating a new "component" with all the nodes of the
+        # categories of `Triples`, `Tuples` and `Singletons`.
+        current_component_number = components_number
+        for component_size, component_name in (
+            (3, "Triples"),
+            (2, "Tuples"),
+            (1, "Singletons"),
+        ):
+            new_component_size = 0
+            for i in range(len(components)):
+                if sizes_backup[components[i]] == component_size:
+                    components[i] = current_component_number
+                    sizes[components[i]] -= 1
+                    new_component_size += 1
+
+            if new_component_size > 0:
+                labels.append("{} {}".format(new_component_size, component_name))
+                sizes.append(new_component_size)
+                current_component_number += 1
 
         components_remapping = {
             old_component_id: new_component_id
@@ -2533,57 +2561,21 @@ class GraphVisualizer:
                 [
                     (old_component_id, size)
                     for old_component_id, size in enumerate(sizes)
-                    if size > 2
+                    if size > 0
                 ],
                 key=lambda x: x[1],
                 reverse=True
             ))
         }
 
-        tuples_number = sum(
-            int(size == 2)
-            for size in sizes
-        )
-
         labels = [
-            "Size {}".format(size)
-            for size in sorted([
-                size
-                for size in sizes
-                if size > 2
-            ], reverse=True)
+            labels[old_component_id]
+            for old_component_id in components_remapping.keys()
         ]
-
-        if tuples_number > 0:
-            labels.append(
-                "{} Tuples".format(tuples_number)
-            )
-
-            number_of_non_pathological_components = len(components_remapping)
-
-            for i in range(len(components)):
-                if sizes[components[i]] == 2:
-                    components[i] = number_of_non_pathological_components
-
-        if self._graph.has_disconnected_nodes():
-            labels.append(
-                "{} Singletons".format(
-                    self._graph.get_disconnected_nodes_number())
-            )
-
-            number_of_non_pathological_components = len(
-                components_remapping) + int(tuples_number > 0)
-
-            for i in range(len(components)):
-                if sizes[components[i]] == 1:
-                    components[i] = number_of_non_pathological_components
 
         # Remap all other components
         for i in range(len(components)):
-            components[i] = components_remapping.get(
-                components[i],
-                components[i]
-            )
+            components[i] = components_remapping[components[i]]
 
         returned_values = self._plot_types(
             self._node_embedding,
@@ -3243,7 +3235,7 @@ class GraphVisualizer:
                 fontsize=20
             )
         else:
-            fig.tight_layout()        
+            fig.tight_layout()
 
         self._show_graph_name = show_name_backup
 
