@@ -284,7 +284,6 @@ class GraphVisualizer:
                                 verbose=False,
                                 n_iter=400,
                                 init="pca",
-                                metric="cosine",
                                 square_distances=True,
                                 method="exact" if self._n_components == 4 else "barnes_hut",
                             ),
