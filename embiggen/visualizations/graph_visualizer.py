@@ -1571,6 +1571,7 @@ class GraphVisualizer:
         self,
         metric_name: str,
         edge_metric_callback: Callable[[int, int], float],
+        use_log_scale: bool,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1591,6 +1592,8 @@ class GraphVisualizer:
             Name of the metric that will be computed.
         edge_metric_callback: Callable[[int, int], float]
             Callback to compute the metric given two nodes.
+        use_log_scale: bool
+            Whether log scale should be used in the heatmap.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -1665,7 +1668,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": SymLogNorm(linthresh=10, linscale=1)
+                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -1744,6 +1747,7 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Adamic-Adar",
             edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
+            use_log_scale=False,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1811,9 +1815,16 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
+        def wrapper_preferential_attachment(src, dst) -> float:
+            return self._graph.get_preferential_attachment_from_node_ids(
+                src,
+                dst,
+                normalize=True
+            )
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Preferential Attachment",
-            edge_metric_callback=self._graph.get_preferential_attachment_from_node_ids,
+            edge_metric_callback=wrapper_preferential_attachment,
+            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1884,6 +1895,7 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Jaccard Coefficient",
             edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
+            use_log_scale=False,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1954,6 +1966,7 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Resource Allocation Index",
             edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
+            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
