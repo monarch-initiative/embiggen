@@ -2115,7 +2115,7 @@ class GraphVisualizer:
 
         components_remapping = {
             old_component_id: new_component_id
-            for new_component_id, old_component_id, _ in enumerate(sorted(
+            for new_component_id, old_component_id in enumerate(sorted(
                 list([
                     (old_component_id, size)
                     for old_component_id, size in enumerate(sizes)
