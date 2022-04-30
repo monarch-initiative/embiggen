@@ -3342,7 +3342,7 @@ class GraphVisualizer:
             return figure, axes
 
         caption = (
-            f"Node degrees distribution histogram, using {number_of_buckets} buckets, with the node degrees on the "
+            "Node degrees distribution histogram, with the node degrees on the "
             "horizontal axis and node counts on the vertical axis in a logarithmic scale."
         )
 
@@ -3395,7 +3395,7 @@ class GraphVisualizer:
             return figure, axes
 
         caption = (
-            f"Edge weights distribution histogram, using {number_of_buckets} buckets, with the edge weights on the "
+            "Edge weights distribution histogram, with the edge weights on the "
             "horizontal axis and edge counts on the vertical axis in in a logarithmic scale."
         )
 
