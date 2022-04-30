@@ -1776,6 +1776,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=False,
             loc=loc,
             return_collections=True,
             **kwargs
@@ -2867,6 +2868,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=False,
             loc=loc,
             return_collections=True,
             **kwargs
@@ -3142,6 +3144,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=False,
             loc=loc,
             return_collections=True,
             **kwargs
