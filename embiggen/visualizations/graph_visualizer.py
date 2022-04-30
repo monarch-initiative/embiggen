@@ -1794,10 +1794,7 @@ class GraphVisualizer:
             return returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition colore-coded with existing and non-existing edges {metric_name} heatmap, "
-            f"with low {metric_name} values in red hues while high {metric_name} values are in "
-            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+            f"<i>Existing and non-existing edges {metric_name} heatmap</i>"
         )
 
         return (*returned_values, caption)
@@ -2895,10 +2892,7 @@ class GraphVisualizer:
         # TODO! Add caption node abount gaussian ball!
 
         caption = (
-            f"{self._decomposition_method} decomposition colore-coded with node degrees heatmap, "
-            "with low node degrees values in red hues while high node degrees values are in "
-            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+            f"<i>Node degrees heatmap</i>"
         )
 
         return (*returned_values[:2], caption)
@@ -3163,10 +3157,7 @@ class GraphVisualizer:
             return returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition colore-coded with edge weights heatmap, "
-            "with low edge weights values in red hues while high edge weights values are in "
-            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+            f"<i>Edge weights heatmap</i>"
         )
 
         return (*returned_values, caption)
@@ -3415,6 +3406,8 @@ class GraphVisualizer:
 
         complete_caption = f"<b>{self._decomposition_method} decomposition and properties distribution of graph {self._graph_name}:</b>"
 
+        heatmaps_letters = []
+
         for ax, plot_callback, letter in zip(
             flat_axes,
             itertools.chain(
@@ -3431,6 +3424,8 @@ class GraphVisualizer:
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
+            if "heatmap" in caption.lower():
+                heatmaps_letters.append(letter)
             complete_caption += f" <b>({letter})</b> {caption}"
             if show_letters:
                 ax.text(
@@ -3444,6 +3439,20 @@ class GraphVisualizer:
                     verticalalignment='center',
                     transform=ax.transAxes,
                 )
+
+        if len(heatmaps_letters) > 0:
+            complete_caption += (
+                "In the heatmap{plural} in figure{plural} {letters} "
+                "low values appear in red hues while high values appear in "
+                "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
+                "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
+            ).format(
+                plural="s" if len(heatmaps_letters) > 1 else "",
+                letters = ", ".format([
+                    "<b>({})</b>".format(letter)
+                    for letter in heatmaps_letters
+                ])
+            )
 
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
