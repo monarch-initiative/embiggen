@@ -512,18 +512,19 @@ class GraphVisualizer:
         loc: str = 'best'
             Position for the legend.
         """
+        number_of_columns = 1 if len(labels) <= 2 and any(
+            len(label) > 20
+            for label in labels
+        ) else 2
         legend = axes.legend(
             handles=handles,
             labels=[
                 "{}...".format(label[:20])
-                if len(label) > 20 else label
+                if len(label) > 20 and number_of_columns == 2 else label
                 for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
-            ncol=1 if len(labels) <= 2 and any(
-                len(label) > 20
-                for label in labels
-            ) else 2,
+            ncol=number_of_columns,
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
