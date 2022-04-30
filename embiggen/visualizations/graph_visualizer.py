@@ -1291,9 +1291,7 @@ class GraphVisualizer:
         
         fig, axes, color_caption = result
 
-        caption = f"{title} {color_caption}."
-
-        return fig, axes, caption
+        return fig, axes, color_caption
 
     def plot_edge_segments(
         self,
@@ -1572,6 +1570,7 @@ class GraphVisualizer:
         scatter_kwargs: Optional[Dict] = None,
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
@@ -1591,6 +1590,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -1630,7 +1631,7 @@ class GraphVisualizer:
             "Existing edges",
         ]
 
-        return self._plot_types(
+        returned_values =  self._plot_types(
             points=points,
             title=self._get_complete_title(
                 "Existing & non-existing edges",
@@ -1644,15 +1645,28 @@ class GraphVisualizer:
             scatter_kwargs=scatter_kwargs,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             **kwargs
         )
+
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+        fig, axes, types_caption = returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition highlighting graph-wide existing and non existing "
+            f"edges: {types_caption}."
+        )
+
+        return (fig, axes, caption)
 
     def _plot_positive_and_negative_edges_metric(
         self,
         metric_name: str,
         edge_metric_callback: Callable[[int, int], float],
-        use_log_scale: bool,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -1662,6 +1676,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -1673,8 +1688,6 @@ class GraphVisualizer:
             Name of the metric that will be computed.
         edge_metric_callback: Callable[[int, int], float]
             Callback to compute the metric given two nodes.
-        use_log_scale: bool
-            Whether log scale should be used in the heatmap.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -1697,6 +1710,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -1770,7 +1785,18 @@ class GraphVisualizer:
             color_bar.set_alpha(1)
             color_bar.draw_all()
             returned_values = figure, axes
-        return returned_values
+        
+        if not return_caption:
+            return returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition colore-coded with existing and non-existing edges {metric_name} heatmap, "
+            f"with low {metric_name} values in red hues while high {metric_name} values are in "
+            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
+            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+        )
+
+        return (*returned_values, caption)
 
     def plot_positive_and_negative_edges_adamic_adar(
         self,
@@ -1783,6 +1809,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -1812,6 +1839,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -1829,7 +1858,6 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Adamic-Adar",
             edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
-            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1839,6 +1867,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             **kwargs,
         )
@@ -1854,6 +1883,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -1883,6 +1913,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -1906,7 +1938,6 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Preferential Attachment",
             edge_metric_callback=wrapper_preferential_attachment,
-            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1916,6 +1947,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             **kwargs,
         )
@@ -1931,6 +1963,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -1960,6 +1993,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -1977,7 +2012,6 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Jaccard Coefficient",
             edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
-            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -1987,6 +2021,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             **kwargs,
         )
@@ -2002,6 +2037,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -2031,6 +2067,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -2048,7 +2086,6 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Resource Allocation Index",
             edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
-            use_log_scale=True,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2057,6 +2094,7 @@ class GraphVisualizer:
             train_marker=train_marker,
             test_marker=test_marker,
             show_title=show_title,
+            return_caption=return_caption,
             show_legend=show_legend,
             loc=loc,
             **kwargs,
@@ -2208,6 +2246,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -2246,6 +2285,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         show_edges: bool = False,
@@ -2344,7 +2385,18 @@ class GraphVisualizer:
                 points=self._node_embedding,
             )
 
-        return returned_values
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+        fig, axes, types_caption = returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition highlighting the node "
+            f"types: {types_caption}."
+        )
+
+        return (fig, axes, caption)
 
     def plot_node_ontologies(
         self,
@@ -2359,6 +2411,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         show_edges: bool = False,
         edge_scatter_kwargs: Optional[Dict] = None,
@@ -2395,6 +2448,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         show_edges: bool = False,
@@ -2476,7 +2531,18 @@ class GraphVisualizer:
                 points=self._node_embedding,
             )
 
-        return returned_values
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+        fig, axes, types_caption = returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition highlighting the graph detected node "
+            f"ontologies: {types_caption}."
+        )
+
+        return (fig, axes, caption)
 
     def plot_connected_components(
         self,
@@ -2492,6 +2558,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
@@ -2530,6 +2597,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         show_edges: bool = False,
@@ -2571,6 +2640,7 @@ class GraphVisualizer:
         components, components_number, _, _ = self._graph.get_connected_components()
         sizes = np.bincount(components, minlength=components_number).tolist()
         sizes_backup = list(sizes)
+        largest_component_size = max(sizes)
 
         labels = [
             "Size {}".format(size)
@@ -2586,9 +2656,7 @@ class GraphVisualizer:
         for expected_component_size, component_name in (
             (1, "Singletons"),
             (2, "Tuples"),
-            (3, "Triples"),
-            (4, "Quadruples"),
-            (5, "Quintuple"),
+            (None, "Minor components"),
         ):
             new_component_size = 0
             for i in range(len(components)):
@@ -2596,16 +2664,16 @@ class GraphVisualizer:
                 # we skip it.
                 if components[i] >= components_number:
                     continue
-                if sizes_backup[components[i]] == expected_component_size:
+                nodes_component_size = sizes_backup[components[i]]
+                is_in_odd_component = expected_component_size is not  None and nodes_component_size == expected_component_size
+                is_in_minor_component = expected_component_size is None and nodes_component_size < largest_component_size
+                if is_in_odd_component or is_in_minor_component:
                     sizes[components[i]] -= 1
                     components[i] = current_component_number
                     new_component_size += 1
 
             if new_component_size > 0:
-                labels.append("{} {}".format(
-                    new_component_size // expected_component_size,
-                    component_name
-                ))
+                labels.append("{}".format(component_name))
                 sizes.append(new_component_size)
                 current_component_number += 1
 
@@ -2630,6 +2698,8 @@ class GraphVisualizer:
             for old_component_id in components_remapping.keys()
         ]
 
+        labels[0] = "Main component"
+
         # Remap all other components
         for i in range(len(components)):
             components[i] = components_remapping[components[i]]
@@ -2645,6 +2715,7 @@ class GraphVisualizer:
             legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             k=k,
             figure=figure,
@@ -2659,14 +2730,25 @@ class GraphVisualizer:
         )
 
         if annotate_nodes:
-            figure, axes = returned_values
+            figure, axes = returned_values[:2]
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding,
             )
 
-        return returned_values
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+        fig, axes, types_caption = returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition highlighting the graph connected "
+            f"components: {types_caption}."
+        )
+
+        return (fig, axes, caption)
 
     def plot_node_degrees(
         self,
@@ -2680,6 +2762,7 @@ class GraphVisualizer:
         use_log_scale: bool = True,
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
         show_edges: bool = False,
@@ -2714,6 +2797,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
         show_edges: bool = False,
@@ -2798,7 +2883,19 @@ class GraphVisualizer:
                 points=self._node_embedding,
             )
 
-        return returned_values
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+
+        caption = (
+            f"{self._decomposition_method} decomposition colore-coded with node degrees heatmap, "
+            "with low node degrees values in red hues while high node degrees values are in "
+            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
+            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+        )
+
+        return (*returned_values, caption)
 
     def plot_edge_types(
         self,
@@ -2815,6 +2912,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -2852,6 +2950,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption for the image.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -2902,7 +3002,7 @@ class GraphVisualizer:
 
         edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
-        return self._plot_types(
+        returned_values = self._plot_types(
             self._edge_embedding,
             self._get_complete_title(
                 "Edge types",
@@ -2927,6 +3027,19 @@ class GraphVisualizer:
             **kwargs
         )
 
+        if not return_caption:
+            return returned_values
+
+        # TODO! Add caption node abount gaussian ball!
+        fig, axes, types_caption = returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition highlighting the edge "
+            f"types: {types_caption}."
+        )
+
+        return (fig, axes, caption)
+
     def plot_edge_weights(
         self,
         figure: Optional[Figure] = None,
@@ -2938,6 +3051,7 @@ class GraphVisualizer:
         test_marker: str = "X",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         **kwargs: Dict
     ):
@@ -2967,6 +3081,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption for this plot.
         loc: str = 'best'
             Position for the legend.
         **kwargs: Dict,
@@ -3035,7 +3151,18 @@ class GraphVisualizer:
             color_bar.set_alpha(1)
             color_bar.draw_all()
             returned_values = figure, axes
-        return returned_values
+
+        if not return_caption:
+            return returned_values
+
+        caption = (
+            f"{self._decomposition_method} decomposition colore-coded with edge weights heatmap, "
+            "with low edge weights values in red hues while high edge weights values are in "
+            "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
+            "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
+        )
+
+        return (*returned_values, caption)
 
     def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
@@ -3072,7 +3199,8 @@ class GraphVisualizer:
         self,
         figure: Optional[Figure] = None,
         axes: Optional[Figure] = None,
-        apply_tight_layout: bool = True
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
 
@@ -3087,7 +3215,15 @@ class GraphVisualizer:
         apply_tight_layout: bool = True,
             Whether to apply the tight layout on the matplotlib
             Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
         """
+        if axes is None:
+            figure, axes = plt.subplots(figsize=(5, 5))
+        number_of_buckets = min(
+            100,
+            self._graph.get_nodes_number() // 10
+        )
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
         axes.hist(
@@ -3107,13 +3243,23 @@ class GraphVisualizer:
         axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
-        return figure, axes
+        
+        if not return_caption:
+            return figure, axes
+        
+        caption = (
+            f"Node degrees distribution histogram, using {number_of_buckets} buckets, with the node degrees on the "
+            "horizontal axis and node counts on the vertical axis in in logarithmic scale."
+        )
+
+        return figure, axes, caption
 
     def plot_edge_weight_distribution(
         self,
         figure: Optional[Figure] = None,
         axes: Optional[Figure] = None,
-        apply_tight_layout: bool = True
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
 
@@ -3128,15 +3274,18 @@ class GraphVisualizer:
         apply_tight_layout: bool = True,
             Whether to apply the tight layout on the matplotlib
             Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
         """
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
+        number_of_buckets = min(
+            100,
+            self._graph.get_number_of_directed_edges() // 10
+        )
         axes.hist(
             self._graph.get_edge_weights(),
-            bins=min(
-                100,
-                self._graph.get_number_of_directed_edges() // 10
-            ),
+            bins=number_of_buckets,
             log=True
         )
         axes.set_ylabel("Number of edges (log scale)")
@@ -3148,7 +3297,15 @@ class GraphVisualizer:
         axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
-        return figure, axes
+        if not return_caption:
+            return figure, axes
+        
+        caption = (
+            f"Edge weights distribution histogram, using {number_of_buckets} buckets, with the edge weights on the "
+            "horizontal axis and edge counts on the vertical axis in in logarithmic scale."
+        )
+
+        return figure, axes, caption
 
     def fit_and_plot_all(
         self,
