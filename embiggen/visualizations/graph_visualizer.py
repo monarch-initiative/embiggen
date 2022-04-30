@@ -15,7 +15,7 @@ from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
+from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm, FuncNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -1806,8 +1806,8 @@ class GraphVisualizer:
         )
 
         points = np.vstack([
-            self._edge_embedding,
             self._negative_edge_embedding,
+            self._edge_embedding,
         ])
 
         points, shuffled_edge_metrics = self._shuffle(points, edge_metrics)
@@ -1824,7 +1824,10 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": LogNorm()
+                "norm": FuncNorm((
+                    lambda x: np.log(np.log(x)),
+                    lambda y: np.exp(np.exp(y))
+                ))
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -1894,7 +1897,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            f"<i>Existing and non-existing edges {metric_name} heatmap</i>. {metric_caption}"
+            f"<i>{metric_name} heatmap</i>. {metric_caption}"
         )
 
         return (*returned_values, caption)
@@ -3544,7 +3547,8 @@ class GraphVisualizer:
                 " In the heatmap{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-                "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
+                "The scale used for the degrees is a logarithmic scale, "
+                "while the edge metrics are in a double logarithmic scale. "
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
