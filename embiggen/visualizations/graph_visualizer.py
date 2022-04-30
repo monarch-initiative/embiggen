@@ -1083,9 +1083,10 @@ class GraphVisualizer:
                 )
 
             caption = ", ".join([
-                "{optional_and}{label} in {color_name}".format(
+                '{optional_and}<span style="display: inline-block; border-radius: 3px; border: 1px solid {color_hexa};">{label}</span> in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
+                    color_hexa=color_hexas[color_name],
                     optional_and="and " if i == len(color_to_be_used) else ""
                 )
                 for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
@@ -3412,7 +3413,7 @@ class GraphVisualizer:
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
 
-        complete_caption = f"<b>{self._decomposition_method} decomposition and properties distribution of graph {self._graph_name}:</b>"
+        complete_caption = f"<b>{self._decomposition_method} decomposition and properties distribution of the {self._graph_name} graph:</b>"
 
         heatmaps_letters = []
 
