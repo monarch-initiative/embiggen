@@ -1230,7 +1230,7 @@ class GraphVisualizer:
                 ).format(type(types))
             )
 
-        return_caption = return_caption and self._rotate
+        return_caption = return_caption and not self._rotate
         counts = np.bincount(types)
         number_of_types = len(counts)
         top_counts = [
@@ -2376,6 +2376,7 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
+            return_caption=return_caption,
             loc=loc,
             **kwargs
         )
