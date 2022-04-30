@@ -3653,8 +3653,11 @@ class GraphVisualizer:
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
-                    "{}".format(letter)
-                    for letter in heatmaps_letters
+                    "{optional_and}{letter}".format(
+                        letter=letter,
+                        optional_and="and " if i > 0 and i == len(heatmaps_letters) else ""
+                    )
+                    for i, letter in enumerate(heatmaps_letters)
                 ])
             )
 
