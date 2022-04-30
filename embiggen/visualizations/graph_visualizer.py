@@ -23,6 +23,8 @@ from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.model_selection import ShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
 try:
@@ -1083,11 +1085,12 @@ class GraphVisualizer:
                 )
 
             caption = ", ".join([
-                '{optional_and}<span style="text-decoration: underline solid {color_hexa} 2px;">`{label}`</span> in {color_name}'.format(
+                '{optional_and}<span style="text-decoration: underline solid {color_hexa} 4px;">{quotations}{label}{quotations}</span> in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
                     color_hexa=color_hexas[color_name],
-                    optional_and="and " if i == len(color_to_be_used) else ""
+                    quotations="\'" if "other" not in label else "",
+                    optional_and="and " if i == len(color_to_be_used) - 1 else ""
                 )
                 for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
             ])
@@ -1308,7 +1311,46 @@ class GraphVisualizer:
 
         fig, axes, color_caption = result
 
-        return fig, axes, color_caption
+        tree = DecisionTreeClassifier(
+            max_depth=5,
+            random_state=self._random_state
+        )
+
+        train_indices, test_indices = ShuffleSplit(
+            n_splits=1,
+            test_size=0.3,
+            random_state=self._random_state
+        ).split(points, types)
+
+        train_x, test_x = points[train_indices], points[test_indices]
+        train_y, test_y = types[train_indices], types[test_indices]
+
+        tree.fit(train_x, train_y)
+
+        score = balanced_accuracy_score(
+            test_y,
+            tree.predict(test_x)
+        )
+
+        if score > 0.6:
+            if score > 0.95:
+                descriptor = "extremely well recognizable clusters"
+            elif score > 0.8:
+                descriptor = "recognizable clusters"
+            elif score > 0.7:
+                descriptor = "some clusters"
+            else:
+                descriptor = "some possible cluster"
+            type_caption = (
+                f"The different classes form {descriptor}."
+            )
+        else:
+            type_caption = (
+                "The different classes do not appear "
+                "to form recognizable clusters."
+            )
+
+        return fig, axes, f"{color_caption}. {type_caption}"
 
     def plot_edge_segments(
         self,
@@ -1807,7 +1849,7 @@ class GraphVisualizer:
             return returned_values
 
         caption = (
-            f"<i>Existing and non-existing edges {metric_name} heatmap</i>"
+            f"<i>Existing and non-existing edges {metric_name} heatmap</i>."
         )
 
         return (*returned_values, caption)
@@ -2902,7 +2944,7 @@ class GraphVisualizer:
         # TODO! Add caption node abount gaussian ball!
 
         caption = (
-            f"<i>Node degrees heatmap</i>"
+            f"<i>Node degrees heatmap</i>."
         )
 
         return (*returned_values[:2], caption)
@@ -3166,7 +3208,7 @@ class GraphVisualizer:
             return returned_values
 
         caption = (
-            f"<i>Edge weights heatmap</i>"
+            f"<i>Edge weights heatmap</i>."
         )
 
         return (*returned_values, caption)
@@ -3256,7 +3298,7 @@ class GraphVisualizer:
 
         caption = (
             f"Node degrees distribution histogram, using {number_of_buckets} buckets, with the node degrees on the "
-            "horizontal axis and node counts on the vertical axis in logarithmic scale."
+            "horizontal axis and node counts on the vertical axis in a logarithmic scale."
         )
 
         return figure, axes, caption
@@ -3309,7 +3351,7 @@ class GraphVisualizer:
 
         caption = (
             f"Edge weights distribution histogram, using {number_of_buckets} buckets, with the edge weights on the "
-            "horizontal axis and edge counts on the vertical axis in in logarithmic scale."
+            "horizontal axis and edge counts on the vertical axis in in a logarithmic scale."
         )
 
         return figure, axes, caption
@@ -3454,7 +3496,7 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                " In the heatmap{plural} in figure{plural} <b>{letters}</b>, "
+                " In the heatmap{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
