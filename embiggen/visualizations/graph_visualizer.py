@@ -2895,7 +2895,7 @@ class GraphVisualizer:
             "The scale used, as shown in the bar on the right of heatmap, is logarithmic. "
         )
 
-        return (*returned_values, caption)
+        return (*returned_values[:2], caption)
 
     def plot_edge_types(
         self,
