@@ -1089,7 +1089,7 @@ class GraphVisualizer:
                     label=label,
                     color_name=color_name.split(":")[1],
                     color_hexa=color_hexas[color_name],
-                    quotations="\'" if "other" not in label else "",
+                    quotations="\'" if "other" not in label.lower() else "",
                     optional_and="and " if i == len(color_to_be_used) - 1 else ""
                 )
                 for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
