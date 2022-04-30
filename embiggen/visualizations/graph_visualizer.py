@@ -43,7 +43,6 @@ if is_notebook():
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
-from .logscale100 import LogNorm100
 
 
 class GraphVisualizer:
@@ -1811,7 +1810,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": LogNorm100()
+                "norm": LogNorm()
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -1864,10 +1863,10 @@ class GraphVisualizer:
             tree.predict(test_x)
         )
 
-        if score > 0.65:
+        if score > 0.7:
             if score > 0.95:
                 descriptor = "is an extremely good edge prediction feature"
-            elif score > 0.75:
+            elif score > 0.8:
                 descriptor = "is a good edge prediction feature"
             else:
                 descriptor = "may be considered as an edge prediction feature"
@@ -3531,8 +3530,7 @@ class GraphVisualizer:
                 " In the heatmap{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-                "The scale used for the degrees is a logarithmic scale, "
-                "while the edge metrics are in a log100 scale. "
+                "The values are in a logaritmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
