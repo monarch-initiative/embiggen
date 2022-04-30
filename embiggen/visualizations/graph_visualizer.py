@@ -520,7 +520,10 @@ class GraphVisualizer:
                 for label in sanitize_ml_labels(labels)
             ],
             loc=loc,
-            ncol=2,
+            ncol=1 if len(labels) <= 2 and any(
+                len(label) > 20
+                for label in labels
+            ) else 2,
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
