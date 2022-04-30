@@ -1328,11 +1328,11 @@ class GraphVisualizer:
             else:
                 descriptor = "some possible cluster"
             type_caption = (
-                f"The different classes form {descriptor}"
+                f"The different {title.lower()} form {descriptor}"
             )
         else:
             type_caption = (
-                "The different classes do not appear "
+                f"The different {title.lower()} do not appear "
                 "to form recognizable clusters"
             )
 
