@@ -23,7 +23,7 @@ from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import ShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
@@ -1327,7 +1327,7 @@ class GraphVisualizer:
 
         tree.fit(train_x, train_y)
 
-        score = balanced_accuracy_score(
+        score = accuracy_score(
             test_y,
             tree.predict(test_x)
         )
@@ -1335,7 +1335,7 @@ class GraphVisualizer:
         if score > 0.6:
             if score > 0.95:
                 descriptor = "extremely well recognizable clusters"
-            elif score > 0.8:
+            elif score > 0.85:
                 descriptor = "recognizable clusters"
             elif score > 0.7:
                 descriptor = "some clusters"
@@ -1673,14 +1673,14 @@ class GraphVisualizer:
             )
 
         points = np.vstack([
+            self._negative_edge_embedding,
             self._edge_embedding,
-            self._negative_edge_embedding
         ])
 
         types = np.concatenate([
-            np.ones(self._edge_embedding.shape[0], dtype="int64"),
             np.zeros(
                 self._negative_edge_embedding.shape[0], dtype="int64"),
+            np.ones(self._edge_embedding.shape[0], dtype="int64"),
         ])
 
         points, types = self._shuffle(points, types)
@@ -1806,11 +1806,11 @@ class GraphVisualizer:
         )
 
         points = np.vstack([
-            self._negative_edge_embedding,
             self._edge_embedding,
+            self._negative_edge_embedding,
         ])
 
-        points, edge_metrics = self._shuffle(points, edge_metrics)
+        points, shuffled_edge_metrics = self._shuffle(points, edge_metrics)
 
         returned_values = self._wrapped_plot_scatter(
             points=points,
@@ -1818,7 +1818,7 @@ class GraphVisualizer:
                 metric_name,
                 show_edge_embedding=True
             ),
-            colors=edge_metrics,
+            colors=shuffled_edge_metrics,
             figure=figure,
             axes=axes,
             scatter_kwargs={
@@ -1848,8 +1848,53 @@ class GraphVisualizer:
         if not return_caption:
             return returned_values
 
+        tree = DecisionTreeClassifier(
+            max_depth=5,
+            random_state=self._random_state
+        )
+
+        train_indices, test_indices = next(ShuffleSplit(
+            n_splits=1,
+            test_size=0.3,
+            random_state=self._random_state
+        ).split(edge_metrics))
+
+        types = np.concatenate([
+            np.zeros(
+                self._negative_edge_embedding.shape[0], dtype="int64"),
+            np.ones(self._edge_embedding.shape[0], dtype="int64"),
+        ])
+
+        train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
+        train_y, test_y = types[train_indices], types[test_indices]
+
+        tree.fit(train_x, train_y)
+
+        score = accuracy_score(
+            test_y,
+            tree.predict(test_x)
+        )
+
+        if score > 0.6:
+            if score > 0.95:
+                descriptor = "an extremely good edge prediction feature"
+            elif score > 0.8:
+                descriptor = "an good edge prediction feature"
+            elif score > 0.7:
+                descriptor = "a relevant edge prediction feature"
+            else:
+                descriptor = "an possible edge prediction feature"
+            metric_caption = (
+                f"This metric is {descriptor}."
+            )
+        else:
+            metric_caption = (
+                "The different classes do not appear "
+                "to form recognizable clusters."
+            )
+
         caption = (
-            f"<i>Existing and non-existing edges {metric_name} heatmap</i>."
+            f"<i>Existing and non-existing edges {metric_name} heatmap</i>. {metric_caption}"
         )
 
         return (*returned_values, caption)
