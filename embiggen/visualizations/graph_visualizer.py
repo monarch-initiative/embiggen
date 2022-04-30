@@ -1853,6 +1853,8 @@ class GraphVisualizer:
             random_state=self._random_state
         )
 
+        edge_metrics = edge_metrics.reshape((-1, 1))
+
         train_indices, test_indices = next(ShuffleSplit(
             n_splits=1,
             test_size=0.3,
