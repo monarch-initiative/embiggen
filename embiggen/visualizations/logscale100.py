@@ -3,10 +3,12 @@ from matplotlib.colors import _make_norm_from_scale, Normalize
 from matplotlib.scale import LogScale
 import numpy as np
 
+
 class LogScale100(LogScale):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, base=100, **kwargs)
+
 
 @_make_norm_from_scale(functools.partial(LogScale100, nonpositive="mask"))
 class LogNorm100(Normalize):

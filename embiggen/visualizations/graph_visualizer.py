@@ -43,7 +43,7 @@ if is_notebook():
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
-from .logscale100 import LogScale100
+from .logscale100 import LogNorm100
 
 
 class GraphVisualizer:
@@ -1811,7 +1811,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": LogScale100()
+                "norm": LogNorm100()
             },
             train_indices=train_indices,
             test_indices=test_indices,
