@@ -169,6 +169,7 @@ class GraphVisualizer:
         self._show_node_embedding_method = show_node_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
+        self._automatically_display_on_notebooks = automatically_display_on_notebooks
 
         self._node_embedding_method_name = node_embedding_method_name
         self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
@@ -3430,7 +3431,7 @@ class GraphVisualizer:
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
-            complete_caption += f" <b>({letter})</b> {caption}."
+            complete_caption += f" <b>({letter})</b> {caption}"
             if show_letters:
                 ax.text(
                     -0.1,
@@ -3465,8 +3466,9 @@ class GraphVisualizer:
 
         complete_caption = f'<p style="text-align: justify; word-break: break-all;">{complete_caption}</p>'
 
-        if is_notebook():
+        if is_notebook() and self._automatically_display_on_notebooks:
             display(fig)
             display(HTML(complete_caption))
+            plt.close()
         else:
             return fig, axes, complete_caption
