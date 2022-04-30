@@ -1083,7 +1083,7 @@ class GraphVisualizer:
                 )
 
             caption = ", ".join([
-                '{optional_and}<span style="display: inline-block; border-radius: 3px; border: 1px solid {color_hexa};">{label}</span> in {color_name}'.format(
+                '{optional_and}<span style="text-decoration: underline solid {color_hexa} 2px;">`{label}`</span> in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
                     color_hexa=color_hexas[color_name],
@@ -1674,7 +1674,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"Graph-wide existing and non existing edges: {types_caption}."
+            f"Graph-wide existing and non-existing edges: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -3256,7 +3256,7 @@ class GraphVisualizer:
 
         caption = (
             f"Node degrees distribution histogram, using {number_of_buckets} buckets, with the node degrees on the "
-            "horizontal axis and node counts on the vertical axis in in logarithmic scale."
+            "horizontal axis and node counts on the vertical axis in logarithmic scale."
         )
 
         return figure, axes, caption
@@ -3454,7 +3454,7 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                "<br>In the heatmap{plural} in figure{plural} <b>{letters}</b>, "
+                " In the heatmap{plural} in figure{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
