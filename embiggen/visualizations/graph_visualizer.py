@@ -3450,7 +3450,7 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                " In the heatmap{plural} in figure{plural} <b>{letters}</b> "
+                "<br>In the heatmap{plural} in figure{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
