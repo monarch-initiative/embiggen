@@ -408,7 +408,7 @@ class GraphVisualizer:
             else:
                 node_embedding = self._node_embedding_method_name
         if isinstance(node_embedding, str):
-            if self._node_embedding_method_name == "auto":
+            if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
                 self._has_autodetermined_node_embedding_name = True
                 self._node_embedding_method_name = node_embedding
             node_embedding, _ = compute_node_embedding(
