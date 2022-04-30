@@ -1825,8 +1825,8 @@ class GraphVisualizer:
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
                 "norm": FuncNorm((
-                    lambda x: np.log(np.log(x)),
-                    lambda y: np.exp(np.exp(y))
+                    lambda x: np.log(x) / np.log(100),
+                    lambda y: 100 ** y
                 ))
             },
             train_indices=train_indices,
@@ -3548,7 +3548,7 @@ class GraphVisualizer:
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The scale used for the degrees is a logarithmic scale, "
-                "while the edge metrics are in a double logarithmic scale. "
+                "while the edge metrics are in a log100 scale. "
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
