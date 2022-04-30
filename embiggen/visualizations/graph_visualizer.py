@@ -1863,7 +1863,7 @@ class GraphVisualizer:
             tree.predict(test_x)
         )
 
-        if score > 0.7:
+        if score > 0.6:
             if score > 0.95:
                 descriptor = "is an extremely good edge prediction feature"
             elif score > 0.8:
