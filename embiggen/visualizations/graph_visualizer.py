@@ -1421,7 +1421,7 @@ class GraphVisualizer:
                 "to form recognizable clusters"
             )
 
-        return fig, axes, f"{color_caption}. {type_caption}"
+        return fig, axes, f"{color_caption}. {type_caption} (Decision Tree test accuracy: {accuracy:.2%})"
 
     def plot_edge_segments(
         self,
@@ -1975,17 +1975,17 @@ class GraphVisualizer:
 
         tree.fit(train_x, train_y)
 
-        score = accuracy_score(
+        accuracy = accuracy_score(
             test_y,
             tree.predict(test_x)
         )
 
         bipartite = "bipartite " if self._is_bipartite_edge_prediction else ""
 
-        if score > 0.6:
-            if score > 0.95:
+        if accuracy > 0.6:
+            if accuracy > 0.95:
                 descriptor = f"is an extremely good {bipartite}edge prediction feature"
-            elif score > 0.75:
+            elif accuracy > 0.75:
                 descriptor = f"is a good {bipartite}edge prediction feature"
             else:
                 descriptor = f"may be considered as {bipartite}edge prediction feature"
@@ -1999,7 +1999,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            f"<i>{metric_name} heatmap</i>. {metric_caption}"
+            f"<i>{metric_name} heatmap</i>. {metric_caption} (Decision Tree test accuracy: {accuracy:.2%})"
         )
 
         return (*returned_values, caption)
