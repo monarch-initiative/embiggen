@@ -1326,7 +1326,7 @@ class GraphVisualizer:
             elif accuracy > 0.7:
                 descriptor = "some clusters"
             else:
-                descriptor = "some possible cluster"
+                descriptor = "some possible clusters"
             type_caption = (
                 f"The different {title.lower()} form {descriptor}"
             )
@@ -2272,7 +2272,7 @@ class GraphVisualizer:
                     unknown_ontology_id
                     if ontology is None
                     else ontologies_by_frequencies[ontology]
-                    for ontology in ontology_names
+                    for ontology ontology_names
                 ),
                 dtype=np.uint32
             )
@@ -3329,7 +3329,7 @@ class GraphVisualizer:
 
         caption = (
             "Node degrees distribution histogram, with the node degrees on the "
-            "horizontal axis and node counts on the vertical axis in a logarithmic scale."
+            "horizontal axis and node counts on the vertical axis on a logarithmic scale."
         )
 
         return figure, axes, caption
@@ -3382,7 +3382,7 @@ class GraphVisualizer:
 
         caption = (
             "Edge weights distribution histogram, with the edge weights on the "
-            "horizontal axis and edge counts on the vertical axis in in a logarithmic scale."
+            "horizontal axis and edge counts on the vertical axis on a logarithmic scale."
         )
 
         return figure, axes, caption
@@ -3530,7 +3530,7 @@ class GraphVisualizer:
                 " In the heatmap{plural} <b>{letters}</b>, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
-                "The values are in a logaritmic scale."
+                "The values are on a logarithmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
