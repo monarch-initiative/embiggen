@@ -816,7 +816,7 @@ class GraphVisualizer:
                 self._edge_embedding_method,
             )
 
-        return title
+        return sanitize_ml_labels(title)
 
     def _plot_scatter(
         self,
@@ -3220,7 +3220,7 @@ class GraphVisualizer:
             if show_letters:
                 ax.text(
                     -0.1,
-                    1.0,
+                    1.1,
                     letter,
                     size=18,
                     color='black',
