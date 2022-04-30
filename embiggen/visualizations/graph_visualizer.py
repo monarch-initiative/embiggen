@@ -1085,7 +1085,7 @@ class GraphVisualizer:
                 )
 
             caption = ", ".join([
-                '{optional_and}<span style="text-decoration: underline solid {color_hexa} 4px;">{quotations}{label}{quotations}</span> in {color_name}'.format(
+                '{optional_and}{quotations}{label}{quotations} in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
                     color_hexa=color_hexas[color_name],
@@ -1327,17 +1327,17 @@ class GraphVisualizer:
 
         tree.fit(train_x, train_y)
 
-        score = accuracy_score(
+        accuracy = accuracy_score(
             test_y,
             tree.predict(test_x)
         )
 
-        if score > 0.6:
-            if score > 0.95:
+        if accuracy > 0.6:
+            if accuracy > 0.95:
                 descriptor = "extremely well recognizable clusters"
-            elif score > 0.85:
+            elif accuracy > 0.85:
                 descriptor = "recognizable clusters"
-            elif score > 0.7:
+            elif accuracy > 0.7:
                 descriptor = "some clusters"
             else:
                 descriptor = "some possible cluster"
@@ -1877,17 +1877,15 @@ class GraphVisualizer:
             tree.predict(test_x)
         )
 
-        if score > 0.6:
+        if score > 0.65:
             if score > 0.95:
-                descriptor = "an extremely good edge prediction feature"
-            elif score > 0.8:
-                descriptor = "an good edge prediction feature"
-            elif score > 0.7:
-                descriptor = "a relevant edge prediction feature"
+                descriptor = "is an extremely good edge prediction feature"
+            elif score > 0.75:
+                descriptor = "is a good edge prediction feature"
             else:
-                descriptor = "an possible edge prediction feature"
+                descriptor = "may be considered as an edge prediction feature"
             metric_caption = (
-                f"This metric is {descriptor}"
+                f"This metric {descriptor}"
             )
         else:
             metric_caption = (
