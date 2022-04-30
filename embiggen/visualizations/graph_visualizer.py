@@ -2756,7 +2756,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            "<i>Connected components</i>: {types_caption}."
+            f"<i>Connected components</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -3450,13 +3450,13 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                "In the heatmap{plural} in figure{plural} {letters} "
+                " In the heatmap{plural} in figure{plural} {letters} "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
-                letters=", ".format([
+                letters=", ".join([
                     "<b>({})</b>".format(letter)
                     for letter in heatmaps_letters
                 ])
