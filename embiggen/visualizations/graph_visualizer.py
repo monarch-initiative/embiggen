@@ -10,6 +10,7 @@ import warnings
 import math
 import sys
 import inspect
+from environments_utils import is_notebook
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
@@ -21,6 +22,7 @@ from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from sklearn.tree import DecisionTreeClassifier
 from tqdm.auto import trange, tqdm
 import itertools
 try:
@@ -31,6 +33,11 @@ except ImportError:
         "you will not be able to execute 3D animations with the visualization "
         "pipeline."
     )
+
+# If we are in a Jupyter notebook, we will use
+# the display method within the visualization.
+if is_notebook():
+    from IPython.display import display
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
@@ -65,6 +72,7 @@ class GraphVisualizer:
         show_graph_name: Union[str, bool] = "auto",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
+        automatically_display_on_notebooks: bool = True,
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
@@ -111,6 +119,9 @@ class GraphVisualizer:
         show_edge_embedding_method: bool = True
             Whether to show the edge embedding method.
             By default, we show it if we can detect it.
+        automatically_display_on_notebooks: bool = True
+            Whether to automatically show the plots and the captions
+            using the display command when in jupyter notebooks.
         number_of_subsampled_nodes: int = 20_000,
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
@@ -828,6 +839,7 @@ class GraphVisualizer:
         legend_title: str = "",
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
@@ -945,9 +957,10 @@ class GraphVisualizer:
         ])
 
         if colors is not None:
+            color_to_be_used = color_names[:int(colors.max() + 1)]
             cmap = scatter_kwargs.pop(
                 "cmap",
-                ListedColormap(color_names[:int(colors.max() + 1)])
+                ListedColormap(color_to_be_used)
             )
         else:
             cmap = None
@@ -1045,6 +1058,24 @@ class GraphVisualizer:
 
         if return_collections and not self._rotate:
             return figure, axes, collections
+
+        if return_caption:
+            if colors is None or labels is None:
+                raise ValueError(
+                    "It does not make sense to ask for a caption to the "
+                    "scatter plot without providing colors or labels to it."
+                )
+
+            caption = ", ".join([
+                "{optional_and}{label} in {color_name}".format(
+                    label=label,
+                    color_name=color_name.split(":")[1],
+                    optional_and="and " if i == len(color_to_be_used) else ""
+                )
+                for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
+            ])
+
+            return figure, axes, caption
         return figure, axes
 
     def _wrapped_plot_scatter(self, **kwargs):
@@ -1098,6 +1129,7 @@ class GraphVisualizer:
         legend_title: str,
         show_title: bool = True,
         show_legend: bool = True,
+        return_caption: bool = True,
         loc: str = "best",
         predictions: Optional[List[int]] = None,
         k: int = 7,
@@ -1129,6 +1161,8 @@ class GraphVisualizer:
             Whether to show the figure title.
         show_legend: bool = True,
             Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return the caption for the provided types.
         loc: str = 'best'
             Position for the legend.
         predictions: Optional[List[int]] = None,
@@ -1194,6 +1228,7 @@ class GraphVisualizer:
                 ).format(type(types))
             )
 
+        return_caption = return_caption and self._rotate
         counts = np.bincount(types)
         number_of_types = len(counts)
         top_counts = [
@@ -1225,10 +1260,12 @@ class GraphVisualizer:
             type_labels.append(other_label.format(number_of_types - k))
 
         type_labels = sanitize_ml_labels(
-            type_labels[:k]) + sanitize_ml_labels(type_labels[k:])
+            type_labels[:k]
+        ) + sanitize_ml_labels(type_labels[k:])
 
-        return self._wrapped_plot_scatter(**{
+        result = self._wrapped_plot_scatter(**{
             **dict(
+                return_caption=return_caption,
                 points=points,
                 title=title,
                 colors=types,
@@ -1248,6 +1285,15 @@ class GraphVisualizer:
             ),
             **kwargs
         })
+
+        if not return_caption:
+            return result
+        
+        fig, axes, color_caption = result
+
+        caption = f"{title} {color_caption}."
+
+        return fig, axes, caption
 
     def plot_edge_segments(
         self,
@@ -1579,6 +1625,11 @@ class GraphVisualizer:
 
         points, types = self._shuffle(points, types)
 
+        labels = [
+            "Non-existing edges",
+            "Existing edges",
+        ]
+
         return self._plot_types(
             points=points,
             title=self._get_complete_title(
@@ -1586,10 +1637,7 @@ class GraphVisualizer:
                 show_edge_embedding=True
             ),
             types=types,
-            type_labels=np.array([
-                "Non-existing edges",
-                "Existing edges",
-            ]),
+            type_labels=np.array(labels),
             legend_title="Edges",
             figure=figure,
             axes=axes,
@@ -3201,6 +3249,8 @@ class GraphVisualizer:
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
 
+        complete_caption = f"<b>{self._decomposition_method} decomposition and properties distribution of graph {self._graph_name}:</b>"
+
         for ax, plot_callback, letter in zip(
             flat_axes,
             itertools.chain(
@@ -3211,12 +3261,13 @@ class GraphVisualizer:
             "abcdefghjkilmnopqrstuvwxyz"
         ):
             inspect.signature(plot_callback).parameters
-            plot_callback(
+            _, _, caption = plot_callback(
                 figure=fig,
                 axes=ax,
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
+            complete_caption += f" <b>({letter})</b> {caption}."
             if show_letters:
                 ax.text(
                     -0.1,
@@ -3249,4 +3300,10 @@ class GraphVisualizer:
 
         self._show_graph_name = show_name_backup
 
-        return fig, axes
+        complete_caption = f'<p style="text-align: justify; word-break: break-all;">{complete_caption}</p>'
+
+        if is_notebook():
+            display(fig)
+            display(complete_caption)
+        else:
+            return fig, axes, complete_caption
