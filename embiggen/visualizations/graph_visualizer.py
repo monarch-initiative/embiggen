@@ -765,7 +765,7 @@ class GraphVisualizer:
                 size=self._number_of_subsampled_negative_edges
             )]
 
-        edge_node_ids = self._subsampled_negative_edge_node_ids = np.hstack((
+        edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
             source_node_ids,
             destination_node_ids
         ))
