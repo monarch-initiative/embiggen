@@ -959,19 +959,6 @@ class GraphVisualizer:
             "tab:cyan",
         ])
 
-        color_hexas = {
-            "tab:blue": "#1f77b4",
-            "tab:orange": "#ff7f0e",
-            "tab:green": "#2ca02c",
-            "tab:red": "#d62728",
-            "tab:purple": "#9467bd",
-            "tab:brown": "#8c564b",
-            "tab:pink": "#e377c2",
-            "tab:gray": "#7f7f7f",
-            "tab:olive": "#bcbd22",
-            "tab:cyan": "#17becf",
-        }
-
         if colors is not None:
             color_to_be_used = color_names[:int(colors.max() + 1)]
             cmap = scatter_kwargs.pop(
@@ -1088,7 +1075,6 @@ class GraphVisualizer:
                 '{optional_and}{quotations}{label}{quotations} in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
-                    color_hexa=color_hexas[color_name],
                     quotations="\'" if "other" not in label.lower() else "",
                     optional_and="and " if i == len(color_to_be_used) - 1 else ""
                 )
