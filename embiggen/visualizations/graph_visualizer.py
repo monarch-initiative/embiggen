@@ -1342,12 +1342,12 @@ class GraphVisualizer:
             else:
                 descriptor = "some possible cluster"
             type_caption = (
-                f"The different classes form {descriptor}."
+                f"The different classes form {descriptor}"
             )
         else:
             type_caption = (
                 "The different classes do not appear "
-                "to form recognizable clusters."
+                "to form recognizable clusters"
             )
 
         return fig, axes, f"{color_caption}. {type_caption}"
@@ -1885,12 +1885,12 @@ class GraphVisualizer:
             else:
                 descriptor = "an possible edge prediction feature"
             metric_caption = (
-                f"This metric is {descriptor}."
+                f"This metric is {descriptor}"
             )
         else:
             metric_caption = (
                 "The metric does not seem to be useful for "
-                "edge prediction."
+                "edge prediction"
             )
 
         caption = (
