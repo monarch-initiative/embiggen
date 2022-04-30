@@ -1057,7 +1057,9 @@ class GraphVisualizer:
             figure.tight_layout()
 
         if return_collections and not self._rotate:
-            return figure, axes, collections
+            return_values = figure, axes, collections
+        else:
+            return_values = figure, axes
 
         if return_caption:
             if colors is None or labels is None:
@@ -1075,8 +1077,8 @@ class GraphVisualizer:
                 for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
             ])
 
-            return figure, axes, caption
-        return figure, axes
+            return_values = (*return_values, caption)
+        return return_values
 
     def _wrapped_plot_scatter(self, **kwargs):
         if self._rotate:
