@@ -1316,11 +1316,11 @@ class GraphVisualizer:
             random_state=self._random_state
         )
 
-        train_indices, test_indices = ShuffleSplit(
+        train_indices, test_indices = next(ShuffleSplit(
             n_splits=1,
             test_size=0.3,
             random_state=self._random_state
-        ).split(points, types)
+        ).split(points))
 
         train_x, test_x = points[train_indices], points[test_indices]
         train_y, test_y = types[train_indices], types[test_indices]
