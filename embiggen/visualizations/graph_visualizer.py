@@ -71,6 +71,9 @@ class GraphVisualizer:
         fps: int = 24,
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
+        edge_prediction_edge_type: Optional[str] = None,
+        edge_prediction_source_node_type: Optional[str] = None,
+        edge_prediction_destination_node_type: Optional[str] = None,
         show_graph_name: Union[str, bool] = "auto",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
@@ -111,6 +114,26 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        edge_prediction_edge_type: Optional[str] = None
+            The edge type of the edges to be used as positives in the visualization
+            for edge prediction. This will limit the sampling of positive edges only
+            to this specific edge type.
+        edge_prediction_source_node_type: Optional[str] = None
+            The node type of the source nodes to be used for the sampling of negative
+            edges in the visualization of the edge prediction.
+            This will limit the sampling of negative edges only
+            to this specific set of source nodes.
+            When used in combination with the `edge_prediction_destination_node_type`,
+            and the `edge_prediction_edge_type` parameters,
+            it will visualize an edge prediction between a bipartite set of nodes.
+        edge_prediction_destination_node_type: Optional[str] = None
+            The node type of the destination nodes to be used for the sampling of negative
+            edges in the visualization of the edge prediction.
+            This will limit the sampling of negative edges only
+            to this specific set of destination nodes.
+            When used in combination with the `edge_prediction_source_node_type`,
+            and the `edge_prediction_edge_type` parameters,
+            it will visualize an edge prediction between a bipartite set of nodes.
         show_graph_name: Union[str, bool] = "auto"
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
@@ -171,6 +194,16 @@ class GraphVisualizer:
         self._show_node_embedding_method = show_node_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
+        self._edge_prediction_edge_type = edge_prediction_edge_type
+        self._edge_prediction_source_node_type = edge_prediction_source_node_type
+        self._edge_prediction_destination_node_type = edge_prediction_destination_node_type
+        self._is_bipartite_edge_prediction = all(
+            (
+                edge_prediction_edge_type is not None,
+                edge_prediction_source_node_type is not None,
+                edge_prediction_destination_node_type is not None,
+            )
+        )
         self._automatically_display_on_notebooks = automatically_display_on_notebooks
 
         self._node_embedding_method_name = node_embedding_method_name
@@ -383,6 +416,13 @@ class GraphVisualizer:
                 node_embedding_method_name=node_embedding,
                 **node_embedding_kwargs
             )
+        elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+            self._has_autodetermined_node_embedding_name = True
+            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
+                node_embedding.values
+                if isinstance(node_embedding, pd.DataFrame)
+                else node_embedding
+            )
         return node_embedding
 
     def _shuffle(
@@ -536,13 +576,6 @@ class GraphVisualizer:
                     self._graph.get_nodes_number()
                 )
             )
-        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
-            self._has_autodetermined_node_embedding_name = True
-            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
-                node_embedding.values
-                if isinstance(node_embedding, pd.DataFrame)
-                else node_embedding
-            )
 
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
@@ -592,22 +625,25 @@ class GraphVisualizer:
                     self._graph.get_nodes_number()
                 )
             )
-        if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
-            self._has_autodetermined_node_embedding_name = True
-            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
-                node_embedding.values
-                if isinstance(node_embedding, pd.DataFrame)
-                else node_embedding
+
+        if self._edge_prediction_edge_type is None:
+            edges_number = self._graph.get_number_of_directed_edges()
+        else:
+            edges_number = self._graph.get_number_of_edges_from_edge_type_name(
+                self._edge_prediction_edge_type
             )
+
         # If necessary, we proceed with the subsampling
-        if self._number_of_subsampled_edges is not None and self._graph.get_number_of_directed_edges() > self._number_of_subsampled_edges:
-            # If there are edge types, we use a stratified
-            # edge sampling so that all the edges types may be displayed.
+        if self._number_of_subsampled_edges is not None and edges_number > self._number_of_subsampled_edges:
             self._subsampled_edge_ids = np.random.randint(
                 low=0,
-                high=self._graph.get_number_of_directed_edges(),
+                high=edges_number,
                 size=self._number_of_subsampled_edges
             )
+            if self._edge_prediction_edge_type is not None:
+                self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
+                    self._edge_prediction_edge_type
+                )[self._subsampled_edge_ids]
             if isinstance(node_embedding, np.ndarray):
                 edge_indices = [
                     self._graph.get_node_ids_from_edge_id(edge_id)
@@ -630,9 +666,19 @@ class GraphVisualizer:
                 ]
         else:
             if isinstance(node_embedding, np.ndarray):
-                edge_indices = self._graph.get_directed_edge_node_ids()
+                if self._edge_prediction_edge_type is None:
+                    edge_indices = self._graph.get_directed_edge_node_ids()
+                else:
+                    edge_indices = self._graph.get_directed_edge_node_ids_from_edge_type_name(
+                        self._edge_prediction_edge_type
+                    )
             else:
-                edge_indices = self._graph.get_directed_edge_node_names()
+                if self._edge_prediction_edge_type is None:
+                    edge_indices = self._graph.get_directed_edge_node_names()
+                else:
+                    edge_indices = self._graph.get_directed_edge_node_names_from_edge_type_name(
+                        self._edge_prediction_edge_type
+                    )
 
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
@@ -685,15 +731,47 @@ class GraphVisualizer:
                     self._graph.get_nodes_number()
                 )
             )
-        # If necessary, we proceed with the subsampling
-        edge_indices = self._subsampled_negative_edge_node_ids = np.random.randint(
-            low=0,
-            high=self._graph.get_nodes_number(),
-            size=(self._number_of_subsampled_negative_edges, 2)
-        )
+
+        # With negative edges, it is always necessary to subsample.
+        if self._edge_prediction_source_node_type is None:
+            source_node_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_nodes_number(),
+                size=self._number_of_subsampled_negative_edges
+            )
+        else:
+            possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
+                self._edge_prediction_source_node_type
+            )
+            source_node_ids = possible_source_node_ids[np.random.randint(
+                low=0,
+                high=possible_source_node_ids.size,
+                size=self._number_of_subsampled_negative_edges
+            )]
+
+        if self._edge_prediction_destination_node_type is None:
+            destination_node_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_nodes_number(),
+                size=self._number_of_subsampled_negative_edges
+            )
+        else:
+            possible_destination_node_ids = self._graph.get_node_ids_from_node_type_name(
+                self._edge_prediction_destination_node_type
+            )
+            destination_node_ids = possible_destination_node_ids[np.random.randint(
+                low=0,
+                high=possible_destination_node_ids.size,
+                size=self._number_of_subsampled_negative_edges
+            )]
+
+        edge_node_ids = self._subsampled_negative_edge_node_ids = np.hstack((
+            source_node_ids,
+            destination_node_ids
+        ))
 
         if not isinstance(node_embedding, np.ndarray):
-            edge_indices = np.array([
+            edge_node_ids = np.array([
                 (
                     self._graph.get_node_name_from_node_id(src_node_id),
                     self._graph.get_node_name_from_node_id(dst_node_id),
@@ -713,7 +791,9 @@ class GraphVisualizer:
             aligned_node_mapping=isinstance(node_embedding, np.ndarray)
         )
         graph_transformer.fit(node_embedding)
-        return graph_transformer.transform(edge_indices)
+        return graph_transformer.transform(
+            edge_node_ids
+        )
 
     def fit_negative_and_positive_edges(
         self,
@@ -1076,7 +1156,8 @@ class GraphVisualizer:
                     label=label,
                     color_name=color_name.split(":")[1],
                     quotations="\'" if "other" not in label.lower() else "",
-                    optional_and="and " if i == len(color_to_be_used) - 1 else ""
+                    optional_and="and " if i == len(
+                        color_to_be_used) - 1 else ""
                 )
                 for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
             ])
@@ -1671,9 +1752,37 @@ class GraphVisualizer:
 
         points, types = self._shuffle(points, types)
 
+        if self._edge_prediction_destination_node_type is None:
+            if self._edge_prediction_source_node_type is None:
+                negative_label = "Non-existing edges"
+            else:
+                negative_label = "Non-existing edges from {}".format(
+                    sanitize_ml_labels(self._edge_prediction_source_node_type)
+                )
+        else:
+            if self._edge_prediction_source_node_type is None:
+                negative_label = "Non-existing edges to {}".format(
+                    sanitize_ml_labels(
+                        self._edge_prediction_destination_node_type)
+                )
+            else:
+                negative_label = "Non-existing edges from {} to {}".format(
+                    *sanitize_ml_labels(
+                        self._edge_prediction_source_node_type,
+                        self._edge_prediction_destination_node_type
+                    )
+                )
+
+        if self._edge_prediction_edge_type is None:
+            positive_label = "Existing edges"
+        else:
+            positive_label = "Existing edges of type {}".format(
+                sanitize_ml_labels(self._edge_prediction_edge_type)
+            )
+
         labels = [
-            "Non-existing edges",
-            "Existing edges",
+            negative_label,
+            positive_label
         ]
 
         returned_values = self._plot_types(
@@ -1698,11 +1807,15 @@ class GraphVisualizer:
         if not return_caption:
             return returned_values
 
-        # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
 
+        if self._is_bipartite_edge_prediction:
+            note_on_scope = "Bipartite"
+        else:
+            note_on_scope = "Graph-wide"
+
         caption = (
-            f"Graph-wide existing and non-existing edges: {types_caption}."
+            f"{note_on_scope} existing and non-existing edges: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -1863,20 +1976,22 @@ class GraphVisualizer:
             tree.predict(test_x)
         )
 
+        bipartite = "bipartite " if self._is_bipartite_edge_prediction else ""
+
         if score > 0.6:
             if score > 0.95:
-                descriptor = "is an extremely good edge prediction feature"
-            elif score > 0.8:
-                descriptor = "is a good edge prediction feature"
+                descriptor = f"is an extremely good {bipartite}edge prediction feature"
+            elif score > 0.75:
+                descriptor = f"is a good {bipartite}edge prediction feature"
             else:
-                descriptor = "may be considered as an edge prediction feature"
+                descriptor = f"may be considered as {bipartite}edge prediction feature"
             metric_caption = (
                 f"This metric {descriptor}"
             )
         else:
             metric_caption = (
-                "The metric does not seem to be useful for "
-                "edge prediction"
+                "The metric does not seem to be useful as "
+                f"{bipartite}edge prediction feature"
             )
 
         caption = (
@@ -2272,7 +2387,7 @@ class GraphVisualizer:
                     unknown_ontology_id
                     if ontology is None
                     else ontologies_by_frequencies[ontology]
-                    for ontology ontology_names
+                    for ontology in ontology_names
                 ),
                 dtype=np.uint32
             )
