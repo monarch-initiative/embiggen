@@ -1383,7 +1383,7 @@ class GraphVisualizer:
         fig, axes, color_caption = result
 
         tree = DecisionTreeClassifier(
-            max_depth=5,
+            max_depth=10,
             random_state=self._random_state
         )
 
@@ -1952,7 +1952,7 @@ class GraphVisualizer:
             return returned_values
 
         tree = DecisionTreeClassifier(
-            max_depth=5,
+            max_depth=10,
             random_state=self._random_state
         )
 
