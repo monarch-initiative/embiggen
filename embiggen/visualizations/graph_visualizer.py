@@ -1889,8 +1889,8 @@ class GraphVisualizer:
             )
         else:
             metric_caption = (
-                "The different classes do not appear "
-                "to form recognizable clusters."
+                "The metric does not seem to be useful for "
+                "edge prediction."
             )
 
         caption = (
