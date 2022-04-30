@@ -1771,10 +1771,10 @@ class GraphVisualizer:
                 )
             else:
                 negative_label = "Non-existing edges from {} to {}".format(
-                    *sanitize_ml_labels(
+                    *sanitize_ml_labels([
                         self._edge_prediction_source_node_type,
                         self._edge_prediction_destination_node_type
-                    )
+                    ])
                 )
 
         if self._edge_prediction_edge_type is None:
