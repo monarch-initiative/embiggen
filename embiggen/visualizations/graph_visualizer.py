@@ -3413,7 +3413,10 @@ class GraphVisualizer:
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
 
-        complete_caption = f"<b>{self._decomposition_method} decomposition and properties distribution of the {self._graph_name} graph:</b>"
+        complete_caption = (
+            f"<b>{self._decomposition_method} decomposition and properties distribution"
+            f" of the {self._graph_name} graph using the {self._node_embedding_method_name} node embedding:</b>"
+        )
 
         heatmaps_letters = []
 
