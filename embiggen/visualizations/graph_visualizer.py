@@ -15,7 +15,7 @@ from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm, FuncNorm
+from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
@@ -43,6 +43,7 @@ if is_notebook():
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
+from .logscale100 import LogScale100
 
 
 class GraphVisualizer:
@@ -1810,10 +1811,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap('RdYlBu'),
-                "norm": FuncNorm((
-                    lambda x: np.log(x) / np.log(100),
-                    lambda y: 100 ** y
-                ))
+                "norm": LogScale100()
             },
             train_indices=train_indices,
             test_indices=test_indices,
