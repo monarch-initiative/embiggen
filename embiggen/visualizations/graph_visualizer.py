@@ -1101,6 +1101,7 @@ class GraphVisualizer:
                     kwargs["title"].lower().replace(" ", ""),
                     self._video_format
                 )
+                kwargs["return_caption"] = False
                 rotate(
                     self._plot_scatter,
                     path=path,
@@ -1230,7 +1231,6 @@ class GraphVisualizer:
                 ).format(type(types))
             )
 
-        return_caption = return_caption and not self._rotate
         counts = np.bincount(types)
         number_of_types = len(counts)
         top_counts = [
