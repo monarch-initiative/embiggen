@@ -957,6 +957,19 @@ class GraphVisualizer:
             "tab:cyan",
         ])
 
+        color_hexas = {
+            "tab:blue": "#1f77b4",
+            "tab:orange": "#ff7f0e",
+            "tab:green": "#2ca02c",
+            "tab:red": "#d62728",
+            "tab:purple": "#9467bd",
+            "tab:brown": "#8c564b",
+            "tab:pink": "#e377c2",
+            "tab:gray": "#7f7f7f",
+            "tab:olive": "#bcbd22",
+            "tab:cyan": "#17becf",
+        }
+
         if colors is not None:
             color_to_be_used = color_names[:int(colors.max() + 1)]
             cmap = scatter_kwargs.pop(
@@ -1291,7 +1304,7 @@ class GraphVisualizer:
 
         if not return_caption:
             return result
-        
+
         fig, axes, color_caption = result
 
         return fig, axes, color_caption
@@ -1634,7 +1647,7 @@ class GraphVisualizer:
             "Existing edges",
         ]
 
-        returned_values =  self._plot_types(
+        returned_values = self._plot_types(
             points=points,
             title=self._get_complete_title(
                 "Existing & non-existing edges",
@@ -1660,8 +1673,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition highlighting graph-wide existing and non existing "
-            f"edges: {types_caption}."
+            f"Graph-wide existing and non existing edges: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -1789,7 +1801,7 @@ class GraphVisualizer:
             color_bar.set_alpha(1)
             color_bar.draw_all()
             returned_values = figure, axes
-        
+
         if not return_caption:
             return returned_values
 
@@ -2394,8 +2406,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition highlighting the node "
-            f"types: {types_caption}."
+            f"<i>Node types</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -2540,8 +2551,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition highlighting the graph detected node "
-            f"ontologies: {types_caption}."
+            f"<i>Detected node ontologies</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -2667,7 +2677,7 @@ class GraphVisualizer:
                 if components[i] >= components_number:
                     continue
                 nodes_component_size = sizes_backup[components[i]]
-                is_in_odd_component = expected_component_size is not  None and nodes_component_size == expected_component_size
+                is_in_odd_component = expected_component_size is not None and nodes_component_size == expected_component_size
                 is_in_minor_component = expected_component_size is None and nodes_component_size < largest_component_size
                 if is_in_odd_component or is_in_minor_component:
                     sizes[components[i]] -= 1
@@ -2746,8 +2756,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition highlighting the graph connected "
-            f"components: {types_caption}."
+            "<i>Connected components</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -3034,8 +3043,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"{self._decomposition_method} decomposition highlighting the edge "
-            f"types: {types_caption}."
+            f"<i>Edge types</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -3241,10 +3249,10 @@ class GraphVisualizer:
         axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
-        
+
         if not return_caption:
             return figure, axes
-        
+
         caption = (
             f"Node degrees distribution histogram, using {number_of_buckets} buckets, with the node degrees on the "
             "horizontal axis and node counts on the vertical axis in in logarithmic scale."
@@ -3297,7 +3305,7 @@ class GraphVisualizer:
             figure.tight_layout()
         if not return_caption:
             return figure, axes
-        
+
         caption = (
             f"Edge weights distribution histogram, using {number_of_buckets} buckets, with the edge weights on the "
             "horizontal axis and edge counts on the vertical axis in in logarithmic scale."
@@ -3448,7 +3456,7 @@ class GraphVisualizer:
                 "The scale used, as shown in the bar on the right of each heatmap, is logarithmic. "
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
-                letters = ", ".format([
+                letters=", ".format([
                     "<b>({})</b>".format(letter)
                     for letter in heatmaps_letters
                 ])
