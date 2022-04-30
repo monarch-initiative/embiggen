@@ -37,7 +37,7 @@ except ImportError:
 # If we are in a Jupyter notebook, we will use
 # the display method within the visualization.
 if is_notebook():
-    from IPython.display import display
+    from IPython.display import display, HTML
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
@@ -3467,6 +3467,6 @@ class GraphVisualizer:
 
         if is_notebook():
             display(fig)
-            display(complete_caption)
+            display(HTML(complete_caption))
         else:
             return fig, axes, complete_caption
