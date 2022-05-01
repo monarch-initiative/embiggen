@@ -1840,7 +1840,7 @@ class GraphVisualizer:
             note_on_scope = "Graph-wide"
 
         caption = (
-            f"{note_on_scope} existent and non-existent edges: {types_caption}."
+            f"<i>{note_on_scope} existent and non-existent edges</i>: {types_caption}."
         )
 
         return (fig, axes, caption)
