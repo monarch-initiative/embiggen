@@ -81,6 +81,8 @@ class GraphVisualizer:
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
+        number_of_holdouts_for_cluster_comments: int = 3,
+        max_depth_for_decision_tree: int = 10,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -170,6 +172,12 @@ class GraphVisualizer:
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
+        number_of_holdouts_for_cluster_comments: int = 3
+            Number of holdouts to execute for getting the comments
+            about clusters separability.
+        max_depth_for_decision_tree: int = 10
+            Maximal depth for the decision tree used for the comments about
+            clusters separability.
         random_state: int = 42,
             The random state to reproduce the visualizations.
         decomposition_kwargs: Optional[Dict] = None,
@@ -197,6 +205,8 @@ class GraphVisualizer:
         self._edge_prediction_edge_type = edge_prediction_edge_type
         self._edge_prediction_source_node_type = edge_prediction_source_node_type
         self._edge_prediction_destination_node_type = edge_prediction_destination_node_type
+        self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
+        self._max_depth_for_decision_tree = max_depth_for_decision_tree
         self._is_bipartite_edge_prediction = all(
             (
                 edge_prediction_edge_type is not None,
@@ -1384,33 +1394,38 @@ class GraphVisualizer:
 
         fig, axes, color_caption = result
 
-        tree = DecisionTreeClassifier(
-            max_depth=10,
-            random_state=self._random_state
-        )
+        test_accuracies = []
 
-        train_indices, test_indices = next(ShuffleSplit(
-            n_splits=1,
+        for train_indices, test_indices in ShuffleSplit(
+            n_splits=ShuffleSplit,
             test_size=0.3,
             random_state=self._random_state
-        ).split(points))
+        ).split(points):
 
-        train_x, test_x = points[train_indices], points[test_indices]
-        train_y, test_y = types[train_indices], types[test_indices]
+            tree = DecisionTreeClassifier(
+                max_depth=self._max_depth_for_decision_tree,
+                random_state=self._random_state
+            )
 
-        tree.fit(train_x, train_y)
+            train_x, test_x = points[train_indices], points[test_indices]
+            train_y, test_y = types[train_indices], types[test_indices]
 
-        accuracy = accuracy_score(
-            test_y,
-            tree.predict(test_x)
-        )
+            tree.fit(train_x, train_y)
 
-        if accuracy > 0.6:
-            if accuracy > 0.95:
+            test_accuracies.append(accuracy_score(
+                test_y,
+                tree.predict(test_x)
+            ))
+
+        mean_accuracy = np.mean(test_accuracies)
+        std_accuracy = np.std(test_accuracies)
+
+        if mean_accuracy > 0.55:
+            if mean_accuracy > 0.90:
                 descriptor = "extremely well recognizable clusters"
-            elif accuracy > 0.85:
+            elif mean_accuracy > 0.80:
                 descriptor = "recognizable clusters"
-            elif accuracy > 0.7:
+            elif mean_accuracy > 0.65:
                 descriptor = "some clusters"
             else:
                 descriptor = "some possible clusters"
@@ -1423,7 +1438,7 @@ class GraphVisualizer:
                 "to form recognizable clusters"
             )
 
-        return fig, axes, f"{color_caption}. {type_caption} (Decision Tree test accuracy: {accuracy:.2%})"
+        return fig, axes, f"{color_caption}. {type_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
 
     def plot_edge_segments(
         self,
@@ -1953,18 +1968,7 @@ class GraphVisualizer:
         if not return_caption:
             return returned_values
 
-        tree = DecisionTreeClassifier(
-            max_depth=10,
-            random_state=self._random_state
-        )
-
         edge_metrics = edge_metrics.reshape((-1, 1))
-
-        train_indices, test_indices = next(ShuffleSplit(
-            n_splits=1,
-            test_size=0.3,
-            random_state=self._random_state
-        ).split(edge_metrics))
 
         types = np.concatenate([
             np.zeros(
@@ -1972,22 +1976,38 @@ class GraphVisualizer:
             np.ones(self._edge_embedding.shape[0], dtype="int64"),
         ])
 
-        train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
-        train_y, test_y = types[train_indices], types[test_indices]
+        test_accuracies = []
 
-        tree.fit(train_x, train_y)
+        for train_indices, test_indices in ShuffleSplit(
+            n_splits=ShuffleSplit,
+            test_size=0.3,
+            random_state=self._random_state
+        ).split(edge_metrics):
 
-        accuracy = accuracy_score(
-            test_y,
-            tree.predict(test_x)
-        )
+            tree = DecisionTreeClassifier(
+                max_depth=self._max_depth_for_decision_tree,
+                random_state=self._random_state
+            )
+
+            train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
+            train_y, test_y = types[train_indices], types[test_indices]
+
+            tree.fit(train_x, train_y)
+
+            test_accuracies.append(accuracy_score(
+                test_y,
+                tree.predict(test_x)
+            ))
 
         bipartite = "bipartite " if self._is_bipartite_edge_prediction else ""
 
-        if accuracy > 0.6:
-            if accuracy > 0.95:
+        mean_accuracy = np.mean(test_accuracies)
+        std_accuracy = np.std(test_accuracies)
+
+        if mean_accuracy > 0.55:
+            if mean_accuracy > 0.90:
                 descriptor = f"is an extremely good {bipartite}edge prediction feature"
-            elif accuracy > 0.75:
+            elif mean_accuracy > 0.65:
                 descriptor = f"is a good {bipartite}edge prediction feature"
             else:
                 descriptor = f"may be considered as {bipartite}edge prediction feature"
@@ -2001,7 +2021,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            f"<i>{metric_name} heatmap</i>. {metric_caption} (Decision Tree test accuracy: {accuracy:.2%})"
+            f"<i>{metric_name} heatmap</i>. {metric_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
         )
 
         return (*returned_values, caption)
@@ -3662,6 +3682,12 @@ class GraphVisualizer:
                     for i, letter in enumerate(heatmaps_letters)
                 ])
             )
+
+        complete_caption += (
+            f" A Decision Tree with maximal depth {self._max_depth_for_decision_tree} has been used to evaluate the separability of "
+            "the various considered classes, with the accuracy score obtained by "
+            f"averaging {self._number_of_holdouts_for_cluster_comments} holdouts."
+        )
 
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
