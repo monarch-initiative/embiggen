@@ -3682,7 +3682,7 @@ class GraphVisualizer:
                 letters=", ".join([
                     "{optional_and}{letter}".format(
                         letter=letter,
-                        optional_and="and " if i > 0 and i == len(heatmaps_letters) else ""
+                        optional_and="and " if i > 0 and i == len(heatmaps_letters) -1 else ""
                     )
                     for i, letter in enumerate(heatmaps_letters)
                 ])
