@@ -880,6 +880,7 @@ class GraphVisualizer:
                 **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
                 **kwargs
             })
+        axes.axis('equal')
         return figure, axes
 
     def _get_complete_title(
@@ -1008,6 +1009,7 @@ class GraphVisualizer:
             axes=axes,
             **kwargs
         )
+        
 
         scatter_kwargs = {
             **GraphVisualizer.DEFAULT_SCATTER_KWARGS,
