@@ -81,7 +81,7 @@ class GraphVisualizer:
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
-        number_of_holdouts_for_cluster_comments: int = 3,
+        number_of_holdouts_for_cluster_comments: int = 5,
         max_depth_for_decision_tree: int = 10,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
@@ -1432,11 +1432,11 @@ class GraphVisualizer:
             else:
                 descriptor = "some possible clusters"
             type_caption = (
-                f"The different {title.lower()} form {descriptor}"
+                f"The {title.lower()} form {descriptor}"
             )
         else:
             type_caption = (
-                f"The different {title.lower()} do not appear "
+                f"The {title.lower()} do not appear "
                 "to form recognizable clusters"
             )
 
@@ -1779,19 +1779,19 @@ class GraphVisualizer:
 
         if self._edge_prediction_destination_node_type is None:
             if self._edge_prediction_source_node_type is None:
-                negative_label = "Non-existing edges"
+                negative_label = "Non-existent edges"
             else:
-                negative_label = "Non-existing edges from {}".format(
+                negative_label = "Non-existent edges from {}".format(
                     sanitize_ml_labels(self._edge_prediction_source_node_type)
                 )
         else:
             if self._edge_prediction_source_node_type is None:
-                negative_label = "Non-existing edges to {}".format(
+                negative_label = "Non-existent edges to {}".format(
                     sanitize_ml_labels(
                         self._edge_prediction_destination_node_type)
                 )
             else:
-                negative_label = "Non-existing edges from {} to {}".format(
+                negative_label = "Non-existent edges from {} to {}".format(
                     *sanitize_ml_labels([
                         self._edge_prediction_source_node_type,
                         self._edge_prediction_destination_node_type
@@ -1799,9 +1799,9 @@ class GraphVisualizer:
                 )
 
         if self._edge_prediction_edge_type is None:
-            positive_label = "Existing edges"
+            positive_label = "Existent edges"
         else:
-            positive_label = "Existing edges of type {}".format(
+            positive_label = "Existent edges of type {}".format(
                 sanitize_ml_labels(self._edge_prediction_edge_type)
             )
 
@@ -1813,7 +1813,7 @@ class GraphVisualizer:
         returned_values = self._plot_types(
             points=points,
             title=self._get_complete_title(
-                "Existing & non-existing edges",
+                "Existent & non-existent edges",
                 show_edge_embedding=True
             ),
             types=types,
@@ -1840,7 +1840,7 @@ class GraphVisualizer:
             note_on_scope = "Graph-wide"
 
         caption = (
-            f"{note_on_scope} existing and non-existing edges: {types_caption}."
+            f"{note_on_scope} existent and non-existent edges: {types_caption}."
         )
 
         return (fig, axes, caption)
@@ -2045,7 +2045,7 @@ class GraphVisualizer:
         loc: str = "best",
         **kwargs: Dict
     ):
-        """Plot Adamic Adar metric heatmap for sampled existing and non-existing edges.
+        """Plot Adamic Adar metric heatmap for sampled existent and non-existent edges.
 
         Parameters
         ------------------------------
@@ -2119,7 +2119,7 @@ class GraphVisualizer:
         loc: str = "best",
         **kwargs: Dict
     ):
-        """Plot Preferential Attachment metric heatmap for sampled existing and non-existing edges.
+        """Plot Preferential Attachment metric heatmap for sampled existent and non-existent edges.
 
         Parameters
         ------------------------------
@@ -2199,7 +2199,7 @@ class GraphVisualizer:
         loc: str = "best",
         **kwargs: Dict
     ):
-        """Plot Jaccard Coefficient metric heatmap for sampled existing and non-existing edges.
+        """Plot Jaccard Coefficient metric heatmap for sampled existent and non-existent edges.
 
         Parameters
         ------------------------------
@@ -2273,7 +2273,7 @@ class GraphVisualizer:
         loc: str = "best",
         **kwargs: Dict
     ):
-        """Plot Resource Allocation Index metric heatmap for sampled existing and non-existing edges.
+        """Plot Resource Allocation Index metric heatmap for sampled existent and non-existent edges.
 
         Parameters
         ------------------------------
