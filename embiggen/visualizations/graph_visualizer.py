@@ -1392,6 +1392,9 @@ class GraphVisualizer:
         if not return_caption:
             return result
 
+        if len(type_labels) == 1:
+            return result
+
         fig, axes, color_caption = result
 
         test_accuracies = []
@@ -1437,8 +1440,10 @@ class GraphVisualizer:
                 f"The different {title.lower()} do not appear "
                 "to form recognizable clusters"
             )
+        
+        caption = f"{color_caption}. {type_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
 
-        return fig, axes, f"{color_caption}. {type_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
+        return fig, axes, caption
 
     def plot_edge_segments(
         self,
