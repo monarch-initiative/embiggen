@@ -1332,6 +1332,7 @@ class GraphVisualizer:
             )
 
         counts = np.bincount(types)
+        number_of_non_zero_types = (counts != 0).astype(int).sum()
         number_of_types = len(counts)
         top_counts = [
             index
@@ -1391,7 +1392,7 @@ class GraphVisualizer:
         if not return_caption:
             return result
 
-        if number_of_types == 1:
+        if number_of_non_zero_types == 1:
             return result
 
         fig, axes, color_caption = result
