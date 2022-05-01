@@ -74,6 +74,8 @@ class GraphVisualizer:
         edge_prediction_edge_type: Optional[str] = None,
         edge_prediction_source_node_type: Optional[str] = None,
         edge_prediction_destination_node_type: Optional[str] = None,
+        edge_prediction_source_curie_prefix: Optional[str] = None,
+        edge_prediction_destination_curie_prefix: Optional[str] = None,
         show_graph_name: Union[str, bool] = "auto",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
@@ -136,6 +138,20 @@ class GraphVisualizer:
             When used in combination with the `edge_prediction_source_node_type`,
             and the `edge_prediction_edge_type` parameters,
             it will visualize an edge prediction between a bipartite set of nodes.
+        edge_prediction_source_curie_prefix: Optional[str] = None
+            Prefix for the source nodes to be used for the edge prediction visualization.
+            These source nodes will be used both for the positive and negative edges.
+            If also the `edge_prediction_source_node_type` parameter is specified,
+            this will result in a ValueError.
+            Additionally, if also the edge_prediction_edge_type is specified, it will
+            result in a ValueError.
+        edge_prediction_destination_curie_prefix: Optional[str] = None
+            Prefix for the destination nodes to be used for the edge prediction visualization.
+            These destination nodes will be used both for the positive and negative edges.
+            If also the `edge_prediction_destination_node_type` parameter is specified,
+            this will result in a ValueError.
+            Additionally, if also the edge_prediction_edge_type is specified, it will
+            result in a ValueError.
         show_graph_name: Union[str, bool] = "auto"
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
@@ -202,16 +218,51 @@ class GraphVisualizer:
         self._show_node_embedding_method = show_node_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
+        if edge_prediction_source_curie_prefix is not None and edge_prediction_source_node_type is not None:
+            raise ValueError(
+                "Both the `edge_prediction_source_curie_prefix` and the `edge_prediction_source_node_type` "
+                "parameters were specified. The behaviour is not defined when both of these parameters are "
+                "specified at once."
+            )
+        if edge_prediction_destination_curie_prefix is not None and edge_prediction_destination_node_type is not None:
+            raise ValueError(
+                "Both the `edge_prediction_destination_curie_prefix` and the `edge_prediction_destination_node_type` "
+                "parameters were specified. The behaviour is not defined when both of these parameters are "
+                "specified at once."
+            )
+        if edge_prediction_source_curie_prefix is not None and edge_prediction_edge_type is not None:
+            raise ValueError(
+                "Both the `edge_prediction_source_curie_prefix` and the `edge_prediction_edge_type` "
+                "parameters were specified. The behaviour is not defined when both of these parameters are "
+                "specified at once."
+            )
+        if edge_prediction_destination_curie_prefix is not None and edge_prediction_edge_type is not None:
+            raise ValueError(
+                "Both the `edge_prediction_destination_curie_prefix` and the `edge_prediction_edge_type` "
+                "parameters were specified. The behaviour is not defined when both of these parameters are "
+                "specified at once."
+            )
         self._edge_prediction_edge_type = edge_prediction_edge_type
         self._edge_prediction_source_node_type = edge_prediction_source_node_type
         self._edge_prediction_destination_node_type = edge_prediction_destination_node_type
+        self._edge_prediction_source_curie_prefix = edge_prediction_source_curie_prefix
+        self._edge_prediction_destination_curie_prefix = edge_prediction_destination_curie_prefix
         self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
         self._max_depth_for_decision_tree = max_depth_for_decision_tree
+        self._curie_prefixes_were_provided = (
+            edge_prediction_source_curie_prefix is not None or
+            edge_prediction_destination_curie_prefix is not None
+        )
         self._is_bipartite_edge_prediction = all(
             (
                 edge_prediction_edge_type is not None,
                 edge_prediction_source_node_type is not None,
                 edge_prediction_destination_node_type is not None,
+            )
+        ) or all(
+            (
+                edge_prediction_source_curie_prefix is not None,
+                edge_prediction_destination_curie_prefix is not None
             )
         )
         self._automatically_display_on_notebooks = automatically_display_on_notebooks
@@ -640,12 +691,17 @@ class GraphVisualizer:
                 )
             )
 
-        if self._edge_prediction_edge_type is None:
-            edges_number = self._graph.get_number_of_directed_edges()
-        else:
+        if self._edge_prediction_edge_type is not None:
             edges_number = self._graph.get_number_of_edges_from_edge_type_name(
                 self._edge_prediction_edge_type
             )
+        elif self._curie_prefixes_were_provided:
+            edges_number = self._graph.get_number_of_directed_edges_from_node_curie_prefixes(
+                self._edge_prediction_source_curie_prefix,
+                self._edge_prediction_destination_curie_prefix,
+            )
+        else:
+            edges_number = self._graph.get_number_of_directed_edges()
 
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_edges is not None and edges_number > self._number_of_subsampled_edges:
@@ -658,6 +714,12 @@ class GraphVisualizer:
                 self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
                     self._edge_prediction_edge_type
                 )[self._subsampled_edge_ids]
+            elif self._curie_prefixes_were_provided:
+                self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
+                    self._edge_prediction_source_curie_prefix,
+                    self._edge_prediction_destination_curie_prefix,
+                )[self._subsampled_edge_ids]
+
             if isinstance(node_embedding, np.ndarray):
                 edge_indices = [
                     self._graph.get_node_ids_from_edge_id(edge_id)
@@ -680,19 +742,29 @@ class GraphVisualizer:
                 ]
         else:
             if isinstance(node_embedding, np.ndarray):
-                if self._edge_prediction_edge_type is None:
-                    edge_indices = self._graph.get_directed_edge_node_ids()
-                else:
+                if self._edge_prediction_edge_type is not None:
                     edge_indices = self._graph.get_directed_edge_node_ids_from_edge_type_name(
                         self._edge_prediction_edge_type
                     )
-            else:
-                if self._edge_prediction_edge_type is None:
-                    edge_indices = self._graph.get_directed_edge_node_names()
+                elif self._curie_prefixes_were_provided:
+                    edge_indices = self._graph.get_directed_edge_node_ids_from_node_curie_prefixes(
+                        self._edge_prediction_source_curie_prefix,
+                        self._edge_prediction_destination_curie_prefix,
+                    )
                 else:
+                    edge_indices = self._graph.get_directed_edge_node_ids()                    
+            else:
+                if self._edge_prediction_edge_type is not None:
                     edge_indices = self._graph.get_directed_edge_node_names_from_edge_type_name(
                         self._edge_prediction_edge_type
                     )
+                elif self._curie_prefixes_were_provided:
+                    edge_indices = self._graph.get_directed_edge_node_names_from_node_curie_prefixes(
+                        self._edge_prediction_source_curie_prefix,
+                        self._edge_prediction_destination_curie_prefix,
+                    )
+                else:
+                    edge_indices = self._graph.get_directed_edge_node_names()                    
 
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
@@ -748,12 +820,6 @@ class GraphVisualizer:
 
         # With negative edges, it is always necessary to subsample.
         if self._edge_prediction_source_node_type is None:
-            source_node_ids = np.random.randint(
-                low=0,
-                high=self._graph.get_nodes_number(),
-                size=self._number_of_subsampled_negative_edges
-            )
-        else:
             possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_source_node_type
             )
@@ -762,14 +828,23 @@ class GraphVisualizer:
                 high=possible_source_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
-
-        if self._edge_prediction_destination_node_type is None:
-            destination_node_ids = np.random.randint(
+        elif self._curie_prefixes_were_provided:
+            possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
+                self._edge_prediction_source_curie_prefix
+            )
+            source_node_ids = possible_source_node_ids[np.random.randint(
+                low=0,
+                high=possible_source_node_ids.size,
+                size=self._number_of_subsampled_negative_edges
+            )]
+        else:
+            source_node_ids = np.random.randint(
                 low=0,
                 high=self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
-        else:
+
+        if self._edge_prediction_destination_node_type is not None:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_destination_node_type
             )
@@ -778,6 +853,21 @@ class GraphVisualizer:
                 high=possible_destination_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
+        elif self._curie_prefixes_were_provided:
+            possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
+                self._edge_prediction_destination_curie_prefix
+            )
+            destination_node_ids = possible_destination_node_ids[np.random.randint(
+                low=0,
+                high=possible_destination_node_ids.size,
+                size=self._number_of_subsampled_negative_edges
+            )]
+        else:
+            destination_node_ids = np.random.randint(
+                low=0,
+                high=self._graph.get_nodes_number(),
+                size=self._number_of_subsampled_negative_edges
+            )
 
         edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
             source_node_ids,
@@ -1777,34 +1867,45 @@ class GraphVisualizer:
         ])
 
         points, types = self._shuffle(points, types)
-
-        if self._edge_prediction_destination_node_type is None:
-            if self._edge_prediction_source_node_type is None:
-                negative_label = "Non-existent edges"
+        if not self._curie_prefixes_were_provided:
+            if self._edge_prediction_destination_node_type is None:
+                if self._edge_prediction_source_node_type is None:
+                    negative_label = "Non-existent edges"
+                else:
+                    negative_label = "Non-existent edges from {}".format(
+                        sanitize_ml_labels(self._edge_prediction_source_node_type)
+                    )
             else:
-                negative_label = "Non-existent edges from {}".format(
-                    sanitize_ml_labels(self._edge_prediction_source_node_type)
-                )
+                if self._edge_prediction_source_node_type is None:
+                    negative_label = "Non-existent edges to {}".format(
+                        sanitize_ml_labels(
+                            self._edge_prediction_destination_node_type)
+                    )
+                else:
+                    negative_label = "Non-existent edges from {} to {}".format(
+                        *sanitize_ml_labels([
+                            self._edge_prediction_source_node_type,
+                            self._edge_prediction_destination_node_type
+                        ])
+                    )
         else:
-            if self._edge_prediction_source_node_type is None:
-                negative_label = "Non-existent edges to {}".format(
-                    sanitize_ml_labels(
-                        self._edge_prediction_destination_node_type)
-                )
-            else:
-                negative_label = "Non-existent edges from {} to {}".format(
-                    *sanitize_ml_labels([
-                        self._edge_prediction_source_node_type,
-                        self._edge_prediction_destination_node_type
-                    ])
-                )
+            negative_label = "Non-existent edges from {} to {} prefixes".format(
+                "Other" if self._edge_prediction_source_curie_prefix is None else self._edge_prediction_source_curie_prefix,
+                "Other" if self._edge_prediction_destination_curie_prefix is None else self._edge_prediction_destination_curie_prefix,
+            )
 
-        if self._edge_prediction_edge_type is None:
-            positive_label = "Existent edges"
-        else:
+        if self._edge_prediction_edge_type is not None:
             positive_label = "Existent edges of type {}".format(
                 sanitize_ml_labels(self._edge_prediction_edge_type)
             )
+        elif self._curie_prefixes_were_provided:
+            positive_label = "Existent edges from {} to {} prefixes".format(
+                "Other" if self._edge_prediction_source_curie_prefix is None else self._edge_prediction_source_curie_prefix,
+                "Other" if self._edge_prediction_destination_curie_prefix is None else self._edge_prediction_destination_curie_prefix,
+            )
+        else:
+            positive_label = "Existent edges"
+            
 
         labels = [
             negative_label,
