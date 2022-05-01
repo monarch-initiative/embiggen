@@ -819,7 +819,7 @@ class GraphVisualizer:
             )
 
         # With negative edges, it is always necessary to subsample.
-        if self._edge_prediction_source_node_type is None:
+        if self._edge_prediction_source_node_type is not None:
             possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_source_node_type
             )
