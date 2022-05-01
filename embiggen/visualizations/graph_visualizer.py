@@ -1019,7 +1019,6 @@ class GraphVisualizer:
             axes=axes,
             **kwargs
         )
-        
 
         scatter_kwargs = {
             **GraphVisualizer.DEFAULT_SCATTER_KWARGS,
@@ -1440,7 +1439,7 @@ class GraphVisualizer:
                 f"The different {title.lower()} do not appear "
                 "to form recognizable clusters"
             )
-        
+
         caption = f"{color_caption}. {type_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
 
         return fig, axes, caption
@@ -3673,16 +3672,17 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                " In the heatmap{plural} <b>{letters}</b>, "
+                " In the heatmap{plural} {letters}, "
                 "low values appear in red hues while high values appear in "
                 "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
                 "The values are on a logarithmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
                 letters=", ".join([
-                    "{optional_and}{letter}".format(
+                    "{optional_and}<b>{letter}</b>".format(
                         letter=letter,
-                        optional_and="and " if i > 0 and i == len(heatmaps_letters) -1 else ""
+                        optional_and="and " if i > 0 and i == len(
+                            heatmaps_letters) - 1 else ""
                     )
                     for i, letter in enumerate(heatmaps_letters)
                 ])

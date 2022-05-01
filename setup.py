@@ -74,7 +74,7 @@ setup(
         "matplotlib",
         "sklearn",
         "ddd_subplots>=1.0.19",
-        "sanitize_ml_labels>=1.0.35",
+        "sanitize_ml_labels>=1.0.36",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.7",
         "ensmallen>=0.7.0.dev16",
