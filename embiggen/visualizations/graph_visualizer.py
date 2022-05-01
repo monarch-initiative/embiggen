@@ -23,7 +23,7 @@ from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
@@ -1519,7 +1519,7 @@ class GraphVisualizer:
 
             tree.fit(train_x, train_y)
 
-            test_accuracies.append(accuracy_score(
+            test_accuracies.append(balanced_accuracy_score(
                 test_y,
                 tree.predict(test_x)
             ))
@@ -1545,7 +1545,7 @@ class GraphVisualizer:
                 "to form recognizable clusters"
             )
 
-        caption = f"{color_caption}. {type_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
+        caption = f"{color_caption}. {type_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
 
         return fig, axes, caption
 
@@ -2116,7 +2116,7 @@ class GraphVisualizer:
 
             tree.fit(train_x, train_y)
 
-            test_accuracies.append(accuracy_score(
+            test_accuracies.append(balanced_accuracy_score(
                 test_y,
                 tree.predict(test_x)
             ))
@@ -2143,7 +2143,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            f"<i>{metric_name} heatmap</i>. {metric_caption} (Accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
+            f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
         )
 
         return (*returned_values, caption)
@@ -3810,7 +3810,7 @@ class GraphVisualizer:
 
         complete_caption += (
             f" A Decision Tree with maximal depth {self._max_depth_for_decision_tree} has been used to evaluate the separability of "
-            "the various considered classes, with the accuracy score obtained by "
+            "the various considered classes, with the balanced accuracy score obtained by "
             f"averaging {self._number_of_holdouts_for_cluster_comments} holdouts."
         )
 
