@@ -3,6 +3,7 @@ from typing import Union, Callable, Tuple, List, Optional, Dict
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
+from time import time
 from tqdm.auto import trange, tqdm
 import math
 from ensmallen.datasets import get_dataset
@@ -61,7 +62,8 @@ def get_negative_graphs(
     # not a massive amount of unknown positive edges.
     graph.enable()
     negative_graph = graph.sample_negatives(
-        number_of_negative_samples=int(math.ceil(graph.get_edges_number()*unbalance_rate)),
+        number_of_negative_samples=int(
+            math.ceil(graph.get_edges_number()*unbalance_rate)),
         random_state=random_state,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
         verbose=False
@@ -90,6 +92,8 @@ def evaluate_embedding_for_edge_prediction(
     dropout_rate: float = 0.1,
     use_edge_metrics: bool = False,
     edge_types: Optional[List[str]] = None,
+    minimum_node_degree: Optional[int] = None,
+    maximum_node_degree: Optional[int] = None,
     use_mirrored_strategy: Union[bool, str] = "auto",
     use_only_cpu: Union[bool, str] = "auto",
     only_execute_embeddings: bool = False,
@@ -129,6 +133,10 @@ def evaluate_embedding_for_edge_prediction(
         Size of the batch to be considered.
     edge_types: Optional[List[str]] = None
         Edge types to focus the edge prediction on, if any.
+    minimum_node_degree: Optional[int] = None
+        The minimum node degree of either the source or destination node to be sampled. By default 0.
+    maximum_node_degree: Optional[int] = None
+        The maximum node degree of either the source or destination node to be sampled. By default, the number of nodes.
     use_mirrored_strategy: Union[bool, str] = "auto"
         Whether to use mirror strategy to distribute the
         computation across multiple devices.
@@ -202,7 +210,6 @@ def evaluate_embedding_for_edge_prediction(
     if isinstance(graphs, (Graph, str)):
         graphs = [graphs]
 
-
     holdouts = []
     histories = []
     for graph in tqdm(
@@ -216,9 +223,10 @@ def evaluate_embedding_for_edge_prediction(
             graph = get_dataset(graph)()
             if graph_normalization_callback is not None:
                 graph = graph_normalization_callback(graph)
-        
+
         graph_name = graph.get_name()
-        graph_unbalance_rate = graph.get_nodes_number() * (graph.get_nodes_number() - 1) / graph.get_number_of_directed_edges()
+        graph_unbalance_rate = graph.get_nodes_number() * (graph.get_nodes_number() - 1) / \
+            graph.get_number_of_directed_edges()
 
         unbalance_rates_for_graph = [
             graph_unbalance_rate
@@ -245,13 +253,21 @@ def evaluate_embedding_for_edge_prediction(
             dynamic_ncols=True,
             leave=False
         ):
+            connected_holdout_random_state = random_state*holdout_number
+            holdouts_parameters = dict(
+                random_state=connected_holdout_random_state,
+                edge_types=edge_types,
+                minimum_node_degree=minimum_node_degree,
+                maximum_node_degree=maximum_node_degree,
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+            )
             train_graph, test_graph = graph.connected_holdout(
                 train_size,
-                random_state=random_state*holdout_number,
-                edge_types=edge_types,
+                **holdouts_parameters,
                 verbose=False
             )
 
+            start_embedding = time()
             if isinstance(embedding_method, str):
                 embedding, _ = compute_node_embedding(
                     graph=train_graph,
@@ -270,6 +286,7 @@ def evaluate_embedding_for_edge_prediction(
                     use_mirrored_strategy=use_mirrored_strategy,
                     **embedding_method_kwargs
                 )
+            seconds_necessary_for_embedding = time() - start_embedding
 
             if only_execute_embeddings:
                 continue
@@ -378,6 +395,7 @@ def evaluate_embedding_for_edge_prediction(
                 else:
                     model = model_name(graph, embedding)
 
+            start_training = time()
             histories.append(model.fit(
                 train_graph=train_graph,
                 valid_graph=test_graph,
@@ -387,30 +405,45 @@ def evaluate_embedding_for_edge_prediction(
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 verbose=False
             ))
+            seconds_necessary_to_train_model = time() - start_training
 
+            start_train_evaluation = time()
             train_performance = model.evaluate(
                 graph=train_graph,
                 negative_graph=train_negative_graph,
                 batch_size=batch_size,
                 verbose=False
             )
+            train_evaluation_time = time() - start_train_evaluation
+
             train_performance["evaluation_type"] = "train"
             train_performance["unbalance"] = 1.0
+            train_performance["size"] = train_size
             train_performance["graph_name"] = graph_name
+            train_performance["required_training_time"] = seconds_necessary_to_train_model
+            train_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+            train_performance["train_evaluation_time"] = train_evaluation_time
 
+            start_test_evaluation = time()
             test_performance = model.evaluate(
                 graph=test_graph,
                 negative_graph=test_negative_graph,
                 batch_size=batch_size,
                 verbose=False
             )
+            test_evaluation_time = time() - start_test_evaluation
+
             test_performance["evaluation_type"] = "test"
             test_performance["unbalance"] = 1.0
+            test_performance["size"] = 1.0 - train_size
             test_performance["graph_name"] = graph_name
+            test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+            train_performance["test_evaluation_time"] = test_evaluation_time
 
-            if isinstance(embedding_method, str):
-                train_performance["embedding_method"] = embedding_method
-                test_performance["embedding_method"] = embedding_method
+            for parameter_name, parameter in holdouts_parameters.items():
+                if parameter is not None:
+                    train_performance[parameter_name] = parameter
+                    test_performance[parameter_name] = parameter
 
             holdouts.append(train_performance)
             holdouts.append(test_performance)
@@ -430,32 +463,50 @@ def evaluate_embedding_for_edge_prediction(
                     unbalance_rate=unbalance_rate,
                     train_size=train_size,
                 )
+
+                start_test_evaluation = time()
                 train_performance = model.evaluate(
                     graph=train_graph,
                     negative_graph=train_negative_graph,
                     batch_size=batch_size,
                     verbose=False
                 )
+                train_evaluation_time = time() - start_train_evaluation
+
                 train_performance["evaluation_type"] = "train"
                 train_performance["unbalance"] = unbalance_rate
+                train_performance["size"] = train_size
                 train_performance["graph_name"] = graph_name
-                
+                train_performance["required_training_time"] = seconds_necessary_to_train_model
+                train_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+                train_performance["train_evaluation_time"] = train_evaluation_time
+
+                start_test_evaluation = time()
                 test_performance = model.evaluate(
                     graph=test_graph,
                     negative_graph=test_negative_graph,
                     batch_size=batch_size,
                     verbose=False
                 )
+                test_evaluation_time = time() - start_test_evaluation
+
                 test_performance["evaluation_type"] = "test"
                 test_performance["unbalance"] = unbalance_rate
+                test_performance["size"] = 1.0 - train_size
                 test_performance["graph_name"] = graph_name
+                test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+                test_performance["test_evaluation_time"] = test_evaluation_time
+
+                for parameter_name, parameter in holdouts_parameters.items():
+                    if parameter is not None:
+                        train_performance[parameter_name] = parameter
+                        test_performance[parameter_name] = parameter
 
                 holdouts.append(train_performance)
                 holdouts.append(test_performance)
 
-                if isinstance(embedding_method, str):
-                    train_performance["embedding_method"] = embedding_method
-                    test_performance["embedding_method"] = embedding_method
+    holdouts = pd.DataFrame(holdouts)
+    if isinstance(embedding_method, str):
+        holdouts["embedding_method"] = embedding_method
 
-
-    return pd.DataFrame(holdouts), histories
+    return embedding_method, histories
