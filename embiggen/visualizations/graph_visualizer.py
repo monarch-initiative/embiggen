@@ -1397,7 +1397,7 @@ class GraphVisualizer:
         test_accuracies = []
 
         for train_indices, test_indices in ShuffleSplit(
-            n_splits=ShuffleSplit,
+            n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
         ).split(points):
@@ -1979,7 +1979,7 @@ class GraphVisualizer:
         test_accuracies = []
 
         for train_indices, test_indices in ShuffleSplit(
-            n_splits=ShuffleSplit,
+            n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
         ).split(edge_metrics):
