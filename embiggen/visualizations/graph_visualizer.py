@@ -3670,6 +3670,8 @@ class GraphVisualizer:
                     transform=ax.transAxes,
                 )
 
+        complete_caption += "<br>"
+
         if len(heatmaps_letters) > 0:
             complete_caption += (
                 " In the heatmap{plural} {letters}, "
