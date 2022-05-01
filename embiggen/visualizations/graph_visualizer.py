@@ -746,8 +746,15 @@ class GraphVisualizer:
                     edge_indices = self._graph.get_directed_edge_node_ids_from_edge_type_name(
                         self._edge_prediction_edge_type
                     )
+                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
+                        self._edge_prediction_edge_type
+                    )
                 elif self._curie_prefixes_were_provided:
                     edge_indices = self._graph.get_directed_edge_node_ids_from_node_curie_prefixes(
+                        self._edge_prediction_source_curie_prefix,
+                        self._edge_prediction_destination_curie_prefix,
+                    )
+                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
                         self._edge_prediction_source_curie_prefix,
                         self._edge_prediction_destination_curie_prefix,
                     )
@@ -758,8 +765,15 @@ class GraphVisualizer:
                     edge_indices = self._graph.get_directed_edge_node_names_from_edge_type_name(
                         self._edge_prediction_edge_type
                     )
+                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
+                        self._edge_prediction_edge_type
+                    )
                 elif self._curie_prefixes_were_provided:
                     edge_indices = self._graph.get_directed_edge_node_names_from_node_curie_prefixes(
+                        self._edge_prediction_source_curie_prefix,
+                        self._edge_prediction_destination_curie_prefix,
+                    )
+                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
                         self._edge_prediction_source_curie_prefix,
                         self._edge_prediction_destination_curie_prefix,
                     )
@@ -2023,8 +2037,10 @@ class GraphVisualizer:
                 for src, dst in (
                     itertools.chain(
                         self._subsampled_negative_edge_node_ids,
-                        (self._graph.get_node_ids_from_edge_id(edge_id)
-                         for edge_id in self._subsampled_edge_ids)
+                        (
+                            self._graph.get_node_ids_from_edge_id(edge_id)
+                            for edge_id in self._subsampled_edge_ids
+                        )
                     )
                 )
             ),
