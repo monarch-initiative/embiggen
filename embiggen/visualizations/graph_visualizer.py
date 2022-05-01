@@ -1337,7 +1337,7 @@ class GraphVisualizer:
             index
             for index, _ in sorted(
                 enumerate(zip(counts, type_labels)),
-                key=lambda x: x[1],
+                key=lambda x: x[0],
                 reverse=True
             )[:k]
         ]
