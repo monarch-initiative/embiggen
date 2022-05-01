@@ -1391,7 +1391,7 @@ class GraphVisualizer:
         if not return_caption:
             return result
 
-        if len(type_labels) == 1:
+        if number_of_types == 1:
             return result
 
         fig, axes, color_caption = result
