@@ -1,4 +1,5 @@
 """Submodule providing pipelines for edge prediction."""
+import itertools
 from typing import Union, Callable, Tuple, List, Optional, Dict
 import pandas as pd
 import tensorflow as tf
@@ -254,16 +255,18 @@ def evaluate_embedding_for_edge_prediction(
             leave=False
         ):
             connected_holdout_random_state = random_state*holdout_number
-            holdouts_parameters = dict(
+            connected_holdouts_parameters = dict(
                 random_state=connected_holdout_random_state,
                 edge_types=edge_types,
                 minimum_node_degree=minimum_node_degree,
                 maximum_node_degree=maximum_node_degree,
+            )
+            negative_graph_parameters = dict(
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             )
             train_graph, test_graph = graph.connected_holdout(
                 train_size,
-                **holdouts_parameters,
+                **connected_holdouts_parameters,
                 verbose=False
             )
 
@@ -370,7 +373,7 @@ def evaluate_embedding_for_edge_prediction(
                 # Inside ensmallen we pass this number in a splitmix function
                 # therefore even a sum should have quite enough additional entropy.
                 random_state=random_state + holdout_number,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                **negative_graph_parameters,
                 unbalance_rate=1.0,
                 train_size=train_size,
             )
@@ -440,7 +443,10 @@ def evaluate_embedding_for_edge_prediction(
             test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
             train_performance["test_evaluation_time"] = test_evaluation_time
 
-            for parameter_name, parameter in holdouts_parameters.items():
+            for parameter_name, parameter in itertools.chain(
+                connected_holdouts_parameters.items(),
+                negative_graph_parameters.items(),
+            ):
                 if parameter is not None:
                     train_performance[parameter_name] = parameter
                     test_performance[parameter_name] = parameter
@@ -497,7 +503,10 @@ def evaluate_embedding_for_edge_prediction(
                 test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
                 test_performance["test_evaluation_time"] = test_evaluation_time
 
-                for parameter_name, parameter in holdouts_parameters.items():
+                for parameter_name, parameter in itertools.chain(
+                    connected_holdouts_parameters.items(),
+                    negative_graph_parameters.items(),
+                ):
                     if parameter is not None:
                         train_performance[parameter_name] = parameter
                         test_performance[parameter_name] = parameter
