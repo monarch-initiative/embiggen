@@ -1,5 +1,5 @@
 """Test to validate that the model GloVe works properly with graph walks."""
-from embiggen import GraphConvolutionalNeuralNetwork
+from embiggen.node_label_prediction.node_label_prediction_tensorflow import GraphConvolutionalNeuralNetwork
 from unittest import TestCase
 from ensmallen.datasets.linqs import Cora
 

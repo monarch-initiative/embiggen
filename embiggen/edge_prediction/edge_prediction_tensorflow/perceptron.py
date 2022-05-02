@@ -1,4 +1,4 @@
-"""Class for creating a Perceptron model for link prediction tasks."""
+"""Class for creating a Perceptron model for edge prediction tasks."""
 from typing import Union
 import pandas as pd
 import numpy as np

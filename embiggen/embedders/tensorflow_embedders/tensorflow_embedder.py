@@ -109,7 +109,7 @@ class TensorFlowEmbedder:
         self._embedding_size = embedding_size
         self._embedding = embedding
 
-        execute_gpu_checks(use_mirrored_strategy)
+        execute_gpu_checks()
 
         if optimizer is None:
             optimizer = Nadam(learning_rate=0.01)

@@ -53,14 +53,8 @@ def has_gpus() -> bool:
     return get_available_gpus_number() > 0
 
 
-def execute_gpu_checks(use_mirrored_strategy: bool):
-    """Executes the GPU checks and raises the proper warnings.
-    
-    Parameters
-    -------------------
-    use_mirrored_strategy: bool
-        Whether to use the mirrored strategy.
-    """
+def execute_gpu_checks():
+    """Executes the GPU checks and raises the proper warnings."""
     # To avoid some nighmares we check availability of GPUs.
     if not has_gpus():
         # We check for drivers to try and give a more explainatory
@@ -94,9 +88,4 @@ def execute_gpu_checks(use_mirrored_strategy: bool):
                 "The model will proceed with trainining, but it will be "
                 "significantly slower than what would be possible "
                 "with GPU acceleration."
-            )
-        if use_mirrored_strategy == True:
-            raise ValueError(
-                "You have required for the mirrored strategy to be used "
-                "but no GPU can be detected by TensorFlow."
             )

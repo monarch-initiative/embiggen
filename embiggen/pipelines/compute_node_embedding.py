@@ -24,7 +24,7 @@ RANDOM_WALK_BASED_MODELS = [
     "spine"
 ]
 
-LINK_PREDICTION_BASED_MODELS = [
+EDGE_PREDICTION_BASED_MODELS = [
     "siamese",
     "transr",
     "transe",
@@ -290,7 +290,7 @@ def compute_node_embedding(
             )
             if issubclass(model, EnsmallenEmbedder):
                 supported_parameter = inspect.signature(
-                    model.fit_transform_graph
+                    model.fit_transform
                 ).parameters
             else:
                 supported_parameter = inspect.signature(
@@ -311,7 +311,7 @@ def compute_node_embedding(
                 vector_destinations=True,
                 vector_cumulative_node_degrees=True
             )
-        if lower_node_embedding_method_name in LINK_PREDICTION_BASED_MODELS:
+        if lower_node_embedding_method_name in EDGE_PREDICTION_BASED_MODELS:
             graph.enable(
                 vector_sources=True,
                 vector_destinations=True,

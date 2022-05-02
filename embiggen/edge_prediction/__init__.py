@@ -1,14 +1,42 @@
-"""Module implementing edge and edge-label prediction models."""
-from .perceptron import Perceptron
-from .multi_layer_perceptron import MultiLayerPerceptron
-from .feed_forward_neural_network import FeedForwardNeuralNetwork
-from .edge_prediction_graph_neural_network import EdgePredictionGraphNeuralNetwork
-from .edge_prediction_model import EdgePredictionModel
+"""Submodule providing models for edge prediction."""
+from .edge_prediction_sklearn import SklearnModelEdgePredictionAdapter
 
-__all__ = [
-    "Perceptron",
-    "MultiLayerPerceptron",
-    "FeedForwardNeuralNetwork",
-    "EdgePredictionGraphNeuralNetwork",
-    "EdgePredictionModel"
-]
+
+try:
+    from .edge_prediction_tensorflow import (
+        Perceptron, MultiLayerPerceptron, EdgePredictionGraphNeuralNetwork,
+        FeedForwardNeuralNetwork, EdgePredictionModel
+    )
+
+    tensorflow_edge_prediction_models = {
+        "perceptron": Perceptron,
+        "multilayerperceptron": MultiLayerPerceptron,
+    }
+
+    def is_tensorflow_edge_prediction_method(model_name: str) -> bool:
+        return model_name.lower() in tensorflow_edge_prediction_models
+
+    def get_tensorflow_model(model_name: str, **kwargs) -> EdgePredictionModel:
+        return tensorflow_edge_prediction_models[model_name.lower()](**kwargs)
+
+    __all__ = [
+        "SklearnModelEdgePredictionAdapter",
+        "Perceptron",
+        "MultiLayerPerceptron",
+        "EdgePredictionGraphNeuralNetwork",
+        "FeedForwardNeuralNetwork",
+        "get_tensorflow_model"
+    ]
+except ModuleNotFoundError as e:
+    def is_tensorflow_edge_prediction_method(model_name: str) -> bool:
+        return False
+
+    def get_tensorflow_model(model_name: str, **kwargs):
+        raise NotImplementedError(
+            "The method is not available when TensorFlow is not installed."
+        )
+
+    __all__ = [
+        "SklearnModelEdgePredictionAdapter",
+        "get_tensorflow_model"
+    ]

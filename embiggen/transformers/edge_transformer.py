@@ -1,5 +1,5 @@
 """EdgeTransformer class to convert edges to edge embeddings."""
-from typing import List
+from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
@@ -348,26 +348,63 @@ class EdgeTransformer:
             )
         self._transformer.fit(embedding)
 
-    def transform(self, sources: List[str], destinations: List[str]) -> np.ndarray:
+    def transform(
+        self,
+        sources:Union[List[str], List[int]],
+        destinations:Union[List[str], List[int]],
+        edge_features: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
         Parameters
         --------------------------
-        sources: List[str]
+        sources:Union[List[str], List[int]]
             List of source nodes whose embedding is to be returned.
-        destinations: List[str]
+        destinations:Union[List[str], List[int]]
             List of destination nodes whose embedding is to be returned.
+        edge_features: Optional[np.ndarray] = None
+            Optional edge features to be used as input concatenated
+            to the obtained edge embedding. The shape must be equal
+            to the number of directed edges in the provided graph.
 
         Raises
         --------------------------
-        ValueError,
+        ValueError
             If embedding is not fitted.
+        ValueError
+            If the edge features are provided and do not have the correct shape.
 
         Returns
         --------------------------
         Numpy array of embeddings.
         """
-        return self._method(
+        if edge_features is not None and len(edge_features.shape) != 2:
+            raise ValueError(
+                (
+                    "The provided edge features should have a bidimensional shape, "
+                    "but the provided one has shape {}."
+                ).format(edge_features.shape)
+            )
+
+        edge_embeddings = self._method(
             self._transformer.transform(sources),
             self._transformer.transform(destinations)
         )
+
+        if edge_features is not None:
+            if edge_features.shape[0] != edge_embeddings.shape[0]:
+                raise ValueError(
+                    (
+                        "The provided edge features should have a sample for each of the edges "
+                        "in the graph, which are {}, but were {}."
+                    ).format(
+                        edge_embeddings.shape[0],
+                        edge_features.shape[0]
+                    )
+                )
+            edge_embeddings = np.hstack([
+                edge_embeddings,
+                edge_features
+            ])
+
+        return edge_embeddings
