@@ -59,13 +59,13 @@ def format_list(
         Whether to use bold letters.
     """
     return ", ".join([
-        "{optional_and}{open_bold}{words}{close_bold}".format(
-            words=words,
+        "{optional_and}{open_bold}{word}{close_bold}".format(
+            word=word,
             optional_and="and " if i > 0 and i == len(words) - 1 else "",
             open_bold="<b>" if bold_words else "",
             close_bold="</b>" if bold_words else "",
         )
-        for i, words in enumerate(words)
+        for i, word in enumerate(words)
     ])
 
 
