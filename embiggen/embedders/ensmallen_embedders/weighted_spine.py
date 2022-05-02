@@ -26,7 +26,9 @@ class WeightedSPINE(EnsmallenEmbedder):
         verbose: bool = True
             Whether to show loading bars
         """
-        self._WeightedSPINE = models.WeightedSPINE(embedding_size)
+        self._WeightedSPINE = models.WeightedSPINE(
+            embedding_size=embedding_size
+        )
 
         super().__init__(
             embedding_size=embedding_size,

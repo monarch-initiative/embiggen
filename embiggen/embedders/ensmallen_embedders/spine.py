@@ -27,7 +27,7 @@ class SPINE(EnsmallenEmbedder):
             Whether to show loading bars
         """
         self._dtype = dtype
-        self._SPINE = models.SPINE(embedding_size)
+        self._SPINE = models.SPINE(embedding_size=embedding_size)
 
         super().__init__(
             embedding_size=embedding_size,
