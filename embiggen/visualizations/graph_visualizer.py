@@ -342,23 +342,28 @@ class GraphVisualizer:
         self._decomposition_method = decomposition_method
         self._decomposition_kwargs = decomposition_kwargs
 
-    def handle_notebook_display(
+    def _handle_notebook_display(
         self,
-        figure: Figure,
-        axes: Axes,
+        *args: List,
         caption: Optional[str] = None
     ) -> Optional[Union[Tuple[Figure, Axes], Tuple[Figure, Axes, str]]]:
         """Handles whether to display provided data in a Jupyter Notebook or return them.
-        
+
         Parameters
         ---------------------
         figure: Figure
             The figure to display.
         axes: Axes
             Axes of the figure.
+        *args: List
+            Capturing arbitrary additional parameters.
         caption: Optional[str] = None
             Optional caption for this figure.
         """
+        # This is a visualization run for rotation.
+        if len(args) < 2:
+            return None
+        figure, axes = args[:2]
         if is_notebook() and self._automatically_display_on_notebooks:
             display(figure)
             if caption is not None:
@@ -369,9 +374,9 @@ class GraphVisualizer:
                 ))
             plt.close()
         elif caption is None:
-            return figure, axes
+            return (figure, axes, *args[2:])
         else:
-            return figure, axes, caption
+            return (figure, axes, *args[2:], caption)
 
     def get_decomposition_method(self) -> Callable:
         if self._decomposition_method == "UMAP":
@@ -609,7 +614,6 @@ class GraphVisualizer:
         axes: Axes,
         labels: List[str],
         handles: List[HandlerBase],
-        legend_title: str,
         loc: str = 'best',
     ):
         """Set the legend with the given values and handles transparency.
@@ -623,8 +627,6 @@ class GraphVisualizer:
         handles: List,
             Handles to display in the legend (the curresponding matplotlib
             objects).
-        legend_title: str,
-            Title for the legend.
         loc: str = 'best'
             Position for the legend.
         """
@@ -1093,7 +1095,6 @@ class GraphVisualizer:
         colors: Optional[List[int]] = None,
         edgecolors: Optional[List[int]] = None,
         labels: List[str] = None,
-        legend_title: str = "",
         show_title: bool = True,
         show_legend: bool = True,
         return_caption: bool = True,
@@ -1123,8 +1124,6 @@ class GraphVisualizer:
             List of the edge colors to use for the scatter plot.
         labels: List[str] = None,
             Labels for the different colors.
-        legend_title: str = "",
-            Title for the legend.
         show_title: bool = True,
             Whether to show the figure title.
         show_legend: bool = True,
@@ -1300,7 +1299,6 @@ class GraphVisualizer:
                 axes,
                 labels,
                 legend_elements,
-                legend_title,
                 loc=loc
             )
 
@@ -1388,7 +1386,6 @@ class GraphVisualizer:
         title: str,
         types: List[int],
         type_labels: List[str],
-        legend_title: str,
         show_title: bool = True,
         show_legend: bool = True,
         return_caption: bool = True,
@@ -1417,8 +1414,6 @@ class GraphVisualizer:
             Types of the provided points.
         type_labels: List[str],
             List of the labels for the provided types.
-        legend_title: str,
-            Title for the legend.
         show_title: bool = True,
             Whether to show the figure title.
         show_legend: bool = True,
@@ -1533,7 +1528,6 @@ class GraphVisualizer:
                 colors=types,
                 edgecolors=predictions,
                 labels=type_labels,
-                legend_title=legend_title,
                 show_title=show_title,
                 show_legend=show_legend,
                 loc=loc,
@@ -1775,7 +1769,7 @@ class GraphVisualizer:
                 points=self._node_embedding,
             )
 
-        return returned_values
+        return self._handle_notebook_display(*returned_values)
 
     def annotate_nodes(
         self,
@@ -1855,7 +1849,7 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        return self._wrapped_plot_scatter(
+        return self._handle_notebook_display(*self._wrapped_plot_scatter(
             points=self._edge_embedding,
             title=self._get_complete_title(
                 "Edges embedding",
@@ -1872,7 +1866,7 @@ class GraphVisualizer:
             show_legend=show_legend,
             loc=loc,
             **kwargs
-        )
+        ))
 
     def plot_positive_and_negative_edges(
         self,
@@ -1989,7 +1983,6 @@ class GraphVisualizer:
             ),
             types=types,
             type_labels=np.array(labels),
-            legend_title="Edges",
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2001,7 +1994,7 @@ class GraphVisualizer:
         )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         fig, axes, types_caption = returned_values
 
@@ -2014,7 +2007,7 @@ class GraphVisualizer:
             f"<i>{note_on_scope} existent and non-existent edges</i>: {types_caption}."
         )
 
-        return (fig, axes, caption)
+        return self._handle_notebook_display(fig, axes, caption)
 
     def _plot_positive_and_negative_edges_metric(
         self,
@@ -2143,7 +2136,7 @@ class GraphVisualizer:
             returned_values = figure, axes
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         edge_metrics = edge_metrics.reshape((-1, 1))
 
@@ -2201,7 +2194,7 @@ class GraphVisualizer:
             f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
         )
 
-        return (*returned_values, caption)
+        return self._handle_notebook_display(*returned_values, caption=caption)
 
     def plot_positive_and_negative_edges_adamic_adar(
         self,
@@ -2643,7 +2636,6 @@ class GraphVisualizer:
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        legend_title: str = "Node types",
         other_label: str = "Other {} node types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -2765,7 +2757,6 @@ class GraphVisualizer:
             self._get_complete_title("Node types"),
             types=node_types,
             type_labels=node_type_names,
-            legend_title=legend_title,
             predictions=node_type_predictions,
             k=k,
             figure=figure,
@@ -2792,7 +2783,7 @@ class GraphVisualizer:
             )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
@@ -2801,14 +2792,13 @@ class GraphVisualizer:
             f"<i>Node types</i>: {types_caption}."
         )
 
-        return (fig, axes, caption)
+        return self._handle_notebook_display(fig, axes, caption=caption)
 
     def plot_node_ontologies(
         self,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
-        legend_title: str = "Node ontologies",
         other_label: str = "Other {} ontologies",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
@@ -2833,8 +2823,6 @@ class GraphVisualizer:
         axes: Optional[Axes] = None,
             Axes to use to plot. If None, a new one is created using the
             provided kwargs.
-        legend_title: str = "Node Ontologies"
-            Title for the legend of the plot
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other {} node ontologies"
@@ -2912,7 +2900,6 @@ class GraphVisualizer:
             self._get_complete_title("Node ontologies"),
             types=ontology_ids,
             type_labels=unique_ontologies,
-            legend_title=legend_title,
             k=7,
             figure=figure,
             axes=axes,
@@ -2937,7 +2924,7 @@ class GraphVisualizer:
             )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
@@ -2946,7 +2933,7 @@ class GraphVisualizer:
             f"<i>Detected node ontologies</i>: {types_caption}."
         )
 
-        return (fig, axes, caption)
+        return self._handle_notebook_display(fig, axes, caption=caption)
 
     def plot_connected_components(
         self,
@@ -2955,7 +2942,6 @@ class GraphVisualizer:
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
         other_label: str = "Other {} components",
-        legend_title: str = "Component sizes",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
@@ -2985,8 +2971,6 @@ class GraphVisualizer:
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other {} components",
             Label to use for edges below the top k threshold.
-        legend_title: str = "Component sizes",
-            Title for the legend.
         train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
@@ -3116,7 +3100,6 @@ class GraphVisualizer:
                 labels,
                 dtype=str
             ),
-            legend_title=legend_title,
             show_title=show_title,
             show_legend=show_legend,
             return_caption=return_caption,
@@ -3142,7 +3125,8 @@ class GraphVisualizer:
             )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
+
 
         # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
@@ -3151,7 +3135,7 @@ class GraphVisualizer:
             f"<i>Connected components</i>: {types_caption}."
         )
 
-        return (fig, axes, caption)
+        return self._handle_notebook_display(fig, axes, caption=caption)
 
     def plot_node_degrees(
         self,
@@ -3288,7 +3272,7 @@ class GraphVisualizer:
             )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
 
@@ -3296,7 +3280,7 @@ class GraphVisualizer:
             f"<i>Node degrees heatmap</i>."
         )
 
-        return (*returned_values[:2], caption)
+        return self._handle_notebook_display(*returned_values[:2], caption=caption)
 
     def plot_edge_types(
         self,
@@ -3306,7 +3290,6 @@ class GraphVisualizer:
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
         other_label: str = "Other {} edge types",
-        legend_title: str = "Edge types",
         train_indices: Optional[np.ndarray] = None,
         test_indices: Optional[np.ndarray] = None,
         train_marker: str = "o",
@@ -3335,8 +3318,6 @@ class GraphVisualizer:
             Kwargs to pass to the scatter plot call.
         other_label: str = "Other {} edge types",
             Label to use for edges below the top k threshold.
-        legend_title: str = "Edge types",
-            Title for the legend.
         train_indices: Optional[np.ndarray] = None,
             Indices to draw using the training marker.
             If None, all points are drawn using the training marker.
@@ -3411,7 +3392,6 @@ class GraphVisualizer:
             ),
             types=edge_types,
             type_labels=edge_type_names,
-            legend_title=legend_title,
             predictions=edge_type_predictions,
             k=k,
             figure=figure,
@@ -3429,7 +3409,7 @@ class GraphVisualizer:
         )
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
@@ -3438,7 +3418,7 @@ class GraphVisualizer:
             f"<i>Edge types</i>: {types_caption}."
         )
 
-        return (fig, axes, caption)
+        return self._handle_notebook_display(fig, axes, caption=caption)
 
     def plot_edge_weights(
         self,
@@ -3554,13 +3534,13 @@ class GraphVisualizer:
             returned_values = figure, axes
 
         if not return_caption:
-            return returned_values
+            return self._handle_notebook_display(*returned_values)
 
         caption = (
             f"<i>Edge weights heatmap</i>."
         )
 
-        return (*returned_values, caption)
+        return self._handle_notebook_display(*returned_values, caption=caption)
 
     def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
@@ -3643,14 +3623,14 @@ class GraphVisualizer:
             figure.tight_layout()
 
         if not return_caption:
-            return figure, axes
+            return self._handle_notebook_display(figure, axes)
 
         caption = (
             "<i>Node degrees distribution histogram</i>, with the node degrees on the "
             "horizontal axis and node counts on the vertical axis on a logarithmic scale."
         )
 
-        return figure, axes, caption
+        return self._handle_notebook_display(figure, axes, caption=caption)
 
     def plot_edge_weight_distribution(
         self,
@@ -3695,15 +3675,18 @@ class GraphVisualizer:
         axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
+
         if not return_caption:
-            return figure, axes
+            return self._handle_notebook_display(
+                figure, axes
+            )
 
         caption = (
             "<i>Edge weights distribution histogram</i>, with the edge weights on the "
             "horizontal axis and edge counts on the vertical axis on a logarithmic scale."
         )
 
-        return figure, axes, caption
+        return self._handle_notebook_display(figure, axes, caption=caption)
 
     def fit_and_plot_all(
         self,
@@ -3797,12 +3780,16 @@ class GraphVisualizer:
 
         flat_axes = np.array(axes).flatten()
 
+        # Backing up and turning off some of the visualizations
+        # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
         show_node_embedding_backup = self._show_node_embedding_method
         show_edge_embedding_backup = self._show_edge_embedding_method
+        automatically_display_backup = self._automatically_display_on_notebooks
         self._show_graph_name = False
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
+        self._automatically_display_on_notebooks = False
 
         complete_caption = (
             f"<b>{self._decomposition_method} decomposition and properties distribution"
@@ -3876,6 +3863,7 @@ class GraphVisualizer:
 
         self._show_edge_embedding_method = show_edge_embedding_backup
         self._show_node_embedding_method = show_node_embedding_backup
+        self._automatically_display_on_notebooks = automatically_display_backup
 
         if show_name_backup:
             fig.suptitle(
@@ -3890,9 +3878,6 @@ class GraphVisualizer:
 
         self._show_graph_name = show_name_backup
 
-        if is_notebook() and self._automatically_display_on_notebooks:
-            display(fig)
-            display(HTML(complete_caption))
-            plt.close()
-        else:
-            return fig, axes, complete_caption
+        return self._handle_notebook_display(
+            fig, axes, caption=complete_caption
+        )
