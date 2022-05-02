@@ -18,7 +18,8 @@ try:
         "simple": tensorflow_embedders.SimplE,
         "transh": tensorflow_embedders.TransH,
         "transr": tensorflow_embedders.TransR,
-        "spine": ensmallen_embedders.SPINE
+        "spine": ensmallen_embedders.SPINE,
+        "weightedspine": ensmallen_embedders.WeightedSPINE,
     }
 
     __all__ = [

@@ -21,7 +21,8 @@ RANDOM_WALK_BASED_MODELS = [
     "cbow",
     "glove",
     "skipgram",
-    "spine"
+    "spine",
+    "weightedspine"
 ]
 
 EDGE_PREDICTION_BASED_MODELS = [
