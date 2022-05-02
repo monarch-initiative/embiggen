@@ -45,6 +45,30 @@ from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
 
 
+def format_list(
+    words: List[str],
+    bold_words: bool = False
+) -> str:
+    """Returns formatted list with Oxford comma.
+
+    Parameters
+    --------------------------
+    words: List[str]
+        The list of words to format.
+    bold_words: bool = False
+        Whether to use bold letters.
+    """
+    return ", ".join([
+        "{optional_and}{open_bold}{words}{close_bold}".format(
+            words=words,
+            optional_and="and " if i > 0 and i == len(words) - 1 else "",
+            open_bold="<b>" if bold_words else "",
+            close_bold="</b>" if bold_words else "",
+        )
+        for i, words in enumerate(words)
+    ])
+
+
 class GraphVisualizer:
     """Tools to visualize the graph embeddings."""
 
@@ -759,7 +783,7 @@ class GraphVisualizer:
                         self._edge_prediction_destination_curie_prefix,
                     )
                 else:
-                    edge_indices = self._graph.get_directed_edge_node_ids()                    
+                    edge_indices = self._graph.get_directed_edge_node_ids()
             else:
                 if self._edge_prediction_edge_type is not None:
                     edge_indices = self._graph.get_directed_edge_node_names_from_edge_type_name(
@@ -778,7 +802,7 @@ class GraphVisualizer:
                         self._edge_prediction_destination_curie_prefix,
                     )
                 else:
-                    edge_indices = self._graph.get_directed_edge_node_names()                    
+                    edge_indices = self._graph.get_directed_edge_node_names()
 
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
@@ -1887,7 +1911,8 @@ class GraphVisualizer:
                     negative_label = "Non-existent edges"
                 else:
                     negative_label = "Non-existent edges from {}".format(
-                        sanitize_ml_labels(self._edge_prediction_source_node_type)
+                        sanitize_ml_labels(
+                            self._edge_prediction_source_node_type)
                     )
             else:
                 if self._edge_prediction_source_node_type is None:
@@ -1919,7 +1944,6 @@ class GraphVisualizer:
             )
         else:
             positive_label = "Existent edges"
-            
 
         labels = [
             negative_label,
@@ -3755,6 +3779,7 @@ class GraphVisualizer:
         )
 
         heatmaps_letters = []
+        evaluation_letters = []
 
         for ax, plot_callback, letter in zip(
             flat_axes,
@@ -3774,6 +3799,8 @@ class GraphVisualizer:
             )
             if "heatmap" in caption.lower():
                 heatmaps_letters.append(letter)
+            if "accuracy" in caption.lower():
+                evaluation_letters.append(letter)
             complete_caption += f" <b>({letter})</b> {caption}"
             if show_letters:
                 ax.text(
@@ -3798,20 +3825,19 @@ class GraphVisualizer:
                 "The values are on a logarithmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
-                letters=", ".join([
-                    "{optional_and}<b>{letter}</b>".format(
-                        letter=letter,
-                        optional_and="and " if i > 0 and i == len(
-                            heatmaps_letters) - 1 else ""
-                    )
-                    for i, letter in enumerate(heatmaps_letters)
-                ])
+                letters=format_list(heatmaps_letters, bold_words=True)
             )
 
         complete_caption += (
-            f" A Decision Tree with maximal depth {self._max_depth_for_decision_tree} has been used to evaluate the separability of "
-            "the various considered classes, with the balanced accuracy score obtained by "
-            f"averaging {self._number_of_holdouts_for_cluster_comments} holdouts."
+            " The separability consideration{plural} for figure{plural} {letters} {plural2} obtained "
+            "by training a Decision Tree model with maximal depth {max_depth} on {holdouts_number} holdouts, "
+            "with a 70/30 split between training and test sets."
+        ).format(
+            plural="s" if len(evaluation_letters) > 1 else "",
+            plural2="were" if len(evaluation_letters) > 1 else "was",
+            letters=format_list(evaluation_letters, bold_words=True),
+            max_depth=self._max_depth_for_decision_tree,
+            holdouts_number=self._number_of_holdouts_for_cluster_comments
         )
 
         for axis in flat_axes[number_of_total_plots:]:
