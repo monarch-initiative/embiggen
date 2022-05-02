@@ -7,7 +7,7 @@ from time import time
 from tqdm.auto import trange, tqdm
 import math
 from ensmallen.datasets import get_dataset
-from yaml import warnings
+import warnings
 from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
 from ..utils import execute_gpu_checks, get_available_gpus_number
 from .compute_node_embedding import compute_node_embedding
