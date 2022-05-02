@@ -342,6 +342,37 @@ class GraphVisualizer:
         self._decomposition_method = decomposition_method
         self._decomposition_kwargs = decomposition_kwargs
 
+    def handle_notebook_display(
+        self,
+        figure: Figure,
+        axes: Axes,
+        caption: Optional[str] = None
+    ) -> Optional[Union[Tuple[Figure, Axes], Tuple[Figure, Axes, str]]]:
+        """Handles whether to display provided data in a Jupyter Notebook or return them.
+        
+        Parameters
+        ---------------------
+        figure: Figure
+            The figure to display.
+        axes: Axes
+            Axes of the figure.
+        caption: Optional[str] = None
+            Optional caption for this figure.
+        """
+        if is_notebook() and self._automatically_display_on_notebooks:
+            display(figure)
+            if caption is not None:
+                display(HTML(
+                    '<p style="text-align: justify; word-break: break-all;">{}</p>'.format(
+                        caption
+                    )
+                ))
+            plt.close()
+        elif caption is None:
+            return figure, axes
+        else:
+            return figure, axes, caption
+
     def get_decomposition_method(self) -> Callable:
         if self._decomposition_method == "UMAP":
             # The UMAP package graph is not automatically installed
@@ -3858,8 +3889,6 @@ class GraphVisualizer:
             fig.tight_layout()
 
         self._show_graph_name = show_name_backup
-
-        complete_caption = f'<p style="text-align: justify; word-break: break-all;">{complete_caption}</p>'
 
         if is_notebook() and self._automatically_display_on_notebooks:
             display(fig)

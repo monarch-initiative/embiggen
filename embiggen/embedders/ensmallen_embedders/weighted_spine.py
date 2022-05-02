@@ -39,4 +39,4 @@ class WeightedSPINE(EnsmallenEmbedder):
         return self._WeightedSPINE.fit_transform(
             graph,
             verbose=self._verbose,
-        )
+        ).T

@@ -39,4 +39,4 @@ class SPINE(EnsmallenEmbedder):
             graph,
             dtype=self._dtype,
             verbose=self._verbose,
-        )
+        ).T
