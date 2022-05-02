@@ -150,7 +150,7 @@ def _compute_node_ensmallen_embedding(
         verbose=verbose,
         **kwargs
     )
-    return model.fit_transform_graph(
+    return model.fit_transform(
         graph,
         **fit_kwargs
     )

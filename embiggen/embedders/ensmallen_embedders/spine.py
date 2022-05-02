@@ -32,7 +32,7 @@ class SPINE(EnsmallenEmbedder):
             verbose=verbose
         )
 
-    def _fit_transform_graph(self, graph: Graph) -> np.ndarray:
+    def _fit_transform(self, graph: Graph) -> np.ndarray:
         return graph.compute_spine_embedding(
             embedding_size=self._embedding_size,
             dtype=self._dtype,
