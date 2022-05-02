@@ -203,11 +203,6 @@ def evaluate_embedding_for_edge_prediction(
     ) and get_available_gpus_number() > 1:
         use_mirrored_strategy = True
 
-    # If the embedding method is a string, we execute this check also within
-    # the compute node embedding pipeline.
-    if not isinstance(embedding_method, str):
-        execute_gpu_checks(use_mirrored_strategy)
-
     if isinstance(graphs, (Graph, str)):
         graphs = [graphs]
 

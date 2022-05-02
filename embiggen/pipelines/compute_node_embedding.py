@@ -259,9 +259,6 @@ def compute_node_embedding(
             "and require to use the mirrored strategy for GPUs."
         )
 
-    if not use_only_cpu:
-        execute_gpu_checks(use_mirrored_strategy)
-
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
         fit_kwargs = {}

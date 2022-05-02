@@ -13,6 +13,7 @@ from tensorflow.keras.optimizers import \
     Nadam, Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from .optimizers import apply_centralized_gradients
+from ...utils import execute_gpu_checks
 
 
 class TensorFlowEmbedder:
@@ -90,7 +91,6 @@ class TensorFlowEmbedder:
             embedding_size = embedding.shape[1]
             vocabulary_size = embedding.shape[0]
 
-
         if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
             raise ValueError((
                 "The given vocabulary size ({}) "
@@ -108,6 +108,8 @@ class TensorFlowEmbedder:
         self._vocabulary_size = vocabulary_size
         self._embedding_size = embedding_size
         self._embedding = embedding
+
+        execute_gpu_checks(use_mirrored_strategy)
 
         if optimizer is None:
             optimizer = Nadam(learning_rate=0.01)
