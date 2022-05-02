@@ -894,6 +894,12 @@ class GraphVisualizer:
             possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_source_node_type
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            possible_source_node_ids = possible_source_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in possible_source_node_ids
+            )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
                 high=possible_source_node_ids.size,
@@ -903,6 +909,12 @@ class GraphVisualizer:
             possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
                 self._edge_prediction_source_curie_prefix
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            possible_source_node_ids = possible_source_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in possible_source_node_ids
+            )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
                 high=possible_source_node_ids.size,
@@ -914,11 +926,23 @@ class GraphVisualizer:
                 high=self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            source_node_ids = source_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in source_node_ids
+            )]
 
         if self._edge_prediction_destination_node_type is not None:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_destination_node_type
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in possible_destination_node_ids
+            )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
                 high=possible_destination_node_ids.size,
@@ -928,6 +952,12 @@ class GraphVisualizer:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
                 self._edge_prediction_destination_curie_prefix
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in possible_destination_node_ids
+            )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
                 high=possible_destination_node_ids.size,
@@ -939,6 +969,12 @@ class GraphVisualizer:
                 high=self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
+            # We drop from this list any singleton node to avoid
+            # biasing the visualization.
+            destination_node_ids = destination_node_ids[np.fromiter(
+                self._graph.is_connected_from_node_id(node_id)
+                for node_id in destination_node_ids
+            )]
 
         edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
             source_node_ids,
@@ -2174,7 +2210,7 @@ class GraphVisualizer:
 
         if mean_accuracy > 0.55:
             if mean_accuracy > 0.90:
-                descriptor = f"is an extremely good {bipartite}edge prediction feature"
+                descriptor = f"is an outstanding {bipartite}edge prediction feature"
             elif mean_accuracy > 0.65:
                 descriptor = f"is a good {bipartite}edge prediction feature"
             else:
@@ -3624,7 +3660,7 @@ class GraphVisualizer:
             return self._handle_notebook_display(figure, axes)
 
         caption = (
-            "<i>Node degrees distribution histogram</i>, with the node degrees on the "
+            "<i>Node degrees distribution histogram:</i> with the node degrees on the "
             "horizontal axis and node counts on the vertical axis on a logarithmic scale."
         )
 
@@ -3680,7 +3716,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            "<i>Edge weights distribution histogram</i>, with the edge weights on the "
+            "<i>Edge weights distribution histogram:</i> with the edge weights on the "
             "horizontal axis and edge counts on the vertical axis on a logarithmic scale."
         )
 
@@ -3835,9 +3871,9 @@ class GraphVisualizer:
 
         if len(heatmaps_letters) > 0:
             complete_caption += (
-                " In the heatmap{plural} {letters}, "
+                " In the heatmap{plural}, {letters}, "
                 "low values appear in red hues while high values appear in "
-                "blue hues. Intermediate values are represented in either a yellow or cyan hue. "
+                "blue hues. Intermediate values appear in either a yellow or cyan hue. "
                 "The values are on a logarithmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
@@ -3846,7 +3882,7 @@ class GraphVisualizer:
 
         complete_caption += (
             " The separability consideration{plural} for figure{plural} {letters} {plural2} obtained "
-            "by training a Decision Tree model with maximal depth {max_depth} on {holdouts_number} holdouts, "
+            "by training a Decision Tree model with maximal depth {max_depth} on {holdouts_number} MonteCarlo holdouts, "
             "with a 70/30 split between training and test sets."
         ).format(
             plural="s" if len(evaluation_letters) > 1 else "",

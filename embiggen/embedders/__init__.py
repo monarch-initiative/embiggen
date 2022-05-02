@@ -33,10 +33,11 @@ except ModuleNotFoundError as e:
     SUPPORTED_NODE_EMBEDDING_METHODS = {
         "cbow": GraphCBOW,
         "skipgram": GraphSkipGram,
-        "spine": SPINE
+        "spine": SPINE,
+        "weightedspine": WeightedSPINE
     }
 
     __all__ = [
         "ensmallen_embedders",
-        "SUPPORTED_NODE_EMBEDDING_METHODS"
+        "SUPPORTED_NODE_EMBEDDING_METHODS",
     ]
