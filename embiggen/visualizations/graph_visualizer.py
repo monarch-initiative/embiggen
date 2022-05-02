@@ -1323,15 +1323,13 @@ class GraphVisualizer:
                     "scatter plot without providing colors or labels to it."
                 )
 
-            caption = ", ".join([
-                '{optional_and}{quotations}{label}{quotations} in {color_name}'.format(
+            caption = format_list([
+                '{quotations}{label}{quotations} in {color_name}'.format(
                     label=label,
                     color_name=color_name.split(":")[1],
                     quotations="\'" if "other" not in label.lower() else "",
-                    optional_and="and " if i > 0 and i == len(
-                        color_to_be_used) - 1 else ""
                 )
-                for i, (color_name, label) in enumerate(zip(color_to_be_used, labels))
+                for color_name, label in zip(color_to_be_used, labels)
             ])
 
             return_values = (*return_values, caption)
