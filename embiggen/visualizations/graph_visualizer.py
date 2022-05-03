@@ -910,8 +910,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             possible_source_node_ids = possible_source_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in possible_source_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in possible_source_node_ids),
+                dtype=bool
             )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
@@ -925,8 +926,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             possible_source_node_ids = possible_source_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in possible_source_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in possible_source_node_ids),
+                dtype=bool
             )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
@@ -942,8 +944,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             source_node_ids = source_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in source_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in source_node_ids),
+                dtype=bool
             )]
 
         if self._edge_prediction_destination_node_type is not None:
@@ -953,8 +956,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in possible_destination_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in possible_destination_node_ids),
+                dtype=bool
             )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
@@ -968,8 +972,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in possible_destination_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in possible_destination_node_ids),
+                dtype=bool
             )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
@@ -985,8 +990,9 @@ class GraphVisualizer:
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
             destination_node_ids = destination_node_ids[np.fromiter(
-                self._graph.is_connected_from_node_id(node_id)
-                for node_id in destination_node_ids
+                (self._graph.is_connected_from_node_id(node_id)
+                 for node_id in destination_node_ids),
+                dtype=bool
             )]
 
         edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
@@ -3174,7 +3180,6 @@ class GraphVisualizer:
 
         if not return_caption:
             return self._handle_notebook_display(*returned_values)
-
 
         # TODO! Add caption node abount gaussian ball!
         fig, axes, types_caption = returned_values
