@@ -1608,7 +1608,7 @@ class GraphVisualizer:
 
         if mean_accuracy > 0.55:
             if mean_accuracy > 0.90:
-                descriptor = "extremely well recognizable clusters"
+                descriptor = "easily recognizable clusters"
             elif mean_accuracy > 0.80:
                 descriptor = "recognizable clusters"
             elif mean_accuracy > 0.65:
@@ -3867,8 +3867,8 @@ class GraphVisualizer:
         if len(heatmaps_letters) > 0:
             complete_caption += (
                 " In the heatmap{plural}, {letters}, "
-                "low values appear in red hues while high values appear in "
-                "blue hues. Intermediate values appear in either a yellow or cyan hue. "
+                "low and high values appear in red and blue hues, respectively. "
+                "Intermediate values appear in either a yellow or cyan hue. "
                 "The values are on a logarithmic scale."
             ).format(
                 plural="s" if len(heatmaps_letters) > 1 else "",
@@ -3876,8 +3876,8 @@ class GraphVisualizer:
             )
 
         complete_caption += (
-            " The separability consideration{plural} for figure{plural} {letters} {plural2} obtained "
-            "by training a Decision Tree model with maximal depth {max_depth} on {holdouts_number} MonteCarlo holdouts, "
+            " The separability consideration{plural} for figure{plural} {letters} {plural2} derive from "
+            "evaluating a Decision Tree model with maximal depth {max_depth} trained on {holdouts_number} Monte Carlo holdouts, "
             "with a 70/30 split between training and test sets."
         ).format(
             plural="s" if len(evaluation_letters) > 1 else "",
