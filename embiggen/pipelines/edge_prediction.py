@@ -1,15 +1,14 @@
 """Submodule providing pipelines for edge prediction."""
 import itertools
-from operator import mod
 from typing import Union, Callable, Tuple, List, Optional, Dict
-from grpc import Call
 import pandas as pd
 from ensmallen import Graph
 from time import time
 from tqdm.auto import trange, tqdm
-from sklearn.base import ClassifierMixin
 import math
 from ensmallen.datasets import get_dataset
+from sklearn.base import ClassifierMixin
+import copy
 import warnings
 from ..edge_prediction import SklearnModelEdgePredictionAdapter, is_tensorflow_edge_prediction_method, get_tensorflow_model
 from ..utils import is_sklearn_classifier_model, get_sklearn_default_classifier, is_default_sklearn_classifier
@@ -75,7 +74,9 @@ def get_negative_graphs(
 def evaluate_embedding_for_edge_prediction(
     embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graphs: Union[Graph, str, List[str], List[Graph]],
-    model: Union[str, Callable],
+    model: Union[str, Callable, ClassifierMixin],
+    repositories: Optional[Union[str, List[str]]] = None,
+    versions: Optional[Union[str, List[str]]] = None,
     number_of_holdouts: int = 10,
     train_size: float = 0.8,
     unbalance_rates: Tuple[Union[float, str]] = (10.0, 100.0, "auto"),
@@ -104,8 +105,16 @@ def evaluate_embedding_for_edge_prediction(
         The graph to run the embedding and edge prediction on.
         If a string was provided, we will retrieve the graphs from Ensmallen's repositories.
         If a list was provided, we will iterate on all graphs.
-    model: Union[str, ClassifierMixin, EdgePredictionModel]
+    model: Union[str, Callable, ClassifierMixin]
         Either the name of the model or a method returning a model.
+    repositories: Optional[Union[str, List[str]]] = None
+        Repositorie(s) of the graphs to be retrieved.
+        This only applies when the provided graph(s) are all strings,
+        otherwise an exception will be raised.
+    versions: Optional[Union[str, List[str]]] = None
+        Version(s) of the graphs to be retrieved.
+        This only applies when the provided graph(s) are all strings,
+        otherwise an exception will be raised.
     number_of_holdouts: int = 10
         The number of the holdouts to run.
     train_size: float = 0.8
@@ -171,22 +180,49 @@ def evaluate_embedding_for_edge_prediction(
     if isinstance(graphs, (Graph, str)):
         graphs = [graphs]
 
+    number_of_graphs = len(graphs)
+
+    if versions is not None:
+        if any(not isinstance(graph, str) for graph in graphs):
+            raise ValueError(
+                "Graph versions were provided, but the graphs are not ",
+                "graph names from Ensmallen's automatic retrieval."
+            )
+        if isinstance(versions, str):
+            versions = [versions] * number_of_graphs
+    else:
+        versions = [None] *number_of_graphs
+
+    if repositories is not None:
+        if any(not isinstance(graph, str) for graph in graphs):
+            raise ValueError(
+                "Graph repositories were provided, but the graphs are not ",
+                "graph names from Ensmallen's automatic retrieval."
+            )
+        if isinstance(repositories, str):
+            repositories = [repositories]*len(graphs)
+    else:
+        repositories = [None] *number_of_graphs
+
     holdouts = []
-    for graph in tqdm(
-        graphs,
+    for graph, repository, version in tqdm(
+        zip(graphs, repositories, versions),
         desc="Executing graph",
-        disable=len(graphs) <= 1,
+        disable=number_of_graphs==1,
         dynamic_ncols=True,
         leave=False
     ):
         if isinstance(graph, str):
-            graph = get_dataset(graph)()
+            graph = get_dataset(
+                graph,
+                repository=repository,
+                version=version
+            )()
             if graph_normalization_callback is not None:
                 graph = graph_normalization_callback(graph)
 
         graph_name = graph.get_name()
-        graph_unbalance_rate = graph.get_nodes_number() * (graph.get_nodes_number() - 1) / \
-            graph.get_number_of_directed_edges()
+        graph_unbalance_rate =  0.9 * (graph.get_nodes_number() * (graph.get_nodes_number() - 1)) / graph.get_number_of_directed_edges()
 
         unbalance_rates_for_graph = [
             graph_unbalance_rate
@@ -359,6 +395,13 @@ def evaluate_embedding_for_edge_prediction(
                         model(**classifier_kwargs))
                 else:
                     model_instance = model(graph, embedding)
+            elif is_sklearn_classifier_model(model):
+                # If the provide model is already an sklearn model,
+                # we proceed to wrap it and we avoid to training the original
+                # models multiple times by making a deep copy of it.
+                model_instance = SklearnModelEdgePredictionAdapter(
+                    copy.deepcopy(model)
+                )
             else:
                 raise ValueError(
                     "It is not clear what to do with the provided model object of type {}.".format(
