@@ -907,13 +907,6 @@ class GraphVisualizer:
             possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_source_node_type
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            possible_source_node_ids = possible_source_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in possible_source_node_ids),
-                dtype=bool
-            )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
                 high=possible_source_node_ids.size,
@@ -923,13 +916,6 @@ class GraphVisualizer:
             possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
                 self._edge_prediction_source_curie_prefixes
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            possible_source_node_ids = possible_source_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in possible_source_node_ids),
-                dtype=bool
-            )]
             source_node_ids = possible_source_node_ids[np.random.randint(
                 low=0,
                 high=possible_source_node_ids.size,
@@ -941,25 +927,11 @@ class GraphVisualizer:
                 high=self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            source_node_ids = source_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in source_node_ids),
-                dtype=bool
-            )]
 
         if self._edge_prediction_destination_node_type is not None:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_destination_node_type
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in possible_destination_node_ids),
-                dtype=bool
-            )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
                 high=possible_destination_node_ids.size,
@@ -969,13 +941,6 @@ class GraphVisualizer:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
                 self._edge_prediction_destination_curie_prefix
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            possible_destination_node_ids = possible_destination_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in possible_destination_node_ids),
-                dtype=bool
-            )]
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 low=0,
                 high=possible_destination_node_ids.size,
@@ -987,18 +952,24 @@ class GraphVisualizer:
                 high=self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
-            # We drop from this list any singleton node to avoid
-            # biasing the visualization.
-            destination_node_ids = destination_node_ids[np.fromiter(
-                (self._graph.is_connected_from_node_id(node_id)
-                 for node_id in destination_node_ids),
-                dtype=bool
-            )]
 
         edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
             source_node_ids,
             destination_node_ids
         )).T
+
+        # We drop from this list any non-existent edge involving singleton node to avoid
+        # biasing the visualization.
+        edge_node_ids = edge_node_ids[np.fromiter(
+            (
+                all(
+                    self._graph.is_connected_from_node_id(node_id)
+                    for node_id in node_ids
+                )
+                for node_ids in edge_node_ids
+            ),
+            dtype=bool
+        )]
 
         if not isinstance(node_embedding, np.ndarray):
             edge_node_ids = np.array([
