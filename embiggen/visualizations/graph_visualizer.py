@@ -293,8 +293,8 @@ class GraphVisualizer:
             )
         ) or all(
             (
-                edge_prediction_source_curie_prefix is not None,
-                edge_prediction_destination_curie_prefix is not None
+                edge_prediction_source_curie_prefixes is not None,
+                edge_prediction_destination_curie_prefixes is not None
             )
         )
         self._automatically_display_on_notebooks = automatically_display_on_notebooks
@@ -920,7 +920,7 @@ class GraphVisualizer:
             )]
         elif self._curie_prefixes_were_provided:
             possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
-                self._edge_prediction_source_curie_prefix
+                self._edge_prediction_source_curie_prefixes
             )
             # We drop from this list any singleton node to avoid
             # biasing the visualization.
@@ -2002,8 +2002,8 @@ class GraphVisualizer:
                     )
         else:
             negative_label = "Non-existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefix is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefix is None else self._edge_prediction_destination_curie_prefixes,
+                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
             )
 
         if self._edge_prediction_edge_type is not None:
@@ -2012,8 +2012,8 @@ class GraphVisualizer:
             )
         elif self._curie_prefixes_were_provided:
             positive_label = "Existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefix is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefix is None else self._edge_prediction_destination_curie_prefixes,
+                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
             )
         else:
             positive_label = "Existent edges"
