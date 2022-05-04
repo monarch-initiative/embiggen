@@ -469,9 +469,9 @@ class GraphVisualizer:
 
     def get_heatmaps_comments(self, letters: Optional[List[str]] = None) -> str:
         """Returns description of the heatmaps for the provided letters."""
-        if not self._show_heatmaps_description or letters is not None and len(letters) == 0: 
+        if not self._show_heatmaps_description or letters is not None and len(letters) == 0:
             return ""
-                
+
         number_of_letters = 0 if letters is None else len(letters)
         plural = "s" if number_of_letters else ""
 
@@ -482,7 +482,7 @@ class GraphVisualizer:
             "The values are on a logarithmic scale."
         ).format(
             plural=plural,
-            letters= "{}, ".format(
+            letters="{}, ".format(
                 format_list(letters, bold_words=True)
             ) if number_of_letters > 0 else ""
         )
@@ -1446,7 +1446,7 @@ class GraphVisualizer:
 
         if return_caption:
             # If the colors were not provided, then this is
-            # an heatmap and we need to return its caption 
+            # an heatmap and we need to return its caption
             # if it was requested.
             if colors is None or labels is None:
                 return (*return_values, self.get_heatmaps_comments())
@@ -2261,7 +2261,7 @@ class GraphVisualizer:
                 figure, axes, scatter, color_caption = returned_values
             else:
                 figure, axes, scatter = returned_values
-            
+
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
@@ -2286,7 +2286,8 @@ class GraphVisualizer:
             random_state=self._random_state
         ).split(edge_metrics):
 
-            model = get_sklearn_default_classifier(self._classifier_for_separations_considerations)
+            model = get_sklearn_default_classifier(
+                self._classifier_for_separations_considerations)
 
             train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]
@@ -3981,7 +3982,8 @@ class GraphVisualizer:
         # If requested we automatically add the description of the heatmaps.
         complete_caption += self.get_heatmaps_comments(heatmaps_letters)
         # If requested we automatically add the description of these considerations.
-        complete_caption += self.get_separability_comments_description(evaluation_letters)
+        complete_caption += self.get_separability_comments_description(
+            evaluation_letters)
 
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")

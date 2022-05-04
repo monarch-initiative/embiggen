@@ -178,7 +178,8 @@ def must_be_default_sklearn_classifier(model_name: str) -> bool:
                 "classifier among the default available ones. Possibly you meant {candidate}?"
             ).format(
                 model_name=model_name,
-                candidate=closest(model_name, available_default_sklearn_classifiers.keys())
+                candidate=closest(
+                    model_name, available_default_sklearn_classifiers.keys())
             )
         )
 
@@ -193,7 +194,11 @@ def get_sklearn_default_classifier(model_name: str, **kwargs: Dict):
     **kwargs: Dict
         Arguments to forward to the sklearn model construction.
     """
-    return available_default_sklearn_classifiers[model_name.lower()](**kwargs)
+    must_be_default_sklearn_classifier(model_name)
+    return {
+        key.lower(): callback
+        for key, callback in available_default_sklearn_classifiers.items()
+    }[model_name.lower()](**kwargs)
 
 
 def is_sklearn_classifier_model(candidate_model) -> bool:
