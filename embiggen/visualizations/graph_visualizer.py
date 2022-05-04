@@ -29,7 +29,7 @@ from tqdm.auto import trange, tqdm
 import itertools
 
 from embiggen.utils import (
-    must_be_an_sklearn_classifier_model,
+    must_be_default_sklearn_classifier,
     get_sklearn_default_classifier
 )
 
@@ -294,7 +294,7 @@ class GraphVisualizer:
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
 
-        must_be_an_sklearn_classifier_model(
+        must_be_default_sklearn_classifier(
             classifier_for_separations_considerations)
         self._classifier_for_separations_considerations = classifier_for_separations_considerations
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
