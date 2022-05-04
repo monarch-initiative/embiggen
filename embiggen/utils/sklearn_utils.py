@@ -5,6 +5,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
+from userinput.utils import closest
 import numpy as np
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.metrics import (
@@ -135,19 +136,63 @@ def get_default_mlp_classifier(**kwargs: Dict) -> MLPClassifier:
 
 
 available_default_sklearn_classifiers = {
-    "DecisionTreeClassifier".lower(): get_default_decision_tree_classifier,
-    "ExtraTreesClassifier".lower(): get_default_extra_tree_classifier,
-    "RandomForestClassifier".lower(): get_default_random_forest_classifier,
-    "KNeighborsClassifier".lower(): get_default_k_neighbours_classifier,
-    "MLPClassifier".lower(): get_default_mlp_classifier
+    "DecisionTreeClassifier": get_default_decision_tree_classifier,
+    "ExtraTreesClassifier": get_default_extra_tree_classifier,
+    "RandomForestClassifier": get_default_random_forest_classifier,
+    "KNeighborsClassifier": get_default_k_neighbours_classifier,
+    "MLPClassifier": get_default_mlp_classifier
 }
 
 
 def is_default_sklearn_classifier(model_name: str) -> bool:
-    return model_name.lower() in available_default_sklearn_classifiers
+    """Returns whether we have default models for the provided model name.
+
+    Parameters
+    ------------------------
+    model_name: str
+        Name of the default model to check for.
+    """
+    return model_name.lower() in {
+        key.lower()
+        for key in available_default_sklearn_classifiers
+    }
 
 
-def get_sklearn_default_classifier(model_name: str, **kwargs):
+def must_be_default_sklearn_classifier(model_name: str) -> bool:
+    """Raises exception if we do not have default models for the provided model name.
+
+    Parameters
+    ------------------------
+    model_name: str
+        Name of the default model to check for.
+
+    Raises
+    ------------------------
+    ValueError
+        If the provided model is not currently available as a default.
+    """
+    if not is_default_sklearn_classifier(model_name):
+        raise ValueError(
+            (
+                "The provided model name `{model_name}` is not a supported sklearn "
+                "classifier among the default available ones. Possibly you meant {candidate}?"
+            ).format(
+                model_name=model_name,
+                candidate=closest(model_name, available_default_sklearn_classifiers.keys())
+            )
+        )
+
+
+def get_sklearn_default_classifier(model_name: str, **kwargs: Dict):
+    """Returns instance of default Sklearn classifier.
+
+    Parameters
+    ------------------------
+    model_name: str
+        Name of the default model to load.
+    **kwargs: Dict
+        Arguments to forward to the sklearn model construction.
+    """
     return available_default_sklearn_classifiers[model_name.lower()](**kwargs)
 
 

@@ -1,5 +1,6 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
+from optparse import Option
 from typing import Dict, List, Tuple, Union, Optional, Callable
 
 import matplotlib
@@ -22,11 +23,16 @@ from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
+
+from embiggen.utils import (
+    must_be_an_sklearn_classifier_model,
+    get_sklearn_default_classifier
+)
+
 try:
     from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
 except ImportError:
@@ -92,6 +98,8 @@ class GraphVisualizer:
     def __init__(
         self,
         graph: Union[Graph, str],
+        repository: Optional[str] = None,
+        version: Optional[str] = None,
         decomposition_method: str = "TSNE",
         n_components: int = 2,
         rotate: bool = False,
@@ -106,14 +114,16 @@ class GraphVisualizer:
         edge_prediction_source_curie_prefixes: Optional[Union[str, List[str]]] = None,
         edge_prediction_destination_curie_prefixes: Optional[Union[str, List[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
+        classifier_for_separations_considerations: str = "DecisionTreeClassifier",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
+        show_separability_considerations_explanation: bool = True,
+        show_heatmaps_description: bool = True,
         automatically_display_on_notebooks: bool = True,
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
         number_of_subsampled_negative_edges: int = 20_000,
         number_of_holdouts_for_cluster_comments: int = 5,
-        max_depth_for_decision_tree: int = 10,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None
     ):
@@ -125,6 +135,18 @@ class GraphVisualizer:
             The graph to visualize.
             If a string was provided, we try to retrieve the given
             graph name using the Ensmallen automatic graph retrieval.
+        repository: Optional[str] = None
+            Repository of the provided graph.
+            This only applies when the provided graph is a
+            graph name that can be retrieved using ensmallen.
+            Providing this parameter with an actual graph
+            object will cause an exception to be raised.
+        version: Optional[str] = None
+            version of the provided graph.
+            This only applies when the provided graph is a
+            graph name that can be retrieved using ensmallen.
+            Providing this parameter with an actual graph
+            object will cause an exception to be raised.
         decomposition_method: str = "TSNE",
             The decomposition method to use.
             The supported methods are UMAP, TSNE and PCA.
@@ -185,12 +207,21 @@ class GraphVisualizer:
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
             name such as `Graph`.
+        classifier_for_separations_considerations: str = "DecisionTreeClassifier"
+            Name of default sklearn classifier to use to compute the separations
+            considerations for the clusters.
         show_node_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
         show_edge_embedding_method: bool = True
             Whether to show the edge embedding method.
             By default, we show it if we can detect it.
+        show_separability_considerations_explanation: bool = True
+            Whether to explain how the separability considerations are obtained
+            in the captions of the images.
+        show_heatmaps_description: bool = True
+            Whether to describe the heatmaps
+            in the captions of the images.
         automatically_display_on_notebooks: bool = True
             Whether to automatically show the plots and the captions
             using the display command when in jupyter notebooks.
@@ -217,12 +248,9 @@ class GraphVisualizer:
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
-        number_of_holdouts_for_cluster_comments: int = 3
+        number_of_holdouts_for_cluster_comments: int = 5
             Number of holdouts to execute for getting the comments
             about clusters separability.
-        max_depth_for_decision_tree: int = 10
-            Maximal depth for the decision tree used for the comments about
-            clusters separability.
         random_state: int = 42,
             The random state to reproduce the visualizations.
         decomposition_kwargs: Optional[Dict] = None,
@@ -237,7 +265,25 @@ class GraphVisualizer:
             it is installed.
         """
         if isinstance(graph, str):
-            graph = get_dataset(graph)()
+            graph = get_dataset(
+                graph,
+                repository=repository,
+                version=version
+            )()
+        else:
+            if version is not None:
+                raise ValueError(
+                    "The graph version was provided, but the graph is not from "
+                    "Ensmallen's automatic retrieval. It is unclear what to do "
+                    "with this parameter."
+                )
+            if repository is not None:
+                raise ValueError(
+                    "The graph repository was provided, but the graph is not from "
+                    "Ensmallen's automatic retrieval. It is unclear what to do "
+                    "with this parameter."
+                )
+
         self._graph = graph
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
@@ -247,6 +293,13 @@ class GraphVisualizer:
         self._show_node_embedding_method = show_node_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
+
+        must_be_an_sklearn_classifier_model(
+            classifier_for_separations_considerations)
+        self._classifier_for_separations_considerations = classifier_for_separations_considerations
+        self._show_separability_considerations_explanation = show_separability_considerations_explanation
+        self._show_heatmaps_description = show_heatmaps_description
+
         if edge_prediction_source_curie_prefixes is not None and edge_prediction_source_node_type is not None:
             raise ValueError(
                 "Both the `edge_prediction_source_curie_prefixes` and the `edge_prediction_source_node_type` "
@@ -285,7 +338,6 @@ class GraphVisualizer:
             ]
         self._edge_prediction_destination_curie_prefixes = edge_prediction_destination_curie_prefixes
         self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
-        self._max_depth_for_decision_tree = max_depth_for_decision_tree
         self._curie_prefixes_were_provided = (
             edge_prediction_source_curie_prefixes is not None or
             edge_prediction_destination_curie_prefixes is not None
@@ -390,6 +442,50 @@ class GraphVisualizer:
             return (figure, axes, *args[2:])
         else:
             return (figure, axes, *args[2:], caption)
+
+    def get_separability_comments_description(self, letters: Optional[List[str]] = None) -> str:
+        """Returns separability comments description for the provided letters."""
+        if not self._show_separability_considerations_explanation:
+            return ""
+
+        number_of_letters = 0 if letters is None else len(letters)
+        plural = "s" if number_of_letters else ""
+
+        return (
+            " The separability consideration{plural} {letters}{plural2} derive from "
+            "evaluating a {model_name} trained on {holdouts_number} Monte Carlo holdouts, "
+            "with a 70/30 split between training and test sets."
+        ).format(
+            plural=plural,
+            plural2="were" if number_of_letters else "was",
+            letters="for figure{plural} {letters} ".format(
+                plural=plural,
+                letters=format_list(letters, bold_words=True)
+            ) if number_of_letters > 0 else "",
+            model_name=sanitize_ml_labels(
+                self._classifier_for_separations_considerations),
+            holdouts_number=self._number_of_holdouts_for_cluster_comments
+        )
+
+    def get_heatmaps_comments(self, letters: Optional[List[str]] = None) -> str:
+        """Returns description of the heatmaps for the provided letters."""
+        if not self._show_heatmaps_description or letters is not None and len(letters) == 0: 
+            return ""
+                
+        number_of_letters = 0 if letters is None else len(letters)
+        plural = "s" if number_of_letters else ""
+
+        return (
+            " In the heatmap{plural}, {letters}"
+            "low and high values appear in red and blue hues, respectively. "
+            "Intermediate values appear in either a yellow or cyan hue. "
+            "The values are on a logarithmic scale."
+        ).format(
+            plural=plural,
+            letters= "{}, ".format(
+                format_list(letters, bold_words=True)
+            )
+        )
 
     def get_decomposition_method(self) -> Callable:
         if self._decomposition_method == "UMAP":
@@ -1349,11 +1445,11 @@ class GraphVisualizer:
             return_values = figure, axes
 
         if return_caption:
+            # If the colors were not provided, then this is
+            # an heatmap and we need to return its caption 
+            # if it was requested.
             if colors is None or labels is None:
-                raise ValueError(
-                    "It does not make sense to ask for a caption to the "
-                    "scatter plot without providing colors or labels to it."
-                )
+                return (*return_values, self.get_heatmaps_comments())
 
             caption = format_list([
                 '{quotations}{label}{quotations} in {color_name}'.format(
@@ -1588,19 +1684,18 @@ class GraphVisualizer:
             random_state=self._random_state
         ).split(points):
 
-            tree = DecisionTreeClassifier(
-                max_depth=self._max_depth_for_decision_tree,
-                random_state=self._random_state
+            model = get_sklearn_default_classifier(
+                self._classifier_for_separations_considerations
             )
 
             train_x, test_x = points[train_indices], points[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]
 
-            tree.fit(train_x, train_y)
+            model.fit(train_x, train_y)
 
             test_accuracies.append(balanced_accuracy_score(
                 test_y,
-                tree.predict(test_x)
+                model.predict(test_x)
             ))
 
         mean_accuracy = np.mean(test_accuracies)
@@ -1625,6 +1720,9 @@ class GraphVisualizer:
             )
 
         caption = f"{color_caption}. {type_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
+
+        # If requested we automatically add the description of these considerations.
+        caption += self.get_separability_comments_description()
 
         return fig, axes, caption
 
@@ -2152,21 +2250,25 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
-            return_caption=False,
+            return_caption=return_caption,
             loc=loc,
             return_collections=True,
             **kwargs
         )
 
         if not self._rotate:
-            figure, axes, scatter = returned_values
+            if return_caption:
+                figure, axes, scatter, color_caption = returned_values
+            else:
+                figure, axes, scatter = returned_values
+            
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
             returned_values = figure, axes
 
         if not return_caption:
-            return self._handle_notebook_display(*returned_values)
+            return self._handle_notebook_display(figure, axes, scatter)
 
         edge_metrics = edge_metrics.reshape((-1, 1))
 
@@ -2184,19 +2286,16 @@ class GraphVisualizer:
             random_state=self._random_state
         ).split(edge_metrics):
 
-            tree = DecisionTreeClassifier(
-                max_depth=self._max_depth_for_decision_tree,
-                random_state=self._random_state
-            )
+            model = get_sklearn_default_classifier(self._classifier_for_separations_considerations)
 
             train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]
 
-            tree.fit(train_x, train_y)
+            model.fit(train_x, train_y)
 
             test_accuracies.append(balanced_accuracy_score(
                 test_y,
-                tree.predict(test_x)
+                model.predict(test_x)
             ))
 
         bipartite = "bipartite " if self._is_bipartite_edge_prediction else ""
@@ -2221,8 +2320,11 @@ class GraphVisualizer:
             )
 
         caption = (
-            f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%})"
+            f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%}){color_caption}"
         )
+
+        # If requested we automatically add the description of these considerations.
+        caption += self.get_separability_comments_description()
 
         return self._handle_notebook_display(*returned_values, caption=caption)
 
@@ -3281,35 +3383,37 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
-            return_caption=False,
+            return_caption=return_caption,
             loc=loc,
             return_collections=True,
             **kwargs
         )
 
         if not self._rotate:
-            figure, axes, scatter = returned_values
+            if return_caption:
+                figure, axes, scatter, color_caption = returned_values
+            else:
+                figure, axes, scatter = returned_values
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
 
         if annotate_nodes:
-            returned_values = self.annotate_nodes(
+            figure, axes = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_embedding,
             )
 
         if not return_caption:
-            return self._handle_notebook_display(*returned_values)
+            return self._handle_notebook_display(figure, axes, scatter)
 
         # TODO! Add caption node abount gaussian ball!
-
         caption = (
-            f"<i>Node degrees heatmap</i>."
+            "<i>Node degrees heatmap</i>{}.".format(color_caption)
         )
 
-        return self._handle_notebook_display(*returned_values[:2], caption=caption)
+        return self._handle_notebook_display(figure, axes, caption=caption)
 
     def plot_edge_types(
         self,
@@ -3549,14 +3653,17 @@ class GraphVisualizer:
             test_marker=test_marker,
             show_title=show_title,
             show_legend=show_legend,
-            return_caption=False,
+            return_caption=return_caption,
             loc=loc,
             return_collections=True,
             **kwargs
         )
 
         if not self._rotate:
-            figure, axes, scatter = returned_values
+            if return_caption:
+                figure, axes, scatter, color_caption = returned_values
+            else:
+                figure, axes, scatter = returned_values
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
             color_bar.draw_all()
@@ -3566,7 +3673,7 @@ class GraphVisualizer:
             return self._handle_notebook_display(*returned_values)
 
         caption = (
-            f"<i>Edge weights heatmap</i>."
+            f"<i>Edge weights heatmap</i>{color_caption}."
         )
 
         return self._handle_notebook_display(*returned_values, caption=caption)
@@ -3635,10 +3742,7 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
         axes.hist(
             self._graph.get_node_degrees(),
-            bins=min(
-                100,
-                self._graph.get_nodes_number() // 10
-            ),
+            bins=number_of_buckets,
             log=True
         )
         axes.set_ylabel("Node degree (log scale)")
@@ -3815,10 +3919,14 @@ class GraphVisualizer:
         show_node_embedding_backup = self._show_node_embedding_method
         show_edge_embedding_backup = self._show_edge_embedding_method
         automatically_display_backup = self._automatically_display_on_notebooks
+        show_separability_backup = self._show_separability_considerations_explanation
+        show_heatmaps_backup = self._show_heatmaps_description
         self._show_graph_name = False
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
         self._automatically_display_on_notebooks = False
+        self._show_separability_considerations_explanation = False
+        self._show_heatmaps_description = False
 
         complete_caption = (
             f"<b>{self._decomposition_method} decomposition and properties distribution"
@@ -3864,35 +3972,19 @@ class GraphVisualizer:
 
         complete_caption += "<br>"
 
-        if len(heatmaps_letters) > 0:
-            complete_caption += (
-                " In the heatmap{plural}, {letters}, "
-                "low and high values appear in red and blue hues, respectively. "
-                "Intermediate values appear in either a yellow or cyan hue. "
-                "The values are on a logarithmic scale."
-            ).format(
-                plural="s" if len(heatmaps_letters) > 1 else "",
-                letters=format_list(heatmaps_letters, bold_words=True)
-            )
-
-        complete_caption += (
-            " The separability consideration{plural} for figure{plural} {letters} {plural2} derive from "
-            "evaluating a Decision Tree model with maximal depth {max_depth} trained on {holdouts_number} Monte Carlo holdouts, "
-            "with a 70/30 split between training and test sets."
-        ).format(
-            plural="s" if len(evaluation_letters) > 1 else "",
-            plural2="were" if len(evaluation_letters) > 1 else "was",
-            letters=format_list(evaluation_letters, bold_words=True),
-            max_depth=self._max_depth_for_decision_tree,
-            holdouts_number=self._number_of_holdouts_for_cluster_comments
-        )
-
-        for axis in flat_axes[number_of_total_plots:]:
-            axis.axis("off")
-
         self._show_edge_embedding_method = show_edge_embedding_backup
         self._show_node_embedding_method = show_node_embedding_backup
         self._automatically_display_on_notebooks = automatically_display_backup
+        self._show_separability_considerations_explanation = show_separability_backup
+        self._show_heatmaps_description = show_heatmaps_backup
+
+        # If requested we automatically add the description of the heatmaps.
+        complete_caption += self.get_heatmaps_comments(heatmaps_letters)
+        # If requested we automatically add the description of these considerations.
+        complete_caption += self.get_separability_comments_description(evaluation_letters)
+
+        for axis in flat_axes[number_of_total_plots:]:
+            axis.axis("off")
 
         if show_name_backup:
             fig.suptitle(

@@ -5,7 +5,7 @@ from .normalize_model_structural_parameters import normalize_model_list_paramete
 from .sklearn_utils import (
     must_be_an_sklearn_classifier_model, evaluate_sklearn_classifier,
     is_sklearn_classifier_model, is_default_sklearn_classifier,
-    get_sklearn_default_classifier
+    get_sklearn_default_classifier, must_be_default_sklearn_classifier
 )
 
 try:
@@ -32,7 +32,8 @@ try:
         "evaluate_sklearn_classifier",
         "is_sklearn_classifier_model",
         "is_default_sklearn_classifier",
-        "get_sklearn_default_classifier"
+        "get_sklearn_default_classifier",
+        "must_be_default_sklearn_classifier"
     ]
 except ModuleNotFoundError:
     __all__ = [
@@ -50,5 +51,6 @@ except ModuleNotFoundError:
         "evaluate_sklearn_classifier",
         "is_sklearn_classifier_model",
         "is_default_sklearn_classifier",
-        "get_sklearn_default_classifier"
+        "get_sklearn_default_classifier",
+        "must_be_default_sklearn_classifier"
     ]
