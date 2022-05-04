@@ -1054,7 +1054,7 @@ class GraphVisualizer:
                 size=self._number_of_subsampled_negative_edges
             )
 
-        edge_node_ids = self._subsampled_negative_edge_node_ids = np.vstack((
+        edge_node_ids = np.vstack((
             source_node_ids,
             destination_node_ids
         )).T
@@ -1071,6 +1071,8 @@ class GraphVisualizer:
             ),
             dtype=bool
         )]
+
+        self._subsampled_negative_edge_node_ids = edge_node_ids
 
         if not isinstance(node_embedding, np.ndarray):
             edge_node_ids = np.array([
@@ -2273,9 +2275,8 @@ class GraphVisualizer:
         edge_metrics = edge_metrics.reshape((-1, 1))
 
         types = np.concatenate([
-            np.zeros(
-                self._negative_edge_embedding.shape[0], dtype="int64"),
-            np.ones(self._edge_embedding.shape[0], dtype="int64"),
+            np.zeros(self._negative_edge_embedding.shape[0], dtype=np.bool),
+            np.ones(self._edge_embedding.shape[0], dtype=np.bool),
         ])
 
         test_accuracies = []
