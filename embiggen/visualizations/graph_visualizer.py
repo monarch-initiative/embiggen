@@ -3411,7 +3411,7 @@ class GraphVisualizer:
 
         # TODO! Add caption node abount gaussian ball!
         caption = (
-            "<i>Node degrees heatmap</i>{}.".format(color_caption)
+            "<i>Node degrees heatmap</i>.{}".format(color_caption)
         )
 
         return self._handle_notebook_display(figure, axes, caption=caption)
