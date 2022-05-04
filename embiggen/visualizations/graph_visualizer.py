@@ -484,7 +484,7 @@ class GraphVisualizer:
             plural=plural,
             letters= "{}, ".format(
                 format_list(letters, bold_words=True)
-            )
+            ) if number_of_letters > 0 else ""
         )
 
     def get_decomposition_method(self) -> Callable:
