@@ -160,7 +160,7 @@ def _compute_node_ensmallen_embedding(
 def compute_node_embedding(
     graph: Union[Graph, str],
     node_embedding_method_name: str,
-    use_only_cpu: Union[bool, str] = "auto",
+    use_only_cpu: bool = True,
     use_mirrored_strategy: Union[bool, str] = "auto",
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
@@ -179,7 +179,7 @@ def compute_node_embedding(
         it using the Ensmallen automatic retrieval.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
-    use_only_cpu: Union[bool, str] = "auto",
+    use_only_cpu: bool = True,
         Whether to only use CPU.
         Do note that for CBOW and SkipGram models,
         this will switch the implementation from the

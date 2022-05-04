@@ -29,6 +29,9 @@ class SklearnModelEdgePredictionAdapter:
         """
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
+        # We want to mask the decorator class name
+        self.__class__.__name__ = model_instance.__class__.__name__
+        self.__class__.__doc__ = model_instance.__class__.__doc__
 
     @staticmethod
     def _trasform_graphs_into_edge_embedding(
