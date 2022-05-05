@@ -3976,6 +3976,10 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
+        node_embedding = self._get_node_embedding(
+            node_embedding,
+            **node_embedding_kwargs
+        )
         self.fit_nodes(node_embedding, **node_embedding_kwargs)
         self.fit_negative_and_positive_edges(
             node_embedding, **node_embedding_kwargs)
