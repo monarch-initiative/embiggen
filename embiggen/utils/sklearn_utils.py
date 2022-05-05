@@ -256,11 +256,8 @@ def evaluate_sklearn_classifier(
 
     # If this is a binary prediction, we need to handle
     # this as a corner case.
-    if len(y.shape) == 1:
+    if not multiclass_or_multilabel:
         predictions = predictions[:, 1]
-        y_classes = y
-    else:
-        y_classes = y.argmax(axis=1)
 
     integer_predictions = classifier.predict(X, **kwargs)
 
@@ -278,7 +275,7 @@ def evaluate_sklearn_classifier(
 
     return {
         **{
-            sanitize_ml_labels(integer_metric.__name__): integer_metric(y_classes, integer_predictions)
+            sanitize_ml_labels(integer_metric.__name__): integer_metric(y, integer_predictions)
             for integer_metric in (
                 accuracy_score,
                 balanced_accuracy_score,
