@@ -457,12 +457,11 @@ class GraphVisualizer:
         plural = "s" if number_of_letters else ""
 
         return (
-            " The separability consideration{plural} {letters}{plural2} derive from "
+            " The separability consideration{plural} {letters} derive from "
             "evaluating a {model_name} trained on {holdouts_number} Monte Carlo holdouts, "
             "with a 70/30 split between training and test sets."
         ).format(
             plural=plural,
-            plural2="were" if number_of_letters else "was",
             letters="for figure{plural} {letters} ".format(
                 plural=plural,
                 letters=format_list(letters, bold_words=True)
@@ -2239,18 +2238,18 @@ class GraphVisualizer:
             elif mean_accuracy > 0.65:
                 descriptor = f"is a good {bipartite}edge prediction feature"
             else:
-                descriptor = f"may be considered as {bipartite}edge prediction feature"
+                descriptor = f"may be considered a {bipartite}edge prediction feature"
             metric_caption = (
                 f"This metric {descriptor}"
             )
         else:
             metric_caption = (
-                "The metric does not seem to be useful as "
+                "The metric is not useful as a "
                 f"{bipartite}edge prediction feature"
             )
 
         caption = (
-            f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%}){color_caption}"
+            f"<i>{metric_name} heatmap</i>. {metric_caption} (Balanced accuracy: {mean_accuracy:.2%} ± {std_accuracy:.2%}).{color_caption}"
         )
 
         # If requested we automatically add the description of these considerations.
