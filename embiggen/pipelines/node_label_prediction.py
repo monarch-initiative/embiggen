@@ -116,7 +116,7 @@ def _validate_and_align_node_feature(
 
     # If it is a dataframe we align it
     if isinstance(node_features, pd.DataFrame):
-        return node_features.loc[graph.get_node_names()].values
+        return node_features.loc[graph.get_node_names()].to_numpy()
 
     # And if it is a numpy array we must believe that the user knows what
     # they are doing, as we cannot ensure alignment.
@@ -289,7 +289,7 @@ def _get_graphs_iterator(
     repositories: Union[str, List[str]],
     versions: Union[str, List[str]],
     graph_normalization_callback: Callable[[Graph], Graph],
-) -> Generator[Graph]:
+) -> List[Graph]:
     """Returns iterator on given graph objects.
 
     Parameters
@@ -310,6 +310,9 @@ def _get_graphs_iterator(
         Graph normalization procedure to call on graphs that have been loaded from
         the Ensmallen automatic retrieval.
     """
+    if not isinstance(graphs, list):
+        graphs = [graphs]
+
     number_of_graphs = len(graphs)
 
     if versions is not None:

@@ -14,7 +14,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         self._graph = Cora()
         self._subgraph = self._graph.get_random_subgraph(
             self._graph.get_nodes_number() - 2
-        ).drop_singleton_nodes()
+        ).remove_singleton_nodes()
         self._number_of_holdouts = 2
 
     def test_evaluate_embedding_for_edge_prediction(self):

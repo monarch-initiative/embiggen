@@ -14,7 +14,6 @@ class NodeLabelPredictionTransformer:
     def __init__(
         self,
         aligned_node_mapping: bool = False,
-        one_hot_encode_labels: bool = False
     ):
         """Create new NodeLabelPredictionTransformer object.
 
@@ -25,33 +24,25 @@ class NodeLabelPredictionTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated node embedding
             will be meaningless.
-        one_hot_encode_labels: bool = False
-            Whether to one-hot encode the node labels.
         """
         self._transformer = NodeTransformer(
             aligned_node_mapping=aligned_node_mapping,
         )
-        self._one_hot_encode_labels = one_hot_encode_labels
 
-    def fit(self, embedding: pd.DataFrame):
+    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: pd.DataFrame,
-            Embedding to use to fit the transformer.
-            This is a pandas DataFrame and NOT a numpy array because we need
-            to be able to remap correctly the vector embeddings in case of
-            graphs that do not respect the same internal node mapping but have
-            the same node set. It is possible to remap such graphs using
-            Ensmallen's remap method but it may be less intuitive to users.
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+            node_feature to use to fit the transformer.
         """
-        self._transformer.fit(embedding)
+        self._transformer.fit(node_feature)
 
     def transform(
         self,
         graph: Graph,
-        behaviour_for_unknown_node_labels: Optional[str] = None,
+        behaviour_for_unknown_node_labels: Optional[str] = "warn",
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return node embedding for given graph using provided method.
@@ -61,13 +52,13 @@ class NodeLabelPredictionTransformer:
         graph: Graph,
             The graph whose nodes are to be embedded and node types extracted.
             It can either be an Graph or a list of lists of nodes.
-        behaviour_for_unknown_node_labels: Optional[str] = None
+        behaviour_for_unknown_node_labels: Optional[str] = "warn"
             Behaviour to be followed when encountering nodes that do not
             have a known node type. Possible values are:
             - drop: we drop these nodes
             - keep: we keep these nodes
             By default, we drop these nodes.
-            If the behaviour has not been specified and left to None,
+            If the behaviour has not been specified and left to "warn",
             a warning will be raised to notify the user of this uncertainty.
         random_state: int = 42,
             The random state to use to shuffle the labels.
@@ -136,7 +127,7 @@ class NodeLabelPredictionTransformer:
                     least_common_node_type_name, least_common_count
                 )
             )
-        if graph.has_unknown_node_types() and behaviour_for_unknown_node_labels is None:
+        if graph.has_unknown_node_types() and behaviour_for_unknown_node_labels =="warn":
             warnings.warn(
                 "Please be advised that the provided graph for the node-label "
                 "prediction contains nodes with unknown node types. "
@@ -147,24 +138,31 @@ class NodeLabelPredictionTransformer:
             )
             behaviour_for_unknown_node_labels = "drop"
 
-        node_embeddings = self._transformer.transform(
+        node_features = self._transformer.transform(
             graph,
         )
 
-        if self._one_hot_encode_labels:
+        if graph.has_multilabel_node_types():
             node_labels = graph.get_one_hot_encoded_node_types()
         else:
-            node_labels = graph.get_node_type_ids()
+            node_labels = np.fromiter(
+                (
+                    np.nan if node_type_id is None else node_type_id[0]
+                    for node_type_id in (graph.get_node_type_ids_from_node_id(node_id)
+                    for node_id in range(graph.get_nodes_number()))
+                ),
+                dtype=np.float32
+            ).reshape((-1, 1))
 
         if graph.has_unknown_node_types() and behaviour_for_unknown_node_labels == "drop":
             known_node_labels_mask = graph.get_nodes_with_known_node_types_mask()
             node_labels = node_labels[known_node_labels_mask]
-            node_embeddings = node_embeddings[known_node_labels_mask]
+            node_features = node_features[known_node_labels_mask]
 
         numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
             seed=random_state
         )
 
-        indices = numpy_random_state.permutation(node_labels.size)
+        indices = numpy_random_state.permutation(node_features.shape[0])
 
-        return node_embeddings[indices], node_labels[indices]
+        return node_features[indices], node_labels[indices]

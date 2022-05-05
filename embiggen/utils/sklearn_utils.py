@@ -1,4 +1,5 @@
 """Submodule with utils for interface with Sklearn models."""
+import functools
 from typing import Dict, Type
 from sklearn.base import ClassifierMixin
 from sklearn.tree import DecisionTreeClassifier
@@ -228,9 +229,26 @@ def evaluate_sklearn_classifier(
     classifier: Type[ClassifierMixin],
     X: np.ndarray,
     y: np.ndarray,
+    multiclass_or_multilabel: bool,
     **kwargs: Dict
 ) -> Dict[str, float]:
-    """Return dict with evaluation of the model on classification task."""
+    """Return dict with evaluation of the model on classification task.
+
+    Parameters
+    --------------
+    classifier: Type[ClassifierMixin]
+        The classifier to evaluate.
+    X: np.ndarray
+        The input data.
+    y: np.ndarray
+        The output labels
+    multiclass_or_multilabel: bool
+        Whether the provided labels are multiclass or multilabel,
+        that is the model needs to compute more output
+        classes for a given input.
+    **kwargs: Dict
+        Aguments to forward to the model predict proba method.
+    """
 
     must_be_an_sklearn_classifier_model(classifier)
 
@@ -240,25 +258,60 @@ def evaluate_sklearn_classifier(
     # this as a corner case.
     if len(y.shape) == 1:
         predictions = predictions[:, 1]
+        y_classes = y
+    else:
+        y_classes = y.argmax(axis=1)
 
     integer_predictions = classifier.predict(X, **kwargs)
 
+    # Depending on whether this task is binary or multiclall/multilabel
+    # we need to set the average parameter for the metrics.
+    if multiclass_or_multilabel:
+        average_methods = ("macro", "weighted")
+    else:
+        average_methods = ("binary",)
+
+    @functools.wraps(roc_auc_score)
+    def wrapper_roc_auc_score(*args, **kwargs):
+        return roc_auc_score(*args, **kwargs, multi_class="ovr")
+
     return {
         **{
-            sanitize_ml_labels(integer_metric.__name__): integer_metric(y, integer_predictions)
+            sanitize_ml_labels(integer_metric.__name__): integer_metric(y_classes, integer_predictions)
             for integer_metric in (
                 accuracy_score,
                 balanced_accuracy_score,
+            )
+        },
+        **{
+            "{}{}".format(
+                sanitize_ml_labels(averaged_integer_metric.__name__),
+                " ".format(
+                    average_method) if average_method != "binary" else ""
+            ): averaged_integer_metric(y, integer_predictions, average=average_method)
+            for averaged_integer_metric in (
                 f1_score,
                 precision_score,
                 recall_score,
             )
+            for average_method in average_methods
         },
         **{
-            sanitize_ml_labels(probabilistic_metric.__name__): probabilistic_metric(y, predictions)
-            for probabilistic_metric in (
-                average_precision_score,
-                roc_auc_score
+            "{}{}".format(
+                sanitize_ml_labels(probabilistic_metric.__name__),
+                " ".format(
+                    average_method) if average_method != "binary" else ""
+            ): probabilistic_metric(
+                y,
+                predictions,
+                average=average_method
             )
+            for probabilistic_metric in (
+                # AUPRC in sklearn is only supported for binary labels
+                *((average_precision_score,)
+                  if not multiclass_or_multilabel else ()),
+                wrapper_roc_auc_score
+            )
+            for average_method in average_methods
         },
     }

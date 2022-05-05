@@ -36,7 +36,7 @@ class SklearnModelNodeLabelPredictionAdapter:
     @staticmethod
     def _trasform_graphs_into_node_embedding(
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         behaviour_for_unknown_node_labels: Optional[str] = None,
         aligned_node_mapping: bool = False,
         random_state: int = 42,
@@ -48,7 +48,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph to use for this task.
             It can either be an Graph or a list of lists of nodes.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the training of the model.
         behaviour_for_unknown_node_labels: Optional[str] = None
             Behaviour to be followed when encountering nodes that do not
@@ -79,13 +79,14 @@ class SklearnModelNodeLabelPredictionAdapter:
 
         return nlpt.transform(
             graph=graph,
+            behaviour_for_unknown_node_labels=behaviour_for_unknown_node_labels,
             random_state=random_state
         )
 
     @staticmethod
     def _trasform_graph_into_node_embedding(
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         aligned_node_mapping: bool = False,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
@@ -95,7 +96,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the training of the model.
         aligned_node_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
@@ -119,7 +120,7 @@ class SklearnModelNodeLabelPredictionAdapter:
     def fit(
         self,
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         behaviour_for_unknown_node_labels: Optional[str] = None,
         aligned_node_mapping: bool = False,
         random_state: int = 42,
@@ -132,7 +133,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph to use for this task.
             It can either be an Graph or a list of lists of nodes.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the training of the model.
         behaviour_for_unknown_node_labels: Optional[str] = None
             Behaviour to be followed when encountering nodes that do not
@@ -171,7 +172,7 @@ class SklearnModelNodeLabelPredictionAdapter:
     def evaluate(
         self,
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         behaviour_for_unknown_node_labels: Optional[str] = None,
         aligned_node_mapping: bool = False,
         random_state: int = 42,
@@ -184,7 +185,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph to use for this task.
             It can either be an Graph or a list of lists of nodes.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the evaluation of the model.
         behaviour_for_unknown_node_labels: Optional[str] = None
             Behaviour to be followed when encountering nodes that do not
@@ -218,13 +219,14 @@ class SklearnModelNodeLabelPredictionAdapter:
                 aligned_node_mapping=aligned_node_mapping,
                 random_state=random_state,
             ),
+            multiclass_or_multilabel=graph.get_node_types_number() > 2,
             **kwargs
         )
 
     def predict_proba(
         self,
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         aligned_node_mapping: bool = False,
         **kwargs
     ) -> Dict[str, float]:
@@ -235,7 +237,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the evaluation of the model.
         aligned_node_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
@@ -262,7 +264,7 @@ class SklearnModelNodeLabelPredictionAdapter:
     def predict(
         self,
         graph: Graph,
-        node_features: Union[pd.DataFrame, np.ndarray],
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         aligned_node_mapping: bool = False,
         **kwargs
     ) -> Dict[str, float]:
@@ -273,7 +275,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         graph: Graph,
             The graph to use for this task.
             It can either be an Graph or a list of lists of nodes.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the evaluation of the model.
         aligned_node_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes

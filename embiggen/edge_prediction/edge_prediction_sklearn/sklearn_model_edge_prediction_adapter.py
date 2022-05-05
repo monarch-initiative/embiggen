@@ -290,6 +290,7 @@ class SklearnModelEdgePredictionAdapter:
                 aligned_node_mapping=aligned_node_mapping,
                 random_state=random_state,
             ),
+            multiclass_or_multilabel=False,
             **kwargs
         )
 
