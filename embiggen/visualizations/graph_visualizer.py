@@ -3989,7 +3989,7 @@ class GraphVisualizer:
         ]
         edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges,
-            self.plot_positive_and_negative_edges_l2_distance,
+            self.plot_positive_and_negative_edges_euclidean_distance,
             self.plot_positive_and_negative_edges_cosine_distance,
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
