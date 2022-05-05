@@ -1390,9 +1390,9 @@ class GraphVisualizer:
             # 2) Some of the objects considered are not picklable, such as, at the time of writing
             #    the lambdas used in the graph transformer or the graph object itself.
             graph_backup = self._graph
-            node_embedding = self._node_embedding
-            edge_embedding = self._edge_embedding
-            negative_edge_embedding = self._negative_edge_embedding
+            node_embedding = self._node_decomposition
+            edge_embedding = self._positive_edge_decomposition
+            negative_edge_embedding = self._negative_edge_decomposition
             self._node_decomposition = None
             self._positive_edge_decomposition = None
             self._negative_edge_decomposition = None
@@ -1694,7 +1694,7 @@ class GraphVisualizer:
             )
 
         lines_collection = mc.LineCollection(
-            self._node_embedding[edge_node_ids],
+            self._node_decomposition[edge_node_ids],
             linewidths=1,
             zorder=0,
             **{
@@ -1972,8 +1972,8 @@ class GraphVisualizer:
 
         types = np.concatenate([
             np.zeros(
-                self._negative_edge_embedding.shape[0], dtype="int64"),
-            np.ones(self._edge_embedding.shape[0], dtype="int64"),
+                self._negative_edge_decomposition.shape[0], dtype="int64"),
+            np.ones(self._positive_edge_decomposition.shape[0], dtype="int64"),
         ])
 
         points, types = self._shuffle(points, types)
@@ -2202,8 +2202,8 @@ class GraphVisualizer:
         edge_metrics = edge_metrics.reshape((-1, 1))
 
         types = np.concatenate([
-            np.zeros(self._negative_edge_embedding.shape[0], dtype=np.bool),
-            np.ones(self._edge_embedding.shape[0], dtype=np.bool),
+            np.zeros(self._negative_edge_decomposition.shape[0], dtype=np.bool),
+            np.ones(self._positive_edge_decomposition.shape[0], dtype=np.bool),
         ])
 
         test_accuracies = []
