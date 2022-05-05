@@ -216,11 +216,10 @@ def _execute_node_label_prediction_holdout(
 
     # Split the graph using a k-fold mechanism into the
     # training and the test sets.
-    train_graph, test_graph = graph.get_node_label_kfold(
-        k=number_of_holdouts,
-        k_index=holdout_number,
+    train_graph, test_graph = graph.get_node_label_holdout_graphs(
+        train_size=0.8,
         use_stratification=True,
-        random_state=random_state
+        random_state=random_state*holdout_number
     )
 
     # Compute the remaining node features that we could not
