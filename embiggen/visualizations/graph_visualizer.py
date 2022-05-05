@@ -3990,7 +3990,7 @@ class GraphVisualizer:
         ]
 
         def plot_distance_wrapper(plot_distance):
-            @functools.wrap(plot_distance)
+            @functools.wraps(plot_distance)
             def wrapped_plot_distance(**kwargs):
                 return plot_distance(
                     node_features=node_embedding,
