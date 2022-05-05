@@ -340,20 +340,6 @@ def evaluate_embedding_for_edge_prediction(
             # Force alignment
             embedding = embedding.loc[train_graph.get_node_names()]
 
-            # Simplify the train graph if needed.
-            if train_graph.has_edge_weights():
-                train_graph.remove_inplace_edge_weights()
-
-            if train_graph.has_edge_types():
-                train_graph.remove_inplace_edge_types()
-
-            # Simplify the test graph if needed.
-            if test_graph.has_edge_weights():
-                test_graph.remove_inplace_edge_weights()
-
-            if test_graph.has_edge_types():
-                test_graph.remove_inplace_edge_types()
-
             train_graph.enable(
                 vector_sources=True,
                 vector_destinations=True,

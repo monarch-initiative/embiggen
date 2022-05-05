@@ -58,7 +58,7 @@ class EdgePredictionEvaluationSequence(Sequence):
             If either of the provided graphs is empty.
         """
         if negative_graph is not None:
-            if not positive_graph.is_compatible(negative_graph):
+            if not positive_graph.has_compatible_node_vocabularies(negative_graph):
                 raise ValueError(
                     "The two provided positive and negative graphs are "
                     "not compatible with each other, for instance they may not "

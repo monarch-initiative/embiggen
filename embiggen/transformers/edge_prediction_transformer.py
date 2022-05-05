@@ -82,7 +82,7 @@ class EdgePredictionTransformer:
         Tuple with X and y values.
         """
         if isinstance(positive_graph, Graph) and isinstance(negative_graph, Graph):
-            if not positive_graph.is_compatible(negative_graph):
+            if not positive_graph.has_compatible_node_vocabularies(negative_graph):
                 raise ValueError(
                     "The provided positive and negative graphs are not compatible. "
                     "Possible causes for this may be a different node vocabulary, "
