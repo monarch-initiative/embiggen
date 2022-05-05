@@ -1,6 +1,5 @@
 """Module with embedding visualization tools."""
 from multiprocessing import cpu_count
-from optparse import Option
 from typing import Dict, List, Tuple, Union, Optional, Callable
 
 import matplotlib
@@ -2060,8 +2059,8 @@ class GraphVisualizer:
     def _plot_positive_and_negative_edges_metric(
         self,
         metric_name: str,
-        edge_metric_callback: Option[Callable[[int, int], float]] = None,
-        edge_metrics: Option[np.ndarray] = None,
+        edge_metric_callback: Optional[Callable[[int, int], float]] = None,
+        edge_metrics: Optional[np.ndarray] = None,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2081,9 +2080,9 @@ class GraphVisualizer:
         ------------------------------
         metric_name: str
             Name of the metric that will be computed.
-        edge_metric_callback: Option[Callable[[int, int], float]] = None
+        edge_metric_callback: Optional[Callable[[int, int], float]] = None
             Callback to compute the metric given two nodes.
-        edge_metrics: Option[np.ndarray] = None
+        edge_metrics: Optional[np.ndarray] = None
             Precomputed edge metrics.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
