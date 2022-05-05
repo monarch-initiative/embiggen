@@ -2145,7 +2145,7 @@ class GraphVisualizer:
                             self._subsampled_negative_edge_node_ids,
                             (
                                 self._graph.get_node_ids_from_edge_id(edge_id)
-                                for edge_id in self._subsampled_edge_ids
+                                for edge_id in self._subsampled_positive_edge_ids
                             )
                         )
                     )
@@ -2667,7 +2667,7 @@ class GraphVisualizer:
             )
         else:
             edges_iterator = tqdm(
-                self._subsampled_edge_ids,
+                self._subsampled_positive_edge_ids,
                 desc="Computing subsampled flattened unknown edge types",
                 leave=False,
                 dynamic_ncols=True
@@ -3558,7 +3558,7 @@ class GraphVisualizer:
             weights = np.fromiter(
                 (
                     self._graph.get_edge_weight_from_edge_id(edge_id)
-                    for edge_id in self._subsampled_edge_ids
+                    for edge_id in self._subsampled_positive_edge_ids
                 ),
                 dtype=np.float32
             )
