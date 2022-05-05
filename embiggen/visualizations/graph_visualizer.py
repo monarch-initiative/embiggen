@@ -357,10 +357,15 @@ class GraphVisualizer:
         self._automatically_display_on_notebooks = automatically_display_on_notebooks
 
         self._node_embedding_method_name = node_embedding_method_name
-        self._node_mapping = self._node_embedding = self._edge_embedding = self._negative_edge_embedding = None
+
+        self._node_decomposition = None
+        self._positive_edge_decomposition = None
+        self._negative_edge_decomposition = None
         self._subsampled_node_ids = None
-        self._subsampled_edge_ids = None
+        self._subsampled_positive_edge_ids = None
+        self._subsampled_positive_edge_node_ids = None
         self._subsampled_negative_edge_node_ids = None
+
         self._has_autodetermined_node_embedding_name = False
 
         # Check if the number of subsamples are unreasonable.
@@ -611,7 +616,7 @@ class GraphVisualizer:
         self,
         node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
         **node_embedding_kwargs: Dict
-    ):
+    ) -> np.ndarray:
         """Computes the node embedding if it was not otherwise provided.
 
         Parameters
@@ -658,6 +663,20 @@ class GraphVisualizer:
                 if isinstance(node_embedding, pd.DataFrame)
                 else node_embedding
             )
+
+        if node_embedding.shape[0] != self._graph.get_nodes_number():
+            raise ValueError(
+                ("The number of rows provided with the given node embedding {} "
+                 "does not match the number of nodes in the graph {}.").format(
+                    node_embedding.shape[0],
+                    self._graph.get_nodes_number()
+                )
+            )
+
+        # Making sure that if the node embedding is a dataframe, it is surely aligned.
+        if isinstance(node_embedding, pd.DataFrame):
+            node_embedding = node_embedding.loc[self._graph.get_node_names()].to_numpy()
+
         return node_embedding
 
     def _shuffle(
@@ -804,43 +823,20 @@ class GraphVisualizer:
             node_embedding,
             **node_embedding_kwargs
         )
-        if node_embedding.shape[0] != self._graph.get_nodes_number():
-            raise ValueError(
-                ("The number of rows provided with the given node embedding {} "
-                 "does not match the number of nodes in the graph {}.").format(
-                    node_embedding.shape[0],
-                    self._graph.get_nodes_number()
-                )
-            )
 
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
-            # Otherwise there is no need to stratify.
-            node_indices = self._subsampled_node_ids = np.random.randint(
-                low=0,
-                high=self._graph.get_nodes_number(),
+            self._subsampled_node_ids = np.random.randint(
+                self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_nodes
             )
-
-            if not isinstance(node_embedding, np.ndarray):
-                node_indices = [
-                    self._graph.get_node_name_from_node_id(node_id)
-                    for node_id in self._subsampled_node_ids
-                ]
-        else:
-            if isinstance(node_embedding, np.ndarray):
-                node_indices = self._graph.get_node_ids()
-            else:
-                node_indices = node_embedding.index
-
-        node_transformer = NodeTransformer(
-            # If the node embedding provided is a numpy array, we assume
-            # that the provided embedding is aligned with the graph.
-            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
-        )
-        node_transformer.fit(node_embedding)
-        self._node_embedding = self.decompose(
-            node_transformer.transform(node_indices))
+            node_transformer = NodeTransformer(
+                aligned_node_mapping=True
+            )
+            node_transformer.fit(node_embedding)
+            node_embedding = node_transformer.transform(self._subsampled_node_ids)
+        
+        self._node_decomposition = self.decompose(node_embedding)
 
     def _get_positive_edges_embedding(
         self,
@@ -853,14 +849,6 @@ class GraphVisualizer:
         node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
-        if node_embedding.shape[0] != self._graph.get_nodes_number():
-            raise ValueError(
-                ("The number of rows provided with the given node embedding {} "
-                 "does not match the number of nodes in the graph {}.").format(
-                    node_embedding.shape[0],
-                    self._graph.get_nodes_number()
-                )
-            )
 
         if self._edge_prediction_edge_type is not None:
             edges_number = self._graph.get_number_of_edges_from_edge_type_name(
@@ -876,89 +864,51 @@ class GraphVisualizer:
 
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_edges is not None and edges_number > self._number_of_subsampled_edges:
-            self._subsampled_edge_ids = np.random.randint(
-                low=0,
-                high=edges_number,
+            self._subsampled_positive_edge_ids = np.random.randint(
+                edges_number,
                 size=self._number_of_subsampled_edges
             )
             if self._edge_prediction_edge_type is not None:
-                self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
+                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
                     self._edge_prediction_edge_type
-                )[self._subsampled_edge_ids]
+                )[self._subsampled_positive_edge_ids]
             elif self._curie_prefixes_were_provided:
-                self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
+                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
                     self._edge_prediction_source_curie_prefixes,
                     self._edge_prediction_destination_curie_prefixes,
-                )[self._subsampled_edge_ids]
+                )[self._subsampled_positive_edge_ids]
 
-            if isinstance(node_embedding, np.ndarray):
-                edge_indices = [
-                    self._graph.get_node_ids_from_edge_id(edge_id)
-                    for edge_id in tqdm(
-                        self._subsampled_edge_ids,
-                        desc="Retrieving edge node ids",
-                        leave=False,
-                        dynamic_ncols=True
-                    )
-                ]
-            else:
-                edge_indices = [
-                    self._graph.get_node_names_from_edge_id(edge_id)
-                    for edge_id in tqdm(
-                        self._subsampled_edge_ids,
-                        desc="Retrieving edge node names",
-                        leave=False,
-                        dynamic_ncols=True
-                    )
-                ]
+            self._subsampled_positive_edge_node_ids = np.array([
+                self._graph.get_node_ids_from_edge_id(edge_id)
+                for edge_id in self._subsampled_positive_edge_ids
+            ])
+            
         else:
-            if isinstance(node_embedding, np.ndarray):
-                if self._edge_prediction_edge_type is not None:
-                    edge_indices = self._graph.get_directed_edge_node_ids_from_edge_type_name(
-                        self._edge_prediction_edge_type
-                    )
-                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
-                        self._edge_prediction_edge_type
-                    )
-                elif self._curie_prefixes_were_provided:
-                    edge_indices = self._graph.get_directed_edge_node_ids_from_node_curie_prefixes(
-                        self._edge_prediction_source_curie_prefixes,
-                        self._edge_prediction_destination_curie_prefixes,
-                    )
-                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
-                        self._edge_prediction_source_curie_prefixes,
-                        self._edge_prediction_destination_curie_prefixes,
-                    )
-                else:
-                    edge_indices = self._graph.get_directed_edge_node_ids()
+            if self._edge_prediction_edge_type is not None:
+                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids_from_edge_type_name(
+                    self._edge_prediction_edge_type
+                )
+                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
+                    self._edge_prediction_edge_type
+                )
+            elif self._curie_prefixes_were_provided:
+                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids_from_node_curie_prefixes(
+                    self._edge_prediction_source_curie_prefixes,
+                    self._edge_prediction_destination_curie_prefixes,
+                )
+                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
+                    self._edge_prediction_source_curie_prefixes,
+                    self._edge_prediction_destination_curie_prefixes,
+                )
             else:
-                if self._edge_prediction_edge_type is not None:
-                    edge_indices = self._graph.get_directed_edge_node_names_from_edge_type_name(
-                        self._edge_prediction_edge_type
-                    )
-                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
-                        self._edge_prediction_edge_type
-                    )
-                elif self._curie_prefixes_were_provided:
-                    edge_indices = self._graph.get_directed_edge_node_names_from_node_curie_prefixes(
-                        self._edge_prediction_source_curie_prefixes,
-                        self._edge_prediction_destination_curie_prefixes,
-                    )
-                    self._subsampled_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
-                        self._edge_prediction_source_curie_prefixes,
-                        self._edge_prediction_destination_curie_prefixes,
-                    )
-                else:
-                    edge_indices = self._graph.get_directed_edge_node_names()
-
+                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids()
+        
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            # If the node embedding provided is a numpy array, we assume
-            # that the provided embedding is aligned with the graph.
-            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
+            aligned_node_mapping=True
         )
         graph_transformer.fit(node_embedding)
-        return graph_transformer.transform(edge_indices)
+        return graph_transformer.transform(self._subsampled_positive_edge_node_ids)
 
     def fit_edges(
         self,
@@ -976,7 +926,7 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        self._edge_embedding = self.decompose(
+        self._positive_edge_decomposition = self.decompose(
             self._get_positive_edges_embedding(
                 self._get_node_embedding(
                     node_embedding, **node_embedding_kwargs)
@@ -994,23 +944,13 @@ class GraphVisualizer:
         node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
-        if node_embedding.shape[0] != self._graph.get_nodes_number():
-            raise ValueError(
-                ("The number of rows provided with the given node embedding {} "
-                 "does not match the number of nodes in the graph {}.").format(
-                    node_embedding.shape[0],
-                    self._graph.get_nodes_number()
-                )
-            )
-
         # With negative edges, it is always necessary to subsample.
         if self._edge_prediction_source_node_type is not None:
             possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
                 self._edge_prediction_source_node_type
             )
             source_node_ids = possible_source_node_ids[np.random.randint(
-                low=0,
-                high=possible_source_node_ids.size,
+                possible_source_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
         elif self._curie_prefixes_were_provided:
@@ -1018,14 +958,12 @@ class GraphVisualizer:
                 self._edge_prediction_source_curie_prefixes
             )
             source_node_ids = possible_source_node_ids[np.random.randint(
-                low=0,
-                high=possible_source_node_ids.size,
+                possible_source_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
         else:
             source_node_ids = np.random.randint(
-                low=0,
-                high=self._graph.get_nodes_number(),
+                self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
 
@@ -1034,8 +972,7 @@ class GraphVisualizer:
                 self._edge_prediction_destination_node_type
             )
             destination_node_ids = possible_destination_node_ids[np.random.randint(
-                low=0,
-                high=possible_destination_node_ids.size,
+                possible_destination_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
         elif self._curie_prefixes_were_provided:
@@ -1043,14 +980,12 @@ class GraphVisualizer:
                 self._edge_prediction_destination_curie_prefix
             )
             destination_node_ids = possible_destination_node_ids[np.random.randint(
-                low=0,
-                high=possible_destination_node_ids.size,
+                possible_destination_node_ids.size,
                 size=self._number_of_subsampled_negative_edges
             )]
         else:
             destination_node_ids = np.random.randint(
-                low=0,
-                high=self._graph.get_nodes_number(),
+                self._graph.get_nodes_number(),
                 size=self._number_of_subsampled_negative_edges
             )
 
@@ -1061,7 +996,7 @@ class GraphVisualizer:
 
         # We drop from this list any non-existent edge involving singleton node to avoid
         # biasing the visualization.
-        edge_node_ids = edge_node_ids[np.fromiter(
+        self._subsampled_negative_edge_node_ids = edge_node_ids[np.fromiter(
             (
                 all(
                     self._graph.is_connected_from_node_id(node_id)
@@ -1072,31 +1007,13 @@ class GraphVisualizer:
             dtype=bool
         )]
 
-        self._subsampled_negative_edge_node_ids = edge_node_ids
-
-        if not isinstance(node_embedding, np.ndarray):
-            edge_node_ids = np.array([
-                (
-                    self._graph.get_node_name_from_node_id(src_node_id),
-                    self._graph.get_node_name_from_node_id(dst_node_id),
-                )
-                for (src_node_id, dst_node_id) in tqdm(
-                    self._subsampled_negative_edge_node_ids,
-                    desc="Retrieving negative edge node names",
-                    leave=False,
-                    dynamic_ncols=True
-                )
-            ])
-
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            # If the node embedding provided is a numpy array, we assume
-            # that the provided embedding is aligned with the graph.
-            aligned_node_mapping=isinstance(node_embedding, np.ndarray)
+            aligned_node_mapping=True
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(
-            edge_node_ids
+            self._subsampled_negative_edge_node_ids
         )
 
     def fit_negative_and_positive_edges(
@@ -1129,10 +1046,11 @@ class GraphVisualizer:
             positive_edge_embedding,
             negative_edge_embedding
         ])
+
         edge_embedding = self.decompose(raw_edge_embedding)
-        self._edge_embedding = edge_embedding[:
+        self._positive_edge_decomposition = edge_embedding[:
                                               positive_edge_embedding.shape[0]]
-        self._negative_edge_embedding = edge_embedding[positive_edge_embedding.shape[0]:]
+        self._negative_edge_decomposition = edge_embedding[positive_edge_embedding.shape[0]:]
 
     def _get_figure_and_axes(
         self,
@@ -1476,9 +1394,9 @@ class GraphVisualizer:
             node_embedding = self._node_embedding
             edge_embedding = self._edge_embedding
             negative_edge_embedding = self._negative_edge_embedding
-            self._node_embedding = None
-            self._edge_embedding = None
-            self._negative_edge_embedding = None
+            self._node_decomposition = None
+            self._positive_edge_decomposition = None
+            self._negative_edge_decomposition = None
             self._graph = None
             try:
                 kwargs["loc"] = "lower right"
@@ -1496,14 +1414,14 @@ class GraphVisualizer:
                     **kwargs
                 )
             except (Exception, KeyboardInterrupt) as e:
-                self._node_embedding = node_embedding
-                self._edge_embedding = edge_embedding
-                self._negative_edge_embedding = negative_edge_embedding
+                self._node_decomposition = node_embedding
+                self._positive_edge_decomposition = edge_embedding
+                self._negative_edge_decomposition = negative_edge_embedding
                 self._graph = graph_backup
                 raise e
-            self._node_embedding = node_embedding
-            self._edge_embedding = edge_embedding
-            self._negative_edge_embedding = negative_edge_embedding
+            self._node_decomposition = node_embedding
+            self._positive_edge_decomposition = edge_embedding
+            self._negative_edge_decomposition = negative_edge_embedding
             self._graph = graph_backup
             return display_video_at_path(path)
         return self._plot_scatter(**kwargs)
@@ -1754,7 +1672,7 @@ class GraphVisualizer:
         ------------------------
         Tuple with either the provided or created figure and axes.
         """
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
             )
@@ -1859,7 +1777,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
             )
@@ -1972,7 +1890,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._edge_embedding is None:
+        if self._positive_edge_decomposition is None:
             raise ValueError(
                 "Edge fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_edges()` "
@@ -1980,7 +1898,7 @@ class GraphVisualizer:
             )
 
         return self._handle_notebook_display(*self._wrapped_plot_scatter(
-            points=self._edge_embedding,
+            points=self._positive_edge_decomposition,
             title=self._get_complete_title(
                 "Edges embedding",
                 show_edge_embedding=True
@@ -2041,7 +1959,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._edge_embedding is None or self._negative_edge_embedding is None:
+        if self._positive_edge_decomposition is None or self._negative_edge_decomposition is None:
             raise ValueError(
                 "Positive and negative edge fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_negative_and_positive_edges()` "
@@ -2049,8 +1967,8 @@ class GraphVisualizer:
             )
 
         points = np.vstack([
-            self._negative_edge_embedding,
-            self._edge_embedding,
+            self._negative_edge_decomposition,
+            self._positive_edge_decomposition,
         ])
 
         types = np.concatenate([
@@ -2142,7 +2060,8 @@ class GraphVisualizer:
     def _plot_positive_and_negative_edges_metric(
         self,
         metric_name: str,
-        edge_metric_callback: Callable[[int, int], float],
+        edge_metric_callback: Option[Callable[[int, int], float]] = None,
+        edge_metrics: Option[np.ndarray] = None,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -2162,8 +2081,10 @@ class GraphVisualizer:
         ------------------------------
         metric_name: str
             Name of the metric that will be computed.
-        edge_metric_callback: Callable[[int, int], float]
+        edge_metric_callback: Option[Callable[[int, int], float]] = None
             Callback to compute the metric given two nodes.
+        edge_metrics: Option[np.ndarray] = None
+            Precomputed edge metrics.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -2202,32 +2123,39 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._edge_embedding is None:
+        if self._positive_edge_decomposition is None:
             raise ValueError(
                 "Positive and negative edge fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_negative_and_positive_edges()` "
                 "method before plotting the nodes."
             )
 
-        edge_metrics = np.fromiter(
-            (
-                edge_metric_callback(src, dst) + sys.float_info.epsilon
-                for src, dst in (
-                    itertools.chain(
-                        self._subsampled_negative_edge_node_ids,
-                        (
-                            self._graph.get_node_ids_from_edge_id(edge_id)
-                            for edge_id in self._subsampled_edge_ids
+        if edge_metrics is None and edge_metric_callback is None:
+            raise ValueError(
+                "Neither the edge metrics nor the edge metric callback was "
+                "provided and therefore we cannot plot the edge metrics."
+            )
+
+        if edge_metrics is None:
+            edge_metrics = np.fromiter(
+                (
+                    edge_metric_callback(src, dst) + sys.float_info.epsilon
+                    for src, dst in (
+                        itertools.chain(
+                            self._subsampled_negative_edge_node_ids,
+                            (
+                                self._graph.get_node_ids_from_edge_id(edge_id)
+                                for edge_id in self._subsampled_edge_ids
+                            )
                         )
                     )
-                )
-            ),
-            dtype=np.float32
-        )
+                ),
+                dtype=np.float32
+            )
 
         points = np.vstack([
-            self._negative_edge_embedding,
-            self._edge_embedding,
+            self._negative_edge_decomposition,
+            self._positive_edge_decomposition,
         ])
 
         points, shuffled_edge_metrics = self._shuffle(points, edge_metrics)
@@ -2730,7 +2658,7 @@ class GraphVisualizer:
         unknown_edge_types_id = edge_types_number
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
-        if self._subsampled_edge_ids is None:
+        if self._subsampled_positive_edge_ids is None:
             edges_iterator = trange(
                 self._graph.get_number_of_directed_edges(),
                 desc="Computing flattened unknown edge types",
@@ -2845,7 +2773,7 @@ class GraphVisualizer:
                 "The graph does not have node types!"
             )
 
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_nodes()` "
@@ -3001,7 +2929,7 @@ class GraphVisualizer:
         """
         self._graph.must_have_node_ontologies()
 
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_nodes()` "
@@ -3143,7 +3071,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
             )
@@ -3339,7 +3267,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._node_embedding is None:
+        if self._node_decomposition is None:
             raise ValueError(
                 "Node fitting must be executed before plot."
                 "Please do call the `visualizer.fit_nodes()` "
@@ -3492,7 +3420,7 @@ class GraphVisualizer:
                 "The graph does not have edge types!"
             )
 
-        if self._edge_embedding is None:
+        if self._positive_edge_decomposition is None:
             raise ValueError(
                 "Edge fitting was not yet executed! "
                 "Please do call the `visualizer.fit_edges()` "
@@ -3520,7 +3448,7 @@ class GraphVisualizer:
         edge_type_names = np.array(list(edge_type_names_iter), dtype=str)
 
         returned_values = self._plot_types(
-            self._edge_embedding,
+            self._positive_edge_decomposition,
             self._get_complete_title(
                 "Edge types",
                 show_edge_embedding=True
@@ -3617,14 +3545,14 @@ class GraphVisualizer:
                 "The graph does not have edge weights!"
             )
 
-        if self._edge_embedding is None:
+        if self._positive_edge_decomposition is None:
             raise ValueError(
                 "Edge fitting must be executed before plot. "
                 "Please do call the `visualizer.fit_edges()` "
                 "method before plotting the nodes."
             )
 
-        if self._subsampled_edge_ids is None:
+        if self._subsampled_positive_edge_ids is None:
             weights = self._graph.get_edge_weights()
         else:
             weights = np.fromiter(
@@ -3636,7 +3564,7 @@ class GraphVisualizer:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._edge_embedding,
+            points=self._positive_edge_decomposition,
             title=self._get_complete_title(
                 "Edge weights",
                 show_edge_embedding=True
@@ -3679,6 +3607,206 @@ class GraphVisualizer:
         )
 
         return self._handle_notebook_display(*returned_values, caption=caption)
+
+    def _plot_positive_and_negative_edges_distance(
+        self,
+        node_features: np.ndarray,
+        distance_name: str,
+        distance_callback: str,
+        **kwargs: Dict
+    ):
+        """Plot distances of node features for positive and negative edges.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        distance_name: str
+            The title for the heatmap.
+        distance_callback: str
+            The callback to use to compute the distances.
+        **kwargs: Dict
+            Additional kwargs to forward.
+
+        Raises
+        ------------------------------
+        ValueError
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        graph_transformer = GraphTransformer(
+            method=distance_callback,
+            aligned_node_mapping=True
+        )
+        graph_transformer.fit(node_features)
+
+        return self._plot_positive_and_negative_edges_metric(
+            metric_name=distance_name,
+            edge_metric=graph_transformer.transform(np.vstack([
+                self._subsampled_negative_edge_node_ids,
+                self._subsampled_positive_edge_node_ids
+            ])),
+            **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_euclidean_distance(
+        self,
+        node_features: np.ndarray,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot L2 Distance heatmap for sampled existent and non-existent edges.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_distance(
+            node_features=node_features,
+            distance_name="Euclidean distance",
+            distance_callback="L2Distance",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            return_caption=return_caption,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_cosine_distance(
+        self,
+        node_features: np.ndarray,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        **kwargs: Dict
+    ):
+        """Plot Cosine distance heatmap for sampled existent and non-existent edges.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_positive_and_negative_edges_distance(
+            node_features=node_features,
+            distance_name="Cosine distance",
+            distance_callback="CosineDistance",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            return_caption=return_caption,
+            show_legend=show_legend,
+            loc=loc,
+            **kwargs,
+        )
 
     def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
@@ -3858,6 +3986,8 @@ class GraphVisualizer:
         ]
         edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges,
+            self.plot_positive_and_negative_edges_l2_distance,
+            self.plot_positive_and_negative_edges_cosine_distance,
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
             self.plot_positive_and_negative_edges_preferential_attachment,

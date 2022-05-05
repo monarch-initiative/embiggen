@@ -95,4 +95,4 @@ class GraphTransformer:
         if isinstance(graph, np.ndarray):
             sources = graph[:, 0]
             destinations = graph[:, 1]
-        return self._transformer.transform(sources, destinations)
+        return self._transformer.transform(sources, destinations, edge_features=edge_features)

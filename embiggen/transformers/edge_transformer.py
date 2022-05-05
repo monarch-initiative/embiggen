@@ -3,7 +3,7 @@ from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
-
+from userinput.utils import closest
 from .node_transformer import NodeTransformer
 
 
@@ -178,6 +178,52 @@ def get_l2_edge_embedding(
     )
 
 
+def get_l2_distance(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return L2 distance of the two nodes.
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the L2 distance.
+    """
+    return np.sqrt(np.sum(np.power(
+        source_node_embedding - destination_node_embedding,
+        2.0
+    ), axis=0))
+
+
+def get_cosine_distance(
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
+) -> np.ndarray:
+    """Return cosine distance of the two nodes.
+
+    Parameters
+    --------------------------
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
+
+    Returns
+    --------------------------
+    Numpy array with the cosine distance.
+    """
+    return (
+        np.sum((source_node_embedding * destination_node_embedding), axis=1) /
+        (np.linalg.norm(source_node_embedding, axis=1) * np.linalg.norm(destination_node_embedding, axis=1))
+    )
+
+
 def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
@@ -252,6 +298,7 @@ def get_max_edge_embedding(
         axis=0
     )
 
+
 def get_indices_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
@@ -277,6 +324,8 @@ class EdgeTransformer:
         "Concatenate": get_concatenate_edge_embedding,
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
+        "L2Distance": get_l2_distance,
+        "CosineDistance": get_cosine_distance,
         None: get_indices_edge_embedding,
     }
 
@@ -300,19 +349,28 @@ class EdgeTransformer:
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
         """
-        if isinstance(method, str) and method not in EdgeTransformer.methods:
+        if isinstance(method, str) and method.lower() not in [
+            method_name.lower()
+            for method_name in EdgeTransformer.methods
+        ]:
             raise ValueError((
                 "Given method '{}' is not supported. "
-                "Supported methods are {}, or alternatively a lambda."
+                "Supported methods are {}, or alternatively a lambda. "
+                "Maybe you meant {}?"
             ).format(
-                method, ", ".join(list(EdgeTransformer.methods.keys()))
+                method,
+                ", ".join(list(EdgeTransformer.methods.keys())),
+                closest(method, list(EdgeTransformer.methods.keys()))
             ))
         self._transformer = NodeTransformer(
             numeric_node_ids=method is None,
             aligned_node_mapping=aligned_node_mapping,
         )
         self._method_name = method
-        self._method = EdgeTransformer.methods[self._method_name]
+        self._method = {
+            method.lower(): callback
+            for method, callback in EdgeTransformer.methods.items()
+        }[self._method_name.lower()]
 
     @property
     def numeric_node_ids(self) -> bool:
@@ -350,8 +408,8 @@ class EdgeTransformer:
 
     def transform(
         self,
-        sources:Union[List[str], List[int]],
-        destinations:Union[List[str], List[int]],
+        sources: Union[List[str], List[int]],
+        destinations: Union[List[str], List[int]],
         edge_features: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
