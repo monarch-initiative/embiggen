@@ -977,7 +977,7 @@ class GraphVisualizer:
             )]
         elif self._curie_prefixes_were_provided:
             possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefixes(
-                self._edge_prediction_destination_curie_prefix
+                self._edge_prediction_destination_curie_prefixes
             )
             destination_node_ids = possible_destination_node_ids[np.random.randint(
                 possible_destination_node_ids.size,
