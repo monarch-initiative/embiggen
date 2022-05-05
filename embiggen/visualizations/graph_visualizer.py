@@ -3104,7 +3104,6 @@ class GraphVisualizer:
         current_component_number = components_number
         for expected_component_size, component_name in (
             (1, "Singletons"),
-            (2, "Tuples"),
             (None, "Minor components"),
         ):
             new_component_size = 0
