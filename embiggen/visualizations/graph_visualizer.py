@@ -1793,7 +1793,7 @@ class GraphVisualizer:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_embedding,
+            points=self._node_decomposition,
             title=self._get_complete_title("Nodes embedding"),
             figure=figure,
             axes=axes,
@@ -1813,7 +1813,7 @@ class GraphVisualizer:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding,
+                points=self._node_decomposition,
             )
 
         return self._handle_notebook_display(*returned_values)
@@ -2814,7 +2814,7 @@ class GraphVisualizer:
         )
 
         returned_values = self._plot_types(
-            self._node_embedding,
+            self._node_decomposition,
             self._get_complete_title("Node types"),
             types=node_types,
             type_labels=node_type_names,
@@ -2840,7 +2840,7 @@ class GraphVisualizer:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding,
+                points=self._node_decomposition,
             )
 
         if not return_caption:
@@ -2957,7 +2957,7 @@ class GraphVisualizer:
         )
 
         returned_values = self._plot_types(
-            self._node_embedding,
+            self._node_decomposition,
             self._get_complete_title("Node ontologies"),
             types=ontology_ids,
             type_labels=unique_ontologies,
@@ -2981,7 +2981,7 @@ class GraphVisualizer:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding,
+                points=self._node_decomposition,
             )
 
         if not return_caption:
@@ -3154,7 +3154,7 @@ class GraphVisualizer:
             components[i] = components_remapping[components[i]]
 
         returned_values = self._plot_types(
-            self._node_embedding,
+            self._node_decomposition,
             self._get_complete_title("Components"),
             types=components,
             type_labels=np.array(
@@ -3182,7 +3182,7 @@ class GraphVisualizer:
             returned_values = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding,
+                points=self._node_decomposition,
             )
 
         if not return_caption:
@@ -3296,7 +3296,7 @@ class GraphVisualizer:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_embedding,
+            points=self._node_decomposition,
             title=self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
@@ -3331,7 +3331,7 @@ class GraphVisualizer:
             figure, axes = self.annotate_nodes(
                 figure=figure,
                 axes=axes,
-                points=self._node_embedding,
+                points=self._node_decomposition,
             )
 
         if not return_caption:
