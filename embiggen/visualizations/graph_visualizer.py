@@ -954,7 +954,7 @@ class GraphVisualizer:
                 size=self._number_of_subsampled_negative_edges
             )]
         elif self._curie_prefixes_were_provided:
-            possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
+            possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefixes(
                 self._edge_prediction_source_curie_prefixes
             )
             source_node_ids = possible_source_node_ids[np.random.randint(
@@ -976,7 +976,7 @@ class GraphVisualizer:
                 size=self._number_of_subsampled_negative_edges
             )]
         elif self._curie_prefixes_were_provided:
-            possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefix(
+            possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefixes(
                 self._edge_prediction_destination_curie_prefix
             )
             destination_node_ids = possible_destination_node_ids[np.random.randint(
