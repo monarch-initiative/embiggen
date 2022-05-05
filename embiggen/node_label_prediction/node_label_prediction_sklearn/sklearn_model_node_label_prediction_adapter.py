@@ -37,8 +37,9 @@ class SklearnModelNodeLabelPredictionAdapter:
     def _trasform_graphs_into_node_embedding(
         graph: Graph,
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        behaviour_for_unknown_node_labels: Optional[str] = None,
+        behaviour_for_unknown_node_labels: str = "warn",
         aligned_node_mapping: bool = False,
+        shuffle: bool = False,
         random_state: int = 42,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Transforms the provided data into an Sklearn-compatible numpy array.
@@ -50,7 +51,7 @@ class SklearnModelNodeLabelPredictionAdapter:
             It can either be an Graph or a list of lists of nodes.
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the training of the model.
-        behaviour_for_unknown_node_labels: Optional[str] = None
+        behaviour_for_unknown_node_labels: str = "warn"
             Behaviour to be followed when encountering nodes that do not
             have a known node type. Possible values are:
             - drop: we drop these nodes
@@ -63,6 +64,9 @@ class SklearnModelNodeLabelPredictionAdapter:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
+        shuffle: bool = False
+            Whether to shuffle the labels.
+            In some models, this is necessary.
         random_state: int = 42
             The random state to reproduce the sampling and training.
 
@@ -80,6 +84,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         return nlpt.transform(
             graph=graph,
             behaviour_for_unknown_node_labels=behaviour_for_unknown_node_labels,
+            shuffle=shuffle,
             random_state=random_state
         )
 
@@ -109,19 +114,15 @@ class SklearnModelNodeLabelPredictionAdapter:
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        gt = NodeTransformer(
-            aligned_node_mapping=aligned_node_mapping
-        )
-
+        gt = NodeTransformer(aligned_node_mapping=aligned_node_mapping)
         gt.fit(node_features)
-
         return gt.transform(graph,)
 
     def fit(
         self,
         graph: Graph,
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        behaviour_for_unknown_node_labels: Optional[str] = None,
+        behaviour_for_unknown_node_labels: str = "warn",
         aligned_node_mapping: bool = False,
         random_state: int = 42,
         **kwargs
@@ -135,7 +136,7 @@ class SklearnModelNodeLabelPredictionAdapter:
             It can either be an Graph or a list of lists of nodes.
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the training of the model.
-        behaviour_for_unknown_node_labels: Optional[str] = None
+        behaviour_for_unknown_node_labels: str = "warn"
             Behaviour to be followed when encountering nodes that do not
             have a known node type. Possible values are:
             - drop: we drop these nodes
@@ -173,7 +174,7 @@ class SklearnModelNodeLabelPredictionAdapter:
         self,
         graph: Graph,
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        behaviour_for_unknown_node_labels: Optional[str] = None,
+        behaviour_for_unknown_node_labels: str = "warn",
         aligned_node_mapping: bool = False,
         random_state: int = 42,
         **kwargs
@@ -187,7 +188,7 @@ class SklearnModelNodeLabelPredictionAdapter:
             It can either be an Graph or a list of lists of nodes.
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
             The node features to be used in the evaluation of the model.
-        behaviour_for_unknown_node_labels: Optional[str] = None
+        behaviour_for_unknown_node_labels: str = "warn"
             Behaviour to be followed when encountering nodes that do not
             have a known node type. Possible values are:
             - drop: we drop these nodes
@@ -217,6 +218,7 @@ class SklearnModelNodeLabelPredictionAdapter:
                 node_features=node_features,
                 behaviour_for_unknown_node_labels=behaviour_for_unknown_node_labels,
                 aligned_node_mapping=aligned_node_mapping,
+                shuffle=False,
                 random_state=random_state,
             ),
             multiclass_or_multilabel=graph.get_node_types_number() > 2,

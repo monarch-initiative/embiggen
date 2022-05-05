@@ -43,6 +43,7 @@ class NodeLabelPredictionTransformer:
         self,
         graph: Graph,
         behaviour_for_unknown_node_labels: Optional[str] = "warn",
+        shuffle: bool = False,
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return node embedding for given graph using provided method.
@@ -60,6 +61,9 @@ class NodeLabelPredictionTransformer:
             By default, we drop these nodes.
             If the behaviour has not been specified and left to "warn",
             a warning will be raised to notify the user of this uncertainty.
+        shuffle: bool = False
+            Whether to shuffle the labels.
+            In some models, this is necessary.
         random_state: int = 42,
             The random state to use to shuffle the labels.
 
@@ -159,10 +163,12 @@ class NodeLabelPredictionTransformer:
             node_labels = node_labels[known_node_labels_mask]
             node_features = node_features[known_node_labels_mask]
 
-        numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
-            seed=random_state
-        )
+        if shuffle:
+            numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
+                seed=random_state
+            )
+            indices = numpy_random_state.permutation(node_features.shape[0])
 
-        indices = numpy_random_state.permutation(node_features.shape[0])
+            node_features, node_labels = node_features[indices], node_labels[indices]
 
-        return node_features[indices], node_labels[indices]
+        return node_features, node_labels
