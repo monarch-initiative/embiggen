@@ -198,7 +198,7 @@ def get_l2_distance(
     return np.sqrt(np.sum(np.power(
         source_node_embedding - destination_node_embedding,
         2.0
-    ), axis=0))
+    ), axis=1))
 
 
 def get_cosine_distance(
