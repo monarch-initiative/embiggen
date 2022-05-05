@@ -338,8 +338,9 @@ def _get_graphs_iterator(
 
     for graph, repository, version in tqdm(
         zip(graphs, repositories, versions),
-        desc="Executing graph",
+        desc="Running node-label prediction evaluations",
         disable=number_of_graphs == 1,
+        total=number_of_graphs,
         dynamic_ncols=True,
         leave=False
     ):
