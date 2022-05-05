@@ -368,7 +368,7 @@ class EdgeTransformer:
         )
         self._method_name = method
         self._method = {
-            method.lower(): callback
+            None if method is None else method.lower(): callback
             for method, callback in EdgeTransformer.methods.items()
         }[self._method_name.lower()]
 
