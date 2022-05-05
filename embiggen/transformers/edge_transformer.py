@@ -350,7 +350,7 @@ class EdgeTransformer:
             will be meaningless.
         """
         if isinstance(method, str) and method.lower() not in [
-            method_name.lower()
+            None if method_name is None else method_name.lower()
             for method_name in EdgeTransformer.methods
         ]:
             raise ValueError((
@@ -368,8 +368,8 @@ class EdgeTransformer:
         )
         self._method_name = method
         self._method = {
-            None if method is None else method.lower(): callback
-            for method, callback in EdgeTransformer.methods.items()
+            None if method_name is None else method_name.lower(): callback
+            for method_name, callback in EdgeTransformer.methods.items()
         }[self._method_name.lower()]
 
     @property
