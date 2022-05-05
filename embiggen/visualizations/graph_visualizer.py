@@ -3645,7 +3645,7 @@ class GraphVisualizer:
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
-            edge_metric=graph_transformer.transform(np.vstack([
+            edge_metrics=graph_transformer.transform(np.vstack([
                 self._subsampled_negative_edge_node_ids,
                 self._subsampled_positive_edge_node_ids
             ])),
