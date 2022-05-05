@@ -2168,10 +2168,7 @@ class GraphVisualizer:
                     for src, dst in (
                         itertools.chain(
                             self._subsampled_negative_edge_node_ids,
-                            (
-                                self._graph.get_node_ids_from_edge_id(edge_id)
-                                for edge_id in self._subsampled_positive_edge_ids
-                            )
+                            self._subsampled_positive_edge_node_ids
                         )
                     )
                 ),

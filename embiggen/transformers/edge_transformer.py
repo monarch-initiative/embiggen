@@ -367,10 +367,13 @@ class EdgeTransformer:
             aligned_node_mapping=aligned_node_mapping,
         )
         self._method_name = method
-        self._method = {
-            None if method_name is None else method_name.lower(): callback
-            for method_name, callback in EdgeTransformer.methods.items()
-        }[self._method_name.lower()]
+        if self._method_name is None:
+            self._method = EdgeTransformer.methods[None]
+        else:
+            self._method = {
+                None if method_name is None else method_name.lower(): callback
+                for method_name, callback in EdgeTransformer.methods.items()
+            }[self._method_name.lower()]
 
     @property
     def numeric_node_ids(self) -> bool:
