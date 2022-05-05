@@ -1,4 +1,5 @@
 """Module with embedding visualization tools."""
+import functools
 from multiprocessing import cpu_count
 from typing import Dict, List, Tuple, Union, Optional, Callable
 
@@ -3987,10 +3988,20 @@ class GraphVisualizer:
         node_scatter_plot_methods_to_call = [
             self.plot_node_degrees,
         ]
+
+        def plot_distance_wrapper(plot_distance):
+            @functools.wrap(plot_distance)
+            def wrapped_plot_distance(**kwargs):
+                return plot_distance(
+                    node_features=node_embedding,
+                    **kwargs
+                )
+            return wrapped_plot_distance
+
         edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges,
-            self.plot_positive_and_negative_edges_euclidean_distance,
-            self.plot_positive_and_negative_edges_cosine_distance,
+            plot_distance_wrapper(self.plot_positive_and_negative_edges_euclidean_distance),
+            plot_distance_wrapper(self.plot_positive_and_negative_edges_cosine_distance),
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
             self.plot_positive_and_negative_edges_preferential_attachment,
