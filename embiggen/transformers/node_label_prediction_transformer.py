@@ -156,7 +156,7 @@ class NodeLabelPredictionTransformer:
                     for node_id in range(graph.get_nodes_number()))
                 ),
                 dtype=np.float32
-            ).reshape((-1, 1))
+            )
 
         if graph.has_unknown_node_types() and behaviour_for_unknown_node_labels == "drop":
             known_node_labels_mask = graph.get_nodes_with_known_node_types_mask()
