@@ -267,9 +267,10 @@ def evaluate_sklearn_classifier(
     # Depending on whether this task is binary or multiclall/multilabel
     # we need to set the average parameter for the metrics.
     if multiclass_or_multilabel:
-        average_methods = ("macro", "weighted")
+        average_methods = average_methods_probs = ("macro", "weighted")
     else:
         average_methods = ("binary",)
+        average_methods_probs = ("micro", "macro", "weighted")
 
     @functools.wraps(roc_auc_score)
     def wrapper_roc_auc_score(*args, **kwargs):
@@ -297,10 +298,9 @@ def evaluate_sklearn_classifier(
             for average_method in average_methods
         },
         **{
-            "{}{}".format(
+            "{} {}".format(
                 sanitize_ml_labels(probabilistic_metric.__name__),
-                " ".format(
-                    average_method) if average_method != "binary" else ""
+                average_method
             ): probabilistic_metric(
                 y,
                 predictions,
@@ -312,6 +312,6 @@ def evaluate_sklearn_classifier(
                   if not multiclass_or_multilabel else ()),
                 wrapper_roc_auc_score
             )
-            for average_method in average_methods
+            for average_method in average_methods_probs
         },
     }
