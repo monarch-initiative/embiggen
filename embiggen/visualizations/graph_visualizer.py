@@ -10,6 +10,7 @@ import pandas as pd
 import warnings
 import math
 import sys
+from humanize import intword, apnumber
 import inspect
 from environments_utils import is_notebook
 from collections import Counter
@@ -42,10 +43,6 @@ except ImportError:
         "pipeline."
     )
 
-# If we are in a Jupyter notebook, we will use
-# the display method within the visualization.
-if is_notebook():
-    from IPython.display import display, HTML
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..pipelines import compute_node_embedding
@@ -119,6 +116,7 @@ class GraphVisualizer:
         show_edge_embedding_method: bool = True,
         show_separability_considerations_explanation: bool = True,
         show_heatmaps_description: bool = True,
+        show_non_existing_edges_sampling_description: bool = True,
         automatically_display_on_notebooks: bool = True,
         number_of_subsampled_nodes: int = 20_000,
         number_of_subsampled_edges: int = 20_000,
@@ -222,6 +220,9 @@ class GraphVisualizer:
         show_heatmaps_description: bool = True
             Whether to describe the heatmaps
             in the captions of the images.
+        show_non_existing_edges_sampling_description: bool = True
+            Whether to describe the modalities used to
+            sample the negative edges.
         automatically_display_on_notebooks: bool = True
             Whether to automatically show the plots and the captions
             using the display command when in jupyter notebooks.
@@ -299,6 +300,7 @@ class GraphVisualizer:
         self._classifier_for_separations_considerations = classifier_for_separations_considerations
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
         self._show_heatmaps_description = show_heatmaps_description
+        self._show_non_existing_edges_sampling_description = show_non_existing_edges_sampling_description
 
         if edge_prediction_source_curie_prefixes is not None and edge_prediction_source_node_type is not None:
             raise ValueError(
@@ -435,6 +437,7 @@ class GraphVisualizer:
             return None
         figure, axes = args[:2]
         if is_notebook() and self._automatically_display_on_notebooks:
+            from IPython.display import display, HTML
             display(figure)
             if caption is not None:
                 display(HTML(
@@ -468,7 +471,7 @@ class GraphVisualizer:
             ) if number_of_letters > 0 else "",
             model_name=sanitize_ml_labels(
                 self._classifier_for_separations_considerations),
-            holdouts_number=self._number_of_holdouts_for_cluster_comments
+            holdouts_number=apnumber(self._number_of_holdouts_for_cluster_comments)
         )
 
     def get_heatmaps_comments(self, letters: Optional[List[str]] = None) -> str:
@@ -490,6 +493,28 @@ class GraphVisualizer:
                 format_list(letters, bold_words=True)
             ) if number_of_letters > 0 else ""
         )
+
+    def get_non_existing_edges_sampling_description(self) -> str:
+        """Returns description on how the non-existing edges are sampled."""
+        if not self._show_non_existing_edges_sampling_description:
+            return ""
+
+        caption = (
+            " We have sampled {} existing and {} non-existing edges."
+        ).format(
+            intword(self._positive_edge_decomposition.shape[0]),
+            intword(self._negative_edge_decomposition.shape[0]),
+        )
+
+        if self._graph.has_disconnected_nodes():
+            caption += (
+                " We have sampled the non-existent edges' source "
+                "and destination nodes by avoiding any disconnected "
+                "nodes present in the graph to avoid biases."
+            )
+        
+        return caption
+
 
     def get_decomposition_method(self) -> Callable:
         if self._decomposition_method == "UMAP":
@@ -2051,7 +2076,8 @@ class GraphVisualizer:
             note_on_scope = "Graph-wide"
 
         caption = (
-            f"<i>{note_on_scope} existent and non-existent edges</i>: {types_caption}."
+            f"<i>{note_on_scope} existent and non-existent edges</i>: {types_caption}." +
+            self.get_non_existing_edges_sampling_description()
         )
 
         return self._handle_notebook_display(fig, axes, caption)
@@ -2254,6 +2280,7 @@ class GraphVisualizer:
 
         # If requested we automatically add the description of these considerations.
         caption += self.get_separability_comments_description()
+        caption += self.get_non_existing_edges_sampling_description()
 
         return self._handle_notebook_display(*returned_values, caption=caption)
 
@@ -4065,12 +4092,14 @@ class GraphVisualizer:
         automatically_display_backup = self._automatically_display_on_notebooks
         show_separability_backup = self._show_separability_considerations_explanation
         show_heatmaps_backup = self._show_heatmaps_description
+        non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
         self._show_graph_name = False
         self._show_node_embedding_method = False
         self._show_edge_embedding_method = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False
+        self._show_non_existing_edges_sampling_description = False
 
         complete_caption = (
             f"<b>{self._decomposition_method} decomposition and properties distribution"
@@ -4121,12 +4150,15 @@ class GraphVisualizer:
         self._automatically_display_on_notebooks = automatically_display_backup
         self._show_separability_considerations_explanation = show_separability_backup
         self._show_heatmaps_description = show_heatmaps_backup
+        self._show_non_existing_edges_sampling_description = non_existing_edges_sampling
 
         # If requested we automatically add the description of the heatmaps.
         complete_caption += self.get_heatmaps_comments(heatmaps_letters)
         # If requested we automatically add the description of these considerations.
         complete_caption += self.get_separability_comments_description(
-            evaluation_letters)
+            evaluation_letters
+        )
+        complete_caption += self.get_non_existing_edges_sampling_description()
 
         for axis in flat_axes[number_of_total_plots:]:
             axis.axis("off")
