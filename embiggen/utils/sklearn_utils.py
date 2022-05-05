@@ -104,7 +104,7 @@ def get_default_k_neighbours_classifier(**kwargs: Dict) -> KNeighborsClassifier:
     """
     return KNeighborsClassifier(**{
         **dict(
-            n_estimators=10,
+            n_neighbors=10,
             weights="distance",
             n_jobs=-1,
         ),
