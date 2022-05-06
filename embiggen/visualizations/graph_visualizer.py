@@ -2346,7 +2346,7 @@ class GraphVisualizer:
             ],
             bins=number_of_buckets,
             log=True,
-            labels=self.get_edges_labels()
+            label=self.get_edges_labels()
         )
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(f"{metric_name} (log scale)")
