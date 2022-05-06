@@ -471,7 +471,8 @@ class GraphVisualizer:
             ) if number_of_letters > 0 else "",
             model_name=sanitize_ml_labels(
                 self._classifier_for_separations_considerations),
-            holdouts_number=apnumber(self._number_of_holdouts_for_cluster_comments)
+            holdouts_number=apnumber(
+                self._number_of_holdouts_for_cluster_comments)
         )
 
     def get_heatmaps_comments(self, letters: Optional[List[str]] = None) -> str:
@@ -512,9 +513,52 @@ class GraphVisualizer:
                 "and destination nodes by avoiding any disconnected "
                 "nodes present in the graph to avoid biases."
             )
-        
+
         return caption
 
+    def get_edges_labels(self) -> Tuple[str]:
+        """Return labels to be used for the edge prediction."""
+        if not self._curie_prefixes_were_provided:
+            if self._edge_prediction_destination_node_type is None:
+                if self._edge_prediction_source_node_type is None:
+                    negative_label = "Non-existent edges"
+                else:
+                    negative_label = "Non-existent edges from {}".format(
+                        sanitize_ml_labels(
+                            self._edge_prediction_source_node_type)
+                    )
+            else:
+                if self._edge_prediction_source_node_type is None:
+                    negative_label = "Non-existent edges to {}".format(
+                        sanitize_ml_labels(
+                            self._edge_prediction_destination_node_type)
+                    )
+                else:
+                    negative_label = "Non-existent edges from {} to {}".format(
+                        *sanitize_ml_labels([
+                            self._edge_prediction_source_node_type,
+                            self._edge_prediction_destination_node_type
+                        ])
+                    )
+        else:
+            negative_label = "Non-existent edges from {} to {} prefixes".format(
+                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
+            )
+
+        if self._edge_prediction_edge_type is not None:
+            positive_label = "Existent edges of type {}".format(
+                sanitize_ml_labels(self._edge_prediction_edge_type)
+            )
+        elif self._curie_prefixes_were_provided:
+            positive_label = "Existent edges from {} to {} prefixes".format(
+                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
+            )
+        else:
+            positive_label = "Existent edges"
+
+        return negative_label, positive_label
 
     def get_decomposition_method(self) -> Callable:
         if self._decomposition_method == "UMAP":
@@ -699,7 +743,8 @@ class GraphVisualizer:
 
         # Making sure that if the node embedding is a dataframe, it is surely aligned.
         if isinstance(node_embedding, pd.DataFrame):
-            node_embedding = node_embedding.loc[self._graph.get_node_names()].to_numpy()
+            node_embedding = node_embedding.loc[self._graph.get_node_names(
+            )].to_numpy()
 
         return node_embedding
 
@@ -858,8 +903,9 @@ class GraphVisualizer:
                 aligned_node_mapping=True
             )
             node_transformer.fit(node_embedding)
-            node_embedding = node_transformer.transform(self._subsampled_node_ids)
-        
+            node_embedding = node_transformer.transform(
+                self._subsampled_node_ids)
+
         self._node_decomposition = self.decompose(node_embedding)
 
     def _get_positive_edges_embedding(
@@ -906,7 +952,7 @@ class GraphVisualizer:
                 self._graph.get_node_ids_from_edge_id(edge_id)
                 for edge_id in self._subsampled_positive_edge_ids
             ])
-            
+
         else:
             if self._edge_prediction_edge_type is not None:
                 self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids_from_edge_type_name(
@@ -926,7 +972,7 @@ class GraphVisualizer:
                 )
             else:
                 self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids()
-        
+
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_node_mapping=True
@@ -1073,7 +1119,7 @@ class GraphVisualizer:
 
         edge_embedding = self.decompose(raw_edge_embedding)
         self._positive_edge_decomposition = edge_embedding[:
-                                              positive_edge_embedding.shape[0]]
+                                                           positive_edge_embedding.shape[0]]
         self._negative_edge_decomposition = edge_embedding[positive_edge_embedding.shape[0]:]
 
     def _get_figure_and_axes(
@@ -2002,50 +2048,6 @@ class GraphVisualizer:
         ])
 
         points, types = self._shuffle(points, types)
-        if not self._curie_prefixes_were_provided:
-            if self._edge_prediction_destination_node_type is None:
-                if self._edge_prediction_source_node_type is None:
-                    negative_label = "Non-existent edges"
-                else:
-                    negative_label = "Non-existent edges from {}".format(
-                        sanitize_ml_labels(
-                            self._edge_prediction_source_node_type)
-                    )
-            else:
-                if self._edge_prediction_source_node_type is None:
-                    negative_label = "Non-existent edges to {}".format(
-                        sanitize_ml_labels(
-                            self._edge_prediction_destination_node_type)
-                    )
-                else:
-                    negative_label = "Non-existent edges from {} to {}".format(
-                        *sanitize_ml_labels([
-                            self._edge_prediction_source_node_type,
-                            self._edge_prediction_destination_node_type
-                        ])
-                    )
-        else:
-            negative_label = "Non-existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
-            )
-
-        if self._edge_prediction_edge_type is not None:
-            positive_label = "Existent edges of type {}".format(
-                sanitize_ml_labels(self._edge_prediction_edge_type)
-            )
-        elif self._curie_prefixes_were_provided:
-            positive_label = "Existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
-            )
-        else:
-            positive_label = "Existent edges"
-
-        labels = [
-            negative_label,
-            positive_label
-        ]
 
         returned_values = self._plot_types(
             points=points,
@@ -2054,7 +2056,7 @@ class GraphVisualizer:
                 show_edge_embedding=True
             ),
             types=types,
-            type_labels=np.array(labels),
+            type_labels=np.array(self.get_edges_labels()),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2114,7 +2116,8 @@ class GraphVisualizer:
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
         axes: Optional[Axes] = None,
-            Axes to use to plot. If None, a new one is created using the
+            Axes to use to plot the scatter plot.
+            If None, a new one is created using the
             provided kwargs.
         scatter_kwargs: Optional[Dict] = None,
             Kwargs to pass to the scatter plot call.
@@ -2225,7 +2228,8 @@ class GraphVisualizer:
         edge_metrics = edge_metrics.reshape((-1, 1))
 
         types = np.concatenate([
-            np.zeros(self._negative_edge_decomposition.shape[0], dtype=np.bool),
+            np.zeros(
+                self._negative_edge_decomposition.shape[0], dtype=np.bool),
             np.ones(self._positive_edge_decomposition.shape[0], dtype=np.bool),
         ])
 
@@ -2238,7 +2242,8 @@ class GraphVisualizer:
         ).split(edge_metrics):
 
             model = get_sklearn_default_classifier(
-                self._classifier_for_separations_considerations)
+                self._classifier_for_separations_considerations
+            )
 
             train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]
@@ -2280,6 +2285,125 @@ class GraphVisualizer:
         caption += self.get_non_existing_edges_sampling_description()
 
         return self._handle_notebook_display(*returned_values, caption=caption)
+
+    def _plot_positive_and_negative_edges_metric_histogram(
+        self,
+        metric_name: str,
+        edge_metric_callback: Optional[Callable[[int, int], float]] = None,
+        edge_metrics: Optional[np.ndarray] = None,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node degree distribution.
+
+        Parameters
+        ------------------------------
+        metric_name: str
+            Name of the metric that will be computed.
+        edge_metric_callback: Optional[Callable[[int, int], float]] = None
+            Callback to compute the metric given two nodes.
+        edge_metrics: Optional[np.ndarray] = None
+            Precomputed edge metrics.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        if axes is None:
+            figure, axes = plt.subplots(figsize=(5, 5))
+
+        if edge_metrics is None:
+            edge_metrics = np.fromiter(
+                (
+                    edge_metric_callback(src, dst) + sys.float_info.epsilon
+                    for src, dst in (
+                        itertools.chain(
+                            self._subsampled_negative_edge_node_ids,
+                            self._subsampled_positive_edge_node_ids
+                        )
+                    )
+                ),
+                dtype=np.float32
+            )
+
+        number_of_buckets = min(
+            100,
+            edge_metrics.size // 10
+        )
+        axes.hist(
+            [
+                edge_metrics[:self._subsampled_negative_edge_node_ids.shape[0]],
+                edge_metrics[self._subsampled_negative_edge_node_ids.shape[0]:],
+            ],
+            bins=number_of_buckets,
+            log=True,
+            labels=self.get_edges_labels()
+        )
+        axes.set_ylabel("Counts (log scale)")
+        axes.set_xlabel(f"{metric_name} (log scale)")
+        axes.set_xscale("log")
+        axes.legend(loc='upper right')
+        axes.set_title(
+            f"{metric_name} distribution of graph {self._graph_name}"
+            if self._show_graph_name
+            else f"{metric_name} distribution"
+        )
+
+        if apply_tight_layout:
+            figure.tight_layout()
+
+        if not return_caption:
+            return self._handle_notebook_display(
+                figure, axes
+            )
+
+        caption = (
+            f"<i>{metric_name} distribution.</i> {metric_name} values are on the "
+            "horizontal axis and edge counts are on the vertical axis, both on a logarithmic scale."
+        )
+
+        return self._handle_notebook_display(figure, axes, caption=caption)
+
+    def plot_positive_and_negative_adamic_adar_histogram(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Adamic Adar metric distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric_histogram(
+            metric_name="Adamic-Adar",
+            edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
+        )
 
     def plot_positive_and_negative_edges_adamic_adar(
         self,
@@ -2353,6 +2477,44 @@ class GraphVisualizer:
             return_caption=return_caption,
             loc=loc,
             **kwargs,
+        )
+
+    def plot_positive_and_negative_preferential_attachment_histogram(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Adamic Adar metric distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        def wrapper_preferential_attachment(src, dst) -> float:
+            return self._graph.get_preferential_attachment_from_node_ids(
+                src,
+                dst,
+                normalize=True
+            )
+        return self._plot_positive_and_negative_edges_metric_histogram(
+            metric_name="Preferential Attachment",
+            edge_metric_callback=wrapper_preferential_attachment,
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
         )
 
     def plot_positive_and_negative_edges_preferential_attachment(
@@ -2435,6 +2597,38 @@ class GraphVisualizer:
             **kwargs,
         )
 
+    def plot_positive_and_negative_jaccard_coefficient_histogram(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Jaccard Coefficient metric distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric_histogram(
+            metric_name="Jaccard Coefficient",
+            edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
+        )
+
     def plot_positive_and_negative_edges_jaccard_coefficient(
         self,
         figure: Optional[Figure] = None,
@@ -2507,6 +2701,38 @@ class GraphVisualizer:
             return_caption=return_caption,
             loc=loc,
             **kwargs,
+        )
+
+    def plot_positive_and_negative_resource_allocation_index_histogram(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Resource Allocation Index metric distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_positive_and_negative_edges_metric_histogram(
+            metric_name="Resource Allocation Index",
+            edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
         )
 
     def plot_positive_and_negative_edges_resource_allocation_index(
@@ -3630,6 +3856,56 @@ class GraphVisualizer:
 
         return self._handle_notebook_display(*returned_values, caption=caption)
 
+    def _plot_positive_and_negative_edges_distance_histogram(
+        self,
+        node_features: np.ndarray,
+        distance_name: str,
+        distance_callback: str,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges distance distribution.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        distance_name: str
+            The title for the heatmap.
+        distance_callback: str
+            The callback to use to compute the distances.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        graph_transformer = GraphTransformer(
+            method=distance_callback,
+            aligned_node_mapping=True
+        )
+        graph_transformer.fit(node_features)
+
+        return self._plot_positive_and_negative_edges_metric_histogram(
+            metric_name=distance_name,
+            edge_metrics=graph_transformer.transform(np.vstack([
+                self._subsampled_negative_edge_node_ids,
+                self._subsampled_positive_edge_node_ids
+            ])),
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
+        )
+
     def _plot_positive_and_negative_edges_distance(
         self,
         node_features: np.ndarray,
@@ -3672,6 +3948,42 @@ class GraphVisualizer:
                 self._subsampled_positive_edge_node_ids
             ])),
             **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_euclidean_distance_histogram(
+        self,
+        node_features: np.ndarray,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Euclidean distance distribution.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_positive_and_negative_edges_distance_histogram(
+            node_features=node_features,
+            distance_name="Euclidean distance",
+            distance_callback="L2Distance",
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
         )
 
     def plot_positive_and_negative_edges_euclidean_distance(
@@ -3750,6 +4062,42 @@ class GraphVisualizer:
             show_legend=show_legend,
             loc=loc,
             **kwargs,
+        )
+
+    def plot_positive_and_negative_edges_cosine_distance_histogram(
+        self,
+        node_features: np.ndarray,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the positive and negative edges Cosine distance distribution.
+
+        Parameters
+        ------------------------------
+        node_features: np.ndarray
+            Node features to compute distances on.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_positive_and_negative_edges_distance_histogram(
+            node_features=node_features,
+            distance_name="Cosine distance",
+            distance_callback="CosineDistance",
+            figure=figure,
+            axes=axes,
+            apply_tight_layout=apply_tight_layout,
+            return_caption=return_caption,
         )
 
     def plot_positive_and_negative_edges_cosine_distance(
@@ -3941,9 +4289,9 @@ class GraphVisualizer:
         """
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
-        
+
         components, components_number, _, _ = self._graph.get_connected_components()
-        
+
         component_sizes = np.bincount(
             components,
             minlength=components_number
@@ -4083,8 +4431,10 @@ class GraphVisualizer:
 
         edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges,
-            plot_distance_wrapper(self.plot_positive_and_negative_edges_euclidean_distance),
-            plot_distance_wrapper(self.plot_positive_and_negative_edges_cosine_distance),
+            plot_distance_wrapper(
+                self.plot_positive_and_negative_edges_euclidean_distance),
+            plot_distance_wrapper(
+                self.plot_positive_and_negative_edges_cosine_distance),
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
             self.plot_positive_and_negative_edges_preferential_attachment,
@@ -4093,6 +4443,14 @@ class GraphVisualizer:
 
         distribution_plot_methods_to_call = [
             self.plot_node_degree_distribution,
+            plot_distance_wrapper(
+                self.plot_positive_and_negative_edges_euclidean_distance_histogram),
+            plot_distance_wrapper(
+                self.plot_positive_and_negative_edges_cosine_distance_histogram),
+            self.plot_positive_and_negative_adamic_adar_histogram,
+            self.plot_positive_and_negative_jaccard_coefficient_histogram,
+            self.plot_positive_and_negative_preferential_attachment_histogram,
+            self.plot_positive_and_negative_resource_allocation_index_histogram
         ]
 
         if self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
@@ -4109,9 +4467,9 @@ class GraphVisualizer:
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
-            distribution_plot_methods_to_call = [
+            distribution_plot_methods_to_call.append(
                 self.plot_connected_components_size_distribution
-            ]
+            )
 
         if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
             edge_scatter_plot_methods_to_call.append(
