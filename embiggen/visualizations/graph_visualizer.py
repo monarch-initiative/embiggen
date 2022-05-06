@@ -3890,8 +3890,6 @@ class GraphVisualizer:
             100,
             self._graph.get_nodes_number() // 10
         )
-        if axes is None:
-            figure, axes = plt.subplots(figsize=(5, 5))
         axes.hist(
             self._graph.get_node_degrees(),
             bins=number_of_buckets,
@@ -3911,8 +3909,69 @@ class GraphVisualizer:
             return self._handle_notebook_display(figure, axes)
 
         caption = (
-            "<i>Node degrees distribution histogram:</i> with the node degrees on the "
+            "<i>Node degrees distribution:</i> with the node degrees on the "
             "horizontal axis and node counts on the vertical axis on a logarithmic scale."
+        )
+
+        return self._handle_notebook_display(figure, axes, caption=caption)
+
+    def plot_connected_components_size_distribution(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph connected components sizes distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        if axes is None:
+            figure, axes = plt.subplots(figsize=(5, 5))
+        
+        components, components_number, _, _ = self._graph.get_connected_components()
+        
+        component_sizes = np.bincount(
+            components,
+            minlength=components_number
+        )
+
+        axes.hist(
+            component_sizes,
+            bins=min(
+                100,
+                max(components_number / 5, 2)
+            ),
+            log=True
+        )
+        axes.set_ylabel("Connected components number (log scale)")
+        axes.set_xlabel("Connected components sizes (log scale)")
+        if self._show_graph_name:
+            title = "Connected components sizes of {}".format(self._graph_name)
+        else:
+            title = "Connected components sizes"
+        axes.set_title(title)
+        if apply_tight_layout:
+            figure.tight_layout()
+
+        if not return_caption:
+            return self._handle_notebook_display(figure, axes)
+
+        caption = (
+            "<i>Connected components sizes distribution.</i> The sizes are on the "
+            "horizontal axis and counts are on the vertical axis, both on a logarithmic scale."
         )
 
         return self._handle_notebook_display(figure, axes, caption=caption)
@@ -3967,7 +4026,7 @@ class GraphVisualizer:
             )
 
         caption = (
-            "<i>Edge weights distribution histogram:</i> with the edge weights on the "
+            "<i>Edge weights distribution.</i> Edge weights on the "
             "horizontal axis and edge counts on the vertical axis on a logarithmic scale."
         )
 
@@ -4048,6 +4107,9 @@ class GraphVisualizer:
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
+            distribution_plot_methods_to_call = [
+                self.plot_connected_components_size_distribution
+            ]
 
         if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
             edge_scatter_plot_methods_to_call.append(
@@ -4081,7 +4143,7 @@ class GraphVisualizer:
 
         flat_axes = np.array(axes).flatten()
 
-        # Backing up and turning off some of the visualizations
+        # Backing up ang off some of the visualizations
         # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
         show_node_embedding_backup = self._show_node_embedding_method
