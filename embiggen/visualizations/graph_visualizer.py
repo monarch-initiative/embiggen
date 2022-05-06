@@ -2343,16 +2343,12 @@ class GraphVisualizer:
                 dtype=np.float32
             )
 
-        number_of_buckets = min(
-            30,
-            edge_metrics.size // 300
-        )
         axes.hist(
             [
                 edge_metrics[:self._subsampled_negative_edge_node_ids.shape[0]],
                 edge_metrics[self._subsampled_negative_edge_node_ids.shape[0]:],
             ],
-            bins=number_of_buckets,
+            bins=20,
             log=True,
             label=self.get_edges_labels()
         )
@@ -4493,7 +4489,7 @@ class GraphVisualizer:
             if show_letters:
                 ax.text(
                     0.0,
-                    1.0,
+                    1.1,
                     letter,
                     size=18,
                     color='black',
@@ -4531,7 +4527,7 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            fig.tight_layout(rect=[0, 0.03, 1, 0.98])
+            fig.tight_layout(rect=[0, 0.0, 1, 0.98])
         else:
             fig.tight_layout()
 
