@@ -3895,8 +3895,9 @@ class GraphVisualizer:
             bins=number_of_buckets,
             log=True
         )
+        axes.set_xscale('log')
         axes.set_ylabel("Node degree (log scale)")
-        axes.set_xlabel("Degrees")
+        axes.set_xlabel("Degrees (log scale)")
         if self._show_graph_name:
             title = "Degrees distribution of graph {}".format(self._graph_name)
         else:
@@ -3909,8 +3910,8 @@ class GraphVisualizer:
             return self._handle_notebook_display(figure, axes)
 
         caption = (
-            "<i>Node degrees distribution:</i> with the node degrees on the "
-            "horizontal axis and node counts on the vertical axis on a logarithmic scale."
+            "<i>Node degrees distribution.</i> Node degrees are on the "
+            "horizontal axis and node counts are on the vertical axis, both on a logarithmic scale."
         )
 
         return self._handle_notebook_display(figure, axes, caption=caption)
