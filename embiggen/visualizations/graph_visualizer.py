@@ -4231,7 +4231,7 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+            fig.tight_layout(rect=[0, 0.03, 1, 0.85])
         else:
             fig.tight_layout()
 
