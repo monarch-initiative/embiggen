@@ -3956,6 +3956,7 @@ class GraphVisualizer:
             ),
             log=True
         )
+        axes.set_xscale('log')
         axes.set_ylabel("Connected components number (log scale)")
         axes.set_xlabel("Connected components sizes (log scale)")
         if self._show_graph_name:
