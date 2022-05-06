@@ -53,7 +53,8 @@ class EdgePredictionTransformer:
         positive_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         negative_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         edge_features: Optional[np.ndarray] = None,
-        random_state: int = 42
+        random_state: int = 42,
+        shuffle: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
 
@@ -71,6 +72,8 @@ class EdgePredictionTransformer:
             to the number of directed edges in the provided graph.
         random_state: int = 42,
             The random state to use to shuffle the labels.
+        shuffle: bool = False
+            Whether to shuffle the samples
 
         Raises
         --------------------------
@@ -121,10 +124,13 @@ class EdgePredictionTransformer:
             np.zeros(negative_edge_embedding.shape[0])
         ])
 
-        numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
-            seed=random_state
-        )
+        if shuffle:
+            numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
+                seed=random_state
+            )
 
-        indices = numpy_random_state.permutation(edge_labels.size)
+            indices = numpy_random_state.permutation(edge_labels.size)
 
-        return edge_embeddings[indices], edge_labels[indices]
+            edge_embeddings, edge_labels = edge_embeddings[indices], edge_labels[indices]
+
+        return edge_embeddings, edge_labels
