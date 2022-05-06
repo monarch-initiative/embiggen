@@ -165,6 +165,9 @@ def evaluate_embedding_for_edge_prediction(
     if classifier_fit_kwargs is None:
         classifier_fit_kwargs = {}
 
+    if edge_types is not None and isinstance(edge_types, str):
+        edge_types = [edge_types]
+
     if isinstance(model, str):
         model_name = model
     elif is_sklearn_classifier_model(model):
