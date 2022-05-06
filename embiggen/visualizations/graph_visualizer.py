@@ -542,8 +542,12 @@ class GraphVisualizer:
                     )
         else:
             negative_label = "Non-existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
+                "Other" if self._edge_prediction_source_curie_prefixes is None else format_list(
+                    self._edge_prediction_source_curie_prefixes
+                ),
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else format_list(
+                    self._edge_prediction_destination_curie_prefixes
+                ),
             )
 
         if self._edge_prediction_edge_type is not None:
@@ -552,8 +556,12 @@ class GraphVisualizer:
             )
         elif self._curie_prefixes_were_provided:
             positive_label = "Existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else self._edge_prediction_source_curie_prefixes,
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else self._edge_prediction_destination_curie_prefixes,
+                "Other" if self._edge_prediction_source_curie_prefixes is None else format_list(
+                    self._edge_prediction_source_curie_prefixes
+                ),
+                "Other" if self._edge_prediction_destination_curie_prefixes is None else format_list(
+                    self._edge_prediction_destination_curie_prefixes)
+                ,
             )
         else:
             positive_label = "Existent edges"
@@ -2350,7 +2358,7 @@ class GraphVisualizer:
         )
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(metric_name)
-        axes.legend(loc='upper right')
+        axes.legend(loc='best', prop={'size': 8},)
         axes.set_title(
             f"{metric_name} distribution of graph {self._graph_name}"
             if self._show_graph_name
