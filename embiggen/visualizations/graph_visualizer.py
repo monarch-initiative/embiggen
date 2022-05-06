@@ -4484,8 +4484,8 @@ class GraphVisualizer:
             complete_caption += f" <b>({letter})</b> {caption}"
             if show_letters:
                 ax.text(
-                    -0.1,
-                    1.1,
+                    0.0,
+                    1.0,
                     letter,
                     size=18,
                     color='black',
