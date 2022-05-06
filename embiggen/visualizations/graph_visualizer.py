@@ -2344,8 +2344,8 @@ class GraphVisualizer:
             )
 
         number_of_buckets = min(
-            50,
-            edge_metrics.size // 200
+            30,
+            edge_metrics.size // 300
         )
         axes.hist(
             [
