@@ -2337,7 +2337,7 @@ class GraphVisualizer:
 
         number_of_buckets = min(
             100,
-            edge_metrics.size // 10
+            edge_metrics.size // 100
         )
         axes.hist(
             [
@@ -2349,8 +2349,7 @@ class GraphVisualizer:
             label=self.get_edges_labels()
         )
         axes.set_ylabel("Counts (log scale)")
-        axes.set_xlabel(f"{metric_name} (log scale)")
-        axes.set_xscale("log")
+        axes.set_xlabel(metric_name)
         axes.legend(loc='upper right')
         axes.set_title(
             f"{metric_name} distribution of graph {self._graph_name}"
@@ -2368,7 +2367,7 @@ class GraphVisualizer:
 
         caption = (
             f"<i>{metric_name} distribution.</i> {metric_name} values are on the "
-            "horizontal axis and edge counts are on the vertical axis, both on a logarithmic scale."
+            "horizontal axis and edge counts are on the vertical axis on a logarithmic scale."
         )
 
         return self._handle_notebook_display(figure, axes, caption=caption)
@@ -4243,9 +4242,8 @@ class GraphVisualizer:
             bins=number_of_buckets,
             log=True
         )
-        axes.set_xscale('log')
-        axes.set_ylabel("Node degree (log scale)")
-        axes.set_xlabel("Degrees (log scale)")
+        axes.set_ylabel("Counts (log scale)")
+        axes.set_xlabel("Degrees")
         if self._show_graph_name:
             title = "Degrees distribution of graph {}".format(self._graph_name)
         else:
@@ -4259,69 +4257,7 @@ class GraphVisualizer:
 
         caption = (
             "<i>Node degrees distribution.</i> Node degrees are on the "
-            "horizontal axis and node counts are on the vertical axis, both on a logarithmic scale."
-        )
-
-        return self._handle_notebook_display(figure, axes, caption=caption)
-
-    def plot_connected_components_size_distribution(
-        self,
-        figure: Optional[Figure] = None,
-        axes: Optional[Figure] = None,
-        apply_tight_layout: bool = True,
-        return_caption: bool = True,
-    ) -> Tuple[Figure, Axes]:
-        """Plot the given graph connected components sizes distribution.
-
-        Parameters
-        ------------------------------
-        figure: Optional[Figure] = None,
-            Figure to use to plot. If None, a new one is created using the
-            provided kwargs.
-        axes: Optional[Axes] = None,
-            Axes to use to plot. If None, a new one is created using the
-            provided kwargs.
-        apply_tight_layout: bool = True,
-            Whether to apply the tight layout on the matplotlib
-            Figure object.
-        return_caption: bool = True,
-            Whether to return a caption for the plot.
-        """
-        if axes is None:
-            figure, axes = plt.subplots(figsize=(5, 5))
-
-        components, components_number, _, _ = self._graph.get_connected_components()
-
-        component_sizes = np.bincount(
-            components,
-            minlength=components_number
-        )
-
-        axes.hist(
-            component_sizes,
-            bins=min(
-                100,
-                max(components_number / 5, 2)
-            ),
-            log=True
-        )
-        axes.set_xscale('log')
-        axes.set_ylabel("Connected components number (log scale)")
-        axes.set_xlabel("Connected components sizes (log scale)")
-        if self._show_graph_name:
-            title = "Connected components sizes of {}".format(self._graph_name)
-        else:
-            title = "Connected components sizes"
-        axes.set_title(title)
-        if apply_tight_layout:
-            figure.tight_layout()
-
-        if not return_caption:
-            return self._handle_notebook_display(figure, axes)
-
-        caption = (
-            "<i>Connected components sizes distribution.</i> The sizes are on the "
-            "horizontal axis and counts are on the vertical axis, both on a logarithmic scale."
+            "horizontal axis and node counts are on the vertical axis on a logarithmic scale."
         )
 
         return self._handle_notebook_display(figure, axes, caption=caption)
@@ -4466,9 +4402,6 @@ class GraphVisualizer:
         if self._graph.has_disconnected_nodes():
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
-            )
-            distribution_plot_methods_to_call.append(
-                self.plot_connected_components_size_distribution
             )
 
         if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
