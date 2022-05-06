@@ -2349,6 +2349,7 @@ class GraphVisualizer:
                 edge_metrics[self._subsampled_negative_edge_node_ids.shape[0]:],
             ],
             bins=20,
+            log=True,
             label=self.get_edges_labels()
         )
         axes.set_ylabel("Counts (log scale)")
