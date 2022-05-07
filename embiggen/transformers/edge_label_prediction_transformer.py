@@ -38,20 +38,20 @@ class EdgeLabelPredictionTransformer:
         )
         self._one_hot_encode_labels = one_hot_encode_labels
 
-    def fit(self, embedding: pd.DataFrame):
+    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: pd.DataFrame,
-            Embedding to use to fit the transformer.
-            This is a pandas DataFrame and NOT a numpy array because we need
-            to be able to remap correctly the vector embeddings in case of
-            graphs that do not respect the same internal node mapping but have
-            the same node set. It is possible to remap such graphs using
-            Ensmallen's remap method but it may be less intuitive to users.
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+            Node feature to use to fit the transformer.
+
+        Raises
+        -------------------------
+        ValueError
+            If the given method is None there is no need to call the fit method.
         """
-        self._transformer.fit(embedding)
+        self._transformer.fit(node_feature)
 
     def transform(
         self,
