@@ -200,6 +200,8 @@ def _execute_node_label_prediction_holdout(
     number_of_holdouts: int,
     holdout_number: int,
     train_size: float,
+    holdout_type: str,
+    use_stratification: bool,
     random_state: int,
     graph_node_features: List[Union[str, pd.DataFrame, np.ndarray]],
     embedding_kwargs: Dict,
@@ -214,13 +216,25 @@ def _execute_node_label_prediction_holdout(
     if classifier_fit_kwargs is None:
         classifier_fit_kwargs = {}
 
-    # Split the graph using a k-fold mechanism into the
-    # training and the test sets.
-    train_graph, test_graph = graph.get_node_label_holdout_graphs(
-        train_size=0.8,
-        use_stratification=True,
-        random_state=random_state*holdout_number
-    )
+    # Split the graph using the requested holdout type.
+    if holdout_type == "Monte Carlo":
+        train_graph, test_graph = graph.get_node_label_holdout_graphs(
+            train_size=0.8,
+            use_stratification=use_stratification,
+            random_state=random_state*holdout_number
+        )
+    elif holdout_type == "KFold":
+        train_graph, test_graph = graph.get_node_label_kfold(
+            k=number_of_holdouts,
+            k_index=holdout_number,
+            use_stratification=use_stratification,
+            random_state=random_state*holdout_number
+        )
+    else:
+        raise ValueError(
+            "The provided holdout type is not supported. "
+            "We currently only support Monte Carlo and Kfold."
+        )
 
     # Compute the remaining node features that we could not
     # compute before because of their dependence on the node types,
@@ -362,6 +376,8 @@ def _run_node_label_prediction_on_graph(
     node_features: Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]],
     number_of_holdouts: int,
     train_size: float,
+    holdout_type: str,
+    use_stratification: bool,
     random_state: int,
     embedding_kwargs: Optional[Dict],
     embedding_fit_kwargs: Optional[Dict],
@@ -397,6 +413,8 @@ def _run_node_label_prediction_on_graph(
             number_of_holdouts=number_of_holdouts,
             holdout_number=holdout_number,
             train_size=train_size,
+            holdout_type=holdout_type,
+            use_stratification=use_stratification,
             random_state=random_state,
             graph_node_features=graph_node_features,
             embedding_kwargs=embedding_kwargs,
@@ -412,11 +430,13 @@ def _run_node_label_prediction_on_graph(
 def node_label_prediction(
     node_features: Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]],
     graphs: Union[Graph, str, List[str], List[Graph]],
-    model: Union[str, Callable, ClassifierMixin] = "DecisionTreeClassifier",
+    models: Union[str, Callable, ClassifierMixin, List[Union[str, Callable, ClassifierMixin]]] = "DecisionTreeClassifier",
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     number_of_holdouts: int = 10,
     train_size: float = 0.8,
+    holdout_type: str = "Monte Carlo",
+    use_stratification: bool = True,
     random_state: int = 42,
     embedding_kwargs: Optional[Dict] = None,
     embedding_fit_kwargs: Optional[Dict] = None,
@@ -448,8 +468,21 @@ def node_label_prediction(
         otherwise an exception will be raised.
     number_of_holdouts: int = 10
         The number of the holdouts to run.
-    train_size: float = 0.8
+    train_size: float = 0.8,
         Split size of the training graph.
+        This value will be ignored if the holdouts is
+        specified to be executed as a kfold.
+    holdout_type: str = "Monte Carlo"
+        Whether to use a Monte Carlo holdout or a Kfold
+        holdout. The possible values are:
+        - "Monte Carlo": holdout with repeated sampling, the different holdouts share the same complete set of samples.
+        - "K fold": splits the dataset into k folds.
+    use_stratification: bool = True
+        Whether to use stratification.
+        It is generally a VERY POOR CHOICE when running
+        experiments to not use stratification as it may
+        lead to biases dependending on your dataset labels
+        distribution.
     random_state: int = 42
         The seed to be used to reproduce the holdout.
     embedding_fit_kwargs: Optional[Dict] = None
@@ -471,10 +504,12 @@ def node_label_prediction(
         )
         for holdout in _run_node_label_prediction_on_graph(
             graph=graph,
-            model=model,
+            models=models,
             node_features=node_features,
             number_of_holdouts=number_of_holdouts,
             train_size=train_size,
+            holdout_type=holdout_type,
+            use_stratification=use_stratification,
             random_state=random_state,
             embedding_kwargs=embedding_kwargs,
             embedding_fit_kwargs=embedding_fit_kwargs,
