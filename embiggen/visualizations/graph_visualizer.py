@@ -600,7 +600,7 @@ class GraphVisualizer:
                 # currently support 3D decomposition. If the user has required a
                 # 3D decomposition we need to switch to the MulticoreTSNE version.
                 # Additionally, in the case that the desired decomposition
-                # uses some not available parameters, such as a cosine distance
+                # uses some not available parameters, such as a cosine similarity
                 # metric, we will capture that use case as a NotImplementedError.
                 if self._n_components != 2:
                     raise NotImplementedError()
@@ -3914,6 +3914,7 @@ class GraphVisualizer:
         node_features: np.ndarray,
         distance_name: str,
         distance_callback: str,
+        offset: float = 0.0,
         **kwargs: Dict
     ):
         """Plot distances of node features for positive and negative edges.
@@ -3926,6 +3927,10 @@ class GraphVisualizer:
             The title for the heatmap.
         distance_callback: str
             The callback to use to compute the distances.
+        offset: float = 0.0
+            The offset to move the distance when it is not a true distance
+            such as with the cosine similarity and negative value would
+            not be plottable on a logarithmic scale.
         **kwargs: Dict
             Additional kwargs to forward.
 
@@ -3946,7 +3951,7 @@ class GraphVisualizer:
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
-            edge_metrics=graph_transformer.transform(np.vstack([
+            edge_metrics=offset + graph_transformer.transform(np.vstack([
                 self._subsampled_negative_edge_node_ids,
                 self._subsampled_positive_edge_node_ids
             ])),
@@ -4067,7 +4072,7 @@ class GraphVisualizer:
             **kwargs,
         )
 
-    def plot_positive_and_negative_edges_cosine_distance_histogram(
+    def plot_positive_and_negative_edges_cosine_similarity_histogram(
         self,
         node_features: np.ndarray,
         figure: Optional[Figure] = None,
@@ -4075,7 +4080,7 @@ class GraphVisualizer:
         apply_tight_layout: bool = True,
         return_caption: bool = True,
     ) -> Tuple[Figure, Axes]:
-        """Plot the positive and negative edges Cosine distance distribution.
+        """Plot the positive and negative edges Cosine similarity distribution.
 
         Parameters
         ------------------------------
@@ -4095,15 +4100,15 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_distance_histogram(
             node_features=node_features,
-            distance_name="Cosine distance",
-            distance_callback="CosineDistance",
+            distance_name="Cosine similarity",
+            distance_callback="CosineSimilarity",
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
             return_caption=return_caption,
         )
 
-    def plot_positive_and_negative_edges_cosine_distance(
+    def plot_positive_and_negative_edges_cosine_similarity(
         self,
         node_features: np.ndarray,
         figure: Optional[Figure] = None,
@@ -4119,7 +4124,7 @@ class GraphVisualizer:
         loc: str = "best",
         **kwargs: Dict
     ):
-        """Plot Cosine distance heatmap for sampled existent and non-existent edges.
+        """Plot Cosine similarity heatmap for sampled existent and non-existent edges.
 
         Parameters
         ------------------------------
@@ -4165,8 +4170,9 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_distance(
             node_features=node_features,
-            distance_name="Cosine distance",
-            distance_callback="CosineDistance",
+            distance_name="Cosine similarity",
+            distance_callback="CosineSimilarity",
+            offset=1.0,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -4374,7 +4380,7 @@ class GraphVisualizer:
             plot_distance_wrapper(
                 self.plot_positive_and_negative_edges_euclidean_distance),
             plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_cosine_distance),
+                self.plot_positive_and_negative_edges_cosine_similarity),
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
             self.plot_positive_and_negative_edges_preferential_attachment,
@@ -4386,7 +4392,7 @@ class GraphVisualizer:
             plot_distance_wrapper(
                 self.plot_positive_and_negative_edges_euclidean_distance_histogram),
             plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_cosine_distance_histogram),
+                self.plot_positive_and_negative_edges_cosine_similarity_histogram),
             self.plot_positive_and_negative_adamic_adar_histogram,
             self.plot_positive_and_negative_jaccard_coefficient_histogram,
             self.plot_positive_and_negative_preferential_attachment_histogram,

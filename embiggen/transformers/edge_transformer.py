@@ -201,11 +201,11 @@ def get_l2_distance(
     ), axis=1))
 
 
-def get_cosine_distance(
+def get_cosine_similarity(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return cosine distance of the two nodes.
+    """Return cosine similarity of the two nodes.
 
     Parameters
     --------------------------
@@ -216,7 +216,7 @@ def get_cosine_distance(
 
     Returns
     --------------------------
-    Numpy array with the cosine distance.
+    Numpy array with the cosine similarity.
     """
     return (
         np.sum((source_node_embedding * destination_node_embedding), axis=1) /
@@ -326,7 +326,7 @@ class EdgeTransformer:
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
         "L2Distance": get_l2_distance,
-        "CosineDistance": get_cosine_distance,
+        "CosineSimilarity": get_cosine_similarity,
         None: get_indices_edge_embedding,
     }
 
