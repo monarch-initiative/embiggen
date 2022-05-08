@@ -4168,7 +4168,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        return self._plot_positive_and_negative_edges_distance(
+        returned_values = self._plot_positive_and_negative_edges_distance(
             node_features=node_features,
             distance_name="Cosine similarity",
             distance_callback="CosineSimilarity",
@@ -4186,6 +4186,19 @@ class GraphVisualizer:
             loc=loc,
             **kwargs,
         )
+
+        if not return_caption:
+            return returned_values
+        
+        figure, axes, caption = returned_values
+
+        caption += (
+            " Do note that the cosine similarity has been shifted from the "
+            "range of [-1, 1] to the range [0, 2] "
+            "to be visualized in a logarithmic heatmap."
+        )
+
+        return figure, axes, caption
 
     def plot_dot(self, engine: str = "circo"):
         """Return dot plot of the current graph.
