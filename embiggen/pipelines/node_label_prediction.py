@@ -196,7 +196,7 @@ def _get_node_label_classifier_model(model, **kwargs: Dict):
 def _execute_node_label_prediction_holdout(
     graph: Graph,
     graph_name: str,
-    model: Union[str, Callable, ClassifierMixin],
+    classifier_instance,
     number_of_holdouts: int,
     holdout_number: int,
     train_size: float,
@@ -210,16 +210,10 @@ def _execute_node_label_prediction_holdout(
     classifier_fit_kwargs: Dict
 ) -> List[Dict]:
     """Execute an holdout."""
-    if classifier_kwargs is None:
-        classifier_kwargs = {}
-
-    if classifier_fit_kwargs is None:
-        classifier_fit_kwargs = {}
-
     # Split the graph using the requested holdout type.
     if holdout_type == "Monte Carlo":
         train_graph, test_graph = graph.get_node_label_holdout_graphs(
-            train_size=0.8,
+            train_size=train_size,
             use_stratification=use_stratification,
             random_state=random_state*holdout_number
         )
@@ -253,12 +247,6 @@ def _execute_node_label_prediction_holdout(
         )
     )
 
-    # Get a new instance of the classifier model.
-    classifier_instance = _get_node_label_classifier_model(
-        model,
-        **classifier_kwargs
-    )
-
     start_training = time()
     classifier_instance.fit(
         graph=train_graph,
@@ -289,6 +277,7 @@ def _execute_node_label_prediction_holdout(
         performance["evaluation_type"] = evaluation_type
         performance["size"] = train_size
         performance["graph_name"] = graph_name
+        performance["holdout_type"] = holdout_type
         performance["required_training_time"] = training_time
         performance["required_evaluation_time"] = evaluation_time
 
@@ -372,7 +361,7 @@ def _get_graphs_iterator(
 # TODO! Add caching decorator!
 def _run_node_label_prediction_on_graph(
     graph: Graph,
-    model: Union[str, Callable, ClassifierMixin],
+    models: Union[str, Callable, ClassifierMixin, List[Union[str, Callable, ClassifierMixin]]],
     node_features: Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]],
     number_of_holdouts: int,
     train_size: float,
@@ -396,6 +385,15 @@ def _run_node_label_prediction_on_graph(
         embedding_fit_kwargs=embedding_fit_kwargs
     )
 
+    if classifier_kwargs is None:
+        classifier_kwargs = {}
+
+    if classifier_fit_kwargs is None:
+        classifier_fit_kwargs = {}
+
+    if not isinstance(models, list):
+        models = [models]
+
     # And for each graph we compute a k-fold holdout
     return [
         performance
@@ -405,11 +403,16 @@ def _run_node_label_prediction_on_graph(
             dynamic_ncols=True,
             leave=False
         )
+        # Iterate over the provided models
+        for model in models
         # We compute the training and test performance on this holdout.
         for performance in _execute_node_label_prediction_holdout(
             graph,
             graph_name=graph.get_name(),
-            model=model,
+            classifier_instance=_get_node_label_classifier_model(
+                model,
+                **classifier_kwargs
+            ),
             number_of_holdouts=number_of_holdouts,
             holdout_number=holdout_number,
             train_size=train_size,
