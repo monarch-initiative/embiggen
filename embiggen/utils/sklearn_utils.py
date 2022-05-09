@@ -1,6 +1,7 @@
 """Submodule with utils for interface with Sklearn models."""
 import functools
 from typing import Dict, Type
+from sklearn.linear_model import LogisticRegression
 from sklearn.base import ClassifierMixin
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
@@ -8,16 +9,26 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from userinput.utils import closest
 import numpy as np
-from sanitize_ml_labels import sanitize_ml_labels
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    f1_score,
-    average_precision_score,
-    precision_score,
-    recall_score,
-    roc_auc_score
-)
+
+
+def get_default_logistic_regression_classifier(**kwargs: Dict) -> LogisticRegression:
+    """Returns a default logistic regression classifier.
+
+    On the parameters used
+    ----------------------------
+    The parameters used for this model are reasonable
+    general use parameters, but if you had any better
+    general parameters please do feel free to drop an
+    issue on the Embiggen repository with your proposal.
+    Your insight is absolutely welcomed.
+    """
+    return LogisticRegression(**{
+        **dict(
+            n_jobs=-1,
+            random_state=42
+        ),
+        **kwargs
+    })
 
 
 def get_default_decision_tree_classifier(**kwargs: Dict) -> DecisionTreeClassifier:
@@ -141,7 +152,8 @@ available_default_sklearn_classifiers = {
     "ExtraTreesClassifier": get_default_extra_tree_classifier,
     "RandomForestClassifier": get_default_random_forest_classifier,
     "KNeighborsClassifier": get_default_k_neighbours_classifier,
-    "MLPClassifier": get_default_mlp_classifier
+    "MLPClassifier": get_default_mlp_classifier,
+    "LogisticRegression": get_default_logistic_regression_classifier
 }
 
 
@@ -223,92 +235,3 @@ def must_be_an_sklearn_classifier_model(candidate_model):
                 "that can be adapted for this class as it is not a subclass of `ClassifierMixin`."
             ).format(type(candidate_model))
         )
-
-
-def evaluate_sklearn_classifier(
-    classifier: Type[ClassifierMixin],
-    X: np.ndarray,
-    y: np.ndarray,
-    multiclass_or_multilabel: bool,
-    **kwargs: Dict
-) -> Dict[str, float]:
-    """Return dict with evaluation of the model on classification task.
-
-    Parameters
-    --------------
-    classifier: Type[ClassifierMixin]
-        The classifier to evaluate.
-    X: np.ndarray
-        The input data.
-    y: np.ndarray
-        The output labels
-    multiclass_or_multilabel: bool
-        Whether the provided labels are multiclass or multilabel,
-        that is the model needs to compute more output
-        classes for a given input.
-    **kwargs: Dict
-        Aguments to forward to the model predict proba method.
-    """
-
-    must_be_an_sklearn_classifier_model(classifier)
-
-    predictions = classifier.predict_proba(X, **kwargs)
-
-    # If this is a binary prediction, we need to handle
-    # this as a corner case.
-    if not multiclass_or_multilabel:
-        predictions = predictions[:, 1]
-
-    integer_predictions = classifier.predict(X, **kwargs)
-
-    # Depending on whether this task is binary or multiclall/multilabel
-    # we need to set the average parameter for the metrics.
-    if multiclass_or_multilabel:
-        average_methods = average_methods_probs = ("macro", "weighted")
-    else:
-        average_methods = ("binary",)
-        average_methods_probs = ("micro", "macro", "weighted")
-
-    @functools.wraps(roc_auc_score)
-    def wrapper_roc_auc_score(*args, **kwargs):
-        return roc_auc_score(*args, **kwargs, multi_class="ovr")
-
-    return {
-        **{
-            sanitize_ml_labels(integer_metric.__name__): integer_metric(y, integer_predictions)
-            for integer_metric in (
-                accuracy_score,
-                balanced_accuracy_score,
-            )
-        },
-        **{
-            "{}{}".format(
-                sanitize_ml_labels(averaged_integer_metric.__name__),
-                " ".format(
-                    average_method) if average_method != "binary" else ""
-            ): averaged_integer_metric(y, integer_predictions, average=average_method)
-            for averaged_integer_metric in (
-                f1_score,
-                precision_score,
-                recall_score,
-            )
-            for average_method in average_methods
-        },
-        **{
-            "{} {}".format(
-                sanitize_ml_labels(probabilistic_metric.__name__),
-                average_method
-            ): probabilistic_metric(
-                y,
-                predictions,
-                average=average_method
-            )
-            for probabilistic_metric in (
-                # AUPRC in sklearn is only supported for binary labels
-                *((average_precision_score,)
-                  if not multiclass_or_multilabel else ()),
-                wrapper_roc_auc_score
-            )
-            for average_method in average_methods_probs
-        },
-    }

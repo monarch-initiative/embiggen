@@ -6,14 +6,16 @@ import numpy as np
 from ensmallen import Graph
 from ...utils import must_be_an_sklearn_classifier_model, evaluate_sklearn_classifier
 from ...transformers import EdgePredictionTransformer, GraphTransformer
+from ..edge_prediction_model import AbstractEdgePredictionModel
 
-
-class SklearnModelEdgePredictionAdapter:
+class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     """Class wrapping Sklearn models for running ."""
 
     def __init__(
         self,
         model_instance: Type[ClassifierMixin],
+        edge_embedding_method: str = "Concatenate",
+        random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
 
@@ -21,6 +23,10 @@ class SklearnModelEdgePredictionAdapter:
         ----------------
         model_instance: Type[ClassifierMixin]
             The class instance to be adapted into edge prediction.
+        edge_embedding_method: str = "Concatenate"
+            The method to use to compute the edges.
+        random_state: int
+            The random state to use to reproduce the 
 
         Raises
         ----------------
@@ -29,83 +35,16 @@ class SklearnModelEdgePredictionAdapter:
         """
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
+        self._edge_embedding_method = edge_embedding_method
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
 
-    @staticmethod
-    def _trasform_graphs_into_edge_embedding(
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
-        random_state: int = 42,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """Transforms the provided data into an Sklearn-compatible numpy array.
-
-        Parameters
-        ------------------
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
-            The node features to be used in the training of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the sum of the directed edges in the positive and
-            negative graphs. In this matrix, first we expect the
-            positive graph edge features and secondly the negative graph
-            edge features. We will be shuffling the edge features
-            alongside the edge embedding to have everything aligned
-            correctly.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
-        random_state: int = 42
-            The random state to reproduce the sampling and training.
-
-        Warns
-        ------------------
-        If the node features are provided as a numpy array it will not be possible
-        to check whether the nodes in the graphs are aligned with the features.
-
-        Raises
-        ------------------
-        ValueError
-            If the two graphs do not share the same node vocabulary.
-        """
-        lpt = EdgePredictionTransformer(
-            method=edge_embedding_method,
-            aligned_node_mapping=aligned_node_mapping
-        )
-
-        lpt.fit(node_features)
-
-        return lpt.transform(
-            positive_graph=positive_graph,
-            negative_graph=negative_graph,
-            edge_features=edge_features,
-            random_state=random_state
-        )
-
-    @staticmethod
     def _trasform_graph_into_edge_embedding(
+        self,
         graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
 
@@ -125,14 +64,6 @@ class SklearnModelEdgePredictionAdapter:
             edge features. We will be shuffling the edge features
             alongside the edge embedding to have everything aligned
             correctly.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
 
         Warns
         ------------------
@@ -145,8 +76,8 @@ class SklearnModelEdgePredictionAdapter:
             If the two graphs do not share the same node vocabulary.
         """
         gt = GraphTransformer(
-            method=edge_embedding_method,
-            aligned_node_mapping=aligned_node_mapping
+            method=self._edge_embedding_method,
+            aligned_node_mapping=False
         )
 
         gt.fit(node_features)
@@ -156,248 +87,91 @@ class SklearnModelEdgePredictionAdapter:
             edge_features=edge_features
         )
 
-    def fit(
+
+    def _fit(
         self,
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
-        random_state: int = 42,
-        **kwargs
+        graph: Graph,
+        node_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]] = None,
     ):
-        """Execute fitting of the model.
+        """Run fitting on the provided graph.
 
         Parameters
-        ------------------
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
-            The node features to be used in the training of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the sum of the directed edges in the positive and
-            negative graphs. In this matrix, first we expect the
-            positive graph edge features and secondly the negative graph
-            edge features. We will be shuffling the edge features
-            alongside the edge embedding to have everything aligned
-            correctly.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
-        random_state: int = 42
-            The random state to reproduce the sampling and training.
-        **kwargs: Dict
-            Dictionary of kwargs to be forwarded to sklearn model fitting.
-
-        Warns
-        ------------------
-        If the node features are provided as a numpy array it will not be possible
-        to check whether the nodes in the graphs are aligned with the features.
-
-        Raises
-        ------------------
-        ValueError
-            If the two graphs do not share the same node vocabulary.
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[List[np.ndarray]]
+            The node features to use.
+        edge_features: Optional[List[np.ndarray]] = None
+            The edge features to use.
         """
+        lpt = EdgePredictionTransformer(
+            method=self._edge_embedding_method,
+            aligned_node_mapping=True
+        )
+
+        lpt.fit(node_features)
+
+        edge_features, labels = lpt.transform(
+            positive_graph=graph,
+            negative_graph=graph.sample_negatives(
+                number_of_negative_samples=int(
+                    math.ceil(edges_number*unbalance_rate)),
+                random_state=random_state,
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                verbose=False
+            ),
+            shuffle=True,
+            random_state=random_state
+        )
+
         self._model_instance.fit(
-            *SklearnModelEdgePredictionAdapter._trasform_graphs_into_edge_embedding(
-                positive_graph=positive_graph,
-                negative_graph=negative_graph,
-                node_features=node_features,
-                edge_features=edge_features,
-                edge_embedding_method=edge_embedding_method,
-                aligned_node_mapping=aligned_node_mapping,
-                random_state=random_state,
-            ),
-            **kwargs
+            edge_features,
+            labels
         )
 
-    def evaluate(
+    def _predict(
         self,
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
-        random_state: int = 42,
-        **kwargs
-    ) -> Dict[str, float]:
-        """Return evaluations of the model on the edge prediction task on the provided data.
+        graph: Graph,
+        node_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]] = None,
+    ) -> np.ndarray:
+        """Run prediction on the provided graph.
 
         Parameters
-        ------------------
-        positive_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        negative_graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and labeled as positives.
-            It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
-            The node features to be used in the evaluation of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the sum of the directed edges in the positive and
-            negative graphs. In this matrix, first we expect the
-            positive graph edge features and secondly the negative graph
-            edge features. We will be shuffling the edge features
-            alongside the edge embedding to have everything aligned
-            correctly.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
-        random_state: int = 42
-            The random state to reproduce the sampling and evaluation.
-        **kwargs: Dict
-            Dictionary of kwargs to be forwarded to sklearn model prediction.
-
-        Warns
-        ------------------
-        If the node features are provided as a numpy array it will not be possible
-        to check whether the nodes in the graphs are aligned with the features.
-
-        Raises
-        ------------------
-        ValueError
-            If the two graphs do not share the same node vocabulary.
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[List[np.ndarray]]
+            The node features to use.
+        edge_features: Optional[List[np.ndarray]] = None
+            The edge features to use.
         """
-        return evaluate_sklearn_classifier(
-            self._model_instance,
-            *SklearnModelEdgePredictionAdapter._trasform_graphs_into_edge_embedding(
-                positive_graph=positive_graph,
-                negative_graph=negative_graph,
-                node_features=node_features,
-                edge_features=edge_features,
-                edge_embedding_method=edge_embedding_method,
-                aligned_node_mapping=aligned_node_mapping,
-                random_state=random_state,
-            ),
-            multiclass_or_multilabel=False,
-            **kwargs
-        )
+        return self._model_instance.predict(self._trasform_graph_into_edge_embedding(
+            graph=graph,
+            node_features=node_features,
+            edge_features=edge_features,
+        ))
 
-    def predict_proba(
+    def _predict_proba(
         self,
-        graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
-        **kwargs
-    ) -> Dict[str, float]:
-        """Return evaluations of the model on the edge prediction task on the provided data.
+        graph: Graph,
+        node_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]] = None,
+    ) -> np.ndarray:
+        """Run prediction on the provided graph.
 
         Parameters
-        ------------------
-        graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and predicted.
-            It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
-            The node features to be used in the evaluation of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the number of directed edges in the provided graph.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
-        **kwargs: Dict
-            Dictionary of kwargs to be forwarded to sklearn model prediction.
-
-        Warns
-        ------------------
-        If the node features are provided as a numpy array it will not be possible
-        to check whether the nodes in the graphs are aligned with the features.
-
-        Raises
-        ------------------
-        ValueError
-            If the two graphs do not share the same node vocabulary.
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[List[np.ndarray]]
+            The node features to use.
+        edge_features: Optional[List[np.ndarray]] = None
+            The edge features to use.
         """
-        return self._model_instance.predict_proba(
-            SklearnModelEdgePredictionAdapter._trasform_graph_into_edge_embedding(
-                graph=graph,
-                node_features=node_features,
-                edge_features=edge_features,
-                edge_embedding_method=edge_embedding_method,
-                aligned_node_mapping=aligned_node_mapping,
-            ),
-            **kwargs
-        )
-
-    def predict(
-        self,
-        graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Union[pd.DataFrame, np.ndarray],
-        edge_features: Optional[np.ndarray] = None,
-        edge_embedding_method: str = "Concatenate",
-        aligned_node_mapping: bool = False,
-        **kwargs
-    ) -> Dict[str, float]:
-        """Return evaluations of the model on the edge prediction task on the provided data.
-
-        Parameters
-        ------------------
-        graph: Union[Graph, List[List[str]], List[List[int]]],
-            The graph whose edges are to be embedded and predicted.
-            It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
-            The node features to be used in the evaluation of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the number of directed edges in the provided graph.
-        edge_embedding_method: str = "Concatenate"
-            The method to be used to compute the edge embedding
-            starting from the provided node features.
-        aligned_node_mapping: bool = False,
-            This parameter specifies whether the mapping of the embeddings nodes
-            matches the internal node mapping of the given graph.
-            If these two mappings do not match, the generated edge embedding
-            will be meaningless.
-        **kwargs: Dict
-            Dictionary of kwargs to be forwarded to sklearn model prediction.
-
-        Warns
-        ------------------
-        If the node features are provided as a numpy array it will not be possible
-        to check whether the nodes in the graphs are aligned with the features.
-
-        Raises
-        ------------------
-        ValueError
-            If the two graphs do not share the same node vocabulary.
-        """
-        return self._model_instance.predict(
-            SklearnModelEdgePredictionAdapter._trasform_graph_into_edge_embedding(
-                graph=graph,
-                node_features=node_features,
-                edge_features=edge_features,
-                edge_embedding_method=edge_embedding_method,
-                aligned_node_mapping=aligned_node_mapping,
-            ),
-            **kwargs
-        )
+        return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
+            graph=graph,
+            node_features=node_features,
+            edge_features=edge_features,
+        ))

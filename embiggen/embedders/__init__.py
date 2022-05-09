@@ -5,12 +5,12 @@ try:
 
     SUPPORTED_NODE_EMBEDDING_METHODS = {
         "cbow": {
-            "gpu": tensorflow_embedders.GraphCBOW,
+            "tensorflow": tensorflow_embedders.GraphCBOW,
             "cpu": ensmallen_embedders.GraphCBOW,
         },
         "glove": tensorflow_embedders.GraphGloVe,
         "skipgram": {
-            "gpu": tensorflow_embedders.GraphSkipGram,
+            "tensorflow": tensorflow_embedders.GraphSkipGram,
             "cpu": ensmallen_embedders.GraphSkipGram,
         },
         "siamese": tensorflow_embedders.Siamese,

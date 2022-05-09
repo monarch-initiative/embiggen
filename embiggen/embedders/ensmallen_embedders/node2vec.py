@@ -3,10 +3,10 @@ from typing import Optional
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
-from .ensmallen_embedder import EnsmallenEmbedder
+from ..embedder import Embedder
 
 
-class Node2Vec(EnsmallenEmbedder):
+class Node2Vec(Embedder):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {

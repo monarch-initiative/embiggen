@@ -1,12 +1,11 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import Optional
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
-from .ensmallen_embedder import EnsmallenEmbedder
+from ..embedder import Embedder
 
 
-class WeightedSPINE(EnsmallenEmbedder):
+class WeightedSPINE(Embedder):
     """Abstract class for Node2Vec algorithms."""
 
     def __init__(

@@ -3,11 +3,11 @@ from typing import Optional
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
-from .ensmallen_embedder import EnsmallenEmbedder
+from ..embedder import Embedder
 
 
-class SPINE(EnsmallenEmbedder):
-    """Abstract class for Node2Vec algorithms."""
+class SPINE(Embedder):
+    """Class implementing the SPINE algorithm."""
 
     def __init__(
         self,
