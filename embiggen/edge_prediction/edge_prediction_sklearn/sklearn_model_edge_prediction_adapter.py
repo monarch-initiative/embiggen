@@ -3,10 +3,12 @@ from sklearn.base import ClassifierMixin
 from typing import Type, List, Dict, Union, Optional, Tuple
 import pandas as pd
 import numpy as np
+import math
 from ensmallen import Graph
 from ...utils import must_be_an_sklearn_classifier_model, evaluate_sklearn_classifier
 from ...transformers import EdgePredictionTransformer, GraphTransformer
 from ..edge_prediction_model import AbstractEdgePredictionModel
+
 
 class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     """Class wrapping Sklearn models for running ."""
@@ -15,6 +17,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         model_instance: Type[ClassifierMixin],
         edge_embedding_method: str = "Concatenate",
+        unbalance_rate: float = 1.0,
+        sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
@@ -25,17 +29,26 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             The class instance to be adapted into edge prediction.
         edge_embedding_method: str = "Concatenate"
             The method to use to compute the edges.
+        unbalance_rate: float = 1.0
+            Unbalance rate for the training non-existing edges.
+        sample_only_edges_with_heterogeneous_node_types: bool = False
+            Whether to sample negative edges exclusively between nodes with different node types.
+            This can be useful when executing a bipartite edge prediction task.
         random_state: int
-            The random state to use to reproduce the 
+            The random state to use to reproduce the training.
 
         Raises
         ----------------
         ValueError
             If the provided model_instance is not a subclass of `ClassifierMixin`.
         """
+        super().__init__()
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
         self._edge_embedding_method = edge_embedding_method
+        self._unbalance_rate = unbalance_rate
+        self._random_state = random_state
+        self._sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
@@ -44,7 +57,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         graph: Union[Graph, List[List[str]], List[List[int]]],
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
 
@@ -55,15 +67,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             It can either be an Graph or a list of lists of edges.
         node_features: Union[pd.DataFrame, np.ndarray]
             The node features to be used in the training of the model.
-        edge_features: Optional[np.ndarray] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the sum of the directed edges in the positive and
-            negative graphs. In this matrix, first we expect the
-            positive graph edge features and secondly the negative graph
-            edge features. We will be shuffling the edge features
-            alongside the edge embedding to have everything aligned
-            correctly.
 
         Warns
         ------------------
@@ -82,11 +85,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         gt.fit(node_features)
 
-        return gt.transform(
-            graph=graph,
-            edge_features=edge_features
-        )
-
+        return gt.transform(graph=graph)
 
     def _fit(
         self,
@@ -112,23 +111,19 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         lpt.fit(node_features)
 
-        edge_features, labels = lpt.transform(
+        self._model_instance.fit(*lpt.transform(
             positive_graph=graph,
             negative_graph=graph.sample_negatives(
                 number_of_negative_samples=int(
-                    math.ceil(edges_number*unbalance_rate)),
-                random_state=random_state,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                    math.ceil(graph.get_edges_number()*self._unbalance_rate)
+                ),
+                random_state=self._random_state,
+                sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
                 verbose=False
             ),
             shuffle=True,
-            random_state=random_state
-        )
-
-        self._model_instance.fit(
-            edge_features,
-            labels
-        )
+            random_state=self._random_state
+        ))
 
     def _predict(
         self,
@@ -150,7 +145,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         return self._model_instance.predict(self._trasform_graph_into_edge_embedding(
             graph=graph,
             node_features=node_features,
-            edge_features=edge_features,
         ))
 
     def _predict_proba(
@@ -173,5 +167,4 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
             graph=graph,
             node_features=node_features,
-            edge_features=edge_features,
         ))

@@ -124,6 +124,88 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
 
         return performance
 
+    def predict(
+        self,
+        graph: Graph,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        return super().predict(graph, node_features)
+
+    def predict_proba(
+        self,
+        graph: Graph,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        return super().predict_proba(graph, node_features)
+
+    def fit(
+        self,
+        graph: Graph,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        skip_evaluation_biased_feature: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        skip_evaluation_biased_feature: bool = False
+            Whether to skip feature names that are known to be biased
+            when running an holdout. These features should be computed
+            exclusively on the training graph and not the entire graph.
+        """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        super().fit(
+            graph=graph,
+            node_features=node_features,
+            edge_features=None,
+            skip_evaluation_biased_feature=skip_evaluation_biased_feature,
+        )
+
     def evaluate(
         self,
         graph: Graph,
@@ -170,12 +252,17 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         unbalance_rates: Tuple[float] = (1.0, )
             Unbalance rate for the non-existent graphs generation.
         """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
         super().evaluate(
             graph=graph,
             evaluation_schema=evaluation_schema,
             holdouts_kwargs=holdouts_kwargs,
             node_features=node_features,
-            edge_features=edge_features,
+            edge_features=None,
             subgraph_of_interest=subgraph_of_interest,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
