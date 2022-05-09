@@ -18,7 +18,8 @@ try:
         "simple": tensorflow_embedders.SimplE,
         "transh": tensorflow_embedders.TransH,
         "transr": tensorflow_embedders.TransR,
-        "spine": ensmallen_embedders.SPINE
+        "spine": ensmallen_embedders.SPINE,
+        "weightedspine": ensmallen_embedders.WeightedSPINE,
     }
 
     __all__ = [
@@ -32,10 +33,11 @@ except ModuleNotFoundError as e:
     SUPPORTED_NODE_EMBEDDING_METHODS = {
         "cbow": GraphCBOW,
         "skipgram": GraphSkipGram,
-        "spine": SPINE
+        "spine": SPINE,
+        "weightedspine": WeightedSPINE
     }
 
     __all__ = [
         "ensmallen_embedders",
-        "SUPPORTED_NODE_EMBEDDING_METHODS"
+        "SUPPORTED_NODE_EMBEDDING_METHODS",
     ]

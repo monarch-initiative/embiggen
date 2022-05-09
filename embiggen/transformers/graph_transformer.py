@@ -1,5 +1,5 @@
 """GraphTransformer class to convert graphs to edge embeddings."""
-from typing import List, Union
+from typing import List, Union, Optional
 import pandas as pd
 import numpy as np
 from ensmallen import Graph  # pylint: disable=no-name-in-module
@@ -44,24 +44,25 @@ class GraphTransformer:
         """Return the used edge embedding method."""
         return self._transformer.method
 
-    def fit(self, embedding: pd.DataFrame):
+    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: pd.DataFrame,
-            Embedding to use to fit the transformer.
-            This is a pandas DataFrame and NOT a numpy array because we need
-            to be able to remap correctly the vector embeddings in case of
-            graphs that do not respect the same internal node mapping but have
-            the same node set. It is possible to remap such graphs using
-            Ensmallen's remap method but it may be less intuitive to users.
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+            Node feature to use to fit the transformer.
+
+        Raises
+        -------------------------
+        ValueError
+            If the given method is None there is no need to call the fit method.
         """
-        self._transformer.fit(embedding)
+        self._transformer.fit(node_feature)
 
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
+        edge_features: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
@@ -70,6 +71,10 @@ class GraphTransformer:
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
             It can either be an Graph or a list of lists of edges.
+        edge_features: Optional[np.ndarray] = None
+            Optional edge features to be used as input concatenated
+            to the obtained edge embedding. The shape must be equal
+            to the number of directed edges in the provided graph.
 
         Raises
         --------------------------
@@ -90,4 +95,4 @@ class GraphTransformer:
         if isinstance(graph, np.ndarray):
             sources = graph[:, 0]
             destinations = graph[:, 1]
-        return self._transformer.transform(sources, destinations)
+        return self._transformer.transform(sources, destinations, edge_features=edge_features)

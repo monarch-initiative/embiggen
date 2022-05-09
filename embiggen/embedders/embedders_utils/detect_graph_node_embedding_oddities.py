@@ -33,7 +33,7 @@ def detect_graph_node_embedding_oddities(graph: Graph):
                 "embeddings for these nodes, and their embedding will be generally "
                 "far away from any other node. It is also possible that all singleton nodes "
                 "will receive a relatively similar node embedding. "
-                "Consider dropping them by using the `graph.drop_singleton_nodes()` method."
+                "Consider dropping them by using the `graph.remove_singleton_nodes()` method."
             ).format(graph.get_singleton_nodes_number())
         )
     
@@ -46,6 +46,6 @@ def detect_graph_node_embedding_oddities(graph: Graph):
                 "embeddings for these nodes, and their embedding will be generally "
                 "far away from any other node. It is also possible that all singleton nodes "
                 "will receive a relatively similar node embedding. "
-                "Consider dropping them by using the `graph.drop_singleton_nodes_with_selfloops()` method."
+                "Consider dropping them by using the `graph.remove_singleton_nodes_with_selfloops()` method."
             ).format(graph.get_singleton_nodes_with_selfloops_number())
         )

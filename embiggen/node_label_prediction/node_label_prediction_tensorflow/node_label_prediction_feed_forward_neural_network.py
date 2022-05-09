@@ -21,8 +21,8 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from tensorflow.keras.losses import CategoricalCrossentropy  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ..sequences import NodeLabelPredictionSequence
-from ..embedders.tensorflow_embedders import TensorFlowEmbedder
+from ...sequences import NodeLabelPredictionSequence
+from ...embedders.tensorflow_embedders import TensorFlowEmbedder
 
 
 class NodeLabelPredictionfeedForwardNeuralNetwork(TensorFlowEmbedder):

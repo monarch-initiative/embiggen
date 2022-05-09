@@ -1,20 +1,18 @@
 """Submodule providing pipelines for edge prediction."""
+import itertools
 from typing import Union, Callable, Tuple, List, Optional, Dict
 import pandas as pd
-import tensorflow as tf
 from ensmallen import Graph
+from time import time
 from tqdm.auto import trange, tqdm
 import math
 from ensmallen.datasets import get_dataset
-from yaml import warnings
-from ..edge_prediction import Perceptron, MultiLayerPerceptron, EdgePredictionModel
-from ..utils import execute_gpu_checks, get_available_gpus_number
+from sklearn.base import ClassifierMixin
+import copy
+import warnings
+from ..edge_prediction import SklearnModelEdgePredictionAdapter, is_tensorflow_edge_prediction_method, get_tensorflow_model
+from ..utils import is_sklearn_classifier_model, get_sklearn_default_classifier, is_default_sklearn_classifier
 from .compute_node_embedding import compute_node_embedding
-
-edge_prediction_models = {
-    "Perceptron": Perceptron,
-    "MultiLayerPerceptron": MultiLayerPerceptron
-}
 
 
 def get_negative_graphs(
@@ -59,14 +57,13 @@ def get_negative_graphs(
     # to remove this negative bias from the evaluation.
     # Of course, this only apply to graphs where we can assume that there is
     # not a massive amount of unknown positive edges.
-    graph.enable()
     negative_graph = graph.sample_negatives(
-        number_of_negative_samples=int(math.ceil(graph.get_edges_number()*unbalance_rate)),
+        number_of_negative_samples=int(
+            math.ceil(graph.get_edges_number()*unbalance_rate)),
         random_state=random_state,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
         verbose=False
     )
-    negative_graph.enable()
     return negative_graph.random_holdout(
         train_size=train_size,
         random_state=random_state,
@@ -77,30 +74,27 @@ def get_negative_graphs(
 def evaluate_embedding_for_edge_prediction(
     embedding_method: Union[str, Callable[[Graph, int], pd.DataFrame]],
     graphs: Union[Graph, str, List[str], List[Graph]],
-    model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]],
-    epochs: int = 1000,
+    model: Union[str, Callable, ClassifierMixin],
+    repositories: Optional[Union[str, List[str]]] = None,
+    versions: Optional[Union[str, List[str]]] = None,
     number_of_holdouts: int = 10,
     train_size: float = 0.8,
     unbalance_rates: Tuple[Union[float, str]] = (10.0, 100.0, "auto"),
-    random_state: int = 42,
-    batch_size: int = 2**10,
+    holdouts_random_state: int = 42,
     edge_embedding_method: str = "Concatenate",
-    trainable_embedding: bool = False,
-    use_dropout: bool = True,
-    dropout_rate: float = 0.1,
-    use_edge_metrics: bool = False,
     edge_types: Optional[List[str]] = None,
-    use_mirrored_strategy: Union[bool, str] = "auto",
+    minimum_node_degree: Optional[int] = None,
+    maximum_node_degree: Optional[int] = None,
     use_only_cpu: Union[bool, str] = "auto",
     only_execute_embeddings: bool = False,
-    embedding_method_fit_kwargs: Optional[Dict] = None,
-    embedding_method_kwargs: Optional[Dict] = None,
+    embedding_kwargs: Optional[Dict] = None,
+    embedding_fit_kwargs: Optional[Dict] = None,
+    classifier_kwargs: Optional[Dict] = None,
+    classifier_fit_kwargs: Optional[Dict] = None,
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None,
     sample_only_edges_with_heterogeneous_node_types: bool = False,
-    devices: Union[List[str], str] = None,
     graph_normalization_callback: Callable[[Graph], Graph] = None,
-    verbose: bool = True
-) -> Tuple[pd.DataFrame, List[pd.DataFrame]]:
+) -> pd.DataFrame:
     """Return the evaluation of an embedding for edge prediction on the given model.
 
     Parameters
@@ -111,10 +105,16 @@ def evaluate_embedding_for_edge_prediction(
         The graph to run the embedding and edge prediction on.
         If a string was provided, we will retrieve the graphs from Ensmallen's repositories.
         If a list was provided, we will iterate on all graphs.
-    model_name: Union[str, Callable[[Graph, pd.DataFrame], EdgePredictionModel]]
+    model: Union[str, Callable, ClassifierMixin]
         Either the name of the model or a method returning a model.
-    epochs: int = 1000
-        Number of epochs to train the perceptron model for.
+    repositories: Optional[Union[str, List[str]]] = None
+        Repositorie(s) of the graphs to be retrieved.
+        This only applies when the provided graph(s) are all strings,
+        otherwise an exception will be raised.
+    versions: Optional[Union[str, List[str]]] = None
+        Version(s) of the graphs to be retrieved.
+        This only applies when the provided graph(s) are all strings,
+        otherwise an exception will be raised.
     number_of_holdouts: int = 10
         The number of the holdouts to run.
     train_size: float = 0.8
@@ -123,19 +123,14 @@ def evaluate_embedding_for_edge_prediction(
         List of unbalance to evaluate.
         Do note that an unbalance of one is always included.
         With "auto", we use the true unbalance of the graph.
-    random_state: int = 42
+    holdouts_random_state: int = 42
         The seed to be used to reproduce the holdout.
-    batch_size: int = 2**10
-        Size of the batch to be considered.
     edge_types: Optional[List[str]] = None
         Edge types to focus the edge prediction on, if any.
-    use_mirrored_strategy: Union[bool, str] = "auto"
-        Whether to use mirror strategy to distribute the
-        computation across multiple devices.
-        This is automatically enabled if more than one
-        GPU is detected and the flag `use_only_gpu` was
-        not provided, or if the list of devices to use
-        was provided and it includes at least a GPU.
+    minimum_node_degree: Optional[int] = None
+        The minimum node degree of either the source or destination node to be sampled. By default 0.
+    maximum_node_degree: Optional[int] = None
+        The maximum node degree of either the source or destination node to be sampled. By default, the number of nodes.
     use_only_cpu: Union[bool, str] = "auto",
         Whether to only use CPU.
         Do note that for CBOW and SkipGram models,
@@ -145,9 +140,9 @@ def evaluate_embedding_for_edge_prediction(
         Whether to only execute the computation of the embedding or also the edge prediction.
         This flag can be useful when the two operations should be executed on different machines
         or at different times.
-    embedding_method_fit_kwargs: Optional[Dict] = None
+    embedding_fit_kwargs: Optional[Dict] = None
         The kwargs to be forwarded to the embedding fit method
-    embedding_method_kwargs: Optional[Dict] = None
+    embedding_kwargs: Optional[Dict] = None
         The kwargs to be forwarded to the embedding method
     subgraph_of_interest_for_edge_prediction: Optional[Graph] = None
         The subgraph to use for the edge prediction training and evaluation, if any.
@@ -156,69 +151,81 @@ def evaluate_embedding_for_edge_prediction(
         Whether to only sample edges between heterogeneous node types.
         This may be useful when training a model to predict between
         two portions in a bipartite graph.
-    devices: Union[List[str], str] = None
-        The list of devices to use when training the embedding and edge prediction models
-        in a MirroredStrategy, that is across multiple GPUs. Thise feature is mainly useful
-        when there are multiple GPUs available AND the graph is large enough to actually
-        use the GPUs (for instance when it has at least a few million nodes).
     graph_normalization_callback: Callable[[Graph], Graph] = None
         Graph normalization procedure to call on graphs that have been loaded from
         the Ensmallen automatic retrieval.
-    verbose: bool = True
-        Whether to show the loading bars.
     """
-    if isinstance(model_name, str) and model_name not in edge_prediction_models:
-        raise ValueError(
-            f"The given edge prediction model `{model_name}` is not supported. "
-            f"The supported node embedding methods are `{edge_prediction_models}`."
-        )
 
-    if embedding_method_kwargs is None:
-        embedding_method_kwargs = {}
+    if embedding_kwargs is None:
+        embedding_kwargs = {}
+
+    if classifier_kwargs is None:
+        classifier_kwargs = {}
+
+    if classifier_fit_kwargs is None:
+        classifier_fit_kwargs = {}
+
+    if edge_types is not None and isinstance(edge_types, str):
+        edge_types = [edge_types]
+
+    if isinstance(model, str):
+        model_name = model
+    elif is_sklearn_classifier_model(model):
+        model_name = model.__class__.__name__
+    elif callable(model):
+        model_name = model.__name__
 
     if subgraph_of_interest_for_edge_prediction is not None and not subgraph_of_interest_for_edge_prediction.has_edges():
         raise ValueError(
             "The provided subgraph of interest does not have any edge."
         )
 
-    # If devices are given as a single device we adapt this into a list.
-    if isinstance(devices, str):
-        devices = [devices]
-
-    # If in the list of provided devices there is a GPU specified,
-    # and there are more than one GPU, we need to use the MirroredStrategy
-    # to distribute its computation.
-    if devices and any(
-        "GPU" in device
-        for device in devices
-    ) and get_available_gpus_number() > 1:
-        use_mirrored_strategy = True
-
-    # If the embedding method is a string, we execute this check also within
-    # the compute node embedding pipeline.
-    if not isinstance(embedding_method, str):
-        execute_gpu_checks(use_mirrored_strategy)
-
     if isinstance(graphs, (Graph, str)):
         graphs = [graphs]
 
+    number_of_graphs = len(graphs)
+
+    if versions is not None:
+        if any(not isinstance(graph, str) for graph in graphs):
+            raise ValueError(
+                "Graph versions were provided, but the graphs are not ",
+                "graph names from Ensmallen's automatic retrieval."
+            )
+        if isinstance(versions, str):
+            versions = [versions] * number_of_graphs
+    else:
+        versions = [None] *number_of_graphs
+
+    if repositories is not None:
+        if any(not isinstance(graph, str) for graph in graphs):
+            raise ValueError(
+                "Graph repositories were provided, but the graphs are not ",
+                "graph names from Ensmallen's automatic retrieval."
+            )
+        if isinstance(repositories, str):
+            repositories = [repositories]*len(graphs)
+    else:
+        repositories = [None] *number_of_graphs
 
     holdouts = []
-    histories = []
-    for graph in tqdm(
-        graphs,
+    for graph, repository, version in tqdm(
+        zip(graphs, repositories, versions),
         desc="Executing graph",
-        disable=len(graphs) <= 1,
+        disable=number_of_graphs==1,
         dynamic_ncols=True,
         leave=False
     ):
         if isinstance(graph, str):
-            graph = get_dataset(graph)()
+            graph = get_dataset(
+                graph,
+                repository=repository,
+                version=version
+            )()
             if graph_normalization_callback is not None:
                 graph = graph_normalization_callback(graph)
-        
+
         graph_name = graph.get_name()
-        graph_unbalance_rate = graph.get_nodes_number() * (graph.get_nodes_number() - 1) / graph.get_number_of_directed_edges()
+        graph_unbalance_rate =  0.9 * (graph.get_nodes_number() * (graph.get_nodes_number() - 1)) / graph.get_number_of_directed_edges()
 
         unbalance_rates_for_graph = [
             graph_unbalance_rate
@@ -245,31 +252,39 @@ def evaluate_embedding_for_edge_prediction(
             dynamic_ncols=True,
             leave=False
         ):
+            connected_holdout_random_state = holdouts_random_state*holdout_number
+            connected_holdouts_parameters = dict(
+                random_state=connected_holdout_random_state,
+                edge_types=edge_types,
+                minimum_node_degree=minimum_node_degree,
+                maximum_node_degree=maximum_node_degree,
+            )
+            negative_graph_parameters = dict(
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+            )
             train_graph, test_graph = graph.connected_holdout(
                 train_size,
-                random_state=random_state*holdout_number,
-                edge_types=edge_types,
+                **connected_holdouts_parameters,
                 verbose=False
             )
 
+            start_embedding = time()
             if isinstance(embedding_method, str):
                 embedding, _ = compute_node_embedding(
                     graph=train_graph,
                     node_embedding_method_name=embedding_method,
-                    use_mirrored_strategy=use_mirrored_strategy,
                     use_only_cpu=use_only_cpu,
-                    fit_kwargs=embedding_method_fit_kwargs,
-                    devices=devices,
+                    fit_kwargs=embedding_fit_kwargs,
                     verbose=False,
-                    **embedding_method_kwargs
+                    **embedding_kwargs
                 )
             else:
                 embedding = embedding_method(
                     train_graph,
                     holdout_number,
-                    use_mirrored_strategy=use_mirrored_strategy,
-                    **embedding_method_kwargs
+                    **embedding_kwargs
                 )
+            seconds_necessary_for_embedding = time() - start_embedding
 
             if only_execute_embeddings:
                 continue
@@ -328,20 +343,6 @@ def evaluate_embedding_for_edge_prediction(
             # Force alignment
             embedding = embedding.loc[train_graph.get_node_names()]
 
-            # Simplify the train graph if needed.
-            if train_graph.has_edge_weights():
-                train_graph.remove_inplace_edge_weights()
-
-            if train_graph.has_edge_types():
-                train_graph.remove_inplace_edge_types()
-
-            # Simplify the test graph if needed.
-            if test_graph.has_edge_weights():
-                test_graph.remove_inplace_edge_weights()
-
-            if test_graph.has_edge_types():
-                test_graph.remove_inplace_edge_types()
-
             train_graph.enable(
                 vector_sources=True,
                 vector_destinations=True,
@@ -352,65 +353,119 @@ def evaluate_embedding_for_edge_prediction(
                 graph_to_use_to_sample_negatives,
                 # Inside ensmallen we pass this number in a splitmix function
                 # therefore even a sum should have quite enough additional entropy.
-                random_state=random_state + holdout_number,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                random_state=holdouts_random_state + holdout_number,
+                **negative_graph_parameters,
                 unbalance_rate=1.0,
                 train_size=train_size,
             )
 
-            if tf.config.list_physical_devices('GPU') and use_mirrored_strategy:
-                strategy = tf.distribute.MirroredStrategy(devices)
-            else:
-                # Use the Default Strategy
-                strategy = tf.distribute.get_strategy()
-
-            with strategy.scope():
-                if isinstance(model_name, str):
-                    model = edge_prediction_models.get(model_name)(
+            if isinstance(model, str):
+                if is_tensorflow_edge_prediction_method(model):
+                    model_instance = get_tensorflow_model(
+                        model,
                         graph=graph,
                         embedding=embedding,
                         edge_embedding_method=edge_embedding_method,
-                        trainable_embedding=trainable_embedding,
-                        use_dropout=use_dropout,
-                        dropout_rate=dropout_rate,
-                        use_edge_metrics=use_edge_metrics,
+                        **classifier_kwargs
+                    )
+                elif is_default_sklearn_classifier(model):
+                    model_instance = SklearnModelEdgePredictionAdapter(
+                        get_sklearn_default_classifier(
+                            model, **classifier_kwargs)
                     )
                 else:
-                    model = model_name(graph, embedding)
+                    raise ValueError(
+                        "The provided model name {} is not available.".format(
+                            model)
+                    )
+            elif callable(model):
+                if is_sklearn_classifier_model(model):
+                    model_instance = SklearnModelEdgePredictionAdapter(
+                        model(**classifier_kwargs))
+                else:
+                    model_instance = model(graph, embedding)
+            elif is_sklearn_classifier_model(model):
+                # If the provide model is already an sklearn model,
+                # we proceed to wrap it and we avoid to training the original
+                # models multiple times by making a deep copy of it.
+                model_instance = SklearnModelEdgePredictionAdapter(
+                    copy.deepcopy(model)
+                )
+            else:
+                raise ValueError(
+                    "It is not clear what to do with the provided model object of type {}.".format(
+                        type(model)
+                    )
+                )
 
-            histories.append(model.fit(
-                train_graph=train_graph,
-                valid_graph=test_graph,
-                negative_valid_graph=test_negative_graph,
-                batch_size=batch_size,
-                epochs=epochs,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-                verbose=False
-            ))
+            start_training = time()
+            if isinstance(model_instance, SklearnModelEdgePredictionAdapter):
+                evaluation_kwargs = dict(
+                    node_features=embedding.values,
+                    edge_embedding_method=edge_embedding_method,
+                    aligned_node_mapping=True,
+                )
+                model_instance.fit(
+                    positive_graph=train_graph,
+                    negative_graph=train_negative_graph,
+                    # TODO: In the future consider adding these.
+                    # edge_features: Optional[np.ndarray] = None,
+                    **evaluation_kwargs
+                )
+            elif is_tensorflow_edge_prediction_method(model):
+                evaluation_kwargs = dict()
+                model_instance.fit(
+                    train_graph=train_graph,
+                    valid_graph=test_graph,
+                    negative_valid_graph=test_negative_graph,
+                    **classifier_fit_kwargs,
+                    sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                    verbose=False
+                )
+            else:
+                raise NotImplementedError(
+                    "Unclear what to do with this model."
+                )
+            seconds_necessary_to_train_model = time() - start_training
 
-            train_performance = model.evaluate(
-                graph=train_graph,
+            start_train_evaluation = time()
+            train_performance = model_instance.evaluate(
+                positive_graph=train_graph,
                 negative_graph=train_negative_graph,
-                batch_size=batch_size,
-                verbose=False
+                **evaluation_kwargs
             )
+            train_evaluation_time = time() - start_train_evaluation
+
             train_performance["evaluation_type"] = "train"
             train_performance["unbalance"] = 1.0
+            train_performance["size"] = train_size
             train_performance["graph_name"] = graph_name
+            train_performance["required_training_time"] = seconds_necessary_to_train_model
+            train_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+            train_performance["train_evaluation_time"] = train_evaluation_time
 
-            test_performance = model.evaluate(
-                graph=test_graph,
+            start_test_evaluation = time()
+            test_performance = model_instance.evaluate(
+                positive_graph=test_graph,
                 negative_graph=test_negative_graph,
-                batch_size=batch_size,
-                verbose=False
+                **evaluation_kwargs
             )
+            test_evaluation_time = time() - start_test_evaluation
+
             test_performance["evaluation_type"] = "test"
             test_performance["unbalance"] = 1.0
+            test_performance["size"] = 1.0 - train_size
             test_performance["graph_name"] = graph_name
+            test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+            train_performance["test_evaluation_time"] = test_evaluation_time
 
-            if isinstance(embedding_method, str):
-                train_performance["embedding_method"] = embedding_method
-                test_performance["embedding_method"] = embedding_method
+            for parameter_name, parameter in itertools.chain(
+                connected_holdouts_parameters.items(),
+                negative_graph_parameters.items(),
+            ):
+                if parameter is not None:
+                    train_performance[parameter_name] = parameter
+                    test_performance[parameter_name] = parameter
 
             holdouts.append(train_performance)
             holdouts.append(test_performance)
@@ -425,37 +480,57 @@ def evaluate_embedding_for_edge_prediction(
                     graph_to_use_to_sample_negatives,
                     # Inside ensmallen we pass this number in a splitmix function
                     # therefore even a sum should have quite enough additional entropy.
-                    random_state=random_state + holdout_number + i,
+                    random_state=holdouts_random_state + holdout_number + i,
                     sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                     unbalance_rate=unbalance_rate,
                     train_size=train_size,
                 )
-                train_performance = model.evaluate(
-                    graph=train_graph,
+
+                start_test_evaluation = time()
+                train_performance = model_instance.evaluate(
+                    positive_graph=train_graph,
                     negative_graph=train_negative_graph,
-                    batch_size=batch_size,
-                    verbose=False
+                    **evaluation_kwargs
                 )
+                train_evaluation_time = time() - start_train_evaluation
+
                 train_performance["evaluation_type"] = "train"
                 train_performance["unbalance"] = unbalance_rate
+                train_performance["size"] = train_size
                 train_performance["graph_name"] = graph_name
-                
-                test_performance = model.evaluate(
-                    graph=test_graph,
+                train_performance["required_training_time"] = seconds_necessary_to_train_model
+                train_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+                train_performance["train_evaluation_time"] = train_evaluation_time
+
+                start_test_evaluation = time()
+                test_performance = model_instance.evaluate(
+                    positive_graph=test_graph,
                     negative_graph=test_negative_graph,
-                    batch_size=batch_size,
-                    verbose=False
+                    **evaluation_kwargs
                 )
+                test_evaluation_time = time() - start_test_evaluation
+
                 test_performance["evaluation_type"] = "test"
                 test_performance["unbalance"] = unbalance_rate
+                test_performance["size"] = 1.0 - train_size
                 test_performance["graph_name"] = graph_name
+                test_performance["seconds_necessary_for_embedding"] = seconds_necessary_for_embedding
+                test_performance["test_evaluation_time"] = test_evaluation_time
+
+                for parameter_name, parameter in itertools.chain(
+                    connected_holdouts_parameters.items(),
+                    negative_graph_parameters.items(),
+                ):
+                    if parameter is not None:
+                        train_performance[parameter_name] = parameter
+                        test_performance[parameter_name] = parameter
 
                 holdouts.append(train_performance)
                 holdouts.append(test_performance)
 
-                if isinstance(embedding_method, str):
-                    train_performance["embedding_method"] = embedding_method
-                    test_performance["embedding_method"] = embedding_method
+    holdouts = pd.DataFrame(holdouts)
+    if isinstance(embedding_method, str):
+        holdouts["embedding_method"] = embedding_method
+    holdouts["model_name"] = model_name
 
-
-    return pd.DataFrame(holdouts), histories
+    return holdouts

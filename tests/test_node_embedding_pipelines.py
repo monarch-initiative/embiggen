@@ -15,6 +15,8 @@ class TestNodeEmbeddingUtility(TestCase):
     def test_fit(self):
         """Test that model fitting behaves correctly and produced embedding has correct shape."""
         for node_embedding_method in get_available_node_embedding_methods():
+            if node_embedding_method == "WeightedSPINE".lower():
+                continue
             compute_node_embedding(
                 self._graph,
                 node_embedding_method_name=node_embedding_method,

@@ -21,10 +21,11 @@ RANDOM_WALK_BASED_MODELS = [
     "cbow",
     "glove",
     "skipgram",
-    "spine"
+    "spine",
+    "weightedspine"
 ]
 
-LINK_PREDICTION_BASED_MODELS = [
+EDGE_PREDICTION_BASED_MODELS = [
     "siamese",
     "transr",
     "transe",
@@ -150,7 +151,7 @@ def _compute_node_ensmallen_embedding(
         verbose=verbose,
         **kwargs
     )
-    return model.fit_transform_graph(
+    return model.fit_transform(
         graph,
         **fit_kwargs
     )
@@ -159,7 +160,7 @@ def _compute_node_ensmallen_embedding(
 def compute_node_embedding(
     graph: Union[Graph, str],
     node_embedding_method_name: str,
-    use_only_cpu: Union[bool, str] = "auto",
+    use_only_cpu: bool = True,
     use_mirrored_strategy: Union[bool, str] = "auto",
     devices: Union[List[str], str] = None,
     fit_kwargs: Dict = None,
@@ -178,7 +179,7 @@ def compute_node_embedding(
         it using the Ensmallen automatic retrieval.
     node_embedding_method_name: str,
         The name of the node embedding method to use.
-    use_only_cpu: Union[bool, str] = "auto",
+    use_only_cpu: bool = True,
         Whether to only use CPU.
         Do note that for CBOW and SkipGram models,
         this will switch the implementation from the
@@ -259,9 +260,6 @@ def compute_node_embedding(
             "and require to use the mirrored strategy for GPUs."
         )
 
-    if not use_only_cpu:
-        execute_gpu_checks(use_mirrored_strategy)
-
     # If the fit kwargs are not given we normalize them to an empty dictionary.
     if fit_kwargs is None:
         fit_kwargs = {}
@@ -293,7 +291,7 @@ def compute_node_embedding(
             )
             if issubclass(model, EnsmallenEmbedder):
                 supported_parameter = inspect.signature(
-                    model.fit_transform_graph
+                    model.fit_transform
                 ).parameters
             else:
                 supported_parameter = inspect.signature(
@@ -314,7 +312,7 @@ def compute_node_embedding(
                 vector_destinations=True,
                 vector_cumulative_node_degrees=True
             )
-        if lower_node_embedding_method_name in LINK_PREDICTION_BASED_MODELS:
+        if lower_node_embedding_method_name in EDGE_PREDICTION_BASED_MODELS:
             graph.enable(
                 vector_sources=True,
                 vector_destinations=True,

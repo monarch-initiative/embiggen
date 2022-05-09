@@ -41,7 +41,7 @@ class EnsmallenEmbedder:
         self._embedding_size = embedding_size
         self._verbose = verbose
 
-    def _fit_transform_graph(
+    def _fit_transform(
         self,
         graph: Graph,
     ) -> np.ndarray:
@@ -53,11 +53,11 @@ class EnsmallenEmbedder:
             The ensmallen graph to embed.
         """
         raise NotImplementedError(
-            "The method `_fit_transform_graph` must be implemented "
+            "The method `_fit_transform` must be implemented "
             "in child classes."
         )
 
-    def fit_transform_graph(
+    def fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True
@@ -75,7 +75,7 @@ class EnsmallenEmbedder:
             required for a graph node embedding.
         """
         detect_graph_node_embedding_oddities(graph)
-        node_embedding = self._fit_transform_graph(graph)
+        node_embedding = self._fit_transform(graph)
         if return_dataframe:
             return pd.DataFrame(
                 node_embedding,

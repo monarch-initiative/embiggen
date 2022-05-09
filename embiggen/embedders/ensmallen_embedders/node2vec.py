@@ -136,7 +136,7 @@ class Node2Vec(EnsmallenEmbedder):
             verbose=verbose
         )
 
-    def _fit_transform_graph(self, graph: Graph) -> np.ndarray:
+    def _fit_transform(self, graph: Graph) -> np.ndarray:
         return self._model.fit_transform(
             graph, 
             epochs=self._epochs,

@@ -30,8 +30,8 @@ class TestGraphVisualizer(TestCase):
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        self._visualization.fit_transform_nodes(self._embedding)
-        self._visualization.fit_transform_edges(self._embedding)
+        self._visualization.fit_nodes(self._embedding)
+        self._visualization.fit_edges(self._embedding)
         self._visualization.plot_node_degrees()
         with pytest.raises(ValueError):
             self._visualization.plot_node_types()

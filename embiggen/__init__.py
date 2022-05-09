@@ -5,13 +5,10 @@ try:
         CBOW, GloVe, GraphCBOW, GraphGloVe, GraphSkipGram,
         SkipGram, TransE, TransH, TransR, SimplE, Siamese
     )
-    from .node_prediction import GraphConvolutionalNeuralNetwork
-    from .sequences import Word2VecSequence
-    from .transformers import CorpusTransformer
 
     all_exports = [
-        "CBOW", "SkipGram", "GloVe", "GraphGloVe", "Word2VecSequence", "CorpusTransformer",
-        "TransE", "TransH", "TransR", "SimplE", "Siamese", "GraphConvolutionalNeuralNetwork"
+        "CBOW", "SkipGram", "GloVe", "GraphGloVe", "Word2VecSequence",
+        "TransE", "TransH", "TransR", "SimplE", "Siamese"
     ]
 except ModuleNotFoundError as e:
     from .embedders.ensmallen_embedders import *
@@ -24,7 +21,7 @@ except ModuleNotFoundError as e:
 
 from .embedders.ensmallen_embedders import SPINE
 from .transformers import (EdgeTransformer,
-                           GraphTransformer, LinkPredictionTransformer,
+                           GraphTransformer, EdgePredictionTransformer,
                            NodeTransformer)
 from .visualizations import GraphVisualizer
 
@@ -34,7 +31,7 @@ __all__ = [
     "NodeTransformer",
     "EdgeTransformer",
     "GraphTransformer",
-    "LinkPredictionTransformer",
+    "EdgePredictionTransformer",
     "GraphVisualizer",
     "SPINE",
     *all_exports

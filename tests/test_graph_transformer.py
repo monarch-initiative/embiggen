@@ -38,17 +38,24 @@ class TestGraphTransformer(TestCase):
                 if embedding_method == "Concatenate":
                     self.assertEqual(
                         embedded_edges.shape,
-                        (self._graph.get_undirected_edges_number(), self._embedding_size*2)
+                        (self._graph.get_undirected_edges_number(),
+                         self._embedding_size*2)
                     )
                 elif embedding_method is None:
                     self.assertEqual(
                         embedded_edges.shape,
                         (self._graph.get_undirected_edges_number(), 2)
                     )
+                elif "Distance" in embedding_method:
+                    self.assertEqual(
+                        embedded_edges.shape,
+                        (self._graph.get_undirected_edges_number(), )
+                    )
                 else:
                     self.assertEqual(
                         embedded_edges.shape,
-                        (self._graph.get_undirected_edges_number(), self._embedding_size)
+                        (self._graph.get_undirected_edges_number(),
+                         self._embedding_size)
                     )
 
     def test_graph_transformer_picklability(self):

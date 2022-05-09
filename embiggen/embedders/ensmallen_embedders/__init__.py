@@ -7,10 +7,12 @@ from .ensmallen_embedder import EnsmallenEmbedder
 from .graph_cbow import GraphCBOW
 from .graph_skipgram import GraphSkipGram
 from .spine import SPINE
+from .weighted_spine import WeightedSPINE
 
 __all__ = [
     "GraphCBOW",
     "GraphSkipGram",
     "SPINE",
+    "WeightedSPINE",
     "EnsmallenEmbedder"
 ]

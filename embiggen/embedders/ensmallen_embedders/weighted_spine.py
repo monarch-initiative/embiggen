@@ -6,13 +6,13 @@ from ensmallen import models
 from .ensmallen_embedder import EnsmallenEmbedder
 
 
-class SPINE(EnsmallenEmbedder):
+class WeightedSPINE(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        dtype: Optional[str] = "u8",
+        use_edge_weights_as_probabilities: bool = False,
         verbose: bool = True
     ):
         """Create new abstract Node2Vec method.
@@ -21,13 +21,15 @@ class SPINE(EnsmallenEmbedder):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        dtype: Optional[str] = "u8"
-            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+        use_edge_weights_as_probabilities: bool = False
+            Whether to treat the weights as probabilities.
         verbose: bool = True
             Whether to show loading bars
         """
-        self._dtype = dtype
-        self._SPINE = models.SPINE(embedding_size=embedding_size)
+        self._WeightedSPINE = models.WeightedSPINE(
+            embedding_size=embedding_size,
+            use_edge_weights_as_probabilities=use_edge_weights_as_probabilities
+        )
 
         super().__init__(
             embedding_size=embedding_size,
@@ -35,8 +37,7 @@ class SPINE(EnsmallenEmbedder):
         )
 
     def _fit_transform(self, graph: Graph) -> np.ndarray:
-        return self._SPINE.fit_transform(
+        return self._WeightedSPINE.fit_transform(
             graph,
-            dtype=self._dtype,
             verbose=self._verbose,
         ).T

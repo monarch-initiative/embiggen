@@ -14,8 +14,8 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from userinput import set_validator
 from userinput.utils import closest
 
-from ..embedders.tensorflow_embedders import TensorFlowEmbedder
-from ..sequences import EdgePredictionSequence, EdgeLabelPredictionSequence
+from ...embedders.tensorflow_embedders import TensorFlowEmbedder
+from ...sequences import EdgePredictionSequence, EdgeLabelPredictionSequence
 from .layers import edge_embedding_layer
 
 edge_prediction_supported_tasks = [
@@ -359,15 +359,14 @@ class EdgePredictionModel(TensorFlowEmbedder):
 
     def evaluate(
         self,
-        graph: Graph,
+        positive_graph: Graph,
         negative_graph: Optional[Graph] = None,
         batch_size: int = 2**10,
-        verbose: bool = True
     ) -> Dict[str, float]:
         """Run predict."""
         self._validate_fit_parameters(
             negative_valid_graph=negative_graph,
-            valid_graph=graph
+            valid_graph=positive_graph
         )
         validation_sequence = None
         if self._task_name == "EDGE_PREDICTION":
@@ -376,7 +375,7 @@ class EdgePredictionModel(TensorFlowEmbedder):
                     "The negative graph was not provided."
                 )
             validation_sequence = EdgePredictionEvaluationSequence(
-                positive_graph=graph,
+                positive_graph=positive_graph,
                 negative_graph=negative_graph,
                 batch_size=batch_size,
                 use_edge_metrics=self._use_edge_metrics,
@@ -399,6 +398,6 @@ class EdgePredictionModel(TensorFlowEmbedder):
             self._model.evaluate(
                 validation_sequence,
                 batch_size=batch_size,
-                verbose=verbose,
+                verbose=False,
             )
         ))

@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen import Graph
 from embiggen.embedders.tensorflow_embedders.layers import GraphConvolution
-from ..utils import graph_to_sparse_tensor, validate_verbose
+from ...utils import graph_to_sparse_tensor, validate_verbose
 
 
 class GraphConvolutionalNeuralNetwork:

@@ -2,21 +2,16 @@
 from .edge_transformer import EdgeTransformer
 from .node_transformer import NodeTransformer
 from .graph_transformer import GraphTransformer
-from .link_prediction_transformer import LinkPredictionTransformer
-
-import warnings
-try:
-    from .corpus_transformer import CorpusTransformer
-except ModuleNotFoundError:
-    warnings.warn(
-        "You do not have TensorFlow installed, all tensorflow models "
-        "will not work."
-    )
+from .edge_prediction_transformer import EdgePredictionTransformer
+from .edge_label_prediction_transformer import EdgeLabelPredictionTransformer
+from .node_label_prediction_transformer import NodeLabelPredictionTransformer
 
 __all__ = [
     "EdgeTransformer",
     "NodeTransformer",
     "GraphTransformer",
     "CorpusTransformer",
-    "LinkPredictionTransformer"
+    "EdgePredictionTransformer",
+    "EdgeLabelPredictionTransformer",
+    "NodeLabelPredictionTransformer"
 ]
