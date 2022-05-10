@@ -1,14 +1,14 @@
 """Module providing abstract classes for classification models."""
 import warnings
-from typing import Union, Optional, List, Dict, Any, Tuple
+from typing import Union, Optional, List, Dict, Any, Tuple, Type
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from .abstract_model import AbstractModel
+import time
 from .abstract_embedding_model import AbstractEmbeddingModel
 from tqdm.auto import trange
 import functools
-from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -132,7 +132,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_feature(
         self,
         graph: Graph,
-        node_feature: Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel],
+        node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False
     ) -> List[np.ndarray]:
@@ -142,7 +142,7 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
-        node_feature: Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel],
+        node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
             The node feature to normalize.
         allow_automatic_feature: bool = True
             Whether to allow feature names creation based on the
@@ -181,7 +181,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
-        if issubclass(node_feature, AbstractEmbeddingModel):
+        if issubclass(node_feature, Type[AbstractEmbeddingModel]):
             if (
                 skip_evaluation_biased_feature and
                 node_feature.name().lower() in self._get_evaluation_biased_feature_names_lowercase()
@@ -233,7 +233,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_features(
         self,
         graph: Graph,
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
+        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False
     ) -> List[np.ndarray]:
@@ -243,7 +243,7 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
+        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
             The node features to normalize.
         allow_automatic_feature: bool = True
             Whether to allow feature names creation based on the
@@ -531,7 +531,7 @@ class AbstractClassifierModel(AbstractModel):
         ground_truth: np.ndarray
     ) -> Dict[str, Any]:
         """Return evaluations for the provided predictions.
-        
+
         Parameters
         ----------------
         predictions: np.ndarray
@@ -571,7 +571,7 @@ class AbstractClassifierModel(AbstractModel):
         ground_truth: np.ndarray
     ) -> Dict[str, Any]:
         """Return evaluations for the provided predictions.
-        
+
         Parameters
         ----------------
         prediction_probabilities: np.ndarray
@@ -613,7 +613,7 @@ class AbstractClassifierModel(AbstractModel):
         holdout_number: int,
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
-        
+
         Parameters
         ----------------------
         graph: Graph
@@ -655,7 +655,7 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         evaluation_schema: str,
         holdouts_kwargs: Dict[str, Any],
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
+        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         number_of_holdouts: int = 10,
@@ -673,7 +673,7 @@ class AbstractClassifierModel(AbstractModel):
             The schema for the evaluation to follow.
         holdouts_kwargs: Dict[str, Any]
             Parameters to forward to the desired evaluation schema.
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
+        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
             The node features to use.
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
@@ -786,14 +786,16 @@ class AbstractClassifierModel(AbstractModel):
                 )
 
             # Fit the model using the training graph
+            training_start = time.time()
             classifier.fit(
                 graph=train,
                 node_features=holdout_node_features,
                 edge_features=holdout_edge_features
             )
+            required_training_time = time.time() - training_start
 
             # We add the newly computed performance.
-            performance.extend(self._evaluate(
+            holdout_performance = self._evaluate(
                 graph=graph if subgraph_of_interest is None else subgraph_of_interest,
                 train=train,
                 test=test,
@@ -801,8 +803,20 @@ class AbstractClassifierModel(AbstractModel):
                 edge_features=edge_features,
                 random_state=random_state,
                 **kwargs
-            ))
+            )
+            for hp in holdout_performance:
+                hp["required_training_time"] = required_training_time
+                performance.append(hp)
 
+        # We save the constant values for this model
+        # execution.
         performance = pd.DataFrame(performance)
+        performance["task_name"] = self.task_name()
+        performance["model_name"] = self.name()
+        performance["graph_name"] = graph.get_name()
+        performance["number_of_holdouts"] = number_of_holdouts
+        performance["evaluation_schema"] = evaluation_schema
+        for parameter, value in self.parameters().items():
+            performance[parameter] = value
 
         return performance

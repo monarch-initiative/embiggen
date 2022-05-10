@@ -1171,12 +1171,14 @@ class GraphVisualizer:
                 **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
                 **kwargs
             })
+            figure.patch.set_facecolor("white")
             axes.axis('equal')
         else:
             figure, axes = subplots_3d(**{
                 **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
                 **kwargs
             })
+            figure.patch.set_facecolor("white")
             axes.axis('auto')
         return figure, axes
 
@@ -2328,6 +2330,7 @@ class GraphVisualizer:
         """
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
+            figure.patch.set_facecolor("white")
 
         if edge_metrics is None:
             edge_metrics = np.fromiter(
@@ -4256,6 +4259,7 @@ class GraphVisualizer:
         """
         if axes is None:
             figure, axes = plt.subplots(figsize=(5, 5))
+            figure.patch.set_facecolor("white")
         number_of_buckets = min(
             100,
             self._graph.get_nodes_number() // 10
@@ -4450,12 +4454,13 @@ class GraphVisualizer:
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
-        fig, axes = plt.subplots(
+        figure, axes = plt.subplots(
             nrows=nrows,
             ncols=ncols,
             figsize=(5*ncols, 5*nrows),
             dpi=96
         )
+        figure.patch.set_facecolor("white")
 
         flat_axes = np.array(axes).flatten()
 
@@ -4495,7 +4500,7 @@ class GraphVisualizer:
         ):
             inspect.signature(plot_callback).parameters
             _, _, caption = plot_callback(
-                figure=fig,
+                figure=figure,
                 axes=ax,
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
@@ -4511,7 +4516,7 @@ class GraphVisualizer:
                     1.1,
                     letter,
                     size=18,
-                    color='black',
+                    color="white",
                     weight='bold',
                     horizontalalignment='left',
                     verticalalignment='center',
@@ -4539,19 +4544,19 @@ class GraphVisualizer:
             axis.axis("off")
 
         if show_name_backup:
-            fig.suptitle(
+            figure.suptitle(
                 self._get_complete_title(
                     self._graph_name,
                     show_edge_embedding=True
                 ),
                 fontsize=20
             )
-            fig.tight_layout(rect=[0, 0.0, 1, 0.98])
+            figure.tight_layout(rect=[0, 0.0, 1, 0.98])
         else:
-            fig.tight_layout()
+            figure.tight_layout()
 
         self._show_graph_name = show_name_backup
 
         return self._handle_notebook_display(
-            fig, axes, caption=complete_caption
+            figure, axes, caption=complete_caption
         )

@@ -1,8 +1,9 @@
 """Module providing generic abstract model."""
 from typing import Dict, Any
+from dict_hash import Hashable, sha256
 
 
-class AbstractModel:
+class AbstractModel(Hashable):
     """Class defining properties of a generic abstract model."""
 
     def parameters(self) -> Dict[str, Any]:
@@ -32,3 +33,11 @@ class AbstractModel:
             "The `clone` method must be implemented in "
             "the child classes of the abstract model."
         ))
+
+    def consistent_hash(self)->str:
+        """Returns consistent hash describing the model."""
+        return sha256({
+            **self.parameters(),
+            "name": self.name(),
+            "task_name": self.task_name(),
+        })
