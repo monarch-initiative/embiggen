@@ -803,4 +803,6 @@ class AbstractClassifierModel(AbstractModel):
                 **kwargs
             ))
 
-        return pd.DataFrame(performance)
+        performance = pd.DataFrame(performance)
+
+        return performance

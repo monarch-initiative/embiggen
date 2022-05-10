@@ -1,7 +1,7 @@
 """Submodule providing node-label prediction models based on Sklearn Models."""
 
-from .sklearn_model_node_label_prediction_adapter import SklearnModelNodeLabelPredictionAdapter
+from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 __all__ = [
-    "SklearnModelNodeLabelPredictionAdapter"
+    "SklearnNodeLabelPredictionAdapter"
 ]

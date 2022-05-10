@@ -12,6 +12,13 @@ class AbstractModel:
             "in the child classes of abstract model."
         ))
 
+    def task_name(self) -> str:
+        """Returns the task for which this model is being used."""
+        raise NotImplementedError((
+            "The `task_name` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+        
     def name(self) -> str:
         """Returns name of the model."""
         raise NotImplementedError((

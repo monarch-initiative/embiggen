@@ -1,6 +1,6 @@
 """Submodule providing edge prediction models based on Sklearn Models."""
-from .sklearn_model_edge_prediction_adapter import SklearnModelEdgePredictionAdapter
+from .sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 
 __all__ = [
-    "SklearnModelEdgePredictionAdapter"
+    "SklearnEdgePredictionAdapter"
 ]

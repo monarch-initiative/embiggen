@@ -10,6 +10,10 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
 class AbstractEdgePredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge prediction model."""
 
+    def task_name(self) -> str:
+        """Returns name of the task this model is used for."""
+        return "Edge Prediction"
+
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""
         # Edge prediction is always a binary prediction task.

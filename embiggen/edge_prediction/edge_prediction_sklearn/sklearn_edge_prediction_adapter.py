@@ -1,11 +1,11 @@
 """Module providing adapter class making edge prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Dict, Union, Optional, Tuple
-import pandas as pd
+from typing import Type, List, Optional, Dict, Any
 import numpy as np
 import math
+import copy
 from ensmallen import Graph
-from ...utils import must_be_an_sklearn_classifier_model, evaluate_sklearn_classifier
+from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from ...transformers import EdgePredictionTransformer, GraphTransformer
 from ..edge_prediction_model import AbstractEdgePredictionModel
 
@@ -53,19 +53,36 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
 
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters used for this model."""
+        return {
+            "sample_only_edges_with_heterogeneous_node_types": self._sample_only_edges_with_heterogeneous_node_types,
+            "edge_embedding_method": self._edge_embedding_method,
+            "unbalance_rate": self._unbalance_rate,
+            "random_state": self._random_state
+        }
+
+    def clone(self) -> "Self":
+        """Return copy of self."""
+        return copy.deepcopy(self)
+
+    def name(self) -> str:
+        """Return name of the model."""
+        return self.__class__.__name__
+
     def _trasform_graph_into_edge_embedding(
         self,
-        graph: Union[Graph, List[List[str]], List[List[int]]],
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        graph: Graph,
+        node_features: List[np.ndarray],
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
 
         Parameters
         ------------------
-        graph: Union[Graph, List[List[str]], List[List[int]]],
+        graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
-        node_features: Union[pd.DataFrame, np.ndarray]
+        node_features: List[np.ndarray]
             The node features to be used in the training of the model.
 
         Warns

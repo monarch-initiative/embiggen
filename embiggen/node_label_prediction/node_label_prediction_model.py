@@ -10,6 +10,10 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
 class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract node label prediction model."""
 
+    def task_name(self) -> str:
+        """Returns name of the task this model is used for."""
+        return "Node Label Prediction"
+
     def get_evaluation_biased_feature_names(self) -> List[str]:
         """Returns names of features that are biased in an evaluation setting."""
         # TODO: Extend this list.
