@@ -152,3 +152,4 @@ def graph_to_sparse_tensor(
         ),
         (graph.get_nodes_number(), graph.get_nodes_number()),
     )
+

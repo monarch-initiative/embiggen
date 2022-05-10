@@ -1,10 +1,5 @@
 """Submodule with utils for interface with Sklearn models."""
-import functools
-from typing import Dict, Type
 from sklearn.base import ClassifierMixin
-from userinput.utils import closest
-import numpy as np
-
 
 
 def is_sklearn_classifier_model(candidate_model) -> bool:
