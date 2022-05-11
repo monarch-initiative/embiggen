@@ -25,6 +25,9 @@ class GraphSkipGram(Node2Vec):
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
+        stochastic_downsample_by_degree: Optional[bool] = False,
+        normalize_learning_rate_by_degree: Optional[bool] = False,
+        use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -85,6 +88,12 @@ class GraphSkipGram(Node2Vec):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
+        stochastic_downsample_by_degree: Optional[bool] = False
+            Randomly skip samples with probability proportional to the degree of the central node. By default false.
+        normalize_learning_rate_by_degree: Optional[bool] = False
+            Divide the learning rate by the degree of the central node. By default false.
+        use_zipfian_sampling: Optional[bool] = True
+            Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
         verbose: bool = True
@@ -109,6 +118,13 @@ class GraphSkipGram(Node2Vec):
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
             normalize_by_degree=normalize_by_degree,
+            stochastic_downsample_by_degree=stochastic_downsample_by_degree,
+            normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
+            use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
             verbose=verbose
         )
+
+    def name(self) -> str:
+        """Returns name of the model."""
+        return "SkipGram"

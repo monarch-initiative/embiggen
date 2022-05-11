@@ -1,5 +1,5 @@
-"""Module providing abstract classes for classification and regression models."""
-from typing import Dict, Union
+"""Module providing abstract classes for embedding models."""
+from typing import Dict, Union, Any
 from ensmallen import Graph
 import warnings
 import numpy as np
@@ -9,6 +9,28 @@ from .abstract_model import AbstractModel
 
 class AbstractEmbeddingModel(AbstractModel):
     """Class defining properties of an abstract embedding model."""
+
+    def __init__(self, embedding_size: int):
+        """Create new embedding model.
+
+        Parameters
+        ---------------------
+        embedding_size: int
+            The dimensionality of the embedding.
+        """
+        super().__init__()
+        if not isinstance(embedding_size, int) or embedding_size == 0:
+            raise ValueError(
+                "The embedding size should be a strictly positive integer "
+                f"but {embedding_size} was provided."
+            )
+        self._embedding_size = embedding_size
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters of the embedding model."""
+        return {
+            "embedding_size": self._embedding_size
+        }
 
     def is_topological(self) -> bool:
         """Returns whether this embedding is based on graph topology."""

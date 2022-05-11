@@ -1,12 +1,13 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import Optional
+from typing import Optional, Union, Dict, Any
 from ensmallen import Graph
 import numpy as np
+import pandas as pd
 from ensmallen import models
-from ..embedder import Embedder
+from ...utils import AbstractEmbeddingModel
 
 
-class Node2Vec(Embedder):
+class Node2Vec(AbstractEmbeddingModel):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
@@ -34,8 +35,10 @@ class Node2Vec(Embedder):
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
+        stochastic_downsample_by_degree: Optional[bool] = False,
+        normalize_learning_rate_by_degree: Optional[bool] = False,
+        use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
-        verbose: bool = True
     ):
         """Create new abstract Node2Vec method.
 
@@ -97,10 +100,14 @@ class Node2Vec(Embedder):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
+        stochastic_downsample_by_degree: Optional[bool] = False
+            Randomly skip samples with probability proportional to the degree of the central node. By default false.
+        normalize_learning_rate_by_degree: Optional[bool] = False
+            Divide the learning rate by the degree of the central node. By default false.
+        use_zipfian_sampling: Optional[bool] = True
+            Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
-        verbose: bool = True
-            Whether to show loading bars
         """
         if model_name.lower() not in ("cbow", "skipgram"):
             raise ValueError(
@@ -109,9 +116,28 @@ class Node2Vec(Embedder):
                     "The supported models are `CBOW` and `SkipGram`."
                 ).format(model_name)
             )
+
         self._epochs = epochs
         self._learning_rate = learning_rate
         self._learning_rate_decay = learning_rate_decay
+        self._embedding_size = embedding_size
+        self._window_size = window_size
+        self._clipping_value = clipping_value
+        self._number_of_negative_samples = number_of_negative_samples
+        self._log_sigmoid = log_sigmoid
+        self._siamese = siamese
+        self._walk_length = walk_length
+        self._return_weight = return_weight
+        self._explore_weight = explore_weight
+        self._change_edge_type_weight = change_edge_type_weight
+        self._change_node_type_weight = change_node_type_weight
+        self._max_neighbours = max_neighbours
+        self._random_state = random_state
+        self._iterations = iterations
+        self._normalize_by_degree = normalize_by_degree
+        self._stochastic_downsample_by_degree = stochastic_downsample_by_degree
+        self._normalize_learning_rate_by_degree = normalize_learning_rate_by_degree
+        self._use_zipfian_sampling = use_zipfian_sampling
 
         self._model = Node2Vec.MODELS[model_name.lower()](
             embedding_size=embedding_size,
@@ -128,19 +154,60 @@ class Node2Vec(Embedder):
             max_neighbours=max_neighbours,
             random_state=random_state,
             iterations=iterations,
-            normalize_by_degree=normalize_by_degree
+            normalize_by_degree=normalize_by_degree,
+            stochastic_downsample_by_degree=stochastic_downsample_by_degree,
+            normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
+            use_zipfian_sampling=use_zipfian_sampling,
         )
 
-        super().__init__(
-            embedding_size=embedding_size,
-            verbose=verbose
-        )
+        super().__init__(embedding_size=embedding_size)
 
-    def _fit_transform(self, graph: Graph) -> np.ndarray:
-        return self._model.fit_transform(
-            graph, 
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters of the model."""
+        return {
+            **super().parameters(),
+            **dict(
+                epochs=self._epochs,
+                learning_rate=self._learning_rate,
+                learning_rate_decay=self._learning_rate_decay,
+                embedding_size=self._embedding_size,
+                window_size=self._window_size,
+                clipping_value=self._clipping_value,
+                number_of_negative_samples=self._number_of_negative_samples,
+                log_sigmoid=self._log_sigmoid,
+                siamese=self._siamese,
+                walk_length=self._walk_length,
+                return_weight=self._return_weight,
+                explore_weight=self._explore_weight,
+                change_edge_type_weight=self._change_edge_type_weight,
+                change_node_type_weight=self._change_node_type_weight,
+                max_neighbours=self._max_neighbours,
+                random_state=self._random_state,
+                iterations=self._iterations,
+                normalize_by_degree=self._normalize_by_degree,
+                stochastic_downsample_by_degree=self._stochastic_downsample_by_degree,
+                normalize_learning_rate_by_degree=self._normalize_learning_rate_by_degree,
+                use_zipfian_sampling=self._use_zipfian_sampling
+            )
+        }
+
+    def _fit_transform(
+        self,
+        graph: Graph,
+        return_dataframe: bool = True,
+        verbose: bool = True
+    ) -> Union[np.ndarray, pd.DataFrame]:
+        """Return node embedding."""
+        node_embedding = self._model.fit_transform(
+            graph,
             epochs=self._epochs,
             learning_rate=self._learning_rate,
             learning_rate_decay=self._learning_rate_decay,
-            verbose=self._verbose
+            verbose=verbose
         )
+        if return_dataframe:
+            return pd.DataFrame(
+                node_embedding,
+                index=graph.get_nodes_number()
+            )
+        return node_embedding

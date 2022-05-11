@@ -1,19 +1,21 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import Dict, Any, Union
+from typing import  Dict, Any, Union
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
+from scipy import rand
 from ...utils import AbstractEmbeddingModel
 
 
-class WeightedSPINE(AbstractEmbeddingModel):
-    """Abstract class for Node2Vec algorithms."""
+class TransE(AbstractEmbeddingModel):
+    """Class implementing the TransE algorithm."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        use_edge_weights_as_probabilities: bool = False,
+        renormalize: bool = True,
+        random_state: int = 42
     ):
         """Create new abstract Node2Vec method.
 
@@ -21,12 +23,17 @@ class WeightedSPINE(AbstractEmbeddingModel):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        use_edge_weights_as_probabilities: bool = False
-            Whether to treat the weights as probabilities.
+        renormalize: bool = True
+            Whether to renormalize at each loop, by default true.
+        dtype: int = "u8"
+            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
         """
-        self._model = models.WeightedSPINE(
+        self._renormalize = renormalize
+        self._random_state = random_state
+        self._model = models.TransE(
             embedding_size=embedding_size,
-            use_edge_weights_as_probabilities=use_edge_weights_as_probabilities
+            renormalize=renormalize,
+            random_state=random_state
         )
 
         super().__init__(
@@ -38,7 +45,8 @@ class WeightedSPINE(AbstractEmbeddingModel):
         return {
             **super().parameters(),
             **dict(
-                dtype=self._dtype
+                renormalize = self._renormalize,
+                random_state = self._random_state,
             )
         }
 
@@ -51,7 +59,6 @@ class WeightedSPINE(AbstractEmbeddingModel):
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,
-            dtype=self._dtype,
             verbose=verbose,
         ).T
         if return_dataframe:
@@ -61,6 +68,7 @@ class WeightedSPINE(AbstractEmbeddingModel):
             )
         return node_embedding
 
+
     def name(self) -> str:
         """Returns name of the model."""
-        return "WeightedSPINE"
+        return "TransE"
