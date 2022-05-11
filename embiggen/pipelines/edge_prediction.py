@@ -62,7 +62,6 @@ def get_negative_graphs(
             math.ceil(graph.get_edges_number()*unbalance_rate)),
         random_state=random_state,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-        verbose=False
     )
     return negative_graph.random_holdout(
         train_size=train_size,
