@@ -23,8 +23,6 @@ class CBOW(TensorFlowEmbedder):
         self,
         window_size: int = 4,
         number_of_negative_samples: int = 5,
-        use_gradient_centralization: bool = True,
-        siamese: bool = False,
         **kwargs: Dict
     ):
         """Create new sequence TensorFlowEmbedder model.
@@ -37,26 +35,11 @@ class CBOW(TensorFlowEmbedder):
         number_of_negative_samples: int = 5
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        use_gradient_centralization: bool = True
-            Whether to wrap the provided optimizer into a normalized
-            one that centralizes the gradient.
-            It is automatically enabled if the current version of
-            TensorFlow supports gradient transformers.
-            More detail here: https://arxiv.org/pdf/2004.01461.pdf
-        siamese: bool = False
-            Whether to use the siamese modality and share the embedding
-            weights between the approximated output loss and the embedding layer.
         **kwargs: Dict
             Additional kwargs to pass to parent constructor.
         """
-        # TODO! Figure out a way to test for Zifian distribution in the
-        # data used for the word2vec sampling! The values in the vocabulary
-        # should have a decreasing node degree order!
-        self._window_size = validate_window_size(window_size)
         self._number_of_negative_samples = number_of_negative_samples
-        self._siamese = siamese
         super().__init__(
-            use_gradient_centralization=use_gradient_centralization,
             **kwargs
         )
 

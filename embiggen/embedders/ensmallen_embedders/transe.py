@@ -55,18 +55,27 @@ class TransE(AbstractEmbeddingModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
+        node_embedding, edge_type_embedding = self._model.fit_transform(
             graph,
             verbose=verbose,
         ).T
         if return_dataframe:
-            return pd.DataFrame(
-                node_embedding,
-                index=graph.get_nodes_number()
-            )
-        return node_embedding
+            return {
+                "node_embedding": pd.DataFrame(
+                    node_embedding,
+                    index=graph.get_nodes_number()
+                ),
+                "edge_type_embedding": pd.DataFrame(
+                    edge_type_embedding,
+                    index=graph.get_unique_edge_type_names()
+                ),
+            }
+        return {
+            "node_embedding": node_embedding,
+            "edge_type_embedding": edge_type_embedding,
+        }
 
 
     def name(self) -> str:

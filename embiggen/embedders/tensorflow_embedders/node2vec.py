@@ -18,10 +18,8 @@ class Node2Vec:
     def __init__(
         self,
         graph: Graph,
-        word2vec_model: Union[CBOW, SkipGram],
         embedding_size: int = 100,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        optimizer: Union[str, Optimizer] = None,
+        optimizer: str = "sgd",
         number_of_negative_samples: int = 5,
         walk_length: int = 128,
         batch_size: int = 256,
@@ -232,69 +230,3 @@ class Node2Vec:
     def summary(self):
         """Print model summary."""
         self._model.summary()
-
-    @property
-    def embedding(self) -> np.ndarray:
-        """Return model embeddings."""
-        return self._model.embedding
-
-    @property
-    def trainable(self) -> bool:
-        """Return whether the embedding layer can be trained.
-
-        Raises
-        -------------------
-        NotImplementedError,
-            If the current embedding model does not have an embedding layer.
-        """
-        return self._model.trainable
-
-    @trainable.setter
-    def trainable(self, trainable: bool):
-        """Set whether the embedding layer can be trained or not.
-
-        Parameters
-        -------------------
-        trainable: bool,
-            Whether the embedding layer can be trained or not.
-        """
-        self._model.trainable = trainable
-
-    def get_embedding_dataframe(self) -> pd.DataFrame:
-        """Return terms embedding using given index names."""
-        return self._model.get_embedding_dataframe(self._graph.get_node_names())
-
-    def save_embedding(self, path: str):
-        """Save terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        path: str,
-            Save embedding as csv to given path.
-        """
-        self._model.save_embedding(path, self._graph.get_node_names())
-
-    @property
-    def name(self) -> str:
-        """Return model name."""
-        return self._model.name
-
-    def save_weights(self, path: str):
-        """Save model weights to given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path where to save model weights.
-        """
-        self._model.save_weights(path)
-
-    def load_weights(self, path: str):
-        """Load model weights from given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path from where to load model weights.
-        """
-        self._model.load_weights(path)

@@ -247,11 +247,18 @@ class GloVe(TensorFlowEmbedder):
         -----------------------
         Dataframe with training history.
         """
-        sequence = GloveSequence(
-            *X, frequencies,
-            batch_size=batch_size,
-            directed=self._directed,
-            random_state=self._random_state
+        sources, destinations, frequencies = self._graph.cooccurence_matrix(
+            walk_length=self._walk_length,
+            window_size=self._window_size,
+            iterations=self._iterations,
+            return_weight=self._return_weight,
+            explore_weight=self._explore_weight,
+            change_edge_type_weight=self._change_edge_type_weight,
+            change_node_type_weight=self._change_node_type_weight,
+            dense_node_mapping=self._dense_node_mapping,
+            max_neighbours=self._max_neighbours,
+            random_state=self._random_state,
+            verbose=verbose > 0
         )
         return super().fit(
             sequence.into_dataset().repeat(),
