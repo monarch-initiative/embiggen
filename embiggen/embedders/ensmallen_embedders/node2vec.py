@@ -22,8 +22,8 @@ class Node2Vec(AbstractEmbeddingModel):
         epochs: int = 10,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 5,
-        log_sigmoid: Optional[bool] = True,
-        siamese: Optional[bool] = False,
+        log_sigmoid: bool = True,
+        siamese: bool = False,
         walk_length: int = 128,
         iterations: int = 1,
         window_size: int = 4,
@@ -31,13 +31,13 @@ class Node2Vec(AbstractEmbeddingModel):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: Optional[int] = 100,
+        max_neighbours: int= 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
-        stochastic_downsample_by_degree: Optional[bool] = False,
-        normalize_learning_rate_by_degree: Optional[bool] = False,
-        use_zipfian_sampling: Optional[bool] = True,
+        stochastic_downsample_by_degree: bool = False,
+        normalize_learning_rate_by_degree: bool = False,
+        use_zipfian_sampling: bool = True,
         random_state: int = 42,
     ):
         """Create new abstract Node2Vec method.
@@ -51,9 +51,6 @@ class Node2Vec(AbstractEmbeddingModel):
             Dimension of the embedding.
         epochs: int = 10
             Number of epochs to train the model for.
-        window_size: int = 4
-            Window size for the local context.
-            On the borders the window size is trimmed.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
@@ -89,7 +86,7 @@ class Node2Vec(AbstractEmbeddingModel):
             Weight on the probability of visiting a neighbor edge of a
             different type than the previous edge. This only applies to
             multigraphs, otherwise it has no impact.
-        max_neighbours: Optional[int] = 100
+        max_neighbours: int = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
@@ -100,11 +97,11 @@ class Node2Vec(AbstractEmbeddingModel):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
-        stochastic_downsample_by_degree: Optional[bool] = False
+        stochastic_downsample_by_degree: bool = False
             Randomly skip samples with probability proportional to the degree of the central node. By default false.
-        normalize_learning_rate_by_degree: Optional[bool] = False
+        normalize_learning_rate_by_degree: bool = False
             Divide the learning rate by the degree of the central node. By default false.
-        use_zipfian_sampling: Optional[bool] = True
+        use_zipfian_sampling: bool = True
             Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.

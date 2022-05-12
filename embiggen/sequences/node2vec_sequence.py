@@ -5,7 +5,7 @@ import numpy as np  # type: ignore
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from .abstract_sequence import AbstractSequence
 import tensorflow as tf
-from ..utils import tensorflow_version_is_higher_or_equal_than
+from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
 class Node2VecSequence(AbstractSequence):
@@ -23,9 +23,7 @@ class Node2VecSequence(AbstractSequence):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        elapsed_epochs: int = 0,
         random_state: int = 42,
-        dense_node_mapping: Optional[Dict[int, int]] = None,
     ):
         """Create new Node2Vec Sequence object.
 
@@ -71,18 +69,8 @@ class Node2VecSequence(AbstractSequence):
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with extremely high degrees.
             THIS IS AN EXPERIMENTAL FEATURE!
-        elapsed_epochs: int = 0,
-            Number of elapsed epochs to init state of generator.
         random_state: int = 42,
             The random state to reproduce the training sequence.
-        dense_node_mapping: Optional[Dict[int, int]] = None,
-            Mapping to use for converting sparse walk space into a dense space.
-            This object can be created using the method (available from the
-            graph object created using Graph)
-            called `get_dense_node_mapping` that returns a mapping from
-            the non trap nodes (those from where a walk could start) and
-            maps these nodes into a dense range of values.
-            THIS IS AN EXPERIMENTAL FEATURE!
         """
         self._graph = graph
         self._walk_length = walk_length
@@ -92,14 +80,12 @@ class Node2VecSequence(AbstractSequence):
         self._max_neighbours = max_neighbours
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
-        self._dense_node_mapping = dense_node_mapping
         self._current_index = 0
 
         super().__init__(
             batch_size=batch_size,
             sample_number=self._graph.get_unique_source_nodes_number(),
             window_size=window_size,
-            elapsed_epochs=elapsed_epochs,
             random_state=random_state
         )
 

@@ -15,7 +15,6 @@ class SampledSoftmax(Layer):
         embedding_size: int,
         number_of_negative_samples: int,
         remove_accidental_hits: bool = False,
-        embedding: Optional[Layer] = None,
         **kwargs: Dict
     ):
         """Create new SampledSoftmax layer.
@@ -44,7 +43,6 @@ class SampledSoftmax(Layer):
         self._embedding_size = embedding_size
         self._number_of_negative_samples = number_of_negative_samples
         self._remove_accidental_hits = remove_accidental_hits
-        self._embedding = embedding
         self._weights = None
         self._biases = None
         super().__init__(**kwargs)
@@ -57,7 +55,7 @@ class SampledSoftmax(Layer):
         input_shape: Tuple[int, int],
             Shape of the output of the previous layer.
         """
-        self._weights = self._embedding.weights[0] if self._embedding is not None else self.add_weight(
+        self._weights = self.add_weight(
             name="approx_softmax_weights",
             shape=(self._vocabulary_size, self._embedding_size),
             initializer="glorot_normal",

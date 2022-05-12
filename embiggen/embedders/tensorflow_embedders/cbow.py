@@ -3,102 +3,58 @@ from typing import Dict, Union
 from tensorflow.keras.layers import (   # pylint: disable=import-error,no-name-in-module
     GlobalAveragePooling1D, Input, Embedding
 )
+from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
-from .tensorflow_embedder import TensorFlowEmbedder
+from .node2vec import Node2Vec
 from .layers import SampledSoftmax
-from ...utils import validate_window_size
 
 
-class CBOW(TensorFlowEmbedder):
+class CBOW(Node2Vec):
     """CBOW model for sequence embedding.
 
-    The CBOW model for graoh embedding receives a list of contexts and tries
+    The CBOW model for graph embedding receives a list of contexts and tries
     to predict the central word. The model makes use of an NCE loss layer
     during the training process to generate the negatives.
     """
 
-    def __init__(
-        self,
-        window_size: int = 4,
-        number_of_negative_samples: int = 5,
-        **kwargs: Dict
-    ):
-        """Create new sequence TensorFlowEmbedder model.
+    def name(self) -> str:
+        """Returns name of the model."""
+        return "CBOW"
 
-        Parameters
-        -------------------------------------------
-        window_size: int = 4
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        number_of_negative_samples: int = 5
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
-        **kwargs: Dict
-            Additional kwargs to pass to parent constructor.
-        """
-        self._number_of_negative_samples = number_of_negative_samples
-        super().__init__(
-            **kwargs
-        )
-
-    def _build_model(self) -> Model:
+    def _build_model(self, graph: Graph) -> Model:
         """Return CBOW model."""
         # Creating the inputs layers
 
         # Create first the input with the central terms
-        central_terms_input = Input(
-            (1, ),
-            dtype=tf.int32,
-            name="CentralTermsInput"
-        )
+        central_terms = Input((1, ), dtype=tf.int32)
 
         # Then we create the input of the contextual terms
-        contextual_terms_input = Input(
-            (self._window_size*2, ),
-            dtype=tf.int32,
-            name="ContextualTermsInput"
-        )
+        contextual_terms = Input((self._window_size*2, ), dtype=tf.int32)
 
-        # Creating the embedding layer for the contexts
-        contextual_terms_embedding_layer = Embedding(
-            input_dim=self._vocabulary_size,
+        # Getting the average context embedding
+        average_context_embedding = GlobalAveragePooling1D()(Embedding(
+            input_dim=graph.get_nodes_number(),
             output_dim=self._embedding_size,
             input_length=self._window_size*2,
-            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME,
-        )
-
-        # Query the embedding to get the embedding vector
-        # of the contextual terms provided as input.
-        contextual_terms_embedding = contextual_terms_embedding_layer(
-            contextual_terms_input)
-
-        # Compute the average of the context embedding
-        contextual_embedding = GlobalAveragePooling1D()(
-            contextual_terms_embedding
-        )
+            name="node_embedding",
+        )(contextual_terms))
 
         # Adding layer that also executes the loss function
         sampled_softmax = SampledSoftmax(
-            vocabulary_size=self._vocabulary_size,
+            vocabulary_size=graph.get_nodes_number(),
             embedding_size=self._embedding_size,
             number_of_negative_samples=self._number_of_negative_samples,
-            embedding=contextual_terms_embedding_layer if self._siamese else None
-        )((contextual_embedding, central_terms_input))
+        )((average_context_embedding, central_terms))
 
         # Creating the actual model
         model = Model(
-            inputs=[contextual_terms_input, central_terms_input],
+            inputs=[contextual_terms, central_terms],
             outputs=sampled_softmax,
-            name="CBOW"
+            name=self.name()
         )
-        return model
 
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        # No loss function is needed because it is already executed in
-        # the Sampled Softmax loss layer.
-        self._model.compile(
-            optimizer=self._optimizer
-        )
+        model.compile(optimizer=self._optimizer)
+
+        return model

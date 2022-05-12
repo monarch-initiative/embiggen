@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from ..utils import tensorflow_version_is_higher_or_equal_than
+from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 from .edge_prediction_sequence import EdgePredictionSequence
 
 

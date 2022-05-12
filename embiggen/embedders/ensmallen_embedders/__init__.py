@@ -2,15 +2,16 @@
 
 These models are NOT dependant on TensorFlow and execute in CPU, not GPU.
 """
-
-from .graph_cbow import GraphCBOW
-from .graph_skipgram import GraphSkipGram
+from .cbow import CBOW
+from .skipgram import SkipGram
 from .spine import SPINE
 from .weighted_spine import WeightedSPINE
+from .transe import TransE
 
 __all__ = [
-    "GraphCBOW",
-    "GraphSkipGram",
+    "CBOW",
+    "SkipGram",
     "SPINE",
     "WeightedSPINE",
+    "TransE"
 ]

@@ -1,43 +1,19 @@
 """Submodule providing TensorFlow and Ensmallen-based embedders."""
+from typing import List
+from .ensmallen_embedders import *
 try:
-    from . import tensorflow_embedders
-    from . import ensmallen_embedders
-
-    SUPPORTED_NODE_EMBEDDING_METHODS = {
-        "cbow": {
-            "tensorflow": tensorflow_embedders.GraphCBOW,
-            "cpu": ensmallen_embedders.GraphCBOW,
-        },
-        "glove": tensorflow_embedders.GraphGloVe,
-        "skipgram": {
-            "tensorflow": tensorflow_embedders.GraphSkipGram,
-            "cpu": ensmallen_embedders.GraphSkipGram,
-        },
-        "siamese": tensorflow_embedders.Siamese,
-        "transe": tensorflow_embedders.TransE,
-        "simple": tensorflow_embedders.SimplE,
-        "transh": tensorflow_embedders.TransH,
-        "transr": tensorflow_embedders.TransR,
-        "spine": ensmallen_embedders.SPINE,
-        "weightedspine": ensmallen_embedders.WeightedSPINE,
-    }
-
-    __all__ = [
-        "tensorflow_embedders",
-        "ensmallen_embedders",
-        "SUPPORTED_NODE_EMBEDDING_METHODS"
-    ]
+    from tensorflow_embedders import *
 except ModuleNotFoundError as e:
-    from .ensmallen_embedders import *
+    pass
 
-    SUPPORTED_NODE_EMBEDDING_METHODS = {
-        "cbow": GraphCBOW,
-        "skipgram": GraphSkipGram,
-        "spine": SPINE,
-        "weightedspine": WeightedSPINE
-    }
 
-    __all__ = [
-        "ensmallen_embedders",
-        "SUPPORTED_NODE_EMBEDDING_METHODS",
-    ]
+def get_available_libraries() -> List[str]:
+    """Return names of the available embedding libraries."""
+    available_libraries = ["Ensmallen"]
+    try:
+        import tensorflow
+        available_libraries.append("TensorFlow")
+    except ModuleNotFoundError as e:
+        pass
+
+    return available_libraries

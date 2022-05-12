@@ -20,7 +20,11 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
 
     def __init__(
         self,
-        embedding_size: Optional[int] = None,
+        embedding_size: int,
+        early_stopping_min_delta: float,
+        early_stopping_patience: int,
+        learning_rate_plateau_min_delta: float,
+        learning_rate_plateau_patience: int,
         epochs: int = 10,
         optimizer: str = "sgd",
         use_mirrored_strategy: bool = False
@@ -31,6 +35,18 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         ----------------------------------
         embedding_size: int = None
             Dimension of the embedding.
+        early_stopping_min_delta: float
+            The minimum variation in the provided patience time
+            of the loss to not stop the training.
+        early_stopping_patience: int
+            The amount of epochs to wait for better training
+            performance.
+        learning_rate_plateau_min_delta: float
+            The minimum variation in the provided patience time
+            of the loss to not reduce the learning rate.
+        learning_rate_plateau_patience: int
+            The amount of epochs to wait for better training
+            performance without decreasing the learning rate.
         epochs: int = 10
             Number of epochs to train.
         optimizer: str = "sgd"
@@ -46,16 +62,34 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             )
         self._epochs = epochs
         self._optimizer = optimizer
+        self._early_stopping_min_delta = early_stopping_min_delta
+        self._early_stopping_patience = early_stopping_patience
+        self._learning_rate_plateau_min_delta = learning_rate_plateau_min_delta
+        self._learning_rate_plateau_patience = learning_rate_plateau_patience
         super().__init__(embedding_size=embedding_size)
 
-    def _build_model(self) -> Model:
-        """Build new model for embedding."""
+    def _build_model(self, graph: Graph) -> Model:
+        """Build new model for embedding.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        """
         raise NotImplementedError(
             "The method _build_model must be implemented in the child classes."
         )
 
-    def _build_input(self, graph: Graph) -> Tuple[Any]:
-        """Returns values to be fed as input into the model."""
+    def _build_input(self, graph: Graph, verbose: bool) -> Tuple[Any]:
+        """Returns values to be fed as input into the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        verbose: bool
+            Whether to show loading bars while building input.
+        """
         raise NotImplementedError(
             "The method _build_input must be implemented in the child classes."
         )
@@ -66,7 +100,17 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         model: Model,
         return_dataframe: bool
     ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
-        """Returns embedding from the model."""
+        """Returns embedding from the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph that was embedded.
+        model: Model
+            The Keras model used to embed the graph.
+        return_dataframe: bool
+            Whether to return a dataframe of a numpy array.
+        """
         raise NotImplementedError(
             "The method _build_input must be implemented in the child classes."
         )
@@ -80,7 +124,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
 
         Parameters
         -----------------------
-        layer_name: str,
+        layer_name: str
             Name of the layer to query for.
         """
         for layer in self._model.layers:
@@ -106,7 +150,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             traditional_verbose = True
 
         # Build the model
-        model = self._build_model()
+        model = self._build_model(graph)
 
         # Get the model input
         training_input = self._build_input(graph)
@@ -118,21 +162,20 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             verbose=traditional_verbose and verbose > 0,
             callbacks=[
                 EarlyStopping(
-                    monitor=early_stopping_monitor,
-                    min_delta=early_stopping_min_delta,
-                    patience=early_stopping_patience,
-                    mode=early_stopping_mode,
+                    monitor="loss",
+                    min_delta=self._early_stopping_min_delta,
+                    patience=self._early_stopping_patience,
+                    mode="min",
                 ),
                 ReduceLROnPlateau(
-                    monitor=reduce_lr_monitor,
-                    min_delta=reduce_lr_min_delta,
-                    patience=reduce_lr_patience,
-                    factor=reduce_lr_factor,
-                    mode=reduce_lr_mode,
+                    monitor="loss",
+                    min_delta=self._learning_rate_plateau_min_delta,
+                    patience=self._learning_rate_plateau_patience,
+                    factor=0.5,
+                    mode="min",
                 ),
                 *((TqdmCallback(verbose=verbose-1),)
                   if not traditional_verbose and verbose > 0 else ()),
-                *callbacks
             ],
         )
 

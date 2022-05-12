@@ -1,8 +1,9 @@
 """GloVe model for graph and words embedding."""
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Any
 
 import numpy as np
 import pandas as pd
+from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras import backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Add  # pylint: disable=import-error,no-name-in-module
@@ -11,80 +12,149 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from tensorflow.keras.optimizers import \
     Optimizer, Nadam  # pylint: disable=import-error,no-name-in-module
 
-from ...sequences import GloveSequence
-from .tensorflow_embedder import TensorFlowEmbedder
+from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
 
 
-class GloVe(TensorFlowEmbedder):
+class GloVe(AbstractRandomWalkBasedEmbedderModel):
     """GloVe model for graph and words embedding.
 
     The GloVe model for graph embedding receives two words and is asked to
     predict its cooccurrence probability.
     """
 
+    SOURCE_NODES_EMBEDDING = "SOURCE_NODES_EMBEDDING"
+    DESTINATION_NODES_EMBEDDING = "DESTINATION_NODES_EMBEDDING"
+
     def __init__(
         self,
-        vocabulary_size: int,
-        embedding_size: int,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        optimizer: Union[str, Optimizer] = None,
+        embedding_size: int = 100,
         alpha: float = 0.75,
-        random_state: int = 42,
-        directed: bool = False,
         use_bias: bool = True,
-        use_gradient_centralization: bool = True,
         siamese: bool = False,
+        epochs: int = 10,
+        early_stopping_min_delta: float = 0.001,
+        early_stopping_patience: int = 5,
+        learning_rate_plateau_min_delta: float = 0.001,
+        learning_rate_plateau_patience: int = 3,
+        window_size: int = 4,
+        walk_length: int = 128,
+        iterations: int = 1,
+        return_weight: float = 1.0,
+        explore_weight: float = 1.0,
+        change_node_type_weight: float = 1.0,
+        change_edge_type_weight: float = 1.0,
+        max_neighbours: int = 100,
+        normalize_by_degree: bool = False,
+        random_state: int = 42,
+        optimizer: str = "sgd",
+        use_mirrored_strategy: bool = False
     ):
         """Create new GloVe-based TensorFlowEmbedder object.
 
         Parameters
         -------------------------------
-        vocabulary_size: int,
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-        embedding_size: int,
+        embedding_size: int = 100
             Dimension of the embedding.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-            The seed embedding to be used.
-            Note that it is not possible to provide at once both
-            the embedding and either the vocabulary size or the embedding size.
-        optimizer: Union[str, Optimizer] = "nadam",
-            The optimizer to be used during the training of the model.
-            By default, if None is provided, Nadam with learning rate
-            set at 0.01 is used.
-        alpha: float = 0.75,
+        alpha: float = 0.75
             Alpha to use for the function.
-        random_state: int = 42,
-            The random state to reproduce the training sequence.
-        directed: bool = False,
-            Whether to treat the data as directed or not.
         use_bias: bool = True
             Whether to use the bias in the GloVe model.
             Consider that these weights are excluded from
             the model embedding.
-        use_gradient_centralization: bool = True,
-            Whether to wrap the provided optimizer into a normalized
-            one that centralizes the gradient.
-            It is automatically enabled if the current version of
-            TensorFlow supports gradient transformers.
-            More detail here: https://arxiv.org/pdf/2004.01461.pdf
         siamese: bool = False
             Whether to use the siamese modality and share the embedding
             weights between the source and destination nodes.
+        epochs: int = 10
+            Number of epochs to train the model for.
+        early_stopping_min_delta: float
+            The minimum variation in the provided patience time
+            of the loss to not stop the training.
+        early_stopping_patience: int
+            The amount of epochs to wait for better training
+            performance.
+        learning_rate_plateau_min_delta: float
+            The minimum variation in the provided patience time
+            of the loss to not reduce the learning rate.
+        learning_rate_plateau_patience: int
+            The amount of epochs to wait for better training
+            performance without decreasing the learning rate.
+        window_size: int = 4
+            Window size for the local context.
+            On the borders the window size is trimmed.
+        walk_length: int = 128
+            Maximal length of the walks.
+        iterations: int = 1
+            Number of iterations of the single walks.
+        return_weight: float = 1.0
+            Weight on the probability of returning to the same node the walk just came from
+            Having this higher tends the walks to be
+            more like a Breadth-First Search.
+            Having this very high  (> 2) makes search very local.
+            Equal to the inverse of p in the Node2Vec paper.
+        explore_weight: float = 1.0
+            Weight on the probability of visiting a neighbor node
+            to the one we're coming from in the random walk
+            Having this higher tends the walks to be
+            more like a Depth-First Search.
+            Having this very high makes search more outward.
+            Having this very low makes search very local.
+            Equal to the inverse of q in the Node2Vec paper.
+        change_node_type_weight: float = 1.0
+            Weight on the probability of visiting a neighbor node of a
+            different type than the previous node. This only applies to
+            colored graphs, otherwise it has no impact.
+        change_edge_type_weight: float = 1.0
+            Weight on the probability of visiting a neighbor edge of a
+            different type than the previous edge. This only applies to
+            multigraphs, otherwise it has no impact.
+        max_neighbours: int = 100
+            Number of maximum neighbours to consider when using approximated walks.
+            By default, None, we execute exact random walks.
+            This is mainly useful for graphs containing nodes with high degrees.
+        normalize_by_degree: bool = False
+            Whether to normalize the random walk by the node degree
+            of the destination node degrees.
+        random_state: int = 42
+            The random state to reproduce the training sequence.
+        optimizer: str = "sgd"
+            Optimizer to use during the training.
+        use_mirrored_strategy: bool = False
+            Whether to use mirrored strategy.
         """
         self._alpha = alpha
-        self._random_state = random_state
-        self._directed = directed
         self._siamese = siamese
         self._use_bias = use_bias
+
         super().__init__(
-            vocabulary_size=vocabulary_size,
+            window_size=window_size,
+            walk_length=walk_length,
+            iterations=iterations,
+            return_weight=return_weight,
+            explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight,
+            max_neighbours=max_neighbours,
+            normalize_by_degree=normalize_by_degree,
+            random_state=random_state,
             embedding_size=embedding_size,
-            embedding=embedding,
-            optimizer=Nadam(learning_rate=0.1) if optimizer is None else optimizer,
-            use_gradient_centralization=use_gradient_centralization
+            early_stopping_min_delta=early_stopping_min_delta,
+            early_stopping_patience=early_stopping_patience,
+            learning_rate_plateau_min_delta=learning_rate_plateau_min_delta,
+            learning_rate_plateau_patience=learning_rate_plateau_patience,
+            epochs=epochs,
+            optimizer=optimizer,
+            use_mirrored_strategy=use_mirrored_strategy,
         )
+
+    def parameters(self) -> Dict[str, Any]:
+        return {
+            **super().parameters(),
+            **dict(
+                alpha=self._alpha,
+                siamese=self._siamese,
+                use_bias=self._use_bias
+            )
+        }
 
     def _glove_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
         """Compute the glove loss function.
@@ -106,148 +176,84 @@ class GloVe(TensorFlowEmbedder):
             axis=-1
         )
 
-    def _build_model(self):
-        """Create new Glove model."""
-        # Creating the input layers
-        left_input_layer = Input(
-            (1,),
-            dtype=tf.int32,
-            name="left_input_layer"
-        )
-        right_input_layer = Input(
-            (1,),
-            dtype=tf.int32,
-            name="right_input_layer"
-        )
+    def name(self) -> str:
+        """Returns name of the model."""
+        return "GloVe"
 
-        trainable_left_embedding_layer = Embedding(
-            self._vocabulary_size,
-            self._embedding_size,
+    def _build_model(self, graph: Graph) -> Model:
+        """Create new Glove model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        """
+        # Creating the input layers
+        sources = Input((1,), dtype=tf.int32)
+        destinations = Input((1,), dtype=tf.int32)
+
+        sources_embedding_layer = Embedding(
+            input_dim=graph.get_nodes_number(),
+            output_dim=self._embedding_size,
             input_length=1,
-            weights=None if self._embedding is None else [
-                self._embedding
-            ],
-            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME
+            name=self.SOURCE_NODES_EMBEDDING
         )
-        trainable_left_embedding = trainable_left_embedding_layer(left_input_layer)
+        sources_embedding = sources_embedding_layer(sources)
 
         if self._siamese:
-            trainable_right_embedding = trainable_left_embedding_layer(right_input_layer)
+            destinations_embedding = sources_embedding_layer(destinations)
         else:
-            trainable_right_embedding = Embedding(
-                self._vocabulary_size,
-                self._embedding_size,
+            destinations_embedding = Embedding(
+                input_dim=graph.get_nodes_number(),
+                output_dim=self._embedding_size,
                 input_length=1,
-            )(right_input_layer)
+                name=self.DESTINATION_NODES_EMBEDDING
+            )(destinations)
 
         # Creating the dot product of the embedding layers
-        dot_product_layer = Dot(axes=2)([
-            trainable_left_embedding,
-            trainable_right_embedding
+        prediction = Dot(axes=2)([
+            sources_embedding,
+            destinations_embedding
         ])
 
         # Creating the biases layer
-        biases = [
-            Embedding(self._vocabulary_size, 1, input_length=1)(input_layer)
-            for input_layer in (left_input_layer, right_input_layer)
-            if self._use_bias
-        ]
-
-        # Concatenating with an add the three layers
-        prediction = Flatten()(Add()([dot_product_layer, *biases]))
+        if self._use_bias:
+            biases = [
+                Embedding(graph.get_nodes_number(), 1,
+                          input_length=1)(input_layer)
+                for input_layer in (sources, destinations)
+            ]
+            prediction = Add()([prediction, *biases])
 
         # Creating the model
-        glove = Model(
-            inputs=[
-                left_input_layer,
-                right_input_layer
-            ],
+        model = Model(
+            inputs=[sources, destinations],
             outputs=prediction,
-            name="GloVe"
+            name=self.name()
         )
 
-        return glove
-
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        self._model.compile(
+        model.compile(
             loss=self._glove_loss,
             optimizer=self._optimizer
         )
 
-    def fit(
+        return model
+
+    def _build_input(
         self,
-        X: Tuple[np.ndarray, np.ndarray],
-        frequencies: np.ndarray,
-        *args: List,
-        epochs: int = 1000,
-        batch_size: int = 2**20,
-        early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.001,
-        early_stopping_patience: int = 10,
-        early_stopping_mode: str = "min",
-        reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.01,
-        reduce_lr_patience: int = 10,
-        reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
-        verbose: int = 1,
-        **kwargs: Dict
-    ) -> pd.DataFrame:
-        """Return pandas dataframe with training history.
+        graph: Graph,
+        verbose: bool
+    ) -> Tuple[np.ndarray]:
+        """Returns values to be fed as input into the model.
 
         Parameters
-        -----------------------
-        X: Tuple[np.ndarray, np.ndarray],
-            Tuple with source and destinations.
-        frequencies: np.ndarray,
-            The frequencies to predict.
-        *args: List,
-            Other arguments to provide to the model.
-        epochs: int = 1000,
-            Epochs to train the model for.
-        batch_size: int = 2**20,
-            The batch size.
-            Tipically batch sizes for the GloVe model can be immense.
-        early_stopping_monitor: str = "loss",
-            Metric to monitor for early stopping.
-        early_stopping_min_delta: float = 0.001,
-            Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 10,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which trigger early stopping.
-        early_stopping_mode: str = "min",
-            Direction of the variation of the monitored metric for early stopping.
-        reduce_lr_monitor: str = "loss",
-            Metric to monitor for reducing learning rate.
-        reduce_lr_min_delta: float = 0.01,
-            Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 10,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which reducing learning rate.
-        reduce_lr_mode: str = "min",
-            Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.9,
-            Factor for reduction of learning rate.
-        verbose: int = 1,
-            Wethever to show the loading bar.
-            Specifically, the options are:
-            * 0 or False: No loading bar.
-            * 1 or True: Showing only the loading bar for the epochs.
-            * 2: Showing loading bar for both epochs and batches.
-        **kwargs: Dict,
-            Additional kwargs to pass to the Keras fit call.
-
-        Raises
-        -----------------------
-        ValueError,
-            If given verbose value is not within the available set (-1, 0, 1).
-
-        Returns
-        -----------------------
-        Dataframe with training history.
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        verbose: bool
+            Whether to show loading bars.
         """
-        sources, destinations, frequencies = self._graph.cooccurence_matrix(
+        sources, destinations, frequencies = graph.cooccurence_matrix(
             walk_length=self._walk_length,
             window_size=self._window_size,
             iterations=self._iterations,
@@ -255,25 +261,13 @@ class GloVe(TensorFlowEmbedder):
             explore_weight=self._explore_weight,
             change_edge_type_weight=self._change_edge_type_weight,
             change_node_type_weight=self._change_node_type_weight,
-            dense_node_mapping=self._dense_node_mapping,
             max_neighbours=self._max_neighbours,
             random_state=self._random_state,
-            verbose=verbose > 0
+            normalize_by_degree=self._normalize_by_degree,
+            verbose=verbose
         )
-        return super().fit(
-            sequence.into_dataset().repeat(),
-            *args,
-            epochs=epochs,
-            steps_per_epoch=sequence.steps_per_epoch,
-            early_stopping_monitor=early_stopping_monitor,
-            early_stopping_min_delta=early_stopping_min_delta,
-            early_stopping_patience=early_stopping_patience,
-            early_stopping_mode=early_stopping_mode,
-            reduce_lr_monitor=reduce_lr_monitor,
-            reduce_lr_min_delta=reduce_lr_min_delta,
-            reduce_lr_patience=reduce_lr_patience,
-            reduce_lr_mode=reduce_lr_mode,
-            reduce_lr_factor=reduce_lr_factor,
-            verbose=verbose,
-            **kwargs
+
+        return (
+            (sources, destinations),
+            frequencies
         )

@@ -3,7 +3,7 @@ from typing import Optional
 from .node2vec import Node2Vec
 
 
-class GraphCBOW(Node2Vec):
+class CBOW(Node2Vec):
     """Class providing CBOW implemeted in Rust from Ensmallen."""
 
     def __init__(

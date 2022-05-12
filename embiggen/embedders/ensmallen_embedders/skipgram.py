@@ -3,7 +3,7 @@ from typing import Optional
 from .node2vec import Node2Vec
 
 
-class GraphSkipGram(Node2Vec):
+class SkipGram(Node2Vec):
     """Class providing SkipGram implemeted in Rust from Ensmallen."""
 
     def __init__(
