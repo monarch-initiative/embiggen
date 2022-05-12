@@ -1,9 +1,9 @@
 """Module providing SkipGram model implementation."""
 from typing import Optional
-from .node2vec import Node2Vec
+from .node2vec import Node2VecEnsmallen
 
 
-class SkipGram(Node2Vec):
+class SkipGramEnsmallen(Node2VecEnsmallen):
     """Class providing SkipGram implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -125,6 +125,6 @@ class SkipGram(Node2Vec):
             verbose=verbose
         )
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Returns name of the model."""
         return "SkipGram"

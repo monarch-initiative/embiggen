@@ -246,7 +246,7 @@ class GraphConvolutionalNeuralNetwork:
         )
 
     @property
-    def name(self) -> str:
+    def model_name(self) -> str:
         return self._model.name
 
     def summary(self):

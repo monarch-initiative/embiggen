@@ -61,6 +61,6 @@ class WeightedSPINE(AbstractEmbeddingModel):
             )
         return node_embedding
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Returns name of the model."""
         return "WeightedSPINE"

@@ -4,10 +4,11 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import AbstractEmbeddingModel
+from ...utils import AbstractEmbeddingModel, abstract_class
 
 
-class Node2Vec(AbstractEmbeddingModel):
+@abstract_class
+class Node2VecEnsmallen(AbstractEmbeddingModel):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
@@ -136,7 +137,7 @@ class Node2Vec(AbstractEmbeddingModel):
         self._normalize_learning_rate_by_degree = normalize_learning_rate_by_degree
         self._use_zipfian_sampling = use_zipfian_sampling
 
-        self._model = Node2Vec.MODELS[model_name.lower()](
+        self._model = Node2VecEnsmallen.MODELS[model_name.lower()](
             embedding_size=embedding_size,
             window_size=window_size,
             clipping_value=clipping_value,

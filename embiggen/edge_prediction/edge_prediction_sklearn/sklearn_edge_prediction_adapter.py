@@ -8,8 +8,10 @@ from ensmallen import Graph
 from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from ...transformers import EdgePredictionTransformer, GraphTransformer
 from ..edge_prediction_model import AbstractEdgePredictionModel
+from ...utils import abstract_class
 
 
+@abstract_class
 class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     """Class wrapping Sklearn models for running ."""
 
@@ -66,7 +68,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Return name of the model."""
         return self.__class__.__name__
 

@@ -1,12 +1,9 @@
 """Module with graph and text embedding models."""
-from .cbow import CBOW
 from .tensorflow_embedder import TensorFlowEmbedder
-from .glove import GloVe
-from .skipgram import SkipGram
+from ...utils import build_init
 
-__all__ = [
-    "GloVe",
-    "SkipGram",
-    "CBOW",
-    "TensorFlowEmbedder",
-]
+build_init(
+    module_library_name="tensorflow",
+    formatted_library_name="TensorFlow",
+    expected_parent_class=TensorFlowEmbedder
+)

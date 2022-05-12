@@ -7,6 +7,7 @@ import pandas as pd
 from .abstract_model import AbstractModel
 import time
 from .abstract_embedding_model import AbstractEmbeddingModel
+from .abstract_decorator import abstract_class
 from tqdm.auto import trange
 import functools
 from sklearn.metrics import (
@@ -20,6 +21,7 @@ from sklearn.metrics import (
 )
 
 
+@abstract_class
 class AbstractClassifierModel(AbstractModel):
     """Class defining properties of an abstract classifier model."""
 

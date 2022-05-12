@@ -176,7 +176,7 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
             axis=-1
         )
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Returns name of the model."""
         return "GloVe"
 

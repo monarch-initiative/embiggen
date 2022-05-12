@@ -55,7 +55,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Return name of the model."""
         return self.__class__.__name__
 

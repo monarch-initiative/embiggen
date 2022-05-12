@@ -3,20 +3,24 @@ from typing import Type
 import inspect
 from .abstract_model import AbstractModel
 from ..list_formatting import format_list
+from sanitize_ml_labels import sanitize_ml_labels
 
 
 def get_model_or_stub(
+    frame,
     module_library_name: str,
     formatted_library_name: str,
     submodule_name: str,
     model_class_name: str,
     formatted_model_name: str,
     parent_class: Type[AbstractModel]
-) -> Type[AbstractModel]:
+):
     """Returns either the class or a stub with helpful error messages.
 
     Parameters
     -------------------
+    frame
+        Stack frame of the main context.
     module_library_name: str
         Name of the library dependency to be check for availability.
     formatted_library_name: str
@@ -58,8 +62,6 @@ def get_model_or_stub(
             "likely an implementation error, and should be "
             "reported to the Embiggen repository as an issue."
         )
-    # We retrieve the context of the caller.
-    frame = inspect.currentframe()
     # We identify what module or submodule is it calling from.
     current_module_name = frame.f_back.f_locals["__name__"]
     # We try to import the required class.
@@ -126,11 +128,13 @@ def get_model_or_stub(
                         )
                     )
 
-                def library_name(self) -> str:
+                @staticmethod
+                def library_name() -> str:
                     """Returns library name of the model."""
                     return formatted_library_name
 
-                def model_name(self) -> str:
+                @staticmethod
+                def model_name() -> str:
                     """Returns model name of the model."""
                     return formatted_model_name
 

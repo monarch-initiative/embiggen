@@ -8,8 +8,10 @@ from ensmallen import Graph
 from ...transformers import NodeLabelPredictionTransformer, NodeTransformer
 from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from ..node_label_prediction_model import AbstractNodeLabelPredictionModel
+from ...utils import abstract_class
 
 
+@abstract_class
 class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     """Class wrapping Sklearn models for running node-label predictions."""
 
@@ -46,11 +48,11 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             "random_state": self._random_state
         }
 
-    def clone(self) -> "Self":
+    def clone(self) -> Type["SklearnNodeLabelPredictionAdapter"]:
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Return name of the model."""
         return self.__class__.__name__
 

@@ -12,9 +12,10 @@ from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 
 from ...utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number
-from ...utils import AbstractEmbeddingModel
+from ...utils import AbstractEmbeddingModel, abstract_class
 
 
+@abstract_class
 class TensorFlowEmbedder(AbstractEmbeddingModel):
     """Abstract Keras Model wrapper for embedding models."""
 

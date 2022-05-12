@@ -1,19 +1,10 @@
 """Submodule providing TensorFlow and Ensmallen-based embedders."""
-from typing import List
 from .ensmallen_embedders import *
-try:
-    from tensorflow_embedders import *
-except ModuleNotFoundError as e:
-    pass
+from .tensorflow_embedders import *
 
-
-def get_available_libraries() -> List[str]:
-    """Return names of the available embedding libraries."""
-    available_libraries = ["Ensmallen"]
-    try:
-        import tensorflow
-        available_libraries.append("TensorFlow")
-    except ModuleNotFoundError as e:
-        pass
-
-    return available_libraries
+# Export all non-internals.
+__all__ = [
+    variable_name
+    for variable_name in locals().keys()
+    if not variable_name.startswith("_")
+]

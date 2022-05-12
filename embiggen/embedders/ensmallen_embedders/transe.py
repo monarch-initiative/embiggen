@@ -4,11 +4,10 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from scipy import rand
 from ...utils import AbstractEmbeddingModel
 
 
-class TransE(AbstractEmbeddingModel):
+class TransEEnsmallen(AbstractEmbeddingModel):
     """Class implementing the TransE algorithm."""
 
     def __init__(
@@ -78,6 +77,6 @@ class TransE(AbstractEmbeddingModel):
         }
 
 
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Returns name of the model."""
         return "TransE"

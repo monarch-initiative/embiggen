@@ -7,8 +7,10 @@ from ensmallen import Graph
 import tensorflow as tf
 from ...sequences import Node2VecSequence
 from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
+from ...utils import abstract_class
 
 
+@abstract_class
 class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
     """Abstract class for sequence embedding models."""
 

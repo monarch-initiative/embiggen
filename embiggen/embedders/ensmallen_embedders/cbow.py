@@ -1,9 +1,9 @@
 """Module providing CBOW model implementation."""
 from typing import Optional
-from .node2vec import Node2Vec
+from .node2vec import Node2VecEnsmallen
 
 
-class CBOW(Node2Vec):
+class CBOWEnsmallen(Node2VecEnsmallen):
     """Class providing CBOW implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -129,6 +129,6 @@ class CBOW(Node2Vec):
             verbose=verbose
         )
     
-    def name(self) -> str:
+    def model_name(self) -> str:
         """Returns name of the model."""
         return "CBOW"

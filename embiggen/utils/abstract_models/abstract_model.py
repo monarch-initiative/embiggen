@@ -3,11 +3,15 @@ from traceback import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest
+from .abstract_decorator import abstract_class
+import compress_json
 
+
+@abstract_class
 class AbstractModel(Hashable):
     """Class defining properties of a generic abstract model."""
 
-    MODELS_LIBRARY = {}
+    MODELS_LIBRARY: Dict[str, Dict[str, Dict[str, Type["AbstractModel"]]]] = {}
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
@@ -66,7 +70,7 @@ class AbstractModel(Hashable):
     ) -> Dict[str, Dict]:
         """Returns data relative to the registered model data."""
         # We turn this to lowercase in order to allow
-        # for error in casing of the model, since one may 
+        # for error in casing of the model, since one may
         # write models like `GloVe` also as `Glove` or other
         # typos, which are generally easy to make.
         lowercase_model_mapping = AbstractModel.get_available_model_names_in_lowercase_mapping()
@@ -139,7 +143,7 @@ class AbstractModel(Hashable):
         library_name: Optional[str] = None,
     ) -> Type["AbstractModel"]:
         """Returns list of models implementations available for given task and model.
-        
+
         Parameters
         -------------------
         model_name: str
@@ -169,7 +173,7 @@ class AbstractModel(Hashable):
                 )
 
         task_data = AbstractModel.get_task_data(model_name, task_name)
-        
+
         if library_name is None:
             library_names = list(task_data.keys())
             if len(library_names) == 1:
@@ -211,14 +215,14 @@ class AbstractModel(Hashable):
             model_name.lower(): model_name
             for model_name in AbstractModel.get_available_model_names()
         }
-    
+
     @staticmethod
     def find_available_models(
         model_name: str,
         task_name: str
     ) -> List[Type["AbstractModel"]]:
         """Returns list of models implementations available for given task and model.
-        
+
         Parameters
         -------------------
         model_name: str
@@ -232,11 +236,10 @@ class AbstractModel(Hashable):
             if model.is_available()
         ]
 
-
     @staticmethod
     def register(model_class: Type["AbstractModel"]):
         """Registers the provided model in the model library.
-        
+
         Parameters
         ------------------
         model_class:  Type["AbstractModel"]
@@ -246,15 +249,15 @@ class AbstractModel(Hashable):
         # If this is the first model of its kind to be registered.
         if model_name not in AbstractModel.MODELS_LIBRARY:
             AbstractModel.MODELS_LIBRARY[model_name] = {}
-        
+
         # We retrieve the data for the model to enrich it.
-        # This is NOT a copy, but a reference to the same STATIC object. 
+        # This is NOT a copy, but a reference to the same STATIC object.
         model_data = AbstractModel.MODELS_LIBRARY[model_name]
 
         task_name = model_class.task_name()
         if task_name not in model_data:
             model_data[task_name] = {}
-        
+
         task_data = model_data[task_name]
 
         class_name = model_class.__name__

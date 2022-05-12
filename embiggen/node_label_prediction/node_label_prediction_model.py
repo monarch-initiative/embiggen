@@ -4,9 +4,10 @@ import pandas as pd
 import numpy as np
 import math
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
+from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class
 
 
+@abstract_class
 class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract node label prediction model."""
 

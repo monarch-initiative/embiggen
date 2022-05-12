@@ -1,7 +1,10 @@
 """Submodule providing abstract random walk based embedder model."""
 from typing import Dict, Any
+from ...utils import abstract_class
 from .tensorflow_embedder import TensorFlowEmbedder
 
+
+@abstract_class
 class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
 
     def __init__(
@@ -68,7 +71,7 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         self._max_neighbours = max_neighbours
         self._iterations = iterations
         self._normalize_by_degree = normalize_by_degree
-        
+
         super().__init__(**kwargs)
 
     def parameters(self) -> Dict[str, Any]:
@@ -76,15 +79,15 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         return {
             **super().parameters(),
             **dict(
-                random_state = self._random_state,
-                window_size = self._window_size,
-                walk_length = self._walk_length,
-                return_weight = self._return_weight,
-                explore_weight = self._explore_weight,
-                change_edge_type_weight = self._change_edge_type_weight,
-                change_node_type_weight = self._change_node_type_weight,
-                max_neighbours = self._max_neighbours,
-                iterations = self._iterations,
-                normalize_by_degree = self._normalize_by_degree,
+                random_state=self._random_state,
+                window_size=self._window_size,
+                walk_length=self._walk_length,
+                return_weight=self._return_weight,
+                explore_weight=self._explore_weight,
+                change_edge_type_weight=self._change_edge_type_weight,
+                change_node_type_weight=self._change_node_type_weight,
+                max_neighbours=self._max_neighbours,
+                iterations=self._iterations,
+                normalize_by_degree=self._normalize_by_degree,
             )
         }
