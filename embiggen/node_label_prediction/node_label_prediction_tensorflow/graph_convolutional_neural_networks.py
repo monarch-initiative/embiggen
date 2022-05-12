@@ -14,8 +14,8 @@ from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
-from embiggen.embedders.tensorflow_embedders.layers import GraphConvolution
-from ...utils import graph_to_sparse_tensor, validate_verbose
+from .graph_convolution_layer import GraphConvolution
+from ...utils.tensorflow_utils import graph_to_sparse_tensor
 
 
 class GraphConvolutionalNeuralNetwork:

@@ -1,6 +1,6 @@
 """Unit test class for Node-label prediction pipeline."""
 from unittest import TestCase
-from embiggen.pipelines import node_label_prediction
+from embiggen.node_label_prediction import node_label_prediction_evaluation
 from ensmallen.datasets.linqs import Cora
 import shutil
 import os
@@ -22,7 +22,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
         
-        node_label_prediction(
+        node_label_prediction_evaluation(
             node_features="SPINE",
             graphs=self._graph,
         )

@@ -91,3 +91,6 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
                 normalize_by_degree=self._normalize_by_degree,
             )
         }
+
+    def is_topological(self) -> bool:
+        return True

@@ -175,14 +175,13 @@ class AbstractClassifierModel(AbstractModel):
             ):
                 return node_feature
 
-            raise NotImplementedError(
-                "I still need to finish the dispatching for feature names, "
-                "this is coming soon!"
-            )
+            node_feature = AbstractEmbeddingModel.get_model_from_library(
+                model_name=node_feature
+            )()
 
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
-        if issubclass(node_feature, Type[AbstractEmbeddingModel]):
+        if issubclass(node_feature.__class__, AbstractEmbeddingModel):
             if (
                 skip_evaluation_biased_feature and
                 node_feature.name().lower() in self._get_evaluation_biased_feature_names_lowercase()
@@ -275,7 +274,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_feature(
         self,
         graph: Graph,
-        edge_feature: Union[str, pd.DataFrame, np.ndarray],
+        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False
     ) -> List[np.ndarray]:
@@ -285,7 +284,7 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
-        edge_feature: Union[str, pd.DataFrame, np.ndarray],
+        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray]] = None
             The edge feature to normalize.
         allow_automatic_feature: bool = True
             Whether to allow feature names creation based on the
@@ -297,6 +296,9 @@ class AbstractClassifierModel(AbstractModel):
             when running an holdout. These features should be computed
             exclusively on the training graph and not the entire graph.
         """
+        if edge_feature is None:
+            return None
+
         if isinstance(edge_feature, str):
             if not allow_automatic_feature:
                 raise ValueError(
@@ -757,7 +759,8 @@ class AbstractClassifierModel(AbstractModel):
                 evaluation_schema=evaluation_schema,
                 random_state=random_state,
                 holdouts_kwargs=holdouts_kwargs,
-                holdout_number=holdout_number
+                holdout_number=holdout_number,
+                number_of_holdouts=number_of_holdouts
             )
 
             # We compute the remaining features

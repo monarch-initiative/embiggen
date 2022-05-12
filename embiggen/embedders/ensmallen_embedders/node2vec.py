@@ -197,6 +197,12 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     def library_name() -> str:
         return "Ensmallen"
 
+    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+        return False
+
+    def is_topological(self) -> bool:
+        return True
+
     def _fit_transform(
         self,
         graph: Graph,

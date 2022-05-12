@@ -188,7 +188,11 @@ def build_init(
         imports = get_imports(parsed)
         for klass in klasses:
             # If this class is an abstract.
-            if len(klass.decorator_list) > 0 and klass.decorator_list[0].id == "abstract_class":
+            if (
+                len(klass.decorator_list) > 0 and
+                klass.decorator_list[0].id == "abstract_class" or
+                klass.name == expected_parent_class.__name__
+            ):
                 continue
             # If this class has the expected parent.
             if expected_parent_class.__name__ in get_class_parent_names(

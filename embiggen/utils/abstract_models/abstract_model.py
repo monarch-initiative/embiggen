@@ -1,5 +1,5 @@
 """Module providing generic abstract model."""
-from traceback import format_list
+from ..list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest
@@ -84,7 +84,8 @@ class AbstractModel(Hashable):
                 f"Did you mean {closest(model_name, lowercase_model_mapping.values())}?"
             )
         # We retrieve the model standard name.
-        return lowercase_model_mapping[model_name.lower()]
+        model_name = lowercase_model_mapping[model_name.lower()]
+        return AbstractModel.MODELS_LIBRARY[model_name]
 
     @staticmethod
     def get_task_data(
@@ -98,10 +99,10 @@ class AbstractModel(Hashable):
         # as one may do typos while writig the task name and
         # we should always provide the best possible help message.
         lowercase_task_mapping = {
-            t.lower() == t
+            t.lower(): t
             for t in model_data.keys()
         }
-        if task_name not in lowercase_task_mapping:
+        if task_name.lower() not in lowercase_task_mapping:
             raise ValueError(
                 f"The provided task name `{task_name}` is not available for "
                 f"the requested model {model_name}."
@@ -124,13 +125,13 @@ class AbstractModel(Hashable):
         task_data = AbstractModel.get_task_data(model_name, task_name)
 
         lowercase_libraries_mapping = {
-            t.lower() == t
+            t.lower(): t
             for t in task_data.keys()
         }
-        if library_name not in lowercase_libraries_mapping:
+        if library_name.lower() not in lowercase_libraries_mapping:
             raise ValueError(
                 f"The provided library name `{library_name}` is not available for "
-                f"the requested model {model_name}."
+                f"the requested model {model_name}. "
                 f"Did you mean {closest(library_name, lowercase_libraries_mapping.values())}?"
             )
 
@@ -168,11 +169,12 @@ class AbstractModel(Hashable):
             if len(task_names) == 1:
                 task_name = task_names[0]
             else:
+                formatted_list = format_list(task_names)
                 raise ValueError(
                     f"The requested model `{model_name}` is available for "
                     "multiple tasks and no specific task was requested, "
                     "so it is unclear which task you intend to execute. "
-                    f"Specifically, the available tasks are {format_list(task_names)}."
+                    f"Specifically, the available tasks are {formatted_list}."
                     "Please do provide a task name to resolve this ambiguity."
                 )
 
@@ -183,12 +185,15 @@ class AbstractModel(Hashable):
             if len(library_names) == 1:
                 library_name = library_names[0]
             else:
+                formatted_list = format_list(library_names)
                 raise ValueError(
-                    f"The requested model `{model_name}` is available for "
-                    "multiple libraries and no specific library was requested, "
-                    "so it is unclear which library you intend to execute. "
-                    f"Specifically, the available libraries are {format_list(library_names)}."
-                    "Please do provide a library name to resolve this ambiguity."
+                    (
+                        f"The requested model `{model_name}` is available for "
+                        "multiple libraries and no specific library was requested, "
+                        "so it is unclear which library you intend to execute. "
+                        f"Specifically, the available libraries are {formatted_list}. "
+                        "Please do provide a library name to resolve this ambiguity."
+                    )
                 )
 
         model_class = AbstractModel.get_library_data(

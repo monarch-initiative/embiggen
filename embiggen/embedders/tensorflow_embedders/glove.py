@@ -272,3 +272,6 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
             (sources, destinations),
             frequencies
         )
+
+    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+        return False

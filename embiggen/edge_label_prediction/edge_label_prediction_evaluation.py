@@ -14,6 +14,7 @@ def edge_label_prediction_evaluation(
     evaluation_schema: str = "Stratified Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+    library_names: Optional[Union[str, List[str]]] = None,
     subgraph_of_interest: Optional[Graph] = None,
     number_of_holdouts: int = 10,
     random_state: int = 42,
@@ -36,6 +37,8 @@ def edge_label_prediction_evaluation(
         The node features to use.
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
+    library_names: Optional[Union[str, List[str]]] = None
+        Library names from where to retrieve the provided model names.
     subgraph_of_interest: Optional[Graph] = None
         The subgraph of interest to focus the task on.
     number_of_holdouts: int = 10
@@ -56,6 +59,7 @@ def edge_label_prediction_evaluation(
         expected_parent_class=AbstractEdgeLabelPredictionModel,
         node_features=node_features,
         edge_features=edge_features,
+        library_names=library_names,
         subgraph_of_interest=subgraph_of_interest,
         number_of_holdouts=number_of_holdouts,
         random_state=random_state,

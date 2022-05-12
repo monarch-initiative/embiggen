@@ -90,8 +90,9 @@ def iterate_graphs(
 
 
 def iterate_classifier_models(
-    models: Union[Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]],
-    expected_parent_class: Type[AbstractClassifierModel]
+    models: Union[str, Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]],
+    expected_parent_class: Type[AbstractClassifierModel],
+    library_names: Optional[Union[str, List[str]]] = None
 ) -> Iterator[Type[AbstractClassifierModel]]:
     """Return iterator over the provided models after validation.
 
@@ -101,19 +102,46 @@ def iterate_classifier_models(
         The models to validate and iterate on.
     expected_parent_class: Type[AbstractClassifierModel]
         The parent class to check the model against.
+    library_names: Optional[Union[str, List[str]]] = None
+        Library names from where to retrieve the provided model names.
     """
     if not isinstance(models, (list, tuple)):
         models = [models]
 
     number_of_models = len(models)
 
+    if not isinstance(library_names, (list, tuple)):
+        library_names = [library_names] * number_of_models
+
     if number_of_models == 0:
         raise ValueError(
             "An empty list of models was provided."
         )
+    
+    number_of_libraries = len(library_names)
+
+    if number_of_libraries != number_of_models:
+        raise ValueError(
+            f"The number of the provided models {number_of_models} "
+            f"is different from the number of provided libraries {number_of_libraries}."
+        )
+
+    models = [
+        expected_parent_class.get_model_from_library(
+            model,
+            task_name=expected_parent_class.task_name(),
+            library_name=library_name
+        )()
+        if isinstance(model, str)
+        else model
+        for model, library_name in zip(
+            models,
+            library_names
+        )
+    ]
 
     for model in models:
-        if not issubclass(model, expected_parent_class):
+        if not issubclass(model.__class__, expected_parent_class):
             raise ValueError(
                 "The provided classifier model is expected to be "
                 f"an implementation of the {expected_parent_class.__name__} class, but you provided "
@@ -173,6 +201,7 @@ def classification_evaluation_pipeline(
     expected_parent_class: Type[AbstractClassifierModel],
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+    library_names: Optional[Union[str, List[str]]] = None,
     subgraph_of_interest: Optional[Graph] = None,
     number_of_holdouts: int = 10,
     random_state: int = 42,
@@ -198,6 +227,8 @@ def classification_evaluation_pipeline(
         The node features to use.
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
+    library_names: Optional[Union[str, List[str]]] = None
+        Library names from where to retrieve the provided model names.
     subgraph_of_interest: Optional[Graph] = None
         The subgraph of interest to focus the task on.
     number_of_holdouts: int = 10
@@ -216,7 +247,7 @@ def classification_evaluation_pipeline(
         evaluate_classifier(
             classifier=classifier,
             task_name=classifier.task_name(),
-            model_name=classifier.name(),
+            model_name=classifier.model_name(),
             graph_name=graph.get_name(),
             graph=graph,
             evaluation_schema=evaluation_schema,

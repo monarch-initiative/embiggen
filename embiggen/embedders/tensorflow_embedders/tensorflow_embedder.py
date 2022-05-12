@@ -20,11 +20,11 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
 
     def __init__(
         self,
-        embedding_size: int,
-        early_stopping_min_delta: float,
-        early_stopping_patience: int,
-        learning_rate_plateau_min_delta: float,
-        learning_rate_plateau_patience: int,
+        embedding_size: int = 100,
+        early_stopping_min_delta: float = 0.001,
+        early_stopping_patience: int = 1,
+        learning_rate_plateau_min_delta: float = 0.001,
+        learning_rate_plateau_patience: int = 1,
         epochs: int = 10,
         optimizer: str = "sgd",
         use_mirrored_strategy: bool = False
