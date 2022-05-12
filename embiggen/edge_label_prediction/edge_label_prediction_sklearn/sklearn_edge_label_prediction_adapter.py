@@ -1,7 +1,6 @@
 """Module providing adapter class making edge-label prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Dict, Union, Optional, Tuple, Any
-import pandas as pd
+from typing import Type, List, Dict, Optional, Tuple, Any
 import numpy as np
 import copy
 from ensmallen import Graph
@@ -51,13 +50,9 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             "random_state": self._random_state
         }
 
-    def clone(self) -> "Self":
+    def clone(self) -> Type["SklearnEdgeLabelPredictionAdapter"]:
         """Return copy of self."""
         return copy.deepcopy(self)
-
-    def model_name(self) -> str:
-        """Return name of the model."""
-        return self.__class__.__name__
 
     def _trasform_graph_into_edge_embedding(
         self,
@@ -196,3 +191,8 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             node_features=node_features,
             edge_features=edge_features,
         ))
+
+    @staticmethod
+    def library_name() -> str:
+        """Return name of the model."""
+        return "scikit-learn"

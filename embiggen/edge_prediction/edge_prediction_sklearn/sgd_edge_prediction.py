@@ -95,3 +95,8 @@ class SGDEdgePrediction(SklearnEdgePredictionAdapter):
                 average=self._average
             )
         }
+
+
+    @staticmethod
+    def model_name() -> str:
+        return "SGD Classifier"

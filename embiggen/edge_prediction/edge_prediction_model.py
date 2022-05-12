@@ -11,7 +11,8 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_cl
 class AbstractEdgePredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge prediction model."""
 
-    def task_name(self) -> str:
+    @staticmethod
+    def task_name() -> str:
         """Returns name of the task this model is used for."""
         return "Edge Prediction"
 

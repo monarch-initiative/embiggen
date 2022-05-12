@@ -4,8 +4,7 @@ from ensmallen import Graph
 import warnings
 import numpy as np
 import pandas as pd
-from .abstract_decorator import abstract_class
-from .abstract_model import AbstractModel
+from .abstract_model import AbstractModel, abstract_class
 
 
 @abstract_class

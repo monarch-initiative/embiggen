@@ -79,3 +79,7 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 ccp_alpha=self._ccp_alpha,
             )
         }
+
+    @staticmethod
+    def model_name() -> str:
+        return "Decision Tree Classifier"

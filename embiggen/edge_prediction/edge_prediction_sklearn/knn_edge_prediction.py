@@ -61,3 +61,7 @@ class KNNEdgePrediction(SklearnEdgePredictionAdapter):
                 n_jobs = self._n_jobs,
             )
         }
+
+    @staticmethod
+    def model_name() -> str:
+        return "KNeighbors Classifier"

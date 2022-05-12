@@ -15,13 +15,13 @@ def get_python_code_from_import(
     import_from: Dict
 ):
     element = import_from["element"]
-    source_path = os.path.join(
+    source_path = os.sep + os.path.join(
         *original_file_path.split(os.sep)[:-element.level],
         f"{element.module}.py"
     )
 
     if not os.path.exists(source_path):
-        source_path = os.path.join(
+        source_path = os.sep + os.path.join(
             *original_file_path.split(os.sep)[:-element.level],
             f"{element.module}/__init__.py"
         )
@@ -68,6 +68,7 @@ def get_class_parent_names(
     expected_parent: str
 ) -> List[str]:
     """Return list of parent classes names."""
+
     # First we search for the parent class in the same file.
     parent_names = [
         base.id
@@ -142,7 +143,7 @@ def get_classes(parsed) -> List[ClassDef]:
 def find_method_name(klass: ClassDef) -> str:
     """Returns name extracted from class."""
     for function in klass.body:
-        if not isinstance(function, FunctionDef) and function.name == "model_name":
+        if not isinstance(function, FunctionDef) or function.name != "model_name":
             continue
         for function_line in function.body:
             if isinstance(function_line, Return):

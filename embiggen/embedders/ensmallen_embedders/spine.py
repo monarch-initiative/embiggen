@@ -59,7 +59,15 @@ class SPINE(AbstractEmbeddingModel):
             )
         return node_embedding
 
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
 
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "SPINE"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"

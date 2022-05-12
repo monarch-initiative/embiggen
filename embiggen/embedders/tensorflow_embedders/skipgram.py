@@ -21,7 +21,8 @@ class SkipGram(Node2Vec):
 
     NODE_EMBEDDING = "NODE_EMBEDDING"
 
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "SkipGram"
 

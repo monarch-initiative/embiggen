@@ -118,3 +118,8 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
                 max_fun=self._max_fun,
             )
         }
+
+
+    @staticmethod
+    def model_name() -> str:
+        return "MLP Classifier"

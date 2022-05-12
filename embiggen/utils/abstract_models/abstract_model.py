@@ -3,8 +3,11 @@ from traceback import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest
-from .abstract_decorator import abstract_class
-import compress_json
+
+
+def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
+    """Simply adds a descriptor for meta-programming and nothing else."""
+    return klass
 
 
 @abstract_class
@@ -55,7 +58,8 @@ class AbstractModel(Hashable):
         """Returns consistent hash describing the model."""
         return sha256({
             **self.parameters(),
-            "name": self.name(),
+            "model_name": self.model_name(),
+            "library_name": self.library_name(),
             "task_name": self.task_name(),
         })
 

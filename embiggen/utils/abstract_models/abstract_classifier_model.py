@@ -4,10 +4,9 @@ from typing import Union, Optional, List, Dict, Any, Tuple, Type
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
-from .abstract_model import AbstractModel
+from .abstract_model import AbstractModel, abstract_class
 import time
 from .abstract_embedding_model import AbstractEmbeddingModel
-from .abstract_decorator import abstract_class
 from tqdm.auto import trange
 import functools
 from sklearn.metrics import (

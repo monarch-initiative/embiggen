@@ -188,6 +188,14 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
                 use_zipfian_sampling=self._use_zipfian_sampling
             )
         }
+    
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"
 
     def _fit_transform(
         self,

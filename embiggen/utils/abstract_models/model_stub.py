@@ -1,6 +1,8 @@
 """Submodule providing auto model stub for non-mandatory modules."""
 from typing import Type
 import inspect
+
+from numpy import isin
 from .abstract_model import AbstractModel
 from ..list_formatting import format_list
 from sanitize_ml_labels import sanitize_ml_labels
@@ -41,7 +43,7 @@ def get_model_or_stub(
         ("submodule_name", submodule_name),
         ("model_class_name", model_class_name),
     ):
-        if not issubclass(variable_value, str):
+        if not isinstance(variable_value, str):
             raise ValueError(
                 f"The provided parent class {variable_name} is not string. "
                 "This is likely an implementation error, and should be "
@@ -135,8 +137,13 @@ def get_model_or_stub(
 
                 @staticmethod
                 def model_name() -> str:
-                    """Returns model name of the model."""
+                    """Returns name of the model."""
                     return formatted_model_name
+
+                @staticmethod
+                def task_name() -> str:
+                    """Returns name of the task"""
+                    return parent_class.task_name()
 
                 @staticmethod
                 def is_available() -> bool:

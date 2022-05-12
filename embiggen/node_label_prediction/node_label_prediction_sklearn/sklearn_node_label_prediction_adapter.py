@@ -52,7 +52,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Return name of the model."""
         return self.__class__.__name__
 

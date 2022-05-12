@@ -69,3 +69,7 @@ class LogisticRegressionEdgeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 l1_ratio = self._model_instance.l1_ratio
             )
         }
+
+    @staticmethod
+    def model_name() -> str:
+        return "Logistic Regression"

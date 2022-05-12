@@ -95,3 +95,8 @@ class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 ccp_alpha=self._ccp_alpha
             )
         }
+
+
+    @staticmethod
+    def model_name() -> str:
+        return "Gradient Boosting Classifier"

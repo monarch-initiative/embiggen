@@ -10,7 +10,8 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge label prediction model."""
 
-    def task_name(self) -> str:
+    @staticmethod
+    def task_name() -> str:
         """Returns name of the task this model is used for."""
         return "Edge Label Prediction"
 

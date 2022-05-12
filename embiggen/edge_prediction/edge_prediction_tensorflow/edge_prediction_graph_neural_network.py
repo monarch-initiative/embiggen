@@ -12,12 +12,10 @@ from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-
 from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
-import math
 
 from embiggen.sequences import GNNEdgePredictionSequence, GNNBipartiteEdgePredictionSequence
 from ensmallen import Graph
-from embiggen.embedders.tensorflow_embedders.optimizers import apply_centralized_gradients
-from embiggen.utils import validate_verbose, normalize_model_ragged_list_parameter, normalize_model_list_parameter
+from ...utils.normalize_model_structural_parameters import normalize_model_ragged_list_parameter, normalize_model_list_parameter
 from tqdm.auto import tqdm
 import tensorflow as tf
 
@@ -340,9 +338,6 @@ class EdgePredictionGraphNeuralNetwork:
 
         if isinstance(optimizer, str):
             optimizer = tf.keras.optimizers.get(optimizer)
-
-        if use_gradient_centralization:
-            apply_centralized_gradients(optimizer)
 
         self._optimizer = optimizer
 
@@ -719,9 +714,9 @@ class EdgePredictionGraphNeuralNetwork:
             weighted_metrics=get_complete_binary_metrics()
         )
 
-    @property
-    def model_name(self) -> str:
-        return self._model.name
+    @staticmethod
+    def model_name() -> str:
+        return "GNN"
 
     def summary(self, *args, **kwargs):
         """Print model summary."""

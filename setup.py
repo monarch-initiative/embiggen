@@ -77,8 +77,9 @@ setup(
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.7",
-        "ensmallen>=0.7.0.dev16",
+        "ensmallen>=0.7.0.dev19",
         "validate_version_code",
+        "cache_decorator>=2.0.16",
         "packaging"
     ],
     tests_require=test_deps,

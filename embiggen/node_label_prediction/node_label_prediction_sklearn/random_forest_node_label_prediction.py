@@ -99,3 +99,7 @@ class RandomForestNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 max_samples = self._max_samples,
             )
         }
+
+    @staticmethod
+    def model_name() -> str:
+        return "Random Forest Classifier"

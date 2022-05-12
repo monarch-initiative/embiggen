@@ -20,6 +20,7 @@ from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from sklearn.tree import DecisionTreeClassifier
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
 from sanitize_ml_labels import sanitize_ml_labels
@@ -29,10 +30,6 @@ from sklearn.model_selection import ShuffleSplit
 from tqdm.auto import trange, tqdm
 import itertools
 
-from embiggen.utils import (
-    must_be_default_sklearn_classifier,
-    get_sklearn_default_classifier
-)
 
 try:
     from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
@@ -45,7 +42,7 @@ except ImportError:
 
 
 from ..transformers import GraphTransformer, NodeTransformer
-from ..pipelines import compute_node_embedding
+from ..embedders import embed_graph
 from ..utils.list_formatting import format_list
 
 
@@ -267,9 +264,6 @@ class GraphVisualizer:
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
 
-        must_be_default_sklearn_classifier(
-            classifier_for_separations_considerations)
-        self._classifier_for_separations_considerations = classifier_for_separations_considerations
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
         self._show_heatmaps_description = show_heatmaps_description
         self._show_non_existing_edges_sampling_description = show_non_existing_edges_sampling_description
@@ -568,85 +562,59 @@ class GraphVisualizer:
             }).fit_transform
         elif self._decomposition_method == "TSNE":
             try:
-                # We try to use CUDA tsne if available, but this does not
-                # currently support 3D decomposition. If the user has required a
-                # 3D decomposition we need to switch to the MulticoreTSNE version.
-                # Additionally, in the case that the desired decomposition
-                # uses some not available parameters, such as a cosine similarity
-                # metric, we will capture that use case as a NotImplementedError.
-                if self._n_components != 2:
-                    raise NotImplementedError()
                 try:
-                    from tsnecuda import TSNE as CUDATSNE  # pylint: disable=import-error,import-outside-toplevel
-                    return CUDATSNE(**{
+                    from MulticoreTSNE import \
+                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
+                    return MulticoreTSNE(**{
                         **dict(
-                            n_components=2,
-                            random_seed=self._random_state,
+                            n_components=self._n_components,
+                            n_jobs=cpu_count(),
+                            n_iter=400,
+                            random_state=self._random_state,
                             verbose=False,
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
                 except OSError as e:
                     warnings.warn(
-                        ("The tsnecuda module is installed, but we could not find "
-                         "some of the necessary libraries to make it run properly. "
-                         "Specifically, the error encountered was: {}").format(e)
+                        ("The MulticoreTSNE module is installed, but we could not find "
+                            "some of the necessary libraries to make it run properly. "
+                            "Specifically, the error encountered was: {}").format(e)
                     )
-            except (ModuleNotFoundError, NotImplementedError):
+            except (ModuleNotFoundError, RuntimeError):
                 try:
-                    try:
-                        from MulticoreTSNE import \
-                            MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                        return MulticoreTSNE(**{
-                            **dict(
-                                n_components=self._n_components,
-                                n_jobs=cpu_count(),
-                                n_iter=400,
-                                random_state=self._random_state,
-                                verbose=False,
-                            ),
-                            **self._decomposition_kwargs
-                        }).fit_transform
-                    except OSError as e:
-                        warnings.warn(
-                            ("The MulticoreTSNE module is installed, but we could not find "
-                             "some of the necessary libraries to make it run properly. "
-                             "Specifically, the error encountered was: {}").format(e)
-                        )
-                except (ModuleNotFoundError, RuntimeError):
-                    try:
-                        from sklearn.manifold import \
-                            TSNE  # pylint: disable=import-outside-toplevel
-                        return TSNE(**{
-                            **dict(
-                                n_components=self._n_components,
-                                n_jobs=cpu_count(),
-                                random_state=self._random_state,
-                                verbose=False,
-                                n_iter=500,
-                                init="random",
-                                square_distances="legacy",
-                                method="exact" if self._n_components == 4 else "barnes_hut",
-                            ),
-                            **self._decomposition_kwargs
-                        }).fit_transform
-                    except:
-                        raise ModuleNotFoundError(
-                            "You do not have installed a supported TSNE "
-                            "decomposition algorithm. Depending on your use case, "
-                            "we suggest you install tsne-cuda if your graph is "
-                            "very big (in the millions of nodes) if you have access "
-                            "to a compatible GPU system.\n"
-                            "Alternatively, we suggest (and support) MulticoreTSNE, "
-                            "which tends to be easier to install, and is significantly "
-                            "faster than the Sklearn implementation.\n"
-                            "Alternatively, we suggest (and support) MulticoreTSNE, "
-                            "which tends to be easier to install, and is significantly "
-                            "faster than the Sklearn implementation.\n"
-                            "If you intend to do 3D decompositions, "
-                            "remember that tsne-cuda, at the time of writing, "
-                            "does not support them."
-                        )
+                    from sklearn.manifold import \
+                        TSNE  # pylint: disable=import-outside-toplevel
+                    return TSNE(**{
+                        **dict(
+                            n_components=self._n_components,
+                            n_jobs=cpu_count(),
+                            random_state=self._random_state,
+                            verbose=False,
+                            n_iter=500,
+                            init="random",
+                            square_distances="legacy",
+                            method="exact" if self._n_components == 4 else "barnes_hut",
+                        ),
+                        **self._decomposition_kwargs
+                    }).fit_transform
+                except:
+                    raise ModuleNotFoundError(
+                        "You do not have installed a supported TSNE "
+                        "decomposition algorithm. Depending on your use case, "
+                        "we suggest you install tsne-cuda if your graph is "
+                        "very big (in the millions of nodes) if you have access "
+                        "to a compatible GPU system.\n"
+                        "Alternatively, we suggest (and support) MulticoreTSNE, "
+                        "which tends to be easier to install, and is significantly "
+                        "faster than the Sklearn implementation.\n"
+                        "Alternatively, we suggest (and support) MulticoreTSNE, "
+                        "which tends to be easier to install, and is significantly "
+                        "faster than the Sklearn implementation.\n"
+                        "If you intend to do 3D decompositions, "
+                        "remember that tsne-cuda, at the time of writing, "
+                        "does not support them."
+                    )
         elif self._decomposition_method == "PCA":
             return PCA(**{
                 **dict(
@@ -694,11 +662,15 @@ class GraphVisualizer:
             if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
                 self._has_autodetermined_node_embedding_name = True
                 self._node_embedding_method_name = node_embedding
-            node_embedding, _ = compute_node_embedding(
+            node_embedding = embed_graph(
                 graph=self._graph,
                 node_embedding_method_name=node_embedding,
                 **node_embedding_kwargs
             )
+            # If this is a node embedding like TransE, which
+            # returns multiple node embeddings.
+            if isinstance(node_embedding, dict):
+                node_embedding = node_embedding["node_embedding"]
             # For now here we only handle the node embedding and
             # ignore other possible embeddings such as node type and
             # edge type embedding.
@@ -1656,9 +1628,7 @@ class GraphVisualizer:
             random_state=self._random_state
         ).split(points):
 
-            model = get_sklearn_default_classifier(
-                self._classifier_for_separations_considerations
-            )
+            model = DecisionTreeClassifier(max_depth=5)
 
             train_x, test_x = points[train_indices], points[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]
@@ -2223,9 +2193,7 @@ class GraphVisualizer:
             random_state=self._random_state
         ).split(edge_metrics):
 
-            model = get_sklearn_default_classifier(
-                self._classifier_for_separations_considerations
-            )
+            model = DecisionTreeClassifier(max_depth=5)
 
             train_x, test_x = edge_metrics[train_indices], edge_metrics[test_indices]
             train_y, test_y = types[train_indices], types[test_indices]

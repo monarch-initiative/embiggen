@@ -5,13 +5,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
-from embiggen.utils.parameter_validators import validate_verbose
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
     EarlyStopping, ReduceLROnPlateau)
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 
-from ...utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number
+from ...utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number, has_gpus
 from ...utils import AbstractEmbeddingModel, abstract_class
 
 
@@ -61,6 +60,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
                 "Mirrored strategy was requested, one "
                 "or less GPUs where detected."
             )
+        self._use_mirrored_strategy = use_mirrored_strategy
         self._epochs = epochs
         self._optimizer = optimizer
         self._early_stopping_min_delta = early_stopping_min_delta
@@ -68,6 +68,14 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._learning_rate_plateau_min_delta = learning_rate_plateau_min_delta
         self._learning_rate_plateau_patience = learning_rate_plateau_patience
         super().__init__(embedding_size=embedding_size)
+
+    @staticmethod
+    def library_name() -> str:
+        return "TensorFlow"
+    
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
 
     def _build_model(self, graph: Graph) -> Model:
         """Build new model for embedding.
@@ -150,8 +158,14 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         except AttributeError:
             traditional_verbose = True
 
+        if has_gpus() and self._use_mirrored_strategy:
+            strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
+        else:
+            strategy = tf.distribute.get_strategy()
+
         # Build the model
-        model = self._build_model(graph)
+        with strategy.scope():
+            model = self._build_model(graph)
 
         # Get the model input
         training_input = self._build_input(graph)

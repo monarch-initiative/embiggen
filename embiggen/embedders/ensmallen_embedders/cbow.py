@@ -129,6 +129,7 @@ class CBOWEnsmallen(Node2VecEnsmallen):
             verbose=verbose
         )
     
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "CBOW"

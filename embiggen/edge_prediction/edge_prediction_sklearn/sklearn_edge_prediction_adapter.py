@@ -64,13 +64,14 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "random_state": self._random_state
         }
 
-    def clone(self) -> "Self":
+    def clone(self) -> Type["SklearnEdgePredictionAdapter"]:
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    def model_name(self) -> str:
+    @staticmethod
+    def library_name() -> str:
         """Return name of the model."""
-        return self.__class__.__name__
+        return "scikit-learn"
 
     def _trasform_graph_into_edge_embedding(
         self,

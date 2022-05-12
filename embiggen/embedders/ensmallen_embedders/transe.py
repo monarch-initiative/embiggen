@@ -76,7 +76,15 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             "edge_type_embedding": edge_type_embedding,
         }
 
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
 
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "TransE"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"

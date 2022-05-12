@@ -245,8 +245,8 @@ class GraphConvolutionalNeuralNetwork:
             weighted_metrics=get_minimal_multiclass_metrics()
         )
 
-    @property
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         return self._model.name
 
     def summary(self):

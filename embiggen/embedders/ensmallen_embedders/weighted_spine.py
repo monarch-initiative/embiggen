@@ -61,6 +61,15 @@ class WeightedSPINE(AbstractEmbeddingModel):
             )
         return node_embedding
 
-    def model_name(self) -> str:
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
+
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "WeightedSPINE"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"

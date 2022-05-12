@@ -19,7 +19,8 @@ class CBOW(Node2Vec):
     during the training process to generate the negatives.
     """
 
-    def model_name(self) -> str:
+    @staticmethod
+    def model_name() -> str:
         """Returns name of the model."""
         return "CBOW"
 

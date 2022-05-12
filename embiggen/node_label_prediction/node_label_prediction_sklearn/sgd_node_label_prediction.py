@@ -89,3 +89,7 @@ class SGDNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 average=self._average
             )
         }
+
+    @staticmethod
+    def model_name() -> str:
+        return "SGD Regression"
