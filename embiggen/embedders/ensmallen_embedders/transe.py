@@ -14,6 +14,7 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         self,
         embedding_size: int = 100,
         renormalize: bool = True,
+        relu_bias: float = 1.0,
         epochs: int = 10,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -27,6 +28,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             Dimension of the embedding.
         renormalize: bool = True
             Whether to renormalize at each loop, by default true.
+        relu_bias: float = 1.0
+            Bias to use for the relu.
+            In the TransE paper it is called gamma.
         epochs: int
             The number of epochs to run the model for, by default 10.
         learning_rate: float
@@ -38,6 +42,7 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         """
         self._renormalize = renormalize
         self._random_state = random_state
+        self._relu_bias = relu_bias
         self._epochs = epochs
         self._learning_rate = learning_rate
         self._learning_rate_decay = learning_rate_decay
@@ -58,6 +63,7 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             **super().parameters(),
             **dict(
                 renormalize=self._renormalize,
+                relu_bias=self._relu_bias,
                 random_state=self._random_state,
                 epochs=self._epochs,
                 learning_rate=self._learning_rate,
