@@ -1,6 +1,6 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
-from embiggen.edge_prediction import edge_prediction_evaluation
+from embiggen import edge_prediction_evaluation, get_available_models_for_edge_prediction
 from ensmallen.datasets.linqs import Cora
 import shutil
 import os
@@ -22,13 +22,16 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
         
-        holdouts = edge_prediction_evaluation(
-            holdouts_kwargs=dict(),
-            models="Decision Tree Classifier",
-            node_features="SPINE",
-            evaluation_schema="Kfold",
-            graphs=self._graph,
-            number_of_holdouts=self._number_of_holdouts,
-            unbalance_rates = (2.0, 3.0, ),
-        )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
+        for _, row in get_available_models_for_edge_prediction().iterrows():
+            holdouts = edge_prediction_evaluation(
+                holdouts_kwargs=dict(),
+                models=row.model_name,
+                library_names=row.library_name,
+                node_features="SPINE",
+                evaluation_schema="Kfold",
+                graphs=self._graph,
+                number_of_holdouts=self._number_of_holdouts,
+                unbalance_rates = (2.0, 3.0, ),
+                verbose=False
+            )
+            self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)

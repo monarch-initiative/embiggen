@@ -20,6 +20,7 @@ def edge_label_prediction_evaluation(
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
+    verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge-label prediction evaluation pipeline for all provided models and graphs.
 
@@ -50,6 +51,8 @@ def edge_label_prediction_evaluation(
         from the Ensmallen automatic retrieval.
     versions: Optional[Union[str, List[str]]] = None
         Graph versions to retrieve.
+    verbose: bool = True
+        Whether to show loading bars
     """
     return classification_evaluation_pipeline(
         evaluation_schema=evaluation_schema,
@@ -65,4 +68,5 @@ def edge_label_prediction_evaluation(
         random_state=random_state,
         repositories=repositories,
         versions=versions,
+        verbose=verbose
     )

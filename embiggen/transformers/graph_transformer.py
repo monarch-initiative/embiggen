@@ -87,9 +87,9 @@ class GraphTransformer:
         """
         if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = graph.get_edge_node_ids(directed=False)
+                graph = graph.get_directed_edge_node_ids()
             else:
-                graph = graph.get_edge_node_names(directed=False)
+                graph = graph.get_directed_edge_node_names()
         if isinstance(graph, List):
             graph = np.array(graph)
         if isinstance(graph, np.ndarray):

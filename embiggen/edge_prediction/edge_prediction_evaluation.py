@@ -21,7 +21,8 @@ def edge_prediction_evaluation(
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     sample_only_edges_with_heterogeneous_node_types: bool = False,
-    unbalance_rates: Tuple[float] = (1.0, )
+    unbalance_rates: Tuple[float] = (1.0, ),
+    verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge prediction evaluation pipeline for all provided models and graphs.
 
@@ -57,6 +58,8 @@ def edge_prediction_evaluation(
         This can be useful when executing a bipartite edge prediction task.
     unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
+    verbose: bool = True
+        Whether to show loading bars
     """
     return classification_evaluation_pipeline(
         evaluation_schema=evaluation_schema,
@@ -72,6 +75,7 @@ def edge_prediction_evaluation(
         random_state=random_state,
         repositories=repositories,
         versions=versions,
+        verbose=verbose,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
         unbalance_rates=unbalance_rates
     )

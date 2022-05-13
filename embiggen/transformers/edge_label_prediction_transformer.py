@@ -167,14 +167,16 @@ class EdgeLabelPredictionTransformer:
         )
 
         if self._one_hot_encode_labels:
-            edge_labels = graph.get_one_hot_encoded_edge_types()
+            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
+                edge_labels = graph.get_one_hot_encoded_edge_types()
+            else:
+                edge_labels = graph.get_one_hot_encoded_known_edge_types()
         else:
-            edge_labels = graph.get_edge_type_ids()
-
-        if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
-            known_edge_labels_mask = graph.get_edge_with_known_edge_types_mask()
-            edge_labels = edge_labels[known_edge_labels_mask]
-            edge_embeddings = edge_embeddings[known_edge_labels_mask]
+            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
+                edge_labels = graph.get_known_edge_type_ids()
+                edge_embeddings = edge_embeddings[graph.get_edges_with_known_edge_types_mask()]
+            else:
+                edge_labels = graph.get_edge_types_ids()
         
         numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
             seed=random_state

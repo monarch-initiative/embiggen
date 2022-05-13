@@ -822,6 +822,6 @@ class AbstractClassifierModel(AbstractModel):
         performance["number_of_holdouts"] = number_of_holdouts
         performance["evaluation_schema"] = evaluation_schema
         for parameter, value in self.parameters().items():
-            performance[parameter] = value
+            performance[parameter] = str(value)
 
         return performance

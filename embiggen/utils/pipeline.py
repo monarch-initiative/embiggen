@@ -114,12 +114,12 @@ def iterate_classifier_models(
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
     """
-    if not isinstance(models, (list, tuple)):
+    if not isinstance(models, (list, tuple, pd.Series)):
         models = [models]
 
     number_of_models = len(models)
 
-    if not isinstance(library_names, (list, tuple)):
+    if not isinstance(library_names, (list, tuple, pd.Series)):
         library_names = [library_names] * number_of_models
 
     if number_of_models == 0:
@@ -269,5 +269,5 @@ def classification_evaluation_pipeline(
             **evaluation_kwargs
         )
         for graph in iterate_graphs(graphs, repositories, versions)
-        for classifier in iterate_classifier_models(models, expected_parent_class)
+        for classifier in iterate_classifier_models(models, expected_parent_class, library_names)
     ])

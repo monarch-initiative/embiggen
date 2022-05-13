@@ -123,7 +123,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
 
         lpt.fit(node_features)
 
-        self._model_instance.fit(**lpt.transform(
+        self._model_instance.fit(*lpt.transform(
             graph=graph,
             edge_features=edge_features,
             behaviour_for_unknown_edge_labels="drop",

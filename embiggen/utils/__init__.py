@@ -8,6 +8,7 @@ from .abstract_models import (
     get_available_models_for_node_label_prediction,
     get_available_models_for_edge_prediction,
     get_available_models_for_edge_label_prediction,
+    get_available_models_for_node_embedding,
     abstract_class
 )
 from .pipeline import classification_evaluation_pipeline
@@ -22,5 +23,6 @@ __all__ = [
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_edge_prediction",
     "get_available_models_for_edge_label_prediction",
+    "get_available_models_for_node_embedding",
     "abstract_class"
 ]

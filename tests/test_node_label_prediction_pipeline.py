@@ -1,7 +1,6 @@
 """Unit test class for Node-label prediction pipeline."""
 from unittest import TestCase
-from embiggen.node_label_prediction import node_label_prediction_evaluation
-from ensmallen.datasets.linqs import Cora
+from embiggen import node_label_prediction_evaluation, get_available_models_for_node_label_prediction
 import shutil
 import os
 
@@ -17,13 +16,20 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         """Test graph visualization."""
         if os.path.exists("experiments"):
             shutil.rmtree("experiments")
-        
-        node_label_prediction_evaluation(
-            holdouts_kwargs={
-                "train_size": 0.8
-            },
-            node_features="SPINE",
-            models="Decision Tree Classifier",
-            graphs="Cora",
-            repositories="linqs"
-        )
+
+        for _, row in get_available_models_for_node_label_prediction().iterrows():
+            holdouts = node_label_prediction_evaluation(
+                holdouts_kwargs={
+                    "train_size": 0.8
+                },
+                node_features="SPINE",
+                models=row.model_name,
+                library_names=row.model_name,
+                graphs="Cora",
+                repositories="linqs",
+                verbose=False
+            )
+            self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2)
+
+        if os.path.exists("experiments"):
+            shutil.rmtree("experiments")

@@ -111,10 +111,15 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 edge_features=edge_features
             )
 
-            if self._one_hot_encode_labels:
-                labels = graph.get_one_hot_encoded_edge_types()
-            else:
-                labels = graph.get_edge_type_ids()
+            if self.is_binary_prediction_task():
+                prediction_probabilities = prediction_probabilities[:, 1]
+
+            labels = graph.get_known_edge_type_ids()
+
+            if graph.has_unknown_node_types():
+                mask = graph.get_known_node_types_mask()
+                prediction_probabilities = prediction_probabilities[mask]
+                predictions = predictions[mask]
 
             performance.append({
                 "evaluation_mode": evaluation_mode,
@@ -131,66 +136,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             })
 
         return performance
-
-    def evaluate(
-        self,
-        graph: Graph,
-        evaluation_schema: str,
-        holdouts_kwargs: Dict[str, Any],
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        subgraph_of_interest: Optional[Graph] = None,
-        number_of_holdouts: int = 10,
-        random_state: int = 42,
-        verbose: bool = True,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
-        unbalance_rates: Tuple[float] = (1.0, )
-    ) -> pd.DataFrame:
-        """Execute evaluation on the provided graph.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run predictions on.
-        evaluation_schema: str
-            The schema for the evaluation to follow.
-        holdouts_kwargs: Dict[str, Any]
-            Parameters to forward to the desired evaluation schema.
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
-            The node features to use.
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
-            The edge features to use.
-        subgraph_of_interest: Optional[Graph] = None
-            Optional subgraph where to focus the task.
-        skip_evaluation_biased_feature: bool = False
-            Whether to skip feature names that are known to be biased
-            when running an holdout. These features should be computed
-            exclusively on the training graph and not the entire graph.
-        number_of_holdouts: int = 10
-            The number of holdouts to execute.
-        random_state: int = 42
-            The random state to use for the holdouts.
-        verbose: bool = True
-            Whether to show a loading bar while computing holdouts.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges exclusively between nodes with different node types.
-            This can be useful when executing a bipartite edge prediction task.
-        unbalance_rates: Tuple[float] = (1.0, )
-            Unbalance rate for the non-existent graphs generation.
-        """
-        super().evaluate(
-            graph=graph,
-            evaluation_schema=evaluation_schema,
-            holdouts_kwargs=holdouts_kwargs,
-            node_features=node_features,
-            edge_features=edge_features,
-            subgraph_of_interest=subgraph_of_interest,
-            number_of_holdouts=number_of_holdouts,
-            random_state=random_state,
-            verbose=verbose,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            unbalance_rates=unbalance_rates,
-        )
 
     def fit(
         self,
