@@ -588,7 +588,7 @@ class GraphVisualizer:
                             n_jobs=cpu_count(),
                             random_state=self._random_state,
                             verbose=self._verbose,
-                            n_iter=500,
+                            n_iter=400,
                             init="random",
                             square_distances="legacy",
                             method="exact" if self._n_components == 4 else "barnes_hut",
@@ -599,18 +599,9 @@ class GraphVisualizer:
                     raise ModuleNotFoundError(
                         "You do not have installed a supported TSNE "
                         "decomposition algorithm. Depending on your use case, "
-                        "we suggest you install tsne-cuda if your graph is "
-                        "very big (in the millions of nodes) if you have access "
-                        "to a compatible GPU system.\n"
-                        "Alternatively, we suggest (and support) MulticoreTSNE, "
-                        "which tends to be easier to install, and is significantly "
-                        "faster than the Sklearn implementation.\n"
-                        "Alternatively, we suggest (and support) MulticoreTSNE, "
-                        "which tends to be easier to install, and is significantly "
-                        "faster than the Sklearn implementation.\n"
-                        "If you intend to do 3D decompositions, "
-                        "remember that tsne-cuda, at the time of writing, "
-                        "does not support them."
+                        "we suggest you install MulticoreTSNE or, "
+                        "alternatively, we suggest (and support) Sklearn's TSNE "
+                        "but it will be slower than the former."
                     )
         elif self._decomposition_method == "PCA":
             return PCA(**{
