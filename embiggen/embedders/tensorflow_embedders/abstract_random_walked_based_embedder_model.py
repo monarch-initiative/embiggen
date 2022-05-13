@@ -92,5 +92,22 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
             )
         }
 
-    def is_topological(self) -> bool:
+    @staticmethod
+    def is_topological() -> bool:
         return True
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return True
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False

@@ -186,7 +186,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             .repeat()\
             .prefetch(AUTOTUNE), )
 
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+    @staticmethod
+    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
         return True
 
     def _extract_embeddings(

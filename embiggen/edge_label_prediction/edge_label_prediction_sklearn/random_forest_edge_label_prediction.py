@@ -1,6 +1,7 @@
 """Submodule wrapping Random Forest for edge label prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import RandomForestClassifier
+from multiprocessing import cpu_count
 from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
 
@@ -43,7 +44,7 @@ class RandomForestEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         self._min_impurity_split = min_impurity_split
         self._bootstrap = bootstrap
         self._oob_score = oob_score
-        self._n_jobs = n_jobs
+        self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
         self._random_state = random_state
         self._verbose = verbose
         self._warm_start = warm_start

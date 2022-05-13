@@ -1,10 +1,10 @@
 """Submodule wrapping MLP for node label prediction."""
 from typing import Dict, Any
 from sklearn.neural_network import MLPClassifier
-from .sgd_node_label_prediction import SGDNodeLabelPrediction
+from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
-class MLPNodeLabelPrediction(SGDNodeLabelPrediction):
+class MLPNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     """Create wrapper over Sklearn MLP classifier for node label prediction."""
 
     def __init__(

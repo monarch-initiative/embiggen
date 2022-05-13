@@ -14,6 +14,10 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_binary_prediction_task = None
         super().__init__()
     
+    def requires_edge_types() -> bool:
+        """Returns whether this method requires node types."""
+        return True
+
     @staticmethod
     def task_name() -> str:
         """Returns name of the task this model is used for."""

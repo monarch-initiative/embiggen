@@ -160,7 +160,7 @@ def iterate_classifier_models(
 
     for model in tqdm(
         models,
-        desc="Models",
+        desc=f"{expected_parent_class.task_name()} Models",
         total=number_of_models,
         disable=number_of_models == 1,
         dynamic_ncols=True,

@@ -748,7 +748,9 @@ class AbstractClassifierModel(AbstractModel):
         for holdout_number in trange(
             number_of_holdouts,
             disable=not verbose,
-            desc="Computing holdouts"
+            leave=False,
+            dynamic_ncols=True,
+            desc=f"Evaluating {self.model_name()} on {graph.get_name()}"
         ):
             # We create a copy of the current classifier.
             classifier = self.clone()

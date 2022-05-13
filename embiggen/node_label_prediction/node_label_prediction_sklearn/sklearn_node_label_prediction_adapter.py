@@ -173,3 +173,15 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             graph=graph,
             node_features=node_features,
         ))
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False

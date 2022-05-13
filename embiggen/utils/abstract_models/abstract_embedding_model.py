@@ -33,14 +33,16 @@ class AbstractEmbeddingModel(AbstractModel):
             "embedding_size": self._embedding_size
         }
 
-    def is_topological(self) -> bool:
+    @staticmethod
+    def is_topological() -> bool:
         """Returns whether this embedding is based on graph topology."""
         raise NotImplementedError((
             "The `is_topological` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+    @staticmethod
+    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
         """Returns whether this embedding requires the node degrees to be sorted."""
         raise NotImplementedError((
             "The `requires_nodes_sorted_by_decreasing_node_degree` method must be implemented "
@@ -104,6 +106,30 @@ class AbstractEmbeddingModel(AbstractModel):
                     "are sorted by decreasing outbound node degrees, you can use "
                     "the Graph method `graph.sort_by_decreasing_outbound_node_degree()`."
                 )
+
+        if self.requires_node_types() and not graph.has_node_types():
+            raise ValueError(
+                "The provided graph does not have node types, but "
+                f"the {self.model_name()} requires node types."
+            )
+
+        if self.requires_edge_types() and not graph.has_edge_types():
+            raise ValueError(
+                "The provided graph does not have edge types, but "
+                f"the {self.model_name()} requires edge types."
+            )
+
+        if self.requires_edge_weights() and not graph.has_edge_weights():
+            raise ValueError(
+                "The provided graph does not have edge weights, but "
+                f"the {self.model_name()} requires edge weights."
+            )
+
+        if self.requires_positive_edge_weights() and graph.has_edge_weights() and graph.has_negative_edge_weights():
+            raise ValueError(
+                "The provided graph has negative edge weights, but "
+                f"the {self.model_name()} requires strictly positive edge weights."
+            )
 
         if self.is_topological():
             if not graph.has_edges():

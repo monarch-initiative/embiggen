@@ -24,6 +24,38 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def requires_edge_weights() -> bool:
+        """Returns whether the model requires edge weights."""
+        raise NotImplementedError((
+            "The `requires_edge_weights` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        """Returns whether the model requires edge weights."""
+        raise NotImplementedError((
+            "The `requires_positive_edge_weights` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        """Returns whether the model requires edge weights."""
+        raise NotImplementedError((
+            "The `requires_node_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        """Returns whether the model requires edge weights."""
+        raise NotImplementedError((
+            "The `requires_edge_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+    
+    @staticmethod
     def task_name() -> str:
         """Returns the task for which this model is being used."""
         raise NotImplementedError((
@@ -62,7 +94,7 @@ class AbstractModel(Hashable):
             "library_name": self.library_name(),
             "task_name": self.task_name(),
         })
-
+    
     @staticmethod
     def is_available() -> bool:
         """Returns whether the model class is actually available in the user system."""

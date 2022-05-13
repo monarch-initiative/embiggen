@@ -1,6 +1,7 @@
 """Submodule wrapping KNN for node label prediction."""
 from typing import Dict, Any
 from sklearn.neighbors import KNeighborsClassifier
+from multiprocessing import cpu_count
 from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
@@ -27,7 +28,7 @@ class KNNNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         self._p = p
         self._metric = metric
         self._metric_params = metric_params
-        self._n_jobs = n_jobs
+        self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
         super().__init__(
             KNeighborsClassifier(
                 n_neighbors=n_neighbors,

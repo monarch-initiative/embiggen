@@ -49,9 +49,9 @@ class WeightedSPINE(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Return node embedding."""
+        print(graph.get_name())
         node_embedding = self._model.fit_transform(
             graph,
-            dtype=self._dtype,
             verbose=verbose,
         ).T
         if return_dataframe:
@@ -74,8 +74,26 @@ class WeightedSPINE(AbstractEmbeddingModel):
     def library_name() -> str:
         return "Ensmallen"
 
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+    @staticmethod
+    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
         return False
 
-    def is_topological(self) -> bool:
+    @staticmethod
+    def is_topological() -> bool:
         return True
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return True
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return True
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False

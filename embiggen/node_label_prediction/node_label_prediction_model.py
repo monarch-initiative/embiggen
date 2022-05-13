@@ -16,6 +16,11 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         super().__init__()
 
     @staticmethod
+    def requires_node_types() -> bool:
+        """Returns whether this method requires node types."""
+        return True
+
+    @staticmethod
     def task_name() -> str:
         """Returns name of the task this model is used for."""
         return "Node Label Prediction"

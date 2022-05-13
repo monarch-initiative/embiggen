@@ -10,7 +10,11 @@ def get_models_dataframe() -> pd.DataFrame:
             "model_name": model_name,
             "task_name": task_name,
             "library_name": library_name,
-            "available": model_class.is_available()
+            "available": model_class.is_available(),
+            "requires_node_types": model_class.requires_node_types(),
+            "requires_edge_types": model_class.requires_edge_types(),
+            "requires_edge_weights": model_class.requires_edge_weights(),
+            "requires_positive_edge_weights": model_class.requires_positive_edge_weights(),
         }
         for model_name, tasks in AbstractModel.MODELS_LIBRARY.items()
         for task_name, libraries in tasks.items()

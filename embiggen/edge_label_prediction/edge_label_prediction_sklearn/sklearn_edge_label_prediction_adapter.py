@@ -196,3 +196,15 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     def library_name() -> str:
         """Return name of the model."""
         return "scikit-learn"
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False

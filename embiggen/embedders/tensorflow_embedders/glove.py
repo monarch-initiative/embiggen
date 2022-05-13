@@ -230,7 +230,7 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
         model = Model(
             inputs=[sources, destinations],
             outputs=prediction,
-            name=self.name()
+            name=self.model_name()
         )
 
         model.compile(
@@ -273,7 +273,8 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
             frequencies
         )
 
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+    @staticmethod
+    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
         return False
 
     def _extract_embeddings(

@@ -105,7 +105,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         gt.fit(node_features)
 
-        return gt.transform(graph=graph)
+        return gt.transform(
+            graph=graph
+        )
 
     def _fit(
         self,
@@ -139,7 +141,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 ),
                 random_state=self._random_state,
                 sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
-                verbose=False
             ),
             shuffle=True,
             random_state=self._random_state
@@ -188,3 +189,19 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             graph=graph,
             node_features=node_features,
         ))
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False

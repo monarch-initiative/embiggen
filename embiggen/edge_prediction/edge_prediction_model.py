@@ -128,7 +128,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     math.ceil(edges_number*unbalance_rate)),
                 random_state=random_state,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-                verbose=False
             )
             non_existent_train, non_existent_test = negative_graph.random_holdout(
                 train_size=train_size,

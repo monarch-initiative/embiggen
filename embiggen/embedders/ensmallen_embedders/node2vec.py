@@ -32,7 +32,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
-        max_neighbours: int= 100,
+        max_neighbours: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
@@ -188,7 +188,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
                 use_zipfian_sampling=self._use_zipfian_sampling
             )
         }
-    
+
     @staticmethod
     def task_name() -> str:
         return "Node Embedding"
@@ -223,3 +223,19 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
                 index=graph.get_node_names()
             )
         return node_embedding
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return True
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False
