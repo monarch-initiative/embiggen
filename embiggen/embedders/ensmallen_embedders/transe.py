@@ -1,5 +1,5 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import  Dict, Any, Union
+from typing import Dict, Any, Union
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
@@ -14,6 +14,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         self,
         embedding_size: int = 100,
         renormalize: bool = True,
+        epochs: int = 10,
+        learning_rate: float = 0.01,
+        learning_rate_decay: float = 0.9,
         random_state: int = 42
     ):
         """Create new abstract Node2Vec method.
@@ -24,11 +27,21 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             Dimension of the embedding.
         renormalize: bool = True
             Whether to renormalize at each loop, by default true.
-        dtype: int = "u8"
-            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+        epochs: int
+            The number of epochs to run the model for, by default 10.
+        learning_rate: float
+            The learning rate to update the gradient, by default 0.01.
+        learning_rate_decay: float
+            Factor to reduce the learning rate for at each epoch. By default 0.9.
+        random_state: int = 42
+            Random state to reproduce the embeddings.
         """
         self._renormalize = renormalize
         self._random_state = random_state
+        self._epochs = epochs
+        self._learning_rate = learning_rate
+        self._learning_rate_decay = learning_rate_decay
+
         self._model = models.TransE(
             embedding_size=embedding_size,
             renormalize=renormalize,
@@ -44,8 +57,11 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         return {
             **super().parameters(),
             **dict(
-                renormalize = self._renormalize,
-                random_state = self._random_state,
+                renormalize=self._renormalize,
+                random_state=self._random_state,
+                epochs=self._epochs,
+                learning_rate=self._learning_rate,
+                learning_rate_decay=self._learning_rate_decay,
             )
         }
 
@@ -58,6 +74,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         """Return node embedding."""
         node_embedding, edge_type_embedding = self._model.fit_transform(
             graph,
+            epochs=self._epochs,
+            learning_rate=self._learning_rate,
+            learning_rate_decay=self._learning_rate_decay,
             verbose=verbose,
         )
         if return_dataframe:

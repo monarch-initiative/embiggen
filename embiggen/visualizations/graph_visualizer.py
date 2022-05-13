@@ -27,7 +27,6 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
-from tqdm.auto import trange, tqdm
 import itertools
 
 
@@ -91,7 +90,8 @@ class GraphVisualizer:
         number_of_subsampled_negative_edges: int = 20_000,
         number_of_holdouts_for_cluster_comments: int = 5,
         random_state: int = 42,
-        decomposition_kwargs: Optional[Dict] = None
+        decomposition_kwargs: Optional[Dict] = None,
+        verbose: bool = False
     ):
         """Create new GraphVisualizer object.
 
@@ -221,6 +221,8 @@ class GraphVisualizer:
             The random state to reproduce the visualizations.
         decomposition_kwargs: Optional[Dict] = None,
             Kwargs to forward to the selected decomposition method.
+        verbose: bool = False
+            Whether to show loading bars and logs.
 
         Raises
         ---------------------------
@@ -259,6 +261,7 @@ class GraphVisualizer:
         self._show_node_embedding_method = show_node_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
+        self._verbose = verbose
 
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
         self._show_heatmaps_description = show_heatmaps_description
@@ -565,7 +568,7 @@ class GraphVisualizer:
                             n_jobs=cpu_count(),
                             n_iter=400,
                             random_state=self._random_state,
-                            verbose=False,
+                            verbose=self._verbose,
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
@@ -584,7 +587,7 @@ class GraphVisualizer:
                             n_components=self._n_components,
                             n_jobs=cpu_count(),
                             random_state=self._random_state,
-                            verbose=False,
+                            verbose=self._verbose,
                             n_iter=500,
                             init="random",
                             square_distances="legacy",
@@ -2771,19 +2774,9 @@ class GraphVisualizer:
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
         if self._subsampled_node_ids is None:
-            nodes_iterator = trange(
-                self._graph.get_nodes_number(),
-                desc="Computing flattened multi-label and unknown node types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            nodes_iterator = range(self._graph.get_nodes_number())
         else:
-            nodes_iterator = tqdm(
-                self._subsampled_node_ids,
-                desc="Computing subsampled flattened multi-label and unknown node types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            nodes_iterator = self._subsampled_node_ids
 
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
@@ -2848,19 +2841,9 @@ class GraphVisualizer:
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
         if self._subsampled_positive_edge_ids is None:
-            edges_iterator = trange(
-                self._graph.get_number_of_directed_edges(),
-                desc="Computing flattened unknown edge types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            edges_iterator = range(self._graph.get_number_of_directed_edges())
         else:
-            edges_iterator = tqdm(
-                self._subsampled_positive_edge_ids,
-                desc="Computing subsampled flattened unknown edge types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            edges_iterator = self._subsampled_positive_edge_ids
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
@@ -2984,12 +2967,7 @@ class GraphVisualizer:
 
         node_type_names_iter = (
             self._graph.get_node_type_name_from_node_type_id(node_id)
-            for node_id in trange(
-                self._graph.get_node_types_number(),
-                desc="Retrieving graph node types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            for node_id in range(self._graph.get_node_types_number())
         )
 
         if self._graph.has_unknown_node_types():
@@ -3619,12 +3597,7 @@ class GraphVisualizer:
 
         edge_type_names_iter = (
             self._graph.get_edge_type_name_from_edge_type_id(edge_id)
-            for edge_id in trange(
-                self._graph.get_edge_types_number(),
-                desc="Retrieving graph edge types",
-                leave=False,
-                dynamic_ncols=True
-            )
+            for edge_id in range(self._graph.get_edge_types_number())
         )
 
         if self._graph.has_unknown_edge_types():
