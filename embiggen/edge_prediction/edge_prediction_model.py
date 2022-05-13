@@ -116,12 +116,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             train,
             node_features=node_features,
             edge_features=edge_features
-        )
+        )[:, 1]
         existent_test_prediction_probabilities = self.predict_proba(
             test,
             node_features=node_features,
             edge_features=edge_features
-        )
+        )[:, 1]
         for unbalance_rate in unbalance_rates:
             negative_graph = graph.sample_negatives(
                 number_of_negative_samples=int(
@@ -162,19 +162,23 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     non_existent_graph,
                     node_features=node_features,
                     edge_features=edge_features
-                )
-                predictions = np.stack((
+                )[:, 1]
+                
+                predictions = np.concatenate((
                     existent_predictions,
                     non_existent_predictions
                 ))
-                prediction_probabilities = np.stack((
+
+                prediction_probabilities = np.concatenate((
                     existent_prediction_probabilitiess,
                     non_existent_prediction_probabilities
                 ))
-                labels = np.stack((
+
+                labels = np.concatenate((
                     np.ones_like(existent_predictions),
                     np.zeros_like(non_existent_predictions),
                 ))
+
                 performance.append({
                     "evaluation_mode": evaluation_mode,
                     "unbalance_rate": unbalance_rate,
@@ -247,8 +251,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         skip_evaluation_biased_feature: bool = False
-    ) -> np.ndarray:
-        """Execute predictions on the provided graph.
+    ):
+        """Execute fitting on the provided graph.
 
         Parameters
         --------------------

@@ -57,7 +57,7 @@ class WeightedSPINE(AbstractEmbeddingModel):
         if return_dataframe:
             return pd.DataFrame(
                 node_embedding,
-                index=graph.get_nodes_number()
+                index=graph.get_node_names()
             )
         return node_embedding
 

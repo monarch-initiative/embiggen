@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from ensmallen import Graph
 import tensorflow as tf
+from tensorflow.keras import Model
 from ...sequences import Node2VecSequence
 from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
 from ...utils import abstract_class
@@ -139,6 +140,16 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             )
         }
 
+    def _get_steps_per_epoch(self, graph: Graph) -> Tuple[Any]:
+        """Returns number of steps per epoch.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to compute the number of steps.
+        """
+        return max(graph.get_nodes_number() // self._batch_size, 1)
+
     def _build_input(
         self,
         graph: Graph,
@@ -159,7 +170,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        return Node2VecSequence(
+        return (Node2VecSequence(
             graph,
             walk_length=self._walk_length,
             batch_size=self._batch_size,
@@ -173,7 +184,29 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             random_state=self._random_state,
         ).into_dataset()\
             .repeat()\
-            .prefetch(AUTOTUNE)
+            .prefetch(AUTOTUNE), )
 
     def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
         return True
+
+    def _extract_embeddings(
+        self,
+        graph: Graph,
+        model: Model,
+        return_dataframe: bool
+    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+        """Returns embedding from the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph that was embedded.
+        model: Model
+            The Keras model used to embed the graph.
+        return_dataframe: bool
+            Whether to return a dataframe of a numpy array.
+        """
+        return self.get_layer_weights(
+            "node_embedding",
+            model
+        )

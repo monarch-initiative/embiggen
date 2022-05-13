@@ -59,12 +59,12 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         node_embedding, edge_type_embedding = self._model.fit_transform(
             graph,
             verbose=verbose,
-        ).T
+        )
         if return_dataframe:
             return {
                 "node_embedding": pd.DataFrame(
                     node_embedding,
-                    index=graph.get_nodes_number()
+                    index=graph.get_node_names()
                 ),
                 "edge_type_embedding": pd.DataFrame(
                     edge_type_embedding,

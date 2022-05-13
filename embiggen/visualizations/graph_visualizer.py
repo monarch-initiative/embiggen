@@ -80,7 +80,6 @@ class GraphVisualizer:
         edge_prediction_source_curie_prefixes: Optional[Union[str, List[str]]] = None,
         edge_prediction_destination_curie_prefixes: Optional[Union[str, List[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
-        classifier_for_separations_considerations: str = "DecisionTreeClassifier",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
         show_separability_considerations_explanation: bool = True,
@@ -174,9 +173,6 @@ class GraphVisualizer:
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
             name such as `Graph`.
-        classifier_for_separations_considerations: str = "DecisionTreeClassifier"
-            Name of default sklearn classifier to use to compute the separations
-            considerations for the clusters.
         show_node_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
@@ -427,7 +423,7 @@ class GraphVisualizer:
 
         return (
             " The separability consideration{plural} {letters} derive from "
-            "evaluating a {model_name} trained on {holdouts_number} Monte Carlo holdouts, "
+            "evaluating a Decision Tree trained on {holdouts_number} Monte Carlo holdouts, "
             "with a 70/30 split between training and test sets."
         ).format(
             plural=plural,
@@ -435,8 +431,6 @@ class GraphVisualizer:
                 plural=plural,
                 letters=format_list(letters, bold_words=True)
             ) if number_of_letters > 0 else "",
-            model_name=sanitize_ml_labels(
-                self._classifier_for_separations_considerations),
             holdouts_number=apnumber(
                 self._number_of_holdouts_for_cluster_comments)
         )
@@ -664,7 +658,7 @@ class GraphVisualizer:
                 self._node_embedding_method_name = node_embedding
             node_embedding = embed_graph(
                 graph=self._graph,
-                node_embedding_method_name=node_embedding,
+                embedding_model=node_embedding,
                 **node_embedding_kwargs
             )
             # If this is a node embedding like TransE, which

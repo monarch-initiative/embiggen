@@ -14,7 +14,7 @@ class TestNodeEmbeddingUtility(TestCase):
         """Test that embed pipeline works fine in SPINE."""
         embed_graph(
             "Cora",
-            library_name="Linqs",
+            repository="linqs",
             embedding_model="SPINE",
         )
 
@@ -22,6 +22,43 @@ class TestNodeEmbeddingUtility(TestCase):
         """Test that embed pipeline works fine in SPINE."""
         embed_graph(
             "Cora",
-            library_name="Linqs",
+            repository="linqs",
             embedding_model="TransE",
+            library_name="Ensmallen"
+        )
+
+    def test_cbow_tensorflow(self):
+        """Test that embed pipeline works fine in SPINE."""
+        embed_graph(
+            "Cora",
+            repository="linqs",
+            embedding_model="CBOW",
+            library_name="TensorFlow"
+        )
+
+    def test_cbow_ensmallen(self):
+        """Test that embed pipeline works fine in SPINE."""
+        embed_graph(
+            "Cora",
+            repository="linqs",
+            embedding_model="CBOW",
+            library_name="Ensmallen"
+        )
+
+    def test_skipgram_tensorflow(self):
+        """Test that embed pipeline works fine in SPINE."""
+        embed_graph(
+            "Cora",
+            repository="linqs",
+            embedding_model="SkipGram",
+            library_name="TensorFlow"
+        )
+
+    def test_skipgram_ensmallen(self):
+        """Test that embed pipeline works fine in SPINE."""
+        embed_graph(
+            "Cora",
+            repository="linqs",
+            embedding_model="SkipGram",
+            library_name="Ensmallen"
         )

@@ -53,7 +53,7 @@ class CBOW(Node2Vec):
         model = Model(
             inputs=[contextual_terms, central_terms],
             outputs=sampled_softmax,
-            name=self.name()
+            name=self.model_name()
         )
 
         model.compile(optimizer=self._optimizer)

@@ -29,7 +29,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
         normalize_learning_rate_by_degree: Optional[bool] = False,
         use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
-        verbose: bool = True
     ):
         """Create new abstract Node2Vec method.
 
@@ -100,8 +99,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
             Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
-        verbose: bool = True
-            Whether to show loading bars
         """
         super().__init__(
             model_name="CBOW",
@@ -126,7 +123,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
-            verbose=verbose
         )
     
     @staticmethod

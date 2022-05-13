@@ -100,7 +100,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """
         gt = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=False
+            aligned_node_mapping=True
         )
 
         gt.fit(node_features)

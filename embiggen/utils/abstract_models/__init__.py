@@ -2,7 +2,12 @@
 from .abstract_classifier_model import AbstractClassifierModel
 from .abstract_embedding_model import AbstractEmbeddingModel
 from .abstract_model import abstract_class, AbstractModel
-from .get_models_dataframe import get_models_dataframe
+from .get_models_dataframe import (
+    get_models_dataframe,
+    get_available_models_for_edge_label_prediction,
+    get_available_models_for_edge_prediction,
+    get_available_models_for_node_label_prediction
+)
 from .auto_init import build_init
 
 __all__ = [
@@ -12,5 +17,8 @@ __all__ = [
     "abstract_class",
     "AbstractModel",
     "get_models_dataframe",
+    "get_available_models_for_edge_label_prediction",
+    "get_available_models_for_edge_prediction",
+    "get_available_models_for_node_label_prediction",
     "build_init"
 ]

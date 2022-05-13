@@ -21,6 +21,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         """Test graph visualization."""
         if os.path.exists("node_embeddings"):
             shutil.rmtree("node_embeddings")
+        
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(),
             models="Decision Tree Classifier",
@@ -30,4 +31,4 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             number_of_holdouts=self._number_of_holdouts,
             unbalance_rates = (2.0, 3.0, ),
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*3)
+        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)

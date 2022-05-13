@@ -118,6 +118,8 @@ class NodeTransformer:
 
         if self.numeric_node_ids:
             return self._node_feature.index.get_indexer(nodes)
+        
         if isinstance(nodes, Graph):
             nodes = nodes.get_node_names()
+        
         return self._node_feature.loc[nodes].to_numpy()

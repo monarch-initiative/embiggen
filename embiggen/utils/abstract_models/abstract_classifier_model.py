@@ -184,7 +184,7 @@ class AbstractClassifierModel(AbstractModel):
         if issubclass(node_feature.__class__, AbstractEmbeddingModel):
             if (
                 skip_evaluation_biased_feature and
-                node_feature.name().lower() in self._get_evaluation_biased_feature_names_lowercase()
+                node_feature.model_name().lower() in self._get_evaluation_biased_feature_names_lowercase()
             ):
                 return node_feature
 
@@ -799,12 +799,12 @@ class AbstractClassifierModel(AbstractModel):
             required_training_time = time.time() - training_start
 
             # We add the newly computed performance.
-            holdout_performance = self._evaluate(
+            holdout_performance = classifier._evaluate(
                 graph=graph if subgraph_of_interest is None else subgraph_of_interest,
                 train=train,
                 test=test,
-                node_features=node_features,
-                edge_features=edge_features,
+                node_features=holdout_node_features,
+                edge_features=holdout_edge_features,
                 random_state=random_state,
                 **kwargs
             )
@@ -816,7 +816,8 @@ class AbstractClassifierModel(AbstractModel):
         # execution.
         performance = pd.DataFrame(performance)
         performance["task_name"] = self.task_name()
-        performance["model_name"] = self.name()
+        performance["model_name"] = self.model_name()
+        performance["library_name"] = self.library_name()
         performance["graph_name"] = graph.get_name()
         performance["number_of_holdouts"] = number_of_holdouts
         performance["evaluation_schema"] = evaluation_schema

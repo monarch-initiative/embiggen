@@ -11,6 +11,10 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_cl
 class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract node label prediction model."""
 
+    def __init__(self):
+        self._is_binary_prediction_task = None
+        super().__init__()
+
     @staticmethod
     def task_name() -> str:
         """Returns name of the task this model is used for."""
@@ -36,6 +40,10 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             "Stratified Kfold"
             "Kfold"
         ]
+
+    def is_binary_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a binary prediction task."""
+        return self._is_binary_prediction_task
 
     def split_graph_following_evaluation_schema(
         self,
@@ -113,12 +121,21 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             else:
                 labels = np.fromiter(
                     (
-                        np.nan if node_type_id is None else node_type_id[0]
-                        for node_type_id in (evaluation_graph.get_node_type_ids_from_node_id(node_id)
-                                             for node_id in range(evaluation_graph.get_nodes_number()))
+                        0 if node_type_id is None else node_type_id[0]
+                        for node_type_id in (
+                            evaluation_graph.get_node_type_ids_from_node_id(node_id)
+                            for node_id in range(evaluation_graph.get_nodes_number())
+                        )
                     ),
-                    dtype=np.float32
+                    dtype=np.uint32
                 )
+            
+            if graph.has_unknown_node_types():
+                mask = graph.get_known_node_types_mask()
+                prediction_probabilities = prediction_probabilities[mask]
+                predictions = predictions[mask]
+                labels = labels[mask]
+
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
@@ -210,6 +227,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "Currently edge features are not supported in edge prediction models."
             )
 
+        self._is_binary_prediction_task = graph.get_node_types_number() == 2
+
         super().fit(
             graph=graph,
             node_features=node_features,
@@ -228,8 +247,6 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         number_of_holdouts: int = 10,
         random_state: int = 42,
         verbose: bool = True,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
-        unbalance_rates: Tuple[float] = (1.0, )
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
 
@@ -257,18 +274,13 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The random state to use for the holdouts.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges exclusively between nodes with different node types.
-            This can be useful when executing a bipartite edge prediction task.
-        unbalance_rates: Tuple[float] = (1.0, )
-            Unbalance rate for the non-existent graphs generation.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
             )
 
-        super().evaluate(
+        return super().evaluate(
             graph=graph,
             evaluation_schema=evaluation_schema,
             holdouts_kwargs=holdouts_kwargs,
@@ -278,6 +290,4 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
             verbose=verbose,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            unbalance_rates=unbalance_rates,
         )

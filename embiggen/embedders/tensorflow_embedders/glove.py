@@ -22,8 +22,8 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
     predict its cooccurrence probability.
     """
 
-    SOURCE_NODES_EMBEDDING = "SOURCE_NODES_EMBEDDING"
-    DESTINATION_NODES_EMBEDDING = "DESTINATION_NODES_EMBEDDING"
+    SOURCE_NODES_EMBEDDING = "source_nodes_embedding"
+    DESTINATION_NODES_EMBEDDING = "destination_nodes_embedding"
 
     def __init__(
         self,
@@ -275,3 +275,31 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
 
     def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
         return False
+
+    def _extract_embeddings(
+        self,
+        graph: Graph,
+        model: Model,
+        return_dataframe: bool
+    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+        """Returns embedding from the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph that was embedded.
+        model: Model
+            The Keras model used to embed the graph.
+        return_dataframe: bool
+            Whether to return a dataframe of a numpy array.
+        """
+        return {
+            layer_name: self.get_layer_weights(
+                layer_name,
+                model
+            )
+            for layer_name in (
+                self.SOURCE_NODES_EMBEDDING,
+                self.DESTINATION_NODES_EMBEDDING
+            )
+        }

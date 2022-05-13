@@ -11,18 +11,19 @@ class TestEvaluateNodeLabelPrediction(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on Node-label prediction pipeline class."""
-        self._graph = Cora()
-        self._subgraph = self._graph.get_random_subgraph(
-            self._graph.get_nodes_number() - 2
-        ).remove_singleton_nodes()
         self._number_of_holdouts = 2
 
-    def test_evaluate_embedding_for_edge_prediction(self):
+    def test_evaluate_embedding_for_node_label_prediction(self):
         """Test graph visualization."""
-        if os.path.exists("node_embeddings"):
-            shutil.rmtree("node_embeddings")
+        if os.path.exists("experiments"):
+            shutil.rmtree("experiments")
         
         node_label_prediction_evaluation(
+            holdouts_kwargs={
+                "train_size": 0.8
+            },
             node_features="SPINE",
-            graphs=self._graph,
+            models="Decision Tree Classifier",
+            graphs="Cora",
+            repositories="linqs"
         )

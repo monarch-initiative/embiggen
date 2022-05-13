@@ -196,7 +196,6 @@ class Node2VecSequence(AbstractSequence):
             explore_weight=self._explore_weight,
             change_node_type_weight=self._change_node_type_weight,
             change_edge_type_weight=self._change_edge_type_weight,
-            dense_node_mapping=self._dense_node_mapping,
             max_neighbours=self._max_neighbours,
             random_state=self._random_state + idx + self.elapsed_epochs
         )

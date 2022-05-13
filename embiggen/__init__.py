@@ -6,6 +6,7 @@ from .transformers import (
     NodeTransformer
 )
 from .visualizations import GraphVisualizer
+from .utils import *
 from .embedders import *
 from .edge_prediction import *
 from .edge_label_prediction import *

@@ -52,11 +52,6 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    @staticmethod
-    def model_name() -> str:
-        """Return name of the model."""
-        return self.__class__.__name__
-
     def _trasform_graph_into_node_embedding(
         self,
         graph: Graph,
@@ -112,7 +107,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
 
         nlpt.fit(node_features)
 
-        self._model_instance.fit(nlpt.transform(
+        self._model_instance.fit(*nlpt.transform(
             graph=graph,
             behaviour_for_unknown_node_labels="drop",
             shuffle=True,
@@ -147,7 +142,6 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         return self._model_instance.predict_proba(self._trasform_graph_into_node_embedding(
             graph=graph,
             node_features=node_features,
-            edge_features=edge_features,
         ))
 
     def _predict(
@@ -178,5 +172,4 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         return self._model_instance.predict(self._trasform_graph_into_node_embedding(
             graph=graph,
             node_features=node_features,
-            edge_features=edge_features,
         ))

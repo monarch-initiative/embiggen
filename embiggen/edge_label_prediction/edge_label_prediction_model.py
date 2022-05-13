@@ -10,6 +10,10 @@ from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge label prediction model."""
 
+    def __init__(self):
+        self._is_binary_prediction_task = None
+        super().__init__()
+    
     @staticmethod
     def task_name() -> str:
         """Returns name of the task this model is used for."""
@@ -21,6 +25,10 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         return [
             "TransE"
         ]
+
+    def is_binary_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a binary prediction task."""
+        return self._is_binary_prediction_task
 
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""
@@ -182,4 +190,40 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             verbose=verbose,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             unbalance_rates=unbalance_rates,
+        )
+
+    def fit(
+        self,
+        graph: Graph,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        skip_evaluation_biased_feature: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        skip_evaluation_biased_feature: bool = False
+            Whether to skip feature names that are known to be biased
+            when running an holdout. These features should be computed
+            exclusively on the training graph and not the entire graph.
+        """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        self._is_binary_prediction_task = graph.get_edge_types_number() == 2
+
+        super().fit(
+            graph=graph,
+            node_features=node_features,
+            edge_features=edge_features,
+            skip_evaluation_biased_feature=skip_evaluation_biased_feature,
         )

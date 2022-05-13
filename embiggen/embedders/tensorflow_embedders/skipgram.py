@@ -19,7 +19,7 @@ class SkipGram(Node2Vec):
     during the training process to generate the negatives.
     """
 
-    NODE_EMBEDDING = "NODE_EMBEDDING"
+    NODE_EMBEDDING = "node_embedding"
 
     @staticmethod
     def model_name() -> str:
@@ -54,7 +54,7 @@ class SkipGram(Node2Vec):
         model = Model(
             inputs=[contextual_terms, central_terms],
             outputs=output,
-            name=self.name()
+            name=self.model_name()
         )
 
         model.compile(optimizer=self._optimizer)

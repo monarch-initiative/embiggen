@@ -24,7 +24,6 @@ def _cached_embed_graph(
     embedding_model: Type[AbstractEmbeddingModel],
     embedding_model_name: str,
     library_name: str,
-    enable_cache: bool,
     cache_directory: str,
     return_dataframe: bool = True,
     verbose: bool = True,
@@ -84,7 +83,7 @@ def embed_graph(
         be raised as it is unclear how to behave.
     """
 
-    graph, version, repository = next(iterate_graphs(
+    graph = next(iterate_graphs(
         graphs=graph,
         repositories=repository,
         versions=version
@@ -103,11 +102,14 @@ def embed_graph(
             "model. It is unclear what to do with these arguments."
         )
 
-    if not issubclass(embedding_model, AbstractEmbeddingModel):
+    if not issubclass(embedding_model.__class__, AbstractEmbeddingModel):
         raise ValueError(
             "The provided object is not an embedding model, that is, "
             "it does not extend the class `AbstractEmbeddingModel`."
         )
+
+    if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
+        graph = graph.sort_by_decreasing_outbound_node_degree()
 
     embedding = _cached_embed_graph(
         graph=graph,

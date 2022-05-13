@@ -103,6 +103,16 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             "The method _build_input must be implemented in the child classes."
         )
 
+    def _get_steps_per_epoch(self, graph: Graph) -> Tuple[Any]:
+        """Returns number of steps per epoch.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to compute the number of steps.
+        """
+        return None
+
     def _extract_embeddings(
         self,
         graph: Graph,
@@ -128,15 +138,17 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         """Print model summary."""
         self._model.summary()
 
-    def get_layer_weights(self, layer_name: str) -> np.ndarray:
+    def get_layer_weights(self, layer_name: str, model: Model) -> np.ndarray:
         """Return weights from the requested layer.
 
         Parameters
         -----------------------
         layer_name: str
             Name of the layer to query for.
+        model: Model
+            The model from where to extract the layer weights.
         """
-        for layer in self._model.layers:
+        for layer in model.layers:
             if layer.name == layer_name:
                 return layer.get_weights()[0]
         raise NotImplementedError(
@@ -168,13 +180,22 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             model = self._build_model(graph)
 
         # Get the model input
-        training_input = self._build_input(graph)
+        training_input = self._build_input(
+            graph,
+            verbose=verbose
+        )
+
+        if not isinstance(training_input, tuple):
+            raise ValueError(
+                "The provided input data is not a tuple."
+            )
 
         # Fit the model
         model.fit(
             *training_input,
             epochs=self._epochs,
             verbose=traditional_verbose and verbose > 0,
+            steps_per_epoch=self._get_steps_per_epoch(graph),
             callbacks=[
                 EarlyStopping(
                     monitor="loss",

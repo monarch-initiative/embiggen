@@ -72,6 +72,14 @@ def iterate_graphs(
             f"the number of provided versions `{number_of_versions}`."
         )
 
+    for graph in graphs:
+        if not isinstance(graph, (str, Graph)):
+            raise ValueError(
+                "The provided classifier graph is expected to be "
+                "either an Ensmallen graph object or a string with the graph name "
+                f"but an object of type {type(graph)} was provided."
+            )
+
     for graph, version, repository in tqdm(
         zip(graphs, versions, repositories),
         desc="Graphs",
@@ -85,8 +93,9 @@ def iterate_graphs(
                 name=graph,
                 repository=repository,
                 version=version
-            )
-        yield graph
+            )()
+        else:
+            yield graph
 
 
 def iterate_classifier_models(
