@@ -69,6 +69,9 @@ def get_class_parent_names(
 ) -> List[str]:
     """Return list of parent classes names."""
 
+    if klass is None:
+        return []
+
     # First we search for the parent class in the same file.
     parent_names = [
         base.id
