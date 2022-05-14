@@ -150,11 +150,11 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
                 ),
                 "node_type_embedding": pd.DataFrame(
                     node_type_embedding,
-                    index=graph.get_node_type_names()
+                    index=graph.get_unique_node_type_names()
                 ),
                 "edge_type_embedding": pd.DataFrame(
                     edge_type_embedding,
-                    index=graph.get_edge_type_names()
+                    index=graph.get_unique_edge_type_names()
                 )
             }
         return {
@@ -162,7 +162,7 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
             "node_type_embedding": node_type_embedding,
             "edge_type_embedding": edge_type_embedding,
         }
-    
+
     @staticmethod
     def model_name() -> str:
         """Returns name of the model."""
