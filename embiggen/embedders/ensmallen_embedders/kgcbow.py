@@ -1,5 +1,8 @@
 """Module providing KGCBOW model implementation."""
-from typing import Optional
+from typing import Optional, Union
+from ensmallen import Graph
+import numpy as np
+import pandas as pd
 from .node2vec import Node2VecEnsmallen
 
 
@@ -124,6 +127,41 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
             use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
         )
+
+    def _fit_transform(
+        self,
+        graph: Graph,
+        return_dataframe: bool = True,
+        verbose: bool = True
+    ) -> Union[np.ndarray, pd.DataFrame]:
+        """Return node embedding."""
+        node_embedding, node_type_embedding, edge_type_embedding = self._model.fit_transform(
+            graph,
+            epochs=self._epochs,
+            learning_rate=self._learning_rate,
+            learning_rate_decay=self._learning_rate_decay,
+            verbose=verbose
+        )
+        if return_dataframe:
+            return {
+                "node_embedding": pd.DataFrame(
+                    node_embedding,
+                    index=graph.get_node_names()
+                ),
+                "node_type_embedding": pd.DataFrame(
+                    node_type_embedding,
+                    index=graph.get_node_type_names()
+                ),
+                "edge_type_embedding": pd.DataFrame(
+                    edge_type_embedding,
+                    index=graph.get_edge_type_names()
+                )
+            }
+        return {
+            "node_embedding": node_embedding,
+            "node_type_embedding": node_type_embedding,
+            "edge_type_embedding": edge_type_embedding,
+        }
     
     @staticmethod
     def model_name() -> str:
