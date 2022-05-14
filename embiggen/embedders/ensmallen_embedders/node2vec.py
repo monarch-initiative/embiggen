@@ -108,7 +108,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         random_state: int = 42
             The random state to reproduce the training sequence.
         """
-        if model_name.lower() not in ("cbow", "skipgram"):
+        if model_name.lower() not in self.MODELS:
             raise ValueError(
                 (
                     "The provided model name {} is not supported. "
