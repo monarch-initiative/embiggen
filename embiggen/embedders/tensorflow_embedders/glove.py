@@ -15,7 +15,7 @@ from tensorflow.keras.optimizers import \
 from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
 
 
-class GloVe(AbstractRandomWalkBasedEmbedderModel):
+class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
     """GloVe model for graph and words embedding.
 
     The GloVe model for graph embedding receives two words and is asked to
@@ -32,6 +32,7 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
         use_bias: bool = True,
         siamese: bool = False,
         epochs: int = 10,
+        batch_size: int = 2**12,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 5,
         learning_rate_plateau_min_delta: float = 0.001,
@@ -66,6 +67,8 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
             weights between the source and destination nodes.
         epochs: int = 10
             Number of epochs to train the model for.
+        batch_size: int = 2**12
+            Batch size for the training of the model.
         early_stopping_min_delta: float
             The minimum variation in the provided patience time
             of the loss to not stop the training.
@@ -142,6 +145,7 @@ class GloVe(AbstractRandomWalkBasedEmbedderModel):
             learning_rate_plateau_min_delta=learning_rate_plateau_min_delta,
             learning_rate_plateau_patience=learning_rate_plateau_patience,
             epochs=epochs,
+            batch_size=batch_size,
             optimizer=optimizer,
             use_mirrored_strategy=use_mirrored_strategy,
         )

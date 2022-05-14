@@ -125,3 +125,11 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
     def model_name() -> str:
         """Returns name of the model."""
         return "SkipGram"
+    
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return False

@@ -11,7 +11,7 @@ from .node2vec import Node2Vec
 from .layers import SampledSoftmax
 
 
-class CBOW(Node2Vec):
+class CBOWTensorFlow(Node2Vec):
     """CBOW model for sequence embedding.
 
     The CBOW model for graph embedding receives a list of contexts and tries

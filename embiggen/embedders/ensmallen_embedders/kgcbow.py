@@ -1,10 +1,10 @@
-"""Module providing CBOW model implementation."""
+"""Module providing KGCBOW model implementation."""
 from typing import Optional
 from .node2vec import Node2VecEnsmallen
 
 
-class CBOWEnsmallen(Node2VecEnsmallen):
-    """Class providing CBOW implemeted in Rust from Ensmallen."""
+class KGCBOWEnsmallen(Node2VecEnsmallen):
+    """Class providing KGCBOW implemeted in Rust from Ensmallen."""
 
     def __init__(
         self,
@@ -101,7 +101,7 @@ class CBOWEnsmallen(Node2VecEnsmallen):
             The random state to reproduce the training sequence.
         """
         super().__init__(
-            model_name="CBOW",
+            model_name="KGCBOW",
             embedding_size=embedding_size,
             epochs=epochs,
             clipping_value=clipping_value,
@@ -128,12 +128,12 @@ class CBOWEnsmallen(Node2VecEnsmallen):
     @staticmethod
     def model_name() -> str:
         """Returns name of the model."""
-        return "CBOW"
+        return "KGCBOW"
 
     @staticmethod
     def requires_node_types() -> bool:
-        return False
+        return True
 
     @staticmethod
     def requires_edge_types() -> bool:
-        return False
+        return True

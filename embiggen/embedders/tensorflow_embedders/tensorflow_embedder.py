@@ -1,5 +1,5 @@
 """Abstract Keras Model wrapper for embedding models."""
-from typing import Dict, List, Union, Optional, Tuple, Any
+from typing import Dict, List, Sequence, Union, Optional, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -26,6 +26,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 1,
         epochs: int = 10,
+        batch_size: int = 2**10,
         optimizer: str = "sgd",
         use_mirrored_strategy: bool = False
     ):
@@ -33,22 +34,24 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
 
         Parameters
         ----------------------------------
-        embedding_size: int = None
+        embedding_size: int = 100
             Dimension of the embedding.
-        early_stopping_min_delta: float
+        early_stopping_min_delta: float = 0.001
             The minimum variation in the provided patience time
             of the loss to not stop the training.
-        early_stopping_patience: int
+        early_stopping_patience: int = 1
             The amount of epochs to wait for better training
             performance.
-        learning_rate_plateau_min_delta: float
+        learning_rate_plateau_min_delta: float = 0.001
             The minimum variation in the provided patience time
             of the loss to not reduce the learning rate.
-        learning_rate_plateau_patience: int
+        learning_rate_plateau_patience: int = 1
             The amount of epochs to wait for better training
             performance without decreasing the learning rate.
         epochs: int = 10
             Number of epochs to train.
+        batch_size: int = 2**10
+            Batch size to use during the training.
         optimizer: str = "sgd"
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
@@ -62,6 +65,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             )
         self._use_mirrored_strategy = use_mirrored_strategy
         self._epochs = epochs
+        self._batch_size = batch_size
         self._optimizer = optimizer
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
@@ -69,10 +73,25 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._learning_rate_plateau_patience = learning_rate_plateau_patience
         super().__init__(embedding_size=embedding_size)
 
+    def parameters(self) -> Dict[str, Any]:
+        return {
+            **super().parameters(),
+            **dict(
+                use_mirrored_strategy=self._use_mirrored_strategy,
+                epochs=self._epochs,
+                batch_size=self._batch_size,
+                optimizer=self._optimizer,
+                early_stopping_min_delta=self._early_stopping_min_delta,
+                early_stopping_patience=self._early_stopping_patience,
+                learning_rate_plateau_min_delta=self._learning_rate_plateau_min_delta,
+                learning_rate_plateau_patience=self._learning_rate_plateau_patience,
+            )
+        }
+
     @staticmethod
     def library_name() -> str:
         return "TensorFlow"
-    
+
     @staticmethod
     def task_name() -> str:
         return "Node Embedding"
@@ -195,6 +214,11 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             *training_input,
             epochs=self._epochs,
             verbose=traditional_verbose and verbose > 0,
+            batch_size=(
+                self._batch_size
+                if issubclass(training_input[0].__class__, Sequence)
+                else None
+            ),
             steps_per_epoch=self._get_steps_per_epoch(graph),
             callbacks=[
                 EarlyStopping(

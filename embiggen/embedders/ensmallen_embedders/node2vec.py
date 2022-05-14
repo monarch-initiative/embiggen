@@ -13,6 +13,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     MODELS = {
         "cbow": models.CBOW,
+        "kgcbow": models.KGCBOW,
         "skipgram": models.SkipGram
     }
 
@@ -111,7 +112,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             raise ValueError(
                 (
                     "The provided model name {} is not supported. "
-                    "The supported models are `CBOW` and `SkipGram`."
+                    "The supported models are `CBOW`, `KGCBOW` and `SkipGram`."
                 ).format(model_name)
             )
 
@@ -231,11 +232,3 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def requires_positive_edge_weights() -> bool:
         return True
-
-    @staticmethod
-    def requires_node_types() -> bool:
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
-        return False

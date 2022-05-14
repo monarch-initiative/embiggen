@@ -11,7 +11,7 @@ from .node2vec import Node2Vec
 from .layers import NoiseContrastiveEstimation
 
 
-class SkipGram(Node2Vec):
+class SkipGramTensorFlow(Node2Vec):
     """SkipGram model for sequence embedding.
 
     The SkipGram model for graph embedding receives a central word and tries

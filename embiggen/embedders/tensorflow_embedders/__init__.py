@@ -1,4 +1,4 @@
-"""Module with graph and text embedding models."""
+"""Module with graph embedding models based on TensorFlow."""
 from .tensorflow_embedder import TensorFlowEmbedder
 from ...utils import build_init
 

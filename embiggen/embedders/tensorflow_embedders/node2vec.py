@@ -107,7 +107,6 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             Whether to use mirrored strategy.
         """
         self._number_of_negative_samples = number_of_negative_samples
-        self._batch_size = batch_size
 
         super().__init__(
             window_size=window_size,
@@ -126,6 +125,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             learning_rate_plateau_min_delta=learning_rate_plateau_min_delta,
             learning_rate_plateau_patience=learning_rate_plateau_patience,
             epochs=epochs,
+            batch_size=batch_size,
             optimizer=optimizer,
             use_mirrored_strategy=use_mirrored_strategy,
         )
@@ -136,7 +136,6 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             super().parameters(),
             dict(
                 number_of_negative_samples=self._number_of_negative_samples,
-                batch_size=self._batch_size
             )
         }
 
@@ -207,7 +206,13 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """
-        return self.get_layer_weights(
+        embedding = self.get_layer_weights(
             "node_embedding",
             model
         )
+        if return_dataframe:
+            return pd.DataFrame(
+                embedding,
+                index=graph.get_node_names()
+            )
+        return embedding
