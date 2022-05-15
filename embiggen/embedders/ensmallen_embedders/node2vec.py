@@ -13,7 +13,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     MODELS = {
         "cbow": models.CBOW,
-        #"kgcbow": models.KGCBOW,
+        "kgcbow": models.KGCBOW,
         "skipgram": models.SkipGram
     }
 
