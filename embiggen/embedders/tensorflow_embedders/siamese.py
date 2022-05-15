@@ -1,7 +1,5 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
-from re import S
-import warnings
-from typing import Dict, List, Union, Tuple, Any
+from typing import Dict, List, Union, Tuple, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,7 +18,7 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
 )
 from tensorflow.keras.models import Model
 from embiggen.utils import abstract_class
-from ...sequences import EdgePredictionSequence
+from ...sequences import SiameseSequence
 from .tensorflow_embedder import TensorFlowEmbedder
 
 
@@ -43,7 +41,7 @@ class Siamese(TensorFlowEmbedder):
         use_mirrored_strategy: bool = False,
         optimizer: str = "sgd",
     ):
-        """Create new sequence TensorFlowEmbedder model.
+        """Create new sequence Siamese model.
 
         Parameters
         -------------------------------------------
@@ -97,12 +95,10 @@ class Siamese(TensorFlowEmbedder):
     def _build_model(self, graph: Graph):
         """Return Siamese model."""
         # Creating the inputs layers
-        srcs, dsts = Input((1,)), Input((1,))
-        srcs_node_types = dsts_node_types = edge_types_input = None
-
-        self._multilabel_node_types = graph.has_multilabel_node_types()
-        self._max_node_types = graph.get_maximum_multilabel_count()
-        self._node_types_number = graph.get_node_types_number()
+        node_inputs = [
+            Input((1,))
+            for _ in range(4)
+        ]
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
@@ -113,140 +109,133 @@ class Siamese(TensorFlowEmbedder):
         )
 
         # Get the node embedding
-        srcs_embedding = UnitNorm(axis=-1)(node_embedding_layer(srcs))
-        dsts_embedding = UnitNorm(axis=-1)(node_embedding_layer(dsts))
+        node_embeddings = [
+            UnitNorm(axis=-1)(node_embedding_layer(node_input))
+            for node_input in node_inputs
+        ]
 
         if self.requires_node_types():
             max_node_types = graph.get_maximum_multilabel_count()
             multilabel = graph.has_multilabel_node_types()
-            srcs_node_types = Input((max_node_types,),)
-            dsts_node_types = Input((max_node_types,),)
-            node_types_number = (
-                graph.get_node_types_number() +
-                int(multilabel)
-            )
+            unknown_node_types = graph.has_unknown_node_types()
+            node_types_offset = int(multilabel or unknown_node_types)
+            node_type_inputs = [
+                Input((max_node_types,))
+                for _ in range(4)
+            ]
+
             node_type_embedding_layer = Embedding(
-                input_dim=node_types_number,
+                input_dim=graph.get_node_types_number() + node_types_offset,
                 output_dim=self._node_type_embedding_size,
-                input_length=self._max_node_types,
+                input_length=max_node_types,
                 name="node_type_embedding",
-                mask_zero=multilabel
+                mask_zero=multilabel or unknown_node_types
             )
 
-            srcs_node_types_embedding = node_type_embedding_layer(
-                srcs_node_types
-            )
-            dsts_node_types_embedding = node_type_embedding_layer(
-                dsts_node_types
-            )
-
-            if multilabel:
-                global_average_layer = GlobalAveragePooling1D()
-                srcs_node_types_embedding = global_average_layer(
-                    srcs_node_types_embedding
+            node_embeddings = [
+                UnitNorm(axis=-1)(Add()(
+                    GlobalAveragePooling1D()(
+                        node_type_embedding_layer(node_type_input)
+                    )),
+                    node_embedding
                 )
-                dsts_node_types_embedding = global_average_layer(
-                    dsts_node_types_embedding
+                for node_type_input, node_embedding in zip(
+                    node_type_inputs,
+                    node_embeddings
                 )
+            ]
+        else:
+            node_type_inputs = []
 
-            srcs_embedding = UnitNorm(axis=-1)(Add()([
-                srcs_embedding,
-                srcs_node_types_embedding
-            ]))
-            dsts_embedding = UnitNorm(axis=-1)(Add()([
-                dsts_embedding,
-                dsts_node_types_embedding
-            ]))
+        inputs = [
+            *node_inputs,
+            *node_type_inputs,
+        ]
 
         if self.requires_edge_types():
+            unknown_edge_types = graph.has_unknown_edge_types()
+            edge_types_offset = int(unknown_edge_types)
             edge_types = Input((1,))
-            edge_type_embedding = UnitNorm(axis=-1)(Embedding(
-                input_dim=self._edge_types_number,
-                output_dim=self._edge_type_embedding_size,
-                input_length=1,
-                name="edge_type_embedding",
-            )(edge_types))
+            edge_type_embedding = UnitNorm(axis=-1)(
+                GlobalAveragePooling1D()(Embedding(
+                    input_dim=self._edge_types_number,
+                    output_dim=self._edge_type_embedding_size,
+                    input_length=1 + edge_types_offset,
+                    mask_zero=unknown_edge_types,
+                    name="edge_type_embedding",
+                )(edge_types)))
+            inputs.append(edge_types)
+        else:
+            edge_types = edge_type_embedding = None
 
-        (dsts_embedding, dsts_embedding) = self._build_output(
+        (
             srcs_embedding,
             dsts_embedding,
+            not_srcs_embedding,
+            not_dsts_embedding,
+            edge_type_embedding
+        ) = self._build_output(
+            *node_embeddings,
             edge_type_embedding,
-            edge_types_input
+            edge_types
         )
 
-        output = K.sum(K.square(srcs_embedding - dsts_embedding), axis=-1)
+        loss = K.relu(self._relu_bias + tf.norm(
+            srcs_embedding + edge_type_embedding - dsts_embedding,
+            axis=-1
+        ) - tf.norm(
+            not_srcs_embedding + edge_type_embedding - not_dsts_embedding,
+            axis=-1
+        ))
 
         # Creating the actual model
         model = Model(
-            inputs=[
-                input_layer
-                for input_layer in (
-                    srcs,
-                    srcs_node_types,
-                    dsts,
-                    dsts_node_types,
-                    edge_types
-                )
-                if input_layer is not None
-            ],
-            outputs=output,
+            inputs=inputs,
             name=self.model_name()
         )
 
+        model.add_loss(loss)
+
         model.compile(
-            loss=self._siamese_loss,
-            optimizer=self._optimizer
+            optimizer=self._optimizer,
+            name=self.model_name()
         )
 
         return model
 
     def _build_output(
         self,
-        source_node_embedding: tf.Tensor,
-        destination_node_embedding: tf.Tensor,
-        *args: List[tf.Tensor],
-        **kwargs: Dict[str, tf.Tensor],
-    ):
-        """Return output of the model.
+        srcs_embedding: tf.Tensor,
+        dsts_embedding: tf.Tensor,
+        not_srcs_embedding: tf.Tensor,
+        not_dsts_embedding: tf.Tensor,
+        edge_type_embedding: tf.Tensor,
+        edge_type_input: Optional[Input]
+    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        """Returns the five input tensors, arbitrarily changed.
 
         Parameters
         ----------------------
-        source_node_embedding: tf.Tensor,
+        srcs_embedding: tf.Tensor
             Embedding of the source node.
-        destination_node_embedding: tf.Tensor,
+        dsts_embedding: tf.Tensor
             Embedding of the destination node.
-        args: List[tf.Tensor],
-            Additional tensors that may be used
-            in subclasses of this model.
-        kwargs: Dict[str, tf.Tensor],
-            Additional tensors that may be used
-            in subclasses of this model.
-
-        Returns
-        ----------------------
-        The distance for the Siamese network.
+        not_srcs_embedding: tf.Tensor
+            Embedding of the fake source node.
+        not_dsts_embedding: tf.Tensor
+            Embedding of the fake destination node.
+        edge_type_embedding: tf.Tensor
+            Embedding of the edge types.
+        edge_type_input: Optional[Input]
+            Input of the edge types. This is not None
+            only when there is one such input in the
+            model, when edge types are requested.
         """
         raise NotImplementedError(
             "The method `_build_output` should be implemented in the child "
             "classes of the Siamese model, and is missing in the class "
             f"called {self.__class__.__name__}."
         )
-
-    def _siamese_loss(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> float:
-        """Compute the siamese loss function.
-
-        Parameters
-        ---------------------------
-        y_true: tf.Tensor,
-            The true values Tensor for this batch.
-        y_pred: tf.Tensor,
-            The predicted values Tensor for this batch.
-
-        Returns
-        ---------------------------
-        Loss function score related to this batch.
-        """
-        return K.relu(self._relu_bias + (1 - 2 * tf.cast(y_true, "float32")) * y_pred)
 
     def _get_steps_per_epoch(self, graph: Graph) -> int:
         """Returns number of steps per epoch.
@@ -279,10 +268,9 @@ class Siamese(TensorFlowEmbedder):
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
         return (
-            EdgePredictionSequence(
+            SiameseSequence(
                 graph=graph,
                 batch_size=self._batch_size,
-                avoid_false_negatives=False,
                 use_node_types=self.requires_node_types(),
                 use_edge_types=self.requires_edge_types(),
             ).into_dataset()
@@ -293,30 +281,14 @@ class Siamese(TensorFlowEmbedder):
     def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
         return False
 
-    def _extract_embeddings(
-        self,
-        graph: Graph,
-        model: Model,
-        return_dataframe: bool
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
-        """Returns embedding from the model.
+    @staticmethod
+    def is_topological() -> bool:
+        return True
 
-        Parameters
-        ------------------
-        graph: Graph
-            The graph that was embedded.
-        model: Model
-            The Keras model used to embed the graph.
-        return_dataframe: bool
-            Whether to return a dataframe of a numpy array.
-        """
-        embedding = self.get_layer_weights(
-            "node_embedding",
-            model
-        )
-        if return_dataframe:
-            return pd.DataFrame(
-                embedding,
-                index=graph.get_node_names()
-            )
-        return embedding
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return False

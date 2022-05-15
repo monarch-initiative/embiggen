@@ -5,6 +5,7 @@ from .edge_label_prediction_sequence import EdgeLabelPredictionSequence
 from .node_label_prediction_sequence import NodeLabelPredictionSequence
 from .gnn_edge_prediction_sequence import GNNEdgePredictionSequence
 from .gnn_bipartite_edge_prediction_sequence import GNNBipartiteEdgePredictionSequence
+from .siamese_sequence import SiameseSequence
 
 __all__ = [
     "Node2VecSequence",
@@ -12,5 +13,6 @@ __all__ = [
     "EdgeLabelPredictionSequence",
     "NodeLabelPredictionSequence",
     "GNNEdgePredictionSequence",
-    "GNNBipartiteEdgePredictionSequence"
+    "GNNBipartiteEdgePredictionSequence",
+    "SiameseSequence"
 ]
