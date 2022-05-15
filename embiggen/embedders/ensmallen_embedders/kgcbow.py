@@ -15,8 +15,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         epochs: int = 10,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 5,
-        log_sigmoid: Optional[bool] = True,
-        siamese: Optional[bool] = False,
         walk_length: int = 128,
         iterations: int = 1,
         window_size: int = 4,
@@ -29,7 +27,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
-        normalize_learning_rate_by_degree: Optional[bool] = False,
         use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
     ):
@@ -109,8 +106,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
-            log_sigmoid=log_sigmoid,
-            siamese=siamese,
             walk_length=walk_length,
             iterations=iterations,
             window_size=window_size,
@@ -123,7 +118,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
             learning_rate_decay=learning_rate_decay,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
-            normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
         )
