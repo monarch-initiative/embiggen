@@ -28,7 +28,7 @@ class Siamese(TensorFlowEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 100,
+        node_embedding_size: int = 100,
         node_type_embedding_size: int = 100,
         edge_type_embedding_size: int = 100,
         relu_bias: float = 1.0,
@@ -81,7 +81,7 @@ class Siamese(TensorFlowEmbedder):
         self._relu_bias = relu_bias
 
         super().__init__(
-            embedding_size=embedding_size,
+            embedding_size=node_embedding_size,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
             learning_rate_plateau_min_delta=learning_rate_plateau_min_delta,
@@ -100,6 +100,16 @@ class Siamese(TensorFlowEmbedder):
             node_type_embedding_size=5,
             edge_type_embedding_size=5,
         )
+
+    def parameters(self) -> Dict[str, Any]:
+        return {
+            **super().parameters(),
+            **dict(
+                node_type_embedding_size = self._node_type_embedding_size,
+                edge_type_embedding_size = self._edge_type_embedding_size,
+                relu_bias = self._relu_bias
+            )
+        }
 
     def _build_model(self, graph: Graph):
         """Return Siamese model."""
