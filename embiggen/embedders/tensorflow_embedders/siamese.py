@@ -200,13 +200,13 @@ class Siamese(TensorFlowEmbedder):
             edge_types
         )
 
-        loss = K.relu(self._relu_bias + tf.norm(
+        loss = tf.norm(
             srcs_embedding + edge_type_embedding - dsts_embedding,
             axis=-1
         ) - tf.norm(
             not_srcs_embedding + edge_type_embedding - not_dsts_embedding,
             axis=-1
-        ))
+        )
 
         # Creating the actual model
         model = Model(
