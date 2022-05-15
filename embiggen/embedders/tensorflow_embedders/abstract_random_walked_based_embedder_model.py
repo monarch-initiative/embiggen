@@ -74,6 +74,17 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
 
         super().__init__(**kwargs)
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **TensorFlowEmbedder.smoke_test_parameters(),
+            window_size=1,
+            walk_length=4,
+            iterations=1,
+            max_neighbours= 10,
+        )
+
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
         return {

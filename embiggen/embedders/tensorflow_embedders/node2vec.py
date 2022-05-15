@@ -139,6 +139,14 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             )
         }
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **AbstractRandomWalkBasedEmbedderModel.smoke_test_parameters(),
+            number_of_negative_samples=1
+        )
+
     def _get_steps_per_epoch(self, graph: Graph) -> Tuple[Any]:
         """Returns number of steps per epoch.
 

@@ -16,9 +16,6 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
     
     def test_evaluate_embedding_for_edge_label_prediction(self):
         """Test graph visualization."""
-        if os.path.exists("experiments"):
-            shutil.rmtree("experiments")
-
         node_embedding = SPINE(embedding_size=5).fit_transform(self._graph)
 
         df = get_available_models_for_edge_label_prediction()
@@ -31,9 +28,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             library_names=df.library_name,
             graphs=self._graph,
             number_of_holdouts=self._number_of_holdouts,
-            verbose=True
+            verbose=True,
+            smoke_test=True
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
-
-        if os.path.exists("experiments"):
-            shutil.rmtree("experiments")

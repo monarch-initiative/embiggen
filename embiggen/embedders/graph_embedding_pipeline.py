@@ -47,6 +47,7 @@ def embed_graph(
     version: Optional[str] = None,
     library_name: Optional[str] = None,
     enable_cache: bool = False,
+    smoke_test: bool = False,
     cache_directory: str = "embedding",
     return_dataframe: bool = True,
     verbose: bool = True,
@@ -71,6 +72,10 @@ def embed_graph(
         The library from where to retrieve the embedding model.
     enable_cache: bool = False
         Whether to enable the cache.
+    smoke_test: bool = False
+        Whether this run should be considered a smoke test
+        and therefore use the smoke test configurations for
+        the provided model names and feature names.
     cache_directory: str = "embedding"
         Path where to store the cache if it is enabled.
     return_dataframe: bool = True
@@ -108,6 +113,11 @@ def embed_graph(
             "it does not extend the class `AbstractEmbeddingModel`."
         )
 
+    if smoke_test:
+        embedding_model = embedding_model.__class__(
+            **embedding_model.smoke_test_parameters()
+        )
+
     if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
         graph = graph.sort_by_decreasing_outbound_node_degree()
 
@@ -117,7 +127,7 @@ def embed_graph(
         embedding_model=embedding_model,
         embedding_model_name=embedding_model.model_name(),
         library_name=embedding_model.library_name(),
-        enable_cache=enable_cache,
+        enable_cache=enable_cache and not smoke_test,
         cache_directory=cache_directory,
         return_dataframe=return_dataframe,
         verbose=verbose

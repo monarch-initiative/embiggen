@@ -13,7 +13,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     MODELS = {
         "cbow": models.CBOW,
-        "kgcbow": models.KGCBOW,
+        #"kgcbow": models.KGCBOW,
         "skipgram": models.SkipGram
     }
 
@@ -160,6 +160,19 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         )
 
         super().__init__(embedding_size=embedding_size)
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1,
+            window_size=1,
+            walk_length=4,
+            iterations=1,
+            max_neighbours= 10,
+            number_of_negative_samples=1
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""

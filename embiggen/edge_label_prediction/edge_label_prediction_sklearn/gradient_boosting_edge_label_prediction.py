@@ -70,6 +70,14 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
             edge_embedding_method,
             random_state
         )
+    
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            max_depth=1,
+            n_estimators=1
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""

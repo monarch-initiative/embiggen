@@ -1,7 +1,7 @@
 """Submodule wrapping Extra Trees for node label prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import ExtraTreesClassifier
-from multiprocessing import cpu_count
+from .decision_tree_for_node_prediction import DecisionTreeNodeLabelPrediction
 from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
@@ -43,7 +43,7 @@ class ExtraTreesNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         self._min_impurity_split = min_impurity_split
         self._bootstrap = bootstrap
         self._oob_score = oob_score
-        self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+        self._n_jobs = n_jobs
         self._verbose = verbose
         self._warm_start = warm_start
         self._class_weight = class_weight
@@ -73,6 +73,14 @@ class ExtraTreesNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 max_samples=max_samples
             ),
             random_state
+        )
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **DecisionTreeNodeLabelPrediction.smoke_test_parameters(),
+            n_estimators=1
         )
 
     def parameters(self) -> Dict[str, Any]:

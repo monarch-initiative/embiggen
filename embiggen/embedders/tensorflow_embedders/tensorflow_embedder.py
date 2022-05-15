@@ -73,6 +73,14 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._learning_rate_plateau_patience = learning_rate_plateau_patience
         super().__init__(embedding_size=embedding_size)
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1
+        )
+
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
@@ -105,7 +113,9 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             The graph to build the model for.
         """
         raise NotImplementedError(
-            "The method _build_model must be implemented in the child classes."
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_build_model`. Please do implement it."
         )
 
     def _build_input(self, graph: Graph, verbose: bool) -> Tuple[Any]:
@@ -119,7 +129,9 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Whether to show loading bars while building input.
         """
         raise NotImplementedError(
-            "The method _build_input must be implemented in the child classes."
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_build_input`. Please do implement it."
         )
 
     def _get_steps_per_epoch(self, graph: Graph) -> Tuple[Any]:
@@ -150,14 +162,21 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Whether to return a dataframe of a numpy array.
         """
         raise NotImplementedError(
-            "The method _build_input must be implemented in the child classes."
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_extract_embeddings`. Please do implement it."
         )
 
     def summary(self):
         """Print model summary."""
         self._model.summary()
 
-    def get_layer_weights(self, layer_name: str, model: Model) -> np.ndarray:
+    def get_layer_weights(
+        self,
+        layer_name: str,
+        model: Model,
+        drop_first_row: bool = False
+    ) -> np.ndarray:
         """Return weights from the requested layer.
 
         Parameters
@@ -166,10 +185,18 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Name of the layer to query for.
         model: Model
             The model from where to extract the layer weights.
+        drop_first_row: bool = False
+            Whether to drop the first row of the weights.
+            May be useful for when the embedding included
+            padding, such as when dealing with unknown
+            edge and node types or multilabel node types.
         """
         for layer in model.layers:
             if layer.name == layer_name:
-                return layer.get_weights()[0]
+                weights = layer.get_weights()[0]
+                if drop_first_row:
+                    weights = weights[1:]
+                return weights
         raise NotImplementedError(
             "This model does not have a layer called {}.".format(
                 layer_name
@@ -194,7 +221,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         else:
             strategy = tf.distribute.get_strategy()
 
-        # Build the model
+        # # Build the model
         with strategy.scope():
             model = self._build_model(graph)
 
@@ -234,7 +261,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
                     factor=0.5,
                     mode="min",
                 ),
-                *((TqdmCallback(verbose=verbose-1),)
+                *((TqdmCallback(verbose=2),)
                   if not traditional_verbose and verbose > 0 else ()),
             ],
         )

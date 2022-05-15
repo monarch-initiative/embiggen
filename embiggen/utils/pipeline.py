@@ -101,7 +101,8 @@ def iterate_graphs(
 def iterate_classifier_models(
     models: Union[str, Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]],
     expected_parent_class: Type[AbstractClassifierModel],
-    library_names: Optional[Union[str, List[str]]] = None
+    library_names: Optional[Union[str, List[str]]],
+    smoke_test: bool
 ) -> Iterator[Type[AbstractClassifierModel]]:
     """Return iterator over the provided models after validation.
 
@@ -113,6 +114,10 @@ def iterate_classifier_models(
         The parent class to check the model against.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
+    smoke_test: bool = False
+        Whether this run should be considered a smoke test
+        and therefore use the smoke test configurations for
+        the provided model names and feature names.
     """
     if not isinstance(models, (list, tuple, pd.Series)):
         models = [models]
@@ -157,6 +162,14 @@ def iterate_classifier_models(
                 f"an object of type {type(model)} that does not hereditate from "
                 "the expected class."
             )
+    
+    # If this is a smoke test, we replace all of the
+    # provided models with their smoke test version.
+    if smoke_test:
+        models = [
+            model.__class__(**model.smoke_test_parameters())
+            for model in models
+        ]
 
     for model in tqdm(
         models,
@@ -171,7 +184,8 @@ def iterate_classifier_models(
 
 @Cache(
     cache_path="{cache_dir}/{task_name}/{model_name}/{graph_name}/{_hash}.csv.gz",
-    cache_dir="experiments"
+    cache_dir="experiments",
+    enable_cache_arg_name="enable_cache"
 )
 def evaluate_classifier(
     classifier: Type[AbstractClassifierModel],
@@ -181,11 +195,12 @@ def evaluate_classifier(
     graph: Graph,
     evaluation_schema: str,
     holdouts_kwargs: Dict[str, Any],
-    node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-    subgraph_of_interest: Optional[Graph] = None,
-    number_of_holdouts: int = 10,
-    random_state: int = 42,
+    node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]],
+    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]],
+    subgraph_of_interest: Optional[Graph],
+    number_of_holdouts: int,
+    random_state: int,
+    smoke_test: bool,
     **evaluation_kwargs: Dict
 ) -> pd.DataFrame:
     """Executes cache evaluation for model."""
@@ -198,6 +213,7 @@ def evaluate_classifier(
         subgraph_of_interest=subgraph_of_interest,
         number_of_holdouts=number_of_holdouts,
         random_state=random_state,
+        smoke_test=smoke_test,
         **evaluation_kwargs
     )
 
@@ -216,6 +232,8 @@ def classification_evaluation_pipeline(
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
+    enable_cache: bool = False,
+    smoke_test: bool = False,
     **evaluation_kwargs
 ) -> pd.DataFrame:
     """Execute classification pipeline for all provided models and graphs.
@@ -249,6 +267,13 @@ def classification_evaluation_pipeline(
         from the Ensmallen automatic retrieval.
     versions: Optional[Union[str, List[str]]] = None
         Graph versions to retrieve.
+    enable_cache: bool = False
+        Whether to enable the cache.
+    smoke_test: bool = False
+        Whether this run should be considered a smoke test
+        and therefore use the smoke test configurations for
+        the provided model names and feature names.
+        This parameter will also turn off the cache.
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
@@ -266,8 +291,10 @@ def classification_evaluation_pipeline(
             subgraph_of_interest=subgraph_of_interest,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
+            enable_cache=enable_cache and not smoke_test,
+            smoke_test=smoke_test,
             **evaluation_kwargs
         )
         for graph in iterate_graphs(graphs, repositories, versions)
-        for classifier in iterate_classifier_models(models, expected_parent_class, library_names)
+        for classifier in iterate_classifier_models(models, expected_parent_class, library_names, smoke_test)
     ])

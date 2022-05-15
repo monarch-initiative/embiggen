@@ -11,7 +11,7 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         self,
         criterion="gini",
         splitter="best",
-        max_depth=None,
+        max_depth=10,
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.,
@@ -57,6 +57,13 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
             ),
             edge_embedding_method,
             random_state
+        )
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            max_depth=1,
         )
 
     def parameters(self) -> Dict[str, Any]:

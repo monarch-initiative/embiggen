@@ -135,7 +135,8 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
-        skip_evaluation_biased_feature: bool = False
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -154,6 +155,10 @@ class AbstractClassifierModel(AbstractModel):
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
             exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         """
         if isinstance(node_feature, str):
             if not allow_automatic_feature:
@@ -187,6 +192,11 @@ class AbstractClassifierModel(AbstractModel):
                 node_feature.model_name().lower() in self._get_evaluation_biased_feature_names_lowercase()
             ):
                 return node_feature
+
+            if smoke_test:
+                node_feature = node_feature.__class__(
+                    **node_feature.smoke_test_parameters()
+                )
 
             node_feature = node_feature.fit_transform(
                 graph=graph,
@@ -235,7 +245,8 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
-        skip_evaluation_biased_feature: bool = False
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -254,6 +265,10 @@ class AbstractClassifierModel(AbstractModel):
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
             exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         """
         if node_features is None:
             return None
@@ -266,7 +281,8 @@ class AbstractClassifierModel(AbstractModel):
                 graph=graph,
                 node_feature=node_feature,
                 allow_automatic_feature=allow_automatic_feature,
-                skip_evaluation_biased_feature=skip_evaluation_biased_feature
+                skip_evaluation_biased_feature=skip_evaluation_biased_feature,
+                smoke_test=smoke_test
             )
             for node_feature in node_features
         ]
@@ -274,9 +290,10 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_feature(
         self,
         graph: Graph,
-        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray]] = None,
+        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]] = None,
         allow_automatic_feature: bool = True,
-        skip_evaluation_biased_feature: bool = False
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -295,6 +312,10 @@ class AbstractClassifierModel(AbstractModel):
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
             exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         """
         if edge_feature is None:
             return None
@@ -319,9 +340,28 @@ class AbstractClassifierModel(AbstractModel):
             ):
                 return edge_feature
 
-            raise NotImplementedError(
-                "I still need to finish the dispatching for feature names, "
-                "this is coming soon!"
+            edge_feature = AbstractEmbeddingModel.get_model_from_library(
+                model_name=edge_feature
+            )()
+
+        # If this object is an implementation of an abstract
+        # embedding model, we compute the embedding.
+        if issubclass(edge_feature.__class__, AbstractEmbeddingModel):
+            if (
+                skip_evaluation_biased_feature and
+                edge_feature.model_name().lower() in self._get_evaluation_biased_feature_names_lowercase()
+            ):
+                return edge_feature
+
+            if smoke_test:
+                edge_feature = edge_feature.__class__(
+                    **edge_feature.smoke_test_parameters()
+                )
+
+            edge_feature = edge_feature.fit_transform(
+                graph=graph,
+                return_dataframe=True,
+                verbose=False
             )
 
         if not isinstance(edge_feature, (np.ndarray, pd.DataFrame)):
@@ -363,9 +403,10 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_features(
         self,
         graph: Graph,
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
-        skip_evaluation_biased_feature: bool = False
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -384,6 +425,10 @@ class AbstractClassifierModel(AbstractModel):
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
             exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         """
         if edge_features is None:
             return None
@@ -664,6 +709,7 @@ class AbstractClassifierModel(AbstractModel):
         number_of_holdouts: int = 10,
         random_state: int = 42,
         verbose: bool = True,
+        smoke_test: bool = False,
         **kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -692,6 +738,10 @@ class AbstractClassifierModel(AbstractModel):
             The random state to use for the holdouts.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         **kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -728,7 +778,8 @@ class AbstractClassifierModel(AbstractModel):
             graph,
             node_feature=node_features,
             allow_automatic_feature=True,
-            skip_evaluation_biased_feature=True
+            skip_evaluation_biased_feature=True,
+            smoke_test=smoke_test
         )
 
         # We execute the same thing as described above,
@@ -738,7 +789,8 @@ class AbstractClassifierModel(AbstractModel):
             graph,
             edge_feature=edge_features,
             allow_automatic_feature=True,
-            skip_evaluation_biased_feature=True
+            skip_evaluation_biased_feature=True,
+            smoke_test=smoke_test
         )
 
         # We create the list where we store the holdouts performance.
@@ -770,7 +822,8 @@ class AbstractClassifierModel(AbstractModel):
                 train,
                 node_feature=node_features,
                 allow_automatic_feature=True,
-                skip_evaluation_biased_feature=False
+                skip_evaluation_biased_feature=False,
+                smoke_test=smoke_test
             )
 
             # We execute the same thing as described above,
@@ -780,7 +833,8 @@ class AbstractClassifierModel(AbstractModel):
                 train,
                 edge_feature=edge_features,
                 allow_automatic_feature=True,
-                skip_evaluation_biased_feature=False
+                skip_evaluation_biased_feature=False,
+                smoke_test=smoke_test
             )
 
             if subgraph_of_interest is not None:

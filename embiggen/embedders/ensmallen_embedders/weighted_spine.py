@@ -42,6 +42,13 @@ class WeightedSPINE(AbstractEmbeddingModel):
             )
         }
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+        )
+
     def _fit_transform(
         self,
         graph: Graph,
@@ -49,7 +56,6 @@ class WeightedSPINE(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Return node embedding."""
-        print(graph.get_name())
         node_embedding = self._model.fit_transform(
             graph,
             verbose=verbose,

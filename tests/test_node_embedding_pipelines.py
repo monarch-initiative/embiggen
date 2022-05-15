@@ -31,5 +31,5 @@ class TestNodeEmbeddingPipeline(TestCase):
                 embedding_model=row.model_name,
                 library_name=row.library_name,
                 verbose=False,
-                embedding_size=5
+                smoke_test=True
             )

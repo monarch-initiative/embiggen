@@ -22,6 +22,8 @@ def edge_prediction_evaluation(
     versions: Optional[Union[str, List[str]]] = None,
     sample_only_edges_with_heterogeneous_node_types: bool = False,
     unbalance_rates: Tuple[float] = (1.0, ),
+    enable_cache: bool = False,
+    smoke_test: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge prediction evaluation pipeline for all provided models and graphs.
@@ -58,6 +60,13 @@ def edge_prediction_evaluation(
         This can be useful when executing a bipartite edge prediction task.
     unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
+    enable_cache: bool = False
+        Whether to enable the cache.
+    smoke_test: bool = False
+        Whether this run should be considered a smoke test
+        and therefore use the smoke test configurations for
+        the provided model names and feature names.
+        This parameter will also turn off the cache.
     verbose: bool = True
         Whether to show loading bars
     """
@@ -75,6 +84,8 @@ def edge_prediction_evaluation(
         random_state=random_state,
         repositories=repositories,
         versions=versions,
+        enable_cache=enable_cache,
+        smoke_test=smoke_test,
         verbose=verbose,
         sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
         unbalance_rates=unbalance_rates

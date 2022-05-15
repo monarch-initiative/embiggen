@@ -298,13 +298,24 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """
-        return {
+        result = {
             layer_name: self.get_layer_weights(
                 layer_name,
-                model
+                model,
             )
             for layer_name in (
                 self.SOURCE_NODES_EMBEDDING,
                 self.DESTINATION_NODES_EMBEDDING
             )
         }
+        
+        if return_dataframe:
+            result = {
+                layer_name: pd.DataFrame(
+                    embedding,
+                    index=graph.get_node_names()
+                )
+                for layer_name, embedding in result.items()
+            }
+        
+        return result

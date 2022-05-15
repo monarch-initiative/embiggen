@@ -1,7 +1,7 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from embiggen import GraphVisualizer, GloVe
+from embiggen import GraphVisualizer
 import pytest
 
 
@@ -10,7 +10,6 @@ class TestGraphVisualizer(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        self._embedding_size = 50
         self._visualization = GraphVisualizer(
             "Cora",
             repository="linqs",

@@ -2,6 +2,7 @@
 from typing import Dict, Any
 from sklearn.ensemble import RandomForestClassifier
 from multiprocessing import cpu_count
+from .decision_tree_for_node_prediction import DecisionTreeNodeLabelPrediction
 from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
@@ -73,6 +74,14 @@ class RandomForestNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 max_samples=max_samples
             ),
             random_state
+        )
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **DecisionTreeNodeLabelPrediction.smoke_test_parameters(),
+            n_estimators=1
         )
 
     def parameters(self) -> Dict[str, Any]:

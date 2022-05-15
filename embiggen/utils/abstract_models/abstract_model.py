@@ -16,6 +16,14 @@ class AbstractModel(Hashable):
 
     MODELS_LIBRARY: Dict[str, Dict[str, Dict[str, Type["AbstractModel"]]]] = {}
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Return parameters to create a model with minimal configuration to test execution."""
+        raise NotImplementedError((
+            "The `smoke_test_parameters` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+    
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
         raise NotImplementedError((

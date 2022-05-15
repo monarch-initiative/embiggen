@@ -2,6 +2,7 @@
 from typing import Dict, Any
 from sklearn.ensemble import RandomForestClassifier
 from multiprocessing import cpu_count
+from .decision_tree_edge_label_prediction import DecisionTreeEdgeLabelPrediction
 from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
 
@@ -76,6 +77,14 @@ class RandomForestEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
             ),
             edge_embedding_method,
             random_state
+        )
+    
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test on Random Forest."""
+        return dict(
+            **DecisionTreeEdgeLabelPrediction.smoke_test_parameters(),
+            n_estimators=1
         )
 
     def parameters(self) -> Dict[str, Any]:

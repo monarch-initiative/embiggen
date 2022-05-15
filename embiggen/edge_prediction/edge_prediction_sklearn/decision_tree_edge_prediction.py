@@ -87,3 +87,10 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
     @staticmethod
     def model_name() -> str:
         return "Decision Tree Classifier"
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            max_depth=1,
+        )

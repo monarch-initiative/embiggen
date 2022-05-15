@@ -101,6 +101,14 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 ccp_alpha=self._ccp_alpha
             )
         }
+    
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            max_depth=1,
+            n_estimators=1
+        )
 
     @staticmethod
     def model_name() -> str:

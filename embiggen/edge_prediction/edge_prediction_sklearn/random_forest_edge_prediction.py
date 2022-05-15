@@ -1,7 +1,7 @@
 """Submodule wrapping Random Forest for edge prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import RandomForestClassifier
-from multiprocessing import cpu_count
+from .decision_tree_edge_prediction import DecisionTreeEdgePrediction
 from .sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 
 
@@ -46,7 +46,7 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
         self._min_impurity_split = min_impurity_split
         self._bootstrap = bootstrap
         self._oob_score = oob_score
-        self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+        self._n_jobs = n_jobs
         self._random_state = random_state
         self._verbose = verbose
         self._warm_start = warm_start
@@ -80,6 +80,14 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
             unbalance_rate,
             sample_only_edges_with_heterogeneous_node_types,
             random_state
+        )
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **DecisionTreeEdgePrediction.smoke_test_parameters(),
+            n_estimators=1
         )
 
     def parameters(self) -> Dict[str, Any]:

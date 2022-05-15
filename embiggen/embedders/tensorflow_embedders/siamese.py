@@ -1,5 +1,5 @@
 """Siamese network for node-embedding including optionally node types and edge types."""
-from typing import Dict, List, Union, Tuple, Any, Optional
+from typing import Dict, Tuple, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -33,7 +33,7 @@ class Siamese(TensorFlowEmbedder):
         edge_type_embedding_size: int = 100,
         relu_bias: float = 1.0,
         epochs: int = 10,
-        batch_size: int = 2**14,
+        batch_size: int = 2**10,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 1,
         learning_rate_plateau_min_delta: float = 0.001,
@@ -92,11 +92,20 @@ class Siamese(TensorFlowEmbedder):
             use_mirrored_strategy=use_mirrored_strategy,
         )
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            **TensorFlowEmbedder.smoke_test_parameters(),
+            node_type_embedding_size=5,
+            edge_type_embedding_size=5,
+        )
+
     def _build_model(self, graph: Graph):
         """Return Siamese model."""
         # Creating the inputs layers
         node_inputs = [
-            Input((1,))
+            Input((1,), dtype=tf.int32)
             for _ in range(4)
         ]
 
@@ -120,7 +129,7 @@ class Siamese(TensorFlowEmbedder):
             unknown_node_types = graph.has_unknown_node_types()
             node_types_offset = int(multilabel or unknown_node_types)
             node_type_inputs = [
-                Input((max_node_types,))
+                Input((max_node_types,), dtype=tf.int32)
                 for _ in range(4)
             ]
 
@@ -133,12 +142,12 @@ class Siamese(TensorFlowEmbedder):
             )
 
             node_embeddings = [
-                UnitNorm(axis=-1)(Add()(
+                UnitNorm(axis=-1)(Add()([
                     GlobalAveragePooling1D()(
                         node_type_embedding_layer(node_type_input)
-                    )),
+                    ),
                     node_embedding
-                )
+                ]))
                 for node_type_input, node_embedding in zip(
                     node_type_inputs,
                     node_embeddings
@@ -153,12 +162,13 @@ class Siamese(TensorFlowEmbedder):
         ]
 
         if self.requires_edge_types():
+            edge_types_number = graph.get_edge_types_number()
             unknown_edge_types = graph.has_unknown_edge_types()
             edge_types_offset = int(unknown_edge_types)
-            edge_types = Input((1,))
+            edge_types = Input((1,), dtype=tf.int32)
             edge_type_embedding = UnitNorm(axis=-1)(
                 GlobalAveragePooling1D()(Embedding(
-                    input_dim=self._edge_types_number,
+                    input_dim=edge_types_number,
                     output_dim=self._edge_type_embedding_size,
                     input_length=1 + edge_types_offset,
                     mask_zero=unknown_edge_types,
@@ -191,15 +201,13 @@ class Siamese(TensorFlowEmbedder):
         # Creating the actual model
         model = Model(
             inputs=inputs,
+            outputs=loss,
             name=self.model_name()
         )
 
         model.add_loss(loss)
 
-        model.compile(
-            optimizer=self._optimizer,
-            name=self.model_name()
-        )
+        model.compile(optimizer=self._optimizer)
 
         return model
 

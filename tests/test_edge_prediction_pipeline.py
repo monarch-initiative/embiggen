@@ -16,9 +16,6 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):
         """Test graph visualization."""
-        if os.path.exists("node_embeddings"):
-            shutil.rmtree("node_embeddings")
-        
         df = get_available_models_for_edge_prediction()
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(),
@@ -27,8 +24,8 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             node_features=SPINE(embedding_size=5),
             evaluation_schema="Kfold",
             graphs=self._graph,
-            repositories="linqs",
             number_of_holdouts=self._number_of_holdouts,
-            verbose=False
+            verbose=True,
+            smoke_test=True
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])

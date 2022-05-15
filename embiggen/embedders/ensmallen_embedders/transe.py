@@ -71,6 +71,14 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             )
         }
 
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1
+        )
+
     def _fit_transform(
         self,
         graph: Graph,

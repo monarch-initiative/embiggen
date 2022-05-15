@@ -288,6 +288,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         subgraph_of_interest: Optional[Graph] = None,
         number_of_holdouts: int = 10,
         random_state: int = 42,
+        smoke_test: bool = False,
         verbose: bool = True,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         unbalance_rates: Tuple[float] = (1.0, )
@@ -316,6 +317,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The number of holdouts to execute.
         random_state: int = 42
             The random state to use for the holdouts.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
         sample_only_edges_with_heterogeneous_node_types: bool = False
@@ -339,6 +344,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
             verbose=verbose,
+            smoke_test=smoke_test,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             unbalance_rates=unbalance_rates,
         )

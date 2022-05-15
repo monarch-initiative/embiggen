@@ -4,7 +4,7 @@ from sklearn.tree import DecisionTreeClassifier
 from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
-class DecisionTreeEdgePrediction(SklearnNodeLabelPredictionAdapter):
+class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     """Create wrapper over Sklearn Random Forest classifier for edge prediction."""
 
     def __init__(
@@ -77,6 +77,13 @@ class DecisionTreeEdgePrediction(SklearnNodeLabelPredictionAdapter):
                 ccp_alpha=self._ccp_alpha,
             )
         }
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            max_depth=1,
+        )
 
     @staticmethod
     def model_name() -> str:

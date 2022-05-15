@@ -251,6 +251,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         subgraph_of_interest: Optional[Graph] = None,
         number_of_holdouts: int = 10,
         random_state: int = 42,
+        smoke_test: bool = False,
         verbose: bool = True,
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -277,12 +278,16 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The number of holdouts to execute.
         random_state: int = 42
             The random state to use for the holdouts.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
         """
         if edge_features is not None:
             raise NotImplementedError(
-                "Currently edge features are not supported in edge prediction models."
+                "Currently edge features are not supported in node-label prediction models."
             )
 
         return super().evaluate(
@@ -294,5 +299,6 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             subgraph_of_interest=subgraph_of_interest,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
+            smoke_test=smoke_test,
             verbose=verbose,
         )

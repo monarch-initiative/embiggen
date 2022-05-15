@@ -38,6 +38,7 @@ class SiameseSequence(Sequence):
         self._random_state = random_state
         self._use_node_types = use_node_types
         self._use_edge_types = use_edge_types
+        self._current_index = 0
         super().__init__(
             sample_number=self._graph.get_number_of_directed_edges(),
             batch_size=batch_size,
@@ -46,7 +47,7 @@ class SiameseSequence(Sequence):
     def __call__(self):
         """Return next batch using an infinite generator model."""
         self._current_index += 1
-        return tuple(self[self._current_index])
+        return ((tuple(self[self._current_index]),),)
 
     def into_dataset(self) -> tf.data.Dataset:
         """Return dataset generated out of the current sequence instance.
@@ -74,43 +75,49 @@ class SiameseSequence(Sequence):
                 # Shapes of the source and destination node IDs
                 input_tensor_specs.append(tf.TensorSpec(
                     shape=(self._batch_size, ),
-                    dtype=tf.int32
+                    dtype=tf.uint32
                 ))
 
-                if self._graph.has_node_types() and self._use_node_types:
+            if self._graph.has_node_types() and self._use_node_types:
+                for _ in range(4):
                     # Shapes of the source and destination node type IDs
-                    input_tensor_specs.append(tf.TensorSpec(
-                        shape=(self._batch_size,
-                               self._graph.get_maximum_multilabel_count()),
-                        dtype=tf.int32
-                    ))
+                    input_tensor_specs.append(
+                        tf.TensorSpec(
+                            shape=(
+                                self._batch_size,
+                                self._graph.get_maximum_multilabel_count()
+                            ),
+                            dtype=tf.uint32
+                        )
+                    )
 
             if self._graph.has_edge_types() and self._use_edge_types:
                 # Shapes of the edge type IDs
                 input_tensor_specs.append(tf.TensorSpec(
                     shape=(self._batch_size,),
-                    dtype=tf.int32
+                    dtype=tf.uint32
                 ))
 
             return tf.data.Dataset.from_generator(
                 self,
-                output_signature=input_tensor_specs
+                output_signature=(tuple(input_tensor_specs),)
             )
 
         input_tensor_types = []
         input_tensor_shapes = []
 
         for _ in range(4):
-            input_tensor_types.append(tf.int32,)
+            input_tensor_types.append(tf.uint32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
+        for _ in range(4):
             if self._graph.has_node_types() and self._use_node_types:
-                input_tensor_types.append(tf.int32,)
+                input_tensor_types.append(tf.uint32,)
                 input_tensor_shapes.append(
                     tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
 
         if self._graph.has_edge_types() and self._use_edge_types:
-            input_tensor_types.append(tf.int32,)
+            input_tensor_types.append(tf.uint32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
         return tf.data.Dataset.from_generator(
@@ -132,6 +139,8 @@ class SiameseSequence(Sequence):
             value
             for value in self._graph.get_siamese_mini_batch(
                 random_state,
+                use_node_types=self._use_node_types,
+                use_edge_types=self._use_edge_types,
                 batch_size=self.batch_size,
                 use_zipfian_sampling=True
             )

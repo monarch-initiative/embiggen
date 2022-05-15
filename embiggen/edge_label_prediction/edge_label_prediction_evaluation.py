@@ -1,5 +1,5 @@
 """Submodule providing edge-label prediction evaluation pipeline."""
-from typing import Dict, Any, Union, List, Type, Optional, Tuple
+from typing import Dict, Any, Union, List, Type, Optional
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
@@ -20,6 +20,8 @@ def edge_label_prediction_evaluation(
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
+    enable_cache: bool = False,
+    smoke_test: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge-label prediction evaluation pipeline for all provided models and graphs.
@@ -51,6 +53,13 @@ def edge_label_prediction_evaluation(
         from the Ensmallen automatic retrieval.
     versions: Optional[Union[str, List[str]]] = None
         Graph versions to retrieve.
+    enable_cache: bool = False
+        Whether to enable the cache.
+    smoke_test: bool = False
+        Whether this run should be considered a smoke test
+        and therefore use the smoke test configurations for
+        the provided model names and feature names.
+        This parameter will also turn off the cache.
     verbose: bool = True
         Whether to show loading bars
     """
@@ -68,5 +77,7 @@ def edge_label_prediction_evaluation(
         random_state=random_state,
         repositories=repositories,
         versions=versions,
+        enable_cache=enable_cache,
+        smoke_test=smoke_test,
         verbose=verbose
     )

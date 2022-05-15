@@ -28,9 +28,9 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             models=df.model_name,
             library_names=df.library_name,
             graphs=self._graph,
-            repositories="linqs",
             verbose=False,
-            number_of_holdouts=self._number_of_holdouts
+            number_of_holdouts=self._number_of_holdouts,
+            smoke_test=True
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
 

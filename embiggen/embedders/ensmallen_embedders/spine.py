@@ -39,6 +39,12 @@ class SPINE(AbstractEmbeddingModel):
                 dtype=self._dtype
             )
         }
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+        )
 
     def _fit_transform(
         self,
