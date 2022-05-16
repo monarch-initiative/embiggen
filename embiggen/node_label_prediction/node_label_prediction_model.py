@@ -144,7 +144,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "edges_number": edges_number,
+                "edges_number": nodes_number,
                 **self.evaluate_predictions(
                     predictions,
                     labels

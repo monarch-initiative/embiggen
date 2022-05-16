@@ -112,6 +112,12 @@ class AbstractModel(Hashable):
         model_name: str
     ) -> Dict[str, Dict]:
         """Returns data relative to the registered model data."""
+        # We check if the provided string is not an empty string.
+        if len(model_name) == 0:
+            raise ValueError(
+                "The provided model name is empty."
+            )
+
         # We turn this to lowercase in order to allow
         # for error in casing of the model, since one may
         # write models like `GloVe` also as `Glove` or other
@@ -133,6 +139,12 @@ class AbstractModel(Hashable):
     ) -> Dict[str, Dict]:
         """Returns data relative to the registered model and task data."""
         model_data = AbstractModel.get_model_data(model_name)
+
+        # We check if the provided string is not an empty string.
+        if len(task_name) == 0:
+            raise ValueError(
+                "The provided task name is empty."
+            )
 
         # We do a similar check as the one above for the tasks,
         # as one may do typos while writig the task name and
@@ -162,6 +174,12 @@ class AbstractModel(Hashable):
     ) -> Type["AbstractModel"]:
         """Returns model relative library, task and model name."""
         task_data = AbstractModel.get_task_data(model_name, task_name)
+
+        # We check if the provided string is not an empty string.
+        if len(library_name) == 0:
+            raise ValueError(
+                "The provided library name is empty."
+            )
 
         lowercase_libraries_mapping = {
             t.lower(): t
