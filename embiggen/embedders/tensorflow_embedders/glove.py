@@ -174,11 +174,7 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
         ---------------------------
         Loss function score related to this batch.
         """
-        return K.sum(
-            K.pow(K.clip(y_true, 0.0, 1.0), self._alpha) *
-            K.square(y_pred - K.log(y_true)),
-            axis=-1
-        )
+        return K.pow(y_true, self._alpha) * K.square(y_pred - K.log(y_true))
 
     @staticmethod
     def model_name() -> str:

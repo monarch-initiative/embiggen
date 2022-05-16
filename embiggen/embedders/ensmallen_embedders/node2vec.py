@@ -4,16 +4,15 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import AbstractEmbeddingModel, abstract_class
-
+from ...utils import abstract_class
+from .abstract_random_walk_based_model import AbstractRandomWalkBasedEmbedderModel
 
 @abstract_class
-class Node2VecEnsmallen(AbstractEmbeddingModel):
+class Node2VecEnsmallen(AbstractRandomWalkBasedEmbedderModel):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
         "cbow": models.CBOW,
-        "kgcbow": models.KGCBOW,
         "skipgram": models.SkipGram
     }
 
@@ -43,7 +42,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             raise ValueError(
                 (
                     "The provided model name {} is not supported. "
-                    "The supported models are `CBOW`, `KGCBOW` and `SkipGram`."
+                    "The supported models are `CBOW` and `SkipGram`."
                 ).format(model_name)
             )
 

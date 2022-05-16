@@ -1,20 +1,20 @@
-"""Module providing KGCBOW model implementation."""
-from typing import Optional, Union
+"""Module providing GloVe model implementation."""
+from typing import Optional, Dict, Any, Union
 from ensmallen import Graph
+from ensmallen import models
 import numpy as np
 import pandas as pd
-from .node2vec import Node2VecEnsmallen
+from ...utils import AbstractEmbeddingModel
 
 
-class KGCBOWEnsmallen(Node2VecEnsmallen):
-    """Class providing KGCBOW implemeted in Rust from Ensmallen."""
+class GloVeEnsmallen(AbstractEmbeddingModel):
+    """Class providing GloVe implemeted in Rust from Ensmallen."""
 
     def __init__(
         self,
         embedding_size: int = 100,
         epochs: int = 10,
         clipping_value: float = 6.0,
-        number_of_negative_samples: int = 5,
         walk_length: int = 128,
         iterations: int = 1,
         window_size: int = 4,
@@ -26,8 +26,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
-        stochastic_downsample_by_degree: Optional[bool] = False,
-        use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
     ):
         """Create new abstract Node2Vec method.
@@ -44,13 +42,6 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
-        number_of_negative_samples: int = 5
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
-        log_sigmoid: Optional[bool] = True
-            Whether to use the model using a sigmoid or log sigmoid. By default, log sigmoid.
-        siamese: Optional[bool] = False
-            Whether to use the model in Siamese mode, using half the weights and therefore half the memory.
         walk_length: int = 128
             Maximal length of the walks.
         iterations: int = 1
@@ -91,21 +82,17 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
-        stochastic_downsample_by_degree: Optional[bool] = False
-            Randomly skip samples with probability proportional to the degree of the central node. By default false.
-        normalize_learning_rate_by_degree: Optional[bool] = False
-            Divide the learning rate by the degree of the central node. By default false.
-        use_zipfian_sampling: Optional[bool] = True
-            Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
         """
-        super().__init__(
-            model_name="KGCBOW",
+
+        self._epochs=epochs
+        self._learning_rate=learning_rate,
+        self._learning_rate_decay=learning_rate_decay,
+
+        self._model_kwargs = dict(
             embedding_size=embedding_size,
-            epochs=epochs,
             clipping_value=clipping_value,
-            number_of_negative_samples=number_of_negative_samples,
             walk_length=walk_length,
             iterations=iterations,
             window_size=window_size,
@@ -114,13 +101,54 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
             change_edge_type_weight=change_edge_type_weight,
             change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
-            learning_rate=learning_rate,
-            learning_rate_decay=learning_rate_decay,
             normalize_by_degree=normalize_by_degree,
-            stochastic_downsample_by_degree=stochastic_downsample_by_degree,
-            use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
         )
+
+        self._model = models.GloVe(**self._model_kwargs)
+
+        super().__init__(
+            embedding_size=embedding_size
+        )
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1,
+            window_size=1,
+            walk_length=4,
+            iterations=1,
+            max_neighbours= 10,
+            number_of_negative_samples=1
+        )
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters of the model."""
+        return {
+            **super().parameters(),
+            **self._model_kwargs,
+            **dict(
+                epochs=self._epochs,
+                learning_rate=self._learning_rate,
+                learning_rate_decay=self._learning_rate_decay,
+            )
+        }
+
+    @staticmethod
+    def task_name() -> str:
+        return "Node Embedding"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"
+
+    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
+        return False
+
+    def is_topological(self) -> bool:
+        return True
 
     def _fit_transform(
         self,
@@ -144,14 +172,22 @@ class KGCBOWEnsmallen(Node2VecEnsmallen):
         return node_embedding
 
     @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return True
+    
+    @staticmethod
     def model_name() -> str:
         """Returns name of the model."""
-        return "KGCBOW"
+        return "GloVe"
 
     @staticmethod
     def requires_node_types() -> bool:
-        return True
+        return False
 
     @staticmethod
     def requires_edge_types() -> bool:
-        return True
+        return False
