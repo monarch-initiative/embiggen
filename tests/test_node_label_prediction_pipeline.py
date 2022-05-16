@@ -11,7 +11,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on Node-label prediction pipeline class."""
-        self._graph, _ = get_words_data(Cora())
+        self._graph, self._data = get_words_data(Cora())
         self._number_of_holdouts = 2
 
     def test_evaluate_embedding_for_node_label_prediction(self):
@@ -24,7 +24,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             holdouts_kwargs={
                 "train_size": 0.8
             },
-            node_features=SPINE(embedding_size=5),
+            node_features=[SPINE(embedding_size=5), self._data],
             models=df.model_name,
             library_names=df.library_name,
             graphs=self._graph,
@@ -32,6 +32,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             number_of_holdouts=self._number_of_holdouts,
             smoke_test=True
         )
+
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
 
         if os.path.exists("experiments"):

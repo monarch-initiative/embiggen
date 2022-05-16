@@ -273,7 +273,7 @@ class AbstractClassifierModel(AbstractModel):
         if node_features is None:
             return None
 
-        if not isinstance(node_features, list):
+        if not isinstance(node_features, (list, tuple)):
             node_features = [node_features]
 
         return [
@@ -774,9 +774,9 @@ class AbstractClassifierModel(AbstractModel):
         # This way we compute only once the features that do not
         # cause biases for this task, while recomputing those
         # that cause biases at each holdout, avoiding said biases.
-        node_features = self.normalize_node_feature(
+        node_features = self.normalize_node_features(
             graph,
-            node_feature=node_features,
+            node_features=node_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
             smoke_test=smoke_test
@@ -785,9 +785,9 @@ class AbstractClassifierModel(AbstractModel):
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
-        edge_features = self.normalize_edge_feature(
+        edge_features = self.normalize_edge_features(
             graph,
-            edge_feature=edge_features,
+            edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
             smoke_test=smoke_test
@@ -818,9 +818,9 @@ class AbstractClassifierModel(AbstractModel):
             )
 
             # We compute the remaining features
-            holdout_node_features = self.normalize_node_feature(
+            holdout_node_features = self.normalize_node_features(
                 train,
-                node_feature=node_features,
+                node_features=node_features,
                 allow_automatic_feature=True,
                 skip_evaluation_biased_feature=False,
                 smoke_test=smoke_test
@@ -829,9 +829,9 @@ class AbstractClassifierModel(AbstractModel):
             # We execute the same thing as described above,
             # but now for the edge features instead that for
             # the node features.
-            holdout_edge_features = self.normalize_edge_feature(
+            holdout_edge_features = self.normalize_edge_features(
                 train,
-                edge_feature=edge_features,
+                edge_features=edge_features,
                 allow_automatic_feature=True,
                 skip_evaluation_biased_feature=False,
                 smoke_test=smoke_test
