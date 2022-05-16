@@ -27,6 +27,21 @@ def get_python_code_from_import(
             f"{element.module}/__init__.py"
         )
 
+    # While this secondary check should NEVER be necessary
+    # sadly pip has some issues with removing deleted files
+    # when updating the packages. In order to avoid
+    # such accidents, we double check this case.
+    if not os.path.exists(source_path):
+        raise ValueError(
+            "If you see this error, there may be an issue "
+            "in your embiggen installation. For instance, "
+            "you may have multiple versions installed at once "
+            "which are currently ad odds with one another. "
+            "Often, this is caused when an older version had a "
+            "file that is no longer present but was not deleted "
+            "during the installation process."
+        )
+
     expected_class_name = import_from["name"]
 
     with open(source_path, "r") as f:
