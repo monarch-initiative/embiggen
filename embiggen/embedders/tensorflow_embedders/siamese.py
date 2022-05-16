@@ -37,7 +37,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
-        optimizer: str = "sgd",
+        optimizer: str = "nadam",
     ):
         """Create new sequence Siamese model.
 
@@ -67,7 +67,7 @@ class Siamese(TensorFlowEmbedder):
             performance without decreasing the learning rate.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
-        optimizer: str = "sgd"
+        optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
         """
         self._relu_bias = relu_bias
@@ -148,13 +148,13 @@ class Siamese(TensorFlowEmbedder):
             edge_types
         )
 
-        loss = K.relu(self._relu_bias + tf.norm(
+        loss = tf.math.reduce_mean(K.relu(self._relu_bias + tf.norm(
             srcs_embedding + edge_type_embedding - dsts_embedding,
             axis=-1
         ) - tf.norm(
             not_srcs_embedding + edge_type_embedding - not_dsts_embedding,
             axis=-1
-        ))
+        )))
 
         # Creating the actual model
         model = Model(

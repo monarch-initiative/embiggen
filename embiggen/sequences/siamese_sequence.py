@@ -39,7 +39,7 @@ class SiameseSequence(Sequence):
     def __call__(self):
         """Return next batch using an infinite generator model."""
         self._current_index += 1
-        return ((tuple(self[self._current_index]),),)
+        return (tuple(self[self._current_index]),)
 
     def into_dataset(self) -> tf.data.Dataset:
         """Return dataset generated out of the current sequence instance.
@@ -106,8 +106,8 @@ class SiameseSequence(Sequence):
             Index corresponding to batch to be returned.
         """
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
-        return self._graph.get_siamese_mini_batch(
+        return (self._graph.get_siamese_mini_batch(
             random_state,
             batch_size=self.batch_size,
             use_zipfian_sampling=True
-        )
+        ),)
