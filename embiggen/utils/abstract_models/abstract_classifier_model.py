@@ -875,6 +875,8 @@ class AbstractClassifierModel(AbstractModel):
         performance["model_name"] = self.model_name()
         performance["library_name"] = self.library_name()
         performance["graph_name"] = graph.get_name()
+        performance["nodes_number"] = graph.get_nodes_number()
+        performance["edges_number"] = graph.get_number_of_directed_edges()
         performance["number_of_holdouts"] = number_of_holdouts
         performance["evaluation_schema"] = evaluation_schema
         for parameter, value in self.parameters().items():

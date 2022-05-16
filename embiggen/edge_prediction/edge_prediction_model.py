@@ -183,7 +183,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     "unbalance_rate": unbalance_rate,
                     "sample_only_edges_with_heterogeneous_node_types": sample_only_edges_with_heterogeneous_node_types,
                     "train_size": train_size,
-                    "edges_number": edges_number,
                     **self.evaluate_predictions(
                         predictions,
                         labels

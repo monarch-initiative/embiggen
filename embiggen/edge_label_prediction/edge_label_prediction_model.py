@@ -97,8 +97,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         random_state: int = 42,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        edges_number = graph.get_known_edge_types_number()
-        train_size = train.get_known_edge_types_number() / edges_number
+        train_size = train.get_known_edge_types_number() / graph.get_known_edge_types_number()
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -128,7 +127,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "edges_number": edges_number,
+                "known_edges_number": graph.get_known_node_types_number(),
                 **self.evaluate_predictions(
                     predictions,
                     labels
