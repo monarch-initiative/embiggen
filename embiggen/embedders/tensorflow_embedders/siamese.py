@@ -114,10 +114,13 @@ class Siamese(TensorFlowEmbedder):
     def _build_model(self, graph: Graph):
         """Return Siamese model."""
         # Creating the inputs layers
-        node_inputs = [
+        inputs = [
             Input((1,), dtype=tf.int32)
             for _ in range(4)
         ]
+
+        edge_types = Input((1,), dtype=tf.int32)
+        inputs.append(edge_types)
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
@@ -130,63 +133,19 @@ class Siamese(TensorFlowEmbedder):
         # Get the node embedding
         node_embeddings = [
             UnitNorm(axis=-1)(node_embedding_layer(node_input))
-            for node_input in node_inputs
+            for node_input in inputs
         ]
 
-        if self.requires_node_types():
-            max_node_types = graph.get_maximum_multilabel_count()
-            multilabel = graph.has_multilabel_node_types()
-            unknown_node_types = graph.has_unknown_node_types()
-            node_types_offset = int(multilabel or unknown_node_types)
-            node_type_inputs = [
-                Input((max_node_types,), dtype=tf.int32)
-                for _ in range(4)
-            ]
-
-            node_type_embedding_layer = Embedding(
-                input_dim=graph.get_node_types_number() + node_types_offset,
-                output_dim=self._node_type_embedding_size,
-                input_length=max_node_types,
-                name="node_type_embedding",
-                mask_zero=multilabel or unknown_node_types
-            )
-
-            node_embeddings = [
-                UnitNorm(axis=-1)(Add()([
-                    GlobalAveragePooling1D()(
-                        node_type_embedding_layer(node_type_input)
-                    ),
-                    node_embedding
-                ]))
-                for node_type_input, node_embedding in zip(
-                    node_type_inputs,
-                    node_embeddings
-                )
-            ]
-        else:
-            node_type_inputs = []
-
-        inputs = [
-            *node_inputs,
-            *node_type_inputs,
-        ]
-
-        if self.requires_edge_types():
-            edge_types_number = graph.get_edge_types_number()
-            unknown_edge_types = graph.has_unknown_edge_types()
-            edge_types_offset = int(unknown_edge_types)
-            edge_types = Input((1,), dtype=tf.int32)
-            edge_type_embedding = UnitNorm(axis=-1)(
-                GlobalAveragePooling1D()(Embedding(
-                    input_dim=edge_types_number,
-                    output_dim=self._edge_type_embedding_size,
-                    input_length=1 + edge_types_offset,
-                    mask_zero=unknown_edge_types,
-                    name="edge_type_embedding",
-                )(edge_types)))
-            inputs.append(edge_types)
-        else:
-            edge_types = edge_type_embedding = None
+        edge_types_number = graph.get_edge_types_number()
+        unknown_edge_types = graph.has_unknown_edge_types()
+        edge_types_offset = int(unknown_edge_types)
+        edge_type_embedding = GlobalAveragePooling1D()(Embedding(
+            input_dim=edge_types_number,
+            output_dim=self._edge_type_embedding_size,
+            input_length=1 + edge_types_offset,
+            mask_zero=unknown_edge_types,
+            name="edge_type_embedding",
+        )(edge_types))
 
         (
             srcs_embedding,
@@ -263,7 +222,7 @@ class Siamese(TensorFlowEmbedder):
         graph: Graph
             The graph to compute the number of steps.
         """
-        return max(graph.get_nodes_number() // self._batch_size, 1)
+        return max(graph.get_number_of_directed_edges() // self._batch_size, 1)
 
     def _build_input(
         self,

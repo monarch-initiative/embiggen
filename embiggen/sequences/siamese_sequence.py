@@ -14,8 +14,6 @@ class SiameseSequence(Sequence):
     def __init__(
         self,
         graph: Graph,
-        use_node_types: bool,
-        use_edge_types: bool,
         batch_size: int = 2**10,
         random_state: int = 42
     ):
@@ -25,10 +23,6 @@ class SiameseSequence(Sequence):
         --------------------------------
         graph: Graph,
             The graph from which to sample the triples.
-        use_node_types: bool
-            Whether to use node types.
-        use_edge_types: bool
-            Whether to use edge types.
         batch_size: int = 2**10,
             The batch size to use.
         random_state: int = 42,
@@ -36,8 +30,6 @@ class SiameseSequence(Sequence):
         """
         self._graph = graph
         self._random_state = random_state
-        self._use_node_types = use_node_types
-        self._use_edge_types = use_edge_types
         self._current_index = 0
         super().__init__(
             sample_number=self._graph.get_number_of_directed_edges(),
@@ -78,25 +70,11 @@ class SiameseSequence(Sequence):
                     dtype=tf.uint32
                 ))
 
-            if self._graph.has_node_types() and self._use_node_types:
-                for _ in range(4):
-                    # Shapes of the source and destination node type IDs
-                    input_tensor_specs.append(
-                        tf.TensorSpec(
-                            shape=(
-                                self._batch_size,
-                                self._graph.get_maximum_multilabel_count()
-                            ),
-                            dtype=tf.uint32
-                        )
-                    )
-
-            if self._graph.has_edge_types() and self._use_edge_types:
-                # Shapes of the edge type IDs
-                input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size,),
-                    dtype=tf.uint32
-                ))
+            # Shapes of the edge type IDs
+            input_tensor_specs.append(tf.TensorSpec(
+                shape=(self._batch_size,),
+                dtype=tf.uint32
+            ))
 
             return tf.data.Dataset.from_generator(
                 self,
@@ -110,15 +88,8 @@ class SiameseSequence(Sequence):
             input_tensor_types.append(tf.uint32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
-        for _ in range(4):
-            if self._graph.has_node_types() and self._use_node_types:
-                input_tensor_types.append(tf.uint32,)
-                input_tensor_shapes.append(
-                    tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
-
-        if self._graph.has_edge_types() and self._use_edge_types:
-            input_tensor_types.append(tf.uint32,)
-            input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
+        input_tensor_types.append(tf.uint32,)
+        input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
 
         return tf.data.Dataset.from_generator(
             self,
@@ -135,14 +106,10 @@ class SiameseSequence(Sequence):
             Index corresponding to batch to be returned.
         """
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
-        return [
-            value
-            for value in self._graph.get_siamese_mini_batch(
-                random_state,
-                use_node_types=self._use_node_types,
-                use_edge_types=self._use_edge_types,
-                batch_size=self.batch_size,
-                use_zipfian_sampling=True
-            )
-            if value is not None
-        ]
+        return self._graph.get_siamese_mini_batch(
+            random_state,
+            use_node_types=self._use_node_types,
+            use_edge_types=self._use_edge_types,
+            batch_size=self.batch_size,
+            use_zipfian_sampling=True
+        )
