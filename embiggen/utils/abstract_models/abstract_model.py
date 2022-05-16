@@ -47,6 +47,14 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def is_topological() -> bool:
+        """Returns whether this embedding is based on graph topology."""
+        raise NotImplementedError((
+            "The `is_topological` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
     def requires_node_types() -> bool:
         """Returns whether the model requires edge weights."""
         raise NotImplementedError((

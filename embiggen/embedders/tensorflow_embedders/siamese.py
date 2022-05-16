@@ -18,7 +18,7 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
 )
 from tensorflow.keras.models import Model
 from embiggen.utils import abstract_class
-from ...sequences import SiameseSequence
+from ...sequences import SiameseSequence, KGSiameseSequence
 from .tensorflow_embedder import TensorFlowEmbedder
 
 
@@ -123,6 +123,40 @@ class Siamese(TensorFlowEmbedder):
             for node_input in inputs
         ]
 
+        if self.requires_node_types():
+            max_node_types = graph.get_maximum_multilabel_count()
+            multilabel = graph.has_multilabel_node_types()
+            unknown_node_types = graph.has_unknown_node_types()
+            node_types_offset = int(multilabel or unknown_node_types)
+            node_type_inputs = [
+                Input((max_node_types,), dtype=tf.int32)
+                for _ in range(4)
+            ]
+
+            node_type_embedding_layer = Embedding(
+                input_dim=graph.get_node_types_number() + node_types_offset,
+                output_dim=self._node_type_embedding_size,
+                input_length=max_node_types,
+                name="node_type_embedding",
+                mask_zero=multilabel or unknown_node_types
+            )
+
+            node_embeddings = [
+                Add()([
+                    GlobalAveragePooling1D()(
+                        node_type_embedding_layer(node_type_input)
+                    ),
+                    node_embedding
+                ])
+                for node_type_input, node_embedding in zip(
+                    node_type_inputs,
+                    node_embeddings
+                )
+            ]
+        else:
+            node_type_inputs = []
+
+        inputs.extend(node_type_inputs)
         inputs.append(edge_types)
 
         edge_types_number = graph.get_edge_types_number()
@@ -148,13 +182,13 @@ class Siamese(TensorFlowEmbedder):
             edge_types
         )
 
-        loss = tf.math.reduce_mean(K.relu(self._relu_bias + tf.norm(
+        loss = K.relu(self._relu_bias + tf.norm(
             srcs_embedding + edge_type_embedding - dsts_embedding,
             axis=-1
         ) - tf.norm(
             not_srcs_embedding + edge_type_embedding - not_dsts_embedding,
             axis=-1
-        )))
+        ))
 
         # Creating the actual model
         model = Model(
@@ -233,11 +267,18 @@ class Siamese(TensorFlowEmbedder):
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        return (
-            SiameseSequence(
+        if self.requires_node_types():
+            sequence = KGSiameseSequence(
                 graph=graph,
                 batch_size=self._batch_size,
-            ).into_dataset()
+            )
+        else:
+            sequence = SiameseSequence(
+                graph=graph,
+                batch_size=self._batch_size,
+            )
+        return (
+            sequence.into_dataset()
             .repeat()
             .prefetch(AUTOTUNE), )
 

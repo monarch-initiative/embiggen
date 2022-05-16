@@ -100,10 +100,6 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
     def library_name() -> str:
         return "TensorFlow"
 
-    @staticmethod
-    def task_name() -> str:
-        return "Node Embedding"
-
     def _build_model(self, graph: Graph) -> Model:
         """Build new model for embedding.
 

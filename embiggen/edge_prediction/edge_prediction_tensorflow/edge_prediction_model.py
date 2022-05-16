@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model  # pylint: disable=import-error,no-nam
 from userinput import set_validator
 from userinput.utils import closest
 
-from ...embedders.tensorflow_embedders import TensorFlowEmbedder
+from ...embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
 from ...sequences import EdgePredictionSequence, EdgeLabelPredictionSequence
 from .layers import edge_embedding_layer
 

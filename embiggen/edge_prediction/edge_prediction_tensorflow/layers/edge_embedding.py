@@ -5,7 +5,7 @@ import numpy as np
 from tensorflow.keras.layers import Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Flatten, Input, Layer, Dropout  # pylint: disable=import-error,no-name-in-module
 
-from ....embedders.tensorflow_embedders import TensorFlowEmbedder
+from ....embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
 
 
 class EdgeEmbedding(Layer):

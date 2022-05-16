@@ -34,12 +34,8 @@ class AbstractEmbeddingModel(AbstractModel):
         }
 
     @staticmethod
-    def is_topological() -> bool:
-        """Returns whether this embedding is based on graph topology."""
-        raise NotImplementedError((
-            "The `is_topological` method must be implemented "
-            "in the child classes of abstract model."
-        ))
+    def task_name() -> str:
+        return "Node Embedding"
 
     @staticmethod
     def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
