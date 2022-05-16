@@ -33,9 +33,9 @@ class Siamese(TensorFlowEmbedder):
         epochs: int = 10,
         batch_size: int = 2**10,
         early_stopping_min_delta: float = 0.001,
-        early_stopping_patience: int = 1,
+        early_stopping_patience: int = 5,
         learning_rate_plateau_min_delta: float = 0.001,
-        learning_rate_plateau_patience: int = 1,
+        learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
         optimizer: str = "sgd",
     ):
