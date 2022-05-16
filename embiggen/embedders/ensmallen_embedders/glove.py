@@ -86,9 +86,9 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             The random state to reproduce the training sequence.
         """
 
-        self._epochs=epochs
-        self._learning_rate=learning_rate,
-        self._learning_rate_decay=learning_rate_decay,
+        self._epochs = epochs
+        self._learning_rate = learning_rate,
+        self._learning_rate_decay = learning_rate_decay,
 
         self._model_kwargs = dict(
             embedding_size=embedding_size,
@@ -120,7 +120,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             window_size=1,
             walk_length=4,
             iterations=1,
-            max_neighbours= 10,
+            max_neighbours=10,
             number_of_negative_samples=1
         )
 
@@ -178,7 +178,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def requires_positive_edge_weights() -> bool:
         return True
-    
+
     @staticmethod
     def model_name() -> str:
         """Returns name of the model."""

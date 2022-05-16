@@ -22,15 +22,11 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
     predict its cooccurrence probability.
     """
 
-    SOURCE_NODES_EMBEDDING = "source_nodes_embedding"
-    DESTINATION_NODES_EMBEDDING = "destination_nodes_embedding"
-
     def __init__(
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
         use_bias: bool = True,
-        siamese: bool = False,
         epochs: int = 10,
         batch_size: int = 2**12,
         early_stopping_min_delta: float = 0.001,
@@ -62,9 +58,6 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             Whether to use the bias in the GloVe model.
             Consider that these weights are excluded from
             the model embedding.
-        siamese: bool = False
-            Whether to use the siamese modality and share the embedding
-            weights between the source and destination nodes.
         epochs: int = 10
             Number of epochs to train the model for.
         batch_size: int = 2**12
@@ -125,7 +118,6 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             Whether to use mirrored strategy.
         """
         self._alpha = alpha
-        self._siamese = siamese
         self._use_bias = use_bias
 
         super().__init__(
@@ -155,7 +147,6 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             **super().parameters(),
             **dict(
                 alpha=self._alpha,
-                siamese=self._siamese,
                 use_bias=self._use_bias
             )
         }
@@ -197,19 +188,10 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             input_dim=graph.get_nodes_number(),
             output_dim=self._embedding_size,
             input_length=1,
-            name=self.SOURCE_NODES_EMBEDDING
+            name="node_embedding"
         )
         sources_embedding = sources_embedding_layer(sources)
-
-        if self._siamese:
-            destinations_embedding = sources_embedding_layer(destinations)
-        else:
-            destinations_embedding = Embedding(
-                input_dim=graph.get_nodes_number(),
-                output_dim=self._embedding_size,
-                input_length=1,
-                name=self.DESTINATION_NODES_EMBEDDING
-            )(destinations)
+        destinations_embedding = sources_embedding_layer(destinations)
 
         # Creating the dot product of the embedding layers
         prediction = Dot(axes=2)([
@@ -219,12 +201,15 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
 
         # Creating the biases layer
         if self._use_bias:
-            biases = [
-                Embedding(graph.get_nodes_number(), 1,
-                          input_length=1)(input_layer)
-                for input_layer in (sources, destinations)
-            ]
-            prediction = Add()([prediction, *biases])
+            bias = Embedding(
+                graph.get_nodes_number(),
+                1,
+                input_length=1
+            )
+            prediction = Add()([
+                prediction,
+                *[bias(node) for node in (sources, destinations)]
+            ])
 
         # Creating the model
         model = Model(
@@ -295,13 +280,9 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             Whether to return a dataframe of a numpy array.
         """
         result = {
-            layer_name: self.get_layer_weights(
-                layer_name,
+            "node_embedding": self.get_layer_weights(
+                "node_embedding",
                 model,
-            )
-            for layer_name in (
-                self.SOURCE_NODES_EMBEDDING,
-                self.DESTINATION_NODES_EMBEDDING
             )
         }
         
