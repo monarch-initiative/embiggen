@@ -27,13 +27,6 @@ def get_python_code_from_import(
             f"{element.module}/__init__.py"
         )
 
-    # While this secondary check should NEVER be necessary
-    # sadly pip has some issues with removing deleted files
-    # when updating the packages. In order to avoid
-    # such accidents, we double check this case.
-    if not os.path.exists(source_path):
-        return None
-
     expected_class_name = import_from["name"]
 
     with open(source_path, "r") as f:
