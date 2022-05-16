@@ -9,7 +9,6 @@ def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
     """Simply adds a descriptor for meta-programming and nothing else."""
     return klass
 
-
 @abstract_class
 class AbstractModel(Hashable):
     """Class defining properties of a generic abstract model."""
