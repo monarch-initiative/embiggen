@@ -108,8 +108,6 @@ class SiameseSequence(Sequence):
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
         return self._graph.get_siamese_mini_batch(
             random_state,
-            use_node_types=self._use_node_types,
-            use_edge_types=self._use_edge_types,
             batch_size=self.batch_size,
             use_zipfian_sampling=True
         )
