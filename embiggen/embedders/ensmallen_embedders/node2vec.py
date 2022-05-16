@@ -4,11 +4,10 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import abstract_class
-from .abstract_random_walk_based_model import AbstractRandomWalkBasedEmbedderModel
+from ...utils import abstract_class, AbstractEmbeddingModel
 
 @abstract_class
-class Node2VecEnsmallen(AbstractRandomWalkBasedEmbedderModel):
+class Node2VecEnsmallen(AbstractEmbeddingModel):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
