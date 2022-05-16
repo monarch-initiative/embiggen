@@ -16,7 +16,7 @@ def get_python_code_from_import(
     import_from: Dict
 ):
     element = import_from["element"]
-    source_path = os.sep + os.path.join(
+    original_path = source_path = os.sep + os.path.join(
         *original_file_path.split(os.sep)[:-element.level],
         f"{element.module}.py"
     )
@@ -39,7 +39,8 @@ def get_python_code_from_import(
             "which are currently ad odds with one another. "
             "Often, this is caused when an older version had a "
             "file that is no longer present but was not deleted "
-            "during the installation process."
+            "during the installation process. The file causing this issue are "
+            f"'{original_path}' and '{original_file_path}'. Consider deleting it."
         )
 
     expected_class_name = import_from["name"]
