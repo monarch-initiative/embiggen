@@ -120,7 +120,6 @@ class Siamese(TensorFlowEmbedder):
         ]
 
         edge_types = Input((1,), dtype=tf.int32)
-        inputs.append(edge_types)
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
@@ -135,6 +134,8 @@ class Siamese(TensorFlowEmbedder):
             UnitNorm(axis=-1)(node_embedding_layer(node_input))
             for node_input in inputs
         ]
+        
+        inputs.append(edge_types)
 
         edge_types_number = graph.get_edge_types_number()
         unknown_edge_types = graph.has_unknown_edge_types()
