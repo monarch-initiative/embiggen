@@ -1,14 +1,14 @@
 """Submodule with utilities for pytorch models."""
 import torch
 
-def resolve_torch_device(device: str) -> torch.device:
-    """Resolve a torch.device given a desired device (string).
+def validate_torch_device(device: str) -> str:
+    """Validate and sanitize torch device name.
     
     Parameters
     ------------------------
     device: str
         The device to use with Torch.
-        This can either be `cuda` or `gpu`.
+        This can either be `cuda`, `gpu`, or `auto`.
 
     Raises
     ------------------------
@@ -24,16 +24,21 @@ def resolve_torch_device(device: str) -> torch.device:
             "installed in your system. Do consider using `cuda` "
             "as device option as it may be the faster option."
         )
+        if device == "auto":
+            device = "cuda"
     else:
         cuda_comment = (
             "Your Torch installation is not "
             "currently able to detect any CUDA device."
         )
+        if device == "auto":
+            device = "cuda"
+    
     if device not in ("cpu", "cuda"):
         raise ValueError(
             f"The provided torch device `{device}` is not a supported "
             "torch device. Currently, the supported torch devices are "
-            f"cpu and cuda. {cuda_comment}"
+            f"cpu and cuda, or `auto` for auto-dispatching. {cuda_comment}"
         )
         
     if device == "cuda" and not torch.cuda.is_available():
@@ -43,7 +48,5 @@ def resolve_torch_device(device: str) -> torch.device:
             "and CUDA is installed and has a version compatible "
             "with the version of Torch you have installed."
         )
-
-    device = torch.device(device)
     
     return device

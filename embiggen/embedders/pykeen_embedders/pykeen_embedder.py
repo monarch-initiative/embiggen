@@ -6,7 +6,7 @@ import pandas as pd
 from ensmallen import Graph
 import inspect
 
-from ...utils.pytorch_utils import resolve_torch_device
+from ...utils.pytorch_utils import validate_torch_device
 from ...utils import AbstractEmbeddingModel, abstract_class
 from ...utils import format_list
 import torch
@@ -30,7 +30,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         embedding_size: int = 100,
         epochs: int = 10,
         batch_size: int = 2**10,
-        device: str = "cpu",
+        device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
@@ -58,7 +58,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         self._training_loop = training_loop
         self._epochs = epochs
         self._batch_size = batch_size
-        self._device = device
+        self._device = validate_torch_device(device)
 
         super().__init__(embedding_size=embedding_size)
 
@@ -142,7 +142,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
         """Return node embedding"""
 
-        torch_device = resolve_torch_device(self.device)
+        torch_device = torch.device(self._device)
 
         triples_factory = CoreTriplesFactory(
             torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
