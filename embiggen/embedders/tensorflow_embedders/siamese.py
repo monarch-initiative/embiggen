@@ -29,8 +29,6 @@ class Siamese(TensorFlowEmbedder):
     def __init__(
         self,
         embedding_size: int = 100,
-        node_type_embedding_size: int = 100,
-        edge_type_embedding_size: int = 100,
         relu_bias: float = 1.0,
         epochs: int = 10,
         batch_size: int = 2**10,
@@ -49,10 +47,6 @@ class Siamese(TensorFlowEmbedder):
             Dimension of the embedding.
             If None, the seed embedding must be provided.
             It is not possible to provide both at once.
-        node_type_embedding_size: int = 100
-            Dimension of the embedding for the node types.
-        edge_type_embedding_size: int = 100
-            Dimension of the embedding for the edge types.
         relu_bias: float = 1.0
             The bias to use for the ReLu.
         epochs: int = 10
@@ -76,8 +70,6 @@ class Siamese(TensorFlowEmbedder):
         optimizer: str = "sgd"
             The optimizer to be used during the training of the model.
         """
-        self._node_type_embedding_size = node_type_embedding_size
-        self._edge_type_embedding_size = edge_type_embedding_size
         self._relu_bias = relu_bias
 
         super().__init__(
@@ -97,16 +89,12 @@ class Siamese(TensorFlowEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **TensorFlowEmbedder.smoke_test_parameters(),
-            node_type_embedding_size=5,
-            edge_type_embedding_size=5,
         )
 
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
             **dict(
-                node_type_embedding_size = self._node_type_embedding_size,
-                edge_type_embedding_size = self._edge_type_embedding_size,
                 relu_bias = self._relu_bias
             )
         }
@@ -134,7 +122,7 @@ class Siamese(TensorFlowEmbedder):
             UnitNorm(axis=-1)(node_embedding_layer(node_input))
             for node_input in inputs
         ]
-        
+
         inputs.append(edge_types)
 
         edge_types_number = graph.get_edge_types_number()
@@ -142,7 +130,7 @@ class Siamese(TensorFlowEmbedder):
         edge_types_offset = int(unknown_edge_types)
         edge_type_embedding = GlobalAveragePooling1D()(Embedding(
             input_dim=edge_types_number,
-            output_dim=self._edge_type_embedding_size,
+            output_dim=self._embedding_size,
             input_length=1 + edge_types_offset,
             mask_zero=unknown_edge_types,
             name="edge_type_embedding",
@@ -249,8 +237,6 @@ class Siamese(TensorFlowEmbedder):
             SiameseSequence(
                 graph=graph,
                 batch_size=self._batch_size,
-                use_node_types=self.requires_node_types(),
-                use_edge_types=self.requires_edge_types(),
             ).into_dataset()
             .repeat()
             .prefetch(AUTOTUNE), )
