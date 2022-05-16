@@ -59,8 +59,8 @@ class TransETensorFlow(Siamese):
                 )
                 for layer_name, names, drop_first_row in (
                     ("node_embedding", graph.get_node_names(), False),
-                    ("edge_type_embedding", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types())
-                    ("node_type_embedding", graph.get_unique_node_type_names(), graph.has_unknown_node_types())
+                    ("edge_type_embedding", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types()),
+                    ("node_type_embedding", graph.get_unique_node_type_names(), graph.has_unknown_node_types()),
                 )
             }
         return {
@@ -71,7 +71,7 @@ class TransETensorFlow(Siamese):
             )
             for layer_name, drop_first_row in (
                 ("node_embedding", False),
-                ("edge_type_embedding", graph.has_unknown_edge_types())
-                ("node_type_embedding", graph.has_unknown_node_types())
+                ("edge_type_embedding", graph.has_unknown_edge_types()),
+                ("node_type_embedding", graph.has_unknown_node_types()),
             )
         }
