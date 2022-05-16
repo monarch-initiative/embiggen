@@ -11,6 +11,7 @@ from .abstract_models import (
     get_available_models_for_node_embedding,
     abstract_class
 )
+from .list_formatting import format_list
 from .pipeline import classification_evaluation_pipeline
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "AbstractModel",
     "classification_evaluation_pipeline",
     "build_init",
+    "format_list",
     "get_models_dataframe",
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_edge_prediction",

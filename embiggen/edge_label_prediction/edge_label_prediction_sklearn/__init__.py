@@ -3,7 +3,7 @@ from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAda
 from ...utils import build_init
 
 build_init(
-    module_library_name="sklearn",
+    module_library_names="sklearn",
     formatted_library_name="scikit-learn",
     expected_parent_class=SklearnEdgeLabelPredictionAdapter
 )

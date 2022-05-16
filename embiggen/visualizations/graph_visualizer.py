@@ -1546,6 +1546,13 @@ class GraphVisualizer:
         counts = np.bincount(types)
         number_of_non_zero_types = (counts != 0).astype(int).sum()
         number_of_types = len(counts)
+
+        # We want to avoid to use a space in the legend for
+        # the "Other" values when they would only contain
+        # a single class.
+        if number_of_types == k + 1:
+            k = k + 1
+
         top_counts = [
             index
             for index, _ in sorted(

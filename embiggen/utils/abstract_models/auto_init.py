@@ -1,5 +1,5 @@
 """Submodule to automatically create __init__ files for the library submodules with stubs."""
-from typing import Dict, List, Type
+from typing import Dict, List, Type, Union
 from .abstract_model import AbstractModel
 import ast
 from ast import ClassDef, ImportFrom, FunctionDef, Return
@@ -158,7 +158,7 @@ def find_method_name(klass: ClassDef) -> str:
 
 
 def build_init(
-    module_library_name: str,
+    module_library_names: Union[str, List[str]],
     formatted_library_name: str,
     expected_parent_class: Type[AbstractModel]
 ):
@@ -166,7 +166,7 @@ def build_init(
 
     Parameters
     --------------------
-    module_library_name: str
+    module_library_names: Union[str, List[str]]
         Name of the library dependency to be check for availability.
     formatted_library_name: str
         The formatted name of the library for visualization pourposes.
@@ -208,7 +208,7 @@ def build_init(
                 generated_classes.append(klass.name)
                 get_model_or_stub(
                     frame,
-                    module_library_name=module_library_name,
+                    module_library_names=module_library_names,
                     formatted_library_name=formatted_library_name,
                     submodule_name=submodule_name,
                     model_class_name=klass.name,

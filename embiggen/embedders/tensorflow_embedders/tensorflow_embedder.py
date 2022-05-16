@@ -167,10 +167,6 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             "called `_extract_embeddings`. Please do implement it."
         )
 
-    def summary(self):
-        """Print model summary."""
-        self._model.summary()
-
     def get_layer_weights(
         self,
         layer_name: str,

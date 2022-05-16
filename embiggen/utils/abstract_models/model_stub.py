@@ -1,16 +1,12 @@
 """Submodule providing auto model stub for non-mandatory modules."""
-from typing import Type
-import inspect
-
-from numpy import isin
+from typing import Type, List, Union
 from .abstract_model import AbstractModel
 from ..list_formatting import format_list
-from sanitize_ml_labels import sanitize_ml_labels
 
 
 def get_model_or_stub(
     frame,
-    module_library_name: str,
+    module_library_names: Union[str, List[str]],
     formatted_library_name: str,
     submodule_name: str,
     model_class_name: str,
@@ -23,8 +19,8 @@ def get_model_or_stub(
     -------------------
     frame
         Stack frame of the main context.
-    module_library_name: str
-        Name of the library dependency to be check for availability.
+    module_library_names: Union[str, List[str]]
+        Name of the library dependencies to be check for availability.
     formatted_library_name: str
         The formatted name of the library for visualization pourposes.
     submodule_name: str
@@ -36,12 +32,18 @@ def get_model_or_stub(
     parent_class: Type[AbstractModel]
         Expected parent class of the model.
     """
+    if not isinstance(module_library_names, list):
+        module_library_names = [module_library_names]
+    
     # We check that all names are actually string.
     for variable_name, variable_value in (
-        ("module_library_name", module_library_name),
         ("formatted_library_name", formatted_library_name),
         ("submodule_name", submodule_name),
         ("model_class_name", model_class_name),
+        *[
+            ("module_library_name", module_library_name)
+            for module_library_name in module_library_names
+        ]
     ):
         if not isinstance(variable_value, str):
             raise ValueError(
@@ -88,7 +90,10 @@ def get_model_or_stub(
     except ModuleNotFoundError as e:
         # If effectively the error is that we cannot load the desired
         # library name, we catch this and re-raise it.
-        if f"No module named '{module_library_name}'" == str(e):
+        if any(
+            f"No module named '{module_library_name}'" == str(e)
+            for module_library_name in module_library_names
+        ):
             class StubClass(parent_class):
 
                 def __init__(self) :
@@ -120,7 +125,7 @@ def get_model_or_stub(
                         )
                     raise ModuleNotFoundError(
                         (
-                            f"The module {module_library_name} is not available "
+                            f"The module {module_library_names} is not available "
                             "on your system "
                             "and therefore we cannot make available the requested "
                             f"model {self.model_name()}, as it is based on the "

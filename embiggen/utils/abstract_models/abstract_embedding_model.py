@@ -94,12 +94,14 @@ class AbstractEmbeddingModel(AbstractModel):
         and its values.
         """
         if not graph.has_nodes():
-            raise ValueError("The provided graph is empty.")
+            raise ValueError(
+                f"The provided graph {graph.get_name()} is empty."
+            )
 
         if self.requires_nodes_sorted_by_decreasing_node_degree():
             if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
                 raise ValueError(
-                    "The given graph does not have the nodes sorted by decreasing "
+                    f"The given graph {graph.get_name()} does not have the nodes sorted by decreasing "
                     "order, therefore the negative sampling (which follows a zipfian "
                     "distribution) would not approximate well the Softmax.\n"
                     "In order to sort the given graph in such a way that the node IDs "
@@ -109,43 +111,46 @@ class AbstractEmbeddingModel(AbstractModel):
 
         if self.requires_node_types() and not graph.has_node_types():
             raise ValueError(
-                "The provided graph does not have node types, but "
+                f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires node types."
             )
 
         if self.requires_edge_types() and not graph.has_edge_types():
             raise ValueError(
-                "The provided graph does not have edge types, but "
+                f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."
             )
 
         if self.requires_edge_weights() and not graph.has_edge_weights():
             raise ValueError(
-                "The provided graph does not have edge weights, but "
+                f"The provided graph {graph.get_name()} does not have edge weights, but "
                 f"the {self.model_name()} requires edge weights."
             )
 
         if self.requires_positive_edge_weights() and graph.has_edge_weights() and graph.has_negative_edge_weights():
             raise ValueError(
-                "The provided graph has negative edge weights, but "
+                f"The provided graph {graph.get_name()} has negative edge weights, but "
                 f"the {self.model_name()} requires strictly positive edge weights."
             )
 
         if self.is_topological():
             if not graph.has_edges():
-                raise ValueError("The provided graph does not have edges.")
+                raise ValueError(
+                    f"The provided graph {graph.get_name()} does not have edges."
+                )
 
             if graph.has_disconnected_nodes():
                 warnings.warn(
                     (
-                        "Please be advised that this graph contains {} disconnected nodes. "
+                        f"Please be advised that the {graph.get_name()} graph "
+                        f"contains {graph.get_disconnected_nodes_number()} disconnected nodes. "
                         "Consider that node embedding algorithms that only use topological information "
                         "such as CBOW, GloVe, SPINE and SkipGram are not able to provide meaningful "
                         "embeddings for these nodes, and their embedding will be generally "
                         "far away from any other node. It is also possible that all disconnected nodes "
                         "will receive a relatively similar node embedding. "
                         "Consider dropping them by using the `graph.remove_disconnected_nodes()` method."
-                    ).format(graph.get_singleton_nodes_number())
+                    )
                 )
 
         return self._fit_transform(

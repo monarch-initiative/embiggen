@@ -16,6 +16,7 @@ class TestNodeEmbeddingPipeline(TestCase):
         for _, row in tqdm(
             df.iterrows(),
             total=df.shape[0],
+            leave=False,
             desc="Testing embedding methods"
         ):
             if row.requires_edge_weights:

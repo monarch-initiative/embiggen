@@ -28,7 +28,7 @@ class Siamese(TensorFlowEmbedder):
 
     def __init__(
         self,
-        node_embedding_size: int = 100,
+        embedding_size: int = 100,
         node_type_embedding_size: int = 100,
         edge_type_embedding_size: int = 100,
         relu_bias: float = 1.0,
@@ -81,7 +81,7 @@ class Siamese(TensorFlowEmbedder):
         self._relu_bias = relu_bias
 
         super().__init__(
-            embedding_size=node_embedding_size,
+            embedding_size=embedding_size,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
             learning_rate_plateau_min_delta=learning_rate_plateau_min_delta,
