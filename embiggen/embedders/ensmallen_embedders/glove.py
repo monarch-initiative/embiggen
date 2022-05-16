@@ -87,8 +87,8 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         """
 
         self._epochs = epochs
-        self._learning_rate = learning_rate,
-        self._learning_rate_decay = learning_rate_decay,
+        self._learning_rate = learning_rate
+        self._learning_rate_decay = learning_rate_decay
 
         self._model_kwargs = dict(
             embedding_size=embedding_size,
