@@ -135,7 +135,7 @@ class Siamese(TensorFlowEmbedder):
 
             node_type_embedding_layer = Embedding(
                 input_dim=graph.get_node_types_number() + node_types_offset,
-                output_dim=self._node_type_embedding_size,
+                output_dim=self._embedding_size,
                 input_length=max_node_types,
                 name="node_type_embedding",
                 mask_zero=multilabel or unknown_node_types
