@@ -4,7 +4,6 @@ from ensmallen import Graph
 from pykeen.models import EntityRelationEmbeddingModel
 from .pykeen_embedder import PyKeenEmbedder
 from pykeen.training import TrainingLoop
-from torch.optim import Optimizer
 import numpy as np
 import pandas as pd
 from ...utils import abstract_class
@@ -19,7 +18,6 @@ class EntityRelationEmbeddingModelPyKeen(PyKeenEmbedder):
         scoring_fct_norm: int = 2,
         epochs: int = 10,
         batch_size: int = 2**10,
-        optimizer: Union[str, Optimizer] = "sgd",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
@@ -29,7 +27,6 @@ class EntityRelationEmbeddingModelPyKeen(PyKeenEmbedder):
             embedding_size=embedding_size,
             epochs=epochs,
             batch_size=batch_size,
-            optimizer=optimizer,
             training_loop=training_loop
         )
 

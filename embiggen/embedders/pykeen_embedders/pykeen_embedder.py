@@ -29,7 +29,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         embedding_size: int = 100,
         epochs: int = 10,
         batch_size: int = 2**10,
-        optimizer: Union[str, Optimizer] = "sgd",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
@@ -55,7 +54,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             )
 
         self._training_loop = training_loop
-        self._optimizer = optimizer
         self._epochs = epochs
         self._batch_size = batch_size
 
@@ -75,7 +73,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             **dict(
                 epochs=self._epochs,
                 batch_size=self._batch_size,
-                optimizer=self._optimizer,
             )
         }
 
@@ -87,13 +84,13 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     def task_name() -> str:
         return "Node Embedding"
 
-    def _build_model(self, graph: Graph) -> Type[Model]:
+    def _build_model(self, triples_factory: CoreTriplesFactory) -> Type[Model]:
         """Build new model for embedding.
 
         Parameters
         ------------------
-        graph: Graph
-            The graph to build the model for.
+        triples_factory: CoreTriplesFactory
+            The PyKeen triples factory to use to create the model.
         """
         raise NotImplementedError(
             f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
@@ -142,18 +139,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
         """Return node embedding"""
 
-        model = self._build_model(graph)
-
-        if not issubclass(model, Model):
-            raise NotImplementedError(
-                "The model created with the `_build_model` in the child "
-                f"class {self.__class__.__name__} for the model {self.model_name()} "
-                f"in the library {self.library_name()} did not return a "
-                f"PyKeen model but an object of type {type(model)}."
-            )
-
         triples_factory = CoreTriplesFactory(
-            torch.LongTensor(graph.get_directed_edge_triples_ids()),
+            torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
             num_entities=graph.get_nodes_number(),
             num_relations=graph.get_edge_types_number(),
             entity_ids=graph.get_node_ids(),
@@ -161,10 +148,19 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             create_inverse_triples=False,
         )
 
+        model = self._build_model(triples_factory)
+
+        if not issubclass(model.__class__, Model):
+            raise NotImplementedError(
+                "The model created with the `_build_model` in the child "
+                f"class {self.__class__.__name__} for the model {self.model_name()} "
+                f"in the library {self.library_name()} did not return a "
+                f"PyKeen model but an object of type {type(model)}."
+            )
+
         training_loop = SLCWATrainingLoop(
             model=model,
             triples_factory=triples_factory,
-            optimizer=self._optimizer,
         )
 
         training_loop.train(
