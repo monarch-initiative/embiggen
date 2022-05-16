@@ -1,5 +1,6 @@
 """Submodule to automatically create __init__ files for the library submodules with stubs."""
 from typing import Dict, List, Type, Union
+from unittest import result
 from .abstract_model import AbstractModel
 import ast
 from ast import ClassDef, ImportFrom, FunctionDef, Return
@@ -25,6 +26,13 @@ def get_python_code_from_import(
             *original_file_path.split(os.sep)[:-element.level],
             f"{element.module}/__init__.py"
         )
+
+    # While this secondary check should NEVER be necessary
+    # sadly pip has some issues with removing deleted files
+    # when updating the packages. In order to avoid
+    # such accidents, we double check this case.
+    if not os.path.exists(source_path):
+        return None
 
     expected_class_name = import_from["name"]
 
@@ -106,13 +114,15 @@ def get_class_parent_names(
         # If this is a parent class
         if import_name in parent_names:
             # Get the imported path and parsed code.
-            parent_names.extend(get_class_parent_names(
-                *get_python_code_from_import(
-                    original_file_path,
-                    import_from
-                ),
-                expected_parent
-            ))
+            results = get_python_code_from_import(
+                original_file_path,
+                import_from
+            )
+            if results:
+                parent_names.extend(get_class_parent_names(
+                    *results,
+                    expected_parent
+                ))
 
             if expected_parent in parent_names:
                 return parent_names
