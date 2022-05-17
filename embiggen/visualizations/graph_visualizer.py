@@ -578,7 +578,7 @@ class GraphVisualizer:
                             "some of the necessary libraries to make it run properly. "
                             "Specifically, the error encountered was: {}").format(e)
                     )
-            except (ModuleNotFoundError, RuntimeError):
+            except (ModuleNotFoundError, RuntimeError, TypeError):
                 try:
                     from sklearn.manifold import \
                         TSNE  # pylint: disable=import-outside-toplevel
