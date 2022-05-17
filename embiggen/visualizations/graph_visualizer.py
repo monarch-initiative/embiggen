@@ -560,6 +560,13 @@ class GraphVisualizer:
         elif self._decomposition_method == "TSNE":
             try:
                 try:
+                    metric = self._decomposition_kwargs.get("metric", "euclidean")
+                    if metric != "euclidean":
+                        raise NotImplementedError(
+                            "Non-euclidean metrics are not supported in MulticoreTSNE "
+                            f"but the metric `{metric}` was provided."
+                        )
+
                     from MulticoreTSNE import \
                         MulticoreTSNE  # pylint: disable=import-outside-toplevel
                     return MulticoreTSNE(**{
@@ -578,7 +585,7 @@ class GraphVisualizer:
                             "some of the necessary libraries to make it run properly. "
                             "Specifically, the error encountered was: {}").format(e)
                     )
-            except (ModuleNotFoundError, RuntimeError, TypeError):
+            except (ModuleNotFoundError, RuntimeError, TypeError, NotImplementedError):
                 try:
                     from sklearn.manifold import \
                         TSNE  # pylint: disable=import-outside-toplevel
