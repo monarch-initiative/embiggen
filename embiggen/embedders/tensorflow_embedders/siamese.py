@@ -18,7 +18,7 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
 )
 from tensorflow.keras.models import Model
 from embiggen.utils import abstract_class
-from ...sequences import SiameseSequence
+from ...sequences import SiameseSequence, KGSiameseSequence
 from .tensorflow_embedder import TensorFlowEmbedder
 
 
@@ -37,7 +37,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
-        optimizer: str = "sgd",
+        optimizer: str = "nadam",
     ):
         """Create new sequence Siamese model.
 
@@ -67,7 +67,7 @@ class Siamese(TensorFlowEmbedder):
             performance without decreasing the learning rate.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
-        optimizer: str = "sgd"
+        optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
         """
         self._relu_bias = relu_bias
@@ -123,6 +123,40 @@ class Siamese(TensorFlowEmbedder):
             for node_input in inputs
         ]
 
+        if self.requires_node_types():
+            max_node_types = graph.get_maximum_multilabel_count()
+            multilabel = graph.has_multilabel_node_types()
+            unknown_node_types = graph.has_unknown_node_types()
+            node_types_offset = int(multilabel or unknown_node_types)
+            node_type_inputs = [
+                Input((max_node_types,), dtype=tf.int32)
+                for _ in range(4)
+            ]
+
+            node_type_embedding_layer = Embedding(
+                input_dim=graph.get_node_types_number() + node_types_offset,
+                output_dim=self._embedding_size,
+                input_length=max_node_types,
+                name="node_type_embedding",
+                mask_zero=multilabel or unknown_node_types
+            )
+
+            node_embeddings = [
+                Add()([
+                    GlobalAveragePooling1D()(
+                        node_type_embedding_layer(node_type_input)
+                    ),
+                    node_embedding
+                ])
+                for node_type_input, node_embedding in zip(
+                    node_type_inputs,
+                    node_embeddings
+                )
+            ]
+        else:
+            node_type_inputs = []
+
+        inputs.extend(node_type_inputs)
         inputs.append(edge_types)
 
         edge_types_number = graph.get_edge_types_number()
@@ -233,11 +267,18 @@ class Siamese(TensorFlowEmbedder):
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        return (
-            SiameseSequence(
+        if self.requires_node_types():
+            sequence = KGSiameseSequence(
                 graph=graph,
                 batch_size=self._batch_size,
-            ).into_dataset()
+            )
+        else:
+            sequence = SiameseSequence(
+                graph=graph,
+                batch_size=self._batch_size,
+            )
+        return (
+            sequence.into_dataset()
             .repeat()
             .prefetch(AUTOTUNE), )
 

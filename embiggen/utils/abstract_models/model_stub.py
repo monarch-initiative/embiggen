@@ -146,6 +146,31 @@ def get_model_or_stub(
                     return formatted_model_name
 
                 @staticmethod
+                def requires_node_types() -> str:
+                    """Returns name of the model."""
+                    return None
+
+                @staticmethod
+                def requires_edge_types() -> str:
+                    """Returns name of the model."""
+                    return None
+
+                @staticmethod
+                def requires_positive_edge_weights() -> str:
+                    """Returns name of the model."""
+                    return None
+
+                @staticmethod
+                def requires_edge_weights() -> str:
+                    """Returns name of the model."""
+                    return None
+
+                @staticmethod
+                def is_topological() -> str:
+                    """Returns name of the model."""
+                    return parent_class.is_topological()
+
+                @staticmethod
                 def task_name() -> str:
                     """Returns name of the task"""
                     return parent_class.task_name()

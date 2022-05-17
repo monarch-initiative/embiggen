@@ -102,26 +102,12 @@ class AbstractClassifierModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
-    def get_evaluation_biased_feature_names(self) -> List[str]:
-        """Returns names of features that are biased in an evaluation setting."""
-        raise NotImplementedError((
-            "The `get_evaluation_biased_feature_names` method must be implemented "
-            "in the child classes of abstract model."
-        ))
-
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
             "The `get_available_evaluation_schemas` method must be implemented "
             "in the child classes of abstract model."
         ))
-
-    def _get_evaluation_biased_feature_names_lowercase(self) -> List[str]:
-        """Returns lowercase names of features that are biased in an evaluation setting."""
-        return [
-            feature_name.lower()
-            for feature_name in self.get_evaluation_biased_feature_names()
-        ]
 
     def _get_available_evaluation_schemas_lowercase(self) -> List[str]:
         """Returns lowercase available evaluation schemas for this task."""
@@ -174,12 +160,7 @@ class AbstractClassifierModel(AbstractModel):
                         "yourselves to completely define your intentions."
                     ).format(node_feature)
                 )
-            if (
-                skip_evaluation_biased_feature and
-                node_feature.lower() in self._get_evaluation_biased_feature_names_lowercase()
-            ):
-                return node_feature
-
+            
             node_feature = AbstractEmbeddingModel.get_model_from_library(
                 model_name=node_feature
             )()
@@ -189,7 +170,11 @@ class AbstractClassifierModel(AbstractModel):
         if issubclass(node_feature.__class__, AbstractEmbeddingModel):
             if (
                 skip_evaluation_biased_feature and
-                node_feature.model_name().lower() in self._get_evaluation_biased_feature_names_lowercase()
+                (
+                    self.requires_edge_types() and node_feature.requires_edge_types() or
+                    self.requires_node_types() and node_feature.requires_node_types() or
+                    self.is_topological() and node_feature.is_topological()
+                )
             ):
                 return node_feature
 

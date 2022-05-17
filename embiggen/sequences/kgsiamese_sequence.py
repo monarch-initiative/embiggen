@@ -8,7 +8,7 @@ from keras_mixed_sequence import Sequence
 from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
-class SiameseSequence(Sequence):
+class KGSiameseSequence(Sequence):
     """Keras Sequence for running Siamese Neural Network."""
 
     def __init__(
@@ -69,6 +69,16 @@ class SiameseSequence(Sequence):
                     shape=(self._batch_size, ),
                     dtype=tf.uint32
                 ))
+            for _ in range(4):
+                input_tensor_specs.append(
+                    tf.TensorSpec(
+                        shape=(
+                            self._batch_size,
+                            self._graph.get_maximum_multilabel_count()
+                        ),
+                        dtype=tf.uint32
+                    )
+                )
 
             # Shapes of the edge type IDs
             input_tensor_specs.append(tf.TensorSpec(
@@ -87,6 +97,11 @@ class SiameseSequence(Sequence):
         for _ in range(4):
             input_tensor_types.append(tf.uint32,)
             input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
+        
+        for _ in range(4):
+            input_tensor_types.append(tf.uint32,)
+            input_tensor_shapes.append(
+                tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
 
         input_tensor_types.append(tf.uint32,)
         input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
@@ -106,7 +121,7 @@ class SiameseSequence(Sequence):
             Index corresponding to batch to be returned.
         """
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
-        return (self._graph.get_siamese_mini_batch(
+        return (self._graph.get_kgsiamese_mini_batch(
             random_state,
             batch_size=self.batch_size,
             use_zipfian_sampling=True

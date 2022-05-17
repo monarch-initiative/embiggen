@@ -30,12 +30,9 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         """Return name of the model."""
         return "scikit-learn"
 
-    def get_evaluation_biased_feature_names(self) -> List[str]:
-        """Returns names of features that are biased in an evaluation setting."""
-        # TODO: Extend this list.
-        return [
-            "TransE"
-        ]
+    @staticmethod
+    def is_topological() -> bool:
+        return False
 
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""

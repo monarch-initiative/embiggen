@@ -27,7 +27,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         learning_rate_plateau_patience: int = 1,
         epochs: int = 10,
         batch_size: int = 2**10,
-        optimizer: str = "sgd",
+        optimizer: str = "nadam",
         use_mirrored_strategy: bool = False
     ):
         """Create new TensorFlowEmbedder object.
@@ -52,7 +52,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Number of epochs to train.
         batch_size: int = 2**10
             Batch size to use during the training.
-        optimizer: str = "sgd"
+        optimizer: str = "nadam"
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
@@ -99,10 +99,6 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
     @staticmethod
     def library_name() -> str:
         return "TensorFlow"
-
-    @staticmethod
-    def task_name() -> str:
-        return "Node Embedding"
 
     def _build_model(self, graph: Graph) -> Model:
         """Build new model for embedding.
@@ -257,7 +253,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
                     factor=0.5,
                     mode="min",
                 ),
-                *((TqdmCallback(verbose=2),)
+                *((TqdmCallback(verbose=1, leave=False),)
                   if not traditional_verbose and verbose > 0 else ()),
             ],
         )

@@ -23,12 +23,9 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns name of the task this model is used for."""
         return "Edge Label Prediction"
 
-    def get_evaluation_biased_feature_names(self) -> List[str]:
-        """Returns names of features that are biased in an evaluation setting."""
-        # TODO: Extend this list.
-        return [
-            "TransE"
-        ]
+    @staticmethod
+    def is_topological() -> bool:
+        return False
 
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""

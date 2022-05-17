@@ -21,12 +21,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         # Edge prediction is always a binary prediction task.
         return True
 
-    def get_evaluation_biased_feature_names(self) -> List[str]:
-        """Returns names of features that are biased in an evaluation setting."""
-        # TODO: Extend this list.
-        return [
-            "SPINE", "CBOW", "SkipGram", "TransE"
-        ]
+    @staticmethod
+    def is_topological() -> bool:
+        return True
 
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""

@@ -1,4 +1,4 @@
-"""Module providing abstract Node2Vec implementation."""
+"""Module providing TransE implementation."""
 from typing import Dict, Any, Union
 from ensmallen import Graph
 import numpy as np

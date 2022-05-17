@@ -43,7 +43,7 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
         max_neighbours: int = 100,
         normalize_by_degree: bool = False,
         random_state: int = 42,
-        optimizer: str = "sgd",
+        optimizer: str = "nadam",
         use_mirrored_strategy: bool = False
     ):
         """Create new GloVe-based TensorFlowEmbedder object.
@@ -112,7 +112,7 @@ class GloVeTensorFlow(AbstractRandomWalkBasedEmbedderModel):
             of the destination node degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
-        optimizer: str = "sgd"
+        optimizer: str = "nadam"
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
