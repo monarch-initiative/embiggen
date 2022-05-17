@@ -13,6 +13,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
     def __init__(
         self,
         embedding_size: int = 100,
+        alpha: float = 0.75,
         epochs: int = 10,
         clipping_value: float = 6.0,
         walk_length: int = 128,
@@ -34,6 +35,8 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
+        alpha: float = 0.75
+            Alpha parameter for GloVe's loss.
         epochs: int = 10
             Number of epochs to train the model for.
         window_size: int = 4
@@ -91,6 +94,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         self._learning_rate_decay = learning_rate_decay
 
         self._model_kwargs = dict(
+            alpha=alpha,
             embedding_size=embedding_size,
             clipping_value=clipping_value,
             walk_length=walk_length,
