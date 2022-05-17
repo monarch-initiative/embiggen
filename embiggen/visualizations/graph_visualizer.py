@@ -597,7 +597,7 @@ class GraphVisualizer:
                             verbose=self._verbose,
                             n_iter=400,
                             init="random",
-                            square_distances="legacy",
+                            square_distances=True,
                             method="exact" if self._n_components == 4 else "barnes_hut",
                         ),
                         **self._decomposition_kwargs
