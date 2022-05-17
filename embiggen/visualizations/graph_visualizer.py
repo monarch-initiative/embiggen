@@ -532,6 +532,23 @@ class GraphVisualizer:
         return negative_label, positive_label
 
     def get_decomposition_method(self) -> Callable:
+        # Adding a warning for when decomposing methods that
+        # embed nodes using a cosine similarity / distance approach
+        # in order to avoid false negatives.
+        if self._node_embedding_method_name == "GloVe":
+            metric = self._decomposition_kwargs.get("metric")
+            if metric is not None and metric != "cosine":
+                warnings.warn(
+                    "Please do be advised that when using a node embedding method "
+                    "such as Glove, which embeds nodes using a dot product, it is "
+                    "highly suggested to use a `cosine` metric. Using a different "
+                    f"metric, such as the one you have provided ({metric}) may lead "
+                    "to unsuccessfull decompositions using UMAP or t-SNE."
+                )
+            else:
+                # Otherwise we switch to using a cosine metric.
+                self._decomposition_kwargs["metric"] = "cosine" 
+        
         if self._decomposition_method == "UMAP":
             # The UMAP package graph is not automatically installed
             # with the Embiggen package because it has multiple possible
