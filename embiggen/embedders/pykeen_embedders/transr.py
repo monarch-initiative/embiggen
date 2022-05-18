@@ -1,27 +1,28 @@
-"""Submodule providing wrapper for PyKeen's TransH model."""
+"""Submodule providing wrapper for PyKeen's TransR model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
-from pykeen.models import TransH
+from pykeen.models import TransR
 from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
 
     def __init__(
         self,
         embedding_size: int = 100,
+        relation_dim: int = 30,
         scoring_fct_norm: int = 2,
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen TransH model.
+        """Create new PyKeen TransR model.
         
         Details
         -------------------------
-        This is a wrapper of the TransH implementation from the
+        This is a wrapper of the TransR implementation from the
         PyKeen library. Please refer to the PyKeen library documentation
         for details and posssible errors regarding this model.
 
@@ -29,6 +30,8 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
         -------------------------
         embedding_size: int = 100
             The dimension of the embedding to compute.
+        relation_dim: int = 30
+            The dimension of the relation embedding to compute.
         scoring_fct_norm: int = 2
             Norm exponent to use in the loss.
         epochs: int = 100
@@ -46,6 +49,7 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Local Closed World Assumption
         """
         self._scoring_fct_norm = scoring_fct_norm
+        self._relation_dim = relation_dim
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
@@ -58,35 +62,38 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
         """Returns parameters for smoke test."""
         return dict(
             **super().smoke_test_parameters(),
-            scoring_fct_norm=1
+            scoring_fct_norm=1,
+            relation_dim=5
         )
 
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
             **dict(
-                scoring_fct_norm=self._scoring_fct_norm
+                scoring_fct_norm=self._scoring_fct_norm,
+                relation_dim=self._relation_dim
             )
         }
 
     @staticmethod
     def model_name() -> str:
         """Return name of the model."""
-        return "TransH"
+        return "TransR"
 
     def _build_model(
         self,
         triples_factory: CoreTriplesFactory
-    ) -> TransH:
-        """Build new TransH model for embedding.
+    ) -> TransR:
+        """Build new TransR model for embedding.
 
         Parameters
         ------------------
         graph: Graph
             The graph to build the model for.
         """
-        return TransH(
+        return TransR(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
+            relation_dim=self._relation_dim,
             scoring_fct_norm=self._scoring_fct_norm
         )

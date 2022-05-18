@@ -1,36 +1,48 @@
-"""Submodule providing wrapper for PyKeen's TransH model."""
-from typing import Union, Type, Dict, Any
+"""Submodule providing wrapper for PyKeen's TuckER model."""
+from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
-from pykeen.models import TransH
+from pykeen.models import TuckER
 from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
 
     def __init__(
         self,
-        embedding_size: int = 100,
-        scoring_fct_norm: int = 2,
+        embedding_size: int = 200,
+        relation_dim: Optional[int] = None,
+        dropout_0: float = 0.3,
+        dropout_1: float = 0.4,
+        dropout_2: float = 0.5,
+        apply_batch_normalization: bool = True,
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen TransH model.
+        """Create new PyKeen TuckER model.
         
         Details
         -------------------------
-        This is a wrapper of the TransH implementation from the
+        This is a wrapper of the TuckER implementation from the
         PyKeen library. Please refer to the PyKeen library documentation
         for details and posssible errors regarding this model.
 
         Parameters
         -------------------------
-        embedding_size: int = 100
+        embedding_size: int = 200
             The dimension of the embedding to compute.
-        scoring_fct_norm: int = 2
-            Norm exponent to use in the loss.
+        relation_dim: Optional[int] = None
+            The relation embedding dimension. Defaults to `embedding_dim`.
+        dropout_0: float = 0.3
+            The first dropout, cf. formula
+        dropout_1: float = 0.4
+            The second dropout, cf. formula
+        dropout_2: float = 0.5
+            The third dropout, cf. formula
+        apply_batch_normalization: bool = True
+            Whether to apply batch normalization
         epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
@@ -45,7 +57,11 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
         """
-        self._scoring_fct_norm = scoring_fct_norm
+        self._relation_dim=relation_dim
+        self._dropout_0=dropout_0
+        self._dropout_1=dropout_1
+        self._dropout_2=dropout_2
+        self._apply_batch_normalization=apply_batch_normalization
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
@@ -53,40 +69,40 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
             training_loop=training_loop
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **super().smoke_test_parameters(),
-            scoring_fct_norm=1
-        )
-
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
             **dict(
-                scoring_fct_norm=self._scoring_fct_norm
+                relation_dim=self._relation_dim,
+                dropout_0=self._dropout_0,
+                dropout_1=self._dropout_1,
+                dropout_2=self._dropout_2,
+                apply_batch_normalization=self._apply_batch_normalization
             )
         }
 
     @staticmethod
     def model_name() -> str:
         """Return name of the model."""
-        return "TransH"
+        return "TuckER"
 
     def _build_model(
         self,
         triples_factory: CoreTriplesFactory
-    ) -> TransH:
-        """Build new TransH model for embedding.
+    ) -> TuckER:
+        """Build new TuckER model for embedding.
 
         Parameters
         ------------------
         graph: Graph
             The graph to build the model for.
         """
-        return TransH(
+        return TuckER(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            scoring_fct_norm=self._scoring_fct_norm
+            relation_dim=self._relation_dim,
+            dropout_0=self._dropout_0,
+            dropout_1=self._dropout_1,
+            dropout_2=self._dropout_2,
+            apply_batch_normalization=self._apply_batch_normalization
         )

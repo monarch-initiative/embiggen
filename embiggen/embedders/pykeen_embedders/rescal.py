@@ -11,7 +11,7 @@ class RESCALPyKeen(EntityRelationEmbeddingModelPyKeen):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 10,
+        epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
@@ -28,7 +28,7 @@ class RESCALPyKeen(EntityRelationEmbeddingModelPyKeen):
         -------------------------
         embedding_size: int = 100
             The dimension of the embedding to compute.
-        epochs: int = 10
+        epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
             Size of the training batch.

@@ -40,7 +40,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         -------------------------
         embedding_size: int = 100
             The dimension of the embedding to compute.
-        epochs: int = 10
+        epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
             Size of the training batch.

@@ -12,7 +12,7 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
         self,
         embedding_size: int = 100,
         hidden_dim: Optional[int] = None,
-        epochs: int = 10,
+        epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
@@ -31,7 +31,7 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
             The dimension of the embedding to compute.
         hidden_dim: Optional[int] = None
             Size of the hidden layer.
-        epochs: int = 10
+        epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
             Size of the training batch.
