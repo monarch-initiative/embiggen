@@ -2,6 +2,7 @@
 from .abstract_models import (
     AbstractClassifierModel,
     AbstractEmbeddingModel,
+    EmbeddingResult,
     AbstractModel,
     build_init,
     get_models_dataframe,
@@ -17,6 +18,7 @@ from .pipeline import classification_evaluation_pipeline
 __all__ = [
     "AbstractClassifierModel",
     "AbstractEmbeddingModel",
+    "EmbeddingResult",
     "AbstractModel",
     "classification_evaluation_pipeline",
     "build_init",

@@ -1,36 +1,39 @@
-"""Submodule providing wrapper for PyKeen's ERMLP model."""
+"""Submodule providing wrapper for PyKeen's TorusE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
-from pykeen.models import ERMLP
+from pykeen.models import TorusE
 from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 
-class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TorusEPyKeen(EntityRelationEmbeddingModelPyKeen):
 
     def __init__(
         self,
-        embedding_size: int = 100,
-        hidden_dim: Optional[int] = None,
+        embedding_size: int = 256,
+        p: int = 2,
+        power_norm: bool = False,
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen ERMLP model.
+        """Create new PyKeen TorusE model.
 
         Details
         -------------------------
-        This is a wrapper of the ERMLP implementation from the
+        This is a wrapper of the TorusE implementation from the
         PyKeen library. Please refer to the PyKeen library documentation
         for details and posssible errors regarding this model.
 
         Parameters
         -------------------------
-        embedding_size: int = 100
+        embedding_size: int = 256
             The dimension of the embedding to compute.
-        hidden_dim: Optional[int] = None
-            Size of the hidden layer.
+        p: int = 2
+            order of norm in score computation
+        param power_norm: bool = False
+            whether to use the p-th power of the norm instead
         epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
@@ -45,7 +48,8 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
         """
-        self._hidden_dim = hidden_dim
+        self._p=p
+        self._power_norm=power_norm
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
@@ -53,40 +57,34 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
             training_loop=training_loop
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
-            hidden_dim=5
-        )
-
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
             **dict(
-                hidden_dim=self._hidden_dim
+                p=self._p,
+                power_norm=self._power_norm,
             )
         }
 
     @staticmethod
     def model_name() -> str:
         """Return name of the model."""
-        return "ERMLP"
+        return "TorusE"
 
     def _build_model(
         self,
         triples_factory: CoreTriplesFactory
-    ) -> ERMLP:
-        """Build new ERMLP model for embedding.
+    ) -> TorusE:
+        """Build new TorusE model for embedding.
 
         Parameters
         ------------------
         graph: Graph
             The graph to build the model for.
         """
-        return ERMLP(
+        return TorusE(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            hidden_dim=self._hidden_dim
+            p=self._p,
+            power_norm=self._power_norm,
         )

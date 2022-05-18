@@ -15,7 +15,7 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
         embedding_size: int = 100,
         renormalize: bool = True,
         relu_bias: float = 1.0,
-        epochs: int = 10,
+        epochs: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         random_state: int = 42
@@ -31,11 +31,11 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
         relu_bias: float = 1.0
             Bias to use for the relu.
             In the TransE paper it is called gamma.
-        epochs: int
+        epochs: int = 100
             The number of epochs to run the model for, by default 10.
-        learning_rate: float
+        learning_rate: float = 0.01
             The learning rate to update the gradient, by default 0.01.
-        learning_rate_decay: float
+        learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         random_state: int = 42
             Random state to reproduce the embeddings.
@@ -84,7 +84,7 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding, node_type_embedding, edge_type_embedding = self._model.fit_transform(
             graph,
@@ -121,7 +121,7 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def model_name() -> str:
         """Returns name of the model."""
-        return "TransE"
+        return "KGTransE"
 
     @staticmethod
     def library_name() -> str:

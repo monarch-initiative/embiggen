@@ -1,10 +1,9 @@
 """TransE model."""
-from typing import Union, Dict
 from ensmallen import Graph
 import pandas as pd
-import numpy as np
 from tensorflow.keras import Model
 from .siamese import Siamese
+from ...utils import EmbeddingResult
 
 
 class TransETensorFlow(Siamese):
@@ -35,7 +34,7 @@ class TransETensorFlow(Siamese):
         graph: Graph,
         model: Model,
         return_dataframe: bool
-    ) -> Union[Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Returns embedding from the model.
 
         Parameters
@@ -48,7 +47,7 @@ class TransETensorFlow(Siamese):
             Whether to return a dataframe of a numpy array.
         """
         if return_dataframe:
-            return {
+            result = {
                 layer_name: pd.DataFrame(
                     self.get_layer_weights(
                         layer_name,
@@ -58,18 +57,23 @@ class TransETensorFlow(Siamese):
                     index=names
                 )
                 for layer_name, names, drop_first_row in (
-                    ("node_embedding", graph.get_node_names(), False),
-                    ("edge_type_embedding", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types())
+                    ("node_embeddings", graph.get_node_names(), False),
+                    ("edge_type_embeddings", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types())
                 )
             }
-        return {
-            layer_name: self.get_layer_weights(
-                layer_name,
-                model,
-                drop_first_row=drop_first_row
-            )
-            for layer_name, drop_first_row in (
-                ("node_embedding", False),
-                ("edge_type_embedding", graph.has_unknown_edge_types())
-            )
-        }
+        else:
+            result = {
+                layer_name: self.get_layer_weights(
+                    layer_name,
+                    model,
+                    drop_first_row=drop_first_row
+                )
+                for layer_name, drop_first_row in (
+                    ("node_embeddings", False),
+                    ("edge_type_embeddings", graph.has_unknown_edge_types())
+                )
+            }
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            **result
+        )

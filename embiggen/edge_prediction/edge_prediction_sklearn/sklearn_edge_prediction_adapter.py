@@ -135,7 +135,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         self._model_instance.fit(*lpt.transform(
             positive_graph=graph,
-            negative_graph=graph.sample_negatives(
+            negative_graph=graph.sample_negative_graph(
                 number_of_negative_samples=int(
                     math.ceil(graph.get_edges_number()*self._unbalance_rate)
                 ),

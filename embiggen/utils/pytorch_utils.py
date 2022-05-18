@@ -32,7 +32,7 @@ def validate_torch_device(device: str) -> str:
             "currently able to detect any CUDA device."
         )
         if device == "auto":
-            device = "cuda"
+            device = "cpu"
     
     if device not in ("cpu", "cuda"):
         raise ValueError(

@@ -15,7 +15,6 @@ import inspect
 from environments_utils import is_notebook
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from ensmallen.datasets import get_dataset  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
 from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
 from matplotlib.axes import Axes
@@ -42,7 +41,8 @@ except ImportError:
 
 from ..transformers import GraphTransformer, NodeTransformer
 from ..embedders import embed_graph
-from ..utils.list_formatting import format_list
+from ..utils import format_list
+from ..utils.pipeline import iterate_graphs
 
 
 class GraphVisualizer:
@@ -73,11 +73,14 @@ class GraphVisualizer:
         fps: int = 24,
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
-        edge_prediction_edge_type: Optional[str] = None,
-        edge_prediction_source_node_type: Optional[str] = None,
-        edge_prediction_destination_node_type: Optional[str] = None,
-        edge_prediction_source_curie_prefixes: Optional[Union[str, List[str]]] = None,
-        edge_prediction_destination_curie_prefixes: Optional[Union[str, List[str]]] = None,
+        minimum_node_degree: int = 1,
+        maximum_node_degree: Optional[int] = None,
+        source_node_types_names: Optional[Union[str, List[str]]] = None,
+        destination_node_types_names: Optional[Union[str, List[str]]] = None,
+        source_edge_types_names: Optional[Union[str, List[str]]] = None,
+        destination_edge_types_names: Optional[Union[str, List[str]]] = None,
+        source_nodes_prefixes: Optional[Union[str, List[str]]] = None,
+        destination_nodes_prefixes: Optional[Union[str, List[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
@@ -135,40 +138,40 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        edge_prediction_edge_type: Optional[str] = None
-            The edge type of the edges to be used as positives in the visualization
-            for edge prediction. This will limit the sampling of positive edges only
-            to this specific edge type.
-        edge_prediction_source_node_type: Optional[str] = None
-            The node type of the source nodes to be used for the sampling of negative
-            edges in the visualization of the edge prediction.
-            This will limit the sampling of negative edges only
-            to this specific set of source nodes.
-            When used in combination with the `edge_prediction_destination_node_type`,
-            and the `edge_prediction_edge_type` parameters,
-            it will visualize an edge prediction between a bipartite set of nodes.
-        edge_prediction_destination_node_type: Optional[str] = None
-            The node type of the destination nodes to be used for the sampling of negative
-            edges in the visualization of the edge prediction.
-            This will limit the sampling of negative edges only
-            to this specific set of destination nodes.
-            When used in combination with the `edge_prediction_source_node_type`,
-            and the `edge_prediction_edge_type` parameters,
-            it will visualize an edge prediction between a bipartite set of nodes.
-        edge_prediction_source_curie_prefixes: Optional[Union[str, List[str]]] = None
-            Prefixes for the source nodes to be used for the edge prediction visualization.
-            These source nodes will be used both for the positive and negative edges.
-            If also the `edge_prediction_source_node_type` parameter is specified,
-            this will result in a ValueError.
-            Additionally, if also the edge_prediction_edge_type is specified, it will
-            result in a ValueError.
-        edge_prediction_destination_curie_prefixes: Optional[Union[str, List[str]]] = None
-            Prefixes for the destination nodes to be used for the edge prediction visualization.
-            These destination nodes will be used both for the positive and negative edges.
-            If also the `edge_prediction_destination_node_type` parameter is specified,
-            this will result in a ValueError.
-            Additionally, if also the edge_prediction_edge_type is specified, it will
-            result in a ValueError.
+        sample_only_edges_with_heterogeneous_node_types: Optional[bool] = False
+            Whether to sample negative edges only with source and
+            destination nodes that have different node types.
+        minimum_node_degree: Optional[int] = 1
+            The minimum node degree of either the source or
+            destination node to be sampled.
+        maximum_node_degree: Optional[int] = None
+            The maximum node degree of either the source or
+            destination node to be sampled.
+            By default, the number of nodes.
+        source_node_types_names: Optional[str, List[str]] = None
+            Node type names of the nodes to be samples as sources.
+            If a node has any of the provided node types,
+            it can be sampled as a source node.
+        destination_node_types_names: Optional[str, List[str]] = None
+            Node type names of the nodes to be samples as destinations.
+            If a node has any of the provided node types,
+            it can be sampled as a destination node.
+        source_edge_types_names: Optional[str, List[str]] = None
+            Edge type names of the nodes to be samples as sources.
+            If a node has any of the provided edge types,
+            it can be sampled as a source node.
+        destination_edge_types_names: Optional[str, List[str]] = None
+            Edge type names of the nodes to be samples as destinations.
+            If a node has any of the provided edge types,
+            it can be sampled as a destination node.
+        source_nodes_prefixes: Optional[str, List[str]] = None
+            Prefixes of the nodes names to be samples as sources.
+            If a node starts with any of the provided prefixes,
+            it can be sampled as a source node.
+        destination_nodes_prefixes: Optional[str, List[str]] = None
+            Prefixes of the nodes names to be samples as destinations.
+            If a node starts with any of the provided prefixes,
+            it can be sampled as a destinations node.
         show_graph_name: Union[str, bool] = "auto"
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
@@ -191,25 +194,19 @@ class GraphVisualizer:
         automatically_display_on_notebooks: bool = True
             Whether to automatically show the plots and the captions
             using the display command when in jupyter notebooks.
-        number_of_subsampled_nodes: int = 20_000,
+        number_of_subsampled_nodes: int = 20_000
             Number of points to subsample.
             Some graphs have a number of nodes and edges in the millions.
             Using non-CUDA versions of TSNE, the dimensionality reduction
             procedure can take a considerable amount of time.
             For this porpose, we include the possibility to subsample the
             points to the given number.
-            The subsampling is done in a way that takes into consideration
-            the node types and/or edge types (the subsampling is applied
-            separately to the two different sets) by using a Stratified Shuffle
-            Split if there are node types or edge types.
-            Otherwise, a normal train test split is used.
-            If None is given, no subsampling is executed.
-        number_of_subsampled_edges: int = 20_000,
+        number_of_subsampled_edges: int = 20_000
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
             Not subsampling the edges in most graphs is a poor life choice.
-        number_of_subsampled_negative_edges: int = 20_000,
+        number_of_subsampled_negative_edges: int = 20_000
             Number of edges to subsample.
             The same considerations described for the subsampled nodes number
             also apply for the edges number.
@@ -217,9 +214,9 @@ class GraphVisualizer:
         number_of_holdouts_for_cluster_comments: int = 5
             Number of holdouts to execute for getting the comments
             about clusters separability.
-        random_state: int = 42,
+        random_state: int = 42
             The random state to reproduce the visualizations.
-        decomposition_kwargs: Optional[Dict] = None,
+        decomposition_kwargs: Optional[Dict] = None
             Kwargs to forward to the selected decomposition method.
         verbose: bool = False
             Whether to show loading bars and logs.
@@ -232,121 +229,25 @@ class GraphVisualizer:
             If TSNE decomposition has been required and no module supporting
             it is installed.
         """
-        if isinstance(graph, str):
-            graph = get_dataset(
-                graph,
-                repository=repository,
-                version=version
-            )()
-        else:
-            if version is not None:
-                raise ValueError(
-                    "The graph version was provided, but the graph is not from "
-                    "Ensmallen's automatic retrieval. It is unclear what to do "
-                    "with this parameter."
-                )
-            if repository is not None:
-                raise ValueError(
-                    "The graph repository was provided, but the graph is not from "
-                    "Ensmallen's automatic retrieval. It is unclear what to do "
-                    "with this parameter."
-                )
+        graph = next(iterate_graphs(
+            graphs=graph,
+            repositories=repository,
+            versions=version
+        ))
 
         self._graph = graph
-        self._rotate = rotate
-        self._graph_name = self._graph.get_name()
-        if show_graph_name == "auto":
-            show_graph_name = self._graph_name.lower() != "graph"
-        self._show_graph_name = show_graph_name
-        self._show_node_embedding_method = show_node_embedding_method
-        self._show_edge_embedding_method = show_edge_embedding_method
-        self._edge_embedding_method = edge_embedding_method
-        self._verbose = verbose
 
-        self._show_separability_considerations_explanation = show_separability_considerations_explanation
-        self._show_heatmaps_description = show_heatmaps_description
-        self._show_non_existing_edges_sampling_description = show_non_existing_edges_sampling_description
-
-        if edge_prediction_source_curie_prefixes is not None and edge_prediction_source_node_type is not None:
-            raise ValueError(
-                "Both the `edge_prediction_source_curie_prefixes` and the `edge_prediction_source_node_type` "
-                "parameters were specified. The behaviour is not defined when both of these parameters are "
-                "specified at once."
-            )
-        if edge_prediction_destination_curie_prefixes is not None and edge_prediction_destination_node_type is not None:
-            raise ValueError(
-                "Both the `edge_prediction_destination_curie_prefixes` and the `edge_prediction_destination_node_type` "
-                "parameters were specified. The behaviour is not defined when both of these parameters are "
-                "specified at once."
-            )
-        if edge_prediction_source_curie_prefixes is not None and edge_prediction_edge_type is not None:
-            raise ValueError(
-                "Both the `edge_prediction_source_curie_prefixes` and the `edge_prediction_edge_type` "
-                "parameters were specified. The behaviour is not defined when both of these parameters are "
-                "specified at once."
-            )
-        if edge_prediction_destination_curie_prefixes is not None and edge_prediction_edge_type is not None:
-            raise ValueError(
-                "Both the `edge_prediction_destination_curie_prefixes` and the `edge_prediction_edge_type` "
-                "parameters were specified. The behaviour is not defined when both of these parameters are "
-                "specified at once."
-            )
-        self._edge_prediction_edge_type = edge_prediction_edge_type
-        self._edge_prediction_source_node_type = edge_prediction_source_node_type
-        self._edge_prediction_destination_node_type = edge_prediction_destination_node_type
-        if isinstance(edge_prediction_source_curie_prefixes, str):
-            edge_prediction_source_curie_prefixes = [
-                edge_prediction_source_curie_prefixes
-            ]
-        self._edge_prediction_source_curie_prefixes = edge_prediction_source_curie_prefixes
-        if isinstance(edge_prediction_destination_curie_prefixes, str):
-            edge_prediction_destination_curie_prefixes = [
-                edge_prediction_destination_curie_prefixes
-            ]
-        self._edge_prediction_destination_curie_prefixes = edge_prediction_destination_curie_prefixes
-        self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
-        self._curie_prefixes_were_provided = (
-            edge_prediction_source_curie_prefixes is not None or
-            edge_prediction_destination_curie_prefixes is not None
+        edge_prediction_graph_kwargs = dict(
+            minimum_node_degree=minimum_node_degree,
+            maximum_node_degree=maximum_node_degree,
+            source_node_types_names=source_node_types_names,
+            destination_node_types_names=destination_node_types_names,
+            source_edge_types_names=source_edge_types_names,
+            destination_edge_types_names=destination_edge_types_names,
+            source_nodes_prefixes=source_nodes_prefixes,
+            destination_nodes_prefixes=destination_nodes_prefixes,
         )
-        self._is_bipartite_edge_prediction = all(
-            (
-                edge_prediction_edge_type is not None,
-                edge_prediction_source_node_type is not None,
-                edge_prediction_destination_node_type is not None,
-            )
-        ) or all(
-            (
-                edge_prediction_source_curie_prefixes is not None,
-                edge_prediction_destination_curie_prefixes is not None
-            )
-        )
-        self._automatically_display_on_notebooks = automatically_display_on_notebooks
 
-        self._node_embedding_method_name = node_embedding_method_name
-
-        self._node_decomposition = None
-        self._positive_edge_decomposition = None
-        self._negative_edge_decomposition = None
-        self._subsampled_node_ids = None
-        self._subsampled_positive_edge_ids = None
-        self._subsampled_positive_edge_node_ids = None
-        self._subsampled_negative_edge_node_ids = None
-
-        self._has_autodetermined_node_embedding_name = False
-
-        # Check if the number of subsamples are unreasonable.
-        if any(
-            isinstance(number_of_subsamples, int) and number_of_subsamples == 0
-            for number_of_subsamples in (
-                number_of_subsampled_nodes,
-                number_of_subsampled_edges,
-                number_of_subsampled_negative_edges
-            )
-        ):
-            raise ValueError(
-                "One of the number of subsamples provided is zero."
-            )
         if any(
             number_of_subsamples is None or number_of_subsamples > 100_000
             for number_of_subsamples in (
@@ -364,9 +265,54 @@ class GraphVisualizer:
                 "just produce Gaussian spheres, even though the data "
                 "is informative."
             )
-        self._number_of_subsampled_nodes = number_of_subsampled_nodes
-        self._number_of_subsampled_edges = number_of_subsampled_edges
-        self._number_of_subsampled_negative_edges = number_of_subsampled_negative_edges
+
+        self._negative_graph = graph.sample_negative_graph(
+            number_of_negative_samples=min(
+                number_of_subsampled_negative_edges,
+                graph.get_edges_number()
+            ),
+            random_state=random_state,
+            only_from_same_component=True,
+            use_zipfian_sampling=True,
+            **edge_prediction_graph_kwargs
+        )
+
+        if number_of_subsampled_edges > graph.get_edges_number():
+            self._positive_graph = graph.sample_negative_graph(
+                number_of_samples=number_of_subsampled_edges,
+                random_state=random_state,
+                **edge_prediction_graph_kwargs
+            )
+        else:
+            self._positive_graph = self._graph
+
+        self._rotate = rotate
+        self._graph_name = self._graph.get_name()
+
+        if show_graph_name == "auto":
+            show_graph_name = self._graph_name.lower() != "graph"
+
+        self._show_graph_name = show_graph_name
+        self._show_node_embedding_method = show_node_embedding_method
+        self._show_edge_embedding_method = show_edge_embedding_method
+        self._edge_embedding_method = edge_embedding_method
+        self._verbose = verbose
+
+        self._show_separability_considerations_explanation = show_separability_considerations_explanation
+        self._show_heatmaps_description = show_heatmaps_description
+        self._show_non_existing_edges_sampling_description = show_non_existing_edges_sampling_description
+        self._automatically_display_on_notebooks = automatically_display_on_notebooks
+
+        self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
+
+        self._node_embedding_method_name = node_embedding_method_name
+
+        self._node_decomposition = None
+        self._positive_edge_decomposition = None
+        self._negative_edge_decomposition = None
+
+        self._has_autodetermined_node_embedding_name = False
+
         self._random_state = random_state
         self._video_format = video_format
         self._duration = duration
@@ -479,58 +425,6 @@ class GraphVisualizer:
 
         return caption
 
-    def get_edges_labels(self) -> Tuple[str]:
-        """Return labels to be used for the edge prediction."""
-        if not self._curie_prefixes_were_provided:
-            if self._edge_prediction_destination_node_type is None:
-                if self._edge_prediction_source_node_type is None:
-                    negative_label = "Non-existent edges"
-                else:
-                    negative_label = "Non-existent edges from {}".format(
-                        sanitize_ml_labels(
-                            self._edge_prediction_source_node_type)
-                    )
-            else:
-                if self._edge_prediction_source_node_type is None:
-                    negative_label = "Non-existent edges to {}".format(
-                        sanitize_ml_labels(
-                            self._edge_prediction_destination_node_type)
-                    )
-                else:
-                    negative_label = "Non-existent edges from {} to {}".format(
-                        *sanitize_ml_labels([
-                            self._edge_prediction_source_node_type,
-                            self._edge_prediction_destination_node_type
-                        ])
-                    )
-        else:
-            negative_label = "Non-existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else format_list(
-                    self._edge_prediction_source_curie_prefixes
-                ),
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else format_list(
-                    self._edge_prediction_destination_curie_prefixes
-                ),
-            )
-
-        if self._edge_prediction_edge_type is not None:
-            positive_label = "Existent edges of type {}".format(
-                sanitize_ml_labels(self._edge_prediction_edge_type)
-            )
-        elif self._curie_prefixes_were_provided:
-            positive_label = "Existent edges from {} to {} prefixes".format(
-                "Other" if self._edge_prediction_source_curie_prefixes is None else format_list(
-                    self._edge_prediction_source_curie_prefixes
-                ),
-                "Other" if self._edge_prediction_destination_curie_prefixes is None else format_list(
-                    self._edge_prediction_destination_curie_prefixes)
-                ,
-            )
-        else:
-            positive_label = "Existent edges"
-
-        return negative_label, positive_label
-
     def get_decomposition_method(self) -> Callable:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
@@ -547,8 +441,8 @@ class GraphVisualizer:
                 )
             else:
                 # Otherwise we switch to using a cosine metric.
-                self._decomposition_kwargs["metric"] = "cosine" 
-        
+                self._decomposition_kwargs["metric"] = "cosine"
+
         if self._decomposition_method == "UMAP":
             # The UMAP package graph is not automatically installed
             # with the Embiggen package because it has multiple possible
@@ -577,7 +471,8 @@ class GraphVisualizer:
         elif self._decomposition_method == "TSNE":
             try:
                 try:
-                    metric = self._decomposition_kwargs.get("metric", "euclidean")
+                    metric = self._decomposition_kwargs.get(
+                        "metric", "euclidean")
                     if metric != "euclidean":
                         raise NotImplementedError(
                             "Non-euclidean metrics are not supported in MulticoreTSNE "
@@ -2027,7 +1922,7 @@ class GraphVisualizer:
                 show_edge_embedding=True
             ),
             types=types,
-            type_labels=np.array(self.get_edges_labels()),
+            type_labels=np.array(["Non-existent", "Existent"]),
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2312,7 +2207,7 @@ class GraphVisualizer:
             ],
             bins=10,
             log=True,
-            label=self.get_edges_labels()
+            label=["Non-existent", "Existent"]
         )
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(metric_name)
@@ -2817,55 +2712,13 @@ class GraphVisualizer:
                     for node_id in nodes_iterator
                 )
             ),
-            dtype=np.int32
-        )
-
-    def _get_flatten_unknown_node_ontologies(self) -> Tuple[List[str], np.ndarray]:
-        """Returns unique ontologies and node ontologies adjusted for the current instance."""
-        if self._subsampled_node_ids is None:
-            ontology_names = self._graph.get_node_ontologies()
-        else:
-            ontology_names = [
-                self._graph.get_ontology_from_node_id(node_id)
-                for node_id in self._subsampled_node_ids
-            ]
-
-        # The following is needed to normalize the multiple types
-        ontologies_counts = Counter(ontology_names)
-        ontologies_by_frequencies = {
-            ontology: i
-            for i, (ontology, _) in enumerate(sorted(
-                ontologies_counts.items(),
-                key=lambda x: x[1],
-                reverse=True
-            ))
-        }
-        unknown_ontology_id = len(ontologies_counts)
-
-        return (
-            list(ontologies_by_frequencies.keys()),
-            np.fromiter(
-                (
-                    unknown_ontology_id
-                    if ontology is None
-                    else ontologies_by_frequencies[ontology]
-                    for ontology in ontology_names
-                ),
                 dtype=np.uint32
             )
-        )
 
     def _get_flatten_unknown_edge_types(self) -> np.ndarray:
         """Returns flattened edge type IDs adjusted for the current instance."""
-        # The following is needed to normalize the multiple types
-        edge_types_number = self._graph.get_edge_types_number()
-        unknown_edge_types_id = edge_types_number
-        # According to whether the subsampled node IDs were given,
-        # we iterate on them or on the complete set of nodes of the graph.
-        if self._subsampled_positive_edge_ids is None:
-            edges_iterator = range(self._graph.get_number_of_directed_edges())
-        else:
-            edges_iterator = self._subsampled_positive_edge_ids
+        # The following is needed to normalize the unknown types
+        unknown_edge_types_id = self._graph.get_edge_types_number()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
@@ -2874,15 +2727,9 @@ class GraphVisualizer:
                 if edge_type_id is None
                 else
                 edge_type_id
-                for edge_type_id in (
-                    edge_type_id
-                    for edge_type_id in (
-                        self._graph.get_edge_type_id_from_edge_id(edge_id)
-                        for edge_id in edges_iterator
-                    )
-                )
+                for edge_type_id in self._positive_graph.get_edge_type_ids()
             ),
-            dtype=np.int32
+            dtype=np.uint32
         )
 
     def plot_node_types(
@@ -3470,7 +3317,7 @@ class GraphVisualizer:
                     self._graph.get_node_degree_from_node_id(node_id)
                     for node_id in self._subsampled_node_ids
                 ),
-                dtype=np.int32
+                dtype=np.uint32
             )
 
         if annotate_nodes == "auto":
@@ -3723,7 +3570,7 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if not self._graph.has_edge_weights():
+        if not self._positive_graph.has_edge_weights():
             raise ValueError(
                 "The graph does not have edge weights!"
             )
@@ -3735,16 +3582,7 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        if self._subsampled_positive_edge_ids is None:
-            weights = self._graph.get_edge_weights()
-        else:
-            weights = np.fromiter(
-                (
-                    self._graph.get_edge_weight_from_edge_id(edge_id)
-                    for edge_id in self._subsampled_positive_edge_ids
-                ),
-                dtype=np.float32
-            )
+        weights = self._positive_graph.get_edge_weights()
 
         returned_values = self._wrapped_plot_scatter(
             points=self._positive_edge_decomposition,
@@ -4121,7 +3959,7 @@ class GraphVisualizer:
 
         if not return_caption:
             return returned_values
-        
+
         figure, axes, caption = returned_values
 
         caption += (

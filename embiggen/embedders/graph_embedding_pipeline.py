@@ -1,11 +1,10 @@
 """Module offering pipeline to embed graph nodes, node types and edge types."""
 from typing import Union, Dict, Optional, Type
 from ensmallen import Graph
-import pandas as pd
-import numpy as np
 from cache_decorator import Cache
+
 from ..utils.pipeline import iterate_graphs
-from ..utils import AbstractEmbeddingModel
+from ..utils import AbstractEmbeddingModel, EmbeddingResult
 
 
 @Cache(
@@ -27,7 +26,7 @@ def _cached_embed_graph(
     cache_directory: str,
     return_dataframe: bool = True,
     verbose: bool = True,
-) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+) -> EmbeddingResult:
     embedding = embedding_model.fit_transform(
         graph,
         return_dataframe=return_dataframe,
@@ -52,7 +51,7 @@ def embed_graph(
     return_dataframe: bool = True,
     verbose: bool = True,
     **kwargs: Dict
-) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+) -> EmbeddingResult:
     """Return embedding of the provided graph.
 
     Parameters

@@ -61,7 +61,7 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **super().smoke_test_parameters(),
+            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
             scoring_fct_norm=1,
             relation_dim=5
         )

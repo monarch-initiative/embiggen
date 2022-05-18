@@ -11,14 +11,13 @@ class TransFPyKeen(EntityRelationEmbeddingModelPyKeen):
     def __init__(
         self,
         embedding_size: int = 100,
-        scoring_fct_norm: int = 2,
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
         """Create new PyKeen TransF model.
-        
+
         Details
         -------------------------
         This is a wrapper of the TransF implementation from the
@@ -29,8 +28,6 @@ class TransFPyKeen(EntityRelationEmbeddingModelPyKeen):
         -------------------------
         embedding_size: int = 100
             The dimension of the embedding to compute.
-        scoring_fct_norm: int = 2
-            Norm exponent to use in the loss.
         epochs: int = 100
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
@@ -45,29 +42,12 @@ class TransFPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
         """
-        self._scoring_fct_norm = scoring_fct_norm
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
             batch_size=batch_size,
             training_loop=training_loop
         )
-
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **super().smoke_test_parameters(),
-            scoring_fct_norm=1
-        )
-
-    def parameters(self) -> Dict[str, Any]:
-        return {
-            **super().parameters(),
-            **dict(
-                scoring_fct_norm=self._scoring_fct_norm
-            )
-        }
 
     @staticmethod
     def model_name() -> str:
@@ -88,5 +68,4 @@ class TransFPyKeen(EntityRelationEmbeddingModelPyKeen):
         return TransF(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            scoring_fct_norm=self._scoring_fct_norm
         )

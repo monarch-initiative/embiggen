@@ -14,7 +14,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 10,
+        epochs: int = 100,
         clipping_value: float = 6.0,
         walk_length: int = 128,
         iterations: int = 1,
@@ -37,7 +37,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             Dimension of the embedding.
         alpha: float = 0.75
             Alpha parameter for GloVe's loss.
-        epochs: int = 10
+        epochs: int = 100
             Number of epochs to train the model for.
         window_size: int = 4
             Window size for the local context.
@@ -125,7 +125,6 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             walk_length=4,
             iterations=1,
             max_neighbours=10,
-            number_of_negative_samples=1
         )
 
     def parameters(self) -> Dict[str, Any]:

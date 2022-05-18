@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from ...sequences import Node2VecSequence
 from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
-from ...utils import abstract_class
+from ...utils import abstract_class, EmbeddingResult
 
 
 @abstract_class
@@ -35,7 +35,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         max_neighbours: int = 100,
         normalize_by_degree: bool = False,
         random_state: int = 42,
-        optimizer: str = "nadam",
+        optimizer: str = "sgd",
         use_mirrored_strategy: bool = False
     ):
         """Create new abstract Node2Vec model.
@@ -101,7 +101,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             of the destination node degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
-        optimizer: str = "nadam"
+        optimizer: str = "sgd"
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
@@ -202,7 +202,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         graph: Graph,
         model: Model,
         return_dataframe: bool
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Returns embedding from the model.
 
         Parameters
@@ -214,13 +214,17 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """
-        embedding = self.get_layer_weights(
+        node_embedding = self.get_layer_weights(
             "node_embedding",
             model
         )
         if return_dataframe:
-            return pd.DataFrame(
-                embedding,
+            node_embedding = pd.DataFrame(
+                node_embedding,
                 index=graph.get_node_names()
             )
-        return embedding
+        
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            node_embedding=node_embedding
+        )

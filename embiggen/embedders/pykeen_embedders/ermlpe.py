@@ -57,7 +57,7 @@ class ERMLPEPyKeen(EntityRelationEmbeddingModelPyKeen):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **super().smoke_test_parameters(),
+            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
             hidden_dim=5
         )
 

@@ -7,7 +7,7 @@ from ensmallen import Graph
 import inspect
 
 from ...utils.pytorch_utils import validate_torch_device
-from ...utils import AbstractEmbeddingModel, abstract_class
+from ...utils import AbstractEmbeddingModel, abstract_class, EmbeddingResult
 from ...utils import format_list
 import torch
 from pykeen.models import Model
@@ -135,7 +135,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         graph: Graph,
         model: Type[Model],
         return_dataframe: bool
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Returns embedding from the model.
 
         Parameters

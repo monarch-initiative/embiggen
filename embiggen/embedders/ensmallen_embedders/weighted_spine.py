@@ -1,10 +1,10 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import AbstractEmbeddingModel
+
+from ...utils import AbstractEmbeddingModel, EmbeddingResult
 
 
 class WeightedSPINE(AbstractEmbeddingModel):
@@ -54,18 +54,21 @@ class WeightedSPINE(AbstractEmbeddingModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,
             verbose=verbose,
         ).T
         if return_dataframe:
-            return pd.DataFrame(
+            node_embedding = pd.DataFrame(
                 node_embedding,
                 index=graph.get_node_names()
             )
-        return node_embedding
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            node_embeddings=node_embedding
+        )
 
     @staticmethod
     def task_name() -> str:

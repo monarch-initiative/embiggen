@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from .abstract_model import AbstractModel, abstract_class
+from .embedding_result import EmbeddingResult
 
 
 @abstract_class
@@ -50,7 +51,7 @@ class AbstractEmbeddingModel(AbstractModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Run embedding on the provided graph.
 
         Parameters
@@ -70,7 +71,7 @@ class AbstractEmbeddingModel(AbstractModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Execute embedding on the provided graph.
 
         Parameters
@@ -84,10 +85,7 @@ class AbstractEmbeddingModel(AbstractModel):
 
         Returns
         --------------------
-        It either returns a numpy array, a dataframe, or when the embedding model
-        obtains multiple embeddings for different properties of the graph, such as
-        node types and edge types, it returns a dictionary with the name of the embedding
-        and its values.
+        An embedding result, wrapping the complexity of a generic embedding.
         """
         if not graph.has_nodes():
             raise ValueError(
@@ -149,8 +147,18 @@ class AbstractEmbeddingModel(AbstractModel):
                     )
                 )
 
-        return self._fit_transform(
+        result = self._fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
             verbose=verbose
         )
+
+        if not isinstance(result, EmbeddingResult):
+            raise NotImplementedError(
+                f"The embedding result produced by the {self.model_name()} method "
+                f"from the library {self.library_name()} implemented in the class "
+                f"called {self.__class__.__name__} does not return an Embeddingresult "
+                f"but returns an object of type {type(result)}."
+            )
+
+        return result

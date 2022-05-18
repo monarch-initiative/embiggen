@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from tensorflow.keras import Model
 from .siamese import Siamese
-
+from ...utils import EmbeddingResult
 
 class TransETensorFlow(Siamese):
     """TransE model."""
@@ -35,7 +35,7 @@ class TransETensorFlow(Siamese):
         graph: Graph,
         model: Model,
         return_dataframe: bool
-    ) -> Union[Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Returns embedding from the model.
 
         Parameters
@@ -48,7 +48,7 @@ class TransETensorFlow(Siamese):
             Whether to return a dataframe of a numpy array.
         """
         if return_dataframe:
-            return {
+            result = {
                 layer_name: pd.DataFrame(
                     self.get_layer_weights(
                         layer_name,
@@ -63,15 +63,21 @@ class TransETensorFlow(Siamese):
                     ("node_type_embedding", graph.get_unique_node_type_names(), graph.has_unknown_node_types()),
                 )
             }
-        return {
-            layer_name: self.get_layer_weights(
-                layer_name,
-                model,
-                drop_first_row=drop_first_row
-            )
-            for layer_name, drop_first_row in (
-                ("node_embedding", False),
-                ("edge_type_embedding", graph.has_unknown_edge_types()),
-                ("node_type_embedding", graph.has_unknown_node_types()),
-            )
-        }
+        else:
+            result = {
+                layer_name: self.get_layer_weights(
+                    layer_name,
+                    model,
+                    drop_first_row=drop_first_row
+                )
+                for layer_name, drop_first_row in (
+                    ("node_embedding", False),
+                    ("edge_type_embedding", graph.has_unknown_edge_types()),
+                    ("node_type_embedding", graph.has_unknown_node_types()),
+                )
+            }
+        
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            **result
+        )

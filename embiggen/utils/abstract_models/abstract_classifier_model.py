@@ -160,7 +160,7 @@ class AbstractClassifierModel(AbstractModel):
                         "yourselves to completely define your intentions."
                     ).format(node_feature)
                 )
-            
+
             node_feature = AbstractEmbeddingModel.get_model_from_library(
                 model_name=node_feature
             )()
@@ -187,43 +187,47 @@ class AbstractClassifierModel(AbstractModel):
                 graph=graph,
                 return_dataframe=True,
                 verbose=False
-            )
+            ).get_all_node_embedding()
 
-        if not isinstance(node_feature, (np.ndarray, pd.DataFrame)):
-            raise ValueError(
-                (
-                    "The provided node features are of type `{node_features_type}`, "
-                    "while we only currently support numpy arrays and pandas DataFrames. "
-                    "What behaviour were you expecting with this feature? "
-                    "Please do open an issue on Embiggen and let us know!"
-                ).format(
-                    node_features_type=type(node_feature)
+        if not isinstance(node_feature, list):
+            node_feature = [node_feature]
+
+        for nf in node_feature:
+            if not isinstance(nf, (np.ndarray, pd.DataFrame)):
+                raise ValueError(
+                    (
+                        "The provided node features are of type `{node_features_type}`, "
+                        "while we only currently support numpy arrays and pandas DataFrames. "
+                        "What behaviour were you expecting with this feature? "
+                        "Please do open an issue on Embiggen and let us know!"
+                    ).format(
+                        node_features_type=type(node_feature)
+                    )
                 )
-            )
 
-        if graph.get_nodes_number() != node_feature.shape[0]:
-            raise ValueError(
-                (
-                    "The provided node features have {rows_number} rows "
-                    "but the provided graph{graph_name} has {nodes_number} nodes. "
-                    "Maybe these features refer to another "
-                    "version of the graph or another graph "
-                    "entirely?"
-                ).format(
-                    rows_number=node_feature.shape[0],
-                    graph_name="" if graph.get_name().lower(
-                    ) == "graph" else " {}".format(graph.get_name()),
-                    nodes_number=graph.get_nodes_number()
+            if graph.get_nodes_number() != nf.shape[0]:
+                raise ValueError(
+                    (
+                        "The provided node features have {rows_number} rows "
+                        "but the provided graph{graph_name} has {nodes_number} nodes. "
+                        "Maybe these features refer to another "
+                        "version of the graph or another graph "
+                        "entirely?"
+                    ).format(
+                        rows_number=nf.shape[0],
+                        graph_name="" if graph.get_name().lower(
+                        ) == "graph" else " {}".format(graph.get_name()),
+                        nodes_number=graph.get_nodes_number()
+                    )
                 )
-            )
 
-        # If it is a dataframe we align it
-        if isinstance(node_feature, pd.DataFrame):
-            return node_feature.loc[graph.get_node_names()].to_numpy()
-
-        # And if it is a numpy array we must believe that the user knows what
-        # they are doing, as we cannot ensure alignment.
-        return node_feature
+            # If it is a dataframe we align it
+            if isinstance(nf, pd.DataFrame):
+                yield nf.loc[graph.get_node_names()].to_numpy()
+            else:
+                # And if it is a numpy array we must believe that the user knows what
+                # they are doing, as we cannot ensure alignment.
+                yield nf
 
     def normalize_node_features(
         self,
@@ -262,14 +266,15 @@ class AbstractClassifierModel(AbstractModel):
             node_features = [node_features]
 
         return [
-            self.normalize_node_feature(
+            normalized_node_feature
+            for node_feature in node_features
+            for normalized_node_feature in self.normalize_node_feature(
                 graph=graph,
                 node_feature=node_feature,
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test
             )
-            for node_feature in node_features
         ]
 
     def normalize_edge_feature(
@@ -347,43 +352,47 @@ class AbstractClassifierModel(AbstractModel):
                 graph=graph,
                 return_dataframe=True,
                 verbose=False
-            )
+            ).get_all_edge_embedding()
 
-        if not isinstance(edge_feature, (np.ndarray, pd.DataFrame)):
-            raise ValueError(
-                (
-                    "The provided edge features are of type `{edge_features_type}`, "
-                    "while we only currently support numpy arrays and pandas DataFrames. "
-                    "What behaviour were you expecting with this feature? "
-                    "Please do open an issue on Embiggen and let us know!"
-                ).format(
-                    edge_features_type=type(edge_feature)
+        if not isinstance(edge_feature, list):
+            edge_feature = [edge_feature]
+
+        for ef in edge_feature:
+            if not isinstance(ef, (np.ndarray, pd.DataFrame)):
+                raise ValueError(
+                    (
+                        "The provided edge features are of type `{edge_features_type}`, "
+                        "while we only currently support numpy arrays and pandas DataFrames. "
+                        "What behaviour were you expecting with this feature? "
+                        "Please do open an issue on Embiggen and let us know!"
+                    ).format(
+                        edge_features_type=type(ef)
+                    )
                 )
-            )
 
-        if graph.get_directed_edges_number() != edge_feature.shape[0]:
-            raise ValueError(
-                (
-                    "The provided edge features have {rows_number} rows "
-                    "but the provided graph{graph_name} has {edges_number} edges. "
-                    "Maybe these features refer to another "
-                    "version of the graph or another graph "
-                    "entirely?"
-                ).format(
-                    rows_number=edge_feature.shape[0],
-                    graph_name="" if graph.get_name().lower(
-                    ) == "graph" else " {}".format(graph.get_name()),
-                    edges_number=graph.get_edges_number()
+            if graph.get_directed_edges_number() != ef.shape[0]:
+                raise ValueError(
+                    (
+                        "The provided edge features have {rows_number} rows "
+                        "but the provided graph{graph_name} has {edges_number} edges. "
+                        "Maybe these features refer to another "
+                        "version of the graph or another graph "
+                        "entirely?"
+                    ).format(
+                        rows_number=ef.shape[0],
+                        graph_name="" if graph.get_name().lower(
+                        ) == "graph" else " {}".format(graph.get_name()),
+                        edges_number=graph.get_edges_number()
+                    )
                 )
-            )
 
-        # If it is a dataframe we align it
-        if isinstance(edge_feature, pd.DataFrame):
-            return edge_feature.loc[graph.get_edge_names()].to_numpy()
-
-        # And if it is a numpy array we must believe that the user knows what
-        # they are doing, as we cannot ensure alignment.
-        return edge_feature
+            # If it is a dataframe we align it
+            if isinstance(ef, pd.DataFrame):
+                yield ef.loc[graph.get_edge_names()].to_numpy()
+            else:
+                # And if it is a numpy array we must believe that the user knows what
+                # they are doing, as we cannot ensure alignment.
+                yield ef
 
     def normalize_edge_features(
         self,
@@ -422,13 +431,15 @@ class AbstractClassifierModel(AbstractModel):
             edge_features = [edge_features]
 
         return [
-            self.normalize_edge_feature(
+            normalized_node_feature
+            for edge_feature in edge_features
+            for normalized_node_feature in self.normalize_edge_feature(
                 graph=graph,
                 edge_feature=edge_feature,
                 allow_automatic_feature=allow_automatic_feature,
-                skip_evaluation_biased_feature=skip_evaluation_biased_feature
+                skip_evaluation_biased_feature=skip_evaluation_biased_feature,
+                smoke_test=smoke_test
             )
-            for edge_feature in edge_features
         ]
 
     def fit(

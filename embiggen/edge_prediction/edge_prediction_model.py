@@ -120,7 +120,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )[:, 1]
         for unbalance_rate in unbalance_rates:
-            negative_graph = graph.sample_negatives(
+            negative_graph = graph.sample_negative_graph(
                 number_of_negative_samples=int(
                     math.ceil(edges_number*unbalance_rate)),
                 random_state=random_state,
