@@ -190,9 +190,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
                     weights = weights[1:]
                 return weights
         raise NotImplementedError(
-            "This model does not have a layer called {}.".format(
-                layer_name
-            )
+            f"The model {self.model_name()} implemented in the class {self.__class__.__name__} "
+            f"does not have a layer called {layer_name}."
         )
 
     def _fit_transform(

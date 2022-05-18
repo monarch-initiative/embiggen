@@ -4,7 +4,7 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import AbstractEmbeddingModel
+from ...utils import AbstractEmbeddingModel, EmbeddingResult
 
 
 class KGTransEEnsmallen(AbstractEmbeddingModel):
@@ -94,25 +94,24 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
             verbose=verbose,
         )
         if return_dataframe:
-            return {
-                "node_embedding": pd.DataFrame(
-                    node_embedding,
-                    index=graph.get_node_names()
-                ),
-                "node_type_embedding": pd.DataFrame(
-                    edge_type_embedding,
-                    index=graph.get_unique_edge_type_names()
-                ),
-                "edge_type_embedding": pd.DataFrame(
-                    edge_type_embedding,
-                    index=graph.get_unique_edge_type_names()
-                ),
-            }
-        return {
-            "node_embedding": node_embedding,
-            "node_type_embedding": node_type_embedding,
-            "edge_type_embedding": edge_type_embedding,
-        }
+            node_embedding= pd.DataFrame(
+                node_embedding,
+                index=graph.get_node_names()
+            )
+            node_type_embedding= pd.DataFrame(
+                node_type_embedding,
+                index=graph.get_unique_node_type_names()
+            )
+            edge_type_embedding= pd.DataFrame(
+                edge_type_embedding,
+                index=graph.get_unique_edge_type_names()
+            )
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            node_embeddings=node_embedding,
+            node_type_embeddings=node_type_embedding,
+            edge_type_embeddings=edge_type_embedding,
+        )
 
     @staticmethod
     def task_name() -> str:

@@ -245,7 +245,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        skip_evaluation_biased_feature: bool = False
     ):
         """Execute fitting on the provided graph.
 
@@ -257,10 +256,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
-        skip_evaluation_biased_feature: bool = False
-            Whether to skip feature names that are known to be biased
-            when running an holdout. These features should be computed
-            exclusively on the training graph and not the entire graph.
         """
         if edge_features is not None:
             raise NotImplementedError(
@@ -271,7 +266,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph=graph,
             node_features=node_features,
             edge_features=None,
-            skip_evaluation_biased_feature=skip_evaluation_biased_feature,
         )
 
     def evaluate(

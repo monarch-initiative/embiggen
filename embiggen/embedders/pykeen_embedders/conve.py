@@ -24,7 +24,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
-                             ] = "Stochastic Local Closed World Assumption"
+                             ] = "Stochastic Local Closed World Assumption",
+        random_seed: int = 42
     ):
         """Create new PyKeen ConvE model.
 
@@ -74,6 +75,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        random_seed: int = 42
+            Random seed to use while training the model
         """
         self._input_channels=input_channels
         self._output_channels=output_channels
@@ -89,7 +92,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             embedding_size=embedding_size,
             epochs=epochs,
             batch_size=batch_size,
-            training_loop=training_loop
+            training_loop=training_loop,
+            random_seed=random_seed
         )
 
     def parameters(self) -> Dict[str, Any]:

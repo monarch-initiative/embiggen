@@ -286,6 +286,9 @@ class GraphVisualizer:
         else:
             self._positive_graph = self._graph
 
+        self._number_of_subsampled_nodes = number_of_subsampled_nodes
+        self._subsampled_node_ids = None
+
         self._rotate = rotate
         self._graph_name = self._graph.get_name()
 
@@ -573,7 +576,7 @@ class GraphVisualizer:
                 graph=self._graph,
                 embedding_model=node_embedding,
                 **node_embedding_kwargs
-            )
+            ).get_node_embedding_from_index(0)
             # If this is a node embedding like TransE, which
             # returns multiple node embeddings.
             if isinstance(node_embedding, dict):
@@ -754,16 +757,18 @@ class GraphVisualizer:
 
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
-            self._subsampled_node_ids = np.random.randint(
-                self._graph.get_nodes_number(),
-                size=self._number_of_subsampled_nodes
+            self._subsampled_node_ids, _ = self._graph.get_node_label_holdout_indices(
+                train_size=self._number_of_subsampled_nodes / self._graph.get_nodes_number(),
+                use_stratification=True,
+                random_state=self._random_state
             )
             node_transformer = NodeTransformer(
                 aligned_node_mapping=True
             )
             node_transformer.fit(node_embedding)
             node_embedding = node_transformer.transform(
-                self._subsampled_node_ids)
+                self._subsampled_node_ids
+            )
 
         self._node_decomposition = self.decompose(node_embedding)
 
@@ -778,66 +783,12 @@ class GraphVisualizer:
         node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
-
-        if self._edge_prediction_edge_type is not None:
-            edges_number = self._graph.get_number_of_edges_from_edge_type_name(
-                self._edge_prediction_edge_type
-            )
-        elif self._curie_prefixes_were_provided:
-            edges_number = self._graph.get_number_of_directed_edges_from_node_curie_prefixes(
-                self._edge_prediction_source_curie_prefixes,
-                self._edge_prediction_destination_curie_prefixes,
-            )
-        else:
-            edges_number = self._graph.get_number_of_directed_edges()
-
-        # If necessary, we proceed with the subsampling
-        if self._number_of_subsampled_edges is not None and edges_number > self._number_of_subsampled_edges:
-            self._subsampled_positive_edge_ids = np.random.randint(
-                edges_number,
-                size=self._number_of_subsampled_edges
-            )
-            if self._edge_prediction_edge_type is not None:
-                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
-                    self._edge_prediction_edge_type
-                )[self._subsampled_positive_edge_ids]
-            elif self._curie_prefixes_were_provided:
-                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
-                    self._edge_prediction_source_curie_prefixes,
-                    self._edge_prediction_destination_curie_prefixes,
-                )[self._subsampled_positive_edge_ids]
-
-            self._subsampled_positive_edge_node_ids = np.array([
-                self._graph.get_node_ids_from_edge_id(edge_id)
-                for edge_id in self._subsampled_positive_edge_ids
-            ])
-
-        else:
-            if self._edge_prediction_edge_type is not None:
-                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids_from_edge_type_name(
-                    self._edge_prediction_edge_type
-                )
-                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_edge_type_name(
-                    self._edge_prediction_edge_type
-                )
-            elif self._curie_prefixes_were_provided:
-                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids_from_node_curie_prefixes(
-                    self._edge_prediction_source_curie_prefixes,
-                    self._edge_prediction_destination_curie_prefixes,
-                )
-                self._subsampled_positive_edge_ids = self._graph.get_directed_edge_ids_from_node_curie_prefixes(
-                    self._edge_prediction_source_curie_prefixes,
-                    self._edge_prediction_destination_curie_prefixes,
-                )
-            else:
-                self._subsampled_positive_edge_node_ids = self._graph.get_directed_edge_node_ids()
-
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_node_mapping=True
         )
         graph_transformer.fit(node_embedding)
-        return graph_transformer.transform(self._subsampled_positive_edge_node_ids)
+        return graph_transformer.transform(self._positive_graph)
 
     def fit_edges(
         self,
@@ -873,76 +824,13 @@ class GraphVisualizer:
         node_embedding: Union[pd.DataFrame, np.ndarray]
             Node embedding obtained from SkipGram, CBOW or GloVe or others.
         """
-        # With negative edges, it is always necessary to subsample.
-        if self._edge_prediction_source_node_type is not None:
-            possible_source_node_ids = self._graph.get_node_ids_from_node_type_name(
-                self._edge_prediction_source_node_type
-            )
-            source_node_ids = possible_source_node_ids[np.random.randint(
-                possible_source_node_ids.size,
-                size=self._number_of_subsampled_negative_edges
-            )]
-        elif self._curie_prefixes_were_provided:
-            possible_source_node_ids = self._graph.get_node_ids_from_node_curie_prefixes(
-                self._edge_prediction_source_curie_prefixes
-            )
-            source_node_ids = possible_source_node_ids[np.random.randint(
-                possible_source_node_ids.size,
-                size=self._number_of_subsampled_negative_edges
-            )]
-        else:
-            source_node_ids = np.random.randint(
-                self._graph.get_nodes_number(),
-                size=self._number_of_subsampled_negative_edges
-            )
-
-        if self._edge_prediction_destination_node_type is not None:
-            possible_destination_node_ids = self._graph.get_node_ids_from_node_type_name(
-                self._edge_prediction_destination_node_type
-            )
-            destination_node_ids = possible_destination_node_ids[np.random.randint(
-                possible_destination_node_ids.size,
-                size=self._number_of_subsampled_negative_edges
-            )]
-        elif self._curie_prefixes_were_provided:
-            possible_destination_node_ids = self._graph.get_node_ids_from_node_curie_prefixes(
-                self._edge_prediction_destination_curie_prefixes
-            )
-            destination_node_ids = possible_destination_node_ids[np.random.randint(
-                possible_destination_node_ids.size,
-                size=self._number_of_subsampled_negative_edges
-            )]
-        else:
-            destination_node_ids = np.random.randint(
-                self._graph.get_nodes_number(),
-                size=self._number_of_subsampled_negative_edges
-            )
-
-        edge_node_ids = np.vstack((
-            source_node_ids,
-            destination_node_ids
-        )).T
-
-        # We drop from this list any non-existent edge involving singleton node to avoid
-        # biasing the visualization.
-        self._subsampled_negative_edge_node_ids = edge_node_ids[np.fromiter(
-            (
-                all(
-                    self._graph.is_connected_from_node_id(node_id)
-                    for node_id in node_ids
-                )
-                for node_ids in edge_node_ids
-            ),
-            dtype=bool
-        )]
-
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_node_mapping=True
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(
-            self._subsampled_negative_edge_node_ids
+            self._negative_graph
         )
 
     def fit_negative_and_positive_edges(
@@ -1938,13 +1826,9 @@ class GraphVisualizer:
 
         fig, axes, types_caption = returned_values
 
-        if self._is_bipartite_edge_prediction:
-            note_on_scope = "Bipartite"
-        else:
-            note_on_scope = "Graph-wide"
 
         caption = (
-            f"<i>{note_on_scope} existent and non-existent edges</i>: {types_caption}." +
+            f"<i>Existent and non-existent edges</i>: {types_caption}." +
             self.get_non_existing_edges_sampling_description()
         )
 
@@ -2036,8 +1920,8 @@ class GraphVisualizer:
                     edge_metric_callback(src, dst) + sys.float_info.epsilon
                     for src, dst in (
                         itertools.chain(
-                            self._subsampled_negative_edge_node_ids,
-                            self._subsampled_positive_edge_node_ids
+                            self._positive_graph.get_directed_edge_node_ids(),
+                            self._negative_graph.get_directed_edge_node_ids()
                         )
                     )
                 ),
@@ -2119,25 +2003,23 @@ class GraphVisualizer:
                 model.predict(test_x)
             ))
 
-        bipartite = "bipartite " if self._is_bipartite_edge_prediction else ""
-
         mean_accuracy = np.mean(test_accuracies)
         std_accuracy = np.std(test_accuracies)
 
         if mean_accuracy > 0.55:
             if mean_accuracy > 0.90:
-                descriptor = f"is an outstanding {bipartite}edge prediction feature"
+                descriptor = f"is an outstanding edge prediction feature"
             elif mean_accuracy > 0.65:
-                descriptor = f"is a good {bipartite}edge prediction feature"
+                descriptor = f"is a good edge prediction feature"
             else:
-                descriptor = f"may be considered a {bipartite}edge prediction feature"
+                descriptor = f"may be considered a edge prediction feature"
             metric_caption = (
                 f"This metric {descriptor}"
             )
         else:
             metric_caption = (
                 "The metric is not useful as a "
-                f"{bipartite}edge prediction feature"
+                f"edge prediction feature"
             )
 
         caption = (
@@ -2192,8 +2074,8 @@ class GraphVisualizer:
                     edge_metric_callback(src, dst) + sys.float_info.epsilon
                     for src, dst in (
                         itertools.chain(
-                            self._subsampled_negative_edge_node_ids,
-                            self._subsampled_positive_edge_node_ids
+                            self._positive_graph.get_directed_edge_node_ids(),
+                            self._negative_graph.get_directed_edge_node_ids()
                         )
                     )
                 ),
@@ -2202,8 +2084,8 @@ class GraphVisualizer:
 
         axes.hist(
             [
-                edge_metrics[:self._subsampled_negative_edge_node_ids.shape[0]],
-                edge_metrics[self._subsampled_negative_edge_node_ids.shape[0]:],
+                edge_metrics[:self._negative_graph.get_number_of_directed_edges()],
+                edge_metrics[self._negative_graph.get_number_of_directed_edges():],
             ],
             bins=10,
             log=True,
@@ -2712,8 +2594,8 @@ class GraphVisualizer:
                     for node_id in nodes_iterator
                 )
             ),
-                dtype=np.uint32
-            )
+            dtype=np.uint32
+        )
 
     def _get_flatten_unknown_edge_types(self) -> np.ndarray:
         """Returns flattened edge type IDs adjusted for the current instance."""
@@ -3670,8 +3552,8 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
             edge_metrics=graph_transformer.transform(np.vstack([
-                self._subsampled_negative_edge_node_ids,
-                self._subsampled_positive_edge_node_ids
+                self._positive_graph.get_directed_edge_node_ids(),
+                self._negative_graph.get_directed_edge_node_ids()
             ])),
             figure=figure,
             axes=axes,
@@ -3722,8 +3604,8 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
             edge_metrics=offset + graph_transformer.transform(np.vstack([
-                self._subsampled_negative_edge_node_ids,
-                self._subsampled_positive_edge_node_ids
+                self._positive_graph.get_directed_edge_node_ids(),
+                self._negative_graph.get_directed_edge_node_ids()
             ])),
             **kwargs,
         )

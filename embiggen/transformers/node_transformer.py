@@ -44,6 +44,11 @@ class NodeTransformer:
         if not isinstance(node_feature, list):
             node_feature = [node_feature]
 
+        if len(node_feature) == 0:
+            raise ValueError(
+                "The provided list of features is empty!"
+            )
+
         # We check if any of the provided node features
         # is neither a numpy array nor a pandas dataframe.
         for nf in node_feature:

@@ -15,7 +15,8 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
-                             ] = "Stochastic Local Closed World Assumption"
+                             ] = "Stochastic Local Closed World Assumption",
+        random_seed: int = 42
     ):
         """Create new PyKeen AutoSF model.
 
@@ -44,21 +45,16 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        random_seed: int = 42
+            Random seed to use while training the model
         """
         self._num_components = num_components
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
             batch_size=batch_size,
-            training_loop=training_loop
-        )
-
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
-            num_components=2
+            training_loop=training_loop,
+            random_seed=random_seed
         )
 
     def parameters(self) -> Dict[str, Any]:

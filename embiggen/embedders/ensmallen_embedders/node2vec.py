@@ -6,6 +6,7 @@ import pandas as pd
 from ensmallen import models
 from ...utils import abstract_class, AbstractEmbeddingModel, EmbeddingResult
 
+
 @abstract_class
 class Node2VecEnsmallen(AbstractEmbeddingModel):
     """Abstract class for Node2Vec algorithms."""
@@ -63,7 +64,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             window_size=1,
             walk_length=4,
             iterations=1,
-            max_neighbours= 10,
+            max_neighbours=10,
             number_of_negative_samples=1
         )
 

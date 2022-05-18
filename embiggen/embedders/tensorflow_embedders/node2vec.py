@@ -226,5 +226,5 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embedding=node_embedding
+            node_embeddings=node_embedding
         )

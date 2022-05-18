@@ -114,7 +114,7 @@ class Siamese(TensorFlowEmbedder):
             input_dim=graph.get_nodes_number(),
             output_dim=self._embedding_size,
             input_length=1,
-            name="node_embedding"
+            name="node_embeddings"
         )
 
         # Get the node embedding
@@ -137,7 +137,7 @@ class Siamese(TensorFlowEmbedder):
                 input_dim=graph.get_node_types_number() + node_types_offset,
                 output_dim=self._embedding_size,
                 input_length=max_node_types,
-                name="node_type_embedding",
+                name="node_type_embeddings",
                 mask_zero=multilabel or unknown_node_types
             )
 
@@ -167,7 +167,7 @@ class Siamese(TensorFlowEmbedder):
             output_dim=self._embedding_size,
             input_length=1 + edge_types_offset,
             mask_zero=unknown_edge_types,
-            name="edge_type_embedding",
+            name="edge_type_embeddings",
         )(edge_types))
 
         (

@@ -23,8 +23,8 @@ class TestNodeEmbeddingPipeline(TestCase):
                 graph_name = "HomoSapiens"
                 repository = "string"
             else:
-                graph_name = "Cora"
-                repository="linqs"
+                graph_name = "SpeciesTree"
+                repository="string"
 
             embed_graph(
                 graph_name,

@@ -19,7 +19,8 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
         epochs: int = 100,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
-                             ] = "Stochastic Local Closed World Assumption"
+                             ] = "Stochastic Local Closed World Assumption",
+        random_seed: int = 42
     ):
         """Create new PyKeen TuckER model.
         
@@ -56,6 +57,8 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        random_seed: int = 42
+            Random seed to use while training the model
         """
         self._relation_dim=relation_dim
         self._dropout_0=dropout_0
@@ -66,7 +69,8 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
             embedding_size=embedding_size,
             epochs=epochs,
             batch_size=batch_size,
-            training_loop=training_loop
+            training_loop=training_loop,
+            random_seed=random_seed
         )
 
     def parameters(self) -> Dict[str, Any]:

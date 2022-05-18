@@ -69,7 +69,7 @@ class EmbeddingResult:
                     )
 
                 if isinstance(embedding, pd.DataFrame):
-                    numpy_embedding = embedding.numpy()
+                    numpy_embedding = embedding.to_numpy()
                 else:
                     numpy_embedding = embedding
 

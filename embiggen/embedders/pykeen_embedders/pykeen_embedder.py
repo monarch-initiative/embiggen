@@ -32,7 +32,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         batch_size: int = 2**10,
         device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
-                             ] = "Stochastic Local Closed World Assumption"
+                             ] = "Stochastic Local Closed World Assumption",
+        random_seed: int = 42
     ):
         """Create new PyKeen Abstract Embedder model.
         
@@ -53,6 +54,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        random_seed: int = 42
+            Random seed to use while training the model
         """
         if isinstance(training_loop, str):
             if training_loop in PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS:
@@ -77,6 +80,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         self._training_loop = training_loop
         self._epochs = epochs
         self._batch_size = batch_size
+        self._random_seed = random_seed
         self._device = validate_torch_device(device)
 
         super().__init__(embedding_size=embedding_size)
@@ -85,7 +89,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=5,
+            embedding_size=10,
             epochs=1
         )
 
@@ -95,6 +99,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             **dict(
                 epochs=self._epochs,
                 batch_size=self._batch_size,
+                random_seed = self._random_seed
             )
         }
 

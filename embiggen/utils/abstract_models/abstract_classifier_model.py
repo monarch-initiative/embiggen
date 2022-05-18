@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from .abstract_model import AbstractModel, abstract_class
 import time
-from .abstract_embedding_model import AbstractEmbeddingModel
+from .abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
 from tqdm.auto import trange
 import functools
 from sklearn.metrics import (
@@ -176,7 +176,8 @@ class AbstractClassifierModel(AbstractModel):
                     self.is_topological() and node_feature.is_topological()
                 )
             ):
-                return node_feature
+                yield node_feature
+                return None
 
             if smoke_test:
                 node_feature = node_feature.__class__(
@@ -187,7 +188,10 @@ class AbstractClassifierModel(AbstractModel):
                 graph=graph,
                 return_dataframe=True,
                 verbose=False
-            ).get_all_node_embedding()
+            )
+
+        if isinstance(node_feature, EmbeddingResult):
+            node_feature = node_feature.get_all_node_embedding()
 
         if not isinstance(node_feature, list):
             node_feature = [node_feature]
@@ -201,7 +205,7 @@ class AbstractClassifierModel(AbstractModel):
                         "What behaviour were you expecting with this feature? "
                         "Please do open an issue on Embiggen and let us know!"
                     ).format(
-                        node_features_type=type(node_feature)
+                        node_features_type=type(nf)
                     )
                 )
 
@@ -228,6 +232,7 @@ class AbstractClassifierModel(AbstractModel):
                 # And if it is a numpy array we must believe that the user knows what
                 # they are doing, as we cannot ensure alignment.
                 yield nf
+
 
     def normalize_node_features(
         self,
@@ -265,7 +270,7 @@ class AbstractClassifierModel(AbstractModel):
         if not isinstance(node_features, (list, tuple)):
             node_features = [node_features]
 
-        return [
+        normalized_node_features = [
             normalized_node_feature
             for node_feature in node_features
             for normalized_node_feature in self.normalize_node_feature(
@@ -277,10 +282,14 @@ class AbstractClassifierModel(AbstractModel):
             )
         ]
 
+        assert(len(normalized_node_features) >= len(node_features))
+
+        return normalized_node_features
+
     def normalize_edge_feature(
         self,
         graph: Graph,
-        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]] = None,
+        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False
@@ -307,9 +316,6 @@ class AbstractClassifierModel(AbstractModel):
             and therefore use the smoke test configurations for
             the provided model names and feature names.
         """
-        if edge_feature is None:
-            return None
-
         if isinstance(edge_feature, str):
             if not allow_automatic_feature:
                 raise ValueError(
@@ -324,11 +330,6 @@ class AbstractClassifierModel(AbstractModel):
                         "yourselves to completely define your intentions."
                     ).format(edge_feature)
                 )
-            if (
-                skip_evaluation_biased_feature and
-                edge_feature.lower() in self._get_evaluation_biased_feature_names_lowercase()
-            ):
-                return edge_feature
 
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
                 model_name=edge_feature
@@ -339,9 +340,14 @@ class AbstractClassifierModel(AbstractModel):
         if issubclass(edge_feature.__class__, AbstractEmbeddingModel):
             if (
                 skip_evaluation_biased_feature and
-                edge_feature.model_name().lower() in self._get_evaluation_biased_feature_names_lowercase()
+                (
+                    self.requires_edge_types() and edge_feature.requires_edge_types() or
+                    self.requires_node_types() and edge_feature.requires_node_types() or
+                    self.is_topological() and edge_feature.is_topological()
+                )
             ):
-                return edge_feature
+                yield edge_feature
+                return None
 
             if smoke_test:
                 edge_feature = edge_feature.__class__(
@@ -352,7 +358,10 @@ class AbstractClassifierModel(AbstractModel):
                 graph=graph,
                 return_dataframe=True,
                 verbose=False
-            ).get_all_edge_embedding()
+            )
+
+        if isinstance(edge_feature, EmbeddingResult):
+            edge_feature = edge_feature.get_all_edge_embedding()
 
         if not isinstance(edge_feature, list):
             edge_feature = [edge_feature]
@@ -430,10 +439,10 @@ class AbstractClassifierModel(AbstractModel):
         if not isinstance(edge_features, list):
             edge_features = [edge_features]
 
-        return [
-            normalized_node_feature
+        normalized_edge_features = [
+            normalized_edge_feature
             for edge_feature in edge_features
-            for normalized_node_feature in self.normalize_edge_feature(
+            for normalized_edge_feature in self.normalize_edge_feature(
                 graph=graph,
                 edge_feature=edge_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -441,6 +450,10 @@ class AbstractClassifierModel(AbstractModel):
                 smoke_test=smoke_test
             )
         ]
+
+        assert(len(normalized_edge_features) >= len(edge_features))
+
+        return normalized_edge_features
 
     def fit(
         self,
