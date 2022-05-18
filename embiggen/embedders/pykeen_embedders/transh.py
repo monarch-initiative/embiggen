@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's TransE model."""
+"""Submodule providing wrapper for PyKeen's TransH model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
-from pykeen.models import TransE
+from pykeen.models import TransH
 from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
 
     def __init__(
         self,
@@ -17,11 +17,11 @@ class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen TransE model.
+        """Create new PyKeen TransH model.
         
         Details
         -------------------------
-        This is a wrapper of the TransE implementation from the
+        This is a wrapper of the TransH implementation from the
         PyKeen library. Please refer to the PyKeen library documentation
         for details and posssible errors regarding this model.
 
@@ -72,20 +72,20 @@ class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
     @staticmethod
     def model_name() -> str:
         """Return name of the model."""
-        return "TransE"
+        return "TransH"
 
     def _build_model(
         self,
         triples_factory: CoreTriplesFactory
-    ) -> TransE:
-        """Build new TransE model for embedding.
+    ) -> TransH:
+        """Build new TransH model for embedding.
 
         Parameters
         ------------------
         graph: Graph
             The graph to build the model for.
         """
-        return TransE(
+        return TransH(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
             scoring_fct_norm=self._scoring_fct_norm

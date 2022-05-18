@@ -1,27 +1,27 @@
-"""Submodule providing wrapper for PyKeen's TransE model."""
-from typing import Union, Type, Dict, Any
+"""Submodule providing wrapper for PyKeen's ERMLPE model."""
+from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
-from pykeen.models import TransE
+from pykeen.models import ERMLPE
 from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
+class ERMLPEPyKeen(EntityRelationEmbeddingModelPyKeen):
 
     def __init__(
         self,
         embedding_size: int = 100,
-        scoring_fct_norm: int = 2,
+        hidden_dim: Optional[int] = None,
         epochs: int = 10,
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen TransE model.
-        
+        """Create new PyKeen ERMLPE model.
+
         Details
         -------------------------
-        This is a wrapper of the TransE implementation from the
+        This is a wrapper of the ERMLPE implementation from the
         PyKeen library. Please refer to the PyKeen library documentation
         for details and posssible errors regarding this model.
 
@@ -29,8 +29,8 @@ class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
         -------------------------
         embedding_size: int = 100
             The dimension of the embedding to compute.
-        scoring_fct_norm: int = 2
-            Norm exponent to use in the loss.
+        hidden_dim: Optional[int] = None
+            Size of the hidden layer.
         epochs: int = 10
             The number of epochs to use to train the model for.
         batch_size: int = 2**10
@@ -45,7 +45,7 @@ class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
         """
-        self._scoring_fct_norm = scoring_fct_norm
+        self._hidden_dim = hidden_dim
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
@@ -58,35 +58,35 @@ class TransEPyKeen(EntityRelationEmbeddingModelPyKeen):
         """Returns parameters for smoke test."""
         return dict(
             **super().smoke_test_parameters(),
-            scoring_fct_norm=1
+            hidden_dim=5
         )
 
     def parameters(self) -> Dict[str, Any]:
         return {
             **super().parameters(),
             **dict(
-                scoring_fct_norm=self._scoring_fct_norm
+                hidden_dim=self._hidden_dim
             )
         }
 
     @staticmethod
     def model_name() -> str:
         """Return name of the model."""
-        return "TransE"
+        return "ERMLPE"
 
     def _build_model(
         self,
         triples_factory: CoreTriplesFactory
-    ) -> TransE:
-        """Build new TransE model for embedding.
+    ) -> ERMLPE:
+        """Build new ERMLPE model for embedding.
 
         Parameters
         ------------------
         graph: Graph
             The graph to build the model for.
         """
-        return TransE(
+        return ERMLPE(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            scoring_fct_norm=self._scoring_fct_norm
+            hidden_dim=self._hidden_dim
         )

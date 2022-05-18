@@ -1,9 +1,8 @@
 """Submodule providing wrapper for PyKeen's TransE model."""
-from typing import Union, Type, Dict, Any
+from typing import Union, Dict, Any
 from ensmallen import Graph
 from pykeen.models import EntityRelationEmbeddingModel
 from .pykeen_embedder import PyKeenEmbedder
-from pykeen.training import TrainingLoop
 import numpy as np
 import pandas as pd
 from ...utils import abstract_class
@@ -11,24 +10,6 @@ from ...utils import abstract_class
 
 @abstract_class
 class EntityRelationEmbeddingModelPyKeen(PyKeenEmbedder):
-
-    def __init__(
-        self,
-        embedding_size: int = 100,
-        scoring_fct_norm: int = 2,
-        epochs: int = 10,
-        batch_size: int = 2**10,
-        training_loop: Union[str, Type[TrainingLoop]
-                             ] = "Stochastic Local Closed World Assumption"
-    ):
-        """"""
-        self._scoring_fct_norm = scoring_fct_norm
-        super().__init__(
-            embedding_size=embedding_size,
-            epochs=epochs,
-            batch_size=batch_size,
-            training_loop=training_loop
-        )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:

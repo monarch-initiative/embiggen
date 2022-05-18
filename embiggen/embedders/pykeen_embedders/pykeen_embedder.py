@@ -28,13 +28,32 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 10,
+        epochs: int = 100,
         batch_size: int = 2**10,
         device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption"
     ):
-        """Create new PyKeen Abstract Embedder model."""
+        """Create new PyKeen Abstract Embedder model.
+        
+        Parameters
+        -------------------------
+        embedding_size: int = 100
+            The dimension of the embedding to compute.
+        epochs: int = 10
+            The number of epochs to use to train the model for.
+        batch_size: int = 2**10
+            Size of the training batch.
+        device: str = "auto"
+            The devide to use to train the model.
+            Can either be cpu or cuda.
+        training_loop: Union[str, Type[TrainingLoop]
+                             ] = "Stochastic Local Closed World Assumption"
+            The training loop to use to train the model.
+            Can either be:
+            - Stochastic Local Closed World Assumption
+            - Local Closed World Assumption
+        """
         if isinstance(training_loop, str):
             if training_loop in PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS:
                 training_loop = PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS[training_loop]
