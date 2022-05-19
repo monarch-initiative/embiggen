@@ -132,11 +132,18 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 graph_to_avoid=graph
             )
+
+            assert(negative_graph.has_edges())
+
             non_existent_train, non_existent_test = negative_graph.random_holdout(
                 train_size=train_size,
                 random_state=random_state,
                 verbose=False,
             )
+
+            assert(non_existent_train.has_edges())
+            assert(non_existent_test.has_edges())
+
             for evaluation_mode, (existent_predictions, existent_prediction_probabilitiess, non_existent_graph) in (
                 (
                     "train",
