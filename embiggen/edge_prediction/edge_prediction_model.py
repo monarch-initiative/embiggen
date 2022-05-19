@@ -100,6 +100,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         train_size = train.get_edges_number() / edges_number
         performance = []
 
+        assert train.has_edges(), "The training graph is empty!"
+        assert test.has_edges(), "The test graph is empty!"
+        assert graph.has_edges(), "The graph is empty!"
+
         existent_train_predictions = self.predict(
             train,
             node_features=node_features,
@@ -118,7 +122,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        assert(existent_train_prediction_probabilities.shape[0]==train.get_number_of_directed_edges())
+        edges_number = train.get_number_of_directed_edges()
+        predictions_number = existent_train_prediction_probabilities.shape[0]
+        assert edges_number == predictions_number, f"Expected {edges_number} training predictions, got {predictions_number}."
 
         if existent_train_prediction_probabilities.shape[1] > 1:
             existent_train_prediction_probabilities = existent_train_prediction_probabilities[:, 1]
@@ -129,14 +135,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        assert(existent_test_prediction_probabilities.shape[0]==test.get_number_of_directed_edges())
+        edges_number = test.get_number_of_directed_edges()
+        predictions_number = existent_test_prediction_probabilities.shape[0]
+        assert edges_number == predictions_number, f"Expected {edges_number} testing predictions, got {predictions_number}."
 
         if existent_test_prediction_probabilities.shape[1] > 1:
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
-
-        assert(train.has_edges())
-        assert(test.has_edges())
-        assert(graph.has_edges())
 
         for unbalance_rate in unbalance_rates:
             negative_graph = train.sample_negative_graph(
@@ -147,7 +151,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 graph_to_avoid=graph
             )
 
-            assert(negative_graph.has_edges())
+            assert negative_graph.has_edges(), "Negative graph is empty!"
 
             non_existent_train, non_existent_test = negative_graph.random_holdout(
                 train_size=train_size,
@@ -155,8 +159,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 verbose=False,
             )
 
-            assert(non_existent_train.has_edges())
-            assert(non_existent_test.has_edges())
+            assert non_existent_train.has_edges(), "Negative train graph is empty!"
+            assert non_existent_test.has_edges(), "Negative test graph is empty!"
 
             for evaluation_mode, (existent_predictions, existent_prediction_probabilitiess, non_existent_graph) in (
                 (
