@@ -193,6 +193,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 print(
                     predictions.shape,
                     prediction_probabilities.shape,
+                    existent_prediction_probabilitiess.shape,
+                    existent_predictions.shape,
                     non_existent_predictions.shape,
                     non_existent_prediction_probabilities.shape
                 )
