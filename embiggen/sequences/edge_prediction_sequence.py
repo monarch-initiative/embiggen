@@ -144,7 +144,7 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        return ([
+        return [
             value
             for value in self._graph_used_in_training.get_edge_prediction_chunk_mini_batch(
                 idx,
@@ -154,4 +154,4 @@ class EdgePredictionSequence(Sequence):
                 return_edge_metrics=self._use_edge_metrics,
             )
             if value is not None
-        ], )
+        ]
