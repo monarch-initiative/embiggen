@@ -124,6 +124,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if existent_test_prediction_probabilities.shape[1] > 1:
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
 
+        assert(train.has_edges())
+        assert(test.has_edges())
+        assert(graph.has_edges())
+
         for unbalance_rate in unbalance_rates:
             negative_graph = train.sample_negative_graph(
                 number_of_negative_samples=int(
