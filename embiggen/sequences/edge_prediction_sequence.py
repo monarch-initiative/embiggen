@@ -56,7 +56,7 @@ class EdgePredictionSequence(Sequence):
     def __call__(self):
         """Return next batch using an infinite generator model."""
         self._current_index += 1
-        return ((tuple(self[self._current_index]),),)
+        return (self[self._current_index],)
 
     def into_dataset(self) -> tf.data.Dataset:
         """Return dataset generated out of the current sequence instance.
@@ -148,7 +148,7 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        return [
+        return (tuple([
             value
             for value in self._graph_used_in_training.get_edge_prediction_chunk_mini_batch(
                 idx,
@@ -158,4 +158,4 @@ class EdgePredictionSequence(Sequence):
                 return_edge_metrics=self._use_edge_metrics,
             )
             if value is not None
-        ]
+        ]),)
