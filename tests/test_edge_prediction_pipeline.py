@@ -13,7 +13,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._graph, _ = get_words_data(Cora())
         self._graph = self._graph.remove_singleton_nodes()
-        self._graph_without_nodes = self._graph.remove_node_types()
+        self._graph_without_node_types = self._graph.remove_node_types()
         self._number_of_holdouts = 2
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):
@@ -25,7 +25,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             library_names=df.library_name,
             node_features=SPINE(embedding_size=5),
             evaluation_schema="Connected Monte Carlo",
-            graphs=self._graph,
+            graphs=[self._graph, self._graph_without_node_types],
             number_of_holdouts=self._number_of_holdouts,
             verbose=True,
             smoke_test=True
