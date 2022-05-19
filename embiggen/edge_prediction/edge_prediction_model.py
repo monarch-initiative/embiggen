@@ -99,28 +99,38 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edges_number = graph.get_edges_number()
         train_size = train.get_edges_number() / edges_number
         performance = []
+
         existent_train_predictions = self.predict(
             train,
             node_features=node_features,
             edge_features=edge_features
         )
+        
         existent_test_predictions = self.predict(
             test,
             node_features=node_features,
             edge_features=edge_features
         )
+
         existent_train_prediction_probabilities = self.predict_proba(
             train,
             node_features=node_features,
             edge_features=edge_features
         )
+
+        assert(existent_train_prediction_probabilities.shape[0]==train.get_number_of_directed_edges())
+
         if existent_train_prediction_probabilities.shape[1] > 1:
             existent_train_prediction_probabilities = existent_train_prediction_probabilities[:, 1]
+        
         existent_test_prediction_probabilities = self.predict_proba(
             test,
             node_features=node_features,
             edge_features=edge_features
         )
+
+        assert(existent_test_prediction_probabilities.shape[0]==test.get_number_of_directed_edges())
+
         if existent_test_prediction_probabilities.shape[1] > 1:
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
 
