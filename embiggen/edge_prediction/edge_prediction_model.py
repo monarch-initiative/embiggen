@@ -190,6 +190,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     non_existent_prediction_probabilities
                 ))
 
+                print(
+                    predictions.shape,
+                    prediction_probabilities.shape,
+                    non_existent_predictions.shape,
+                    non_existent_prediction_probabilities.shape
+                )
+
                 labels = np.concatenate((
                     np.ones_like(existent_predictions),
                     np.zeros_like(non_existent_predictions),
