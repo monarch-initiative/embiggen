@@ -100,21 +100,27 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         train_size = train.get_edges_number() / edges_number
         performance = []
 
-        assert train.has_edges(), "The training graph is empty!"
-        assert test.has_edges(), "The test graph is empty!"
-        assert graph.has_edges(), "The graph is empty!"
-
         existent_train_predictions = self.predict(
             train,
             node_features=node_features,
             edge_features=edge_features
         )
+
+        edges_number = train.get_number_of_directed_edges()
+        predictions_number = existent_train_predictions.shape[0]
+        assert edges_number == predictions_number, f"Expected {edges_number} training predictions, got {predictions_number}."
+
         
         existent_test_predictions = self.predict(
             test,
             node_features=node_features,
             edge_features=edge_features
         )
+
+        edges_number = test.get_number_of_directed_edges()
+        predictions_number = existent_test_predictions.shape[0]
+        assert edges_number == predictions_number, f"Expected {edges_number} testing predictions, got {predictions_number}."
+
 
         existent_train_prediction_probabilities = self.predict_proba(
             train,
@@ -203,15 +209,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     existent_prediction_probabilitiess,
                     non_existent_prediction_probabilities
                 ))
-
-                print(
-                    predictions.shape,
-                    prediction_probabilities.shape,
-                    existent_prediction_probabilitiess.shape,
-                    existent_predictions.shape,
-                    non_existent_predictions.shape,
-                    non_existent_prediction_probabilities.shape
-                )
 
                 labels = np.concatenate((
                     np.ones_like(existent_predictions),

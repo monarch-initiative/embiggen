@@ -517,7 +517,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             random_state=self._random_state
         )
         self.history = model.fit(
-            sequence.into_dataset(),
+            sequence,
             steps_per_epoch=sequence.steps_per_epoch,
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
@@ -560,7 +560,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             batch_size=self._batch_size,
         )
         return self._model.predict(
-            sequence.into_dataset(),
+            sequence,
             steps=sequence.steps_per_epoch,
             verbose=False
         )
