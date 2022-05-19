@@ -35,6 +35,14 @@ class EdgePredictionSequence(Sequence):
         batch_size: int = 2**10,
             The batch size to use.
         """
+        if not graph.has_edges():
+            raise ValueError(
+                f"An empty instance of graph {graph.get_name()} was provided!"
+            )
+        if not graph.has_edges():
+            raise ValueError(
+                f"An empty instance of graph {graph_used_in_training.get_name()} was provided!"
+            )
         self._graph = graph
         self._graph_used_in_training = graph_used_in_training
         self._use_node_types = use_node_types
