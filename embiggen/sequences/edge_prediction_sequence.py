@@ -40,10 +40,6 @@ class EdgePredictionSequence(Sequence):
         self._use_node_types = use_node_types
         self._use_edge_metrics = use_edge_metrics
         self._current_index = 0
-        self._batches_per_epoch = max(
-            graph.get_number_of_directed_edges() // batch_size,
-            1
-        )
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
             batch_size=batch_size,

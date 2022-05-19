@@ -521,7 +521,6 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             steps_per_epoch=sequence.steps_per_epoch,
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
-            batch_size=self._batch_size,
             callbacks=[
                 EarlyStopping(
                     monitor=self._early_stopping_monitor,

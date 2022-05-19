@@ -3,12 +3,12 @@ from typing import Tuple, Dict, Optional
 
 import numpy as np  # type: ignore
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from .abstract_sequence import AbstractSequence
+from keras_mixed_sequence import Sequence
 import tensorflow as tf
 from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
-class Node2VecSequence(AbstractSequence):
+class Node2VecSequence(Sequence):
     """Keras Sequence object for running models on graph walks."""
 
     def __init__(
@@ -80,13 +80,13 @@ class Node2VecSequence(AbstractSequence):
         self._max_neighbours = max_neighbours
         self._change_node_type_weight = change_node_type_weight
         self._change_edge_type_weight = change_edge_type_weight
+        self._window_size = window_size
+        self._random_state = random_state
         self._current_index = 0
 
         super().__init__(
-            batch_size=batch_size,
             sample_number=self._graph.get_unique_source_nodes_number(),
-            window_size=window_size,
-            random_state=random_state
+            batch_size=batch_size,
         )
 
     def __call__(self):
