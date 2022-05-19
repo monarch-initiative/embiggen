@@ -450,6 +450,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             if self._optimizer == "LazyAdam":
                 import tensorflow_addons as tfa
                 optimizer = tfa.optimizers.LazyAdam(0.001)
+            else:
+                optimizer = self._optimizer
         except:
             optimizer = "adam"
 
