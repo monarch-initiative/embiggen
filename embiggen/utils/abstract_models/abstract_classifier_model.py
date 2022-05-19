@@ -178,8 +178,9 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    self.requires_edge_types() and node_feature.requires_edge_types() or
-                    self.requires_node_types() and node_feature.requires_node_types() or
+                    self.is_using_edge_types() and node_feature.is_using_edge_types() or
+                    self.is_using_node_types() and node_feature.is_using_node_types() or
+                    self.is_using_edge_weights() and node_feature.is_using_edge_weights() or
                     self.is_topological() and node_feature.is_topological()
                 )
             ):
@@ -348,8 +349,9 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    self.requires_edge_types() and edge_feature.requires_edge_types() or
-                    self.requires_node_types() and edge_feature.requires_node_types() or
+                    self.is_using_edge_types() and edge_feature.is_using_edge_types() or
+                    self.is_using_node_types() and edge_feature.is_using_node_types() or
+                    self.is_using_edge_weights() and edge_feature.is_using_edge_weights() or
                     self.is_topological() and edge_feature.is_topological()
                 )
             ):
@@ -831,6 +833,21 @@ class AbstractClassifierModel(AbstractModel):
                 holdouts_kwargs=holdouts_kwargs,
                 holdout_number=holdout_number,
                 number_of_holdouts=number_of_holdouts
+            )
+
+            # We enable in the train and test graphs the same
+            # speedups enabled in the provided graph.
+            train.enable(
+                vector_sources=graph.has_sources_tradeoff_enabled(),
+                vector_destinations =graph.has_destinations_tradeoff_enabled(),
+                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+            )
+            test.enable(
+                vector_sources=graph.has_sources_tradeoff_enabled(),
+                vector_destinations =graph.has_destinations_tradeoff_enabled(),
+                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
             )
 
             # We compute the remaining features

@@ -54,7 +54,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
         random_state: int = 42,
-        use_laplacian: bool = False,
+        use_laplacian: bool = True,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -561,7 +561,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             batch_size=self._batch_size,
         )
         return self._model.predict(
-            sequence,
+            sequence.into_dataset(),
             steps=sequence.steps_per_epoch,
             verbose=False
         )
