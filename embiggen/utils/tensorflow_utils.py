@@ -103,7 +103,8 @@ def must_have_tensorflow_version_higher_or_equal_than(
 
 def graph_to_sparse_tensor(
     graph: Graph,
-    use_weights: bool
+    use_weights: bool,
+    use_laplacian: bool
 ) -> tf.SparseTensor:
     """Returns provided graph as sparse Tensor.
 
@@ -113,6 +114,8 @@ def graph_to_sparse_tensor(
         The graph to convert.
     use_weights: bool,
         Whether to load the graph weights.
+    use_laplacian: bool
+        Whether to use the symmetrically normalized laplacian 
 
     Raises
     -------------------
@@ -149,6 +152,12 @@ def graph_to_sparse_tensor(
             "The GCN model does not currently support operations on a multigraph. "
             "You can drop multigraph edges by using the method "
             "from Ensmallen `graph.remove_parallel_edges()`."
+        )
+
+    if use_laplacian:
+        return tf.SparseTensor(
+            *graph.get_symmetric_normalized_coo_matrix(),
+            (graph.get_nodes_number(), graph.get_nodes_number()),
         )
 
     return tf.SparseTensor(

@@ -54,6 +54,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
         random_state: int = 42,
+        use_laplacian: bool = False,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -142,6 +143,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             - Preferential attachment
         random_state: int = 42
             Random state to reproduce the training samples.
+        use_laplacian: bool = True
+            Whether to use laplacian transform before training on the graph.
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -172,6 +175,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         self._features_dropout_rate = features_dropout_rate
         self._optimizer = optimizer
         self._batch_size = batch_size
+        self._use_laplacian = use_laplacian
 
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
@@ -282,7 +286,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
 
         adjacency_matrix = graph_to_sparse_tensor(
             graph,
-            use_weights=graph.has_edge_weights()
+            use_weights=graph.has_edge_weights() and not self._use_laplacian,
+            use_laplacian=self._use_laplacian
         )
 
         if node_features is not None:
@@ -502,16 +507,18 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             node_features
         )
 
+        sequence = EdgePredictionTrainingSequence(
+            graph,
+            use_node_types=self.use_node_types,
+            use_edge_metrics=self._use_edge_metrics,
+            batch_size=self._batch_size,
+            negative_samples_rate=self._negative_samples_rate,
+            sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
+            random_state=self._random_state
+        )
         self.history = model.fit(
-            EdgePredictionTrainingSequence(
-                graph,
-                use_node_types=self.use_node_types,
-                use_edge_metrics=self._use_edge_metrics,
-                batch_size=self._batch_size,
-                negative_samples_rate=self._negative_samples_rate,
-                sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
-                random_state=self._random_state
-            ),
+            sequence,
+            steps_per_epoch=sequence.steps_per_epoch,
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
             batch_size=self._batch_size,
@@ -605,11 +612,11 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
     @staticmethod
     def can_use_edge_types() -> bool:
         """Returns whether the model can optionally use edge types."""
-        return True
+        return False
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
-        return True
+        return False
 
     @staticmethod
     def can_use_edge_weights() -> bool:
@@ -618,4 +625,4 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
 
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
-        return True
+        return not self._use_laplacian

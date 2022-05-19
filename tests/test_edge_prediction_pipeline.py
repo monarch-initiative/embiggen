@@ -13,6 +13,7 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._graph, _ = get_words_data(Cora())
         self._graph = self._graph.remove_singleton_nodes()
+        self._graph_without_nodes = self._graph.remove_node_types()
         self._number_of_holdouts = 2
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):

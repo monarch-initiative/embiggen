@@ -39,6 +39,7 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        use_laplacian: bool = True,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -86,6 +87,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        use_laplacian: bool = True
+            Whether to use laplacian transform before training on the graph.
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -105,7 +108,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         self._use_class_weights = use_class_weights
         self._features_dropout_rate = features_dropout_rate
         self._optimizer = optimizer
-
+        self._use_laplacian = use_laplacian
+        
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
         self._reduce_lr_min_delta = reduce_lr_min_delta
@@ -304,7 +308,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
 
         adjacency_matrix = graph_to_sparse_tensor(
             graph,
-            use_weights=graph.has_edge_weights()
+            use_weights=graph.has_edge_weights() and not self._use_laplacian,
+            use_laplacian=self._use_laplacian
         )
 
         if self.is_multilabel_prediction_task():
@@ -359,7 +364,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         """Run predictions on the provided graph."""
         adjacency_matrix = graph_to_sparse_tensor(
             graph,
-            use_weights=graph.has_edge_weights()
+            use_weights=graph.has_edge_weights() and not self._use_laplacian,
+            use_laplacian=self._use_laplacian
         )
         return self._model.predict(
             (adjacency_matrix, node_features),
@@ -404,7 +410,7 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
 
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
-        return True
+        return not self._use_laplacian
 
     @staticmethod
     def can_use_edge_types() -> bool:

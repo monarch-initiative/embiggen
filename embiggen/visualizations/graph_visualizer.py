@@ -786,7 +786,7 @@ class GraphVisualizer:
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
             self._subsampled_node_ids, _ = self._graph.get_node_label_holdout_indices(
                 train_size=self._number_of_subsampled_nodes / self._graph.get_nodes_number(),
-                use_stratification=True,
+                use_stratification=not (self._graph.has_multilabel_node_types() or self._graph.has_singleton_node_types()),
                 random_state=self._random_state
             )
             node_transformer = NodeTransformer(
@@ -4220,16 +4220,17 @@ class GraphVisualizer:
             if "accuracy" in caption.lower():
                 evaluation_letters.append(letter)
             complete_caption += f" <b>({letter})</b> {caption}"
+
             if show_letters:
                 ax.text(
                     0.0,
                     1.1,
                     letter,
                     size=18,
-                    color="white",
-                    weight='bold',
-                    horizontalalignment='left',
-                    verticalalignment='center',
+                    color="black",
+                    weight="bold",
+                    horizontalalignment="left",
+                    verticalalignment="center",
                     transform=ax.transAxes,
                 )
 

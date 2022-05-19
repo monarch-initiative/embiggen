@@ -125,11 +125,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
 
         for unbalance_rate in unbalance_rates:
-            negative_graph = graph.sample_negative_graph(
+            negative_graph = train.sample_negative_graph(
                 number_of_negative_samples=int(
                     math.ceil(edges_number*unbalance_rate)),
                 random_state=random_state,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                graph_to_avoid=graph
             )
             non_existent_train, non_existent_test = negative_graph.random_holdout(
                 train_size=train_size,
