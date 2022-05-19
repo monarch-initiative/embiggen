@@ -1,5 +1,5 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Tuple, Union
+from typing import Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -74,14 +74,14 @@ class EdgePredictionSequence(Sequence):
             for _ in range(2):
                 # Shapes of the source and destination node IDs
                 input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size, ),
+                    shape=(None, ),
                     dtype=tf.int32
                 ))
 
                 if self._use_node_types:
                     # Shapes of the source and destination node type IDs
                     input_tensor_specs.append(tf.TensorSpec(
-                        shape=(self._batch_size,
+                        shape=(None,
                                self._graph.get_maximum_multilabel_count()),
                         dtype=tf.int32
                     ))
@@ -89,7 +89,7 @@ class EdgePredictionSequence(Sequence):
             if self._use_edge_metrics:
                 # Shapes of the edge type IDs
                 input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size,
+                    shape=(None,
                            self._graph.get_number_of_available_edge_metrics()),
                     dtype=tf.float32
                 ))
@@ -106,17 +106,17 @@ class EdgePredictionSequence(Sequence):
 
         for _ in range(2):
             input_tensor_types.append(tf.int32,)
-            input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
+            input_tensor_shapes.append(tf.TensorShape([None, ]),)
 
             if self._use_node_types:
                 input_tensor_types.append(tf.int32,)
                 input_tensor_shapes.append(
-                    tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
+                    tf.TensorShape([None, self._graph.get_maximum_multilabel_count()]),)
 
         if self._use_edge_metrics:
             input_tensor_types.append(tf.float32,)
             input_tensor_shapes.append(tf.TensorShape(
-                [self._batch_size, self._graph.get_number_of_available_edge_metrics()]),)
+                [None, self._graph.get_number_of_available_edge_metrics()]),)
 
         return tf.data.Dataset.from_generator(
             self,
