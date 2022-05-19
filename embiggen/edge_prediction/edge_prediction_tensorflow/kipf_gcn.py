@@ -455,7 +455,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
 
         model.compile(
             loss="binary_crossentropy",
-            optimizer=optimizer
+            optimizer=optimizer,
+            metrics="accuracy"
         )
 
         return model
