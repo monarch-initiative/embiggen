@@ -298,11 +298,11 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
 
             node_features = [
                 tf.Variable(
-                    initial_value=node_feature,
+                    initial_value=node_feature.astype(np.float32),
                     trainable=False,
                     validate_shape=True,
                     shape=node_feature.shape,
-                    dtype=node_feature.dtype
+                    dtype=np.float32
                 )
                 for node_feature in node_features
             ]
@@ -517,7 +517,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             random_state=self._random_state
         )
         self.history = model.fit(
-            sequence,
+            sequence.into_dataset(),
             steps_per_epoch=sequence.steps_per_epoch,
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,

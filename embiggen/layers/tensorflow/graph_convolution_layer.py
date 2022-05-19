@@ -126,5 +126,5 @@ class GraphConvolution(Layer):
             self._features_dropout(node_features),
             ids,
             adjacency,
-            combiner='sum'
+            combiner='mean'
         ))

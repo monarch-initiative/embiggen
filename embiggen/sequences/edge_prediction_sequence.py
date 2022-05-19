@@ -52,7 +52,7 @@ class EdgePredictionSequence(Sequence):
     def __call__(self):
         """Return next batch using an infinite generator model."""
         self._current_index += 1
-        return (tuple(self[self._current_index]),)
+        return ((tuple(self[self._current_index]),),)
 
     def into_dataset(self) -> tf.data.Dataset:
         """Return dataset generated out of the current sequence instance.
@@ -101,7 +101,7 @@ class EdgePredictionSequence(Sequence):
             return tf.data.Dataset.from_generator(
                 self,
                 output_signature=(
-                    *input_tensor_specs,
+                    tuple(input_tensor_specs),
                 )
             )
 
@@ -125,10 +125,10 @@ class EdgePredictionSequence(Sequence):
         return tf.data.Dataset.from_generator(
             self,
             output_types=(
-                *input_tensor_types,
+                tuple(input_tensor_types),
             ),
             output_shapes=(
-                *input_tensor_shapes,
+                tuple(input_tensor_shapes),
             )
         )
 

@@ -217,11 +217,11 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         ]
         node_features = [
             tf.Variable(
-                initial_value=node_feature,
+                initial_value=node_feature.astype(np.float32),
                 trainable=False,
                 validate_shape=True,
                 shape=node_feature.shape,
-                dtype=node_feature.dtype
+                dtype=np.float32
             )
             for node_feature in node_features
         ]

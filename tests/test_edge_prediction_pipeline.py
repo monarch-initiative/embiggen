@@ -30,4 +30,4 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
             verbose=True,
             smoke_test=True
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
+        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])

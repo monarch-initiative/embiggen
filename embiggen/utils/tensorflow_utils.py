@@ -155,10 +155,10 @@ def graph_to_sparse_tensor(
         )
 
     if use_laplacian:
-        return tf.SparseTensor(
+        return tf.sparse.reorder(tf.SparseTensor(
             *graph.get_symmetric_normalized_coo_matrix(),
             (graph.get_nodes_number(), graph.get_nodes_number()),
-        )
+        ))
 
     return tf.SparseTensor(
         graph.get_edge_node_ids(directed=True),
