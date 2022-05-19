@@ -553,18 +553,18 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
-        predictions = self._model.predict(
-            EdgePredictionSequence(
-                graph,
-                graph_used_in_training=self._training_graph,
-                use_node_types=self.use_node_types,
-                use_edge_metrics=self._use_edge_metrics,
-                batch_size=self._batch_size,
-            ),
+        sequence = EdgePredictionSequence(
+            graph,
+            graph_used_in_training=self._training_graph,
+            use_node_types=self.use_node_types,
+            use_edge_metrics=self._use_edge_metrics,
             batch_size=self._batch_size,
+        )
+        return self._model.predict(
+            sequence,
+            steps=sequence.steps_per_epoch,
             verbose=False
         )
-        return predictions.reshape((predictions.shape[0], predictions.shape[-1]))
 
     def _predict(
         self,
