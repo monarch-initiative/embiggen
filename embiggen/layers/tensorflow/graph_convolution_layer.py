@@ -5,9 +5,8 @@ The layer is implemented as described in [Semi-Supervised Classification with Gr
 
 In this version of the implementation, we allow for batch sizes of arbitrary size.
 """
-from typing import Tuple, Union, Dict, Optional
+from typing import Tuple, Union, Dict
 import tensorflow as tf
-from tensorflow.python.ops import nn_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Dropout, Layer, Dense  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
@@ -73,7 +72,6 @@ class GraphConvolution(Layer):
         self._kernel_constraint = kernel_constraint
         self._bias_constraint = bias_constraint
         self._features_dropout_rate = features_dropout_rate
-        self._internal_product = False
         self._dense = None
         self._use_bias = use_bias
         self._bias = None
@@ -88,10 +86,6 @@ class GraphConvolution(Layer):
         input_shape: Tuple[int, int],
             Shape of the output of the previous layer.
         """
-        if self._units < input_shape:
-            self._internal_product = True
-            # TODO! implement internal product
-            pass
         self._dense = Dense(
             units=self._units,
             use_bias=self._use_bias,
@@ -104,12 +98,10 @@ class GraphConvolution(Layer):
             bias_constraint=self._bias_constraint,
             activity_regularizer=self._activity_regularizer,
         )
-
         self._dense.build(input_shape)
         # Create the layer activation
         self._features_dropout = Dropout(self._features_dropout_rate)
         self._features_dropout.build(input_shape)
-
         super().build(input_shape)
 
     def call(
@@ -130,9 +122,6 @@ class GraphConvolution(Layer):
             values=adjacency.indices[:, 1],
             dense_shape=adjacency.dense_shape
         )
-        if self._internal_product:
-            # TODO! implement internal product
-            pass
         return self._dense(embedding_ops.embedding_lookup_sparse_v2(
             self._features_dropout(node_features),
             ids,

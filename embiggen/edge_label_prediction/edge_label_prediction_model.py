@@ -12,6 +12,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
 
     def __init__(self):
         self._is_binary_prediction_task = None
+        self._is_multilabel_prediction_task = None
         super().__init__()
     
     def requires_edge_types() -> bool:
@@ -30,6 +31,10 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""
         return self._is_binary_prediction_task
+
+    def is_multilabel_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a multilabel prediction task."""
+        return self._is_multilabel_prediction_task
 
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""
@@ -165,6 +170,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             )
 
         self._is_binary_prediction_task = graph.get_edge_types_number() == 2
+        self._is_multilabel_prediction_task = graph.is_multigraph()
 
         super().fit(
             graph=graph,
@@ -172,3 +178,12 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             edge_features=edge_features,
             skip_evaluation_biased_feature=skip_evaluation_biased_feature,
         )
+
+    @staticmethod
+    def can_use_edge_types() -> bool:
+        """Returns whether the model can optionally use edge types."""
+        return True
+
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        return True

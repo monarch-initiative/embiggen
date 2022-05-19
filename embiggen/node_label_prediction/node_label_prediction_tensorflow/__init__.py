@@ -1,8 +1,9 @@
-"""Models for node label prediction."""
-from .node_label_prediction_feed_forward_neural_network import NodeLabelPredictionfeedForwardNeuralNetwork
-from .graph_convolutional_neural_networks import GraphConvolutionalNeuralNetwork
+"""Submodule providing node-label prediction models based on TensorFlow."""
+from ..node_label_prediction_model import AbstractNodeLabelPredictionModel
+from ...utils import build_init
 
-__all__ = [
-    "NodeLabelPredictionfeedForwardNeuralNetwork",
-    "GraphConvolutionalNeuralNetwork"
-]
+build_init(
+    module_library_names="tensorflow",
+    formatted_library_name="TensorFlow",
+    expected_parent_class=AbstractNodeLabelPredictionModel
+)

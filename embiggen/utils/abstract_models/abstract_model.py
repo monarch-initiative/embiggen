@@ -39,6 +39,21 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def can_use_edge_weights() -> bool:
+        """Returns whether the model can optionally use edge weights."""
+        raise NotImplementedError((
+            "The `can_use_edge_weights` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    def is_using_edge_weights(self) -> bool:
+        """Returns whether the model is parametrized to use edge weights."""
+        raise NotImplementedError((
+            "The `is_using_edge_weights` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
     def requires_positive_edge_weights() -> bool:
         """Returns whether the model requires edge weights."""
         raise NotImplementedError((
@@ -63,10 +78,40 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        raise NotImplementedError((
+            "The `can_use_node_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        raise NotImplementedError((
+            "The `can_use_node_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
     def requires_edge_types() -> bool:
         """Returns whether the model requires edge weights."""
         raise NotImplementedError((
             "The `requires_edge_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def can_use_edge_types() -> bool:
+        """Returns whether the model can optionally use edge types."""
+        raise NotImplementedError((
+            "The `can_use_edge_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        raise NotImplementedError((
+            "The `can_use_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
     

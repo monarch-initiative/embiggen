@@ -102,6 +102,13 @@ class AbstractClassifierModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
+    def is_multilabel_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a multilabel prediction task."""
+        raise NotImplementedError((
+            "The `is_multilabel_prediction_task` method should be implemented "
+            "in the child classes of abstract model."
+        ))
+
     def get_available_evaluation_schemas(self) -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
@@ -758,7 +765,7 @@ class AbstractClassifierModel(AbstractModel):
             warnings.warn((
                 "Do be advised that this model was already fitted, "
                 "and you will be therefore be running a classification "
-                "evaluation using a warm start. "
+                "evaluation using a warm start."
             ))
 
         if not isinstance(number_of_holdouts, int) or number_of_holdouts == 0:

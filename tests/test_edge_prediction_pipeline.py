@@ -12,17 +12,18 @@ class TestEvaluateEmbeddingForEdgePrediction(TestCase):
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
         self._graph, _ = get_words_data(Cora())
+        self._graph = self._graph.remove_singleton_nodes()
         self._number_of_holdouts = 2
 
     def test_evaluate_embedding_for_edge_prediction_in_subgraph(self):
         """Test graph visualization."""
         df = get_available_models_for_edge_prediction()
         holdouts = edge_prediction_evaluation(
-            holdouts_kwargs=dict(),
+            holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
             node_features=SPINE(embedding_size=5),
-            evaluation_schema="Kfold",
+            evaluation_schema="Connected Monte Carlo",
             graphs=self._graph,
             number_of_holdouts=self._number_of_holdouts,
             verbose=True,

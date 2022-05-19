@@ -2,7 +2,7 @@
 from typing import Optional, Union, List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
-import math
+import warnings
 from ensmallen import Graph
 from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class
 
@@ -13,6 +13,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
 
     def __init__(self):
         self._is_binary_prediction_task = None
+        self._is_multilabel_prediction_task = None
         super().__init__()
 
     @staticmethod
@@ -24,11 +25,6 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     def task_name() -> str:
         """Returns name of the task this model is used for."""
         return "Node Label Prediction"
-
-    @staticmethod
-    def library_name() -> str:
-        """Return name of the model."""
-        return "scikit-learn"
 
     @staticmethod
     def is_topological() -> bool:
@@ -46,6 +42,10 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""
         return self._is_binary_prediction_task
+
+    def is_multilabel_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a multilabel prediction task."""
+        return self._is_multilabel_prediction_task
 
     def split_graph_following_evaluation_schema(
         self,
@@ -229,6 +229,31 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             )
 
         self._is_binary_prediction_task = graph.get_node_types_number() == 2
+        self._is_multilabel_prediction_task = graph.has_multilabel_node_types()
+        
+        node_type_counts = graph.get_node_type_names_counts_hashmap()
+        most_common_node_type_name, most_common_count = max(
+            node_type_counts.items(),
+            key=lambda x: x[1]
+        )
+        least_common_node_type_name, least_common_count = min(
+            node_type_counts.items(),
+            key=lambda x: x[1]
+        )
+        
+        if most_common_count > least_common_count * 20:
+            warnings.warn(
+                (
+                    "Please do be advised that this graph defines "
+                    "an unbalanced node-label prediction task, with the "
+                    "most common node type `{}` appearing {} times, "
+                    "while the least common one, `{}`, appears only `{}` times. "
+                    "Do take this into account when designing the node-label prediction model."
+                ).format(
+                    most_common_node_type_name, most_common_count,
+                    least_common_node_type_name, least_common_count
+                )
+            )
 
         super().fit(
             graph=graph,
@@ -298,3 +323,12 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             smoke_test=smoke_test,
             verbose=verbose,
         )
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return True
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return True

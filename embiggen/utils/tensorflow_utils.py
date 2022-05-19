@@ -129,22 +129,26 @@ def graph_to_sparse_tensor(
     """
     if use_weights and not graph.has_edge_weights():
         raise ValueError(
-            "Weighted were requested but the provided graph "
+            "Edge weights were requested but the provided graph "
             "does not contain any edge weight."
         )
 
     if graph.has_singleton_nodes():
         raise ValueError(
+            f"In the provided {graph.get_name()} graph there are "
+            f"{graph.get_singleton_nodes_number()} singleton nodes."
             "The GCN model does not support operations on graph containing "
-            "singletons. You need to either drop the singleton nodes or "
-            "add to them a singleton."
+            "singletons. You can either choose to drop singletons from "
+            "the graph by using the `graph.remove_singleton_nodes()` "
+            "method or alternatively you can add selfloops to them by "
+            "using the `graph.add_selfloops()` method."
         )
 
     if graph.is_multigraph():
-        raise ValueError(
-            "The GCN model does not support operations on a multigraph. "
-            "You need to drop the parallel edges in order to execute this "
-            "model."
+        raise NotImplementedError(
+            "The GCN model does not currently support operations on a multigraph. "
+            "You can drop multigraph edges by using the method "
+            "from Ensmallen `graph.remove_parallel_edges()`."
         )
 
     return tf.SparseTensor(

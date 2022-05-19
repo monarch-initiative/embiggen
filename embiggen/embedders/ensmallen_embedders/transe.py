@@ -145,3 +145,30 @@ class TransEEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def requires_node_types() -> bool:
         return False
+
+    @staticmethod
+    def can_use_edge_weights() -> bool:
+        """Returns whether the model can optionally use edge weights."""
+        return True
+
+    def is_using_edge_weights(self) -> bool:
+        """Returns whether the model is parametrized to use edge weights."""
+        return True
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return False
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return False
+
+    @staticmethod
+    def can_use_edge_types() -> bool:
+        """Returns whether the model can optionally use edge types."""
+        return True
+
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        return True

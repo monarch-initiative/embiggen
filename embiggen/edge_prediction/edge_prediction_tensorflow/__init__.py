@@ -1,14 +1,9 @@
-"""Module implementing edge and edge-label prediction models."""
-from .perceptron import Perceptron
-from .multi_layer_perceptron import MultiLayerPerceptron
-from .feed_forward_neural_network import FeedForwardNeuralNetwork
-from .edge_prediction_graph_neural_network import EdgePredictionGraphNeuralNetwork
-from .edge_prediction_model import EdgePredictionModel
+"""Submodule providing edge prediction models based on TensorFlow Models."""
+from ..edge_prediction_model import AbstractEdgePredictionModel
+from ...utils import build_init
 
-__all__ = [
-    "Perceptron",
-    "MultiLayerPerceptron",
-    "FeedForwardNeuralNetwork",
-    "EdgePredictionGraphNeuralNetwork",
-    "EdgePredictionModel"
-]
+build_init(
+    module_library_names="tensorflow",
+    formatted_library_name="TensorFlow",
+    expected_parent_class=AbstractEdgePredictionModel
+)

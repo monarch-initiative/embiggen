@@ -79,8 +79,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def _fit(
         self,
         graph: Graph,
-        node_features: np.ndarray,
-        edge_features: Optional[np.ndarray] = None,
+        node_features: List[np.ndarray],
+        edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Execute fitting of the model.
 
@@ -89,9 +89,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
-        node_features: np.ndarray
+        node_features: List[np.ndarray]
             The node features to be used in the training of the model.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the graph.
@@ -117,8 +117,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
-        node_features: np.ndarray,
-        edge_features: Optional[np.ndarray] = None,
+        node_features: List[np.ndarray],
+        edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
 
@@ -127,9 +127,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
-        node_features: np.ndarray
+        node_features: List[np.ndarray]
             The node features to be used in the evaluation of the model.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -147,8 +147,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def _predict(
         self,
         graph: Graph,
-        node_features: np.ndarray,
-        edge_features: Optional[np.ndarray] = None,
+        node_features: List[np.ndarray],
+        edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
 
@@ -157,9 +157,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
-        node_features: np.ndarray
+        node_features: List[np.ndarray]
             The node features to be used in the evaluation of the model.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -175,6 +175,11 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ))
 
     @staticmethod
+    def library_name() -> str:
+        """Return name of the model."""
+        return "scikit-learn"
+
+    @staticmethod
     def requires_edge_weights() -> bool:
         return False
 
@@ -184,4 +189,22 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
 
     @staticmethod
     def requires_edge_types() -> bool:
+        return False
+
+    @staticmethod
+    def can_use_edge_weights() -> bool:
+        """Returns whether the model can optionally use edge weights."""
+        return False
+
+    def is_using_edge_weights(self) -> bool:
+        """Returns whether the model is parametrized to use edge weights."""
+        return False
+
+    @staticmethod
+    def can_use_edge_types() -> bool:
+        """Returns whether the model can optionally use edge types."""
+        return False
+
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
         return False

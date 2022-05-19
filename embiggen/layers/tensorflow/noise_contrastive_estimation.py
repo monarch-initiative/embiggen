@@ -1,8 +1,7 @@
 """Layer for executing NCE loss in Keras models."""
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 
 import tensorflow as tf
-import tensorflow.keras.backend as K   # pylint: disable=import-error
 from tensorflow.keras.layers import Layer   # pylint: disable=import-error
 
 

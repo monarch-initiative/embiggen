@@ -81,3 +81,12 @@ class TransETensorFlow(Siamese):
             embedding_method_name=self.model_name(),
             **result
         )
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return True
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return True

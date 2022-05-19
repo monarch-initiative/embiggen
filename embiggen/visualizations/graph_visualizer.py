@@ -81,6 +81,7 @@ class GraphVisualizer:
         destination_edge_types_names: Optional[Union[str, List[str]]] = None,
         source_nodes_prefixes: Optional[Union[str, List[str]]] = None,
         destination_nodes_prefixes: Optional[Union[str, List[str]]] = None,
+        edge_type_names: Optional[List[Optional[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
@@ -89,8 +90,8 @@ class GraphVisualizer:
         show_non_existing_edges_sampling_description: bool = True,
         automatically_display_on_notebooks: bool = True,
         number_of_subsampled_nodes: int = 20_000,
-        number_of_subsampled_edges: int = 20_000,
-        number_of_subsampled_negative_edges: int = 20_000,
+        number_of_subsampled_edges: int = 10_000,
+        number_of_subsampled_negative_edges: int = 10_000,
         number_of_holdouts_for_cluster_comments: int = 5,
         random_state: int = 42,
         decomposition_kwargs: Optional[Dict] = None,
@@ -172,6 +173,8 @@ class GraphVisualizer:
             Prefixes of the nodes names to be samples as destinations.
             If a node starts with any of the provided prefixes,
             it can be sampled as a destinations node.
+        edge_type_names: Optional[List[Optional[str]]] = None
+            Edge type names of the edges to show in the positive graph.
         show_graph_name: Union[str, bool] = "auto"
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
@@ -237,6 +240,21 @@ class GraphVisualizer:
 
         self._graph = graph
 
+        if isinstance(source_node_types_names, str):
+            source_node_types_names = [source_node_types_names]
+        if isinstance(destination_node_types_names, str):
+            destination_node_types_names = [destination_node_types_names]
+        if isinstance(source_edge_types_names, str):
+            source_edge_types_names = [source_edge_types_names]
+        if isinstance(destination_edge_types_names, str):
+            destination_edge_types_names = [destination_edge_types_names]
+        if isinstance(source_nodes_prefixes, str):
+            source_nodes_prefixes = [source_nodes_prefixes]
+        if isinstance(destination_nodes_prefixes, str):
+            destination_nodes_prefixes = [destination_nodes_prefixes]
+        if isinstance(edge_type_names, str):
+            edge_type_names = [edge_type_names]
+
         edge_prediction_graph_kwargs = dict(
             minimum_node_degree=minimum_node_degree,
             maximum_node_degree=maximum_node_degree,
@@ -266,7 +284,24 @@ class GraphVisualizer:
                 "is informative."
             )
 
-        self._negative_graph = graph.sample_negative_graph(
+        self._positive_graph = graph.sample_positive_graph(
+            number_of_samples=min(
+                number_of_subsampled_negative_edges,
+                graph.get_edges_number()
+            ),
+            random_state=random_state,
+            edge_type_names=edge_type_names,
+            **edge_prediction_graph_kwargs,
+        )
+
+        # We sample the negative edges using the positive graph as base
+        # to follow its zipfian distribution, which may be different from the
+        # main graph zipfian distribution when particular filters are applied to it.
+        # For instance, the zipfian distribution of one particular edge type
+        # may be very different from the whole graph zipfian distribution.
+        # Furthermore, we avoid sampling false negatives by passing to the
+        # method also the original graph.
+        self._negative_graph = self._positive_graph.sample_negative_graph(
             number_of_negative_samples=min(
                 number_of_subsampled_negative_edges,
                 graph.get_edges_number()
@@ -274,17 +309,9 @@ class GraphVisualizer:
             random_state=random_state,
             only_from_same_component=True,
             use_zipfian_sampling=True,
+            graph_to_avoid=graph,
             **edge_prediction_graph_kwargs
         )
-
-        if number_of_subsampled_edges > graph.get_edges_number():
-            self._positive_graph = graph.sample_negative_graph(
-                number_of_samples=number_of_subsampled_edges,
-                random_state=random_state,
-                **edge_prediction_graph_kwargs
-            )
-        else:
-            self._positive_graph = self._graph
 
         self._number_of_subsampled_nodes = number_of_subsampled_nodes
         self._subsampled_node_ids = None
@@ -1826,7 +1853,6 @@ class GraphVisualizer:
 
         fig, axes, types_caption = returned_values
 
-
         caption = (
             f"<i>Existent and non-existent edges</i>: {types_caption}." +
             self.get_non_existing_edges_sampling_description()
@@ -2549,6 +2575,41 @@ class GraphVisualizer:
             show_legend=show_legend,
             loc=loc,
             **kwargs,
+        )
+
+    def _get_flatten_unknown_node_ontologies(self) -> Tuple[List[str], np.ndarray]:
+        """Returns unique ontologies and node ontologies adjusted for the current instance."""
+        if self._subsampled_node_ids is None:
+            ontology_names = self._graph.get_node_ontologies()
+        else:
+            ontology_names = [
+                self._graph.get_ontology_from_node_id(node_id)
+                for node_id in self._subsampled_node_ids
+            ]
+
+        # The following is needed to normalize the multiple types
+        ontologies_counts = Counter(ontology_names)
+        ontologies_by_frequencies = {
+            ontology: i
+            for i, (ontology, _) in enumerate(sorted(
+                ontologies_counts.items(),
+                key=lambda x: x[1],
+                reverse=True
+            ))
+        }
+        unknown_ontology_id = len(ontologies_counts)
+
+        return (
+            list(ontologies_by_frequencies.keys()),
+            np.fromiter(
+                (
+                    unknown_ontology_id
+                    if ontology is None
+                    else ontologies_by_frequencies[ontology]
+                    for ontology in ontology_names
+                ),
+                dtype=np.uint32
+            )
         )
 
     def _get_flatten_multi_label_and_unknown_node_types(self) -> np.ndarray:

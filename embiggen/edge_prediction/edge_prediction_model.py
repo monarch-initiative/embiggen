@@ -113,12 +113,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             train,
             node_features=node_features,
             edge_features=edge_features
-        )[:, 1]
+        )
+        if existent_train_prediction_probabilities.shape[1] > 1:
+            existent_train_prediction_probabilities = existent_train_prediction_probabilities[:, 1]
         existent_test_prediction_probabilities = self.predict_proba(
             test,
             node_features=node_features,
             edge_features=edge_features
-        )[:, 1]
+        )
+        if existent_test_prediction_probabilities.shape[1] > 1:
+            existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
+
         for unbalance_rate in unbalance_rates:
             negative_graph = graph.sample_negative_graph(
                 number_of_negative_samples=int(
@@ -158,7 +163,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     non_existent_graph,
                     node_features=node_features,
                     edge_features=edge_features
-                )[:, 1]
+                )
+
+                if non_existent_prediction_probabilities.shape[1] > 1:
+                    non_existent_prediction_probabilities = non_existent_prediction_probabilities[:, 1]
                 
                 predictions = np.concatenate((
                     existent_predictions,

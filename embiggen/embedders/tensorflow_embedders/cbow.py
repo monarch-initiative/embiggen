@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
 from .node2vec import Node2Vec
-from .layers import SampledSoftmax
+from ...layers.tensorflow import SampledSoftmax
 
 
 class CBOWTensorFlow(Node2Vec):

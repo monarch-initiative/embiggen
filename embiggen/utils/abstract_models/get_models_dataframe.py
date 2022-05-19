@@ -13,8 +13,10 @@ def get_model_metadata(model_class: Type[AbstractModel]):
             "library_name": model_class.library_name(),
             "available": model_class.is_available(),
             "requires_node_types": model_class.requires_node_types(),
+            "can_use_node_types": model_class.can_use_node_types(),
             "requires_edge_types": model_class.requires_edge_types(),
             "requires_edge_weights": model_class.requires_edge_weights(),
+            "can_use_edge_weights": model_class.can_use_edge_weights(),
             "requires_positive_edge_weights": model_class.requires_positive_edge_weights(),
         }
     except NotImplementedError as e:

@@ -8,7 +8,7 @@ import tensorflow as tf  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
 from .node2vec import Node2Vec
-from .layers import NoiseContrastiveEstimation
+from ...layers.tensorflow import NoiseContrastiveEstimation
 
 
 class SkipGramTensorFlow(Node2Vec):

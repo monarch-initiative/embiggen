@@ -125,3 +125,30 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def requires_positive_edge_weights() -> bool:
         return True
+
+    @staticmethod
+    def can_use_edge_weights() -> bool:
+        """Returns whether the model can optionally use edge weights."""
+        return True
+
+    def is_using_edge_weights(self) -> bool:
+        """Returns whether the model is parametrized to use edge weights."""
+        return True
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return True
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return self._model_kwargs["change_node_type_weight"] != 1.0
+
+    @staticmethod
+    def can_use_edge_types() -> bool:
+        """Returns whether the model can optionally use edge types."""
+        return True
+
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        return self._model_kwargs["change_edge_type_weight"] != 1.0
