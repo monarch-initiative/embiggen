@@ -10,6 +10,7 @@ from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
+import tensorflow as tf
 from ...layers.tensorflow import GraphConvolution
 from ...utils.tensorflow_utils import graph_to_sparse_tensor
 from ...utils.normalize_model_structural_parameters import normalize_model_list_parameter
@@ -39,6 +40,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        use_node_embedding: bool = True,
+        node_embedding_size: int = 50,
         use_laplacian: bool = True,
         verbose: bool = True
     ):
@@ -87,6 +90,11 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        use_node_embedding: bool = True
+            Whether to use a node embedding layer to let the model automatically
+            learn an embedding of the nodes.
+        node_embedding_size: int = 50
+            Size of the node embedding.
         use_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
         verbose: bool = True
@@ -119,6 +127,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         self._reduce_lr_monitor = reduce_lr_monitor
         self._reduce_lr_mode = reduce_lr_mode
         self._reduce_lr_factor = reduce_lr_factor
+        self._use_node_embedding = use_node_embedding
+        self._node_embedding_size = node_embedding_size
 
         self._verbose = verbose
         self._model = None
@@ -155,6 +165,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
             reduce_lr_monitor=self._reduce_lr_monitor,
             reduce_lr_mode=self._reduce_lr_mode,
             reduce_lr_factor=self._reduce_lr_factor,
+            use_node_embedding = self._use_node_embedding,
+            node_embedding_size = self._node_embedding_size
         )
 
     def _build_model(
@@ -164,10 +176,25 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
     ):
         """Create new GCN model."""
         adjacency_matrix = Input((None,), sparse=True)
-        node_features = [
+        node_features_inputs = [
             Input((node_features_size,))
             for node_features_size in node_features_sizes
         ]
+
+        node_features = [*node_features_inputs]
+
+        if self._use_node_embedding:
+            node_embedding = tf.Variable(
+                initial_value=np.random.uniform(size=(
+                    (graph.get_nodes_number(),
+                    self._node_embedding_size)
+                )),
+                trainable=True,
+                validate_shape=True,
+                dtype=tf.float32
+            )
+            node_features.append(node_embedding)
+            node_features_sizes.append(self._node_embedding_size)
 
         submodules_outputs = []
         submodules_output_sizes = []
@@ -227,7 +254,7 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         # Building the the model.
 
         model = Model(
-            inputs=[adjacency_matrix, *node_features],
+            inputs=[adjacency_matrix, *node_features_inputs],
             outputs=output,
             name=self.model_name().replace(" ", "_")
         )
@@ -243,6 +270,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
             if self._optimizer == "LazyAdam":
                 import tensorflow_addons as tfa
                 optimizer = tfa.optimizers.LazyAdam(0.001)
+            else:
+                optimizer = self._optimizer
         except:
             optimizer = "adam"
 
@@ -260,7 +289,9 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
     def _fit(
         self,
         graph: Graph,
-        node_features: List[np.ndarray],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -270,12 +301,17 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: List[np.ndarray]
             The node features to be used in the training of the model.
+        node_type_features: List[np.ndarray]
+            NOT SUPPORTED!
         edge_features: Optional[List[np.ndarray]] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the number of directed edges in the graph.
+            NOT SUPPORTED!
 
         Returns
         -----------------------
@@ -286,6 +322,17 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
             traditional_verbose = False
         except AttributeError:
             traditional_verbose = True
+
+        if node_features is None and not self._use_node_embedding:
+            raise ValueError(
+                "Neither node features were provided nor the node "
+                "embedding was enabled through the `use_node_embedding` "
+                "parameter. If you do not provide node features or use an embedding layer "
+                "it does not make sense to use a GCN model."
+            )      
+
+        if support is None:
+            support = graph
 
         nodes_number = graph.get_nodes_number()
         node_types_number = graph.get_node_types_number()
@@ -358,7 +405,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
@@ -376,7 +424,8 @@ class KipfGCNNodeLabelPrediction(AbstractNodeLabelPredictionModel):
     def _predict(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""

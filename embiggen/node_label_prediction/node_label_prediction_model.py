@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class
+from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
 
 
 @abstract_class
@@ -88,7 +88,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             )
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available."
+            "is not available. The available evaluation schemas "
+            f"are: {format_list(self.get_available_evaluation_schemas())}."
         )
 
     def _evaluate(
@@ -97,6 +98,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         train: Graph,
         test: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         random_state: int = 42,
     ) -> List[Dict[str, Any]]:
@@ -110,11 +112,13 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             predictions = self.predict(
                 evaluation_graph,
                 node_features=node_features,
+                node_type_features=node_type_features,
                 edge_features=edge_features
             )
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
                 node_features=node_features,
+                node_type_features=node_type_features,
                 edge_features=edge_features
             )
             if evaluation_graph.has_multilabel_node_types():
@@ -157,6 +161,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         self,
         graph: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -167,12 +172,20 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The graph to run predictions on.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
+            )
+
+        if node_type_features is not None:
+            raise NotImplementedError(
+                "Support for node type features is not currently available for any "
+                "of the edge-label prediction models."
             )
 
         return super().predict(graph, node_features)
@@ -181,6 +194,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         self,
         graph: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -191,6 +205,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The graph to run predictions on.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
@@ -199,33 +215,49 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "Currently edge features are not supported in edge prediction models."
             )
 
+        if node_type_features is not None:
+            raise NotImplementedError(
+                "Support for node type features is not currently available for any "
+                "of the edge-label prediction models."
+            )
+
         return super().predict_proba(graph, node_features)
 
     def fit(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        skip_evaluation_biased_feature: bool = False
-    ) -> np.ndarray:
+    ):
         """Execute predictions on the provided graph.
 
         Parameters
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
-        skip_evaluation_biased_feature: bool = False
-            Whether to skip feature names that are known to be biased
-            when running an holdout. These features should be computed
-            exclusively on the training graph and not the entire graph.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
+            )
+
+        if node_type_features is not None:
+            raise NotImplementedError(
+                "Support for node type features is not currently available for any "
+                "of the edge-label prediction models."
             )
 
         self._is_binary_prediction_task = graph.get_node_types_number() == 2
@@ -257,9 +289,9 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
 
         super().fit(
             graph=graph,
+            support=support,
             node_features=node_features,
             edge_features=None,
-            skip_evaluation_biased_feature=skip_evaluation_biased_feature,
         )
 
     def evaluate(
@@ -268,6 +300,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         evaluation_schema: str,
         holdouts_kwargs: Dict[str, Any],
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
+        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         number_of_holdouts: int = 10,
@@ -287,6 +320,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             Parameters to forward to the desired evaluation schema.
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         subgraph_of_interest: Optional[Graph] = None
@@ -309,6 +344,12 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in node-label prediction models."
+            )
+        
+        if node_type_features is not None:
+            raise NotImplementedError(
+                "Support for node type features is not currently available for any "
+                "of the edge-label prediction models."
             )
 
         return super().evaluate(

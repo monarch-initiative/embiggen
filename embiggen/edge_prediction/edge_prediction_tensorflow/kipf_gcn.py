@@ -254,6 +254,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         self,
         graph: Graph,
         node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
     ):
         """Create new GCN model."""
         self._training_graph = graph        
@@ -399,6 +400,34 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
                 )
             ]
 
+        if node_type_features is not None and self._use_node_types:
+            node_type_features = [
+                tf.Variable(
+                    initial_value=node_type_feature.astype(np.float32),
+                    trainable=False,
+                    validate_shape=True,
+                    shape=node_type_feature.shape,
+                    dtype=np.float32
+                )
+                for node_type_feature in node_type_features
+            ]
+            source_and_destination_features = [
+                Add()([
+                    reshaping_dense_layer(GlobalAveragePooling1D()(
+                        tf.nn.embedding_lookup(
+                            node_type_feature,
+                            ids=node_type_input
+                        ),
+                    )),
+                    node_embedding
+                ])
+                for node_type_feature in node_type_features
+                for node_type_input, node_embedding in zip(
+                    (source_node_types, destination_node_types),
+                    source_and_destination_features
+                )
+            ]
+
         if self._use_edge_metrics:
             source_and_destination_features.append(edge_metrics)
 
@@ -470,7 +499,9 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
     def _fit(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -480,12 +511,15 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[List[np.ndarray]] = None
             The node features to be used in the training of the model.
         edge_features: Optional[List[np.ndarray]] = None
-            Optional edge features to be used as input concatenated
-            to the obtained edge embedding. The shape must be equal
-            to the number of directed edges in the graph.
+            NOT SUPPORTED
 
         Returns
         -----------------------
@@ -503,11 +537,15 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
                 "embedding was enabled through the `use_node_embedding` "
                 "parameter. If you do not provide node features or use an embedding layer "
                 "it does not make sense to use a GCN model."
-            )        
+            )      
+
+        if support is None:
+            support = graph  
 
         model = self._build_model(
-            graph,
-            node_features
+            support,
+            node_features=node_features,
+            node_type_features=node_type_features
         )
 
         sequence = EdgePredictionTrainingSequence(
@@ -551,7 +589,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
@@ -571,13 +610,15 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
     def _predict(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
         return self._predict_proba(
             graph,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features
         ) > 0.5
 

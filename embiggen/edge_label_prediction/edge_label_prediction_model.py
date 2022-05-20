@@ -2,9 +2,8 @@
 from typing import Optional, Union, List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
-import math
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, AbstractEmbeddingModel
+from ..utils import AbstractClassifierModel, format_list
 
 
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
@@ -86,7 +85,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             )
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available."
+            "is not available. The available evaluation schemas "
+            f"are: {format_list(self.get_available_evaluation_schemas())}."
         )
 
     def _evaluate(
@@ -95,6 +95,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         train: Graph,
         test: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         random_state: int = 42,
     ) -> List[Dict[str, Any]]:
@@ -108,11 +109,13 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             predictions = self.predict(
                 evaluation_graph,
                 node_features=node_features,
+                node_type_features=node_type_features,
                 edge_features=edge_features
             )
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
                 node_features=node_features,
+                node_type_features=node_type_features,
                 edge_features=edge_features
             )
 
@@ -145,28 +148,33 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     def fit(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        skip_evaluation_biased_feature: bool = False
-    ) -> np.ndarray:
+    ):
         """Execute predictions on the provided graph.
 
         Parameters
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
-        skip_evaluation_biased_feature: bool = False
-            Whether to skip feature names that are known to be biased
-            when running an holdout. These features should be computed
-            exclusively on the training graph and not the entire graph.
         """
-        if edge_features is not None:
+        if node_type_features is not None:
             raise NotImplementedError(
-                "Currently edge features are not supported in edge prediction models."
+                "Support for node type features is not currently available for any "
+                "of the edge-label prediction models."
             )
 
         self._is_binary_prediction_task = graph.get_edge_types_number() == 2
@@ -174,9 +182,10 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
 
         super().fit(
             graph=graph,
+            support=support,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features,
-            skip_evaluation_biased_feature=skip_evaluation_biased_feature,
         )
 
     @staticmethod

@@ -13,7 +13,7 @@ def edge_prediction_evaluation(
     models: Union[Type[AbstractEdgePredictionModel], List[Type[AbstractEdgePredictionModel]]],
     evaluation_schema: str = "Connected Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     subgraph_of_interest: Optional[Graph] = None,
     number_of_holdouts: int = 10,
@@ -40,8 +40,8 @@ def edge_prediction_evaluation(
         The evaluation schema to follow.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
-        The edge features to use.
+    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
+        The node type features to use.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
     subgraph_of_interest: Optional[Graph] = None
@@ -77,7 +77,7 @@ def edge_prediction_evaluation(
         models=models,
         expected_parent_class=AbstractEdgePredictionModel,
         node_features=node_features,
-        edge_features=edge_features,
+        node_type_features=node_type_features,
         library_names=library_names,
         subgraph_of_interest=subgraph_of_interest,
         number_of_holdouts=number_of_holdouts,

@@ -45,6 +45,8 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        use_node_embedding: bool = True,
+        node_embedding_size: int = 50,
         use_laplacian: bool = True,
         verbose: bool = True
     ):
@@ -107,6 +109,11 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        use_node_embedding: bool = True
+            Whether to use a node embedding layer to let the model automatically
+            learn an embedding of the nodes.
+        node_embedding_size: int = 50
+            Size of the node embedding.
         use_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
         verbose: bool = True
@@ -150,6 +157,8 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         self._reduce_lr_monitor = reduce_lr_monitor
         self._reduce_lr_mode = reduce_lr_mode
         self._reduce_lr_factor = reduce_lr_factor
+        self._use_node_embedding = use_node_embedding
+        self._node_embedding_size = node_embedding_size
 
         self._verbose = verbose
         self._model = None
@@ -190,13 +199,15 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
             reduce_lr_monitor=self._reduce_lr_monitor,
             reduce_lr_mode=self._reduce_lr_mode,
             reduce_lr_factor=self._reduce_lr_factor,
+            use_node_embedding = self._use_node_embedding,
+            node_embedding_size = self._node_embedding_size
         )
 
     def _build_model(
         self,
         graph: Graph,
-        node_features: List[np.ndarray],
-        edge_feature_sizes: List[int] = None
+        node_features: Optional[List[np.ndarray]] = None,
+        edge_feature_sizes: Optional[List[int]] = None
     ):
         """Create new GCN model."""
         source_nodes = Input((1,), name="sources", dtype=tf.int32)
@@ -211,21 +222,39 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
             use_weights=graph.has_edge_weights() and not self._use_laplacian,
             use_laplacian=self._use_laplacian
         )
-        node_features_sizes = [
-            node_feature.shape[1]
-            for node_feature in node_features
-        ]
-        node_features = [
-            tf.Variable(
-                initial_value=node_feature.astype(np.float32),
-                trainable=False,
-                validate_shape=True,
-                shape=node_feature.shape,
-                dtype=np.float32
-            )
-            for node_feature in node_features
-        ]
 
+        if node_features is not None:
+            node_features_sizes = [
+                node_feature.shape[1]
+                for node_feature in node_features
+            ]
+            node_features = [
+                tf.Variable(
+                    initial_value=node_feature.astype(np.float32),
+                    trainable=False,
+                    validate_shape=True,
+                    shape=node_feature.shape,
+                    dtype=np.float32
+                )
+                for node_feature in node_features
+            ]
+        else:
+            node_features_sizes = []
+            node_features = []
+
+        if self._use_node_embedding:
+            node_embedding = tf.Variable(
+                initial_value=np.random.uniform(size=(
+                    (graph.get_nodes_number(),
+                    self._node_embedding_size)
+                )),
+                trainable=True,
+                validate_shape=True,
+                dtype=tf.float32
+            )
+            node_features.append(node_embedding)
+            node_features_sizes.append(self._node_embedding_size)
+        
         submodules_outputs = []
         submodules_output_sizes = []
 
@@ -322,6 +351,8 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
             if self._optimizer == "LazyAdam":
                 import tensorflow_addons as tfa
                 optimizer = tfa.optimizers.LazyAdam(0.001)
+            else:
+                optimizer = self._optimizer
         except:
             optimizer = "adam"
 
@@ -339,7 +370,9 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
     def _fit(
         self,
         graph: Graph,
-        node_features: List[np.ndarray],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
@@ -349,7 +382,14 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
-        node_features: List[np.ndarray]
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[List[np.ndarray]]
+            The node features to be used in the training of the model.
+        node_type_features: Optional[List[np.ndarray]]
             The node features to be used in the training of the model.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
@@ -366,6 +406,17 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
         except AttributeError:
             traditional_verbose = True
 
+        if node_features is None and not self._use_node_embedding:
+            raise ValueError(
+                "Neither node features were provided nor the node "
+                "embedding was enabled through the `use_node_embedding` "
+                "parameter. If you do not provide node features or use an embedding layer "
+                "it does not make sense to use a GCN model."
+            )  
+
+        if support is None:
+            support = graph
+
         edges_number = graph.get_number_of_directed_edges()
         edge_types_number = graph.get_edge_types_number()
 
@@ -378,7 +429,7 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
             class_weight = None
 
         model = self._build_model(
-            graph,
+            support,
             node_features,
             edge_feature_sizes = None if edge_features is None else [
                 edge_feature.shape[1]
@@ -402,7 +453,7 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
             (
                 graph.get_directed_source_nodes_with_known_edge_types(),
                 graph.get_directed_destination_nodes_with_known_edge_types(),
-                *(() if edge_features is None else edge_features)
+                *(() if edge_features is None else edge_features),
             ),
             edge_labels,
             epochs=self._epochs,
@@ -436,7 +487,8 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
@@ -449,7 +501,8 @@ class KipfGCNEdgeLabelPrediction(AbstractEdgeLabelPredictionModel):
     def _predict(
         self,
         graph: Graph,
-        node_features: np.ndarray,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""

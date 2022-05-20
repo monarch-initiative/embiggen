@@ -79,7 +79,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def _fit(
         self,
         graph: Graph,
-        node_features: List[np.ndarray],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Execute fitting of the model.
@@ -89,8 +91,15 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
-        node_features: List[np.ndarray]
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[List[np.ndarray]] = None
             The node features to be used in the training of the model.
+        node_type_features: Optional[List[np.ndarray]] = None
+            The node type features to be used in the training of the model.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -118,6 +127,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         self,
         graph: Graph,
         node_features: List[np.ndarray],
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -129,6 +139,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             It can either be an Graph or a list of lists of edges.
         node_features: List[np.ndarray]
             The node features to be used in the evaluation of the model.
+        node_type_features: List[np.ndarray]
+            The node features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -148,6 +160,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         self,
         graph: Graph,
         node_features: List[np.ndarray],
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -158,7 +171,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
         node_features: List[np.ndarray]
-            The node features to be used in the evaluation of the model.
+            The node features to be used in prediction.
+        node_type_features: List[np.ndarray]
+            The node features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal

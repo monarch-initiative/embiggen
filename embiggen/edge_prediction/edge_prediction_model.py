@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import math
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class
+from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
 
 
 @abstract_class
@@ -81,7 +81,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             )
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available."
+            "is not available. The available evaluation schemas "
+            f"are: {format_list(self.get_available_evaluation_schemas())}."
         )
 
     def _evaluate(
@@ -90,6 +91,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         train: Graph,
         test: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         random_state: int = 42,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
@@ -103,6 +105,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         existent_train_predictions = self.predict(
             train,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features
         )
 
@@ -114,6 +117,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         existent_test_predictions = self.predict(
             test,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features
         )
 
@@ -125,6 +129,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         existent_train_prediction_probabilities = self.predict_proba(
             train,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features
         )
 
@@ -138,6 +143,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         existent_test_prediction_probabilities = self.predict_proba(
             test,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features
         )
 
@@ -154,6 +160,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     math.ceil(edges_number*unbalance_rate)),
                 random_state=random_state,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                use_zipfian_sampling=True,
                 graph_to_avoid=graph
             )
 
@@ -189,11 +196,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 non_existent_predictions = self.predict(
                     non_existent_graph,
                     node_features=node_features,
+                    node_type_features=node_type_features,
                     edge_features=edge_features
                 )
                 non_existent_prediction_probabilities = self.predict_proba(
                     non_existent_graph,
                     node_features=node_features,
+                    node_type_features=node_type_features,
                     edge_features=edge_features
                 )
 
@@ -236,6 +245,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         self,
         graph: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -246,6 +256,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The graph to run predictions on.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
@@ -254,12 +266,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 "Currently edge features are not supported in edge prediction models."
             )
 
-        return super().predict(graph, node_features)
+        return super().predict(
+            graph,
+            node_features=node_features,
+            node_type_features=node_type_features
+        )
 
     def predict_proba(
         self,
         graph: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -270,6 +287,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The graph to run predictions on.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
@@ -278,12 +297,18 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 "Currently edge features are not supported in edge prediction models."
             )
 
-        return super().predict_proba(graph, node_features)
+        return super().predict_proba(
+            graph,
+            node_features=node_features,
+            node_type_features=node_type_features
+        )
 
     def fit(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Execute fitting on the provided graph.
@@ -292,8 +317,15 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
@@ -304,7 +336,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         super().fit(
             graph=graph,
+            support=support,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=None,
         )
 
@@ -314,6 +348,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         evaluation_schema: str,
         holdouts_kwargs: Dict[str, Any],
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
+        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         number_of_holdouts: int = 10,
@@ -335,6 +370,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             Parameters to forward to the desired evaluation schema.
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
             The node features to use.
+        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
+            The node type features to use.
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         subgraph_of_interest: Optional[Graph] = None
@@ -369,6 +406,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             evaluation_schema=evaluation_schema,
             holdouts_kwargs=holdouts_kwargs,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=None,
             subgraph_of_interest=subgraph_of_interest,
             number_of_holdouts=number_of_holdouts,

@@ -77,6 +77,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         graph: Graph,
         node_features: List[np.ndarray],
+        node_type_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
 
@@ -87,6 +88,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             It can either be an Graph or a list of lists of edges.
         node_features: List[np.ndarray]
             The node features to be used in the training of the model.
+        node_type_features: Optional[List[np.ndarray]] = None,
+            The node type features to be used in the training of the model.
 
         Warns
         ------------------
@@ -98,6 +101,12 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
+        if node_type_features is not None:
+            raise NotImplementedError(
+                "Support for node type features is not currently available for any "
+                "of the edge prediction models from the Sklearn library."
+            )
+        
         gt = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_node_mapping=True
@@ -112,7 +121,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     def _fit(
         self,
         graph: Graph,
-        node_features: Optional[List[np.ndarray]],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Run fitting on the provided graph.
@@ -121,8 +132,15 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
-        node_features: Optional[List[np.ndarray]]
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[List[np.ndarray]] = None
             The node features to use.
+        node_type_features: Optional[List[np.ndarray]] = None
+            The node type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
@@ -150,6 +168,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         graph: Graph,
         node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
@@ -160,18 +179,22 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             The graph to run predictions on.
         node_features: Optional[List[np.ndarray]]
             The node features to use.
+        node_type_features: Optional[List[np.ndarray]] = None
+            The node type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
         return self._model_instance.predict(self._trasform_graph_into_edge_embedding(
             graph=graph,
             node_features=node_features,
+            node_type_features=node_type_features,
         ))
 
     def _predict_proba(
         self,
         graph: Graph,
         node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
@@ -182,12 +205,15 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             The graph to run predictions on.
         node_features: Optional[List[np.ndarray]]
             The node features to use.
+        node_type_features: Optional[List[np.ndarray]] = None
+            The node type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
         return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
             graph=graph,
             node_features=node_features,
+            node_type_features=node_type_features,
         ))
 
     @staticmethod
