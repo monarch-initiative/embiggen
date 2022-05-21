@@ -308,7 +308,6 @@ class GraphVisualizer:
                 graph.get_edges_number()
             ),
             random_state=random_state,
-            only_from_same_component=True,
             use_zipfian_sampling=True,
             graph_to_avoid=graph,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
