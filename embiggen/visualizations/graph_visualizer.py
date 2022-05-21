@@ -75,6 +75,7 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
         minimum_node_degree: int = 1,
         maximum_node_degree: Optional[int] = None,
+        sample_only_edges_with_heterogeneous_node_types: Optional[bool] = False,
         source_node_types_names: Optional[Union[str, List[str]]] = None,
         destination_node_types_names: Optional[Union[str, List[str]]] = None,
         source_edge_types_names: Optional[Union[str, List[str]]] = None,
@@ -310,6 +311,7 @@ class GraphVisualizer:
             only_from_same_component=True,
             use_zipfian_sampling=True,
             graph_to_avoid=graph,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             **edge_prediction_graph_kwargs
         )
 
