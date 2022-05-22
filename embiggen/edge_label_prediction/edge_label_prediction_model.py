@@ -107,12 +107,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             ("train", train),
             ("test", test),
         ):
-            predictions = self.predict(
-                evaluation_graph,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_features=edge_features
-            )
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
                 node_features=node_features,
@@ -122,6 +116,9 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
 
             if self.is_binary_prediction_task():
                 prediction_probabilities = prediction_probabilities[:, 1]
+                predictions = prediction_probabilities > 0.5
+            else:
+                predictions = prediction_probabilities.argmax(axis=-1)
 
             labels = graph.get_known_edge_type_ids()
 
