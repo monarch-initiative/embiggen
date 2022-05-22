@@ -351,7 +351,7 @@ class GraphVisualizer:
         self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
             number_of_negative_samples=min(
                 number_of_subsampled_negative_edges,
-                graph.get_edges_number()
+                self._positive_graph.get_edges_number()
             ),
             random_state=random_state,
             use_zipfian_sampling=True,
