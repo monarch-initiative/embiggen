@@ -30,8 +30,8 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         tol=1e-4,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
-        unbalance_rate: float = 1.0,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        training_unbalance_rate: float = 1.0,
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Prediction."""
@@ -70,8 +70,8 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
             edge_embedding_method,
-            unbalance_rate,
-            sample_only_edges_with_heterogeneous_node_types,
+            training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types,
             random_state
         )
 

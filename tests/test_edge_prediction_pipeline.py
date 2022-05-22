@@ -52,7 +52,7 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def test_tree_with_cosine(self):
         """Test graph visualization."""
-        edge_prediction_evaluation(
+        holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(train_size=0.8),
             models=DecisionTreeEdgePrediction(edge_embedding_method="CosineSimilarity"),
             node_features=SPINE(embedding_size=10),
@@ -61,5 +61,8 @@ class TestEvaluateEdgePrediction(TestCase):
             number_of_holdouts=self._number_of_holdouts,
             verbose=True,
             smoke_test=True,
+            unbalance_rates=(1.0, 2.0,),
             subgraph_of_interest=self._subgraph_of_interest
         )
+        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
+        self.assertTrue(set(holdouts.unbalance_rate) == set((1.0, 2.0)))

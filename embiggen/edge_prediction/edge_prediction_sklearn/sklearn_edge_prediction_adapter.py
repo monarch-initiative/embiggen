@@ -19,8 +19,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         model_instance: Type[ClassifierMixin],
         edge_embedding_method: str = "Concatenate",
-        unbalance_rate: float = 1.0,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        training_unbalance_rate: float = 1.0,
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
@@ -31,10 +31,11 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             The class instance to be adapted into edge prediction.
         edge_embedding_method: str = "Concatenate"
             The method to use to compute the edges.
-        unbalance_rate: float = 1.0
+        training_unbalance_rate: float = 1.0
             Unbalance rate for the training non-existing edges.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges exclusively between nodes with different node types.
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False
+            Whether to sample negative edges exclusively between nodes with different node types
+            to generate the negative edges used during the training of the model.
             This can be useful when executing a bipartite edge prediction task.
         random_state: int
             The random state to use to reproduce the training.
@@ -48,9 +49,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
         self._edge_embedding_method = edge_embedding_method
-        self._unbalance_rate = unbalance_rate
+        self._training_unbalance_rate = training_unbalance_rate
         self._random_state = random_state
-        self._sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types
+        self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
@@ -58,9 +59,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
         return {
-            "sample_only_edges_with_heterogeneous_node_types": self._sample_only_edges_with_heterogeneous_node_types,
+            "training_sample_only_edges_with_heterogeneous_node_types": self._training_sample_only_edges_with_heterogeneous_node_types,
             "edge_embedding_method": self._edge_embedding_method,
-            "unbalance_rate": self._unbalance_rate,
+            "training_unbalance_rate": self._training_unbalance_rate,
             "random_state": self._random_state
         }
 
@@ -155,10 +156,10 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             positive_graph=graph,
             negative_graph=graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(graph.get_edges_number()*self._unbalance_rate)
+                    math.ceil(graph.get_edges_number()*self._training_unbalance_rate)
                 ),
                 random_state=self._random_state,
-                sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
+                sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             ),
             shuffle=True,
             random_state=self._random_state

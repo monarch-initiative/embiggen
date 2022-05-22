@@ -29,8 +29,8 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
         ccp_alpha=0.0,
         max_samples=None,
         edge_embedding_method: str = "Concatenate",
-        unbalance_rate: float = 1.0,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        training_unbalance_rate: float = 1.0,
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
     ):
         """Create the Random Forest for Edge  Prediction."""
@@ -77,8 +77,8 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
                 max_samples=max_samples
             ),
             edge_embedding_method,
-            unbalance_rate,
-            sample_only_edges_with_heterogeneous_node_types,
+            training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types,
             random_state
         )
 

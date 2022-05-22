@@ -949,7 +949,7 @@ class AbstractClassifierModel(AbstractModel):
         random_state: int = 42,
         verbose: bool = True,
         smoke_test: bool = False,
-        **kwargs: Dict
+        **validation_kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
 
@@ -983,7 +983,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        **kwargs: Dict
+        **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
         if self._fitting_was_executed:
@@ -1248,7 +1248,7 @@ class AbstractClassifierModel(AbstractModel):
                     edge_features=holdout_edge_features,
                     subgraph_of_interest=subgraph_of_interest,
                     random_state=random_state,
-                    **kwargs
+                    **validation_kwargs
                 )
             except Exception as e:
                 raise RuntimeError(
@@ -1273,6 +1273,14 @@ class AbstractClassifierModel(AbstractModel):
         performance["number_of_holdouts"] = number_of_holdouts
         performance["evaluation_schema"] = evaluation_schema
         for parameter, value in self.parameters().items():
+            if parameter in performance.columns:
+                raise ValueError(
+                    "There has been a collision between the parameters used in the "
+                    f"{self.model_name()} implemented using the {self.library_name()} for the {self.task_name()} task "
+                    "and the parameter used for the validation and reporting of the task itself. "
+                    f"The parameter that has caused the collision is {parameter}. "
+                    "Please do change the name of the parameter in your model."
+                )
             performance[parameter] = str(value)
 
         return performance
