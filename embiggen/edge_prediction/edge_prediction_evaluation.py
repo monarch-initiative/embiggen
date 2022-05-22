@@ -20,8 +20,8 @@ def edge_prediction_evaluation(
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
-    sample_only_edges_with_heterogeneous_node_types: bool = False,
-    unbalance_rates: Tuple[float] = (1.0, ),
+    validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+    validation_unbalance_rates: Tuple[float] = (1.0, ),
     enable_cache: bool = False,
     smoke_test: bool = False,
     verbose: bool = True
@@ -55,10 +55,10 @@ def edge_prediction_evaluation(
         from the Ensmallen automatic retrieval.
     versions: Optional[Union[str, List[str]]] = None
         Graph versions to retrieve.
-    sample_only_edges_with_heterogeneous_node_types: bool = False
+    validation_sample_only_edges_with_heterogeneous_node_types: bool = False
         Whether to sample negative edges exclusively between nodes with different node types.
         This can be useful when executing a bipartite edge prediction task.
-    unbalance_rates: Tuple[float] = (1.0, )
+    validation_unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
     enable_cache: bool = False
         Whether to enable the cache.
@@ -87,6 +87,6 @@ def edge_prediction_evaluation(
         enable_cache=enable_cache,
         smoke_test=smoke_test,
         verbose=verbose,
-        sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-        unbalance_rates=unbalance_rates
+        validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+        validation_unbalance_rates=validation_unbalance_rates
     )

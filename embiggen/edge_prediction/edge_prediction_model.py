@@ -95,8 +95,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
-        unbalance_rates: Tuple[float] = (1.0, )
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        validation_unbalance_rates: Tuple[float] = (1.0, )
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         performance = []
@@ -130,12 +130,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         train_size = train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
 
-        for unbalance_rate in unbalance_rates:
+        for unbalance_rate in validation_unbalance_rates:
             negative_graph = sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
                     math.ceil(sampler_graph.get_edges_number()*unbalance_rate)),
                 random_state=random_state,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 use_zipfian_sampling=True,
                 graph_to_avoid=graph
             )
@@ -190,8 +190,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
                 performance.append({
                     "evaluation_mode": evaluation_mode,
-                    "unbalance_rate": unbalance_rate,
-                    "sample_only_edges_with_heterogeneous_node_types": sample_only_edges_with_heterogeneous_node_types,
+                    "validation_unbalance_rate": unbalance_rate,
+                    "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
                     "train_size": train_size,
                     **self.evaluate_predictions(
                         prediction_probabilities > 0.5,
@@ -319,8 +319,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         random_state: int = 42,
         smoke_test: bool = False,
         verbose: bool = True,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
-        unbalance_rates: Tuple[float] = (1.0, )
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        validation_unbalance_rates: Tuple[float] = (1.0, )
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
 
@@ -354,10 +354,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             the provided model names and feature names.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges exclusively between nodes with different node types.
             This can be useful when executing a bipartite edge prediction task.
-        unbalance_rates: Tuple[float] = (1.0, )
+        validation_unbalance_rates: Tuple[float] = (1.0, )
             Unbalance rate for the non-existent graphs generation.
         """
         if edge_features is not None:
@@ -377,6 +377,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             random_state=random_state,
             verbose=verbose,
             smoke_test=smoke_test,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            unbalance_rates=unbalance_rates,
+            validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+            validation_unbalance_rates=validation_unbalance_rates,
         )

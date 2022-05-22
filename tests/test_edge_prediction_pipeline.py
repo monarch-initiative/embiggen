@@ -61,8 +61,8 @@ class TestEvaluateEdgePrediction(TestCase):
             number_of_holdouts=self._number_of_holdouts,
             verbose=True,
             smoke_test=True,
-            unbalance_rates=(1.0, 2.0,),
+            validation_unbalance_rates=(1.0, 2.0,),
             subgraph_of_interest=self._subgraph_of_interest
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
-        self.assertTrue(set(holdouts.unbalance_rate) == set((1.0, 2.0)))
+        self.assertTrue(set(holdouts.validation_unbalance_rate) == set((1.0, 2.0)))
