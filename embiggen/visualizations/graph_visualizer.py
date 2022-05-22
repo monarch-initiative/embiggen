@@ -3657,7 +3657,7 @@ class GraphVisualizer:
             edge_metrics=graph_transformer.transform(np.vstack([
                 self._positive_graph.get_directed_edge_node_ids(),
                 self._negative_graph.get_directed_edge_node_ids()
-            ])),
+            ])).flatten(),
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,

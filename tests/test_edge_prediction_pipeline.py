@@ -2,7 +2,7 @@
 from unittest import TestCase
 from embiggen import edge_prediction_evaluation, get_available_models_for_edge_prediction, SPINE
 from ensmallen.datasets.linqs import Cora, get_words_data
-
+from embiggen.edge_prediction import DecisionTreeEdgePrediction
 
 class TestEvaluateEdgePrediction(TestCase):
     """Unit test class for GraphTransformer objects."""
@@ -49,3 +49,17 @@ class TestEvaluateEdgePrediction(TestCase):
             subgraph_of_interest=self._subgraph_of_interest
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
+
+    def test_tree_with_cosine(self):
+        """Test graph visualization."""
+        edge_prediction_evaluation(
+            holdouts_kwargs=dict(train_size=0.8),
+            models=DecisionTreeEdgePrediction(edge_embedding_method="CosineSimilarity"),
+            node_features=SPINE(embedding_size=10),
+            evaluation_schema="Connected Monte Carlo",
+            graphs=self._graph,
+            number_of_holdouts=self._number_of_holdouts,
+            verbose=True,
+            smoke_test=True,
+            subgraph_of_interest=self._subgraph_of_interest
+        )

@@ -199,7 +199,7 @@ def get_l2_distance(
     return np.sqrt(np.sum(np.power(
         source_node_embedding - destination_node_embedding,
         2.0
-    ), axis=1))
+    ), axis=1)).reshape((-1, 1))
 
 
 def get_cosine_similarity(
@@ -223,7 +223,7 @@ def get_cosine_similarity(
         np.sum((source_node_embedding * destination_node_embedding), axis=1) /
         (np.linalg.norm(source_node_embedding, axis=1) *
          np.linalg.norm(destination_node_embedding, axis=1))
-    )
+    ).reshape((-1, 1))
 
 
 def get_concatenate_edge_embedding(

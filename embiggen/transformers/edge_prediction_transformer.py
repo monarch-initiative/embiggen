@@ -129,7 +129,7 @@ class EdgePredictionTransformer:
                 seed=random_state
             )
 
-            indices = numpy_random_state.permutation(edge_labels.size)
+            indices = numpy_random_state.permutation(edge_labels.shape[0])
 
             edge_embeddings, edge_labels = edge_embeddings[indices], edge_labels[indices]
 
