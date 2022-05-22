@@ -4,6 +4,7 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 from userinput.utils import closest
+from ..utils import format_list
 from .node_transformer import NodeTransformer
 
 
@@ -360,7 +361,7 @@ class EdgeTransformer:
                 "Maybe you meant {}?"
             ).format(
                 method,
-                ", ".join(list(EdgeTransformer.methods.keys())),
+                format_list([method for method in EdgeTransformer.methods.keys() if method is not None]),
                 closest(method, list(EdgeTransformer.methods.keys()))
             ))
         self._transformer = NodeTransformer(

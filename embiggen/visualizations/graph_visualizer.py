@@ -280,6 +280,7 @@ class GraphVisualizer:
         self._graph = graph
         if support is None:
             support = self._graph
+        
         if subgraph_of_interest is None:
             subgraph_of_interest = self._graph
 
