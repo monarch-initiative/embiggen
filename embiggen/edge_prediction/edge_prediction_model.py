@@ -99,8 +99,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         unbalance_rates: Tuple[float] = (1.0, )
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        edges_number = graph.get_edges_number()
-        train_size = train.get_edges_number() / edges_number
         performance = []
 
         existent_train_prediction_probabilities = self.predict_proba(
@@ -129,6 +127,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             sampler_graph = graph
         else:
             sampler_graph = subgraph_of_interest
+
+        edges_number = sampler_graph.get_edges_number()
+        train_size = train.get_edges_number() / edges_number
+
 
         for unbalance_rate in unbalance_rates:
             negative_graph = sampler_graph.sample_negative_graph(
