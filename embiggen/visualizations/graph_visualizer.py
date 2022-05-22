@@ -282,7 +282,7 @@ class GraphVisualizer:
             support = self._graph
         if subgraph_of_interest is None:
             subgraph_of_interest = self._graph
-        
+
         self._support = support
         self._subgraph_of_interest = subgraph_of_interest
 
@@ -844,7 +844,8 @@ class GraphVisualizer:
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
             self._subsampled_node_ids, _ = self._graph.get_node_label_holdout_indices(
                 train_size=self._number_of_subsampled_nodes / self._graph.get_nodes_number(),
-                use_stratification=not (self._graph.has_multilabel_node_types() or self._graph.has_singleton_node_types()),
+                use_stratification=not (self._graph.has_multilabel_node_types(
+                ) or self._graph.has_singleton_node_types()),
                 random_state=self._random_state
             )
             node_transformer = NodeTransformer(
@@ -2017,7 +2018,7 @@ class GraphVisualizer:
                 metric_name,
                 show_edge_embedding=True
             ),
-            colors=shuffled_edge_metrics,
+            colors=shuffled_edge_metrics + sys.float_info.epsilon,
             figure=figure,
             axes=axes,
             scatter_kwargs={
@@ -2148,7 +2149,7 @@ class GraphVisualizer:
             edge_metrics = np.concatenate((
                 edge_metric_callback(subgraph=self._negative_graph),
                 edge_metric_callback(subgraph=self._positive_graph),
-            ))
+            )) + sys.float_info.epsilon
 
         axes.hist(
             [
@@ -3100,7 +3101,7 @@ class GraphVisualizer:
         sizes = np.bincount(components, minlength=components_number).tolist()
         sizes_backup = list(sizes)
         largest_component_size = max(sizes)
-        
+
         # We do not show a single "connected component"
         # when such a component has size 3 or lower, as it would
         # really be pushing what a "Main component" is meant to be.
@@ -3292,7 +3293,8 @@ class GraphVisualizer:
             )
 
         if self._subsampled_node_ids is None:
-            degrees = self._support.get_non_zero_subgraph_node_degrees(self._graph)
+            degrees = self._support.get_non_zero_subgraph_node_degrees(
+                self._graph)
         else:
             degrees = np.fromiter(
                 (
@@ -4162,7 +4164,6 @@ class GraphVisualizer:
             self.plot_positive_and_negative_edges_preferential_attachment,
             self.plot_positive_and_negative_edges_resource_allocation_index
         ]
-
 
         distribution_plot_methods_to_call = [
             plot_distance_wrapper(
