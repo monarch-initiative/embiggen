@@ -128,8 +128,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         else:
             sampler_graph = subgraph_of_interest
 
-        edges_number = sampler_graph.get_edges_number()
-        train_size = train.get_edges_number() / edges_number
+        train_size = train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
 
         for unbalance_rate in unbalance_rates:
             negative_graph = sampler_graph.sample_negative_graph(
