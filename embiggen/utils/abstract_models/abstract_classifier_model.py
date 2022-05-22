@@ -928,6 +928,7 @@ class AbstractClassifierModel(AbstractModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
+        verbose: bool = True,
         **kwargs: Dict
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
@@ -1248,6 +1249,7 @@ class AbstractClassifierModel(AbstractModel):
                     edge_features=holdout_edge_features,
                     subgraph_of_interest=subgraph_of_interest,
                     random_state=random_state,
+                    verbose=verbose,
                     **validation_kwargs
                 )
             except Exception as e:

@@ -99,6 +99,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
+        verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         train_size = train.get_known_edge_types_number() / graph.get_known_edge_types_number()

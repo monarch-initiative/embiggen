@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import math
 from ensmallen import Graph
+from tqdm.auto import tqdm
 from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
 
 
@@ -95,6 +96,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
+        verbose: bool = True,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
         validation_unbalance_rates: Tuple[float] = (1.0, )
     ) -> List[Dict[str, Any]]:
@@ -130,7 +132,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         train_size = train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
 
-        for unbalance_rate in validation_unbalance_rates:
+        for unbalance_rate in tqdm(
+            validation_unbalance_rates,
+            disable=not verbose or len(validation_unbalance_rates) > 0,
+            leave=False,
+            dynamic_ncols=True,
+            desc=f"Evaluating on unbalances"
+        ):
             negative_graph = sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
                     math.ceil(sampler_graph.get_edges_number()*unbalance_rate)),
