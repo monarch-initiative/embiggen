@@ -72,7 +72,7 @@ setup(
         'pandas',
         "tqdm",
         "matplotlib>=3.5.2",
-        "sklearn",
+        "sklearn>=1.1.1",
         "ddd_subplots>=1.0.19",
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
