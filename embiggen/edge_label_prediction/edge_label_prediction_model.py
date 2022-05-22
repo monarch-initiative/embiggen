@@ -97,6 +97,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""

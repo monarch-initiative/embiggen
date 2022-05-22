@@ -926,6 +926,7 @@ class AbstractClassifierModel(AbstractModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
         **kwargs: Dict
     ) -> List[Dict[str, Any]]:
@@ -1236,17 +1237,26 @@ class AbstractClassifierModel(AbstractModel):
             )
             required_training_time = time.time() - training_start
 
-            # We add the newly computed performance.
-            holdout_performance = classifier._evaluate(
-                graph=graph,
-                train=train_of_interest,
-                test=test_of_interest,
-                node_features=holdout_node_features,
-                node_type_features=holdout_node_type_features,
-                edge_features=holdout_edge_features,
-                random_state=random_state,
-                **kwargs
-            )
+            try:
+                # We add the newly computed performance.
+                holdout_performance = classifier._evaluate(
+                    graph=graph,
+                    train=train_of_interest,
+                    test=test_of_interest,
+                    node_features=holdout_node_features,
+                    node_type_features=holdout_node_type_features,
+                    edge_features=holdout_edge_features,
+                    subgraph_of_interest=subgraph_of_interest,
+                    random_state=random_state,
+                    **kwargs
+                )
+            except Exception as e:
+                raise RuntimeError(
+                    f"An exception was raised while calling the `._evaluate` method of {self.model_name()} "
+                    f"implemented using the {self.library_name()} for the {self.task_name()} task. "
+                    f"Specifically, the class of the model is {self.__class__.__name__}."
+                ) from e
+
             for hp in holdout_performance:
                 hp["required_training_time"] = required_training_time
                 performance.append(hp)

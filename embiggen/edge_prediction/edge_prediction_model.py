@@ -93,6 +93,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         unbalance_rates: Tuple[float] = (1.0, )
@@ -102,30 +103,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         train_size = train.get_edges_number() / edges_number
         performance = []
 
-        existent_train_predictions = self.predict(
-            train,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features
-        )
-
-        edges_number = train.get_number_of_directed_edges()
-        predictions_number = existent_train_predictions.shape[0]
-        assert edges_number == predictions_number, f"Expected {edges_number} training predictions, got {predictions_number}."
-
-        
-        existent_test_predictions = self.predict(
-            test,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features
-        )
-
-        edges_number = test.get_number_of_directed_edges()
-        predictions_number = existent_test_predictions.shape[0]
-        assert edges_number == predictions_number, f"Expected {edges_number} testing predictions, got {predictions_number}."
-
-
         existent_train_prediction_probabilities = self.predict_proba(
             train,
             node_features=node_features,
@@ -133,13 +110,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        edges_number = train.get_number_of_directed_edges()
-        predictions_number = existent_train_prediction_probabilities.shape[0]
-        assert edges_number == predictions_number, f"Expected {edges_number} training predictions, got {predictions_number}."
-
         if existent_train_prediction_probabilities.shape[1] > 1:
-            existent_train_prediction_probabilities = existent_train_prediction_probabilities[:, 1]
-        
+            existent_train_prediction_probabilities = existent_train_prediction_probabilities[
+                :, 1]
+
         existent_test_prediction_probabilities = self.predict_proba(
             test,
             node_features=node_features,
@@ -147,17 +121,19 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        edges_number = test.get_number_of_directed_edges()
-        predictions_number = existent_test_prediction_probabilities.shape[0]
-        assert edges_number == predictions_number, f"Expected {edges_number} testing predictions, got {predictions_number}."
-
         if existent_test_prediction_probabilities.shape[1] > 1:
-            existent_test_prediction_probabilities = existent_test_prediction_probabilities[:, 1]
+            existent_test_prediction_probabilities = existent_test_prediction_probabilities[
+                :, 1]
+
+        if subgraph_of_interest is None:
+            sampler_graph = graph
+        else:
+            sampler_graph = subgraph_of_interest
 
         for unbalance_rate in unbalance_rates:
-            negative_graph = train.sample_negative_graph(
+            negative_graph = sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(edges_number*unbalance_rate)),
+                    math.ceil(sampler_graph.get_edges_number()*unbalance_rate)),
                 random_state=random_state,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 use_zipfian_sampling=True,
@@ -175,11 +151,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             assert non_existent_train.has_edges(), "Negative train graph is empty!"
             assert non_existent_test.has_edges(), "Negative test graph is empty!"
 
-            for evaluation_mode, (existent_predictions, existent_prediction_probabilitiess, non_existent_graph) in (
+            for evaluation_mode, (existent_prediction_probabilities, non_existent_graph) in (
                 (
                     "train",
                     (
-                        existent_train_predictions,
                         existent_train_prediction_probabilities,
                         non_existent_train
                     )
@@ -187,18 +162,11 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 (
                     "test",
                     (
-                        existent_test_predictions,
                         existent_test_prediction_probabilities,
                         non_existent_test
                     )
                 ),
             ):
-                non_existent_predictions = self.predict(
-                    non_existent_graph,
-                    node_features=node_features,
-                    node_type_features=node_type_features,
-                    edge_features=edge_features
-                )
                 non_existent_prediction_probabilities = self.predict_proba(
                     non_existent_graph,
                     node_features=node_features,
@@ -207,21 +175,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 )
 
                 if non_existent_prediction_probabilities.shape[1] > 1:
-                    non_existent_prediction_probabilities = non_existent_prediction_probabilities[:, 1]
-                
-                predictions = np.concatenate((
-                    existent_predictions,
-                    non_existent_predictions
-                ))
+                    non_existent_prediction_probabilities = non_existent_prediction_probabilities[
+                        :, 1]
 
                 prediction_probabilities = np.concatenate((
-                    existent_prediction_probabilitiess,
+                    existent_prediction_probabilities,
                     non_existent_prediction_probabilities
                 ))
 
                 labels = np.concatenate((
-                    np.ones_like(existent_predictions),
-                    np.zeros_like(non_existent_predictions),
+                    np.ones_like(existent_prediction_probabilities),
+                    np.zeros_like(non_existent_prediction_probabilities),
                 ))
 
                 performance.append({
@@ -230,7 +194,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     "sample_only_edges_with_heterogeneous_node_types": sample_only_edges_with_heterogeneous_node_types,
                     "train_size": train_size,
                     **self.evaluate_predictions(
-                        predictions,
+                        prediction_probabilities > 0.5,
                         labels
                     ),
                     **self.evaluate_prediction_probabilities(

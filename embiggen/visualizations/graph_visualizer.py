@@ -63,6 +63,8 @@ class GraphVisualizer:
     def __init__(
         self,
         graph: Union[Graph, str],
+        support: Optional[Graph] = None,
+        subgraph_of_interest: Optional[Graph] = None,
         repository: Optional[str] = None,
         version: Optional[str] = None,
         decomposition_method: str = "TSNE",
@@ -75,7 +77,8 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
         minimum_node_degree: int = 1,
         maximum_node_degree: Optional[int] = None,
-        sample_only_edges_with_heterogeneous_node_types: Optional[bool] = False,
+        only_from_same_component: bool = True,
+        sample_only_edges_with_heterogeneous_node_types: bool = False,
         source_node_types_names: Optional[Union[str, List[str]]] = None,
         destination_node_types_names: Optional[Union[str, List[str]]] = None,
         source_edge_types_names: Optional[Union[str, List[str]]] = None,
@@ -102,10 +105,36 @@ class GraphVisualizer:
 
         Parameters
         --------------------------
-        graph: Union[Graph, str],
+        graph: Union[Graph, str]
             The graph to visualize.
             If a string was provided, we try to retrieve the given
             graph name using the Ensmallen automatic graph retrieval.
+        support: Optional[Graph] = None
+            The support graph to use to compute metrics such as degrees,
+            Adamic-Adar and so on. This is useful when the graph to be
+            visualized is a small component of a larger graph, for instance
+            when visualizing the test graph of an holdout where most edges
+            are left in the training graph.
+            Without providing a support graph, it would not be possible
+            to visualize the correct metrics of the provided graph as we
+            would have to assume that this graph is a `true` graph by itself,
+            and not a subgraph of a larger one.
+            The support graph is also employed in the sampling of the negative
+            edges, so to avoid sampling edges that exist in the original graph,
+            and is also used in the computation of the embedding when requested.
+            This provided graph must share the same vocabulary of the support graph.
+            When visualizing an holdout, the train graph should be used as support
+            for the validation or test graphs.
+        subgraph_of_interest: Optional[Graph] = None
+            The graph to use to sample the negative edges.
+            This graph's node degree distribution is expected to be the one best capturing
+            the are of interest of a task (for instance a subgraph edge prediction)
+            and is therefore best suited to sample the negative edges.
+            If we were to use the support graph for cases of this type we would
+            sample negative edges that are far away from the positive edges we are
+            taking into consideration, making the visualization biased and make the
+            task look artificially easy.
+            We expected for the provided graph to be contained in this subgraph of interest.
         repository: Optional[str] = None
             Repository of the provided graph.
             This only applies when the provided graph is a
@@ -140,9 +169,18 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        sample_only_edges_with_heterogeneous_node_types: Optional[bool] = False
+        only_from_same_component: bool = True
+            Whether to sample negative edges only from the same connected component.
+            This should generally be set to `True`, but in some corner cases when
+            the graph to visualize has extremely dense (or very small, like tuples)
+            components it will raise an exception as it is not possible to sample
+            negative edges from such densely connected components.
+        sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types.
+            Using this parameter will raise an exception when the provided
+            graph wither does not have node types or has exclusively constant
+            node types.
         minimum_node_degree: Optional[int] = 1
             The minimum node degree of either the source or
             destination node to be sampled.
@@ -240,6 +278,13 @@ class GraphVisualizer:
         ))
 
         self._graph = graph
+        if support is None:
+            support = self._graph
+        if subgraph_of_interest is None:
+            subgraph_of_interest = self._graph
+        
+        self._support = support
+        self._subgraph_of_interest = subgraph_of_interest
 
         if isinstance(source_node_types_names, str):
             source_node_types_names = [source_node_types_names]
@@ -292,24 +337,27 @@ class GraphVisualizer:
             ),
             random_state=random_state,
             edge_type_names=edge_type_names,
+            support=self._support,
             **edge_prediction_graph_kwargs,
         )
 
-        # We sample the negative edges using the positive graph as base
+        # We sample the negative edges using the subgraph of interest as base graph
         # to follow its zipfian distribution, which may be different from the
         # main graph zipfian distribution when particular filters are applied to it.
         # For instance, the zipfian distribution of one particular edge type
         # may be very different from the whole graph zipfian distribution.
         # Furthermore, we avoid sampling false negatives by passing to the
-        # method also the original graph.
-        self._negative_graph = self._positive_graph.sample_negative_graph(
+        # method also the support graph.
+        self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
             number_of_negative_samples=min(
                 number_of_subsampled_negative_edges,
                 graph.get_edges_number()
             ),
             random_state=random_state,
             use_zipfian_sampling=True,
-            graph_to_avoid=graph,
+            graph_to_avoid=self._support,
+            support=self._support,
+            only_from_same_component=only_from_same_component,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             **edge_prediction_graph_kwargs
         )
@@ -540,8 +588,17 @@ class GraphVisualizer:
                             verbose=self._verbose,
                             n_iter=400,
                             init="random",
-                            square_distances=True,
                             method="exact" if self._n_components == 4 else "barnes_hut",
+                        ),
+                        # The following handles the case when the `square distances` parameter
+                        # still existed in old versions in Sklearn and used to cause a warning
+                        # when not provided. More recent versions of Sklearn have entirely dropped
+                        # this parameter, and therefore will raise an exception if this parameter
+                        # is provided, making this check necessary.
+                        **(
+                            dict(square_distances=True)
+                            if "square_distances" in inspect.signature(TSNE.__init__).parameters
+                            else dict()
                         ),
                         **self._decomposition_kwargs
                     }).fit_transform
@@ -1864,7 +1921,7 @@ class GraphVisualizer:
     def _plot_positive_and_negative_edges_metric(
         self,
         metric_name: str,
-        edge_metric_callback: Optional[Callable[[int, int], float]] = None,
+        edge_metric_callback: Optional[Callable[[Graph], np.ndarray]] = None,
         edge_metrics: Optional[np.ndarray] = None,
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
@@ -1942,18 +1999,10 @@ class GraphVisualizer:
             )
 
         if edge_metrics is None:
-            edge_metrics = np.fromiter(
-                (
-                    edge_metric_callback(src, dst) + sys.float_info.epsilon
-                    for src, dst in (
-                        itertools.chain(
-                            self._positive_graph.get_directed_edge_node_ids(),
-                            self._negative_graph.get_directed_edge_node_ids()
-                        )
-                    )
-                ),
-                dtype=np.float32
-            )
+            edge_metrics = np.concatenate((
+                edge_metric_callback(subgraph=self._negative_graph),
+                edge_metric_callback(subgraph=self._positive_graph),
+            ))
 
         points = np.vstack([
             self._negative_edge_decomposition,
@@ -2096,18 +2145,10 @@ class GraphVisualizer:
             figure.patch.set_facecolor("white")
 
         if edge_metrics is None:
-            edge_metrics = np.fromiter(
-                (
-                    edge_metric_callback(src, dst) + sys.float_info.epsilon
-                    for src, dst in (
-                        itertools.chain(
-                            self._positive_graph.get_directed_edge_node_ids(),
-                            self._negative_graph.get_directed_edge_node_ids()
-                        )
-                    )
-                ),
-                dtype=np.float32
-            )
+            edge_metrics = np.concatenate((
+                edge_metric_callback(subgraph=self._negative_graph),
+                edge_metric_callback(subgraph=self._positive_graph),
+            ))
 
         axes.hist(
             [
@@ -2167,7 +2208,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name="Adamic-Adar",
-            edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
+            edge_metric_callback=self._support.get_adamic_adar_scores,
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -2233,7 +2274,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Adamic-Adar",
-            edge_metric_callback=self._graph.get_adamic_adar_index_from_node_ids,
+            edge_metric_callback=self._support.get_adamic_adar_scores,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2271,15 +2312,9 @@ class GraphVisualizer:
         return_caption: bool = True,
             Whether to return a caption for the plot.
         """
-        def wrapper_preferential_attachment(src, dst) -> float:
-            return self._graph.get_preferential_attachment_from_node_ids(
-                src,
-                dst,
-                normalize=True
-            )
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name="Preferential Attachment",
-            edge_metric_callback=wrapper_preferential_attachment,
+            edge_metric_callback=self._support.get_preferential_attachment_scores,
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -2343,15 +2378,9 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        def wrapper_preferential_attachment(src, dst) -> float:
-            return self._graph.get_preferential_attachment_from_node_ids(
-                src,
-                dst,
-                normalize=True
-            )
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Preferential Attachment",
-            edge_metric_callback=wrapper_preferential_attachment,
+            edge_metric_callback=self._support.get_preferential_attachment_scores,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2391,7 +2420,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name="Jaccard Coefficient",
-            edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
+            edge_metric_callback=self._support.get_jaccard_coefficient_scores,
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -2457,7 +2486,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Jaccard Coefficient",
-            edge_metric_callback=self._graph.get_jaccard_coefficient_from_node_ids,
+            edge_metric_callback=self._support.get_jaccard_coefficient_scores,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -2497,7 +2526,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name="Resource Allocation Index",
-            edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
+            edge_metric_callback=self._support.get_resource_allocation_index_scores,
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -2563,7 +2592,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_metric(
             metric_name="Resource Allocation Index",
-            edge_metric_callback=self._graph.get_resource_allocation_index_from_node_ids,
+            edge_metric_callback=self._support.get_resource_allocation_index_scores,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -3067,10 +3096,16 @@ class GraphVisualizer:
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
 
-        components, components_number, _, _ = self._graph.get_connected_components()
+        components, components_number, _, _ = self._support.get_connected_components()
         sizes = np.bincount(components, minlength=components_number).tolist()
         sizes_backup = list(sizes)
         largest_component_size = max(sizes)
+        
+        # We do not show a single "connected component"
+        # when such a component has size 3 or lower, as it would
+        # really be pushing what a "Main component" is meant to be.
+        if largest_component_size <= 3:
+            largest_component_size = None
 
         labels = [
             "Size {}".format(size)
@@ -3085,6 +3120,8 @@ class GraphVisualizer:
         current_component_number = components_number
         for expected_component_size, component_name in (
             (1, "Singletons"),
+            (2, "Tuples"),
+            (3, "Triples"),
             (None, "Minor components"),
         ):
             new_component_size = 0
@@ -3095,7 +3132,7 @@ class GraphVisualizer:
                     continue
                 nodes_component_size = sizes_backup[components[i]]
                 is_in_odd_component = expected_component_size is not None and nodes_component_size == expected_component_size
-                is_in_minor_component = expected_component_size is None and nodes_component_size < largest_component_size
+                is_in_minor_component = expected_component_size is None and largest_component_size is not None and nodes_component_size < largest_component_size
                 if is_in_odd_component or is_in_minor_component:
                     sizes[components[i]] -= 1
                     components[i] = current_component_number
@@ -3127,7 +3164,8 @@ class GraphVisualizer:
             for old_component_id in components_remapping.keys()
         ]
 
-        labels[0] = "Main component"
+        if largest_component_size is not None:
+            labels[0] = "Main component"
 
         # Remap all other components
         for i in range(len(components)):
@@ -3254,11 +3292,11 @@ class GraphVisualizer:
             )
 
         if self._subsampled_node_ids is None:
-            degrees = self._graph.get_node_degrees()
+            degrees = self._support.get_non_zero_subgraph_node_degrees(self._graph)
         else:
             degrees = np.fromiter(
                 (
-                    self._graph.get_node_degree_from_node_id(node_id)
+                    self._support.get_node_degree_from_node_id(node_id)
                     for node_id in self._subsampled_node_ids
                 ),
                 dtype=np.uint32
@@ -3976,7 +4014,7 @@ class GraphVisualizer:
             self._graph.get_nodes_number() // 10
         )
         axes.hist(
-            self._graph.get_node_degrees(),
+            self._support.get_non_zero_subgraph_node_degrees(self._graph),
             bins=number_of_buckets,
             log=True
         )
@@ -4062,6 +4100,7 @@ class GraphVisualizer:
         number_of_columns: int = 4,
         show_letters: bool = True,
         include_distribution_plots: bool = True,
+        skip_constant_metrics: bool = True,
         **node_embedding_kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
@@ -4079,6 +4118,8 @@ class GraphVisualizer:
         include_distribution_plots: bool = True
             Whether to include the distribution plots for the degrees
             and the edge weights, if they are present.
+        skip_constant_metrics: bool = True
+            Whether to skip constant metrics in the visualization.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
@@ -4090,9 +4131,16 @@ class GraphVisualizer:
         self.fit_negative_and_positive_edges(
             node_embedding, **node_embedding_kwargs)
 
-        node_scatter_plot_methods_to_call = [
-            self.plot_node_degrees,
-        ]
+        node_scatter_plot_methods_to_call = []
+        distribution_plot_methods_to_call = []
+
+        if self._graph.has_constant_non_zero_node_degrees():
+            node_scatter_plot_methods_to_call.append(
+                self.plot_node_degrees,
+            )
+            distribution_plot_methods_to_call.append(
+                self.plot_node_degree_distribution,
+            )
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)
@@ -4115,8 +4163,8 @@ class GraphVisualizer:
             self.plot_positive_and_negative_edges_resource_allocation_index
         ]
 
+
         distribution_plot_methods_to_call = [
-            self.plot_node_degree_distribution,
             plot_distance_wrapper(
                 self.plot_positive_and_negative_edges_euclidean_distance_histogram),
             plot_distance_wrapper(
@@ -4137,17 +4185,17 @@ class GraphVisualizer:
                 self.plot_node_ontologies
             )
 
-        if self._graph.has_disconnected_nodes():
+        if not self._support.is_connected():
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
 
-        if self._graph.has_edge_types() and not self._graph.has_homogeneous_edge_types():
+        if self._positive_graph.has_edge_types() and not self._positive_graph.has_homogeneous_edge_types():
             edge_scatter_plot_methods_to_call.append(
                 self.plot_edge_types
             )
 
-        if self._graph.has_edge_weights() and not self._graph.has_constant_edge_weights():
+        if self._positive_graph.has_edge_weights() and not self._positive_graph.has_constant_edge_weights():
             edge_scatter_plot_methods_to_call.append(
                 self.plot_edge_weights
             )
