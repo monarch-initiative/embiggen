@@ -114,13 +114,22 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 edge_features=edge_features
             )
 
+            
             if self.is_binary_prediction_task():
                 prediction_probabilities = prediction_probabilities[:, 1]
                 predictions = prediction_probabilities > 0.5
+                labels = graph.get_known_edge_type_ids() == 1
+            elif self.is_multilabel_prediction_task():
+                # TODO! support multilabel prediction!
+                raise NotImplementedError(
+                    "Currently we do not support multi-label edge-label prediction "
+                    f"in the {self.model_name()} from the {self.library_name()} "
+                    f"as it is implemented in the {self.__class__.__name__} class."
+                )
             else:
                 predictions = prediction_probabilities.argmax(axis=-1)
+                labels = graph.get_known_edge_type_ids()
 
-            labels = graph.get_known_edge_type_ids()
 
             if graph.has_unknown_node_types():
                 mask = graph.get_known_node_types_mask()

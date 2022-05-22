@@ -110,31 +110,26 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             ("train", train),
             ("test", test),
         ):
-            predictions = self.predict(
-                evaluation_graph,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_features=edge_features
-            )
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features
             )
-            if evaluation_graph.has_multilabel_node_types():
-                labels = evaluation_graph.get_one_hot_encoded_node_types()
+
+            if self.is_binary_prediction_task():
+                predictions = prediction_probabilities > 0.5
+            elif self.is_multilabel_prediction_task():
+                predictions = prediction_probabilities > 0.5
             else:
-                labels = np.fromiter(
-                    (
-                        0 if node_type_id is None else node_type_id[0]
-                        for node_type_id in (
-                            evaluation_graph.get_node_type_ids_from_node_id(node_id)
-                            for node_id in range(evaluation_graph.get_nodes_number())
-                        )
-                    ),
-                    dtype=np.uint32
-                )
+                predictions = prediction_probabilities.argmax(axis=-1)
+
+            if self.is_multilabel_prediction_task():
+                labels = graph.get_one_hot_encoded_node_types()
+            elif self.is_binary_prediction_task():
+                labels = graph.get_boolean_node_type_ids()
+            else:
+                labels = graph.get_single_label_node_type_ids()
             
             if graph.has_unknown_node_types():
                 mask = graph.get_known_node_types_mask()
