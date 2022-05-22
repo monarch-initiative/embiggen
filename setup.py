@@ -71,7 +71,7 @@ setup(
         'numpy',
         'pandas',
         "tqdm",
-        "matplotlib",
+        "matplotlib>=3.5.2",
         "sklearn",
         "ddd_subplots>=1.0.19",
         "sanitize_ml_labels>=1.0.38",
