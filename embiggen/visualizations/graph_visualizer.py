@@ -3297,7 +3297,7 @@ class GraphVisualizer:
             degrees = self._support.get_non_zero_subgraph_node_degrees(
                 self._graph
             )
-            mask = (self._graph.get_node_degrees() != 0) | self._support.get_node_degrees() == 0
+            mask = (self._graph.get_node_degrees() != 0) | (self._support.get_node_degrees() == 0)
             points = self._node_decomposition[mask]
         else:
             degrees = np.fromiter(
