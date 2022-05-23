@@ -3295,7 +3295,10 @@ class GraphVisualizer:
 
         if self._subsampled_node_ids is None:
             degrees = self._support.get_non_zero_subgraph_node_degrees(
-                self._graph)
+                self._graph
+            )
+            mask = (self._graph.get_node_degrees() != 0) | self._support.get_node_degrees() == 0
+            points = self._node_decomposition[mask]
         else:
             degrees = np.fromiter(
                 (
@@ -3304,6 +3307,7 @@ class GraphVisualizer:
                 ),
                 dtype=np.uint32
             )
+            points = self._node_decomposition
 
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
@@ -3317,7 +3321,7 @@ class GraphVisualizer:
             )
 
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_decomposition,
+            points=points,
             title=self._get_complete_title("Node degrees"),
             colors=degrees,
             figure=figure,
