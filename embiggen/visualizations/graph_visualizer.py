@@ -333,7 +333,7 @@ class GraphVisualizer:
 
         self._positive_graph = graph.sample_positive_graph(
             number_of_samples=min(
-                number_of_subsampled_negative_edges,
+                number_of_subsampled_edges,
                 graph.get_edges_number()
             ),
             random_state=random_state,
