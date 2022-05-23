@@ -823,10 +823,6 @@ class AbstractClassifierModel(AbstractModel):
         ground_truth: np.ndarray
             The ground truth to evaluate the predictions against.
         """
-        if self.is_binary_prediction_task():
-            average_methods = ("binary",)
-        else:
-            average_methods = ("macro", "weighted")
 
         return {
             **{
@@ -837,15 +833,16 @@ class AbstractClassifierModel(AbstractModel):
                 )
             },
             **{
-                metric.__name__
-                if average_method == "binary"
-                else metric.__name__ + " " + average_method: metric(ground_truth, predictions, average=average_method)
+                metric.__name__: metric(
+                    ground_truth,
+                    predictions,
+                    average="binary" if self.is_binary_prediction_task() else "macro"
+                )
                 for metric in (
                     f1_score,
                     precision_score,
                     recall_score,
                 )
-                for average_method in average_methods
             }
         }
 
@@ -865,11 +862,8 @@ class AbstractClassifierModel(AbstractModel):
         """
         metrics = []
         if self.is_binary_prediction_task():
-            average_methods_probs = ("micro", "macro", "weighted")
             # AUPRC in sklearn is only supported for binary labels
             metrics.append(average_precision_score)
-        else:
-            average_methods_probs = ("macro", "weighted")
 
         @functools.wraps(roc_auc_score)
         def wrapper_roc_auc_score(*args, **kwargs):
@@ -878,13 +872,11 @@ class AbstractClassifierModel(AbstractModel):
         metrics.append(wrapper_roc_auc_score)
 
         return {
-            metric.__name__ + " " + average_method: metric(
+            metric.__name__: metric(
                 ground_truth,
                 prediction_probabilities,
-                average=average_method
             )
             for metric in metrics
-            for average_method in average_methods_probs
         }
 
     def split_graph_following_evaluation_schema(
