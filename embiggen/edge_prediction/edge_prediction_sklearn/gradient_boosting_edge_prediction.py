@@ -32,6 +32,7 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Prediction."""
@@ -69,10 +70,11 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
-            edge_embedding_method,
-            training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            prediction_batch_size=prediction_batch_size,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:

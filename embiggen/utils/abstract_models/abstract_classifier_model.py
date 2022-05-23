@@ -1240,15 +1240,17 @@ class AbstractClassifierModel(AbstractModel):
                     node_type_features=holdout_node_type_features,
                     edge_features=holdout_edge_features,
                     subgraph_of_interest=subgraph_of_interest,
-                    random_state=random_state,
+                    random_state=random_state * holdout_number,
                     verbose=verbose,
                     **validation_kwargs
                 )
+            except RuntimeError as e:
+                raise e
             except Exception as e:
                 raise RuntimeError(
                     f"An exception was raised while calling the `._evaluate` method of {self.model_name()} "
                     f"implemented using the {self.library_name()} for the {self.task_name()} task. "
-                    f"Specifically, the class of the model is {self.__class__.__name__}."
+                    f"Specifically, the class of the model is {self.__class__.__name__}. "
                 ) from e
 
             for hp in holdout_performance:

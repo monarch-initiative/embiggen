@@ -244,6 +244,286 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features
         )
 
+    def predict_bipartite_graph_from_edge_node_ids(
+        self,
+        graph: Graph,
+        source_node_ids: List[int],
+        destination_node_ids: List[int],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_ids: List[int]
+            The source nodes of the bipartite graph.
+        destination_node_ids: List[int]
+            The destination nodes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_ids(
+                source_node_ids=source_node_ids,
+                destination_node_ids=destination_node_ids,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_bipartite_graph_from_edge_node_names(
+        self,
+        graph: Graph,
+        source_node_names: List[str],
+        destination_node_names: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_names: List[str]
+            The source nodes of the bipartite graph.
+        destination_node_names: List[str]
+            The destination nodes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_names(
+                source_node_names=source_node_names,
+                destination_node_names=destination_node_names,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_bipartite_graph_from_edge_node_prefixes(
+        self,
+        graph: Graph,
+        source_node_prefixes: List[str],
+        destination_node_prefixes: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_prefixes: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_prefixes: List[str]
+            The destination node prefixes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_prefixes(
+                source_node_prefixes=source_node_prefixes,
+                destination_node_prefixes=destination_node_prefixes,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_bipartite_graph_from_edge_node_types(
+        self,
+        graph: Graph,
+        source_node_types: List[str],
+        destination_node_types: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_types: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_types: List[str]
+            The destination node prefixes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_types(
+                source_node_types=source_node_types,
+                destination_node_types=destination_node_types,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_clique_graph_from_node_ids(
+        self,
+        graph: Graph,
+        node_ids: List[int],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_ids: List[int]
+            The nodes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_ids(
+                node_ids=node_ids,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_clique_graph_from_node_names(
+        self,
+        graph: Graph,
+        node_names: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_names: List[str]
+            The nodes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_names(
+                node_names=node_names,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_clique_graph_from_node_prefixes(
+        self,
+        graph: Graph,
+        node_prefixes: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_prefixes: List[str]
+            The node prefixes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_prefixes(
+                node_prefixes=node_prefixes,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_clique_graph_from_node_types(
+        self,
+        graph: Graph,
+        node_types: List[str],
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_types: List[str]
+            The node prefixes of the bipartite graph.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_types(
+                node_types=node_types,
+                directed=True
+            ),
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
     def predict_proba(
         self,
         graph: Graph,

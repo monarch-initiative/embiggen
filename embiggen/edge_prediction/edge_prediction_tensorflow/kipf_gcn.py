@@ -14,7 +14,7 @@ from ...layers.tensorflow import GraphConvolution
 from ...utils.tensorflow_utils import graph_to_sparse_tensor
 from ...utils.normalize_model_structural_parameters import normalize_model_list_parameter
 from ..edge_prediction_model import AbstractEdgePredictionModel
-from ...sequences import EdgePredictionSequence, EdgePredictionTrainingSequence
+from ...sequences.tensorflow_sequences import EdgePredictionSequence, EdgePredictionTrainingSequence
 import tensorflow as tf
 import copy
 

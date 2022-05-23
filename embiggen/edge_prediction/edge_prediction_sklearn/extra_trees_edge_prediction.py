@@ -31,6 +31,7 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
         """Create the Extra Trees for Edge  Prediction."""
@@ -76,10 +77,11 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
                 ccp_alpha=ccp_alpha,
                 max_samples=max_samples
             ),
-            edge_embedding_method,
-            training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            prediction_batch_size=prediction_batch_size,
+            random_state=random_state
         )
 
     @staticmethod

@@ -1,14 +1,17 @@
 """Module providing adapter class making edge prediction possible in sklearn models."""
+from matplotlib import use
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Optional, Dict, Any
+from typing import Type, List, Optional, Dict, Any, Union
 import numpy as np
 import math
 import copy
 from ensmallen import Graph
+from ...sequences.generic_sequences import EdgePredictionSequence
 from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from ...transformers import EdgePredictionTransformer, GraphTransformer
 from ..edge_prediction_model import AbstractEdgePredictionModel
 from ...utils import abstract_class
+from tqdm.auto import tqdm
 
 
 @abstract_class
@@ -21,6 +24,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
@@ -37,6 +41,11 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             Whether to sample negative edges exclusively between nodes with different node types
             to generate the negative edges used during the training of the model.
             This can be useful when executing a bipartite edge prediction task.
+        prediction_batch_size: int = 2**12
+            Batch size to use for the predictions.
+            Since usually rendering a whole dense graph edge embedding is not
+            feaseable in main memory, we chunk it into more digestable smaller
+            batches of edges.
         random_state: int
             The random state to use to reproduce the training.
 
@@ -51,6 +60,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._edge_embedding_method = edge_embedding_method
         self._training_unbalance_rate = training_unbalance_rate
         self._random_state = random_state
+        self._prediction_batch_size = prediction_batch_size
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
@@ -62,7 +72,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "training_sample_only_edges_with_heterogeneous_node_types": self._training_sample_only_edges_with_heterogeneous_node_types,
             "edge_embedding_method": self._edge_embedding_method,
             "training_unbalance_rate": self._training_unbalance_rate,
-            "random_state": self._random_state
+            "random_state": self._random_state,
+            "prediction_batch_size": self._prediction_batch_size
         }
 
     def clone(self) -> Type["SklearnEdgePredictionAdapter"]:
@@ -76,7 +87,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
     def _trasform_graph_into_edge_embedding(
         self,
-        graph: Graph,
+        graph: Union[Graph, np.ndarray],
         node_features: List[np.ndarray],
         node_type_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
@@ -107,7 +118,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 "Support for node type features is not currently available for any "
                 "of the edge prediction models from the Sklearn library."
             )
-        
+
+        print("BRILLU BARILLU")
+
         gt = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_node_mapping=True
@@ -156,7 +169,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             positive_graph=graph,
             negative_graph=graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(graph.get_edges_number()*self._training_unbalance_rate)
+                    math.ceil(graph.get_edges_number() *
+                              self._training_unbalance_rate)
                 ),
                 random_state=self._random_state,
                 sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
@@ -185,11 +199,26 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        return self._model_instance.predict(self._trasform_graph_into_edge_embedding(
+        sequence = EdgePredictionSequence(
             graph=graph,
-            node_features=node_features,
-            node_type_features=node_type_features,
-        ))
+            graph_used_in_training=graph,
+            use_node_types=False,
+            use_edge_metrics=False,
+            batch_size=self._prediction_batch_size
+        )
+        return np.concatenate([
+            self._model_instance.predict(self._trasform_graph_into_edge_embedding(
+                graph=edges[0],
+                node_features=node_features,
+                node_type_features=node_type_features,
+            ))
+            for edges in tqdm(
+                (sequence[i] for i in range(len(sequence))),
+                total=len(sequence),
+                desc="Running edge predictions",
+                leave=False
+            )
+        ])
 
     def _predict_proba(
         self,
@@ -211,11 +240,26 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
+        sequence = EdgePredictionSequence(
             graph=graph,
-            node_features=node_features,
-            node_type_features=node_type_features,
-        ))
+            graph_used_in_training=graph,
+            use_node_types=False,
+            use_edge_metrics=False,
+            batch_size=self._prediction_batch_size
+        )
+        return np.concatenate([
+            self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
+                graph=edges[0],
+                node_features=node_features,
+                node_type_features=node_type_features,
+            ))
+            for edges in tqdm(
+                (sequence[i] for i in range(len(sequence))),
+                total=len(sequence),
+                desc="Running edge predictions",
+                leave=False
+            )
+        ])
 
     @staticmethod
     def requires_edge_weights() -> bool:

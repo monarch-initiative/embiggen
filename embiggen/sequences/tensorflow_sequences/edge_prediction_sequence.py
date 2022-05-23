@@ -5,7 +5,8 @@ import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
-from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
+from ..generic_sequences import EdgePredictionSequence as GenericEdgePredictionSequence
+from ...utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
 class EdgePredictionSequence(Sequence):
@@ -35,23 +36,13 @@ class EdgePredictionSequence(Sequence):
         batch_size: int = 2**10,
             The batch size to use.
         """
-        if not graph.has_edges():
-            raise ValueError(
-                f"An empty instance of graph {graph.get_name()} was provided!"
-            )
-        if not graph.has_edges():
-            raise ValueError(
-                f"An empty instance of graph {graph_used_in_training.get_name()} was provided!"
-            )
-        if not graph.has_compatible_node_vocabularies(graph_used_in_training):
-            raise ValueError(
-                f"The provided graph {graph.get_name()} does not have a node vocabulary "
-                "that is compatible with the provided graph used in training."
-            )
-        self._graph = graph
-        self._graph_used_in_training = graph_used_in_training
-        self._use_node_types = use_node_types
-        self._use_edge_metrics = use_edge_metrics
+        self._sequence = GenericEdgePredictionSequence(
+            graph=graph,
+            graph_used_in_training=graph_used_in_training,
+            use_node_types=use_node_types,
+            use_edge_metrics=use_edge_metrics,
+            batch_size=batch_size
+        )
         self._current_index = 0
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
@@ -153,14 +144,4 @@ class EdgePredictionSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        return (tuple([
-            value
-            for value in self._graph_used_in_training.get_edge_prediction_chunk_mini_batch(
-                idx,
-                graph=self._graph,
-                batch_size=self.batch_size,
-                return_node_types=self._use_node_types,
-                return_edge_metrics=self._use_edge_metrics,
-            )
-            if value is not None
-        ]),)
+        return self._sequence[idx]

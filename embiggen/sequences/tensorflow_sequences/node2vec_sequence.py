@@ -5,7 +5,7 @@ import numpy as np  # type: ignore
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 import tensorflow as tf
-from ..utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
+from ...utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
 class Node2VecSequence(Sequence):
