@@ -4,6 +4,8 @@ from typing import Union, Optional, List, Dict, Any, Tuple, Type
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
+
+from embiggen.utils.list_formatting import format_list
 from .abstract_model import AbstractModel, abstract_class
 import time
 from .abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
@@ -1029,6 +1031,46 @@ class AbstractClassifierModel(AbstractModel):
                 subgraph_of_interest
             )
 
+        # Retrieve the set of provided automatic features parameters
+        # so we can put them in the report.
+        feature_parameters = {
+            parameter_name: value
+            for features in (
+                node_features
+                if isinstance(node_features, (list, tuple))
+                else (node_features,),
+                node_type_features
+                if isinstance(node_type_features, (list, tuple))
+                else (node_type_features,),
+                edge_features
+                if isinstance(edge_features, (list, tuple))
+                else (edge_features,),
+                (self,)
+            )
+            for feature in features
+            if issubclass(feature.__class__, AbstractModel)
+            for parameter_name, value in feature.parameters().items()
+        }
+
+        # Retrieve the set of provided automatic features names
+        # so we can put them in the report.
+        automatic_feature_names = {
+            feature.model_name()
+            for features in (
+                node_features
+                if isinstance(node_features, (list, tuple))
+                else (node_features,),
+                node_type_features
+                if isinstance(node_type_features, (list, tuple))
+                else (node_type_features,),
+                edge_features
+                if isinstance(edge_features, (list, tuple))
+                else (edge_features,),
+            )
+            for feature in features
+            if issubclass(feature.__class__, AbstractEmbeddingModel)
+        }
+
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
         # computed on the entire graph.
@@ -1268,7 +1310,8 @@ class AbstractClassifierModel(AbstractModel):
         performance["edges_number"] = graph.get_number_of_directed_edges()
         performance["number_of_holdouts"] = number_of_holdouts
         performance["evaluation_schema"] = evaluation_schema
-        for parameter, value in self.parameters().items():
+        performance["automatic_feature_names"] = format_list(automatic_feature_names)
+        for parameter, value in feature_parameters.items():
             if parameter in performance.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in the "
