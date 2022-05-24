@@ -55,6 +55,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         use_edge_metrics: bool = True,
         random_state: int = 42,
         use_laplacian: bool = True,
+        handling_multi_graph: str = "warn",
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -143,6 +144,12 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             Random state to reproduce the training samples.
         use_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
+        handling_multi_graph: str = "warn"
+            How to behave when dealing with multigraphs.
+            Possible behaviours are:
+            - "warn"
+            - "raise"
+            - "drop"
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -174,6 +181,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         self._optimizer = optimizer
         self._batch_size = batch_size
         self._use_laplacian = use_laplacian
+        self._handling_multi_graph = handling_multi_graph
 
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
@@ -286,7 +294,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         adjacency_matrix = graph_to_sparse_tensor(
             graph,
             use_weights=graph.has_edge_weights() and not self._use_laplacian,
-            use_laplacian=self._use_laplacian
+            use_laplacian=self._use_laplacian,
+            handling_multi_graph=self._handling_multi_graph
         )
 
         if node_features is not None:

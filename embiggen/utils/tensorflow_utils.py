@@ -104,7 +104,8 @@ def must_have_tensorflow_version_higher_or_equal_than(
 def graph_to_sparse_tensor(
     graph: Graph,
     use_weights: bool,
-    use_laplacian: bool
+    use_laplacian: bool,
+    handling_multi_graph: str = "warn",
 ) -> tf.SparseTensor:
     """Returns provided graph as sparse Tensor.
 
@@ -116,6 +117,13 @@ def graph_to_sparse_tensor(
         Whether to load the graph weights.
     use_laplacian: bool
         Whether to use the symmetrically normalized laplacian 
+    handling_multi_graph: str = "warn"
+        How to behave when dealing with multigraphs.
+        Possible behaviours are:
+        - "warn"
+        - "raise"
+        - "drop"
+
 
     Raises
     -------------------
@@ -148,10 +156,15 @@ def graph_to_sparse_tensor(
         )
 
     if graph.is_multigraph():
-        warnings.warn(
+        message = (
             "The Kipf GCN model does not currently support convolutions on a multigraph. "
             "We are dropping the parallel edges before computing the adjacency matrix."
         )
+        if handling_multi_graph == "warn":
+            warnings.warn(message)
+        elif handling_multi_graph == "raise":
+            raise ValueError(message)
+        
         graph = graph.remove_parallel_edges()
 
     if use_laplacian:
