@@ -141,12 +141,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                     subgraph=graph,
                 )
             elif isinstance(graph, tuple):
-                edge_features = self._support.get_all_edge_metrics(
+                edge_features = self._support.get_all_edge_metrics_from_node_ids(
+                    *graph,
                     normalize=True,
-                    subgraph=self._support.build_bipartite_graph_from_edge_node_ids(
-                        *graph,
-                        directed=True
-                    ),
                 )
             else:
                 raise NotImplementedError(
