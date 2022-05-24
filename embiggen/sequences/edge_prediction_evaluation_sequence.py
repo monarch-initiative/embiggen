@@ -271,10 +271,13 @@ class EdgePredictionEvaluationSequence(Sequence):
                 negative_labels
             ])
 
+        new_indices = np.arange(labels.size)
+        np.random.shuffle(new_indices)
+
         return ((tuple([
-            value
+            value[new_indices]
             for value in (
                 sources, source_node_types, destinations, destination_node_types, edge_metrics, edge_types,
             )
             if not self._filter_none_values or value is not None
-        ]), labels,), )
+        ]), labels[new_indices],), )
