@@ -37,7 +37,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         features_dropout_rate: float = 0.2,
         optimizer: Union[str, Optimizer] = "LazyAdam",
         early_stopping_min_delta: float = 0.0001,
-        early_stopping_patience: int = 10,
+        early_stopping_patience: int = 20,
         reduce_lr_min_delta: float = 0.0001,
         reduce_lr_patience: int = 5,
         early_stopping_monitor: str = "loss",
