@@ -838,7 +838,8 @@ class AbstractClassifierModel(AbstractModel):
                 metric.__name__: metric(
                     ground_truth,
                     predictions,
-                    average="binary" if self.is_binary_prediction_task() else "macro"
+                    average="binary" if self.is_binary_prediction_task() else "macro",
+                    zero_division=0
                 )
                 for metric in (
                     f1_score,
