@@ -164,7 +164,7 @@ def graph_to_sparse_tensor(
             warnings.warn(message)
         elif handling_multi_graph == "raise":
             raise ValueError(message)
-        
+
         graph = graph.remove_parallel_edges()
 
     if use_laplacian:
