@@ -1168,7 +1168,7 @@ class GraphVisualizer:
 
         if colors is not None:
             if "cmap" in scatter_kwargs:
-                cmap = scatter_kwargs["cmap"]
+                cmap = scatter_kwargs.pop("cmap")
             else:
                 color_to_be_used = color_names[:int(colors.max() + 1)]
                 cmap = ListedColormap(color_to_be_used)
