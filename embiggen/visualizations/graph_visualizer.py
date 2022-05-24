@@ -1153,7 +1153,7 @@ class GraphVisualizer:
         legend_elements = []
         collections = []
 
-        colors = {
+        color_map = {
             "blue":'#4e79a7',
             "orange":'#f28e2b',
             "red":'#e15759',
@@ -1166,13 +1166,13 @@ class GraphVisualizer:
             "grey":"#bab0ac",
         }
 
-        color_hexas = np.array(list(colors.values()))
+        color_hexas = np.array(list(color_map.values()))
 
         if colors is not None:
             if "cmap" in scatter_kwargs:
                 cmap = scatter_kwargs.pop("cmap")
             else:
-                color_names_to_be_used = list(colors.keys())[:int(colors.max() + 1)]
+                color_names_to_be_used = list(color_map.keys())[:int(colors.max() + 1)]
                 cmap = ListedColormap(color_hexas[:int(colors.max() + 1)])
         else:
             cmap = None
