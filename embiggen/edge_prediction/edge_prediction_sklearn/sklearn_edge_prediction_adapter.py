@@ -262,6 +262,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             for edges in tqdm(
                 (sequence[i] for i in range(len(sequence))),
                 total=len(sequence),
+                dynamic_ncols=True,
                 desc="Running edge predictions",
                 leave=False
             )
@@ -303,6 +304,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             for edges in tqdm(
                 (sequence[i] for i in range(len(sequence))),
                 total=len(sequence),
+                dynamic_ncols=True,
                 desc="Running edge predictions",
                 leave=False
             )

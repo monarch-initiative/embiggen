@@ -280,7 +280,7 @@ class GraphVisualizer:
         self._graph = graph
         if support is None:
             support = self._graph
-        
+
         if subgraph_of_interest is None:
             subgraph_of_interest = self._graph
 
@@ -1154,16 +1154,16 @@ class GraphVisualizer:
         collections = []
 
         color_map = {
-            "blue":'#4e79a7',
-            "orange":'#f28e2b',
-            "red":'#e15759',
-            "cyan":'#76b7b2',
-            "green":'#59a14e',
-            "yellow":"#edc949",
-            "purple":"#b07aa2",
-            "pink":"#ff9da7",
-            "purple":"#9c755f",
-            "grey":"#bab0ac",
+            "blue": '#4e79a7',
+            "orange": '#f28e2b',
+            "red": '#e15759',
+            "cyan": '#76b7b2',
+            "green": '#59a14e',
+            "yellow": "#edc949",
+            "purple": "#b07aa2",
+            "pink": "#ff9da7",
+            "purple": "#9c755f",
+            "grey": "#bab0ac",
         }
 
         color_hexas = np.array(list(color_map.values()))
@@ -1172,7 +1172,8 @@ class GraphVisualizer:
             if "cmap" in scatter_kwargs:
                 cmap = scatter_kwargs.pop("cmap")
             else:
-                color_names_to_be_used = list(color_map.keys())[:int(colors.max() + 1)]
+                color_names_to_be_used = list(color_map.keys())[
+                    :int(colors.max() + 1)]
                 cmap = ListedColormap(color_hexas[:int(colors.max() + 1)])
         else:
             cmap = None
