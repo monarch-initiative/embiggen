@@ -50,7 +50,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         node_embedding_size: int = 50,
         use_node_types: Union[bool, "str"] = "auto",
         node_type_embedding_size: int = 50,
-        negative_samples_rate: float = 0.5,
+        training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
         random_state: int = 42,
@@ -126,10 +126,8 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             By default, automatically uses them if the graph has them.
         node_type_embedding_size: int = 50
             Size of the embedding for the node types.
-        negative_samples_rate: float = 0.5
-            Factor of negatives to use in every batch.
-            For example, with a batch size of 128 and negative_samples_rate equal
-            to 0.5, there will be 64 positives and 64 negatives.
+        training_unbalance_rate: float = 1.0
+            Unbalance rate for the training non-existing edges.
         training_sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to only sample edges between heterogeneous node types.
             This may be useful when training a model to predict between
@@ -191,7 +189,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         self._node_embedding_size = node_embedding_size
         self._use_node_types = use_node_types
         self._node_type_embedding_size = node_type_embedding_size
-        self._negative_samples_rate = negative_samples_rate
+        self._training_unbalance_rate = training_unbalance_rate
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         self._random_state = random_state
 
@@ -238,7 +236,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             use_edge_metrics = self._use_edge_metrics,
             use_node_types = self._use_node_types,
             node_type_embedding_size = self._node_type_embedding_size,
-            negative_samples_rate = self._negative_samples_rate,
+            training_unbalance_rate = self._training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
             random_state = self._random_state,
         )
@@ -553,7 +551,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             use_node_types=self.use_node_types,
             use_edge_metrics=self._use_edge_metrics,
             batch_size=self._batch_size,
-            negative_samples_rate=self._negative_samples_rate,
+            training_sample_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1),
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             random_state=self._random_state
         )
