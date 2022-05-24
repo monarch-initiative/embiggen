@@ -211,6 +211,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
         """Returns parameters for smoke test."""
         return dict(
             epochs=1,
+            handling_multi_graph="drop",
             number_of_units_per_gcn_body_layer=8,
             number_of_units_per_gcn_head_layer=8,
             number_of_units_per_ffnn_body_layer=8,

@@ -163,16 +163,18 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         lpt.fit(node_features)
 
+        negative_graph = graph.sample_negative_graph(
+            number_of_negative_samples=int(
+                math.ceil(graph.get_edges_number() *
+                            self._training_unbalance_rate)
+            ),
+            random_state=self._random_state,
+            sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
+        )
+
         self._model_instance.fit(*lpt.transform(
             positive_graph=graph,
-            negative_graph=graph.sample_negative_graph(
-                number_of_negative_samples=int(
-                    math.ceil(graph.get_edges_number() *
-                              self._training_unbalance_rate)
-                ),
-                random_state=self._random_state,
-                sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            ),
+            negative_graph=negative_graph,
             shuffle=True,
             random_state=self._random_state
         ))
