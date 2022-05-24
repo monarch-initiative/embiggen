@@ -551,7 +551,7 @@ class KipfGCNEdgePrediction(AbstractEdgePredictionModel):
             use_node_types=self.use_node_types,
             use_edge_metrics=self._use_edge_metrics,
             batch_size=self._batch_size,
-            training_sample_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1),
+            negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1),
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             random_state=self._random_state
         )
