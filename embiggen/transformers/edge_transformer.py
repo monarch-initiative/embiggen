@@ -4,6 +4,7 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 from userinput.utils import closest
+import sys
 from ..utils import format_list
 from .node_transformer import NodeTransformer
 
@@ -222,7 +223,7 @@ def get_cosine_similarity(
     return (
         np.sum((source_node_embedding * destination_node_embedding), axis=1) /
         (np.linalg.norm(source_node_embedding, axis=1) *
-         np.linalg.norm(destination_node_embedding, axis=1))
+         np.linalg.norm(destination_node_embedding, axis=1) + sys.float_info.epsilon)
     ).reshape((-1, 1))
 
 
