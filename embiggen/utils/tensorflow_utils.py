@@ -148,11 +148,11 @@ def graph_to_sparse_tensor(
         )
 
     if graph.is_multigraph():
-        raise NotImplementedError(
-            "The GCN model does not currently support operations on a multigraph. "
-            "You can drop multigraph edges by using the method "
-            "from Ensmallen `graph.remove_parallel_edges()`."
+        warnings.warn(
+            "The Kipf GCN model does not currently support convolutions on a multigraph. "
+            "We are dropping the parallel edges before computing the adjacency matrix."
         )
+        graph = graph.remove_parallel_edges()
 
     if use_laplacian:
         return tf.sparse.reorder(tf.SparseTensor(
