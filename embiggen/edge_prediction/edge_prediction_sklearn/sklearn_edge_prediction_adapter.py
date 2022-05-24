@@ -24,6 +24,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        use_edge_metrics: bool = True,
         prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
@@ -41,6 +42,13 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             Whether to sample negative edges exclusively between nodes with different node types
             to generate the negative edges used during the training of the model.
             This can be useful when executing a bipartite edge prediction task.
+        use_edge_metrics: bool = True
+            Whether to use the edge metrics from traditional edge prediction.
+            These metrics currently include:
+            - Adamic Adar
+            - Jaccard Coefficient
+            - Resource allocation index
+            - Preferential attachment
         prediction_batch_size: int = 2**12
             Batch size to use for the predictions.
             Since usually rendering a whole dense graph edge embedding is not
@@ -61,7 +69,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._training_unbalance_rate = training_unbalance_rate
         self._random_state = random_state
         self._prediction_batch_size = prediction_batch_size
+        self._use_edge_metrics = use_edge_metrics
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
+        self._support = None
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
@@ -124,10 +134,30 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             aligned_node_mapping=True
         )
 
+        if self._use_edge_metrics:
+            if isinstance(graph, Graph):
+                edge_features = self._support.get_all_edge_metrics(
+                    normalize=True,
+                    subgraph=graph,
+                )
+            elif isinstance(graph, tuple):
+                edge_features = self._support.get_all_edge_metrics(
+                    normalize=True,
+                    subgraph=self._support.build_bipartite_graph_from_edge_node_ids(
+                        *graph,
+                        directed=True
+                    ),
+                )
+            else:
+                raise NotImplementedError(
+                    f"A graph of type {type(graph)} was provided."
+                )
+
         gt.fit(node_features)
 
         return gt.transform(
-            graph=graph
+            graph=graph,
+            edge_features=edge_features
         )
 
     def _fit(
@@ -163,6 +193,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         lpt.fit(node_features)
 
+        if support is None:
+            support = graph
+
         negative_graph = graph.sample_negative_graph(
             number_of_negative_samples=int(
                 math.ceil(graph.get_edges_number() *
@@ -172,9 +205,23 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
         )
 
+        if self._use_edge_metrics:
+            self._support = support
+            edge_features = np.vstack((
+                support.get_all_edge_metrics(
+                    normalize=True,
+                    subgraph=graph,
+                ),
+                support.get_all_edge_metrics(
+                    normalize=True,
+                    subgraph=negative_graph,
+                )
+            ))
+
         self._model_instance.fit(*lpt.transform(
             positive_graph=graph,
             negative_graph=negative_graph,
+            edge_features=edge_features,
             shuffle=True,
             random_state=self._random_state
         ))

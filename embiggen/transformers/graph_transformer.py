@@ -62,7 +62,7 @@ class GraphTransformer:
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
@@ -71,7 +71,7 @@ class GraphTransformer:
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
             It can either be an Graph or a list of lists of edges.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.

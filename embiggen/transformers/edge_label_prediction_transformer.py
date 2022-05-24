@@ -56,7 +56,7 @@ class EdgeLabelPredictionTransformer:
     def transform(
         self,
         graph: Graph,
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
         behaviour_for_unknown_edge_labels: Optional[str] = None,
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -67,7 +67,7 @@ class EdgeLabelPredictionTransformer:
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.

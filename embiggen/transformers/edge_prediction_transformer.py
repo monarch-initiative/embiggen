@@ -52,7 +52,7 @@ class EdgePredictionTransformer:
         self,
         positive_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         negative_graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
         random_state: int = 42,
         shuffle: bool = False
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -66,7 +66,7 @@ class EdgePredictionTransformer:
         negative_graph: Union[Graph, List[List[str]], List[List[int]]],
             The graph whose edges are to be embedded and labeled as positives.
             It can either be an Graph or a list of lists of edges.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -95,13 +95,22 @@ class EdgePredictionTransformer:
                 )
 
         if edge_features is not None:
+            if not isinstance(edge_features, list):
+                edge_features = [edge_features]
+            
             if isinstance(positive_graph, Graph):
                 number_of_positive_edges = positive_graph.get_number_of_directed_edges()
             else:
                 number_of_positive_edges = len(positive_graph)
-
-            positive_edge_features = edge_features[:number_of_positive_edges]
-            negative_edge_features = edge_features[number_of_positive_edges:]
+            
+            positive_edge_features = [
+                edge_feature[:number_of_positive_edges]
+                for edge_feature in edge_features
+            ]
+            negative_edge_features  = [
+                edge_feature[number_of_positive_edges:]
+                for edge_feature in edge_features
+            ]
         else:
             positive_edge_features = negative_edge_features = None
 

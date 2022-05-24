@@ -412,7 +412,7 @@ class EdgeTransformer:
         self,
         sources: Union[List[str], List[int]],
         destinations: Union[List[str], List[int]],
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
@@ -422,7 +422,7 @@ class EdgeTransformer:
             List of source nodes whose embedding is to be returned.
         destinations:Union[List[str], List[int]]
             List of destination nodes whose embedding is to be returned.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -438,33 +438,36 @@ class EdgeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if edge_features is not None and len(edge_features.shape) != 2:
-            raise ValueError(
-                (
-                    "The provided edge features should have a bidimensional shape, "
-                    "but the provided one has shape {}."
-                ).format(edge_features.shape)
-            )
-
         edge_embeddings = self._method(
             self._transformer.transform(sources),
             self._transformer.transform(destinations)
         )
 
         if edge_features is not None:
-            if edge_features.shape[0] != edge_embeddings.shape[0]:
-                raise ValueError(
-                    (
-                        "The provided edge features should have a sample for each of the edges "
-                        "in the graph, which are {}, but were {}."
-                    ).format(
-                        edge_embeddings.shape[0],
-                        edge_features.shape[0]
+            if not isinstance(edge_features, list):
+                edge_features = [edge_features]
+            
+            for edge_feature in edge_features:
+                if len(edge_feature.shape) != 2:
+                    raise ValueError(
+                        (
+                            "The provided edge features should have a bidimensional shape, "
+                            "but the provided one has shape {}."
+                        ).format(edge_feature.shape)
                     )
-                )
+                if edge_feature.shape[0] != edge_embeddings.shape[0]:
+                    raise ValueError(
+                        (
+                            "The provided edge features should have a sample for each of the edges "
+                            "in the graph, which are {}, but were {}."
+                        ).format(
+                            edge_embeddings.shape[0],
+                            edge_feature.shape[0]
+                        )
+                    )
             edge_embeddings = np.hstack([
                 edge_embeddings,
-                edge_features
+                *edge_features
             ])
 
         return edge_embeddings
