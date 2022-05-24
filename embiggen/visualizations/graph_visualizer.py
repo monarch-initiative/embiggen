@@ -1153,25 +1153,27 @@ class GraphVisualizer:
         legend_elements = []
         collections = []
 
-        color_names = np.array([
-            "tab:blue",
-            "tab:orange",
-            "tab:green",
-            "tab:red",
-            "tab:purple",
-            "tab:brown",
-            "tab:pink",
-            "tab:gray",
-            "tab:olive",
-            "tab:cyan",
-        ])
+        colors = {
+            "blue":'#4e79a7',
+            "orange":'#f28e2b',
+            "red":'#e15759',
+            "cyan":'#76b7b2',
+            "green":'#59a14e',
+            "yellow":"#edc949",
+            "purple":"#b07aa2",
+            "pink":"#ff9da7",
+            "purple":"#9c755f",
+            "grey":"#bab0ac",
+        }
+
+        color_hexas = np.array(list(colors.values()))
 
         if colors is not None:
             if "cmap" in scatter_kwargs:
                 cmap = scatter_kwargs.pop("cmap")
             else:
-                color_to_be_used = color_names[:int(colors.max() + 1)]
-                cmap = ListedColormap(color_to_be_used)
+                color_names_to_be_used = list(colors.keys())[:int(colors.max() + 1)]
+                cmap = ListedColormap(color_hexas[:int(colors.max() + 1)])
         else:
             cmap = None
 
@@ -1280,10 +1282,10 @@ class GraphVisualizer:
             caption = format_list([
                 '{quotations}{label}{quotations} in {color_name}'.format(
                     label=label,
-                    color_name=color_name.split(":")[1],
+                    color_name=color_name,
                     quotations="\'" if "other" not in label.lower() else "",
                 )
-                for color_name, label in zip(color_to_be_used, labels)
+                for color_name, label in zip(color_names_to_be_used, labels)
             ])
 
             return_values = (*return_values, caption)
