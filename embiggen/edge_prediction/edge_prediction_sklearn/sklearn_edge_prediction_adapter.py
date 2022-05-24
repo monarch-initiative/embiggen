@@ -149,6 +149,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 raise NotImplementedError(
                     f"A graph of type {type(graph)} was provided."
                 )
+        else:
+            edge_features = None
 
         gt.fit(node_features)
 
