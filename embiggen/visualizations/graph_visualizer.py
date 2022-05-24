@@ -2099,7 +2099,7 @@ class GraphVisualizer:
             )
         else:
             metric_caption = (
-                "The metric is not useful as a "
+                "The metric is not useful as an "
                 f"edge prediction feature"
             )
 
