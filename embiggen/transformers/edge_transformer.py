@@ -223,7 +223,7 @@ def get_cosine_similarity(
     return (
         np.sum((source_node_embedding * destination_node_embedding), axis=1) /
         (np.linalg.norm(source_node_embedding, axis=1) *
-         np.linalg.norm(destination_node_embedding, axis=1) + sys.float_info.epsilon)
+         np.linalg.norm(destination_node_embedding, axis=1) + np.finfo(np.float32).resolution)
     ).reshape((-1, 1))
 
 
