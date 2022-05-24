@@ -83,7 +83,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "edge_embedding_method": self._edge_embedding_method,
             "training_unbalance_rate": self._training_unbalance_rate,
             "random_state": self._random_state,
-            "prediction_batch_size": self._prediction_batch_size
+            "prediction_batch_size": self._prediction_batch_size,
+            "use_edge_metrics": self._use_edge_metrics
         }
 
     def clone(self) -> Type["SklearnEdgePredictionAdapter"]:
