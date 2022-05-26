@@ -12,7 +12,8 @@ class EdgePredictionSequence:
         self,
         graph: Graph,
         graph_used_in_training: Graph,
-        use_node_types: bool,
+        return_node_types: bool,
+        return_edge_types: bool,
         use_edge_metrics: bool,
         batch_size: int = 2**10,
     ):
@@ -25,8 +26,10 @@ class EdgePredictionSequence:
         graph_used_in_training: Graph
             The graph that was used while training the current
             edge prediction model.
-        use_node_types: bool
+        return_node_types: bool
             Whether to return the node types.
+        return_edge_types: bool
+            Whether to return the edge types.
         use_edge_metrics: bool = True
             Whether to return the edge metrics.
         batch_size: int = 2**10,
@@ -47,7 +50,8 @@ class EdgePredictionSequence:
             )
         self._graph = graph
         self._graph_used_in_training = graph_used_in_training
-        self._use_node_types = use_node_types
+        self._return_node_types = return_node_types
+        self._return_edge_types = return_edge_types
         self._use_edge_metrics = use_edge_metrics
         self._batch_size = batch_size
 
@@ -73,7 +77,8 @@ class EdgePredictionSequence:
                 idx,
                 graph=self._graph,
                 batch_size=self._batch_size,
-                return_node_types=self._use_node_types,
+                return_node_types=self._return_node_types,
+                return_edge_types=self._return_edge_types,
                 return_edge_metrics=self._use_edge_metrics,
             )
             if value is not None

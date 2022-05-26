@@ -35,7 +35,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         return [
             "Stratified Monte Carlo",
             "Monte Carlo",
-            "Stratified Kfold"
+            "Stratified Kfold",
             "Kfold"
         ]
 
@@ -97,6 +97,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         graph: Graph,
         train: Graph,
         test: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
@@ -106,6 +107,14 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         train_size = train.get_known_node_types_number() / graph.get_known_node_types_number()
+        
+        if self.is_multilabel_prediction_task():
+            labels = graph.get_one_hot_encoded_node_types()
+        elif self.is_binary_prediction_task():
+            labels = graph.get_boolean_node_type_ids()
+        else:
+            labels = graph.get_single_label_node_type_ids()
+
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -113,6 +122,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         ):
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
+                support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features
@@ -125,30 +135,22 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             else:
                 predictions = prediction_probabilities.argmax(axis=-1)
 
-            if self.is_multilabel_prediction_task():
-                labels = graph.get_one_hot_encoded_node_types()
-            elif self.is_binary_prediction_task():
-                labels = graph.get_boolean_node_type_ids()
-            else:
-                labels = graph.get_single_label_node_type_ids()
-            
-            if graph.has_unknown_node_types():
-                mask = graph.get_known_node_types_mask()
-                prediction_probabilities = prediction_probabilities[mask]
-                predictions = predictions[mask]
-                labels = labels[mask]
+            mask = evaluation_graph.get_known_node_types_mask()
+            prediction_probabilities = prediction_probabilities[mask]
+            predictions = predictions[mask]
+            labels_subset = labels[mask]
 
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_nodes_number": graph.get_known_node_types_number(),
+                "known_nodes_number": evaluation_graph.get_known_node_types_number(),
                 **self.evaluate_predictions(
                     predictions,
-                    labels
+                    labels_subset
                 ),
                 **self.evaluate_prediction_probabilities(
                     prediction_probabilities,
-                    labels
+                    labels_subset
                 ),
             })
 
@@ -157,6 +159,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     def predict(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -167,6 +170,11 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -185,11 +193,12 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "of the edge-label prediction models."
             )
 
-        return super().predict(graph, node_features)
+        return super().predict(graph, support=support, node_features=node_features)
 
     def predict_proba(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -200,6 +209,11 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -218,7 +232,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "of the edge-label prediction models."
             )
 
-        return super().predict_proba(graph, node_features)
+        return super().predict_proba(graph, support=support, node_features=node_features)
 
     def fit(
         self,

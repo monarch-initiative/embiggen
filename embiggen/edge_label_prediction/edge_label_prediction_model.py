@@ -14,6 +14,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_multilabel_prediction_task = None
         super().__init__()
     
+    @staticmethod
     def requires_edge_types() -> bool:
         """Returns whether this method requires node types."""
         return True
@@ -94,6 +95,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         graph: Graph,
         train: Graph,
         test: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
@@ -110,16 +112,16 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         ):
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
+                support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features
-            )
-
+            )[evaluation_graph.get_edge_ids_with_known_edge_types()]
             
             if self.is_binary_prediction_task():
                 prediction_probabilities = prediction_probabilities[:, 1]
                 predictions = prediction_probabilities > 0.5
-                labels = graph.get_known_edge_type_ids() == 1
+                labels = evaluation_graph.get_known_edge_type_ids() == 1
             elif self.is_multilabel_prediction_task():
                 # TODO! support multilabel prediction!
                 raise NotImplementedError(
@@ -129,13 +131,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 )
             else:
                 predictions = prediction_probabilities.argmax(axis=-1)
-                labels = graph.get_known_edge_type_ids()
-
-
-            if graph.has_unknown_node_types():
-                mask = graph.get_known_node_types_mask()
-                prediction_probabilities = prediction_probabilities[mask]
-                predictions = predictions[mask]
+                labels = evaluation_graph.get_known_edge_type_ids()
 
             performance.append({
                 "evaluation_mode": evaluation_mode,

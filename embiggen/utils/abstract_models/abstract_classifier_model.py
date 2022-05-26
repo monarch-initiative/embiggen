@@ -65,6 +65,7 @@ class AbstractClassifierModel(AbstractModel):
     def _predict(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -75,6 +76,11 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[List[np.ndarray]] = None
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
@@ -90,6 +96,7 @@ class AbstractClassifierModel(AbstractModel):
     def _predict_proba(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -100,6 +107,11 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[List[np.ndarray]] = None
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
@@ -673,6 +685,19 @@ class AbstractClassifierModel(AbstractModel):
                 f"instance of graph {graph.get_name()} does not have node types. "
                 "It is unclear how to proceed with this data."
             )
+        
+        if (self.requires_node_types() or self.is_using_node_types()) and not graph.has_node_types():
+            raise ValueError(
+                f"The provided graph {graph.get_name()} does not have node types, but "
+                f"the {self.model_name()} requires or is parametrized to use node types."
+            )
+
+        if self.requires_edge_types() and not graph.has_edge_types():
+            raise ValueError(
+                f"The provided graph {graph.get_name()} does not have edge types, but "
+                f"the {self.model_name()} requires edge types."
+            )
+        
         try:
             self._fit(
                 graph=graph,
@@ -705,6 +730,7 @@ class AbstractClassifierModel(AbstractModel):
     def predict(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -715,6 +741,11 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -733,6 +764,7 @@ class AbstractClassifierModel(AbstractModel):
         try:
             return self._predict(
                 graph=graph,
+                support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
                     node_features=node_features,
@@ -759,6 +791,7 @@ class AbstractClassifierModel(AbstractModel):
     def predict_proba(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -769,6 +802,11 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -788,6 +826,7 @@ class AbstractClassifierModel(AbstractModel):
         try:
             return self._predict_proba(
                 graph=graph,
+                support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
                     node_features=node_features,
@@ -918,6 +957,7 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         train: Graph,
         test: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
@@ -1277,6 +1317,7 @@ class AbstractClassifierModel(AbstractModel):
                 # We add the newly computed performance.
                 holdout_performance = classifier._evaluate(
                     graph=graph,
+                    support=train,
                     train=train_of_interest,
                     test=test_of_interest,
                     node_features=holdout_node_features,

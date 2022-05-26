@@ -5,13 +5,10 @@ The layer is implemented as described in [Semi-Supervised Classification with Gr
 
 In this version of the implementation, we allow for batch sizes of arbitrary size.
 """
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional, List
 import tensorflow as tf
 from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Dropout, Layer, Dense  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.initializers import Initializer  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.regularizers import Regularizer  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import Constraint  # pylint: disable=import-error,no-name-in-module
 
 
 class GraphConvolution(Layer):
@@ -21,15 +18,7 @@ class GraphConvolution(Layer):
         self,
         units: int,
         activation: str = "relu",
-        use_bias: bool = True,
-        kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
-        bias_initializer: Union[str, Initializer] = 'zeros',
-        kernel_regularizer: Union[str, Regularizer] = None,
-        bias_regularizer: Union[str, Regularizer] = None,
-        activity_regularizer: Union[str, Regularizer] = None,
-        kernel_constraint: Union[str, Constraint] = None,
-        bias_constraint: Union[str, Constraint] = None,
-        features_dropout_rate: float = 0.5,
+        dropout_rate: Optional[float] = 0.5,
         **kwargs: Dict
     ):
         """Create new GraphConvolution layer.
@@ -40,91 +29,88 @@ class GraphConvolution(Layer):
             The dimensionality of the output space (i.e. the number of output units).
         activation: str = "relu",
             Activation function to use. If you don't specify anything, relu is used.
-        use_bias: bool = True,
-            Whether to use bias in the layer.
-        kernel_initializer: Union[str, Initializer] = 'glorot_uniform',
-            Initializer for the kernel weights matrix.
-        bias_initializer: Union[str, Initializer] = 'zeros',
-            Initializer for the bias vector.
-        kernel_regularizer: Union[str, Regularizer] = None,
-            Regularizer function applied to the kernel weights matrix.
-        bias_regularizer: Union[str, Regularizer] = None,
-            Regularizer function applied to the bias vector.
-        activity_regularizer: Union[str, Regularizer] = None,
-            Regularizer function applied to the output of the activation function.
-        kernel_constraint: Union[str, Constraint] = None,
-            Constraint function applied to the kernel matrix.
-        bias_constraint: Union[str, Constraint] = None,
-            Constraint function applied to the bias vector.
-        features_dropout_rate: float = 0.5,
+        dropout_rate: Optional[float] = 0.5,
             Float between 0 and 1. Fraction of the input units to drop.
+            If the provided value is either zero or None the dropout rate
+            is not applied.
         **kwargs: Dict,
             Kwargs to pass to the parent Layer class.
         """
         super().__init__(**kwargs)
         self._units = units
         self._activation = activation
-        self._kernel_initializer = kernel_initializer
-        self._bias_initializer = bias_initializer
-        self._kernel_regularizer = kernel_regularizer
-        self._bias_regularizer = bias_regularizer
-        self._activity_regularizer = activity_regularizer
-        self._kernel_constraint = kernel_constraint
-        self._bias_constraint = bias_constraint
-        self._features_dropout_rate = features_dropout_rate
-        self._dense = None
-        self._use_bias = use_bias
-        self._bias = None
-        self._features_dropout = None
-        self._norm = None
+        if dropout_rate == 0.0:
+            dropout_rate = None
+        self._dropout_rate = dropout_rate
+        self._dense_layers = []
+        self._dropout_layers = []
 
-    def build(self, input_shape: Tuple[int, int]) -> None:
-        """Build the NCE layer.
+    def build(self, input_shape) -> None:
+        """Build the Graph Convolution layer.
 
         Parameters
         ------------------------------
-        input_shape: Tuple[int, int],
+        input_shape
             Shape of the output of the previous layer.
         """
-        self._dense = Dense(
-            units=self._units,
-            use_bias=self._use_bias,
-            activation=self._activation,
-            kernel_initializer=self._kernel_initializer,
-            bias_initializer=self._bias_initializer,
-            kernel_regularizer=self._kernel_regularizer,
-            bias_regularizer=self._bias_regularizer,
-            kernel_constraint=self._kernel_constraint,
-            bias_constraint=self._bias_constraint,
-            activity_regularizer=self._activity_regularizer,
-        )
-        self._dense.build(input_shape)
-        # Create the layer activation
-        self._features_dropout = Dropout(self._features_dropout_rate)
-        self._features_dropout.build(input_shape)
+        if len(input_shape) == 0:
+            raise ValueError(
+                "The provided input of the Graph Convolution layer "
+                "is empty. It should contain exactly two elements, "
+                "the adjacency matrix and the node features."
+            )
+        
+        if len(input_shape) == 1:
+            raise ValueError(
+                "The provided input of the Graph Convolution layer "
+                "has a single element. It should contain exactly two elements, "
+                "the adjacency matrix and the node features."
+            )
+        for node_feature_shape in input_shape[1:]:
+            dense_layer = Dense(
+                units=self._units,
+                activation=self._activation,
+            )
+            dense_layer.build(node_feature_shape)
+            self._dense_layers.append(dense_layer)
+
+            if self._dropout_rate is not None:
+                dropout_layer = Dropout(self._dropout_rate)
+                dropout_layer.build(node_feature_shape)
+                self._dropout_layers.append(dropout_layer)
+            else:
+                self._dropout_layers.append(lambda x: x)
+
         super().build(input_shape)
 
     def call(
         self,
-        adjacency: tf.SparseTensor,
-        node_features: tf.Tensor
+        inputs: Tuple[Union[tf.Tensor, List[tf.Tensor], tf.SparseTensor]],
     ) -> tf.Tensor:
         """Returns called Graph Convolution Layer.
 
         Parameters
         ---------------------------
-        adjaceny: Tuple[tf.SparseTensor, tf.Tensor],
-            Sparse weighted input matrix.
-        node_features: tf.Tensor
+        inputs: Tuple[Union[tf.Tensor, tf.SparseTensor]],
         """
+        adjacency, node_features = inputs[0], inputs[1:]
+
         ids = tf.SparseTensor(
             indices=adjacency.indices,
             values=adjacency.indices[:, 1],
             dense_shape=adjacency.dense_shape
         )
-        return self._dense(embedding_ops.embedding_lookup_sparse_v2(
-            self._features_dropout(node_features),
-            ids,
-            adjacency,
-            combiner='mean'
-        ))
+
+        return [
+            dense(embedding_ops.embedding_lookup_sparse_v2(
+                dropout(node_feature),
+                ids,
+                adjacency,
+                combiner='mean'
+            ))
+            for dense, dropout, node_feature in zip(
+                self._dense_layers,
+                self._dropout_layers,
+                node_features
+            )
+        ]

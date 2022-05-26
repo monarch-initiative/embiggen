@@ -145,6 +145,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -156,6 +157,11 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used.
         node_type_features: np.ndarray
@@ -179,6 +185,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     def predict(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -190,6 +197,11 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         graph: Graph,
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used in the evaluation of the model.
         node_type_features: np.ndarray

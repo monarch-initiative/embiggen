@@ -229,7 +229,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     def _predict(
         self,
         graph: Graph,
-        node_features: Optional[List[np.ndarray]],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
@@ -239,6 +240,11 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: Optional[List[np.ndarray]]
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
@@ -249,7 +255,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         sequence = EdgePredictionSequence(
             graph=graph,
             graph_used_in_training=graph,
-            use_node_types=False,
+            return_node_types=False,
+            return_edge_types=False,
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
@@ -271,7 +278,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
     def _predict_proba(
         self,
         graph: Graph,
-        node_features: Optional[List[np.ndarray]],
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
@@ -281,7 +289,12 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
-        node_features: Optional[List[np.ndarray]]
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[List[np.ndarray]] = None
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
@@ -291,7 +304,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         sequence = EdgePredictionSequence(
             graph=graph,
             graph_used_in_training=graph,
-            use_node_types=False,
+            return_node_types=False,
+            return_edge_types=False,
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
