@@ -2,6 +2,7 @@
 from typing import Dict, Any
 from ensmallen import Graph
 import warnings
+from cache_decorator import Cache
 from .abstract_model import AbstractModel, abstract_class
 from .embedding_result import EmbeddingResult
 
@@ -10,13 +11,20 @@ from .embedding_result import EmbeddingResult
 class AbstractEmbeddingModel(AbstractModel):
     """Class defining properties of an abstract embedding model."""
 
-    def __init__(self, embedding_size: int):
+    def __init__(
+        self,
+        embedding_size: int,
+        enable_cache: bool = False
+    ):
         """Create new embedding model.
 
         Parameters
         ---------------------
         embedding_size: int
             The dimensionality of the embedding.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         super().__init__()
         if not isinstance(embedding_size, int) or embedding_size == 0:
@@ -25,6 +33,7 @@ class AbstractEmbeddingModel(AbstractModel):
                 f"but {embedding_size} was provided."
             )
         self._embedding_size = embedding_size
+        self._enable_cache = enable_cache
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the embedding model."""
@@ -64,6 +73,12 @@ class AbstractEmbeddingModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
+    @Cache(
+        cache_path="{cache_dir}/{self.model_name()}/{self.library_name()}/{graph.get_name()}/{_hash}.pkl.gz",
+        cache_dir="embedding",
+        enable_cache_arg_name="self._enable_cache",
+        args_to_ignore=["verbose"]
+    )
     def fit_transform(
         self,
         graph: Graph,
@@ -78,7 +93,7 @@ class AbstractEmbeddingModel(AbstractModel):
             The graph to run embedding on.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
-        verbose: bool
+        verbose: bool = True
             Whether to show loading bars.
 
         Returns

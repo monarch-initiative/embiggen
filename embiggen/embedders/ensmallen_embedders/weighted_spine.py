@@ -33,15 +33,6 @@ class WeightedSPINE(AbstractEmbeddingModel):
             embedding_size=embedding_size,
         )
 
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters of the model."""
-        return {
-            **super().parameters(),
-            **dict(
-                dtype=self._dtype
-            )
-        }
-
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""

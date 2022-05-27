@@ -199,7 +199,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> EmbeddingResult:
         """Return node embedding"""
         try:
             from tqdm.keras import TqdmCallback

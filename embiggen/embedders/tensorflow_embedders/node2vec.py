@@ -132,12 +132,10 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
-            super().parameters(),
-            dict(
-                number_of_negative_samples=self._number_of_negative_samples,
-            )
-        }
+        return dict(
+            **super().parameters(),
+            number_of_negative_samples=self._number_of_negative_samples,
+        )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
