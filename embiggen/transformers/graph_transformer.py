@@ -87,7 +87,10 @@ class GraphTransformer:
         """
         if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = graph.get_directed_edge_node_ids()
+                graph = (
+                    graph.get_directed_source_node_ids(),
+                    graph.get_directed_destination_node_ids(),
+                )
             else:
                 graph = graph.get_directed_edge_node_names()
         if isinstance(graph, List):

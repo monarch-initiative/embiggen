@@ -223,6 +223,10 @@ def get_cosine_similarity(
     --------------------------
     Numpy array with the cosine similarity.
     """
+    if not source_node_ids.data.c_contiguous:
+        source_node_ids = np.ascontiguousarray(source_node_ids)
+    if not destination_node_ids.data.c_contiguous:
+        destination_node_ids = np.ascontiguousarray(destination_node_ids)
     return express_measures.cosine_similarity_from_indices_unchecked(
         matrix=embedding,
         sources=np.ascontiguousarray(source_node_ids),
