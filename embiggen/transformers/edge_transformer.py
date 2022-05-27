@@ -229,8 +229,8 @@ def get_cosine_similarity(
         destination_node_ids = np.ascontiguousarray(destination_node_ids)
     return express_measures.cosine_similarity_from_indices_unchecked(
         matrix=embedding,
-        sources=np.ascontiguousarray(source_node_ids),
-        destinations=np.ascontiguousarray(destination_node_ids)
+        sources=source_node_ids,
+        destinations=destination_node_ids
     ).reshape((-1, 1))
 
 def get_concatenate_edge_embedding(
