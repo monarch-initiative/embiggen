@@ -460,7 +460,7 @@ class EdgeTransformer:
             edge_embeddings = self._method(
                 embedding=self._transformer._node_feature,
                 source_node_ids=sources,
-                destinations_node_ids=destinations,
+                destination_node_ids=destinations,
             )
         else:
             edge_embeddings = self._method(
