@@ -116,7 +116,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             existent_train_prediction_probabilities = existent_train_prediction_probabilities[
                 :, 1]
 
-        assert existent_train_prediction_probabilities.shape[0] == train.get_number_of_directed_edges()
+        assert existent_train_prediction_probabilities.shape[0] == train.get_number_of_directed_edges(
+        )
 
         existent_test_prediction_probabilities = self.predict_proba(
             test,
@@ -130,14 +131,16 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[
                 :, 1]
 
-        assert existent_test_prediction_probabilities.shape[0] == test.get_number_of_directed_edges()
+        assert existent_test_prediction_probabilities.shape[0] == test.get_number_of_directed_edges(
+        )
 
         if subgraph_of_interest is None:
             sampler_graph = graph
         else:
             sampler_graph = subgraph_of_interest
 
-        train_size = train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
+        train_size = train.get_edges_number() / (train.get_edges_number() +
+                                                 test.get_edges_number())
 
         for unbalance_rate in tqdm(
             validation_unbalance_rates,
@@ -189,8 +192,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     node_type_features=node_type_features,
                     edge_features=edge_features
                 )
-        
-                assert non_existent_prediction_probabilities.shape[0] == non_existent_graph.get_number_of_directed_edges()
+
+                assert non_existent_prediction_probabilities.shape[0] == non_existent_graph.get_number_of_directed_edges(
+                )
 
                 if non_existent_prediction_probabilities.shape[1] > 1:
                     non_existent_prediction_probabilities = non_existent_prediction_probabilities[
@@ -268,7 +272,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
                 predictions,
-                indices=graph.get_directed_edge_node_ids()
+                index=graph.get_directed_edge_node_ids()
             )
 
         return predictions
@@ -694,7 +698,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
                 predictions,
-                indices=graph.get_directed_edge_node_ids()
+                index=graph.get_directed_edge_node_ids()
             )
 
         return predictions

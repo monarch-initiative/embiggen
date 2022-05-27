@@ -459,8 +459,15 @@ class EdgeTransformer:
                 raise NotImplementedError(
                     "The Cosine Similarity is currently implemented exclusively for "
                     "numpy arrays of type uint32, but you have provided objects of type "
-                    f"{type(sources)} and {type(destinations)}."
+                    f"{type(sources)} and {type(destinations)}. "
                 )
+            if self._transformer._node_feature.dtype != np.float32:
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "node features contained in a numpy array of type float32, but "
+                    f"you have provided an object of type {self._transformer._node_feature.dtype}."
+                )
+
             edge_embeddings = self._method(
                 embedding=self._transformer._node_feature,
                 source_node_ids=sources,
