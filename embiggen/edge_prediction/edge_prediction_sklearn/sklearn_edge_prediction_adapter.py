@@ -25,7 +25,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
-        prediction_batch_size: int = 2**12,
+        prediction_batch_size: int = 2**15,
         random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
@@ -49,7 +49,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             - Jaccard Coefficient
             - Resource allocation index
             - Preferential attachment
-        prediction_batch_size: int = 2**12
+        prediction_batch_size: int = 2**15
             Batch size to use for the predictions.
             Since usually rendering a whole dense graph edge embedding is not
             feaseable in main memory, we chunk it into more digestable smaller
