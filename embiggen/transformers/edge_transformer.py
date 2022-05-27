@@ -224,9 +224,9 @@ def get_cosine_similarity(
     Numpy array with the cosine similarity.
     """
     return express_measures.cosine_similarity_from_indices_unchecked(
-        embedding,
-        source_node_ids,
-        destination_node_ids
+        matrix=embedding,
+        sources=source_node_ids,
+        destinations=destination_node_ids
     ).reshape((-1, 1))
 
 def get_concatenate_edge_embedding(

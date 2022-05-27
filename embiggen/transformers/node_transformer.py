@@ -82,10 +82,10 @@ class NodeTransformer:
             )
 
         if self._aligned_node_mapping:
-            self._node_feature = np.hstack([
+            self._node_feature = np.ascontiguousarray(np.hstack([
                 nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
                 for nf in node_feature
-            ])
+            ]))
         else:
             self._node_feature = pd.concat(node_feature, axis=1)
 
