@@ -252,6 +252,7 @@ class AbstractGCN(AbstractClassifierModel):
         return dict(
             epochs=1,
             number_of_units_per_graph_convolution_layers=2,
+            handling_multi_graph="drop"
         )
 
     def clone(self) -> Type["AbstractGCN"]:
