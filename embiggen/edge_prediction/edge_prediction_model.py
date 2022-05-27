@@ -230,6 +230,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -248,18 +249,29 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
             )
 
-        return super().predict(
+        predictions = super().predict(
             graph,
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
         )
+
+        if return_predictions_dataframe:
+            predictions = pd.DataFrame(
+                predictions,
+                indices=graph.get_directed_edge_node_ids()
+            )
+
+        return predictions
 
     def predict_bipartite_graph_from_edge_node_ids(
         self,
@@ -270,6 +282,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -292,6 +305,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_bipartite_graph_from_edge_node_ids(
@@ -302,7 +318,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_bipartite_graph_from_edge_node_names(
@@ -314,6 +331,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -336,6 +354,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_bipartite_graph_from_edge_node_names(
@@ -346,7 +367,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_bipartite_graph_from_edge_node_prefixes(
@@ -358,6 +380,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -380,6 +403,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_bipartite_graph_from_edge_node_prefixes(
@@ -390,7 +416,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_bipartite_graph_from_edge_node_types(
@@ -402,6 +429,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -424,6 +452,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_bipartite_graph_from_edge_node_types(
@@ -434,7 +465,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_clique_graph_from_node_ids(
@@ -445,6 +477,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -465,6 +498,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_clique_graph_from_node_ids(
@@ -474,7 +510,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_clique_graph_from_node_names(
@@ -485,6 +522,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -505,6 +543,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_clique_graph_from_node_names(
@@ -514,7 +555,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_clique_graph_from_node_prefixes(
@@ -525,6 +567,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -545,6 +588,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_clique_graph_from_node_prefixes(
@@ -554,7 +600,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_clique_graph_from_node_types(
@@ -565,6 +612,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -585,6 +633,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict(
             graph.build_clique_graph_from_node_types(
@@ -594,7 +645,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba(
@@ -604,6 +656,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -622,18 +675,29 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
             )
 
-        return super().predict_proba(
+        predictions = super().predict_proba(
             graph,
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
         )
+
+        if return_predictions_dataframe:
+            predictions = pd.DataFrame(
+                predictions,
+                indices=graph.get_directed_edge_node_ids()
+            )
+
+        return predictions
 
     def predict_proba_bipartite_graph_from_edge_node_ids(
         self,
@@ -644,6 +708,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -666,6 +731,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_bipartite_graph_from_edge_node_ids(
@@ -676,7 +744,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_bipartite_graph_from_edge_node_names(
@@ -688,6 +757,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -710,6 +780,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_bipartite_graph_from_edge_node_names(
@@ -720,7 +793,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_bipartite_graph_from_edge_node_prefixes(
@@ -732,6 +806,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -754,6 +829,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_bipartite_graph_from_edge_node_prefixes(
@@ -764,7 +842,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_bipartite_graph_from_edge_node_types(
@@ -776,6 +855,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -798,6 +878,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_bipartite_graph_from_edge_node_types(
@@ -808,7 +891,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_clique_graph_from_node_ids(
@@ -819,6 +903,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -839,6 +924,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_ids(
@@ -848,7 +936,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_clique_graph_from_node_names(
@@ -859,6 +948,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -879,6 +969,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_names(
@@ -888,7 +981,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_clique_graph_from_node_prefixes(
@@ -899,6 +993,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -919,6 +1014,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_prefixes(
@@ -928,7 +1026,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def predict_proba_clique_graph_from_node_types(
@@ -939,6 +1038,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
     ) -> np.ndarray:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -959,6 +1059,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_types(
@@ -968,7 +1071,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def fit(
