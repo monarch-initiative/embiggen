@@ -1,9 +1,7 @@
 """Module providing abstract classes for embedding models."""
-from typing import Dict, Union, Any
+from typing import Dict, Any
 from ensmallen import Graph
 import warnings
-import numpy as np
-import pandas as pd
 from .abstract_model import AbstractModel, abstract_class
 from .embedding_result import EmbeddingResult
 

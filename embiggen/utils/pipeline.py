@@ -185,7 +185,8 @@ def iterate_classifier_models(
 @Cache(
     cache_path="{cache_dir}/{task_name}/{model_name}/{graph_name}/{_hash}.csv.gz",
     cache_dir="experiments",
-    enable_cache_arg_name="enable_cache"
+    enable_cache_arg_name="enable_cache",
+    args_to_ignore=["node_features", "node_type_features", "edge_features"]
 )
 def evaluate_classifier(
     classifier: Type[AbstractClassifierModel],
