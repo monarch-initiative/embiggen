@@ -75,7 +75,7 @@ def graph_to_sparse_tensor(
 
     if graph.is_multigraph():
         message = (
-            "The Kipf GCN model does not currently support convolutions on a multigraph. "
+            "The GCN model does not currently support convolutions on a multigraph. "
             "We are dropping the parallel edges before computing the adjacency matrix."
         )
         if handling_multi_graph == "warn":

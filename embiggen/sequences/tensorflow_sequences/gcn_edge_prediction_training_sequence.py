@@ -14,6 +14,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         self,
         graph: Graph,
         kernel: tf.SparseTensor,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         return_node_ids: bool = False,
@@ -33,7 +34,9 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             The graph from which to sample the edges.
         kernel: tf.SparseTensor
             The kernel to be used for the convolutions.
-        node_features: List[np.ndarray]
+        support: Optional[Graph] = None
+            The graph to use to compute the edge metrics.
+        node_features: Optonal[List[np.ndarray]] = None
             The node features to be used.
         node_type_features: Optional[List[np.ndarray]]
             The node type features to be used.
@@ -74,8 +77,14 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             raise ValueError(
                 f"An empty instance of graph {graph.get_name()} was provided!"
             )
+
+        if support is None:
+            support = graph
+
         self._graph = graph
+        self._support = support
         self._kernel = kernel
+
         if node_features is None:
             node_features = []
         self._node_features = node_features
@@ -234,6 +243,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
             sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
+            support=self._support,
             graph_to_avoid=self._graph_to_avoid,
         )
 

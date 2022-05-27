@@ -35,6 +35,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         reduce_lr_monitor: str = "loss",
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
+        avoid_false_negatives: bool = True,
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
@@ -74,13 +75,8 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
-        optimizer: str = "LazyAdam"
+        optimizer: str = "adam"
             The optimizer to use while training the model.
-            By default, we use `LazyAdam`, which should be faster
-            than Adam when handling sparse gradients such as the one
-            we are using to train this model.
-            When the tensorflow addons module is not available,
-            we automatically switch back to `Adam`.
         early_stopping_min_delta: float
             Minimum delta of metric to stop the training.
         early_stopping_patience: int
@@ -101,6 +97,17 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
+        avoid_false_negatives: bool = True
+            Whether to avoid sampling false negatives.
+            This check makes the sampling a bit slower, and generally
+            the rate of collision is extremely low.
+            Consider disabling this when the task can account for this.
+        training_unbalance_rate: float = 1.0
+            The amount of negatives to be sampled during the training of the model.
+            By default this is 1.0, which means that the same number of positives and
+            negatives in the training are of the same cardinality.
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False
+            Whether to sample exclusively edges between nodes with different node types.
         use_node_embedding: bool = True
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
@@ -183,6 +190,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             verbose=verbose,
         )
         self._random_state = random_state
+        self._avoid_false_negatives = avoid_false_negatives
         self._training_unbalance_rate = training_unbalance_rate
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         
@@ -205,13 +213,15 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
-            support,
+            graph,
             kernel=self._graph_to_kernel(support),
+            support=support,
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
+            avoid_false_negatives=self._avoid_false_negatives,
             negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             random_state=self._random_state
