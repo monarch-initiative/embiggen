@@ -635,6 +635,342 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features
         )
 
+    def predict_proba_bipartite_graph_from_edge_node_ids(
+        self,
+        graph: Graph,
+        source_node_ids: List[int],
+        destination_node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_ids: List[int]
+            The source nodes of the bipartite graph.
+        destination_node_ids: List[int]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_ids(
+                source_node_ids=source_node_ids,
+                destination_node_ids=destination_node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_names(
+        self,
+        graph: Graph,
+        source_node_names: List[str],
+        destination_node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_names: List[str]
+            The source nodes of the bipartite graph.
+        destination_node_names: List[str]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_names(
+                source_node_names=source_node_names,
+                destination_node_names=destination_node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_prefixes(
+        self,
+        graph: Graph,
+        source_node_prefixes: List[str],
+        destination_node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_prefixes: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_prefixes: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_prefixes(
+                source_node_prefixes=source_node_prefixes,
+                destination_node_prefixes=destination_node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_types(
+        self,
+        graph: Graph,
+        source_node_types: List[str],
+        destination_node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_types: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_types: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_types(
+                source_node_types=source_node_types,
+                destination_node_types=destination_node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_clique_graph_from_node_ids(
+        self,
+        graph: Graph,
+        node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_ids: List[int]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_ids(
+                node_ids=node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_clique_graph_from_node_names(
+        self,
+        graph: Graph,
+        node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_names: List[str]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_names(
+                node_names=node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_clique_graph_from_node_prefixes(
+        self,
+        graph: Graph,
+        node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_prefixes: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_prefixes(
+                node_prefixes=node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+    def predict_proba_clique_graph_from_node_types(
+        self,
+        graph: Graph,
+        node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_types: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_types(
+                node_types=node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
     def fit(
         self,
         graph: Graph,
