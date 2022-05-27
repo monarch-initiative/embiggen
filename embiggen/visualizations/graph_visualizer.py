@@ -2093,7 +2093,7 @@ class GraphVisualizer:
             elif mean_accuracy > 0.65:
                 descriptor = f"is a good edge prediction feature"
             else:
-                descriptor = f"may be considered a edge prediction feature"
+                descriptor = f"may be considered an edge prediction feature"
             metric_caption = (
                 f"This metric {descriptor}"
             )
