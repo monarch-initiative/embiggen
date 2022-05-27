@@ -22,6 +22,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         epochs: int = 10,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        enable_cache: bool = False,
         **kwargs
     ):
         """Create new abstract Node2Vec method.
@@ -37,6 +38,9 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             The learning rate to use to train the Node2Vec model.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         if model_name.lower() not in self.MODELS:
             raise ValueError(
@@ -53,7 +57,10 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
         self._model = Node2VecEnsmallen.MODELS[model_name.lower()](**kwargs)
 
-        super().__init__(embedding_size=kwargs["embedding_size"])
+        super().__init__(
+            embedding_size=kwargs["embedding_size"],
+            enable_cache=enable_cache
+        )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:

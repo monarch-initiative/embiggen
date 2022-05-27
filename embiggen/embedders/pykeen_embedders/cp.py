@@ -16,7 +16,8 @@ class CPPyKeen(EntityRelationEmbeddingModelPyKeen):
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
-        random_seed: int = 42
+        random_seed: int = 42,
+        enable_cache: bool = False
     ):
         """Create new PyKeen CP model.
 
@@ -47,6 +48,9 @@ class CPPyKeen(EntityRelationEmbeddingModelPyKeen):
             - Local Closed World Assumption
         random_seed: int = 42
             Random seed to use while training the model
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._rank = rank
         super().__init__(
@@ -54,7 +58,8 @@ class CPPyKeen(EntityRelationEmbeddingModelPyKeen):
             epochs=epochs,
             batch_size=batch_size,
             training_loop=training_loop,
-            random_seed=random_seed
+            random_seed=random_seed,
+            enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:

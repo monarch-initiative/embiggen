@@ -38,6 +38,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
+        enable_cache: bool = False
     ):
         """Create new sequence Siamese model.
 
@@ -69,6 +70,9 @@ class Siamese(TensorFlowEmbedder):
             Whether to use mirrored strategy.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._relu_bias = relu_bias
 
@@ -82,6 +86,7 @@ class Siamese(TensorFlowEmbedder):
             batch_size=batch_size,
             optimizer=optimizer,
             use_mirrored_strategy=use_mirrored_strategy,
+            enable_cache=enable_cache
         )
 
     @staticmethod

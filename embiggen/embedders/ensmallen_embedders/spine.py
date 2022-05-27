@@ -13,7 +13,8 @@ class SPINE(AbstractEmbeddingModel):
     def __init__(
         self,
         embedding_size: int = 100,
-        dtype: Optional[str] = "u8"
+        dtype: Optional[str] = "u8",
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
 
@@ -23,12 +24,16 @@ class SPINE(AbstractEmbeddingModel):
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._dtype = dtype
         self._model = models.SPINE(embedding_size=embedding_size)
 
         super().__init__(
             embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:

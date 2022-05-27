@@ -18,7 +18,8 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
         epochs: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
-        random_state: int = 42
+        random_state: int = 42,
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
 
@@ -39,6 +40,9 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         random_state: int = 42
             Random state to reproduce the embeddings.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._renormalize = renormalize
         self._random_state = random_state
@@ -55,6 +59,7 @@ class KGTransEEnsmallen(AbstractEmbeddingModel):
 
         super().__init__(
             embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:

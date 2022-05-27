@@ -28,6 +28,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         random_state: int = 42,
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
 
@@ -87,6 +88,9 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             of the destination node degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
 
         self._epochs = epochs
@@ -112,7 +116,8 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         self._model = models.GloVe(**self._model_kwargs)
 
         super().__init__(
-            embedding_size=embedding_size
+            embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
     @staticmethod

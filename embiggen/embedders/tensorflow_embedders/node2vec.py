@@ -36,7 +36,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         normalize_by_degree: bool = False,
         random_state: int = 42,
         optimizer: str = "sgd",
-        use_mirrored_strategy: bool = False
+        use_mirrored_strategy: bool = False,
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec model.
 
@@ -105,6 +106,9 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._number_of_negative_samples = number_of_negative_samples
 
@@ -128,6 +132,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             batch_size=batch_size,
             optimizer=optimizer,
             use_mirrored_strategy=use_mirrored_strategy,
+            enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:

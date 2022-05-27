@@ -29,6 +29,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         normalize_learning_rate_by_degree: Optional[bool] = False,
         use_zipfian_sampling: Optional[bool] = True,
         random_state: int = 42,
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
 
@@ -95,6 +96,9 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         super().__init__(
             model_name="SkipGram",
@@ -119,6 +123,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
+            enable_cache=enable_cache,
         )
 
     @staticmethod

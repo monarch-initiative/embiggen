@@ -1,5 +1,5 @@
 """Abstract Keras Model wrapper for embedding models."""
-from typing import Dict, List, Sequence, Union, Optional, Tuple, Any
+from typing import Dict, Sequence, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         epochs: int = 10,
         batch_size: int = 2**10,
         optimizer: str = "nadam",
-        use_mirrored_strategy: bool = False
+        use_mirrored_strategy: bool = False,
+        enable_cache: bool = False
     ):
         """Create new TensorFlowEmbedder object.
 
@@ -56,6 +57,9 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Optimizer to use during the training.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         execute_gpu_checks()
         if use_mirrored_strategy and get_available_gpus_number() <= 1:
@@ -71,7 +75,10 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._early_stopping_patience = early_stopping_patience
         self._learning_rate_plateau_min_delta = learning_rate_plateau_min_delta
         self._learning_rate_plateau_patience = learning_rate_plateau_patience
-        super().__init__(embedding_size=embedding_size)
+        super().__init__(
+            embedding_size=embedding_size,
+            enable_cache=enable_cache
+        )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:

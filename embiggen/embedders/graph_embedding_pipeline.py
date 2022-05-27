@@ -1,47 +1,10 @@
 """Module offering pipeline to embed graph nodes, node types and edge types."""
 from typing import Union, Dict, Optional, Type
 from ensmallen import Graph
-from cache_decorator import Cache
 
 from ..utils.pipeline import iterate_graphs
 from ..utils import AbstractEmbeddingModel, EmbeddingResult
 
-
-# @Cache(
-#     cache_path={
-#         "node_embedding": "{cache_directory}/{graph_name}/{embedding_model_name}/{library_name}/node_embedding_{_hash}.csv.gz",
-#         "node_type_embedding": "{cache_directory}/{graph_name}/{embedding_model_name}/{library_name}/node_type_embedding_{_hash}.csv.gz",
-#         "edge_type_embedding": "{cache_directory}/{graph_name}/{embedding_model_name}/{library_name}/edge_type_embedding_{_hash}.csv.gz",
-#     },
-#     optional_path_keys=["node_type_embedding", "edge_type_embedding"],
-#     args_to_ignore=["verbose"],
-#     enable_cache_arg_name="enable_cache"
-# )
-def _cached_embed_graph(
-    graph: Graph,
-    graph_name: str,
-    embedding_model: Type[AbstractEmbeddingModel],
-    embedding_model_name: str,
-    library_name: str,
-    cache_directory: str,
-    return_dataframe: bool = True,
-    verbose: bool = True,
-) -> EmbeddingResult:
-    try:
-        return embedding_model.fit_transform(
-            graph,
-            return_dataframe=return_dataframe,
-            verbose=verbose
-        )
-    except Exception as e:
-        raise ValueError(
-            "An exception was raised while trying to compute "
-            f"a node embedding on the graph {graph_name} "
-            f"using the model called {embedding_model_name} "
-            f"from the library {library_name}, specifically "
-            f"implemented in the class {embedding_model.__class__.__name__}. "
-            f"The body of the exception was: {str(e)}."
-        ) from e
 
 
 def embed_graph(
@@ -50,9 +13,7 @@ def embed_graph(
     repository: Optional[str] = None,
     version: Optional[str] = None,
     library_name: Optional[str] = None,
-    enable_cache: bool = False,
     smoke_test: bool = False,
-    cache_directory: str = "embedding",
     return_dataframe: bool = True,
     verbose: bool = True,
     **kwargs: Dict
@@ -125,14 +86,18 @@ def embed_graph(
     if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
         graph = graph.sort_by_decreasing_outbound_node_degree()
 
-    return _cached_embed_graph(
-        graph=graph,
-        graph_name=graph.get_name(),
-        embedding_model=embedding_model,
-        embedding_model_name=embedding_model.model_name(),
-        library_name=embedding_model.library_name(),
-        #enable_cache=enable_cache and not smoke_test,
-        cache_directory=cache_directory,
-        return_dataframe=return_dataframe,
-        verbose=verbose
-    )
+    try:
+        return embedding_model.fit_transform(
+            graph,
+            return_dataframe=return_dataframe,
+            verbose=verbose
+        )
+    except Exception as e:
+        raise ValueError(
+            "An exception was raised while trying to compute "
+            f"a node embedding on the graph {graph.get_name()} "
+            f"using the model called {embedding_model.model_name()} "
+            f"from the library {library_name}, specifically "
+            f"implemented in the class {embedding_model.__class__.__name__}. "
+            f"The body of the exception was: {str(e)}."
+        ) from e

@@ -9,7 +9,8 @@ class HOPEKarateClub(AbstractKarateClubEmbedder):
     def __init__(
         self,
         embedding_size: int = 128,
-        random_state: int = 42
+        random_state: int = 42,
+        enable_cache: bool = False
     ):
         """Return a new HOPE embedding model.
 
@@ -20,9 +21,15 @@ class HOPEKarateClub(AbstractKarateClubEmbedder):
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._random_state = random_state
-        super().__init__(embedding_size=embedding_size)
+        super().__init__(
+            embedding_size=embedding_size,
+            enable_cache=enable_cache
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""

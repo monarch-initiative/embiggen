@@ -10,16 +10,24 @@ from ...utils.networkx_utils import convert_ensmallen_graph_to_networkx_graph
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
 
-    def __init__(self, embedding_size: int):
+    def __init__(
+        self,
+        embedding_size: int,
+        enable_cache: bool = False
+    ):
         """Create new embedding model.
 
         Parameters
         ---------------------
         embedding_size: int
             The dimensionality of the embedding.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         super().__init__(
-            embedding_size=embedding_size
+            embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
     @staticmethod

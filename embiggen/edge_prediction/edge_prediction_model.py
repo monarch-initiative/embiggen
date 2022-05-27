@@ -698,6 +698,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
                 predictions,
+                columns=["prediction"],
                 index=graph.get_directed_edge_node_ids()
             )
 

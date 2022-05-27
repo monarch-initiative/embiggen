@@ -14,6 +14,7 @@ class WeightedSPINE(AbstractEmbeddingModel):
         self,
         embedding_size: int = 100,
         use_edge_weights_as_probabilities: bool = False,
+        enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
 
@@ -23,14 +24,18 @@ class WeightedSPINE(AbstractEmbeddingModel):
             Dimension of the embedding.
         use_edge_weights_as_probabilities: bool = False
             Whether to treat the weights as probabilities.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
         self._model = models.WeightedSPINE(
             embedding_size=embedding_size,
-            use_edge_weights_as_probabilities=use_edge_weights_as_probabilities
+            use_edge_weights_as_probabilities=use_edge_weights_as_probabilities,
         )
 
         super().__init__(
             embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
     @staticmethod
