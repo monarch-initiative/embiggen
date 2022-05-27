@@ -76,6 +76,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             )
         self._graph = graph
         self._kernel = kernel
+        if node_features is None:
+            node_features = []
         self._node_features = node_features
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
