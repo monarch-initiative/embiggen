@@ -4,7 +4,7 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 from userinput.utils import closest
-import sys
+from ensmallen import express_measures
 from ..utils import format_list
 from .node_transformer import NodeTransformer
 
@@ -204,28 +204,30 @@ def get_l2_distance(
 
 
 def get_cosine_similarity(
-    source_node_embedding: np.ndarray,
-    destination_node_embedding: np.ndarray
+    embedding: np.ndarray,
+    source_node_ids: np.ndarray,
+    destination_node_ids: np.ndarray
 ) -> np.ndarray:
     """Return cosine similarity of the two nodes.
 
     Parameters
     --------------------------
-    source_node_embedding: np.ndarray
-        Numpy array with the embedding of the source node.
-    destination_node_embedding: np.ndarray
-        Numpy array with the embedding of the destination node.
+    embedding: np.ndarray
+        Numpy array with the embedding matrix.
+    source_node_ids: np.ndarray
+        Numpy array with the ids of the source node.
+    destination_node_ids: np.ndarray
+        Numpy array with the ids of the destination node.
 
     Returns
     --------------------------
     Numpy array with the cosine similarity.
     """
-    return (
-        np.sum((source_node_embedding * destination_node_embedding), axis=1) /
-        (np.linalg.norm(source_node_embedding, axis=1) *
-         np.linalg.norm(destination_node_embedding, axis=1) + np.finfo(np.float32).resolution)
+    return express_measures.cosine_similarity_from_indices_unchecked(
+        embedding,
+        source_node_ids,
+        destination_node_ids
     ).reshape((-1, 1))
-
 
 def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -363,7 +365,11 @@ class EdgeTransformer:
             ).format(
                 method,
                 format_list([method for method in EdgeTransformer.methods.keys() if method is not None]),
-                closest(method, list(EdgeTransformer.methods.keys()))
+                closest(method, [
+                    method_name
+                    for method_name in EdgeTransformer.methods
+                    if method_name is not None
+                ])
             ))
         self._transformer = NodeTransformer(
             numeric_node_ids=method is None,
@@ -439,10 +445,28 @@ class EdgeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        edge_embeddings = self._method(
-            self._transformer.transform(sources),
-            self._transformer.transform(destinations)
-        )
+        if self.method == "CosineSimilarity":
+            if (
+                not isinstance(sources, np.ndarray) or
+                not isinstance(destinations, np.ndarray) or
+                sources.dtype != np.uint32 or
+                destinations.dtype != np.uint32
+            ):
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "numpy arrays of type uint32, but you have provided objects of type "
+                    f"{type(sources)} and {type(destinations)}."
+                )
+            edge_embeddings = self._method(
+                embedding=self._transformer._node_feature,
+                source_node_ids=sources,
+                destinations_node_ids=destinations,
+            )
+        else:
+            edge_embeddings = self._method(
+                self._transformer.transform(sources),
+                self._transformer.transform(destinations)
+            )
 
         if edge_features is not None:
             if not isinstance(edge_features, list):
