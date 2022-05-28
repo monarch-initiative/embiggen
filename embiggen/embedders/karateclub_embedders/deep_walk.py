@@ -1,29 +1,42 @@
-"""Wrapper for GraRep model provided from the Karate Club package."""
+"""Wrapper for DeepWalk model provided from the Karate Club package."""
 from typing import Dict, Any
-from karateclub.node_embedding import GraRep
+from karateclub.node_embedding import DeepWalk
+from multiprocessing import cpu_count
 from .abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
-class GraRepKarateClub(AbstractKarateClubEmbedder):
+class DeepWalkKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
         embedding_size: int = 128,
-        iteration: int = 10,
-        order: int = 5,
+        walk_number: int = 10,
+        walk_length: int = 80,
+        window_size: int = 5,
+        epochs: int = 1,
+        learning_rate: float = 0.05,
+        min_count: int = 1,
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Return a new GraRep embedding model.
+        """Return a new DeepWalk embedding model.
 
         Parameters
         ----------------------
         embedding_size: int = 128
             Size of the embedding to use.
-        iteration: int = 10
-            Number of SVD iterations. Default is 10.
-        order: int = 5
-            Number of PMI matrix powers. Default is 5.
+        walk_number: int = 10
+            Number of random walks. Default is 10.
+        walk_length: int = 80
+            Length of random walks. Default is 80.
+        window_size: int = 5
+            Matrix power order. Default is 5.
+        epochs: int = 1
+            Number of epochs. Default is 1.
+        learning_rate: float = 0.05
+            HogWild! learning rate. Default is 0.05.
+        min_count: int = 1
+            Minimal count of node occurrences. Default is 1.
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
@@ -31,9 +44,14 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._iteration = iteration
-        self._order = order
         self._random_state = random_state
+        self._walk_number=walk_number
+        self._walk_length=walk_length
+        self._workers=cpu_count()
+        self._window_size=window_size
+        self._epochs=epochs
+        self._learning_rate=learning_rate
+        self._min_count=min_count
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache
@@ -44,8 +62,13 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **super().parameters(),
             random_state=self._random_state,
-            iteration = self._iteration,
-            order = self._order
+            walk_number=self._walk_number,
+            walk_length=self._walk_length,
+            workers=self._workers,
+            window_size=self._window_size,
+            epochs=self._epochs,
+            learning_rate=self._learning_rate,
+            min_count=self._min_count,
         )
 
     @staticmethod
@@ -53,23 +76,29 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            iteration = 2,
-            order = 2
+            walk_number=1,
+            window_size=2,
+            epochs=1,
         )
 
-    def _build_model(self) -> GraRep:
-        """Return new instance of the GraRep model."""
-        return GraRep(
+    def _build_model(self) -> DeepWalk:
+        """Return new instance of the DeepWalk model."""
+        return DeepWalk(
+            walk_number=self._walk_number,
+            walk_length=self._walk_length,
             dimensions=self._embedding_size,
-            iteration=self._iteration,
-            order=self._order,
+            workers=self._workers,
+            window_size=self._window_size,
+            epochs=self._epochs,
+            learning_rate=self._learning_rate,
+            min_count=self._min_count,
             seed=self._random_state
         )
 
     @staticmethod
     def model_name() -> str:
         """Returns name of the model"""
-        return "GraRep"
+        return "DeepWalk"
 
     @staticmethod
     def requires_nodes_sorted_by_decreasing_node_degree() -> bool:

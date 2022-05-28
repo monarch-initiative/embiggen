@@ -1,29 +1,32 @@
-"""Wrapper for GraRep model provided from the Karate Club package."""
+"""Wrapper for BoostNE model provided from the Karate Club package."""
 from typing import Dict, Any
-from karateclub.node_embedding import GraRep
+from karateclub.node_embedding import BoostNE
 from .abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
-class GraRepKarateClub(AbstractKarateClubEmbedder):
+class BoostNEKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
         embedding_size: int = 128,
-        iteration: int = 10,
-        order: int = 5,
+        iterations: int = 16,
+        order: int = 2,
+        alpha: float = 0.01,
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Return a new GraRep embedding model.
+        """Return a new BoostNE embedding model.
 
         Parameters
         ----------------------
         embedding_size: int = 128
             Size of the embedding to use.
-        iteration: int = 10
-            Number of SVD iterations. Default is 10.
-        order: int = 5
-            Number of PMI matrix powers. Default is 5.
+        iterations: int = 16
+            Number of boosting iterations. Default is 16.
+        order: int = 2
+            Number of adjacency matrix powers. Default is 2.
+        alpha: float = 0.01
+            NMF regularization parameter. Default is 0.01.
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
@@ -31,9 +34,10 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._iteration = iteration
-        self._order = order
         self._random_state = random_state
+        self._iterations = iterations
+        self._order = order
+        self._alpha = alpha
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache
@@ -44,32 +48,34 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **super().parameters(),
             random_state=self._random_state,
-            iteration = self._iteration,
-            order = self._order
+            iteration=self._iteration,
+            order=self._order,
+            alpha=self._alpha
         )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            iteration = 2,
-            order = 2
+            embedding_size=5,
+            iteration=2,
+            order=2
         )
 
-    def _build_model(self) -> GraRep:
-        """Return new instance of the GraRep model."""
-        return GraRep(
+    def _build_model(self) -> BoostNE:
+        """Return new instance of the BoostNE model."""
+        return BoostNE(
             dimensions=self._embedding_size,
             iteration=self._iteration,
             order=self._order,
+            alpha=self._alpha,
             seed=self._random_state
         )
 
     @staticmethod
     def model_name() -> str:
         """Returns name of the model"""
-        return "GraRep"
+        return "BoostNE"
 
     @staticmethod
     def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
