@@ -60,6 +60,16 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         """Returns parameters used for this model."""
         return self._model_kwargs
 
+    def clone(self) -> "PerceptronEdgePrediction":
+        return PerceptronEdgePrediction(**self.parameters())
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            number_of_epochs=1
+        )
+
     def _fit(
         self,
         graph: Graph,
@@ -86,7 +96,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        node_features = np.hstack([node_features])
+        node_features = np.hstack(node_features)
         if node_features.dtype != np.float32:
             node_features = node_features.astype(np.float32)
         if not node_features.data.c_contiguous:
@@ -159,7 +169,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        node_features = np.hstack([node_features])
+        node_features = np.hstack(node_features)
         if node_features.dtype != np.float32:
             node_features = node_features.astype(np.float32)
         if not node_features.data.c_contiguous:
@@ -213,3 +223,11 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return False
+
+    @staticmethod
+    def model_name() -> str:
+        return "Perceptron"
+
+    @staticmethod
+    def library_name() -> str:
+        return "Ensmallen"

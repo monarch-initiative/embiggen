@@ -112,7 +112,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if existent_train_prediction_probabilities.shape[1] > 1:
+        if len(existent_train_prediction_probabilities.shape) > 1 and existent_train_prediction_probabilities.shape[1] > 1:
             existent_train_prediction_probabilities = existent_train_prediction_probabilities[
                 :, 1]
 
@@ -127,7 +127,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if existent_test_prediction_probabilities.shape[1] > 1:
+        if len(existent_test_prediction_probabilities.shape) > 1 and existent_test_prediction_probabilities.shape[1] > 1:
             existent_test_prediction_probabilities = existent_test_prediction_probabilities[
                 :, 1]
 
@@ -196,7 +196,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 assert non_existent_prediction_probabilities.shape[0] == non_existent_graph.get_number_of_directed_edges(
                 )
 
-                if non_existent_prediction_probabilities.shape[1] > 1:
+                if len(non_existent_prediction_probabilities.shape) > 1 and non_existent_prediction_probabilities.shape[1] > 1:
                     non_existent_prediction_probabilities = non_existent_prediction_probabilities[
                         :, 1]
 
