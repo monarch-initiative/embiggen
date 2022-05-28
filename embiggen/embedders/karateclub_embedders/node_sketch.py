@@ -9,7 +9,7 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
     def __init__(
         self,
         embedding_size: int = 128,
-        iteration: int = 10,
+        iterations: int = 10,
         decay: float = 0.01,
         random_state: int = 42,
         enable_cache: bool = False
@@ -20,8 +20,8 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
         ----------------------
         embedding_size: int = 128
             Size of the embedding to use.
-        iteration: int = 10
-            Number of SVD iterations. Default is 10.
+        iterations: int = 10
+            Number of SVD iterationss. Default is 10.
         decay: float = 0.01
             Exponential decay rate. Default is 0.01.
         random_state: int = 42
@@ -31,7 +31,7 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._iteration = iteration
+        self._iterations = iterations
         self._decay = decay
         self._random_state = random_state
         super().__init__(
@@ -44,7 +44,7 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **super().parameters(),
             random_state=self._random_state,
-            iteration = self._iteration,
+            iterations = self._iterations,
             decay = self._decay
         )
 
@@ -53,14 +53,14 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            iteration = 2,
+            iterations = 1,
         )
 
     def _build_model(self) -> NodeSketch:
         """Return new instance of the NodeSketch model."""
         return NodeSketch(
             dimensions=self._embedding_size,
-            iteration=self._iteration,
+            iterations=self._iterations,
             decay=self._decay,
             seed=self._random_state
         )

@@ -26,6 +26,8 @@ class TestNodeEmbeddingPipeline(TestCase):
                 graph_name = "SpeciesTree"
                 repository="string"
 
+            print(row.model_name, row.library_name)
+
             embed_graph(
                 graph_name,
                 repository=repository,

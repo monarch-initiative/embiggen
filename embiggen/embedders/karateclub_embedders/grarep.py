@@ -53,7 +53,7 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            iteration = 2,
+            iteration = 1,
             order = 2
         )
 

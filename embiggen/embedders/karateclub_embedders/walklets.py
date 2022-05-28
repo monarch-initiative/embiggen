@@ -13,7 +13,7 @@ class WalkletsKarateClub(AbstractKarateClubEmbedder):
         walk_number: int = 10,
         walk_length: int = 80,
         window_size: int = 5,
-        epochs: int = 1,
+        epochs: int = 10,
         learning_rate: float = 0.05,
         min_count: int = 1,
         random_state: int = 42,
@@ -31,7 +31,7 @@ class WalkletsKarateClub(AbstractKarateClubEmbedder):
             Length of random walks. Default is 80.
         window_size: int = 5
             Matrix power order. Default is 5.
-        epochs: int = 1
+        epochs: int = 10
             Number of epochs. Default is 1.
         learning_rate: float = 0.05
             HogWild! learning rate. Default is 0.05.
@@ -77,6 +77,7 @@ class WalkletsKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
             walk_number=1,
+            walk_length=8,
             window_size=2,
             epochs=1,
         )

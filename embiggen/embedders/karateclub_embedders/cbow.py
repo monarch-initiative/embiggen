@@ -15,7 +15,7 @@ class CBOWKarateClub(AbstractKarateClubEmbedder):
         window_size: int = 5,
         p: float = 1.0,
         q: float = 1.0,
-        epochs: int = 1,
+        epochs: int = 10,
         learning_rate: float = 0.05,
         min_count: int = 1,
         random_state: int = 42,
@@ -45,7 +45,7 @@ class CBOWKarateClub(AbstractKarateClubEmbedder):
             Return parameter (1/p transition probability) to move towards from previous node.
         q: float = 1.0
             In-out parameter (1/q transition probability) to move away from previous node.
-        epochs: int = 1
+        epochs: int = 10
             Number of epochs. Default is 1.
         learning_rate: float = 0.05
             HogWild! learning rate. Default is 0.05.
@@ -95,6 +95,7 @@ class CBOWKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
             walk_number=1,
+            walk_length=8,
             window_size=2,
             epochs=1,
         )

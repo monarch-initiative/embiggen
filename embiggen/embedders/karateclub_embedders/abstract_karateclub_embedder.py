@@ -34,7 +34,7 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=10,
+            embedding_size=2,
         )
 
     @staticmethod

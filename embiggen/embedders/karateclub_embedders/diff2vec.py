@@ -13,7 +13,7 @@ class Diff2VecKarateClub(AbstractKarateClubEmbedder):
         diffusion_number: int = 10,
         diffusion_cover: int = 80,
         window_size: int = 5,
-        epochs: int = 1,
+        epochs: int = 10,
         learning_rate: float = 0.05,
         min_count: int = 1,
         random_state: int = 42,
@@ -31,7 +31,7 @@ class Diff2VecKarateClub(AbstractKarateClubEmbedder):
             Number of nodes in diffusion. Default is 80.
         window_size: int = 5
             Matrix power order. Default is 5.
-        epochs: int = 1
+        epochs: int = 10
             Number of epochs. Default is 1.
         learning_rate: float = 0.05
             HogWild! learning rate. Default is 0.05.
@@ -76,8 +76,9 @@ class Diff2VecKarateClub(AbstractKarateClubEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            walk_number=1,
             window_size=2,
+            diffusion_number=1,
+            diffusion_cover=2,
             epochs=1,
         )
 

@@ -13,7 +13,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         walk_number: int = 10,
         walk_length: int = 80,
         window_size: int = 5,
-        epochs: int = 1,
+        epochs: int = 10,
         learning_rate: float = 0.05,
         down_sampling: float = 0.0001,
         min_count: int = 1,
@@ -34,7 +34,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
             Length of random walks. Default is 80.
         window_size: int = 5
             Matrix power order. Default is 5.
-        epochs: int = 1
+        epochs: int = 10
             Number of epochs. Default is 1.
         learning_rate: float = 0.05
             HogWild! learning rate. Default is 0.05.
@@ -54,14 +54,14 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
             store the computed embedding.
         """
         self._random_state = random_state
-        self._walk_number=walk_number
-        self._walk_length=walk_length
-        self._workers=cpu_count()
-        self._window_size=window_size
-        self._epochs=epochs
-        self._learning_rate=learning_rate
+        self._walk_number = walk_number
+        self._walk_length = walk_length
+        self._workers = cpu_count()
+        self._window_size = window_size
+        self._epochs = epochs
+        self._learning_rate = learning_rate
         self._down_sampling = down_sampling
-        self._min_count=min_count
+        self._min_count = min_count
         self._weisfeiler_lehman_hashing_iterations = weisfeiler_lehman_hashing_iterations
         self._erase_base_features = erase_base_features
         super().__init__(
@@ -81,9 +81,9 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
             epochs=self._epochs,
             learning_rate=self._learning_rate,
             min_count=self._min_count,
-            down_sampling = self._down_sampling,
-            weisfeiler_lehman_hashing_iterations = self._weisfeiler_lehman_hashing_iterations,
-            erase_base_features = self._erase_base_features,
+            down_sampling=self._down_sampling,
+            weisfeiler_lehman_hashing_iterations=self._weisfeiler_lehman_hashing_iterations,
+            erase_base_features=self._erase_base_features,
         )
 
     @staticmethod
@@ -92,6 +92,8 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
             walk_number=1,
+            weisfeiler_lehman_hashing_iterations=1,
+            walk_length=8,
             window_size=2,
             epochs=1,
         )
@@ -105,9 +107,9 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
             workers=self._workers,
             window_size=self._window_size,
             epochs=self._epochs,
-            down_sampling = self._down_sampling,
-            weisfeiler_lehman_hashing_iterations = self._weisfeiler_lehman_hashing_iterations,
-            erase_base_features = self._erase_base_features,
+            down_sampling=self._down_sampling,
+            wl_iterations=self._weisfeiler_lehman_hashing_iterations,
+            erase_base_features=self._erase_base_features,
             learning_rate=self._learning_rate,
             min_count=self._min_count,
             seed=self._random_state

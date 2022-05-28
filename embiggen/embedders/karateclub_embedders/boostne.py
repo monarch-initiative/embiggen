@@ -48,7 +48,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
         return dict(
             **super().parameters(),
             random_state=self._random_state,
-            iteration=self._iteration,
+            iterations=self._iterations,
             order=self._order,
             alpha=self._alpha
         )
@@ -57,8 +57,8 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=5,
-            iteration=2,
+            **AbstractKarateClubEmbedder.smoke_test_parameters(),
+            iterations=1,
             order=2
         )
 
@@ -66,7 +66,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
         """Return new instance of the BoostNE model."""
         return BoostNE(
             dimensions=self._embedding_size,
-            iteration=self._iteration,
+            iterations=self._iterations,
             order=self._order,
             alpha=self._alpha,
             seed=self._random_state

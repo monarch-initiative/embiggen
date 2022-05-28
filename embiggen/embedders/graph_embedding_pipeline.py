@@ -64,7 +64,7 @@ def embed_graph(
             model_name=embedding_model,
             library_name=library_name
         )(**kwargs)
-    elif kwargs:
+    elif kwargs is not None:
         raise ValueError(
             "Please be advised that even though you have provided yourself "
             "the embedding model, you have also provided the kwargs which "
@@ -79,9 +79,19 @@ def embed_graph(
         )
 
     if smoke_test:
-        embedding_model = embedding_model.__class__(
-            **embedding_model.smoke_test_parameters()
-        )
+        try:
+            embedding_model = embedding_model.__class__(
+                **embedding_model.smoke_test_parameters()
+            )
+        except Exception as e:
+            raise ValueError(
+                "An exception was raised while trying to create "
+                f"a smoke test version of the model called {embedding_model.model_name()} "
+                f"from the library {library_name}, specifically "
+                f"implemented in the class {embedding_model.__class__.__name__}. "
+                "Most likely there is an error in this class smoke test parameters. "
+                f"The body of the exception was: {str(e)}. "
+            ) from e
 
     if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
         graph = graph.sort_by_decreasing_outbound_node_degree()
