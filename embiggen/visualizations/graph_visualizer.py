@@ -3652,7 +3652,7 @@ class GraphVisualizer:
             method=distance_callback,
             aligned_node_mapping=True
         )
-        graph_transformer.fit(node_features)
+        graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
@@ -3704,7 +3704,8 @@ class GraphVisualizer:
             method=distance_callback,
             aligned_node_mapping=True
         )
-        graph_transformer.fit(node_features)
+
+        graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
