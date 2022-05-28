@@ -294,6 +294,8 @@ class AbstractModel(Hashable):
             library_names = list(task_data.keys())
             if len(library_names) == 1:
                 library_name = library_names[0]
+            elif "Ensmallen" in library_names:
+                library_name = "Ensmallen"
             else:
                 formatted_list = format_list(library_names)
                 raise ValueError(
