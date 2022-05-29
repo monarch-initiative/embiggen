@@ -147,27 +147,37 @@ def get_model_or_stub(
 
                 @staticmethod
                 def requires_node_types() -> str:
-                    """Returns name of the model."""
+                    """Returns whether the model requires node types."""
+                    return None
+
+                @staticmethod
+                def can_use_node_types() -> bool:
+                    """Returns whether the model can optionally use node types."""
                     return None
 
                 @staticmethod
                 def requires_edge_types() -> str:
-                    """Returns name of the model."""
+                    """Returns whether the model requires edge types."""
+                    return None
+                
+                @staticmethod
+                def can_use_edge_types() -> bool:
+                    """Returns whether the model can optionally use edge types."""
                     return None
 
                 @staticmethod
                 def requires_positive_edge_weights() -> str:
-                    """Returns name of the model."""
+                    """Returns whether the model requires positive edge weights."""
                     return None
 
                 @staticmethod
                 def requires_edge_weights() -> str:
-                    """Returns name of the model."""
+                    """Returns whether the model can optionally use edge weights."""
                     return None
 
                 @staticmethod
                 def is_topological() -> str:
-                    """Returns name of the model."""
+                    """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
 
                 @staticmethod

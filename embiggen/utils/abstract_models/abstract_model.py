@@ -55,7 +55,7 @@ class AbstractModel(Hashable):
 
     @staticmethod
     def requires_positive_edge_weights() -> bool:
-        """Returns whether the model requires edge weights."""
+        """Returns whether the model requires positive edge weights."""
         raise NotImplementedError((
             "The `requires_positive_edge_weights` method must be implemented "
             "in the child classes of abstract model."
@@ -71,7 +71,7 @@ class AbstractModel(Hashable):
 
     @staticmethod
     def requires_node_types() -> bool:
-        """Returns whether the model requires edge weights."""
+        """Returns whether the model requires node types."""
         raise NotImplementedError((
             "The `requires_node_types` method must be implemented "
             "in the child classes of abstract model."
@@ -94,7 +94,7 @@ class AbstractModel(Hashable):
 
     @staticmethod
     def requires_edge_types() -> bool:
-        """Returns whether the model requires edge weights."""
+        """Returns whether the model requires edge types."""
         raise NotImplementedError((
             "The `requires_edge_types` method must be implemented "
             "in the child classes of abstract model."
