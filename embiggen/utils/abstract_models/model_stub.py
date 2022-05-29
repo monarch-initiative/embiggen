@@ -176,6 +176,11 @@ def get_model_or_stub(
                     return None
 
                 @staticmethod
+                def can_use_edge_weights() -> bool:
+                    """Returns whether the model can optionally use edge weights."""
+                    return None
+
+                @staticmethod
                 def is_topological() -> str:
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
