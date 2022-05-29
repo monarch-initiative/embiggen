@@ -12,8 +12,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
         epochs: int = 10,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 5,
-        log_sigmoid: Optional[bool] = True,
-        siamese: Optional[bool] = False,
         walk_length: int = 128,
         iterations: int = 1,
         window_size: int = 4,
@@ -48,10 +46,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
         number_of_negative_samples: int = 5
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
-        log_sigmoid: Optional[bool] = True
-            Whether to use the model using a sigmoid or log sigmoid. By default, log sigmoid.
-        siamese: Optional[bool] = False
-            Whether to use the model in Siamese mode, using half the weights and therefore half the memory.
         walk_length: int = 128
             Maximal length of the walks.
         iterations: int = 1
@@ -110,8 +104,6 @@ class CBOWEnsmallen(Node2VecEnsmallen):
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
-            log_sigmoid=log_sigmoid,
-            siamese=siamese,
             walk_length=walk_length,
             iterations=iterations,
             window_size=window_size,
