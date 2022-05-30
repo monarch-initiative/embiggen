@@ -3663,8 +3663,8 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
             edge_metrics=graph_transformer.transform(np.vstack([
+                self._negative_graph.get_directed_edge_node_ids(),
                 self._positive_graph.get_directed_edge_node_ids(),
-                self._negative_graph.get_directed_edge_node_ids()
             ])).flatten(),
             figure=figure,
             axes=axes,
@@ -3716,8 +3716,8 @@ class GraphVisualizer:
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
             edge_metrics=offset + graph_transformer.transform(np.vstack([
+                self._negative_graph.get_directed_edge_node_ids(),
                 self._positive_graph.get_directed_edge_node_ids(),
-                self._negative_graph.get_directed_edge_node_ids()
             ])),
             **kwargs,
         )
