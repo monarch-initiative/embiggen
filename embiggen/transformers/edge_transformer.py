@@ -452,14 +452,21 @@ class EdgeTransformer:
         if self.method == "CosineSimilarity":
             if (
                 not isinstance(sources, np.ndarray) or
-                not isinstance(destinations, np.ndarray) or
+                not isinstance(destinations, np.ndarray)
+            ):
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "numpy arrays of type uint32, but you have provided objects of type "
+                    f"{type(sources)} and {type(destinations)}. "
+                )
+            if (
                 sources.dtype != np.uint32 or
                 destinations.dtype != np.uint32
             ):
                 raise NotImplementedError(
                     "The Cosine Similarity is currently implemented exclusively for "
                     "numpy arrays of type uint32, but you have provided objects of type "
-                    f"{type(sources)} and {type(destinations)}. "
+                    f"{sources.dtype} and {destinations.dtype}. "
                 )
             if self._transformer._node_feature.dtype != np.float32:
                 raise NotImplementedError(
