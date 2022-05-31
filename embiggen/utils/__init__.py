@@ -10,9 +10,9 @@ from .abstract_models import (
     get_available_models_for_edge_prediction,
     get_available_models_for_edge_label_prediction,
     get_available_models_for_node_embedding,
-    abstract_class
+    abstract_class,
+    format_list
 )
-from .list_formatting import format_list
 from .pipeline import classification_evaluation_pipeline
 from .number_to_ordinal import number_to_ordinal
 
@@ -30,5 +30,6 @@ __all__ = [
     "get_available_models_for_edge_label_prediction",
     "get_available_models_for_node_embedding",
     "abstract_class",
-    "number_to_ordinal"
+    "number_to_ordinal",
+    "format_list"
 ]

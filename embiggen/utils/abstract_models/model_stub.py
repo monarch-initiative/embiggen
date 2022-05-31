@@ -1,7 +1,7 @@
 """Submodule providing auto model stub for non-mandatory modules."""
 from typing import Type, List, Union
 from .abstract_model import AbstractModel
-from ..list_formatting import format_list
+from .list_formatting import format_list
 
 
 def get_model_or_stub(

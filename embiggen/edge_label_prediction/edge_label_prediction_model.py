@@ -45,14 +45,14 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             "Kfold"
         ]
 
+    @classmethod
     def split_graph_following_evaluation_schema(
-        self,
+        cls,
         graph: Graph,
         evaluation_schema: str,
-        number_of_holdouts: int,
         random_state: int,
-        holdouts_kwargs: Dict[str, Any],
-        holdout_number: int
+        holdout_number: int,
+        **holdouts_kwargs: Dict[str, Any],
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
 
@@ -79,7 +79,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             )
         if evaluation_schema in ("Kfold", "Stratified Kfold"):
             return graph.get_edge_label_kfold(
-                k=number_of_holdouts,
+                **holdouts_kwargs,
                 k_index=holdout_number,
                 use_stratification="Stratified" in evaluation_schema,
                 random_state=random_state,
@@ -87,8 +87,23 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
             "is not available. The available evaluation schemas "
-            f"are: {format_list(self.get_available_evaluation_schemas())}."
+            f"are: {format_list(cls.get_available_evaluation_schemas())}."
         )
+
+    @classmethod
+    def _prepare_evaluation(
+        cls,
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        **kwargs: Dict
+    ) -> Dict[str, Any]:
+        """Return additional custom parameters for the current holdout."""
+        return {}
 
     def _evaluate(
         self,
@@ -200,3 +215,23 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return True
+
+    @staticmethod
+    def task_involves_edge_weights() -> bool:
+        """Returns whether the model task involves edge weights."""
+        return False
+
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        return True
+
+    @staticmethod
+    def task_involves_node_types() -> bool:
+        """Returns whether the model task involves node types."""
+        return False
+
+    @staticmethod
+    def task_involves_topology() -> bool:
+        """Returns whether the model task involves topology."""
+        return False

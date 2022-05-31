@@ -10,6 +10,7 @@ from .get_models_dataframe import (
     get_available_models_for_node_embedding
 )
 from .auto_init import build_init
+from .list_formatting import format_list
 
 __all__ = [
     "AbstractClassifierModel",
@@ -23,5 +24,6 @@ __all__ = [
     "get_available_models_for_edge_prediction",
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_node_embedding",
-    "build_init"
+    "build_init",
+    "format_list"
 ]

@@ -1,15 +1,15 @@
 """Module providing abstract classes for classification models."""
-import warnings
-from typing import Union, Optional, List, Dict, Any, Tuple, Type
+from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
-
-from embiggen.utils.list_formatting import format_list
-from .abstract_model import AbstractModel, abstract_class
 import time
+from tqdm.auto import trange, tqdm
+from .list_formatting import format_list
+from cache_decorator import Cache
+
+from .abstract_model import AbstractModel, abstract_class
 from .abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
-from tqdm.auto import trange
 import functools
 from sklearn.metrics import (
     accuracy_score,
@@ -138,22 +138,17 @@ class AbstractClassifierModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
-    def get_available_evaluation_schemas(self) -> List[str]:
+    @staticmethod
+    def get_available_evaluation_schemas() -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
             "The `get_available_evaluation_schemas` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    def _get_available_evaluation_schemas_lowercase(self) -> List[str]:
-        """Returns lowercase available evaluation schemas for this task."""
-        return [
-            feature_name.lower()
-            for feature_name in self.get_available_evaluation_schemas()
-        ]
-
+    @classmethod
     def normalize_node_feature(
-        self,
+        cls,
         graph: Graph,
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
@@ -207,10 +202,10 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    self.is_using_edge_types() and node_feature.is_using_edge_types() or
-                    self.is_using_node_types() and node_feature.is_using_node_types() or
-                    self.is_using_edge_weights() and node_feature.is_using_edge_weights() or
-                    self.is_topological() and node_feature.is_topological()
+                    cls.task_involves_edge_types() and node_feature.is_using_edge_types() or
+                    cls.task_involves_node_types() and node_feature.is_using_node_types() or
+                    cls.task_involves_edge_weights() and node_feature.is_using_edge_weights() or
+                    cls.task_involves_topology() and node_feature.is_topological()
                 )
             ):
                 yield node_feature
@@ -270,8 +265,9 @@ class AbstractClassifierModel(AbstractModel):
                 # they are doing, as we cannot ensure alignment.
                 yield nf
 
+    @classmethod
     def normalize_node_features(
-        self,
+        cls,
         graph: Graph,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
@@ -309,7 +305,7 @@ class AbstractClassifierModel(AbstractModel):
         return [
             normalized_node_feature
             for node_feature in node_features
-            for normalized_node_feature in self.normalize_node_feature(
+            for normalized_node_feature in cls.normalize_node_feature(
                 graph=graph,
                 node_feature=node_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -318,8 +314,9 @@ class AbstractClassifierModel(AbstractModel):
             )
         ]
 
+    @classmethod
     def normalize_node_type_feature(
-        self,
+        cls,
         graph: Graph,
         node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
@@ -373,10 +370,10 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    self.is_using_edge_types() and node_type_feature.is_using_edge_types() or
-                    self.is_using_node_types() and node_type_feature.is_using_node_types() or
-                    self.is_using_edge_weights() and node_type_feature.is_using_edge_weights() or
-                    self.is_topological() and node_type_feature.is_topological()
+                    cls.task_involves_edge_types() and node_type_feature.is_using_edge_types() or
+                    cls.task_involves_node_types() and node_type_feature.is_using_node_types() or
+                    cls.task_involves_edge_weights() and node_type_feature.is_using_edge_weights() or
+                    cls.task_involves_topology() and node_type_feature.is_topological()
                 )
             ):
                 yield node_type_feature
@@ -436,8 +433,9 @@ class AbstractClassifierModel(AbstractModel):
                 # they are doing, as we cannot ensure alignment.
                 yield nf
 
+    @classmethod
     def normalize_node_type_features(
-        self,
+        cls,
         graph: Graph,
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
@@ -475,7 +473,7 @@ class AbstractClassifierModel(AbstractModel):
         return [
             normalized_node_type_feature
             for node_type_feature in node_type_features
-            for normalized_node_type_feature in self.normalize_node_type_feature(
+            for normalized_node_type_feature in cls.normalize_node_type_feature(
                 graph=graph,
                 node_type_feature=node_type_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -484,8 +482,9 @@ class AbstractClassifierModel(AbstractModel):
             )
         ]
 
+    @classmethod
     def normalize_edge_feature(
-        self,
+        cls,
         graph: Graph,
         edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
         allow_automatic_feature: bool = True,
@@ -539,10 +538,10 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    self.is_using_edge_types() and edge_feature.is_using_edge_types() or
-                    self.is_using_node_types() and edge_feature.is_using_node_types() or
-                    self.is_using_edge_weights() and edge_feature.is_using_edge_weights() or
-                    self.is_topological() and edge_feature.is_topological()
+                    cls.task_involves_edge_types() and edge_feature.is_using_edge_types() or
+                    cls.task_involves_node_types() and edge_feature.is_using_node_types() or
+                    cls.task_involves_edge_weights() and edge_feature.is_using_edge_weights() or
+                    cls.task_involves_topology() and edge_feature.is_topological()
                 )
             ):
                 yield edge_feature
@@ -602,8 +601,9 @@ class AbstractClassifierModel(AbstractModel):
                 # they are doing, as we cannot ensure alignment.
                 yield ef
 
+    @classmethod
     def normalize_edge_features(
-        self,
+        cls,
         graph: Graph,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
@@ -641,7 +641,7 @@ class AbstractClassifierModel(AbstractModel):
         return [
             normalized_edge_feature
             for edge_feature in edge_features
-            for normalized_edge_feature in self.normalize_edge_feature(
+            for normalized_edge_feature in cls.normalize_edge_feature(
                 graph=graph,
                 edge_feature=edge_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -685,7 +685,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"instance of graph {graph.get_name()} does not have node types. "
                 "It is unclear how to proceed with this data."
             )
-        
+
         if (self.requires_node_types() or self.is_using_node_types()) and not graph.has_node_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
@@ -697,7 +697,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."
             )
-        
+
         try:
             self._fit(
                 graph=graph,
@@ -921,14 +921,12 @@ class AbstractClassifierModel(AbstractModel):
             for metric in metrics
         }
 
+    @staticmethod
     def split_graph_following_evaluation_schema(
-        self,
         graph: Graph,
         evaluation_schema: str,
-        number_of_holdouts: int,
-        random_state: int,
-        holdouts_kwargs: Dict[str, Any],
         holdout_number: int,
+        **holdouts_kwargs: Dict
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
 
@@ -938,14 +936,10 @@ class AbstractClassifierModel(AbstractModel):
             The graph to split.
         evaluation_schema: str
             The evaluation schema to follow.
-        number_of_holdouts: int
-            The number of holdouts that will be generated throught the evaluation.
-        random_state: int
-            The random state for the evaluation
-        holdouts_kwargs: Dict[str, Any]
-            The kwargs to be forwarded to the holdout method.
         holdout_number: int
             The current holdout number.
+        holdouts_kwargs: Dict[str, Any]
+            The kwargs to be forwarded to the holdout method.
         """
         raise NotImplementedError(
             "The `split_graph_following_evaluation_schema` method should be implemented "
@@ -972,11 +966,429 @@ class AbstractClassifierModel(AbstractModel):
             "classes of abstract classifier model."
         )
 
-    def evaluate(
+    @classmethod
+    def _prepare_evaluation(
+        cls,
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        **kwargs: Dict
+    ) -> Dict[str, Any]:
+        """Return additional custom parameters for the current holdout."""
+        raise NotImplementedError(
+            "The _evaluate method should be implemented in the child "
+            "classes of abstract classifier model."
+        )
+
+    @classmethod
+    def iterate_classifier_models(
+        cls,
+        models: Union[str, Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
+        library_names: Optional[Union[str, List[str]]],
+        smoke_test: bool
+    ) -> Iterator[Type["AbstractClassifierModel"]]:
+        """Return iterator over the provided models after validation.
+
+        Parameters
+        -------------------
+        models: Union[Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]]
+            The models to validate and iterate on.
+        expected_parent_class: Type[AbstractClassifierModel]
+            The parent class to check the model against.
+        library_names: Optional[Union[str, List[str]]] = None
+            Library names from where to retrieve the provided model names.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
+        """
+        if not isinstance(models, (list, tuple, pd.Series)):
+            models = [models]
+
+        number_of_models = len(models)
+
+        if not isinstance(library_names, (list, tuple, pd.Series)):
+            library_names = [library_names] * number_of_models
+
+        if number_of_models == 0:
+            raise ValueError(
+                "An empty list of models was provided."
+            )
+
+        number_of_libraries = len(library_names)
+
+        if number_of_libraries != number_of_models:
+            raise ValueError(
+                f"The number of the provided models {number_of_models} "
+                f"is different from the number of provided libraries {number_of_libraries}."
+            )
+
+        models = [
+            cls.get_model_from_library(
+                model,
+                task_name=cls.task_name(),
+                library_name=library_name
+            )()
+            if isinstance(model, str)
+            else model
+            for model, library_name in zip(
+                models,
+                library_names
+            )
+        ]
+
+        for model in models:
+            if not issubclass(model.__class__, cls):
+                raise ValueError(
+                    "The provided classifier model is expected to be "
+                    f"an implementation of the {cls.__name__} class, but you provided "
+                    f"an object of type {type(model)} that does not hereditate from "
+                    "the expected class."
+                )
+
+        # If this is a smoke test, we replace all of the
+        # provided models with their smoke test version.
+        if smoke_test:
+            models = [
+                model.__class__(**model.smoke_test_parameters())
+                for model in models
+            ]
+
+        for model in tqdm(
+            models,
+            desc=f"{cls.task_name()} Models",
+            total=number_of_models,
+            disable=number_of_models == 1,
+            dynamic_ncols=True,
+            leave=False
+        ):
+            yield model
+
+    @Cache(
+        cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
+        cache_dir="experiments",
+        enable_cache_arg_name="enable_cache",
+        args_to_ignore=["verbose", "smoke_test"],
+        capture_enable_cache_arg_name=True,
+        use_approximated_hash=True
+    )
+    def __train_and_evaluate_model(
         self,
+        graph: Graph,
+        train_of_interest: Graph,
+        test_of_interest: Graph,
+        train: Graph,
+        subgraph_of_interest: Graph,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]],
+        random_state: int,
+        holdout_number: int,
+        evaluation_schema: str,
+        automatic_features_names: List[str],
+        automatic_features_parameters: Dict[str, Any],
+        **validation_kwargs
+    ) -> pd.DataFrame:
+        """Run inner training and evaluation."""
+        # Fit the model using the training graph
+        training_start = time.time()
+        self.fit(
+            graph=train_of_interest,
+            support=train,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+        time_required_for_training = time.time() - training_start
+
+        start_evaluation = time.time()
+
+        try:
+            # We add the newly computed performance.
+            model_performance = pd.DataFrame(self._evaluate(
+                graph=graph,
+                support=train,
+                train=train_of_interest,
+                test=test_of_interest,
+                node_features=node_features,
+                node_type_features=node_type_features,
+                edge_features=edge_features,
+                subgraph_of_interest=subgraph_of_interest,
+                random_state=random_state * holdout_number,
+                verbose=False,
+                **validation_kwargs
+            ))
+        except RuntimeError as e:
+            raise e
+        except Exception as e:
+            raise RuntimeError(
+                f"An exception was raised while calling the `._evaluate` method of {self.model_name()} "
+                f"implemented using the {self.library_name()} for the {self.task_name()} task. "
+                f"Specifically, the class of the model is {self.__class__.__name__}. "
+            ) from e
+
+        time_required_for_evaluation = time.time() - start_evaluation
+
+        model_performance["time_required_for_training"] = time_required_for_training
+        model_performance["time_required_for_evaluation"] = time_required_for_evaluation
+        model_performance["task_name"] = self.task_name()
+        model_performance["model_name"] = self.model_name()
+        model_performance["library_name"] = self.library_name()
+        model_performance["graph_name"] = graph.get_name()
+        model_performance["nodes_number"] = graph.get_nodes_number()
+        model_performance["edges_number"] = graph.get_number_of_directed_edges()
+        model_performance["evaluation_schema"] = evaluation_schema
+        if automatic_features_names:
+            model_performance["automatic_features_names"] = format_list(
+                automatic_features_names
+            )
+        for parameter, value in automatic_features_parameters.items():
+            if parameter in model_performance.columns:
+                raise ValueError(
+                    "There has been a collision between the parameters used in "
+                    f"one of the classifiers, {self.model_name()},  and the parameter "
+                    "used for the validation and reporting of the task itself. "
+                    f"The parameter that has caused the collision is {parameter}. "
+                    "Please do change the name of the parameter in your model."
+                )
+            model_performance[parameter] = str(value)
+        
+        return model_performance
+
+    @classmethod
+    @Cache(
+        cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
+        cache_dir="experiments",
+        enable_cache_arg_name="enable_cache",
+        args_to_ignore=["verbose", "smoke_test"],
+        capture_enable_cache_arg_name=False,
+        use_approximated_hash=True
+    )
+    def __evaluate_on_single_holdout(
+        cls,
+        models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
+        library_names: Optional[Union[str, List[str]]],
+        graph: Graph,
+        subgraph_of_interest: Graph,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]],
+        random_state: int,
+        holdout_number: int,
+        evaluation_schema: str,
+        enable_cache: bool,
+        smoke_test: bool,
+        holdouts_kwargs: Dict[str, Any],
+        subgraph_of_interest_has_compatible_nodes: Optional[bool],
+        automatic_features_names: List[str],
+        automatic_features_parameters: Dict[str, Any],
+        verbose: bool,
+        **validation_kwargs
+    ) -> pd.DataFrame:
+        starting_setting_up_holdout = time.time()
+
+        # We create the graph split using the provided schema.
+        train, test = cls.split_graph_following_evaluation_schema(
+            graph=graph,
+            evaluation_schema=evaluation_schema,
+            random_state=random_state,
+            holdout_number=holdout_number,
+            **holdouts_kwargs
+        )
+
+        # We enable in the train and test graphs the same
+        # speedups enabled in the provided graph.
+        train.enable(
+            vector_sources=graph.has_sources_tradeoff_enabled(),
+            vector_destinations=graph.has_destinations_tradeoff_enabled(),
+            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+        )
+        test.enable(
+            vector_sources=graph.has_sources_tradeoff_enabled(),
+            vector_destinations=graph.has_destinations_tradeoff_enabled(),
+            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+        )
+
+        # We compute the remaining features
+        holdout_node_features = cls.normalize_node_features(
+            train,
+            node_features=node_features,
+            allow_automatic_feature=True,
+            skip_evaluation_biased_feature=False,
+            smoke_test=smoke_test
+        )
+
+        # We compute the remaining features
+        holdout_node_type_features = cls.normalize_node_type_features(
+            train,
+            node_type_features=node_type_features,
+            allow_automatic_feature=True,
+            skip_evaluation_biased_feature=False,
+            smoke_test=smoke_test
+        )
+
+        # We execute the same thing as described above,
+        # but now for the edge features instead that for
+        # the node features.
+        holdout_edge_features = cls.normalize_edge_features(
+            train,
+            edge_features=edge_features,
+            allow_automatic_feature=True,
+            skip_evaluation_biased_feature=False,
+            smoke_test=smoke_test
+        )
+
+        if subgraph_of_interest is not None:
+            # First we align the train and test graph to have
+            # the same node dictionary of the subgraph of interest
+            # when the subgraph of interest does not have
+            # the same node dictionary as the original graph.
+            if not subgraph_of_interest_has_compatible_nodes:
+                train = train.filter_from_names(
+                    node_names_to_keep_from_graph=subgraph_of_interest
+                )
+                test = test.filter_from_names(
+                    node_names_to_keep_from_graph=subgraph_of_interest
+                )
+
+                # We enable in the train and test graphs of interest the same
+                # speedups enabled in the provided graph.
+                train.enable(
+                    vector_sources=graph.has_sources_tradeoff_enabled(),
+                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
+                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+                )
+
+                test.enable(
+                    vector_sources=graph.has_sources_tradeoff_enabled(),
+                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
+                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+                )
+
+                # We adjust the node features to only include the node features
+                # that the subgraph of interest allows us to use.
+                if holdout_node_features is not None:
+                    # We obtain the mapping from the old to the new node IDs
+                    node_ids_mapping = train.get_node_ids_mapping_from_graph(
+                        graph
+                    )
+
+                    holdout_node_features = [
+                        holdout_node_feature[node_ids_mapping]
+                        for holdout_node_feature in holdout_node_features
+                    ]
+
+            train_of_interest = train & subgraph_of_interest
+            test_of_interest = test & subgraph_of_interest
+
+            # We validate that the two graphs are still
+            # valid for this task.
+            for graph_partition, graph_partition_name in (
+                (train_of_interest, "train"),
+                (test_of_interest, "test"),
+            ):
+                if not graph_partition.has_nodes():
+                    raise ValueError(
+                        f"The {graph_partition_name} graph {graph_partition.get_name()} obtained from the evaluation "
+                        f"schema {evaluation_schema}, once filtered using the provided "
+                        "subgraph of interest, does not have any more nodes."
+                    )
+                if (
+                    cls.task_name() in ("Edge Prediction", "Edge Label Prediction") and
+                    not graph_partition.has_edges()
+                ):
+                    raise ValueError(
+                        f"The {graph_partition_name} graph {graph_partition.get_name()} obtained from the evaluation "
+                        f"schema {evaluation_schema}, once filtered using the provided "
+                        "subgraph of interest, does not have any more edges which are "
+                        f"essential when running a {cls.task_name()} task."
+                    )
+            # We enable in the train and test graphs of interest the same
+            # speedups enabled in the provided graph.
+            train_of_interest.enable(
+                vector_sources=graph.has_sources_tradeoff_enabled(),
+                vector_destinations=graph.has_destinations_tradeoff_enabled(),
+                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+            )
+
+            test_of_interest.enable(
+                vector_sources=graph.has_sources_tradeoff_enabled(),
+                vector_destinations=graph.has_destinations_tradeoff_enabled(),
+                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+            )
+        else:
+            train_of_interest = train
+            test_of_interest = test
+
+        additional_validation_kwargs = cls._prepare_evaluation(
+            graph=graph,
+            support=train,
+            train=train_of_interest,
+            test=test_of_interest,
+            subgraph_of_interest=subgraph_of_interest,
+            random_state=random_state * holdout_number,
+            verbose=verbose,
+            **validation_kwargs
+        )
+
+        time_required_for_setting_up_holdout = time.time() - starting_setting_up_holdout
+
+        holdout_performance = pd.concat([
+            classifier.__train_and_evaluate_model(
+                graph=graph,
+                train_of_interest=train_of_interest,
+                test_of_interest=test_of_interest,
+                train=train,
+                subgraph_of_interest=subgraph_of_interest,
+                node_features=holdout_node_features,
+                node_type_features=holdout_node_type_features,
+                edge_features=holdout_edge_features,
+                random_state=random_state,
+                holdout_number=holdout_number,
+                evaluation_schema=evaluation_schema,
+                enable_cache=enable_cache,
+                automatic_features_names=automatic_features_names,
+                automatic_features_parameters=automatic_features_parameters,
+                **additional_validation_kwargs,
+                **validation_kwargs,
+            )
+            for classifier in cls.iterate_classifier_models(
+                models=models,
+                library_names=library_names,
+                smoke_test=smoke_test
+            )
+        ])
+
+        holdout_performance["time_required_for_setting_up_holdout"] = time_required_for_setting_up_holdout
+
+        return holdout_performance
+
+    @classmethod
+    @Cache(
+        cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/{_hash}.csv.gz",
+        cache_dir="experiments",
+        enable_cache_arg_name="enable_cache",
+        args_to_ignore=["verbose", "smoke_test"],
+        capture_enable_cache_arg_name=False,
+        use_approximated_hash=True
+    )
+    def evaluate(
+        cls,
+        models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
         graph: Graph,
         evaluation_schema: str,
         holdouts_kwargs: Dict[str, Any],
+        library_names: Optional[Union[str, List[str]]] = None,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
@@ -984,6 +1396,7 @@ class AbstractClassifierModel(AbstractModel):
         number_of_holdouts: int = 10,
         random_state: int = 42,
         verbose: bool = True,
+        enable_cache: bool = False,
         smoke_test: bool = False,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
@@ -991,12 +1404,17 @@ class AbstractClassifierModel(AbstractModel):
 
         Parameters
         --------------------
+        models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]]
+            The model(s) to be evaluated.
         graph: Graph
             The graph to run predictions on.
         evaluation_schema: str
             The schema for the evaluation to follow.
         holdouts_kwargs: Dict[str, Any]
             Parameters to forward to the desired evaluation schema.
+        library_names: Optional[Union[str, List[str]]] = None
+            The library names of the models, needed when a desired model is implemented in multiple
+            libraries and it is unclear which one to use.
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
             The node features to use.
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
@@ -1015,6 +1433,8 @@ class AbstractClassifierModel(AbstractModel):
             The random state to use for the holdouts.
         verbose: bool = True
             Whether to show a loading bar while computing holdouts.
+        enable_cache: bool = False
+            Whether to enable the cache.
         smoke_test: bool = False
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
@@ -1022,37 +1442,20 @@ class AbstractClassifierModel(AbstractModel):
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
-        if self._fitting_was_executed:
-            warnings.warn((
-                "Do be advised that this model was already fitted, "
-                "and you will be therefore be running a classification "
-                "evaluation using a warm start."
-            ))
-
-        if not isinstance(number_of_holdouts, int) or number_of_holdouts == 0:
+        if not isinstance(number_of_holdouts, int) or number_of_holdouts <= 0:
             raise ValueError(
                 "The number of holdouts must be a strictly positive integer, "
                 f"but {number_of_holdouts} was provided."
             )
 
-        if evaluation_schema.lower() not in self._get_available_evaluation_schemas_lowercase():
-            raise ValueError(
-                (
-                    f"The provided evaluation schema `{evaluation_schema}` is not among the supported "
-                    "evaluation schemas for this task, which are:\n- {}"
-                ).format(
-                    "\n- ".join(self.get_available_evaluation_schemas())
-                )
-            )
-
         if subgraph_of_interest is not None:
-            if self.task_name() not in ("Edge Prediction", "Edge Label Prediction"):
+            if cls.task_name() not in ("Edge Prediction", "Edge Label Prediction"):
                 raise ValueError(
                     "A subgraph of interest was provided, but this parameter "
                     "is only currently supported for Edge Prediction and "
-                    f"Edge Label Prediction tasks and not the {self.task_name()} task."
+                    f"Edge Label Prediction tasks and not the {cls.task_name()} task."
                 )
-            
+
             if not graph.contains(subgraph_of_interest):
                 raise ValueError(
                     "The provided subgraph of interest is not "
@@ -1064,17 +1467,19 @@ class AbstractClassifierModel(AbstractModel):
                     "The provided subgraph of interest does not "
                     "have any edges!"
                 )
-            
+
             # We check whether the subgraph of interest shares the same vocabulary
             # of the main graph. If this is true, we can skip the filtering step to
             # drop the nodes from the train and test graph.
             subgraph_of_interest_has_compatible_nodes = graph.has_compatible_node_vocabularies(
                 subgraph_of_interest
             )
+        else:
+            subgraph_of_interest_has_compatible_nodes = None
 
         # Retrieve the set of provided automatic features parameters
         # so we can put them in the report.
-        feature_parameters = {
+        automatic_features_parameters = {
             parameter_name: value
             for features in (
                 node_features
@@ -1086,7 +1491,6 @@ class AbstractClassifierModel(AbstractModel):
                 edge_features
                 if isinstance(edge_features, (list, tuple))
                 else (edge_features,),
-                (self,)
             )
             for feature in features
             if issubclass(feature.__class__, AbstractModel)
@@ -1095,7 +1499,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features names
         # so we can put them in the report.
-        automatic_feature_names = {
+        automatic_features_names = {
             feature.model_name()
             for features in (
                 node_features
@@ -1118,7 +1522,7 @@ class AbstractClassifierModel(AbstractModel):
         # This way we compute only once the features that do not
         # cause biases for this task, while recomputing those
         # that cause biases at each holdout, avoiding said biases.
-        node_features = self.normalize_node_features(
+        node_features = cls.normalize_node_features(
             graph,
             node_features=node_features,
             allow_automatic_feature=True,
@@ -1129,7 +1533,7 @@ class AbstractClassifierModel(AbstractModel):
         # We execute the same thing as described above,
         # but now for the node type features instead that for
         # the node features.
-        node_type_features = self.normalize_node_type_features(
+        node_type_features = cls.normalize_node_type_features(
             graph,
             node_type_features=node_type_features,
             allow_automatic_feature=True,
@@ -1140,7 +1544,7 @@ class AbstractClassifierModel(AbstractModel):
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
-        edge_features = self.normalize_edge_features(
+        edge_features = cls.normalize_edge_features(
             graph,
             edge_features=edge_features,
             allow_automatic_feature=True,
@@ -1148,220 +1552,48 @@ class AbstractClassifierModel(AbstractModel):
             smoke_test=smoke_test
         )
 
-        # We create the list where we store the holdouts performance.
-        performance = []
-
         # We start to iterate on the holdouts.
-        for holdout_number in trange(
-            number_of_holdouts,
-            disable=not verbose,
-            leave=False,
-            dynamic_ncols=True,
-            desc=f"Evaluating {self.model_name()} on {graph.get_name()}"
-        ):
-            # We create a copy of the current classifier.
-            classifier = self.clone()
-
-            # We create the graph split using the provided schema.
-            train, test = self.split_graph_following_evaluation_schema(
+        performance = pd.concat([
+            cls.__evaluate_on_single_holdout(
+                models=models,
+                library_names=library_names,
                 graph=graph,
-                evaluation_schema=evaluation_schema,
-                random_state=random_state,
-                holdouts_kwargs=holdouts_kwargs,
-                holdout_number=holdout_number,
-                number_of_holdouts=number_of_holdouts
-            )
-
-            # We enable in the train and test graphs the same
-            # speedups enabled in the provided graph.
-            train.enable(
-                vector_sources=graph.has_sources_tradeoff_enabled(),
-                vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-            )
-            test.enable(
-                vector_sources=graph.has_sources_tradeoff_enabled(),
-                vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-            )
-
-            # We compute the remaining features
-            holdout_node_features = self.normalize_node_features(
-                train,
+                subgraph_of_interest=subgraph_of_interest,
                 node_features=node_features,
-                allow_automatic_feature=True,
-                skip_evaluation_biased_feature=False,
-                smoke_test=smoke_test
-            )
-
-            # We compute the remaining features
-            holdout_node_type_features = self.normalize_node_type_features(
-                train,
                 node_type_features=node_type_features,
-                allow_automatic_feature=True,
-                skip_evaluation_biased_feature=False,
-                smoke_test=smoke_test
-            )
-
-            # We execute the same thing as described above,
-            # but now for the edge features instead that for
-            # the node features.
-            holdout_edge_features = self.normalize_edge_features(
-                train,
                 edge_features=edge_features,
-                allow_automatic_feature=True,
-                skip_evaluation_biased_feature=False,
-                smoke_test=smoke_test
+                random_state=random_state,
+                holdout_number=holdout_number,
+                evaluation_schema=evaluation_schema,
+                enable_cache=enable_cache,
+                smoke_test=smoke_test,
+                holdouts_kwargs=holdouts_kwargs,
+                subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
+                verbose=verbose,
+                automatic_features_names=automatic_features_names,
+                automatic_features_parameters=automatic_features_parameters,
+                **validation_kwargs
             )
-
-            if subgraph_of_interest is not None:
-                # First we align the train and test graph to have
-                # the same node dictionary of the subgraph of interest
-                # when the subgraph of interest does not have
-                # the same node dictionary as the original graph.
-                if not subgraph_of_interest_has_compatible_nodes:
-                    train = train.filter_from_names(
-                        node_names_to_keep_from_graph=subgraph_of_interest
-                    )
-                    test = test.filter_from_names(
-                        node_names_to_keep_from_graph=subgraph_of_interest
-                    )
-
-                    # We enable in the train and test graphs of interest the same
-                    # speedups enabled in the provided graph.
-                    train.enable(
-                        vector_sources=graph.has_sources_tradeoff_enabled(),
-                        vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                        vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                        vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-                    )
-
-                    test.enable(
-                        vector_sources=graph.has_sources_tradeoff_enabled(),
-                        vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                        vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                        vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-                    )
-                    
-                    # We adjust the node features to only include the node features
-                    # that the subgraph of interest allows us to use.
-                    if holdout_node_features is not None:
-                        # We obtain the mapping from the old to the new node IDs
-                        node_ids_mapping = train.get_node_ids_mapping_from_graph(
-                            graph
-                        )
-
-                        holdout_node_features = [
-                            holdout_node_feature[node_ids_mapping]
-                            for holdout_node_feature in holdout_node_features
-                        ]
-
-                train_of_interest = train & subgraph_of_interest
-                test_of_interest = test & subgraph_of_interest
-
-                # We validate that the two graphs are still
-                # valid for this task.
-                for graph_partition, graph_partition_name in (
-                    (train_of_interest, "train"),
-                    (test_of_interest, "test"),
-                ):
-                    if not graph_partition.has_nodes():
-                        raise ValueError(
-                            f"The {graph_partition_name} graph {graph_partition.get_name()} obtained from the evaluation "
-                            f"schema {evaluation_schema}, once filtered using the provided "
-                            "subgraph of interest, does not have any more nodes."
-                        )
-                    if (
-                        self.task_name() in ("Edge Prediction", "Edge Label Prediction") and
-                        not graph_partition.has_edges()
-                    ):
-                        raise ValueError(
-                            f"The {graph_partition_name} graph {graph_partition.get_name()} obtained from the evaluation "
-                            f"schema {evaluation_schema}, once filtered using the provided "
-                            "subgraph of interest, does not have any more edges which are "
-                            f"essential when running a {self.task_name()} task."
-                        )
-                # We enable in the train and test graphs of interest the same
-                # speedups enabled in the provided graph.
-                train_of_interest.enable(
-                    vector_sources=graph.has_sources_tradeoff_enabled(),
-                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-                )
-
-                test_of_interest.enable(
-                    vector_sources=graph.has_sources_tradeoff_enabled(),
-                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-                )
-            else:
-                train_of_interest = train
-                test_of_interest = test
-
-            # Fit the model using the training graph
-            training_start = time.time()
-            classifier.fit(
-                graph=train_of_interest,
-                support=train,
-                node_features=holdout_node_features,
-                node_type_features=holdout_node_type_features,
-                edge_features=holdout_edge_features
+            for holdout_number in trange(
+                number_of_holdouts,
+                disable=not verbose,
+                leave=False,
+                dynamic_ncols=True,
+                desc=f"Evaluating on {graph.get_name()}"
             )
-            required_training_time = time.time() - training_start
+        ])
 
-            try:
-                # We add the newly computed performance.
-                holdout_performance = classifier._evaluate(
-                    graph=graph,
-                    support=train,
-                    train=train_of_interest,
-                    test=test_of_interest,
-                    node_features=holdout_node_features,
-                    node_type_features=holdout_node_type_features,
-                    edge_features=holdout_edge_features,
-                    subgraph_of_interest=subgraph_of_interest,
-                    random_state=random_state * holdout_number,
-                    verbose=verbose,
-                    **validation_kwargs
-                )
-            except RuntimeError as e:
-                raise e
-            except Exception as e:
-                raise RuntimeError(
-                    f"An exception was raised while calling the `._evaluate` method of {self.model_name()} "
-                    f"implemented using the {self.library_name()} for the {self.task_name()} task. "
-                    f"Specifically, the class of the model is {self.__class__.__name__}. "
-                ) from e
-
-            for hp in holdout_performance:
-                hp["required_training_time"] = required_training_time
-                performance.append(hp)
+        # Adding to the report the informations relative to
+        # the whole validation run, which are NOT necessary
+        # to make unique the cache hash of the single holdouts
+        # or the single models.
+        # Be extremely weary of adding informations at this
+        # high level, as often the best place should be
+        # in the core loop, where the actual model is trained,
+        # as often such information changes how the model
+        # is trained.
+        performance["number_of_holdouts"] = number_of_holdouts
 
         # We save the constant values for this model
         # execution.
-        performance = pd.DataFrame(performance)
-        performance["task_name"] = self.task_name()
-        performance["model_name"] = self.model_name()
-        performance["library_name"] = self.library_name()
-        performance["graph_name"] = graph.get_name()
-        performance["nodes_number"] = graph.get_nodes_number()
-        performance["edges_number"] = graph.get_number_of_directed_edges()
-        performance["number_of_holdouts"] = number_of_holdouts
-        performance["evaluation_schema"] = evaluation_schema
-        performance["automatic_feature_names"] = format_list(automatic_feature_names)
-        for parameter, value in feature_parameters.items():
-            if parameter in performance.columns:
-                raise ValueError(
-                    "There has been a collision between the parameters used in the "
-                    f"{self.model_name()} implemented using the {self.library_name()} for the {self.task_name()} task "
-                    "and the parameter used for the validation and reporting of the task itself. "
-                    f"The parameter that has caused the collision is {parameter}. "
-                    "Please do change the name of the parameter in your model."
-                )
-            performance[parameter] = str(value)
-
         return performance

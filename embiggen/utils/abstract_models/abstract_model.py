@@ -1,5 +1,5 @@
 """Module providing generic abstract model."""
-from ..list_formatting import format_list
+from .list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest
@@ -39,6 +39,14 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def task_involves_edge_weights() -> bool:
+        """Returns whether the model task involves edge weights."""
+        raise NotImplementedError((
+            "The `task_involves_edge_weights` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
     def can_use_edge_weights() -> bool:
         """Returns whether the model can optionally use edge weights."""
         raise NotImplementedError((
@@ -62,6 +70,14 @@ class AbstractModel(Hashable):
         ))
 
     @staticmethod
+    def task_involves_topology() -> bool:
+        """Returns whether the model task involves topology."""
+        raise NotImplementedError((
+            "The `task_involves_topology` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
     def is_topological() -> bool:
         """Returns whether this embedding is based on graph topology."""
         raise NotImplementedError((
@@ -74,6 +90,14 @@ class AbstractModel(Hashable):
         """Returns whether the model requires node types."""
         raise NotImplementedError((
             "The `requires_node_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def task_involves_node_types() -> bool:
+        """Returns whether the model task involves node types."""
+        raise NotImplementedError((
+            "The `task_involves_node_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
@@ -97,6 +121,14 @@ class AbstractModel(Hashable):
         """Returns whether the model requires edge types."""
         raise NotImplementedError((
             "The `requires_edge_types` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        raise NotImplementedError((
+            "The `task_involves_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 

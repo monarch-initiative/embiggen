@@ -98,125 +98,6 @@ def iterate_graphs(
             yield graph
 
 
-def iterate_classifier_models(
-    models: Union[str, Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]],
-    expected_parent_class: Type[AbstractClassifierModel],
-    library_names: Optional[Union[str, List[str]]],
-    smoke_test: bool
-) -> Iterator[Type[AbstractClassifierModel]]:
-    """Return iterator over the provided models after validation.
-
-    Parameters
-    -------------------
-    models: Union[Type[AbstractClassifierModel], List[Type[AbstractClassifierModel]]]
-        The models to validate and iterate on.
-    expected_parent_class: Type[AbstractClassifierModel]
-        The parent class to check the model against.
-    library_names: Optional[Union[str, List[str]]] = None
-        Library names from where to retrieve the provided model names.
-    smoke_test: bool = False
-        Whether this run should be considered a smoke test
-        and therefore use the smoke test configurations for
-        the provided model names and feature names.
-    """
-    if not isinstance(models, (list, tuple, pd.Series)):
-        models = [models]
-
-    number_of_models = len(models)
-
-    if not isinstance(library_names, (list, tuple, pd.Series)):
-        library_names = [library_names] * number_of_models
-
-    if number_of_models == 0:
-        raise ValueError(
-            "An empty list of models was provided."
-        )
-    
-    number_of_libraries = len(library_names)
-
-    if number_of_libraries != number_of_models:
-        raise ValueError(
-            f"The number of the provided models {number_of_models} "
-            f"is different from the number of provided libraries {number_of_libraries}."
-        )
-
-    models = [
-        expected_parent_class.get_model_from_library(
-            model,
-            task_name=expected_parent_class.task_name(),
-            library_name=library_name
-        )()
-        if isinstance(model, str)
-        else model
-        for model, library_name in zip(
-            models,
-            library_names
-        )
-    ]
-
-    for model in models:
-        if not issubclass(model.__class__, expected_parent_class):
-            raise ValueError(
-                "The provided classifier model is expected to be "
-                f"an implementation of the {expected_parent_class.__name__} class, but you provided "
-                f"an object of type {type(model)} that does not hereditate from "
-                "the expected class."
-            )
-    
-    # If this is a smoke test, we replace all of the
-    # provided models with their smoke test version.
-    if smoke_test:
-        models = [
-            model.__class__(**model.smoke_test_parameters())
-            for model in models
-        ]
-
-    for model in tqdm(
-        models,
-        desc=f"{expected_parent_class.task_name()} Models",
-        total=number_of_models,
-        disable=number_of_models == 1,
-        dynamic_ncols=True,
-        leave=False
-    ):
-        yield model
-
-
-@Cache(
-    cache_path="{cache_dir}/{classifier.task_name()}/{classifier.model_name()}/{graph.get_name()}/{_hash}.csv.gz",
-    cache_dir="experiments",
-    enable_cache_arg_name="enable_cache",
-)
-def evaluate_classifier(
-    classifier: Type[AbstractClassifierModel],
-    graph: Graph,
-    evaluation_schema: str,
-    holdouts_kwargs: Dict[str, Any],
-    node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]],
-    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]],
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]],
-    subgraph_of_interest: Optional[Graph],
-    number_of_holdouts: int,
-    random_state: int,
-    smoke_test: bool,
-    **evaluation_kwargs: Dict
-) -> pd.DataFrame:
-    """Executes cache evaluation for model."""
-    return classifier.evaluate(
-        graph,
-        evaluation_schema=evaluation_schema,
-        holdouts_kwargs=holdouts_kwargs,
-        node_features=node_features,
-        node_type_features=node_type_features,
-        edge_features=edge_features,
-        subgraph_of_interest=subgraph_of_interest,
-        number_of_holdouts=number_of_holdouts,
-        random_state=random_state,
-        smoke_test=smoke_test,
-        **evaluation_kwargs
-    )
-
-
 def classification_evaluation_pipeline(
     evaluation_schema: str,
     holdouts_kwargs: Dict[str, Any],
@@ -278,8 +159,8 @@ def classification_evaluation_pipeline(
         Keyword arguments to forward to evaluation.
     """
     return pd.concat([
-        evaluate_classifier(
-            classifier=classifier,
+        expected_parent_class.evaluate(
+            models=models,
             graph=graph,
             evaluation_schema=evaluation_schema,
             holdouts_kwargs=holdouts_kwargs,
@@ -294,5 +175,6 @@ def classification_evaluation_pipeline(
             **evaluation_kwargs
         )
         for graph in iterate_graphs(graphs, repositories, versions)
-        for classifier in iterate_classifier_models(models, expected_parent_class, library_names, smoke_test)
     ])
+
+    

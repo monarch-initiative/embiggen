@@ -1,5 +1,5 @@
 """Module providing abstract edge prediction model."""
-from typing import Optional, Union, List, Dict, Any, Tuple
+from typing import Optional, Union, List, Dict, Any, Tuple, Iterator
 import pandas as pd
 import numpy as np
 import math
@@ -34,14 +34,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             "Kfold"
         ]
 
+    @classmethod
     def split_graph_following_evaluation_schema(
-        self,
+        cls,
         graph: Graph,
         evaluation_schema: str,
-        number_of_holdouts: int,
         random_state: int,
-        holdouts_kwargs: Dict[str, Any],
-        holdout_number: int
+        holdout_number: int,
+        **holdouts_kwargs: Dict[str, Any],
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
 
@@ -51,14 +51,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The graph to split.
         evaluation_schema: str
             The evaluation schema to follow.
-        number_of_holdouts: int
-            The number of holdouts that will be generated throught the evaluation.
         random_state: int
             The random state for the evaluation
-        holdouts_kwargs: Dict[str, Any]
-            The kwargs to be forwarded to the holdout method.
         holdout_number: int
             The current holdout number.
+        holdouts_kwargs: Dict[str, Any]
+            The kwargs to be forwarded to the holdout method.
         """
         if evaluation_schema == "Connected Monte Carlo":
             return graph.connected_holdout(
@@ -75,7 +73,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if evaluation_schema == "Kfold":
             return graph.get_edge_prediction_kfold(
                 **holdouts_kwargs,
-                k=number_of_holdouts,
                 k_index=holdout_number,
                 random_state=random_state,
                 verbose=False
@@ -83,7 +80,80 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
             "is not available. The available evaluation schemas "
-            f"are: {format_list(self.get_available_evaluation_schemas())}."
+            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        )
+
+    @staticmethod
+    def __iterate_negative_graphs(
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph],
+        subgraph_of_interest: Optional[Graph],
+        random_state: int,
+        verbose: bool,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool,
+        validation_unbalance_rates: Tuple[float]
+    ) -> Iterator[Tuple[Graph]]:
+        """Return iterator over the negative graphs for evaluation."""
+        if subgraph_of_interest is None:
+            sampler_graph = graph
+        else:
+            sampler_graph = subgraph_of_interest
+
+        train_size = (
+            train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
+        )
+
+        return (
+            sampler_graph.sample_negative_graph(
+                number_of_negative_samples=int(
+                    math.ceil(sampler_graph.get_edges_number()*unbalance_rate)
+                ),
+                random_state=random_state*(i+1),
+                sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                use_zipfian_sampling=True,
+                graph_to_avoid=graph
+            ).random_holdout(
+                train_size=train_size,
+                random_state=random_state,
+                verbose=False,
+            )
+            for i, unbalance_rate in tqdm(
+                enumerate(validation_unbalance_rates),
+                disable=not verbose or len(validation_unbalance_rates) == 1,
+                leave=False,
+                dynamic_ncols=True,
+                desc="Building negative graphs for evaluation"
+            )
+        )
+
+    @classmethod
+    def _prepare_evaluation(
+        cls,
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        validation_unbalance_rates: Tuple[float] = (1.0, )
+    ) -> Dict[str, Any]:
+        """Return additional custom parameters for the current holdout."""
+        return dict(
+            negative_graphs=list(cls.__iterate_negative_graphs(
+                graph=graph,
+                train=train,
+                test=test,
+                support=support,
+                subgraph_of_interest=subgraph_of_interest,
+                random_state=random_state,
+                verbose=verbose,
+                validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                validation_unbalance_rates=validation_unbalance_rates,
+            ))
         )
 
     def _evaluate(
@@ -98,13 +168,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
         verbose: bool = True,
+        negative_graphs: Optional[List[Tuple[Graph]]] = None,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
         validation_unbalance_rates: Tuple[float] = (1.0, )
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         performance = []
 
-        existent_train_prediction_probabilities = self.predict_proba(
+        train_predic_proba = self.predict_proba(
             train,
             support=support,
             node_features=node_features,
@@ -112,14 +183,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if len(existent_train_prediction_probabilities.shape) > 1 and existent_train_prediction_probabilities.shape[1] > 1:
-            existent_train_prediction_probabilities = existent_train_prediction_probabilities[
-                :, 1]
+        if len(train_predic_proba.shape) > 1 and train_predic_proba.shape[1] > 1:
+            train_predic_proba = train_predic_proba[:, 1]
 
-        assert existent_train_prediction_probabilities.shape[0] == train.get_number_of_directed_edges(
-        )
-
-        existent_test_prediction_probabilities = self.predict_proba(
+        test_predict_proba = self.predict_proba(
             test,
             support=support,
             node_features=node_features,
@@ -127,65 +194,33 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if len(existent_test_prediction_probabilities.shape) > 1 and existent_test_prediction_probabilities.shape[1] > 1:
-            existent_test_prediction_probabilities = existent_test_prediction_probabilities[
-                :, 1]
+        if len(test_predict_proba.shape) > 1 and test_predict_proba.shape[1] > 1:
+            test_predict_proba = test_predict_proba[:, 1]
 
-        assert existent_test_prediction_probabilities.shape[0] == test.get_number_of_directed_edges(
-        )
+        negative_graph_iterator = self.__iterate_negative_graphs(
+            graph=graph,
+            train=train,
+            test=test,
+            support=support,
+            subgraph_of_interest=subgraph_of_interest,
+            random_state=random_state,
+            verbose=verbose,
+            validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+            validation_unbalance_rates=validation_unbalance_rates,
+        ) if negative_graphs is None else negative_graphs
 
-        if subgraph_of_interest is None:
-            sampler_graph = graph
-        else:
-            sampler_graph = subgraph_of_interest
-
-        train_size = train.get_edges_number() / (train.get_edges_number() +
-                                                 test.get_edges_number())
-
-        for unbalance_rate in tqdm(
-            validation_unbalance_rates,
+        for unbalance_rate, (negative_train, negative_test) in tqdm(
+            zip(validation_unbalance_rates, negative_graph_iterator),
             disable=not verbose or len(validation_unbalance_rates) == 1,
             leave=False,
             dynamic_ncols=True,
             desc=f"Evaluating on unbalances"
         ):
-            negative_graph = sampler_graph.sample_negative_graph(
-                number_of_negative_samples=int(
-                    math.ceil(sampler_graph.get_edges_number()*unbalance_rate)),
-                random_state=random_state,
-                sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-                use_zipfian_sampling=True,
-                graph_to_avoid=graph
-            )
-
-            assert negative_graph.has_edges(), "Negative graph is empty!"
-
-            non_existent_train, non_existent_test = negative_graph.random_holdout(
-                train_size=train_size,
-                random_state=random_state,
-                verbose=False,
-            )
-
-            assert non_existent_train.has_edges(), "Negative train graph is empty!"
-            assert non_existent_test.has_edges(), "Negative test graph is empty!"
-
-            for evaluation_mode, (existent_prediction_probabilities, non_existent_graph) in (
-                (
-                    "train",
-                    (
-                        existent_train_prediction_probabilities,
-                        non_existent_train
-                    )
-                ),
-                (
-                    "test",
-                    (
-                        existent_test_prediction_probabilities,
-                        non_existent_test
-                    )
-                ),
+            for evaluation_mode, (existent_predict_proba, non_existent_graph) in (
+                ("train", (train_predic_proba, negative_train)),
+                ("test", (test_predict_proba, negative_test)),
             ):
-                non_existent_prediction_probabilities = self.predict_proba(
+                non_existent_predict_proba = self.predict_proba(
                     non_existent_graph,
                     support=support,
                     node_features=node_features,
@@ -193,34 +228,29 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     edge_features=edge_features
                 )
 
-                assert non_existent_prediction_probabilities.shape[0] == non_existent_graph.get_number_of_directed_edges(
-                )
+                if len(non_existent_predict_proba.shape) > 1 and non_existent_predict_proba.shape[1] > 1:
+                    non_existent_predict_proba = non_existent_predict_proba[:, 1]
 
-                if len(non_existent_prediction_probabilities.shape) > 1 and non_existent_prediction_probabilities.shape[1] > 1:
-                    non_existent_prediction_probabilities = non_existent_prediction_probabilities[
-                        :, 1]
-
-                prediction_probabilities = np.concatenate((
-                    existent_prediction_probabilities,
-                    non_existent_prediction_probabilities
+                predict_proba = np.concatenate((
+                    existent_predict_proba,
+                    non_existent_predict_proba
                 ))
 
                 labels = np.concatenate((
-                    np.ones_like(existent_prediction_probabilities),
-                    np.zeros_like(non_existent_prediction_probabilities),
+                    np.ones_like(existent_predict_proba),
+                    np.zeros_like(non_existent_predict_proba),
                 ))
 
                 performance.append({
                     "evaluation_mode": evaluation_mode,
                     "validation_unbalance_rate": unbalance_rate,
                     "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
-                    "train_size": train_size,
                     **self.evaluate_predictions(
-                        prediction_probabilities > 0.5,
+                        predict_proba > 0.5,
                         labels
                     ),
                     **self.evaluate_prediction_probabilities(
-                        prediction_probabilities,
+                        predict_proba,
                         labels
                     ),
                 })
@@ -271,8 +301,11 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
-                predictions,
-                index=graph.get_directed_edge_node_ids()
+                {
+                    "predictions": predictions,
+                    "sources": graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_directed_destination_node_ids(),
+                },
             )
 
         return predictions
@@ -697,9 +730,11 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
-                predictions,
-                columns=["prediction"],
-                index=graph.get_directed_edge_node_ids()
+                {
+                    "predictions": predictions,
+                    "sources": graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_directed_destination_node_ids(),
+                },
             )
 
         return predictions
@@ -1119,77 +1154,22 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=None,
         )
 
-    def evaluate(
-        self,
-        graph: Graph,
-        evaluation_schema: str,
-        holdouts_kwargs: Dict[str, Any],
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
-        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None,
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        subgraph_of_interest: Optional[Graph] = None,
-        number_of_holdouts: int = 10,
-        random_state: int = 42,
-        smoke_test: bool = False,
-        verbose: bool = True,
-        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        validation_unbalance_rates: Tuple[float] = (1.0, )
-    ) -> pd.DataFrame:
-        """Execute evaluation on the provided graph.
+    @staticmethod
+    def task_involves_edge_weights() -> bool:
+        """Returns whether the model task involves edge weights."""
+        return False
 
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run predictions on.
-        evaluation_schema: str
-            The schema for the evaluation to follow.
-        holdouts_kwargs: Dict[str, Any]
-            Parameters to forward to the desired evaluation schema.
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
-            The node features to use.
-        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
-            The node type features to use.
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
-            The edge features to use.
-        subgraph_of_interest: Optional[Graph] = None
-            Optional subgraph where to focus the task.
-        skip_evaluation_biased_feature: bool = False
-            Whether to skip feature names that are known to be biased
-            when running an holdout. These features should be computed
-            exclusively on the training graph and not the entire graph.
-        number_of_holdouts: int = 10
-            The number of holdouts to execute.
-        random_state: int = 42
-            The random state to use for the holdouts.
-        smoke_test: bool = False
-            Whether this run should be considered a smoke test
-            and therefore use the smoke test configurations for
-            the provided model names and feature names.
-        verbose: bool = True
-            Whether to show a loading bar while computing holdouts.
-        validation_sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges exclusively between nodes with different node types.
-            This can be useful when executing a bipartite edge prediction task.
-        validation_unbalance_rates: Tuple[float] = (1.0, )
-            Unbalance rate for the non-existent graphs generation.
-        """
-        if edge_features is not None:
-            raise NotImplementedError(
-                "Currently edge features are not supported in edge prediction models."
-            )
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        return False
 
-        return super().evaluate(
-            graph=graph,
-            evaluation_schema=evaluation_schema,
-            holdouts_kwargs=holdouts_kwargs,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=None,
-            subgraph_of_interest=subgraph_of_interest,
-            number_of_holdouts=number_of_holdouts,
-            random_state=random_state,
-            verbose=verbose,
-            smoke_test=smoke_test,
-            validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-            validation_unbalance_rates=validation_unbalance_rates,
-        )
+    @staticmethod
+    def task_involves_node_types() -> bool:
+        """Returns whether the model task involves node types."""
+        return False
+
+    @staticmethod
+    def task_involves_topology() -> bool:
+        """Returns whether the model task involves topology."""
+        return True

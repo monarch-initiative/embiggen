@@ -270,3 +270,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return True
+
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        return True
