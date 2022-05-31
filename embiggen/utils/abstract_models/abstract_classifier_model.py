@@ -1079,7 +1079,7 @@ class AbstractClassifierModel(AbstractModel):
             dynamic_ncols=True,
             leave=False
         ):
-            yield model
+            yield model.clone()
 
     @Cache(
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
