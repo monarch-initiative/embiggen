@@ -219,7 +219,10 @@ class AbstractClassifierModel(AbstractModel):
             node_feature = node_feature.fit_transform(
                 graph=graph,
                 return_dataframe=False,
-                verbose=False
+                # If this is an Ensmallen model, we can enable the verbosity
+                # as it will only show up in the jupyter kernel and it won't bother the
+                # other loading bars.
+                verbose="Ensmallen" == node_feature.library_name()
             )
 
         if isinstance(node_feature, EmbeddingResult):
