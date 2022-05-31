@@ -142,7 +142,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             )
 
             if self.is_binary_prediction_task():
-                predictions = prediction_probabilities > 0.5
+                predictions = prediction_probabilities
             elif self.is_multilabel_prediction_task():
                 predictions = prediction_probabilities > 0.5
             else:
@@ -158,12 +158,12 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "train_size": train_size,
                 "known_nodes_number": evaluation_graph.get_known_node_types_number(),
                 **self.evaluate_predictions(
+                    labels_subset,
                     predictions,
-                    labels_subset
                 ),
                 **self.evaluate_prediction_probabilities(
+                    labels_subset,
                     prediction_probabilities,
-                    labels_subset
                 ),
             })
 

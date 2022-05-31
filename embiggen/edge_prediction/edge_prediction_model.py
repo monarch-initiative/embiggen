@@ -237,8 +237,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 ))
 
                 labels = np.concatenate((
-                    np.ones_like(existent_predict_proba),
-                    np.zeros_like(non_existent_predict_proba),
+                    np.ones_like(existent_predict_proba, dtype=bool),
+                    np.zeros_like(non_existent_predict_proba, dtype=bool),
                 ))
 
                 performance.append({
@@ -246,12 +246,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     "validation_unbalance_rate": unbalance_rate,
                     "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
                     **self.evaluate_predictions(
-                        predict_proba > 0.5,
-                        labels
+                        labels,
+                        predict_proba,
                     ),
                     **self.evaluate_prediction_probabilities(
+                        labels,
                         predict_proba,
-                        labels
                     ),
                 })
 

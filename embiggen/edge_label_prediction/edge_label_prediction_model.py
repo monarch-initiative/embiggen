@@ -135,7 +135,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             
             if self.is_binary_prediction_task():
                 prediction_probabilities = prediction_probabilities[:, 1]
-                predictions = prediction_probabilities > 0.5
+                predictions = prediction_probabilities
                 labels = evaluation_graph.get_known_edge_type_ids() == 1
             elif self.is_multilabel_prediction_task():
                 # TODO! support multilabel prediction!
@@ -153,12 +153,12 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 "train_size": train_size,
                 "known_edges_number": graph.get_known_node_types_number(),
                 **self.evaluate_predictions(
+                    labels,
                     predictions,
-                    labels
                 ),
                 **self.evaluate_prediction_probabilities(
+                    labels,
                     prediction_probabilities,
-                    labels
                 ),
             })
 

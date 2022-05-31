@@ -1,6 +1,6 @@
 """Module providing abstract classes for classification models."""
 from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
-from ensmallen import Graph
+from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import time
@@ -852,18 +852,23 @@ class AbstractClassifierModel(AbstractModel):
 
     def evaluate_predictions(
         self,
+        ground_truth: np.ndarray,
         predictions: np.ndarray,
-        ground_truth: np.ndarray
     ) -> Dict[str, Any]:
         """Return evaluations for the provided predictions.
 
         Parameters
         ----------------
-        predictions: np.ndarray
-            The predictions to be evaluated.
         ground_truth: np.ndarray
             The ground truth to evaluate the predictions against.
+        predictions: np.ndarray
+            The predictions to be evaluated.
         """
+        if self.is_binary_prediction_task():
+            return express_measures.all_binary_metrics(
+                ground_truth.flatten(),
+                predictions.flatten()
+            )
 
         return {
             **{
@@ -890,22 +895,30 @@ class AbstractClassifierModel(AbstractModel):
 
     def evaluate_prediction_probabilities(
         self,
+        ground_truth: np.ndarray,
         prediction_probabilities: np.ndarray,
-        ground_truth: np.ndarray
     ) -> Dict[str, Any]:
         """Return evaluations for the provided predictions.
 
         Parameters
         ----------------
-        prediction_probabilities: np.ndarray
-            The predictions to be evaluated.
         ground_truth: np.ndarray
             The ground truth to evaluate the predictions against.
+        prediction_probabilities: np.ndarray
+            The predictions to be evaluated.
         """
         metrics = []
         if self.is_binary_prediction_task():
-            # AUPRC in sklearn is only supported for binary labels
-            metrics.append(average_precision_score)
+            return {
+                "auroc": express_measures.binary_auroc(
+                    ground_truth.flatten(),
+                    prediction_probabilities.flatten()
+                ),
+                "auprc": express_measures.binary_auprc(
+                    ground_truth.flatten(),
+                    prediction_probabilities.flatten()
+                )
+            }
 
         @functools.wraps(roc_auc_score)
         def wrapper_roc_auc_score(*args, **kwargs):
