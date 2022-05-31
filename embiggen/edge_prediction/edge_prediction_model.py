@@ -212,6 +212,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         for unbalance_rate, (negative_train, negative_test) in tqdm(
             zip(validation_unbalance_rates, negative_graph_iterator),
             disable=not verbose or len(validation_unbalance_rates) == 1,
+            total=len(validation_unbalance_rates),
             leave=False,
             dynamic_ncols=True,
             desc=f"Evaluating on unbalances"
