@@ -844,10 +844,16 @@ class GraphVisualizer:
         # If necessary, we proceed with the subsampling
         if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
             if self._graph.has_node_types():
+                train_size = self._number_of_subsampled_nodes / self._graph.get_nodes_number()
+                node_type_counts = self._graph.get_node_type_names_counts_hashmap()
+                _, least_common_count = min(
+                    node_type_counts.items(),
+                    key=lambda x: x[1]
+                )
                 self._subsampled_node_ids, _ = self._graph.get_node_label_holdout_indices(
-                    train_size=self._number_of_subsampled_nodes / self._graph.get_nodes_number(),
+                    train_size=train_size,
                     use_stratification=not (self._graph.has_multilabel_node_types(
-                    ) or self._graph.has_singleton_node_types()),
+                    ) or self._graph.has_singleton_node_types() or least_common_count*train_size < 1),
                     random_state=self._random_state
                 )
             else:
