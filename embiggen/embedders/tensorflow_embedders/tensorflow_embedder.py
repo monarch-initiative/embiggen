@@ -1,341 +1,272 @@
 """Abstract Keras Model wrapper for embedding models."""
-from typing import Dict, List, Union, Optional
+from typing import Dict, Sequence, Tuple, Any
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from embiggen.utils.parameter_validators import validate_verbose
+from ensmallen import Graph
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
     EarlyStopping, ReduceLROnPlateau)
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import \
-    Nadam, Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from .optimizers import apply_centralized_gradients
-from ...utils import execute_gpu_checks
+from ...utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number, has_gpus
+from ...utils import AbstractEmbeddingModel, abstract_class, EmbeddingResult
 
 
-class TensorFlowEmbedder:
+@abstract_class
+class TensorFlowEmbedder(AbstractEmbeddingModel):
     """Abstract Keras Model wrapper for embedding models."""
-
-    TERMS_EMBEDDING_LAYER_NAME = "terms_embedding_layer"
 
     def __init__(
         self,
-        vocabulary_size: Optional[int] = None,
-        embedding_size: Optional[int] = None,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        optimizer: Optional[Union[str, Optimizer]] = None,
-        trainable_embedding: bool = True,
-        use_gradient_centralization: bool = True
+        embedding_size: int = 100,
+        early_stopping_min_delta: float = 0.001,
+        early_stopping_patience: int = 1,
+        learning_rate_plateau_min_delta: float = 0.001,
+        learning_rate_plateau_patience: int = 1,
+        epochs: int = 10,
+        batch_size: int = 2**10,
+        optimizer: str = "nadam",
+        use_mirrored_strategy: bool = False,
+        enable_cache: bool = False
     ):
         """Create new TensorFlowEmbedder object.
 
         Parameters
         ----------------------------------
-        vocabulary_size: int = None
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        embedding_size: int = None,
+        embedding_size: int = 100
             Dimension of the embedding.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-            The seed embedding to be used.
-            Note that it is not possible to provide at once both
-            the embedding and either the vocabulary size or the embedding size.
-        optimizer: Union[str, Optimizer] = None,
-            The optimizer to be used during the training of the model.
-            By default, if None is provided, Nadam with learning rate
-            set at 0.01 is used.
-        trainable_embedding: bool = True,
-            Wether to allow for trainable embedding.
-            By default true.
-        use_gradient_centralization: bool = True,
-            Whether to wrap the provided optimizer into a normalized
-            one that centralizes the gradient.
-            It is automatically enabled if the current version of
-            TensorFlow supports gradient transformers.
-            More detail here: https://arxiv.org/pdf/2004.01461.pdf
-
-        Raises
-        -----------------------------------
-        ValueError,
-            When the given vocabulary size is not a strictly positive integer.
-        ValueError,
-            When the given embedding size is not a strictly positive integer.
-        ValueError,
-            When both vocabulary size or embedding size are provided with also
-            the seed embedding.
+        early_stopping_min_delta: float = 0.001
+            The minimum variation in the provided patience time
+            of the loss to not stop the training.
+        early_stopping_patience: int = 1
+            The amount of epochs to wait for better training
+            performance.
+        learning_rate_plateau_min_delta: float = 0.001
+            The minimum variation in the provided patience time
+            of the loss to not reduce the learning rate.
+        learning_rate_plateau_patience: int = 1
+            The amount of epochs to wait for better training
+            performance without decreasing the learning rate.
+        epochs: int = 10
+            Number of epochs to train.
+        batch_size: int = 2**10
+            Batch size to use during the training.
+        optimizer: str = "nadam"
+            Optimizer to use during the training.
+        use_mirrored_strategy: bool = False
+            Whether to use mirrored strategy.
+        enable_cache: bool = False
+            Whether to enable the cache, that is to
+            store the computed embedding.
         """
-        if embedding is not None:
-            if isinstance(embedding, pd.DataFrame):
-                embedding = embedding.values
-            if not isinstance(embedding, np.ndarray):
-                raise ValueError(
-                    "Given embedding is not a numpy array."
-                )
-            if vocabulary_size is not None and embedding_size is not None and vocabulary_size != embedding_size.shape[0]:
-                raise ValueError((
-                    "Both seed embedding and vocabulary size were provided but the two values "
-                    "are not compatible. Namely, the vocabulary size is {} while the embedding "
-                    "shape is {}."
-                ).format(
-                    vocabulary_size,
-                    embedding_size.shape
-                ))
-            embedding_size = embedding.shape[1]
-            vocabulary_size = embedding.shape[0]
-
-        if not isinstance(vocabulary_size, int) or vocabulary_size < 1:
-            raise ValueError((
-                "The given vocabulary size ({}) "
-                "is not a strictly positive integer."
-            ).format(
-                vocabulary_size
-            ))
-        if not isinstance(embedding_size, int) or embedding_size < 1:
-            raise ValueError((
-                "The given embedding size ({}) "
-                "is not a strictly positive integer."
-            ).format(
-                embedding_size
-            ))
-        self._vocabulary_size = vocabulary_size
-        self._embedding_size = embedding_size
-        self._embedding = embedding
-
         execute_gpu_checks()
-
-        if optimizer is None:
-            optimizer = Nadam(learning_rate=0.01)
-
-        if isinstance(optimizer, str):
-            optimizer = tf.keras.optimizers.get(optimizer)
-
-        if use_gradient_centralization:
-            apply_centralized_gradients(optimizer)
-
+        if use_mirrored_strategy and get_available_gpus_number() <= 1:
+            raise ValueError(
+                "Mirrored strategy was requested, one "
+                "or less GPUs where detected."
+            )
+        self._use_mirrored_strategy = use_mirrored_strategy
+        self._epochs = epochs
+        self._batch_size = batch_size
         self._optimizer = optimizer
-        self._model = self._build_model()
-        self.trainable = trainable_embedding
-
-    def _build_model(self) -> Model:
-        """Build new model for embedding."""
-        raise NotImplementedError(
-            "The method _build_model must be implemented in the child classes."
+        self._early_stopping_min_delta = early_stopping_min_delta
+        self._early_stopping_patience = early_stopping_patience
+        self._learning_rate_plateau_min_delta = learning_rate_plateau_min_delta
+        self._learning_rate_plateau_patience = learning_rate_plateau_patience
+        super().__init__(
+            embedding_size=embedding_size,
+            enable_cache=enable_cache
         )
 
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        raise NotImplementedError(
-            "The method _compile_model must be implemented in the child classes."
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1
         )
 
-    def summary(self):
-        """Print model summary."""
-        self._model.summary()
+    def parameters(self) -> Dict[str, Any]:
+        return {
+            **super().parameters(),
+            **dict(
+                use_mirrored_strategy=self._use_mirrored_strategy,
+                epochs=self._epochs,
+                batch_size=self._batch_size,
+                optimizer=self._optimizer,
+                early_stopping_min_delta=self._early_stopping_min_delta,
+                early_stopping_patience=self._early_stopping_patience,
+                learning_rate_plateau_min_delta=self._learning_rate_plateau_min_delta,
+                learning_rate_plateau_patience=self._learning_rate_plateau_patience,
+            )
+        }
 
-    def get_layer_weights(self, layer_name: str) -> np.ndarray:
+    @staticmethod
+    def library_name() -> str:
+        return "TensorFlow"
+
+    def _build_model(self, graph: Graph) -> Model:
+        """Build new model for embedding.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        """
+        raise NotImplementedError(
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_build_model`. Please do implement it."
+        )
+
+    def _build_input(self, graph: Graph, verbose: bool) -> Tuple[Any]:
+        """Returns values to be fed as input into the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        verbose: bool
+            Whether to show loading bars while building input.
+        """
+        raise NotImplementedError(
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_build_input`. Please do implement it."
+        )
+
+    def _get_steps_per_epoch(self, graph: Graph) -> Tuple[Any]:
+        """Returns number of steps per epoch.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to compute the number of steps.
+        """
+        return None
+
+    def _extract_embeddings(
+        self,
+        graph: Graph,
+        model: Model,
+        return_dataframe: bool
+    ) -> EmbeddingResult:
+        """Returns embedding from the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph that was embedded.
+        model: Model
+            The Keras model used to embed the graph.
+        return_dataframe: bool
+            Whether to return a dataframe of a numpy array.
+        """
+        raise NotImplementedError(
+            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"implementing the model {self.model_name()} we could not find the method "
+            "called `_extract_embeddings`. Please do implement it."
+        )
+
+    def get_layer_weights(
+        self,
+        layer_name: str,
+        model: Model,
+        drop_first_row: bool = False
+    ) -> np.ndarray:
         """Return weights from the requested layer.
 
         Parameters
         -----------------------
-        layer_name: str,
+        layer_name: str
             Name of the layer to query for.
+        model: Model
+            The model from where to extract the layer weights.
+        drop_first_row: bool = False
+            Whether to drop the first row of the weights.
+            May be useful for when the embedding included
+            padding, such as when dealing with unknown
+            edge and node types or multilabel node types.
         """
-        for layer in self._model.layers:
+        for layer in model.layers:
             if layer.name == layer_name:
-                return layer.get_weights()[0]
+                weights = layer.get_weights()[0]
+                if drop_first_row:
+                    weights = weights[1:]
+                return weights
         raise NotImplementedError(
-            "This model does not have a layer called {}.".format(
-                layer_name
-            )
+            f"The model {self.model_name()} implemented in the class {self.__class__.__name__} "
+            f"does not have a layer called {layer_name}."
         )
 
-    @property
-    def embedding(self) -> np.ndarray:
-        """Return model embeddings.
-
-        Raises
-        -------------------
-        NotImplementedError,
-            If the current embedding model does not have an embedding layer.
-        """
-        return self.get_layer_weights(TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME)
-
-    @property
-    def trainable(self) -> bool:
-        """Return whether the embedding layer can be trained.
-
-        Raises
-        -------------------
-        NotImplementedError,
-            If the current embedding model does not have an embedding layer.
-        """
-        for layer in self._model.layers:
-            if layer.name == TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME:
-                return layer.trainable
-        raise NotImplementedError(
-            "This embedding model does not have an embedding layer."
-        )
-
-    @trainable.setter
-    def trainable(self, trainable: bool):
-        """Set whether the embedding layer can be trained or not.
-
-        Parameters
-        -------------------
-        trainable: bool,
-            Whether the embedding layer can be trained or not.
-        """
-        for layer in self._model.layers:
-            if layer.name == TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME:
-                layer.trainable = trainable
-        self._compile_model()
-
-    def get_embedding_dataframe(self, term_names: List[str]) -> pd.DataFrame:
-        """Return terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        term_names: List[str],
-            List of terms to be used as index names.
-        """
-        return pd.DataFrame(
-            self.embedding,
-            index=term_names
-        )
-
-    def save_embedding(self, path: str, term_names: List[str]):
-        """Save terms embedding using given index names.
-
-        Parameters
-        -----------------------------
-        path: str,
-            Save embedding as csv to given path.
-        term_names: List[str],
-            List of terms to be used as index names.
-        """
-        self.get_embedding_dataframe(term_names).to_csv(path, header=False)
-
-    @property
-    def name(self) -> str:
-        """Return model name."""
-        return self._model.name
-
-    def save_weights(self, path: str):
-        """Save model weights to given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path where to save model weights.
-        """
-        self._model.save_weights(path)
-
-    def load_weights(self, path: str):
-        """Load model weights from given path.
-
-        Parameters
-        ---------------------------
-        path: str,
-            Path from where to load model weights.
-        """
-        self._model.load_weights(path)
-
-    def fit(
+    def _fit_transform(
         self,
-        *args,
-        early_stopping_min_delta: float = 0.1,
-        early_stopping_patience: int = 3,
-        reduce_lr_min_delta: float = 1,
-        reduce_lr_patience: int = 1,
-        epochs: int = 10000,
-        early_stopping_monitor: str = "loss",
-        early_stopping_mode: str = "min",
-        reduce_lr_monitor: str = "loss",
-        reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.5,
-        verbose: int = 1,
-        **kwargs: Dict
-    ) -> pd.DataFrame:
-        """Return pandas dataframe with training history.
-
-        Parameters
-        -----------------------
-        early_stopping_min_delta: float,
-            Minimum delta of metric to stop the training.
-        early_stopping_patience: int,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which trigger early stopping.
-        reduce_lr_min_delta: float,
-            Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which reducing learning rate.
-        epochs: int = 10000,
-            Epochs to train the model for.
-        early_stopping_monitor: str = "loss",
-            Metric to monitor for early stopping.
-        early_stopping_mode: str = "min",
-            Direction of the variation of the monitored metric for early stopping.
-        reduce_lr_monitor: str = "loss",
-            Metric to monitor for reducing learning rate.
-        reduce_lr_mode: str = "min",
-            Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.5,
-            Factor for reduction of learning rate.
-        verbose: int = 1,
-            Wethever to show the loading bar.
-            Specifically, the options are:
-            * 0 or False: No loading bar.
-            * 1 or True: Showing only the loading bar for the epochs.
-            * 2: Showing loading bar for both epochs and batches.
-        **kwargs: Dict,
-            Additional kwargs to pass to the Keras fit call.
-
-        Raises
-        -----------------------
-        ValueError,
-            If given verbose value is not within the available set (-1, 0, 1).
-
-        Returns
-        -----------------------
-        Dataframe with training history.
-        """
+        graph: Graph,
+        return_dataframe: bool = True,
+        verbose: bool = True
+    ) -> EmbeddingResult:
+        """Return node embedding"""
         try:
             from tqdm.keras import TqdmCallback
             traditional_verbose = False
         except AttributeError:
             traditional_verbose = True
-        verbose = validate_verbose(verbose)
-        callbacks = kwargs.pop("callbacks", ())
-        return pd.DataFrame(self._model.fit(
-            *args,
-            epochs=epochs,
+
+        if has_gpus() and self._use_mirrored_strategy:
+            strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
+        else:
+            strategy = tf.distribute.get_strategy()
+
+        # # Build the model
+        with strategy.scope():
+            model = self._build_model(graph)
+
+        # Get the model input
+        training_input = self._build_input(
+            graph,
+            verbose=verbose
+        )
+
+        if not isinstance(training_input, tuple):
+            raise ValueError(
+                "The provided input data is not a tuple."
+            )
+
+        # Fit the model
+        model.fit(
+            *training_input,
+            epochs=self._epochs,
             verbose=traditional_verbose and verbose > 0,
+            batch_size=(
+                self._batch_size
+                if issubclass(training_input[0].__class__, Sequence)
+                else None
+            ),
+            steps_per_epoch=self._get_steps_per_epoch(graph),
             callbacks=[
                 EarlyStopping(
-                    monitor=early_stopping_monitor,
-                    min_delta=early_stopping_min_delta,
-                    patience=early_stopping_patience,
-                    mode=early_stopping_mode,
+                    monitor="loss",
+                    min_delta=self._early_stopping_min_delta,
+                    patience=self._early_stopping_patience,
+                    mode="min",
                 ),
                 ReduceLROnPlateau(
-                    monitor=reduce_lr_monitor,
-                    min_delta=reduce_lr_min_delta,
-                    patience=reduce_lr_patience,
-                    factor=reduce_lr_factor,
-                    mode=reduce_lr_mode,
+                    monitor="loss",
+                    min_delta=self._learning_rate_plateau_min_delta,
+                    patience=self._learning_rate_plateau_patience,
+                    factor=0.5,
+                    mode="min",
                 ),
-                *((TqdmCallback(verbose=verbose-1),)
+                *((TqdmCallback(verbose=1, leave=False),)
                   if not traditional_verbose and verbose > 0 else ()),
-                *callbacks
             ],
-            **kwargs
-        ).history)
+        )
+
+        # Extract and return the embedding
+        return self._extract_embeddings(
+            graph,
+            model,
+            return_dataframe=return_dataframe
+        )

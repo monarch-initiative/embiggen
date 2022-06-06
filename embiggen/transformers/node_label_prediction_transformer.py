@@ -109,28 +109,6 @@ class NodeLabelPredictionTransformer:
                 "will be unlikely to generalize well."
             )
 
-        node_type_counts = graph.get_node_type_names_counts_hashmap()
-        most_common_node_type_name, most_common_count = max(
-            node_type_counts.items(),
-            key=lambda x: x[1]
-        )
-        least_common_node_type_name, least_common_count = min(
-            node_type_counts.items(),
-            key=lambda x: x[1]
-        )
-        if most_common_count > least_common_count * 20:
-            warnings.warn(
-                (
-                    "Please do be advised that this graph defines "
-                    "an unbalanced node-label prediction task, with the "
-                    "most common node type `{}` appearing {} times, "
-                    "while the least common one, `{}`, appears only `{}` times. "
-                    "Do take this into account when designing the node-label prediction model."
-                ).format(
-                    most_common_node_type_name, most_common_count,
-                    least_common_node_type_name, least_common_count
-                )
-            )
         if graph.has_unknown_node_types() and behaviour_for_unknown_node_labels =="warn":
             warnings.warn(
                 "Please be advised that the provided graph for the node-label "

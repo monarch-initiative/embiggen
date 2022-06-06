@@ -44,6 +44,11 @@ class NodeTransformer:
         if not isinstance(node_feature, list):
             node_feature = [node_feature]
 
+        if len(node_feature) == 0:
+            raise ValueError(
+                "The provided list of features is empty!"
+            )
+
         # We check if any of the provided node features
         # is neither a numpy array nor a pandas dataframe.
         for nf in node_feature:
@@ -81,6 +86,8 @@ class NodeTransformer:
                 nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
                 for nf in node_feature
             ])
+            if not self._node_feature.data.c_contiguous:
+                self._node_feature = np.ascontiguousarray(self._node_feature)
         else:
             self._node_feature = pd.concat(node_feature, axis=1)
 
@@ -118,6 +125,8 @@ class NodeTransformer:
 
         if self.numeric_node_ids:
             return self._node_feature.index.get_indexer(nodes)
+        
         if isinstance(nodes, Graph):
             nodes = nodes.get_node_names()
+        
         return self._node_feature.loc[nodes].to_numpy()

@@ -56,7 +56,7 @@ class EdgeLabelPredictionTransformer:
     def transform(
         self,
         graph: Graph,
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
         behaviour_for_unknown_edge_labels: Optional[str] = None,
         random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -67,7 +67,7 @@ class EdgeLabelPredictionTransformer:
         graph: Graph,
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -167,14 +167,16 @@ class EdgeLabelPredictionTransformer:
         )
 
         if self._one_hot_encode_labels:
-            edge_labels = graph.get_one_hot_encoded_edge_types()
+            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
+                edge_labels = graph.get_one_hot_encoded_edge_types()
+            else:
+                edge_labels = graph.get_one_hot_encoded_known_edge_types()
         else:
-            edge_labels = graph.get_edge_type_ids()
-
-        if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
-            known_edge_labels_mask = graph.get_edge_with_known_edge_types_mask()
-            edge_labels = edge_labels[known_edge_labels_mask]
-            edge_embeddings = edge_embeddings[known_edge_labels_mask]
+            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
+                edge_labels = graph.get_known_edge_type_ids()
+                edge_embeddings = edge_embeddings[graph.get_edges_with_known_edge_types_mask()]
+            else:
+                edge_labels = graph.get_edge_types_ids()
         
         numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
             seed=random_state

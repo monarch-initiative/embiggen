@@ -3,115 +3,60 @@ from typing import Dict, Union
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Input, Embedding, Flatten
 )
+from ensmallen import Graph
 import tensorflow as tf  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
-from .tensorflow_embedder import TensorFlowEmbedder
-from .layers import NoiseContrastiveEstimation
-from ...utils import validate_window_size
+from .node2vec import Node2Vec
+from ...layers.tensorflow import NoiseContrastiveEstimation
 
 
-class SkipGram(TensorFlowEmbedder):
+class SkipGramTensorFlow(Node2Vec):
     """SkipGram model for sequence embedding.
 
-    The SkipGram model for graoh embedding receives a central word and tries
+    The SkipGram model for graph embedding receives a central word and tries
     to predict its contexts. The model makes use of an NCE loss layer
     during the training process to generate the negatives.
     """
 
-    def __init__(
-        self,
-        window_size: int = 4,
-        number_of_negative_samples: int = 5,
-        use_gradient_centralization: bool = True,
-        siamese: bool = False,
-        **kwargs: Dict
-    ):
-        """Create new sequence TensorFlowEmbedder model.
+    NODE_EMBEDDING = "node_embedding"
 
-        Parameters
-        -------------------------------------------
-        window_size: int = 4
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        number_of_negative_samples: int = 5
-            The number of negative classes to randomly sample per batch.
-            This single sample of negative classes is evaluated for each element in the batch.
-        use_gradient_centralization: bool = True
-            Whether to wrap the provided optimizer into a normalized
-            one that centralizes the gradient.
-            It is automatically enabled if the current version of
-            TensorFlow supports gradient transformers.
-            More detail here: https://arxiv.org/pdf/2004.01461.pdf
-        siamese: bool = False
-            Whether to use the siamese modality and share the embedding
-            weights between the approximated output loss and the embedding layer.
-        **kwargs: Dict
-            Additional kwargs to pass to parent constructor.
-        """
-        # TODO! Figure out a way to test for Zifian distribution in the
-        # data used for the word2vec sampling! The values in the vocabulary
-        # should have a decreasing node degree order!
-        self._window_size = validate_window_size(window_size)
-        self._number_of_negative_samples = number_of_negative_samples
-        self._siamese = siamese
-        super().__init__(
-            use_gradient_centralization=use_gradient_centralization,
-            **kwargs
-        )
+    @staticmethod
+    def model_name() -> str:
+        """Returns name of the model."""
+        return "SkipGram"
 
-    def _build_model(self) -> Model:
+    def _build_model(self, graph: Graph) -> Model:
         """Return SkipGram model."""
-        # Creating the inputs layers
-
         # Create first the input with the central terms
-        central_terms_input = Input(
-            (1, ),
-            dtype=tf.int32,
-            name="CentralTermsInput"
-        )
+        central_terms = Input((1, ), dtype=tf.int32)
 
         # Then we create the input of the contextual terms
-        contextual_terms_input = Input(
-            (self._window_size*2, ),
-            dtype=tf.int32,
-            name="ContextualTermsInput"
-        )
+        contextual_terms = Input((self._window_size*2, ), dtype=tf.int32)
 
         # Creating the embedding layer for the contexts
-        central_terms_embedding_layer = Embedding(
-            input_dim=self._vocabulary_size,
+        central_term_embedding = Flatten()(Embedding(
+            input_dim=graph.get_nodes_number(),
             output_dim=self._embedding_size,
             input_length=1,
-            name=TensorFlowEmbedder.TERMS_EMBEDDING_LAYER_NAME,
-        )
-        central_terms_embedding = central_terms_embedding_layer(central_terms_input)
-
-        central_embedding = Flatten()(
-            central_terms_embedding
-        )
+            name=self.NODE_EMBEDDING,
+        )(central_terms))
 
         # Adding layer that also executes the loss function
         output = NoiseContrastiveEstimation(
-            vocabulary_size=self._vocabulary_size,
+            vocabulary_size=graph.get_nodes_number(),
             embedding_size=self._embedding_size,
             number_of_negative_samples=self._number_of_negative_samples,
             positive_samples=self._window_size*2,
-            embedding=central_terms_embedding_layer if self._siamese else None
-        )((central_embedding, contextual_terms_input))
+        )((central_term_embedding, contextual_terms))
 
         # Creating the actual model
         model = Model(
-            inputs=[contextual_terms_input, central_terms_input],
+            inputs=[contextual_terms, central_terms],
             outputs=output,
-            name="SkipGram"
+            name=self.model_name()
         )
-        return model
 
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        # No loss function is needed because it is already executed in
-        # the Noise Contrastive Estimation loss layer.
-        self._model.compile(
-            optimizer=self._optimizer
-        )
+        model.compile(optimizer=self._optimizer)
+
+        return model

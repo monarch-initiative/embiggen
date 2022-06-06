@@ -6,7 +6,8 @@ def normalize_model_list_parameter(
     candidate_list: Union[Any, List[Any]],
     elements_number: int,
     object_type: Type,
-    default_value: Any = None
+    default_value: Any = None,
+    can_be_empty: bool = False
 ) -> List[Any]:
     """Return given candidate list parameter normalized.
 
@@ -20,6 +21,8 @@ def normalize_model_list_parameter(
         Base object of the list.
     default_value: Any = None,
         The type to use when the provided candidate list object is None.
+    can_be_empty: bool = False
+        Whether the list can be empty.
 
     Raises
     --------------------------
@@ -35,7 +38,7 @@ def normalize_model_list_parameter(
     Validated and normalized list of parameters.
     """
     # Validate the provided number of elements
-    if not isinstance(elements_number, int) or elements_number < 1:
+    if not isinstance(elements_number, int) or not can_be_empty and elements_number < 1:
         raise ValueError(
             (
                 "The provided amount of elements is not strictly positive "

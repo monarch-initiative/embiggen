@@ -62,7 +62,7 @@ class GraphTransformer:
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
@@ -71,7 +71,7 @@ class GraphTransformer:
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
             It can either be an Graph or a list of lists of edges.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -87,12 +87,42 @@ class GraphTransformer:
         """
         if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = graph.get_edge_node_ids(directed=False)
+                graph = (
+                    graph.get_directed_source_node_ids(),
+                    graph.get_directed_destination_node_ids(),
+                )
             else:
-                graph = graph.get_edge_node_names(directed=False)
+                graph = graph.get_directed_edge_node_names()
         if isinstance(graph, List):
             graph = np.array(graph)
-        if isinstance(graph, np.ndarray):
+        if (
+            isinstance(graph, tuple) and
+            len(graph) == 2 and
+            all(isinstance(e, np.ndarray) for e in graph)
+        ):
+            if (
+                len(graph[0].shape) != 1 or
+                len(graph[1].shape) != 1 or
+                graph[0].shape[0] == 0 or
+                graph[1].shape[0] == 0 or
+                graph[0].shape[0] != graph[1].shape[0]
+            ):
+                raise ValueError(
+                    "When providing a tuple of numpy arrays containing the source and destination "
+                    "node IDs, we expect to receive two arrays both with shape "
+                    "with shape (number of edges,). "
+                    f"The ones you have provided have shapes {graph[0].shape} "
+                    f"and {graph[1].shape}."
+                )
+            sources = graph[0]
+            destinations = graph[1]
+        elif isinstance(graph, np.ndarray):
+            if len(graph.shape) != 2 or graph.shape[1] != 2 or graph.shape[0] == 0:
+                raise ValueError(
+                    "When providing a numpy array containing the source and destination "
+                    "node IDs representing the graph edges, we expect to receive an array "
+                   f"with shape (number of edges, 2). The one you have provided has shape {graph.shape}."
+                )
             sources = graph[:, 0]
             destinations = graph[:, 1]
         return self._transformer.transform(sources, destinations, edge_features=edge_features)

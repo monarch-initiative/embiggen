@@ -1,91 +1,93 @@
-"""Siamese network for node-embedding including optionally node types and edge types."""
-from typing import Optional, Union
-
-import numpy as np
-import pandas as pd
-import tensorflow as tf
+"""TransE model."""
 from ensmallen import Graph
-from tensorflow.keras.optimizers import Optimizer  # pylint: disable=import-error,no-name-in-module
-
+import pandas as pd
+from tensorflow.keras import Model
 from .siamese import Siamese
+from ...utils import EmbeddingResult
 
 
-class TransE(Siamese):
-    """Siamese network for node-embedding including optionally node types and edge types."""
-
-    def __init__(
-        self,
-        graph: Graph,
-        embedding_size: int = 100,
-        distance_metric: str = "COSINE",
-        use_node_types: Union[bool, str] = "auto",
-        node_types_combination: str = "Add",
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        model_name: str = "TransE",
-        optimizer: Union[str, Optimizer] = None,
-        use_gradient_centralization: str = "auto"
-    ):
-        """Create new sequence TensorFlowEmbedder model.
-
-        Parameters
-        -------------------------------------------
-        vocabulary_size: int = None,
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        embedding_size: int = 100,
-            Dimension of the embedding.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        distance_metric: str = "COSINE",
-            The distance to use for the loss function.
-            Supported methods are L1, L2 and COSINE.
-        node_types_combination: str = "Add",
-            Method to combine the node embedding with the node type ambedding.
-            The supported methods are "Add" and "Concatenate".
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-            The seed embedding to be used.
-            Note that it is not possible to provide at once both
-            the embedding and either the vocabulary size or the embedding size.
-        model_name: str = "TransE",
-            Name of the model.
-        optimizer: Union[str, Optimizer] = "nadam",
-            The optimizer to be used during the training of the model.
-        use_gradient_centralization: bool = True,
-            Whether to wrap the provided optimizer into a normalized
-            one that centralizes the gradient.
-            It is automatically enabled if the current version of
-            TensorFlow supports gradient transformers.
-            More detail here: https://arxiv.org/pdf/2004.01461.pdf
-        """
-        super().__init__(
-            graph=graph,
-            use_node_types=use_node_types,
-            node_types_combination=node_types_combination,
-            use_edge_types=True,
-            embedding_size=embedding_size,
-            node_type_embedding_size=embedding_size,
-            edge_type_embedding_size=embedding_size,
-            distance_metric=distance_metric,
-            embedding=embedding,
-            model_name=model_name,
-            optimizer=optimizer,
-            use_gradient_centralization=use_gradient_centralization
-        )
+class TransETensorFlow(Siamese):
+    """TransE model."""
 
     def _build_output(
         self,
-        source_node_embedding: tf.Tensor,
-        destination_node_embedding: tf.Tensor,
-        edge_type_embedding: Optional[tf.Tensor] = None,
-        edge_types_input: Optional[tf.Tensor] = None,
+        *args
     ):
-        """Return output of the model."""
-        return super()._build_output(
-            source_node_embedding + edge_type_embedding,
-            destination_node_embedding,
-            edge_type_embedding,
-            edge_types_input
+        """Returns the five input tensors, unchanged."""
+        return args[:-1]
+
+    @staticmethod
+    def model_name() -> str:
+        """Returns name of the current model."""
+        return "TransE"
+
+    @staticmethod
+    def requires_node_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_types() -> bool:
+        return True
+
+    def _extract_embeddings(
+        self,
+        graph: Graph,
+        model: Model,
+        return_dataframe: bool
+    ) -> EmbeddingResult:
+        """Returns embedding from the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph that was embedded.
+        model: Model
+            The Keras model used to embed the graph.
+        return_dataframe: bool
+            Whether to return a dataframe of a numpy array.
+        """
+        if return_dataframe:
+            result = {
+                layer_name: pd.DataFrame(
+                    self.get_layer_weights(
+                        layer_name,
+                        model,
+                        drop_first_row=drop_first_row
+                    ),
+                    index=names
+                )
+                for layer_name, names, drop_first_row in (
+                    ("node_embeddings", graph.get_node_names(), False),
+                    ("edge_type_embeddings", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types())
+                )
+            }
+        else:
+            result = {
+                layer_name: self.get_layer_weights(
+                    layer_name,
+                    model,
+                    drop_first_row=drop_first_row
+                )
+                for layer_name, drop_first_row in (
+                    ("node_embeddings", False),
+                    ("edge_type_embeddings", graph.has_unknown_edge_types())
+                )
+            }
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            **result
         )
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return False
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return False
+
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        return True

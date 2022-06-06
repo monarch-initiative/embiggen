@@ -4,6 +4,8 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 from userinput.utils import closest
+from ensmallen import express_measures
+from ..utils import format_list
 from .node_transformer import NodeTransformer
 
 
@@ -198,32 +200,38 @@ def get_l2_distance(
     return np.sqrt(np.sum(np.power(
         source_node_embedding - destination_node_embedding,
         2.0
-    ), axis=1))
+    ), axis=1)).reshape((-1, 1))
 
 
 def get_cosine_similarity(
-    source_node_embedding: np.ndarray,
-    destination_node_embedding: np.ndarray
+    embedding: np.ndarray,
+    source_node_ids: np.ndarray,
+    destination_node_ids: np.ndarray
 ) -> np.ndarray:
     """Return cosine similarity of the two nodes.
 
     Parameters
     --------------------------
-    source_node_embedding: np.ndarray
-        Numpy array with the embedding of the source node.
-    destination_node_embedding: np.ndarray
-        Numpy array with the embedding of the destination node.
+    embedding: np.ndarray
+        Numpy array with the embedding matrix.
+    source_node_ids: np.ndarray
+        Numpy array with the ids of the source node.
+    destination_node_ids: np.ndarray
+        Numpy array with the ids of the destination node.
 
     Returns
     --------------------------
     Numpy array with the cosine similarity.
     """
-    return (
-        np.sum((source_node_embedding * destination_node_embedding), axis=1) /
-        (np.linalg.norm(source_node_embedding, axis=1) *
-         np.linalg.norm(destination_node_embedding, axis=1))
-    )
-
+    if not source_node_ids.data.c_contiguous:
+        source_node_ids = np.ascontiguousarray(source_node_ids)
+    if not destination_node_ids.data.c_contiguous:
+        destination_node_ids = np.ascontiguousarray(destination_node_ids)
+    return express_measures.cosine_similarity_from_indices_unchecked(
+        matrix=embedding,
+        sources=source_node_ids,
+        destinations=destination_node_ids
+    ).reshape((-1, 1))
 
 def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -360,8 +368,12 @@ class EdgeTransformer:
                 "Maybe you meant {}?"
             ).format(
                 method,
-                ", ".join(list(EdgeTransformer.methods.keys())),
-                closest(method, list(EdgeTransformer.methods.keys()))
+                format_list([method for method in EdgeTransformer.methods.keys() if method is not None]),
+                closest(method, [
+                    method_name
+                    for method_name in EdgeTransformer.methods
+                    if method_name is not None
+                ])
             ))
         self._transformer = NodeTransformer(
             numeric_node_ids=method is None,
@@ -411,7 +423,7 @@ class EdgeTransformer:
         self,
         sources: Union[List[str], List[int]],
         destinations: Union[List[str], List[int]],
-        edge_features: Optional[np.ndarray] = None,
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
 
@@ -421,7 +433,7 @@ class EdgeTransformer:
             List of source nodes whose embedding is to be returned.
         destinations:Union[List[str], List[int]]
             List of destination nodes whose embedding is to be returned.
-        edge_features: Optional[np.ndarray] = None
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
@@ -437,33 +449,68 @@ class EdgeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if edge_features is not None and len(edge_features.shape) != 2:
-            raise ValueError(
-                (
-                    "The provided edge features should have a bidimensional shape, "
-                    "but the provided one has shape {}."
-                ).format(edge_features.shape)
+        if self.method == "CosineSimilarity":
+            if (
+                not isinstance(sources, np.ndarray) or
+                not isinstance(destinations, np.ndarray)
+            ):
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "numpy arrays of type uint32, but you have provided objects of type "
+                    f"{type(sources)} and {type(destinations)}. "
+                )
+            if (
+                sources.dtype != np.uint32 or
+                destinations.dtype != np.uint32
+            ):
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "numpy arrays of type uint32, but you have provided objects of type "
+                    f"{sources.dtype} and {destinations.dtype}. "
+                )
+            if self._transformer._node_feature.dtype != np.float32:
+                raise NotImplementedError(
+                    "The Cosine Similarity is currently implemented exclusively for "
+                    "node features contained in a numpy array of type float32, but "
+                    f"you have provided an object of type {self._transformer._node_feature.dtype}."
+                )
+
+            edge_embeddings = self._method(
+                embedding=self._transformer._node_feature,
+                source_node_ids=sources,
+                destination_node_ids=destinations,
+            )
+        else:
+            edge_embeddings = self._method(
+                self._transformer.transform(sources),
+                self._transformer.transform(destinations)
             )
 
-        edge_embeddings = self._method(
-            self._transformer.transform(sources),
-            self._transformer.transform(destinations)
-        )
-
         if edge_features is not None:
-            if edge_features.shape[0] != edge_embeddings.shape[0]:
-                raise ValueError(
-                    (
-                        "The provided edge features should have a sample for each of the edges "
-                        "in the graph, which are {}, but were {}."
-                    ).format(
-                        edge_embeddings.shape[0],
-                        edge_features.shape[0]
+            if not isinstance(edge_features, list):
+                edge_features = [edge_features]
+            
+            for edge_feature in edge_features:
+                if len(edge_feature.shape) != 2:
+                    raise ValueError(
+                        (
+                            "The provided edge features should have a bidimensional shape, "
+                            "but the provided one has shape {}."
+                        ).format(edge_feature.shape)
                     )
-                )
+                if edge_feature.shape[0] != edge_embeddings.shape[0]:
+                    raise ValueError(
+                        (
+                            "The provided edge features should have a sample for each of the edges "
+                            "in the graph, which are {}, but were {}."
+                        ).format(
+                            edge_embeddings.shape[0],
+                            edge_feature.shape[0]
+                        )
+                    )
             edge_embeddings = np.hstack([
                 edge_embeddings,
-                edge_features
+                *edge_features
             ])
 
         return edge_embeddings
