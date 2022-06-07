@@ -1,5 +1,7 @@
 """Submodule to automatically create __init__ files for the library submodules with stubs."""
 from typing import Dict, List, Type, Union
+
+from numpy import source
 from embiggen.utils.abstract_models.abstract_model import AbstractModel
 import ast
 from ast import ClassDef, ImportFrom, FunctionDef, Return
@@ -15,16 +17,19 @@ def get_python_code_from_import(
     import_from: Dict
 ):
     element = import_from["element"]
-    original_path = source_path = os.sep + os.path.join(
-        *original_file_path.split(os.sep)[:-element.level],
-        f"{element.module}.py"
-    )
+    file_parts = original_file_path.split(os.sep)
+
+    found = 0
+    for i, path_chunk in enumerate(reversed(file_parts)):
+        if path_chunk == "embiggen":
+            found = i + 1
+            break
+    
+    path = os.sep.join(file_parts[:-found] + element.module.split("."))
+    source_path = f"{path}.py"
 
     if not os.path.exists(source_path):
-        source_path = os.sep + os.path.join(
-            *original_file_path.split(os.sep)[:-element.level],
-            f"{element.module}/__init__.py"
-        )
+        source_path = f"{path}/__init__.py"
 
     # While this secondary check should NEVER be necessary
     # sadly pip has some issues with removing deleted files
@@ -143,12 +148,12 @@ def get_imports(parsed) -> Dict[str, ImportFrom]:
     return {
         getattr(alias, "as_name", alias.name): {
             "element": element,
-            "name": alias.name
+            "name": alias.name,
         }
         for element in parsed.body
         if isinstance(element, ImportFrom)
         for alias in element.names
-        if element.level > 0
+        if element.module.startswith("embiggen")
     }
 
 
@@ -235,5 +240,5 @@ def build_init(
                 )
 
     frame.f_back.f_locals["__all__"] = generated_classes
-    
+
     del frame

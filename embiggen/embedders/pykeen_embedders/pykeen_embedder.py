@@ -6,7 +6,7 @@ import pandas as pd
 from ensmallen import Graph
 import inspect
 
-from embiggen.utils.abstract_models.pytorch_utils import validate_torch_device
+from embiggen.utils.pytorch_utils import validate_torch_device
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, abstract_class, EmbeddingResult
 from embiggen.utils.abstract_models import format_list
 import torch

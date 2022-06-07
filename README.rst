@@ -19,7 +19,6 @@ Instead, to exclusively install the Embiggen package, you can run:
     pip install embiggen
 
 
-
 Cite GraPE
 ----------------------------------------------
 Please cite the following paper if it was useful for your research:
