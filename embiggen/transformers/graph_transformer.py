@@ -1,10 +1,10 @@
 """GraphTransformer class to convert graphs to edge embeddings."""
-from typing import List, Union
+from typing import List, Union, Optional
 import pandas as pd
 import numpy as np
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 
-from .edge_transformer import EdgeTransformer
+from embiggen.transformers.edge_transformer import EdgeTransformer
 
 
 class GraphTransformer:
@@ -14,7 +14,6 @@ class GraphTransformer:
         self,
         method: str = "Hadamard",
         aligned_node_mapping: bool = False,
-        support_mirrored_strategy: bool = False,
     ):
         """Create new GraphTransformer object.
 
@@ -28,19 +27,10 @@ class GraphTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
         """
         self._transformer = EdgeTransformer(
             method=method,
             aligned_node_mapping=aligned_node_mapping,
-            support_mirrored_strategy=support_mirrored_strategy
         )
         self._aligned_node_mapping = aligned_node_mapping
 
@@ -54,24 +44,25 @@ class GraphTransformer:
         """Return the used edge embedding method."""
         return self._transformer.method
 
-    def fit(self, embedding: pd.DataFrame):
+    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
         """Fit the model.
 
         Parameters
         -------------------------
-        embedding: pd.DataFrame,
-            Embedding to use to fit the transformer.
-            This is a pandas DataFrame and NOT a numpy array because we need
-            to be able to remap correctly the vector embeddings in case of
-            graphs that do not respect the same internal node mapping but have
-            the same node set. It is possible to remap such graphs using
-            Ensmallen's remap method but it may be less intuitive to users.
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+            Node feature to use to fit the transformer.
+
+        Raises
+        -------------------------
+        ValueError
+            If the given method is None there is no need to call the fit method.
         """
-        self._transformer.fit(embedding)
+        self._transformer.fit(node_feature)
 
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
 
@@ -80,6 +71,10 @@ class GraphTransformer:
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
             The graph whose edges are to embed.
             It can either be an Graph or a list of lists of edges.
+        edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
+            Optional edge features to be used as input concatenated
+            to the obtained edge embedding. The shape must be equal
+            to the number of directed edges in the provided graph.
 
         Raises
         --------------------------
@@ -92,12 +87,42 @@ class GraphTransformer:
         """
         if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = graph.get_edge__node_ids(directed=False)
+                graph = (
+                    graph.get_directed_source_node_ids(),
+                    graph.get_directed_destination_node_ids(),
+                )
             else:
-                graph = graph.get_edge_node_names(directed=False)
+                graph = graph.get_directed_edge_node_names()
         if isinstance(graph, List):
             graph = np.array(graph)
-        if isinstance(graph, np.ndarray):
+        if (
+            isinstance(graph, tuple) and
+            len(graph) == 2 and
+            all(isinstance(e, np.ndarray) for e in graph)
+        ):
+            if (
+                len(graph[0].shape) != 1 or
+                len(graph[1].shape) != 1 or
+                graph[0].shape[0] == 0 or
+                graph[1].shape[0] == 0 or
+                graph[0].shape[0] != graph[1].shape[0]
+            ):
+                raise ValueError(
+                    "When providing a tuple of numpy arrays containing the source and destination "
+                    "node IDs, we expect to receive two arrays both with shape "
+                    "with shape (number of edges,). "
+                    f"The ones you have provided have shapes {graph[0].shape} "
+                    f"and {graph[1].shape}."
+                )
+            sources = graph[0]
+            destinations = graph[1]
+        elif isinstance(graph, np.ndarray):
+            if len(graph.shape) != 2 or graph.shape[1] != 2 or graph.shape[0] == 0:
+                raise ValueError(
+                    "When providing a numpy array containing the source and destination "
+                    "node IDs representing the graph edges, we expect to receive an array "
+                   f"with shape (number of edges, 2). The one you have provided has shape {graph.shape}."
+                )
             sources = graph[:, 0]
             destinations = graph[:, 1]
-        return self._transformer.transform(sources, destinations)
+        return self._transformer.transform(sources, destinations, edge_features=edge_features)

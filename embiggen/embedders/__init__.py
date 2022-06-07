@@ -1,28 +1,13 @@
-"""Module with graph and text embedding models."""
-from .cbow import CBOW
-from .embedder import Embedder
-from .glove import GloVe
-from .graph_cbow import GraphCBOW
-from .graph_glove import GraphGloVe
-from .graph_skipgram import GraphSkipGram
-from .skipgram import SkipGram
-from .transe import TransE
-from .transh import TransH
-from .siamese import Siamese
-from .transr import TransR
-from .simple import SimplE
+"""Submodule providing TensorFlow and Ensmallen-based embedders."""
+from embiggen.embedders.ensmallen_embedders import *
+from embiggen.embedders.tensorflow_embedders import *
+from embiggen.embedders.pykeen_embedders import *
+from embiggen.embedders.karateclub_embedders import *
+from embiggen.embedders.graph_embedding_pipeline import embed_graph
 
+# Export all non-internals.
 __all__ = [
-    "GloVe",
-    "SkipGram",
-    "CBOW",
-    "Embedder",
-    "GraphCBOW",
-    "GraphSkipGram",
-    "GraphGloVe",
-    "TransE",
-    "TransH",
-    "TransR",
-    "Siamese",
-    "SimplE"
+    variable_name
+    for variable_name in locals().keys()
+    if not variable_name.startswith("_")
 ]

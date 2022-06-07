@@ -33,3 +33,4 @@ htmlcov
 embedding.npy
 build
 graphs
+embeddings

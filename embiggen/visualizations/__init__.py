@@ -1,6 +1,6 @@
 """Module containing objects for visualization of the embeddings."""
-from .graph_visualization import GraphVisualization
+from embiggen.visualizations.graph_visualizer import GraphVisualizer
 
 __all__ = [
-    "GraphVisualization"
+    "GraphVisualizer"
 ]

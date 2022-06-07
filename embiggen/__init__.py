@@ -1,33 +1,20 @@
-"""Module with models for graph and text embedding and their Keras Sequences."""
-from .embedders import (
-    CBOW, GloVe, GraphCBOW, GraphGloVe, GraphSkipGram,
-    SkipGram, TransE, TransH, TransR, SimplE, Siamese
+"""Module with models for graph machine learning and visualization."""
+from embiggen.visualizations import GraphVisualizer
+from embiggen.utils import (
+    EmbeddingResult,
+    get_models_dataframe,
+    get_available_models_for_node_label_prediction,
+    get_available_models_for_edge_prediction,
+    get_available_models_for_edge_label_prediction,
+    get_available_models_for_node_embedding,
 )
-from .node_prediction import GraphConvolutionalNeuralNetwork
-from .sequences import Word2VecSequence
-from .transformers import (CorpusTransformer, EdgeTransformer,
-                           GraphTransformer, LinkPredictionTransformer,
-                           NodeTransformer)
-from .visualizations import GraphVisualization
 
 __all__ = [
-    "CBOW",
-    "SkipGram",
-    "GloVe",
-    "GraphCBOW",
-    "GraphSkipGram",
-    "GraphGloVe",
-    "Word2VecSequence",
-    "NodeTransformer",
-    "EdgeTransformer",
-    "GraphTransformer",
-    "CorpusTransformer",
-    "LinkPredictionTransformer",
-    "GraphVisualization",
-    "TransE",
-    "TransH",
-    "TransR",
-    "SimplE",
-    "Siamese",
-    "GraphConvolutionalNeuralNetwork"
+    "GraphVisualizer",
+    "EmbeddingResult",
+    "get_models_dataframe",
+    "get_available_models_for_node_label_prediction",
+    "get_available_models_for_edge_prediction",
+    "get_available_models_for_edge_label_prediction",
+    "get_available_models_for_node_embedding",
 ]

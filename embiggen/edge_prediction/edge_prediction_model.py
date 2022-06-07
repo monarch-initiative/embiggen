@@ -1,227 +1,1176 @@
-from typing import Dict, Union
-
-import numpy as np
+"""Module providing abstract edge prediction model."""
+from typing import Optional, Union, List, Dict, Any, Tuple, Iterator
 import pandas as pd
+import numpy as np
+import math
 from ensmallen import Graph
-from extra_keras_metrics import get_standard_binary_metrics
-from tensorflow.keras.layers import Layer, Input, Concatenate
-from tensorflow.keras.models import Model
-
-from ..embedders import Embedder
-from ..sequences import EdgePredictionSequence
-from .layers import edge_embedding_layer
+from tqdm.auto import tqdm
+from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
 
 
-class EdgePredictionModel(Embedder):
+@abstract_class
+class AbstractEdgePredictionModel(AbstractClassifierModel):
+    """Class defining an abstract edge prediction model."""
 
-    def __init__(
+    @staticmethod
+    def task_name() -> str:
+        """Returns name of the task this model is used for."""
+        return "Edge Prediction"
+
+    def is_binary_prediction_task(self) -> bool:
+        """Returns whether the model was fit on a binary prediction task."""
+        # Edge prediction is always a binary prediction task.
+        return True
+
+    @staticmethod
+    def is_topological() -> bool:
+        return True
+
+    def get_available_evaluation_schemas(self) -> List[str]:
+        """Returns available evaluation schemas for this task."""
+        return [
+            "Connected Monte Carlo",
+            "Monte Carlo",
+            "Kfold"
+        ]
+
+    @classmethod
+    def split_graph_following_evaluation_schema(
+        cls,
+        graph: Graph,
+        evaluation_schema: str,
+        random_state: int,
+        holdout_number: int,
+        **holdouts_kwargs: Dict[str, Any],
+    ) -> Tuple[Graph]:
+        """Return train and test graphs tuple following the provided evaluation schema.
+
+        Parameters
+        ----------------------
+        graph: Graph
+            The graph to split.
+        evaluation_schema: str
+            The evaluation schema to follow.
+        random_state: int
+            The random state for the evaluation
+        holdout_number: int
+            The current holdout number.
+        holdouts_kwargs: Dict[str, Any]
+            The kwargs to be forwarded to the holdout method.
+        """
+        if evaluation_schema == "Connected Monte Carlo":
+            return graph.connected_holdout(
+                **holdouts_kwargs,
+                random_state=random_state+holdout_number,
+                verbose=False
+            )
+        if evaluation_schema == "Monte Carlo":
+            return graph.random_holdout(
+                **holdouts_kwargs,
+                random_state=random_state+holdout_number,
+                verbose=False
+            )
+        if evaluation_schema == "Kfold":
+            return graph.get_edge_prediction_kfold(
+                **holdouts_kwargs,
+                k_index=holdout_number,
+                random_state=random_state,
+                verbose=False
+            )
+        raise ValueError(
+            f"The requested evaluation schema `{evaluation_schema}` "
+            "is not available. The available evaluation schemas "
+            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        )
+
+    @staticmethod
+    def __iterate_negative_graphs(
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph],
+        subgraph_of_interest: Optional[Graph],
+        random_state: int,
+        verbose: bool,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool,
+        validation_unbalance_rates: Tuple[float]
+    ) -> Iterator[Tuple[Graph]]:
+        """Return iterator over the negative graphs for evaluation."""
+        if subgraph_of_interest is None:
+            sampler_graph = graph
+        else:
+            sampler_graph = subgraph_of_interest
+
+        train_size = (
+            train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
+        )
+
+        return (
+            sampler_graph.sample_negative_graph(
+                number_of_negative_samples=int(
+                    math.ceil(sampler_graph.get_edges_number()*unbalance_rate)
+                ),
+                random_state=random_state*(i+1),
+                sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                use_zipfian_sampling=True,
+                graph_to_avoid=graph
+            ).random_holdout(
+                train_size=train_size,
+                random_state=random_state,
+                verbose=False,
+            )
+            for i, unbalance_rate in tqdm(
+                enumerate(validation_unbalance_rates),
+                disable=not verbose or len(validation_unbalance_rates) == 1,
+                leave=False,
+                dynamic_ncols=True,
+                desc="Building negative graphs for evaluation"
+            )
+        )
+
+    @classmethod
+    def _prepare_evaluation(
+        cls,
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        validation_unbalance_rates: Tuple[float] = (1.0, )
+    ) -> Dict[str, Any]:
+        """Return additional custom parameters for the current holdout."""
+        return dict(
+            negative_graphs=list(cls.__iterate_negative_graphs(
+                graph=graph,
+                train=train,
+                test=test,
+                support=support,
+                subgraph_of_interest=subgraph_of_interest,
+                random_state=random_state,
+                verbose=verbose,
+                validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                validation_unbalance_rates=validation_unbalance_rates,
+            ))
+        )
+
+    def _evaluate(
         self,
-        nodes_number: int = None,
-        embedding_size: int = None,
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-        edge_embedding_method: str = "Concatenate",
-        optimizer: str = "nadam",
-        trainable_embedding: bool = True,
-        use_dropout: bool = True,
-        dropout_rate: float = 0.5,
-        use_edge_metrics: bool = False,
-    ):
-        """Create new Perceptron object.
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        negative_graphs: Optional[List[Tuple[Graph]]] = None,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        validation_unbalance_rates: Tuple[float] = (1.0, )
+    ) -> List[Dict[str, Any]]:
+        """Return model evaluation on the provided graphs."""
+        performance = []
+
+        train_predic_proba = self.predict_proba(
+            train,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+        if len(train_predic_proba.shape) > 1 and train_predic_proba.shape[1] > 1:
+            train_predic_proba = train_predic_proba[:, 1]
+
+        test_predict_proba = self.predict_proba(
+            test,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+
+        if len(test_predict_proba.shape) > 1 and test_predict_proba.shape[1] > 1:
+            test_predict_proba = test_predict_proba[:, 1]
+
+        negative_graph_iterator = self.__iterate_negative_graphs(
+            graph=graph,
+            train=train,
+            test=test,
+            support=support,
+            subgraph_of_interest=subgraph_of_interest,
+            random_state=random_state,
+            verbose=verbose,
+            validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+            validation_unbalance_rates=validation_unbalance_rates,
+        ) if negative_graphs is None else negative_graphs
+
+        for unbalance_rate, (negative_train, negative_test) in tqdm(
+            zip(validation_unbalance_rates, negative_graph_iterator),
+            disable=not verbose or len(validation_unbalance_rates) == 1,
+            total=len(validation_unbalance_rates),
+            leave=False,
+            dynamic_ncols=True,
+            desc=f"Evaluating on unbalances"
+        ):
+            for evaluation_mode, (existent_predict_proba, non_existent_graph) in (
+                ("train", (train_predic_proba, negative_train)),
+                ("test", (test_predict_proba, negative_test)),
+            ):
+                non_existent_predict_proba = self.predict_proba(
+                    non_existent_graph,
+                    support=support,
+                    node_features=node_features,
+                    node_type_features=node_type_features,
+                    edge_features=edge_features
+                )
+
+                if len(non_existent_predict_proba.shape) > 1 and non_existent_predict_proba.shape[1] > 1:
+                    non_existent_predict_proba = non_existent_predict_proba[:, 1]
+
+                predict_proba = np.concatenate((
+                    existent_predict_proba,
+                    non_existent_predict_proba
+                ))
+
+                labels = np.concatenate((
+                    np.ones_like(existent_predict_proba, dtype=bool),
+                    np.zeros_like(non_existent_predict_proba, dtype=bool),
+                ))
+
+                performance.append({
+                    "evaluation_mode": evaluation_mode,
+                    "validation_unbalance_rate": unbalance_rate,
+                    "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
+                    **self.evaluate_predictions(
+                        labels,
+                        predict_proba,
+                    ),
+                    **self.evaluate_prediction_probabilities(
+                        labels,
+                        predict_proba,
+                    ),
+                })
+
+        return performance
+
+    def predict(
+        self,
+        graph: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
 
         Parameters
         --------------------
-        nodes_number: int = None,
-            Number of terms to embed.
-            In a graph this is the number of nodes, while in a text is the
-            number of the unique words.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        embedding_size: int = None,
-            Dimension of the embedding.
-            If None, the seed embedding must be provided.
-            It is not possible to provide both at once.
-        embedding: Union[np.ndarray, pd.DataFrame] = None,
-            The seed embedding to be used.
-            Note that it is not possible to provide at once both
-            the embedding and either the vocabulary size or the embedding size.
-        edge_embedding_method: str = "Concatenate",
-            Method to use to create the edge embedding.
-        optimizer: str = "nadam",
-            Optimizer to use during the training.
-        trainable_embedding: bool = True,
-            Whether to allow for trainable embedding.
-        use_dropout: bool = True,
-            Whether to use dropout.
-        dropout_rate: float = 0.5,
-            Dropout rate.
-        use_edge_metrics: bool = False,
-            Whether to return the edge metrics.
+        graph: Graph
+            The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
         """
-        if edge_embedding_method not in edge_embedding_layer:
-            raise ValueError(
-                "The given edge embedding method `{}` is not supported.".format(
-                    edge_embedding_method
-                )
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
             )
-        self._use_edge_metrics = use_edge_metrics
-        self._edge_embedding_method = edge_embedding_method
-        self._model_name = self.__class__.__name__
-        self._use_dropout = use_dropout
-        self._dropout_rate = dropout_rate
-        super().__init__(
-            vocabulary_size=nodes_number,
-            embedding_size=embedding_size,
-            optimizer=optimizer,
-            embedding=embedding,
-            trainable_embedding=trainable_embedding
+
+        predictions = super().predict(
+            graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features
         )
 
-    def _compile_model(self) -> Model:
-        """Compile model."""
-        self._model.compile(
-            loss="binary_crossentropy",
-            optimizer=self._optimizer,
-            metrics=get_standard_binary_metrics(),
-        )
-
-    def _build_model_body(self, input_layer: Layer) -> Layer:
-        """Build new model body for Edge prediction."""
-        raise NotImplementedError(
-            "The method _build_model_body must be implemented in the child classes."
-        )
-
-    def _build_model(self) -> Model:
-        """Build new model for Edge prediction."""
-        embedding_layer = edge_embedding_layer[self._edge_embedding_method](
-            embedding=self._embedding,
-            use_dropout=self._use_dropout,
-            dropout_rate=self._dropout_rate
-        )
-
-        inputs = [*embedding_layer.inputs]
-        edge_embedding = embedding_layer(None)
-
-        if self._use_edge_metrics:
-            # TODO! update the shape using an ensmallen method
-            edge_metrics_input = Input((4,), name="EdgeMetrics")
-            inputs.append(edge_metrics_input)
-            edge_embedding = Concatenate()([edge_embedding, edge_metrics_input])
-
-        return Model(
-            inputs=inputs,
-            outputs=self._build_model_body(edge_embedding),
-            name="{}_{}".format(
-                self._model_name,
-                self._edge_embedding_method
+        if return_predictions_dataframe:
+            predictions = pd.DataFrame(
+                {
+                    "predictions": predictions,
+                    "sources": graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_directed_destination_node_ids(),
+                },
             )
+
+        return predictions
+
+    def predict_bipartite_graph_from_edge_node_ids(
+        self,
+        graph: Graph,
+        source_node_ids: List[int],
+        destination_node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_ids: List[int]
+            The source nodes of the bipartite graph.
+        destination_node_ids: List[int]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_ids(
+                source_node_ids=source_node_ids,
+                destination_node_ids=destination_node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_bipartite_graph_from_edge_node_names(
+        self,
+        graph: Graph,
+        source_node_names: List[str],
+        destination_node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_names: List[str]
+            The source nodes of the bipartite graph.
+        destination_node_names: List[str]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_names(
+                source_node_names=source_node_names,
+                destination_node_names=destination_node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_bipartite_graph_from_edge_node_prefixes(
+        self,
+        graph: Graph,
+        source_node_prefixes: List[str],
+        destination_node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_prefixes: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_prefixes: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_prefixes(
+                source_node_prefixes=source_node_prefixes,
+                destination_node_prefixes=destination_node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_bipartite_graph_from_edge_node_types(
+        self,
+        graph: Graph,
+        source_node_types: List[str],
+        destination_node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_types: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_types: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_bipartite_graph_from_edge_node_types(
+                source_node_types=source_node_types,
+                destination_node_types=destination_node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_clique_graph_from_node_ids(
+        self,
+        graph: Graph,
+        node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_ids: List[int]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_ids(
+                node_ids=node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_clique_graph_from_node_names(
+        self,
+        graph: Graph,
+        node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_names: List[str]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_names(
+                node_names=node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_clique_graph_from_node_prefixes(
+        self,
+        graph: Graph,
+        node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_prefixes: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_prefixes(
+                node_prefixes=node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_clique_graph_from_node_types(
+        self,
+        graph: Graph,
+        node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_types: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict(
+            graph.build_clique_graph_from_node_types(
+                node_types=node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba(
+        self,
+        graph: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        predictions = super().predict_proba(
+            graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features
+        )
+
+        if return_predictions_dataframe:
+            predictions = pd.DataFrame(
+                {
+                    "predictions": predictions,
+                    "sources": graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_directed_destination_node_ids(),
+                },
+            )
+
+        return predictions
+
+    def predict_proba_bipartite_graph_from_edge_node_ids(
+        self,
+        graph: Graph,
+        source_node_ids: List[int],
+        destination_node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_ids: List[int]
+            The source nodes of the bipartite graph.
+        destination_node_ids: List[int]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_ids(
+                source_node_ids=source_node_ids,
+                destination_node_ids=destination_node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_names(
+        self,
+        graph: Graph,
+        source_node_names: List[str],
+        destination_node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_names: List[str]
+            The source nodes of the bipartite graph.
+        destination_node_names: List[str]
+            The destination nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_names(
+                source_node_names=source_node_names,
+                destination_node_names=destination_node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_prefixes(
+        self,
+        graph: Graph,
+        source_node_prefixes: List[str],
+        destination_node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_prefixes: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_prefixes: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_prefixes(
+                source_node_prefixes=source_node_prefixes,
+                destination_node_prefixes=destination_node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_bipartite_graph_from_edge_node_types(
+        self,
+        graph: Graph,
+        source_node_types: List[str],
+        destination_node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        source_node_types: List[str]
+            The source node prefixes of the bipartite graph.
+        destination_node_types: List[str]
+            The destination node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_bipartite_graph_from_edge_node_types(
+                source_node_types=source_node_types,
+                destination_node_types=destination_node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_clique_graph_from_node_ids(
+        self,
+        graph: Graph,
+        node_ids: List[int],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_ids: List[int]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_ids(
+                node_ids=node_ids,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_clique_graph_from_node_names(
+        self,
+        graph: Graph,
+        node_names: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_names: List[str]
+            The nodes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_names(
+                node_names=node_names,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_clique_graph_from_node_prefixes(
+        self,
+        graph: Graph,
+        node_prefixes: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_prefixes: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_prefixes(
+                node_prefixes=node_prefixes,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
+        )
+
+    def predict_proba_clique_graph_from_node_types(
+        self,
+        graph: Graph,
+        node_types: List[str],
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        return_predictions_dataframe: bool = False
+    ) -> np.ndarray:
+        """Execute predictions probabilities on the provided graph bipartite portion.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph from which to extract the edges.
+        node_types: List[str]
+            The node prefixes of the bipartite graph.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
+        return_predictions_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the predictions is returned as it weights much less.
+        """
+        return self.predict_proba(
+            graph.build_clique_graph_from_node_types(
+                node_types=node_types,
+                directed=True
+            ),
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_predictions_dataframe=return_predictions_dataframe
         )
 
     def fit(
         self,
         graph: Graph,
-        batch_size: int = 2**10,
-        batches_per_epoch: Union[int, str] = "auto",
-        negative_samples_rate: float = 0.5,
-        epochs: int = 10000,
-        support_mirrored_strategy: bool = False,
-        early_stopping_monitor: str = "loss",
-        early_stopping_min_delta: float = 0.01,
-        early_stopping_patience: int = 5,
-        early_stopping_mode: str = "min",
-        reduce_lr_monitor: str = "loss",
-        reduce_lr_min_delta: float = 0.1,
-        reduce_lr_patience: int = 3,
-        reduce_lr_mode: str = "min",
-        reduce_lr_factor: float = 0.9,
-        verbose: int = 2,
-        ** kwargs: Dict
-    ) -> pd.DataFrame:
-        """Train model and return training history dataframe.
+        support: Optional[Graph] = None,
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ):
+        """Execute fitting on the provided graph.
 
         Parameters
-        -------------------
-        graph: Graph,
-            Graph object to use for training.
-        batch_size: int = 2**16,
-            Batch size for the training process.
-        batches_per_epoch: int = 2**10,
-            Number of batches to train for in each epoch.
-        negative_samples_rate: float = 0.5,
-            Rate of unbalancing in the batch.
-        epochs: int = 10000,
-            Epochs to train the model for.
-        support_mirrored_strategy: bool = False,
-            Wethever to patch support for mirror strategy.
-            At the time of writing, TensorFlow's MirrorStrategy does not support
-            input values different from floats, therefore to support it we need
-            to convert the unsigned int 32 values that represent the indices of
-            the embedding layers we receive from Ensmallen to floats.
-            This will generally slow down performance, but in the context of
-            exploiting multiple GPUs it may be unnoticeable.
-        early_stopping_monitor: str = "loss",
-            Metric to monitor for early stopping. 
-        early_stopping_min_delta: float = 0.01,
-            Minimum delta of metric to stop the training.
-        early_stopping_patience: int = 5,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which trigger early stopping.
-        early_stopping_mode: str = "min",
-            Direction of the variation of the monitored metric for early stopping.
-        reduce_lr_monitor: str = "loss",
-            Metric to monitor for reducing learning rate.
-        reduce_lr_min_delta: float = 0.1,
-            Minimum delta of metric to reduce learning rate.
-        reduce_lr_patience: int = 3,
-            Number of epochs to wait for when the given minimum delta is not
-            achieved after which reducing learning rate.
-        reduce_lr_mode: str = "min",
-            Direction of the variation of the monitored metric for learning rate.
-        reduce_lr_factor: float = 0.9,
-            Factor for reduction of learning rate.
-        verbose: int = 2,
-            Wethever to show the loading bar.
-            Specifically, the options are:
-            * 0 or False: No loading bar.
-            * 1 or True: Showing only the loading bar for the epochs.
-            * 2: Showing loading bar for both epochs and batches.
-        ** kwargs: Dict,
-            Parameteres to pass to the dit call.
-
-        Returns
         --------------------
-        Dataframe with traininhg history.
+        graph: Graph
+            The graph to run predictions on.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The node type features to use.
+        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge features to use.
         """
-        sequence = EdgePredictionSequence(
-            graph,
-            batch_size=batch_size,
-            batches_per_epoch=batches_per_epoch,
-            negative_samples_rate=negative_samples_rate,
-            support_mirrored_strategy=support_mirrored_strategy,
-            use_edge_metrics=self._use_edge_metrics,
-        )
-        return super().fit(
-            sequence,
-            epochs=epochs,
-            early_stopping_monitor=early_stopping_monitor,
-            early_stopping_min_delta=early_stopping_min_delta,
-            early_stopping_patience=early_stopping_patience,
-            early_stopping_mode=early_stopping_mode,
-            reduce_lr_monitor=reduce_lr_monitor,
-            reduce_lr_min_delta=reduce_lr_min_delta,
-            reduce_lr_patience=reduce_lr_patience,
-            reduce_lr_mode=reduce_lr_mode,
-            reduce_lr_factor=reduce_lr_factor,
-            verbose=verbose,
-            **kwargs
+        if edge_features is not None:
+            raise NotImplementedError(
+                "Currently edge features are not supported in edge prediction models."
+            )
+
+        super().fit(
+            graph=graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=None,
         )
 
-    def predict(self, *args, **kwargs):
-        """Run predict."""
-        return self._model.predict(*args, **kwargs)
+    @staticmethod
+    def task_involves_edge_weights() -> bool:
+        """Returns whether the model task involves edge weights."""
+        return False
 
-    def evaluate(self, *args, **kwargs) -> Dict[str, float]:
-        """Run predict."""
-        return dict(zip(
-            self._model.metrics_names,
-            self._model.evaluate(*args, **kwargs)
-        ))
+    @staticmethod
+    def task_involves_edge_types() -> bool:
+        """Returns whether the model task involves edge types."""
+        return False
+
+    @staticmethod
+    def task_involves_node_types() -> bool:
+        """Returns whether the model task involves node types."""
+        return False
+
+    @staticmethod
+    def task_involves_topology() -> bool:
+        """Returns whether the model task involves topology."""
+        return True
