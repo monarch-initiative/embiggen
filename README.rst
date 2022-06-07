@@ -2,30 +2,31 @@ Embiggen
 =========================================================================================
 |pip| |downloads| |tutorials| |documentation| |python_version| |DOI| |license|
 
-Embiggen is the graph machine learning submodule of the [GraPE](https://github.com/AnacletoLAB/grape) library.
+Embiggen is the graph machine learning submodule of the `GraPE <https://github.com/AnacletoLAB/grape>`_ library.
 
 How to install Embiggen
 -------------------------
 To install the complete GraPE library, do run:
 
-```bash
+.. code:: bash
+
     pip install grape
-```
 
 Instead, to exclusively install the Embiggen package, you can run:
 
-```bash
+.. code:: bash
+
     pip install embiggen
-```
 
 Unit testing
 -----------------------------------
 To run the unit testing on the package, generating
 the coverage and the HTML report, you can use:
 
-```bash
+.. code:: bash
+
     pytest --cov embiggen --cov-report html
-```
+
 
 Cite GraPE
 ----------------------------------------------
