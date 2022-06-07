@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel, format_list
 
 
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):

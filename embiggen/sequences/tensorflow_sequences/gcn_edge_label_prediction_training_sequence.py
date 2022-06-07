@@ -1,11 +1,11 @@
 """Keras Sequence for Open-world assumption GCN."""
-from typing import Tuple, List, Optional
+from typing import List, Optional
 
 import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from keras_mixed_sequence import Sequence, VectorSequence
-from .gcn_edge_prediction_sequence import GCNEdgePredictionSequence
+from keras_mixed_sequence import VectorSequence
+from embiggen.sequences.tensorflow_sequences.gcn_edge_prediction_sequence import GCNEdgePredictionSequence
 
 
 class GCNEdgeLabelPredictionTrainingSequence(GCNEdgePredictionSequence):

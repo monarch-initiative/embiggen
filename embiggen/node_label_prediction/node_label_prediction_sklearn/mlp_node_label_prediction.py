@@ -1,7 +1,7 @@
 """Submodule wrapping MLP for node label prediction."""
 from typing import Dict, Any
 from sklearn.neural_network import MLPClassifier
-from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
+from embiggen.node_label_prediction.node_label_prediction_sklearn.sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
 class MLPNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):

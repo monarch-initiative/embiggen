@@ -4,7 +4,7 @@ from ensmallen import Graph
 from ensmallen import models
 import numpy as np
 import pandas as pd
-from ...utils import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
 class GloVeEnsmallen(AbstractEmbeddingModel):

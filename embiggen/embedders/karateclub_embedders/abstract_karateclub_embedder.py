@@ -4,8 +4,8 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from karateclub.estimator import Estimator
-from ...utils import AbstractEmbeddingModel, EmbeddingResult, abstract_class
-from ...utils.networkx_utils import convert_ensmallen_graph_to_networkx_graph
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, abstract_class
+from embiggen.utils.abstract_models.networkx_utils import convert_ensmallen_graph_to_networkx_graph
 
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):

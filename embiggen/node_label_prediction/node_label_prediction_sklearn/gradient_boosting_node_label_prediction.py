@@ -1,7 +1,7 @@
 """Submodule wrapping Gradient Boosting for node label prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import GradientBoostingClassifier
-from .sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
+from embiggen.node_label_prediction.node_label_prediction_sklearn.sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
 class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):

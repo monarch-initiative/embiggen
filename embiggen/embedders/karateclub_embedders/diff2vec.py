@@ -2,7 +2,7 @@
 from typing import Dict, Any
 from karateclub.node_embedding import Diff2Vec
 from multiprocessing import cpu_count
-from .abstract_karateclub_embedder import AbstractKarateClubEmbedder
+from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
 class Diff2VecKarateClub(AbstractKarateClubEmbedder):

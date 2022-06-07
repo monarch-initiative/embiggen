@@ -3,8 +3,7 @@ from typing import Dict, Any
 from ensmallen import Graph
 import pandas as pd
 from ensmallen import models
-
-from ...utils import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
 class WeightedSPINE(AbstractEmbeddingModel):

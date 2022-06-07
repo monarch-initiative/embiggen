@@ -5,17 +5,16 @@ import numpy as np
 import pandas as pd
 import time
 from tqdm.auto import trange, tqdm
-from .list_formatting import format_list
+from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
 
-from .abstract_model import AbstractModel, abstract_class
-from .abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
+from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
 import functools
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     f1_score,
-    average_precision_score,
     precision_score,
     recall_score,
     roc_auc_score

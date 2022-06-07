@@ -1,7 +1,7 @@
 """Module providing dataframes with informations about the available models."""
 from typing import Type
 import pandas as pd
-from .abstract_model import AbstractModel
+from embiggen.utils.abstract_models.abstract_model import AbstractModel
 
 
 def get_model_metadata(model_class: Type[AbstractModel]):

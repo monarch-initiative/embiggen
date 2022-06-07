@@ -1,8 +1,8 @@
 """Submodule providing models for edge prediction."""
-from .edge_prediction_sklearn import *
-from .edge_prediction_tensorflow import *
-from .edge_prediction_ensmallen import *
-from .edge_prediction_evaluation import edge_prediction_evaluation
+from embiggen.edge_prediction.edge_prediction_sklearn import *
+from embiggen.edge_prediction.edge_prediction_tensorflow import *
+from embiggen.edge_prediction.edge_prediction_ensmallen import *
+from embiggen.edge_prediction.edge_prediction_evaluation import edge_prediction_evaluation
 
 # Export all non-internals.
 __all__ = [

@@ -10,9 +10,9 @@ from tensorflow.keras.optimizers import \
 from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
-from ...utils.abstract_gcn import graph_to_sparse_tensor, AbstractGCN
-from ...utils.normalize_model_structural_parameters import normalize_model_list_parameter
-from ..node_label_prediction_model import AbstractNodeLabelPredictionModel
+from embiggen.utils.abstract_gcn import AbstractGCN
+from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
+from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
 
 
 class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):

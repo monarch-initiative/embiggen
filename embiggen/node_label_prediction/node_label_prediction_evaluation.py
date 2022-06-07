@@ -1,10 +1,10 @@
 """Submodule providing node-label prediction evaluation pipeline."""
-from typing import Dict, Any, Union, List, Type, Optional, Tuple
+from typing import Dict, Any, Union, List, Type, Optional
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
-from ..utils import classification_evaluation_pipeline, AbstractEmbeddingModel
-from .node_label_prediction_model import AbstractNodeLabelPredictionModel
+from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel
+from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
 
 
 def node_label_prediction_evaluation(

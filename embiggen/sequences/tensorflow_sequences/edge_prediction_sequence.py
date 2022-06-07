@@ -5,8 +5,8 @@ import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
-from ..generic_sequences import EdgePredictionSequence as GenericEdgePredictionSequence
-from ...utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
+from embiggen.sequences.generic_sequences import EdgePredictionSequence as GenericEdgePredictionSequence
+from embiggen.utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
 class EdgePredictionSequence(Sequence):

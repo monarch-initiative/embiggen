@@ -6,9 +6,9 @@ import pandas as pd
 from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras import Model
-from ...sequences.tensorflow_sequences import Node2VecSequence
-from .abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
-from ...utils import abstract_class, EmbeddingResult
+from embiggen.sequences.tensorflow_sequences import Node2VecSequence
+from embiggen.embedders.tensorflow_embedders.abstract_random_walked_based_embedder_model import AbstractRandomWalkBasedEmbedderModel
+from embiggen.utils.abstract_models import abstract_class, EmbeddingResult
 
 
 @abstract_class

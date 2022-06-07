@@ -1,6 +1,7 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 from unittest import TestCase
-from embiggen import embed_graph, get_available_models_for_node_embedding
+from embiggen.embedders import embed_graph
+from embiggen import get_available_models_for_node_embedding
 from tqdm.auto import tqdm
 
 class TestNodeEmbeddingPipeline(TestCase):

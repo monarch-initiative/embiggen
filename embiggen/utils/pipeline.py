@@ -5,8 +5,7 @@ from ensmallen.datasets import get_dataset
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-from cache_decorator import Cache
-from .abstract_models import AbstractClassifierModel, AbstractEmbeddingModel
+from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel
 
 
 def iterate_graphs(

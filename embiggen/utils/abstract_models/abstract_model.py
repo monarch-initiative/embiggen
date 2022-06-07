@@ -1,5 +1,5 @@
 """Module providing generic abstract model."""
-from .list_formatting import format_list
+from embiggen.utils.abstract_models.list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest

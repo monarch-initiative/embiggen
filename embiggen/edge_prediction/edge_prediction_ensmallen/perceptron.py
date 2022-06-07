@@ -2,9 +2,8 @@
 from typing import Optional,  Dict, Any, List
 from ensmallen import Graph
 import numpy as np
-import pandas as pd
 from ensmallen import models
-from ..edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
 class PerceptronEdgePrediction(AbstractEdgePredictionModel):

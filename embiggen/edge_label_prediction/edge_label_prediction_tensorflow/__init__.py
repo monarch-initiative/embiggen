@@ -1,6 +1,6 @@
 """Submodule providing edge-label prediction models based on Sklearn Models."""
-from ..edge_label_prediction_model import AbstractEdgeLabelPredictionModel
-from ...utils import build_init
+from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
+from embiggen.utils.abstract_models import build_init
 
 build_init(
     module_library_names="tensorflow",

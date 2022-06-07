@@ -11,12 +11,12 @@ from tensorflow.keras.optimizers import \
 from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
-from .abstract_models import AbstractClassifierModel, abstract_class
-from .number_to_ordinal import number_to_ordinal
-from ..layers.tensorflow import GraphConvolution, FlatEmbedding
-from tensorflow.keras.layers import Input, Embedding, Concatenate, Flatten
+from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
+from embiggen.utils.number_to_ordinal import number_to_ordinal
+from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding
+from tensorflow.keras.layers import Input, Concatenate
 import warnings
-from .normalize_model_structural_parameters import normalize_model_list_parameter
+from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
 import copy
 
 

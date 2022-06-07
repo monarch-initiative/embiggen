@@ -1,14 +1,13 @@
 """Module providing adapter class making node-label prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Dict, Union, Optional, Tuple, Any
-import pandas as pd
+from typing import Type, List, Dict, Optional, Any
 import numpy as np
 import copy
 from ensmallen import Graph
-from ...transformers import NodeLabelPredictionTransformer, NodeTransformer
-from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
-from ..node_label_prediction_model import AbstractNodeLabelPredictionModel
-from ...utils import abstract_class
+from embiggen.transformers import NodeLabelPredictionTransformer, NodeTransformer
+from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
+from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
+from embiggen.utils.abstract_models import abstract_class
 
 
 @abstract_class

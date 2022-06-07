@@ -3,9 +3,9 @@ from typing import List, Union, Optional, Dict, Any, Type
 
 import numpy as np
 from ensmallen import Graph
-from ...utils.abstract_edge_gcn import AbstractEdgeGCN
-from ..edge_label_prediction_model import AbstractEdgeLabelPredictionModel
-from ...sequences.tensorflow_sequences import GCNEdgeLabelPredictionTrainingSequence
+from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN
+from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
+from embiggen.sequences.tensorflow_sequences import GCNEdgeLabelPredictionTrainingSequence
 
 
 class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):

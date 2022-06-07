@@ -1,6 +1,8 @@
 """Unit test class for Node-label prediction pipeline."""
 from unittest import TestCase
-from embiggen import node_label_prediction_evaluation, get_available_models_for_node_label_prediction, SPINE
+from embiggen.node_label_prediction import node_label_prediction_evaluation
+from embiggen import get_available_models_for_node_label_prediction
+from embiggen.embedders import SPINE
 from ensmallen.datasets.linqs import Cora, get_words_data
 import shutil
 import os

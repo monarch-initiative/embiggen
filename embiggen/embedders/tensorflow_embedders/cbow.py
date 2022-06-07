@@ -7,8 +7,8 @@ from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 
-from .node2vec import Node2Vec
-from ...layers.tensorflow import SampledSoftmax
+from embiggen.embedders.tensorflow_embedders.node2vec import Node2Vec
+from embiggen.layers.tensorflow import SampledSoftmax
 
 
 class CBOWTensorFlow(Node2Vec):

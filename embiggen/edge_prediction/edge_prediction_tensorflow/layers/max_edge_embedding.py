@@ -1,7 +1,6 @@
 """Layer for executing Maximum edge embedding."""
 from tensorflow.keras.layers import Maximum, Layer  # pylint: disable=import-error,no-name-in-module
-from .edge_embedding import EdgeEmbedding
-
+from embiggen.edge_prediction.edge_prediction_tensorflow.layers.edge_embedding import EdgeEmbedding
 
 class MaxEdgeEmbedding(EdgeEmbedding):
 

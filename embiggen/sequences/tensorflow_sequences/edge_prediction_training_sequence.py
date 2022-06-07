@@ -1,11 +1,11 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Tuple, Union
+from typing import Tuple
 
 import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
-from ...utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
+from embiggen.utils.tensorflow_utils import tensorflow_version_is_higher_or_equal_than
 
 
 class EdgePredictionTrainingSequence(Sequence):

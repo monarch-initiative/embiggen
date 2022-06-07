@@ -1,7 +1,7 @@
 """Submodule wrapping Decision Tree for edge prediction."""
 from typing import Dict, Any
 from sklearn.tree import DecisionTreeClassifier
-from .sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
+from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 
 
 class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):

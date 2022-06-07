@@ -3,8 +3,8 @@ from typing import Dict, Any, Union, List, Type, Optional, Tuple
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
-from ..utils import classification_evaluation_pipeline, AbstractEmbeddingModel
-from .edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel
+from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
 def edge_prediction_evaluation(

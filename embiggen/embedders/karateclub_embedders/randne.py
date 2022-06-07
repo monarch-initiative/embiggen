@@ -1,7 +1,7 @@
 """Wrapper for RandNE model provided from the Karate Club package."""
 from typing import Dict, Any, List, Union, Tuple
 from karateclub.node_embedding import RandNE
-from .abstract_karateclub_embedder import AbstractKarateClubEmbedder
+from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
 class RandNEKarateClub(AbstractKarateClubEmbedder):

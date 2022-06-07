@@ -10,8 +10,8 @@ from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 
-from ...utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number, has_gpus
-from ...utils import AbstractEmbeddingModel, abstract_class, EmbeddingResult
+from embiggen.utils.tensorflow_utils import execute_gpu_checks, get_available_gpus_number, has_gpus
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, abstract_class, EmbeddingResult
 
 
 @abstract_class

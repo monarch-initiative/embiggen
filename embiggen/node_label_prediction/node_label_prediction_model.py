@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from ensmallen import Graph
-from ..utils import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
 
 
 @abstract_class

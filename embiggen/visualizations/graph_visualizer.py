@@ -39,10 +39,10 @@ except ImportError:
     )
 
 
-from ..transformers import GraphTransformer, NodeTransformer
-from ..embedders import embed_graph
-from ..utils import format_list
-from ..utils.pipeline import iterate_graphs
+from embiggen.transformers import GraphTransformer, NodeTransformer
+from embiggen.embedders import embed_graph
+from embiggen.utils.abstract_models import format_list
+from embiggen.utils.pipeline import iterate_graphs
 
 
 class GraphVisualizer:

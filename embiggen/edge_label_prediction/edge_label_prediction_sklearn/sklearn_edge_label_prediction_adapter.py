@@ -1,12 +1,12 @@
 """Module providing adapter class making edge-label prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Dict, Optional, Tuple, Any
+from typing import Type, List, Dict, Optional, Any
 import numpy as np
 import copy
 from ensmallen import Graph
-from ...utils.sklearn_utils import must_be_an_sklearn_classifier_model
-from ...transformers import EdgeLabelPredictionTransformer, GraphTransformer
-from ..edge_label_prediction_model import AbstractEdgeLabelPredictionModel
+from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
+from embiggen.transformers import EdgeLabelPredictionTransformer, GraphTransformer
+from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 
 
 class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):

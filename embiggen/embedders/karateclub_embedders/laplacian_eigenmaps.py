@@ -1,7 +1,7 @@
 """Wrapper for LaplacianEigenmaps model provided from the Karate Club package."""
 from typing import Dict, Any
 from karateclub.node_embedding import LaplacianEigenmaps
-from .abstract_karateclub_embedder import AbstractKarateClubEmbedder
+from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
 class LaplacianEigenmapsKarateClub(AbstractKarateClubEmbedder):

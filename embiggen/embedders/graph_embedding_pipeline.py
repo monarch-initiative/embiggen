@@ -2,8 +2,8 @@
 from typing import Union, Dict, Optional, Type
 from ensmallen import Graph
 
-from ..utils.pipeline import iterate_graphs
-from ..utils import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.pipeline import iterate_graphs
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
 

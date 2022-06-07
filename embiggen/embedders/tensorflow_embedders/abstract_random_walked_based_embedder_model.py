@@ -1,7 +1,7 @@
 """Submodule providing abstract random walk based embedder model."""
 from typing import Dict, Any
-from ...utils import abstract_class
-from .tensorflow_embedder import TensorFlowEmbedder
+from embiggen.utils.abstract_models import abstract_class
+from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
 
 
 @abstract_class

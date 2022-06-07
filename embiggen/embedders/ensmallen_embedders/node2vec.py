@@ -4,7 +4,7 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from ...utils import abstract_class, AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models import abstract_class, AbstractEmbeddingModel, EmbeddingResult
 
 
 @abstract_class

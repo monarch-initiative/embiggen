@@ -17,9 +17,9 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
     Input
 )
 from tensorflow.keras.models import Model
-from embiggen.utils import abstract_class
-from ...sequences.tensorflow_sequences import SiameseSequence, KGSiameseSequence
-from .tensorflow_embedder import TensorFlowEmbedder
+from embiggen.utils.abstract_models import abstract_class
+from embiggen.sequences.tensorflow_sequences import SiameseSequence, KGSiameseSequence
+from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
 
 
 @abstract_class

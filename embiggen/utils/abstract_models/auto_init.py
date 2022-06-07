@@ -1,11 +1,10 @@
 """Submodule to automatically create __init__ files for the library submodules with stubs."""
 from typing import Dict, List, Type, Union
-from unittest import result
-from .abstract_model import AbstractModel
+from embiggen.utils.abstract_models.abstract_model import AbstractModel
 import ast
 from ast import ClassDef, ImportFrom, FunctionDef, Return
 from glob import glob
-from .model_stub import get_model_or_stub
+from embiggen.utils.abstract_models.model_stub import get_model_or_stub
 import os
 import inspect
 import traceback

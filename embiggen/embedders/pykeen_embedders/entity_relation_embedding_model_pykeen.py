@@ -1,11 +1,10 @@
 """Submodule providing wrapper for PyKeen's TransE model."""
-from typing import Union, Dict, Any
+from typing import Union
 from ensmallen import Graph
 from pykeen.models import EntityRelationEmbeddingModel, ERModel
-from .pykeen_embedder import PyKeenEmbedder
-import numpy as np
+from embiggen.embedders.pykeen_embedders.pykeen_embedder import PyKeenEmbedder
 import pandas as pd
-from ...utils import abstract_class, EmbeddingResult
+from embiggen.utils.abstract_models import abstract_class, EmbeddingResult
 
 
 @abstract_class

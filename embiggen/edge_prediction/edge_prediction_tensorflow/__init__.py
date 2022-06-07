@@ -1,6 +1,6 @@
 """Submodule providing edge prediction models based on TensorFlow Models."""
-from ..edge_prediction_model import AbstractEdgePredictionModel
-from ...utils import build_init
+from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.utils.abstract_models import build_init
 
 build_init(
     module_library_names="tensorflow",

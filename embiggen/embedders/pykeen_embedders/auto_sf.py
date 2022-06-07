@@ -1,8 +1,8 @@
 """Submodule providing wrapper for PyKeen's AutoSF model."""
-from typing import Union, Type, Dict, Any, Optional
+from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import AutoSF
-from .entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
 from pykeen.triples import CoreTriplesFactory
 
 

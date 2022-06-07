@@ -1,9 +1,9 @@
 """Unit test class for Node-label prediction pipeline."""
 from unittest import TestCase
-from embiggen import edge_label_prediction_evaluation, get_available_models_for_edge_label_prediction, SPINE, GraphTransformer
+from embiggen.edge_label_prediction import edge_label_prediction_evaluation
+from embiggen import get_available_models_for_edge_label_prediction
+from embiggen.embedders import SPINE
 from ensmallen.datasets.string import SpeciesTree
-import shutil
-import os
 
 
 class TestEvaluateEdgeLabelPrediction(TestCase):

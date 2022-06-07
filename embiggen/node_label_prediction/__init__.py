@@ -1,7 +1,7 @@
 """Submodule providing models for edge-label prediction."""
-from .node_label_prediction_sklearn import *
-from .node_label_prediction_tensorflow import *
-from .node_label_prediction_evaluation import node_label_prediction_evaluation
+from embiggen.node_label_prediction.node_label_prediction_sklearn import *
+from embiggen.node_label_prediction.node_label_prediction_tensorflow import *
+from embiggen.node_label_prediction.node_label_prediction_evaluation import node_label_prediction_evaluation
 
 # Export all non-internals.
 __all__ = [

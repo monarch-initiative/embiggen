@@ -3,8 +3,8 @@ from typing import Dict, Any
 from ensmallen import Graph
 import warnings
 from cache_decorator import Cache
-from .abstract_model import AbstractModel, abstract_class
-from .embedding_result import EmbeddingResult
+from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
+from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
 
 @abstract_class

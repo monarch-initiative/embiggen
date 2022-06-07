@@ -6,9 +6,9 @@ import pandas as pd
 from ensmallen import Graph
 import inspect
 
-from ...utils.pytorch_utils import validate_torch_device
-from ...utils import AbstractEmbeddingModel, abstract_class, EmbeddingResult
-from ...utils import format_list
+from embiggen.utils.abstract_models.pytorch_utils import validate_torch_device
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, abstract_class, EmbeddingResult
+from embiggen.utils.abstract_models import format_list
 import torch
 from pykeen.models import Model
 from pykeen.triples import CoreTriplesFactory

@@ -7,9 +7,9 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen import Graph
 from tensorflow.keras.utils import Sequence
-from ..edge_prediction_model import AbstractEdgePredictionModel
-from ...utils.abstract_edge_gcn import AbstractEdgeGCN
-from ...sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
+from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN
+from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
 
 
 class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):

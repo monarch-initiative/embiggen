@@ -2,8 +2,8 @@
 from typing import Dict, Any
 from sklearn.ensemble import ExtraTreesClassifier
 from multiprocessing import cpu_count
-from .decision_tree_edge_label_prediction import DecisionTreeEdgeLabelPrediction
-from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
+from embiggen.edge_label_prediction.edge_label_prediction_sklearn.decision_tree_edge_label_prediction import DecisionTreeEdgeLabelPrediction
+from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
 
 class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):

@@ -1,7 +1,7 @@
 """Submodule wrapping Gradient Boosting for edge prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import GradientBoostingClassifier
-from .sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
+from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 
 
 class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):

@@ -1,8 +1,8 @@
 """Submodule wrapping Random Forest for edge prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import RandomForestClassifier
-from .decision_tree_edge_prediction import DecisionTreeEdgePrediction
-from .sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
+from embiggen.edge_prediction.edge_prediction_sklearn.decision_tree_edge_prediction import DecisionTreeEdgePrediction
+from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 
 
 class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):

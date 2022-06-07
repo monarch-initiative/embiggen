@@ -4,8 +4,8 @@ from ensmallen import Graph
 import pandas as pd
 import numpy as np
 from tensorflow.keras import Model
-from .siamese import Siamese
-from ...utils import EmbeddingResult
+from embiggen.embedders.tensorflow_embedders.siamese import Siamese
+from embiggen.utils.abstract_models import EmbeddingResult
 
 class TransETensorFlow(Siamese):
     """TransE model."""

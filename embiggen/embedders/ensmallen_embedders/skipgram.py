@@ -1,6 +1,6 @@
 """Module providing SkipGram model implementation."""
 from typing import Optional
-from .node2vec import Node2VecEnsmallen
+from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
 
 class SkipGramEnsmallen(Node2VecEnsmallen):

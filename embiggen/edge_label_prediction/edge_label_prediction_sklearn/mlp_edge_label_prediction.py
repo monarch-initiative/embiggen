@@ -1,7 +1,7 @@
 """Submodule wrapping MLP for edge label prediction."""
 from typing import Dict, Any
 from sklearn.neural_network import MLPClassifier
-from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
+from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
 
 class MLPEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):

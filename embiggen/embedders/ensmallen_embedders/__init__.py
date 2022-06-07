@@ -1,5 +1,5 @@
 """Submodule providing node embedding models implemented in Ensmallen in Rust."""
-from ...utils import build_init, AbstractEmbeddingModel
+from embiggen.utils.abstract_models import build_init, AbstractEmbeddingModel
 
 build_init(
     module_library_names="ensmallen",

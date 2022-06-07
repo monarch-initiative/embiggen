@@ -1,10 +1,9 @@
 """Sub-module with utilities to make experiments easier to write."""
-from .abstract_models import (
+from embiggen.utils.abstract_models import (
     AbstractClassifierModel,
     AbstractEmbeddingModel,
     EmbeddingResult,
     AbstractModel,
-    build_init,
     get_models_dataframe,
     get_available_models_for_node_label_prediction,
     get_available_models_for_edge_prediction,
@@ -13,8 +12,8 @@ from .abstract_models import (
     abstract_class,
     format_list
 )
-from .pipeline import classification_evaluation_pipeline
-from .number_to_ordinal import number_to_ordinal
+from embiggen.utils.pipeline import classification_evaluation_pipeline
+from embiggen.utils.number_to_ordinal import number_to_ordinal
 
 __all__ = [
     "AbstractClassifierModel",

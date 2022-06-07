@@ -1,7 +1,7 @@
 """Submodule wrapping Decision Tree for edge label prediction."""
 from typing import Dict, Any
 from sklearn.tree import DecisionTreeClassifier
-from .sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
+from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
 
 class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
