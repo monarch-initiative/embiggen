@@ -9,9 +9,12 @@ from embiggen.utils import (
     get_available_models_for_node_embedding,
 )
 
-# Export all non-internals.
 __all__ = [
-    variable_name
-    for variable_name in locals().keys()
-    if not variable_name.startswith("_")
+    "GraphVisualizer",
+    "EmbeddingResult",
+    "get_models_dataframe",
+    "get_available_models_for_node_label_prediction",
+    "get_available_models_for_edge_prediction",
+    "get_available_models_for_edge_label_prediction",
+    "get_available_models_for_node_embedding",
 ]
