@@ -18,14 +18,6 @@ Instead, to exclusively install the Embiggen package, you can run:
 
     pip install embiggen
 
-Unit testing
------------------------------------
-To run the unit testing on the package, generating
-the coverage and the HTML report, you can use:
-
-.. code:: bash
-
-    pytest --cov embiggen --cov-report html
 
 
 Cite GraPE
@@ -47,7 +39,7 @@ Please cite the following paper if it was useful for your research:
     :target: https://badge.fury.io/py/embiggen
     :alt: Pypi project
 
-.. |downloads| image:: https://badge.fury.io/py/embiggen.svg
+.. |downloads| image:: https://pepy.tech/badge/embiggen
     :target: https://pepy.tech/badge/embiggen
     :alt: Pypi total project downloads
 
