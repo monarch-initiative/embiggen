@@ -47,7 +47,7 @@ Please cite the following paper if it was useful for your research:
     :target: https://opensource.org/licenses/BSD-3-Clause
     :alt: License
 
-.. |tutorials| image:: https://img.shields.io/badge/Tutorial-Jupyter%20Notebooks-blue.svg
+.. |tutorials| image:: https://img.shields.io/badge/Tutorials-Jupyter%20Notebooks-blue.svg
     :target: https://github.com/AnacletoLAB/grape/tree/main/tutorials
     :alt: Tutorials
 
