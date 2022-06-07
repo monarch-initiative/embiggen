@@ -349,19 +349,23 @@ class GraphVisualizer:
         # may be very different from the whole graph zipfian distribution.
         # Furthermore, we avoid sampling false negatives by passing to the
         # method also the support graph.
-        self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
-            number_of_negative_samples=min(
-                number_of_subsampled_negative_edges,
-                self._positive_graph.get_edges_number()
-            ),
-            random_state=random_state,
-            use_zipfian_sampling=True,
-            graph_to_avoid=self._support,
-            support=self._support,
-            only_from_same_component=only_from_same_component,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            **edge_prediction_graph_kwargs
-        )
+        try:
+            self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
+                number_of_negative_samples=min(
+                    number_of_subsampled_negative_edges,
+                    self._positive_graph.get_edges_number()
+                ),
+                random_state=random_state,
+                use_zipfian_sampling=True,
+                graph_to_avoid=self._support,
+                support=self._support,
+                only_from_same_component=only_from_same_component,
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                **edge_prediction_graph_kwargs
+            )
+        except ValueError as e:
+            warnings.warn(str(e))
+            self._negative_graph = None
 
         self._number_of_subsampled_nodes = number_of_subsampled_nodes
         self._subsampled_node_ids = None
@@ -3970,17 +3974,17 @@ class GraphVisualizer:
 
         return figure, axes, caption
 
-    def plot_dot(self, engine: str = "circo"):
+    def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
 
         Parameters
         ------------------------------
-        engine: str = "circo",
+        engine: str = "neato"
             The engine to use to visualize the graph.
 
         Raises
         ------------------------------
-        ModuleNotFoundError,
+        ModuleNotFoundError
             If graphviz is not installed.
         """
         try:
