@@ -35,3 +35,16 @@ class TestNodeEmbeddingPipeline(TestCase):
                 verbose=False,
                 smoke_test=True
             )
+
+    def test_ensmallen_skipgram(self):
+        """Test that embed pipeline works fine in SPINE."""
+        graph_name = "SpeciesTree"
+        repository="string"
+
+        embed_graph(
+            graph_name,
+            repository=repository,
+            embedding_model="SkipGram",
+            verbose=False,
+            smoke_test=True
+        )
