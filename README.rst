@@ -47,7 +47,7 @@ Please cite the following paper if it was useful for your research:
     :target: https://badge.fury.io/py/embiggen
     :alt: Pypi project
 
-.. |downloads| image:: https://img.shields.io/badge/Documentation-blue.svg
+.. |downloads| image:: https://badge.fury.io/py/embiggen.svg
     :target: https://pepy.tech/badge/embiggen
     :alt: Pypi total project downloads
 
