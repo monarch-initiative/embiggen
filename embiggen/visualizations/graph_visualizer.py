@@ -1709,7 +1709,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -1759,7 +1759,7 @@ class GraphVisualizer:
         else:
             node_names = self._graph.get_node_names()
         for i, txt in enumerate(node_names):
-            axes.annotate(txt, points[i])
+            axes.annotate(txt, points[i], fontsize=8)
         return (figure, axes)
 
     def plot_edges(
@@ -2820,7 +2820,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         node_types = self._get_flatten_multi_label_and_unknown_node_types()
 
@@ -2971,7 +2971,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         unique_ontologies, ontology_ids = self._get_flatten_unknown_node_ontologies()
 
@@ -3004,8 +3004,8 @@ class GraphVisualizer:
         )
 
         if annotate_nodes:
-            figure, axes = returned_values
-            returned_values = self.annotate_nodes(
+            fig, axes = returned_values[:2]
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
@@ -3111,7 +3111,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         components, components_number, _, _ = self._support.get_connected_components()
         sizes = np.bincount(components, minlength=components_number).tolist()
@@ -3214,7 +3214,7 @@ class GraphVisualizer:
 
         if annotate_nodes:
             figure, axes = returned_values[:2]
-            returned_values = self.annotate_nodes(
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
@@ -3320,7 +3320,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
