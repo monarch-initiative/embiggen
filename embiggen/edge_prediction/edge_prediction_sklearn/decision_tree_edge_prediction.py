@@ -18,7 +18,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
         max_features=None,
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         class_weight=None,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
@@ -38,7 +37,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
         self._max_features = max_features
         self._max_leaf_nodes = max_leaf_nodes
         self._min_impurity_decrease = min_impurity_decrease
-        self._min_impurity_split = min_impurity_split
         self._random_state = random_state
         self._class_weight = class_weight
         self._ccp_alpha = ccp_alpha
@@ -54,7 +52,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features=max_features,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 random_state=random_state,
                 class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
@@ -81,7 +78,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features=self._max_features,
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
-                min_impurity_split=self._min_impurity_split,
                 random_state=self._random_state,
                 class_weight=self._class_weight,
                 ccp_alpha=self._ccp_alpha,
