@@ -5,7 +5,7 @@ import numpy as np
 import copy
 from ensmallen import Graph
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
-from embiggen.transformers import EdgeLabelPredictionTransformer, GraphTransformer
+from embiggen.embedding_transformers import EdgeLabelPredictionTransformer, GraphTransformer
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 
 

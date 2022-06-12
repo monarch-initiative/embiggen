@@ -6,7 +6,7 @@ import pandas as pd
 from userinput.utils import closest
 from ensmallen import express_measures
 from embiggen.utils.abstract_models import format_list
-from embiggen.transformers.node_transformer import NodeTransformer
+from embiggen.embedding_transformers.node_transformer import NodeTransformer
 
 
 def get_hadamard_edge_embedding(

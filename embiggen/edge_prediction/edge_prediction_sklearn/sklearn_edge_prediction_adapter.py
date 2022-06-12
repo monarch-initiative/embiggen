@@ -8,7 +8,7 @@ import copy
 from ensmallen import Graph
 from embiggen.sequences.generic_sequences import EdgePredictionSequence
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
-from embiggen.transformers import EdgePredictionTransformer, GraphTransformer
+from embiggen.embedding_transformers import EdgePredictionTransformer, GraphTransformer
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.utils.abstract_models import abstract_class
 from tqdm.auto import tqdm
