@@ -3499,6 +3499,9 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
+        if self._rotate:
+            return_caption = False
+
         edge_types = self._get_flatten_unknown_edge_types()
 
         edge_type_names_iter = (
