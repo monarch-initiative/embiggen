@@ -3365,6 +3365,9 @@ class GraphVisualizer:
                 **kwargs
             )
 
+        if not self._rotate:
+            return_caption = False
+
         returned_values = self._wrapped_plot_scatter(
             points=self._node_decomposition,
             title=self._get_complete_title("Node degrees"),
