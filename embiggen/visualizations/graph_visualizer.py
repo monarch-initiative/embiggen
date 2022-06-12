@@ -3365,7 +3365,7 @@ class GraphVisualizer:
                 **kwargs
             )
 
-        if not self._rotate:
+        if self._rotate:
             return_caption = False
 
         returned_values = self._wrapped_plot_scatter(
