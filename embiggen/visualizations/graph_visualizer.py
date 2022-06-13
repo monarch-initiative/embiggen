@@ -800,7 +800,7 @@ class GraphVisualizer:
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
-                if isinstance(handles[0], tuple)
+                if len(handles) > 0 and isinstance(handles[0], tuple)
                 else {}
             )
         )
