@@ -1197,11 +1197,15 @@ class GraphVisualizer:
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                c=colors,
-                edgecolors=None if edgecolors is None else cmap(edgecolors),
-                marker=train_marker,
-                cmap=cmap,
-                **scatter_kwargs
+                **{
+                    **dict(
+                        c=colors,
+                        edgecolors=None if edgecolors is None else cmap(edgecolors),
+                        marker=train_marker,
+                        cmap=cmap,
+                    ),
+                    **scatter_kwargs
+                }
             )
             collections.append(scatter)
             legend_elements += scatter.legend_elements()[0]
