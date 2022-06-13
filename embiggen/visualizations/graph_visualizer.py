@@ -1772,7 +1772,7 @@ class GraphVisualizer:
         else:
             node_names = self._graph.get_node_names()
         for i, txt in enumerate(node_names):
-            axes.annotate(txt, points[i], fontsize=8)
+            axes.annotate(txt, points[i], fontsize=8, ha="center", va="center")
         return (figure, axes)
 
     def plot_edges(
