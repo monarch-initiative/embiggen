@@ -3541,6 +3541,9 @@ class GraphVisualizer:
             **kwargs
         )
 
+        if self._rotate:
+            return returned_values
+
         if not return_caption:
             return self._handle_notebook_display(*returned_values)
 
