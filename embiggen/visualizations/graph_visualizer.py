@@ -698,7 +698,10 @@ class GraphVisualizer:
                 if node_embedding.index[node_id] != node_name:
                     raise ValueError(
                         "The provided pandas DataFrame with the node embedding "
-                        "does not "
+                        "does not seem to be aligned with the provided graph. "
+                        f"Specifically, the value at the row `{node_id}` was expected "
+                        f"to have an index curresponding to the node name `{node_name}`, "
+                        f"but we have found `{node_embedding.index[node_id]}`."
                     )
 
         return node_embedding
