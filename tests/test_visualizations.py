@@ -2,7 +2,7 @@
 from unittest import TestCase
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from embiggen import GraphVisualizer
-import pytest
+from embiggen.embedders import SPINE
 
 
 class TestGraphVisualizer(TestCase):
@@ -18,4 +18,10 @@ class TestGraphVisualizer(TestCase):
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        self._visualization.fit_and_plot_all("SPINE")
+        self._visualization.fit_and_plot_all("SPINE", embedding_size=5)
+
+    def test_graph_visualization(self):
+        """Test graph visualization."""
+        self._visualization.fit_and_plot_all(
+            SPINE(embedding_size=5).fit_transform(self._visualization._graph)
+        )

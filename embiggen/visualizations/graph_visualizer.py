@@ -670,7 +670,13 @@ class GraphVisualizer:
                 graph=self._graph,
                 embedding_model=node_embedding,
                 **node_embedding_kwargs
-            )
+            ).get_node_embedding_from_index(0)
+        elif isinstance(node_embedding, EmbeddingResult):
+            if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding.embedding_method_name
+            node_embedding = node_embedding.get_node_embedding_from_index(0)
+            
         elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
             self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
@@ -678,9 +684,6 @@ class GraphVisualizer:
                 if isinstance(node_embedding, pd.DataFrame)
                 else node_embedding
             )
-
-        if isinstance(node_embedding, EmbeddingResult):
-            node_embedding = node_embedding.get_node_embedding_from_index(0)
 
         if node_embedding.shape[0] != self._graph.get_nodes_number():
             raise ValueError(
