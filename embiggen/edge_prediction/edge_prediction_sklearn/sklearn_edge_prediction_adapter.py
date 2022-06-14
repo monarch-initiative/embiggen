@@ -25,6 +25,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
+        use_zipfian_sampling: bool = True,
         prediction_batch_size: int = 2**15,
         random_state: int = 42
     ):
@@ -42,6 +43,12 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             Whether to sample negative edges exclusively between nodes with different node types
             to generate the negative edges used during the training of the model.
             This can be useful when executing a bipartite edge prediction task.
+        use_zipfian_sampling: bool = True
+            Whether to sample the negative edges for the TRAINING of the model
+            using a zipfian-like distribution that follows the degree distribution
+            of the graph. This is generally useful, as these negative edges are less
+            trivial to predict then edges sampled uniformely.
+            We stringly advise AGAINST using uniform sampling.
         use_edge_metrics: bool = True
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
@@ -70,6 +77,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._random_state = random_state
         self._prediction_batch_size = prediction_batch_size
         self._use_edge_metrics = use_edge_metrics
+        self._use_zipfian_sampling = use_zipfian_sampling
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         self._support = None
         # We want to mask the decorator class name
@@ -84,7 +92,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "training_unbalance_rate": self._training_unbalance_rate,
             "random_state": self._random_state,
             "prediction_batch_size": self._prediction_batch_size,
-            "use_edge_metrics": self._use_edge_metrics
+            "use_edge_metrics": self._use_edge_metrics,
+            "use_zipfian_sampling": self._use_zipfian_sampling
         }
 
     def clone(self) -> Type["SklearnEdgePredictionAdapter"]:
@@ -199,10 +208,11 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         negative_graph = graph.sample_negative_graph(
             number_of_negative_samples=int(
                 math.ceil(graph.get_edges_number() *
-                            self._training_unbalance_rate)
+                          self._training_unbalance_rate)
             ),
             random_state=self._random_state,
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
+            use_zipfian_sampling=self._use_zipfian_sampling
         )
 
         if self._use_edge_metrics:

@@ -22,6 +22,7 @@ def edge_prediction_evaluation(
     versions: Optional[Union[str, List[str]]] = None,
     validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
     validation_unbalance_rates: Tuple[float] = (1.0, ),
+    use_zipfian_sampling: bool = True,
     enable_cache: bool = False,
     smoke_test: bool = False,
     verbose: bool = True
@@ -38,6 +39,30 @@ def edge_prediction_evaluation(
         The models to evaluate.
     evaluation_schema: str = "Connected Monte Carlo"
         The evaluation schema to follow.
+        There are a number of supported evaluation schemas, specifically:
+        - Connected Monte Carlo
+            A random holdout with repeated sampling of the edges across the different
+            repetitions, that assures that there will be exactly the same connected components
+            in the training set. This is the ideal evaluation schema when making a closed
+            world assumption, that is when you do not want to evaluate the edge prediction performance
+            of a model for edges between distinct connected components.
+            This is generally used expecially when you do not have additional node features that may
+            help the model learn that two different components are connected.
+        - Monte Carlo
+            A random holdout with repeated sampling of the edges across the different 
+            repetitions which DOES NOT HAVE any assurance about creating new connected components.
+            This is a correct evaluation schema when you want to evaluate the edge prediction
+            performance of a model across different connected components, which you may want to
+            do when you have additional node features that may
+            help the model learn that two different components are connected.
+        - Kfold
+            A k-fold holdout which will split the set of edges into k different `folds`, where
+            k is the total number of holdouts that will be executed.
+            Do note that this procedure DOES NOT HAVE any assurance about creating new connected components.
+            This is a correct evaluation schema when you want to evaluate the edge prediction
+            performance of a model across different connected components, which you may want to
+            do when you have additional node features that may
+            help the model learn that two different components are connected.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
@@ -60,6 +85,12 @@ def edge_prediction_evaluation(
         This can be useful when executing a bipartite edge prediction task.
     validation_unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
+    use_zipfian_sampling: bool = True
+        Whether to use the zipfian sampling of the NEGATIVE edges for the EVALUATION
+        of the edge prediction performance of the provided models.
+        Please DO BE ADVISED that not using a zipfian sampling for the negative
+        edges is a poor choice and will cause a significant positive bias
+        in the model performance.
     enable_cache: bool = False
         Whether to enable the cache.
     smoke_test: bool = False
@@ -88,5 +119,6 @@ def edge_prediction_evaluation(
         smoke_test=smoke_test,
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-        validation_unbalance_rates=validation_unbalance_rates
+        validation_unbalance_rates=validation_unbalance_rates,
+        use_zipfian_sampling=use_zipfian_sampling
     )
