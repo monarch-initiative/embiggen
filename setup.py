@@ -24,10 +24,6 @@ test_deps = [
 
 extras = {
     'test': test_deps,
-    'nltk': [
-        "pytest",
-        "nltk"
-    ]
 }
 
 def read(*parts):
@@ -77,7 +73,7 @@ setup(
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.7",
-        "ensmallen>=0.7.0.dev21",
+        "ensmallen>=0.8.2",
         "validate_version_code",
         "cache_decorator>=2.1.6",
         "packaging"
