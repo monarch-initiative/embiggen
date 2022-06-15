@@ -1073,14 +1073,16 @@ class AbstractClassifierModel(AbstractModel):
                 for model in models
             ]
 
-        for model in tqdm(
+        bar = tqdm(
             models,
-            desc=f"{cls.task_name()} Models",
             total=number_of_models,
             disable=number_of_models == 1,
             dynamic_ncols=True,
             leave=False
-        ):
+        )
+
+        for model in bar:
+            bar.set_description(f"Evaluating model {model.model_name()} from library {model.library_name()} on {model.task_name()}")
             yield model.clone()
 
     @Cache(

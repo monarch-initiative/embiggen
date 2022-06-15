@@ -14,18 +14,21 @@ class TestNodeEmbeddingPipeline(TestCase):
     def test_embedding_pipeline(self):
         """Test that embed pipeline works fine in SPINE."""
         df = get_available_models_for_node_embedding()
-        for _, row in tqdm(
+        bar = tqdm(
             df.iterrows(),
             total=df.shape[0],
             leave=False,
             desc="Testing embedding methods"
-        ):
+        )
+        for _, row in bar:
             if row.requires_edge_weights:
                 graph_name = "HomoSapiens"
                 repository = "string"
             else:
                 graph_name = "SpeciesTree"
                 repository="string"
+
+            bar.set_description(f"Testing embedding model {row.model_name} from library {row.library_name}")
 
             embed_graph(
                 graph_name,
