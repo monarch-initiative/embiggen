@@ -1,7 +1,6 @@
 """Submodule to automatically create __init__ files for the library submodules with stubs."""
 from typing import Dict, List, Type, Union
 
-from numpy import source
 from embiggen.utils.abstract_models.abstract_model import AbstractModel
 import ast
 from ast import ClassDef, ImportFrom, FunctionDef, Return
@@ -44,7 +43,7 @@ def get_python_code_from_import(
             "Often, this is caused when an older version had a "
             "file that is no longer present but was not deleted "
             "during the installation process. The file causing this issue are "
-            f"'{original_path}' and '{original_file_path}'. Consider deleting it."
+            f"'{source_path}' and '{original_file_path}'. Consider deleting it."
         )
 
     expected_class_name = import_from["name"]

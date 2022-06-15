@@ -41,7 +41,7 @@ except ImportError:
     )
 
 
-from embiggen.transformers import GraphTransformer, NodeTransformer
+from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
 from embiggen.embedders import embed_graph
 from embiggen.utils.abstract_models import format_list
 from embiggen.utils.pipeline import iterate_graphs
@@ -351,19 +351,23 @@ class GraphVisualizer:
         # may be very different from the whole graph zipfian distribution.
         # Furthermore, we avoid sampling false negatives by passing to the
         # method also the support graph.
-        self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
-            number_of_negative_samples=min(
-                number_of_subsampled_negative_edges,
-                self._positive_graph.get_edges_number()
-            ),
-            random_state=random_state,
-            use_zipfian_sampling=True,
-            graph_to_avoid=self._support,
-            support=self._support,
-            only_from_same_component=only_from_same_component,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            **edge_prediction_graph_kwargs
-        )
+        try:
+            self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
+                number_of_negative_samples=min(
+                    number_of_subsampled_negative_edges,
+                    self._positive_graph.get_edges_number()
+                ),
+                random_state=random_state,
+                use_zipfian_sampling=True,
+                graph_to_avoid=self._support,
+                support=self._support,
+                only_from_same_component=only_from_same_component,
+                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                **edge_prediction_graph_kwargs
+            )
+        except ValueError as e:
+            warnings.warn(str(e))
+            self._negative_graph = None
 
         self._number_of_subsampled_nodes = number_of_subsampled_nodes
         self._subsampled_node_ids = None
@@ -809,7 +813,7 @@ class GraphVisualizer:
             prop={'size': 8},
             **(
                 dict(handler_map={tuple: HandlerTuple(ndivide=None)})
-                if isinstance(handles[0], tuple)
+                if len(handles) > 0 and isinstance(handles[0], tuple)
                 else {}
             )
         )
@@ -1206,11 +1210,15 @@ class GraphVisualizer:
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                c=colors,
-                edgecolors=None if edgecolors is None else cmap(edgecolors),
-                marker=train_marker,
-                cmap=cmap,
-                **scatter_kwargs
+                **{
+                    **dict(
+                        c=colors,
+                        edgecolors=None if edgecolors is None else cmap(edgecolors),
+                        marker=train_marker,
+                        cmap=cmap,
+                    ),
+                    **scatter_kwargs
+                }
             )
             collections.append(scatter)
             legend_elements += scatter.legend_elements()[0]
@@ -1529,7 +1537,7 @@ class GraphVisualizer:
             **kwargs
         })
 
-        if not return_caption:
+        if not return_caption or self._rotate:
             return result
 
         if number_of_non_zero_types == 1:
@@ -1661,7 +1669,7 @@ class GraphVisualizer:
         show_legend: bool = True,
         loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
         edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs: Dict
     ) -> Tuple[Figure, Axes]:
@@ -1698,9 +1706,11 @@ class GraphVisualizer:
             The default behaviour, "auto", means that it will
             enable this feature automatically when the graph has
             less than 100 nodes.
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
             Whether to show edges between the different nodes
             shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
         edge_scatter_kwargs: Optional[Dict] = None,
             Arguments to provide to the scatter plot of the edges
             if they were required.
@@ -1721,8 +1731,11 @@ class GraphVisualizer:
                 "Node fitting must be executed before plot."
             )
 
+        if show_edges == "auto":
+            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -1749,8 +1762,8 @@ class GraphVisualizer:
         )
 
         if annotate_nodes:
-            figure, axes = returned_values
-            returned_values = self.annotate_nodes(
+            figure, axes = returned_values[:2]
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
@@ -1772,7 +1785,7 @@ class GraphVisualizer:
         else:
             node_names = self._graph.get_node_names()
         for i, txt in enumerate(node_names):
-            axes.annotate(txt, points[i])
+            axes.annotate(txt, points[i], fontsize=8, ha="center", va="center")
         return (figure, axes)
 
     def plot_edges(
@@ -2751,7 +2764,7 @@ class GraphVisualizer:
         show_legend: bool = True,
         return_caption: bool = True,
         loc: str = "best",
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
         edge_scatter_kwargs: Optional[Dict] = None,
         annotate_nodes: Union[str, bool] = "auto",
         **kwargs
@@ -2792,9 +2805,11 @@ class GraphVisualizer:
             Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
             Whether to show edges between the different nodes
             shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
         edge_scatter_kwargs: Optional[Dict] = None,
             Arguments to provide to the scatter plot of the edges
             if they were required.
@@ -2824,6 +2839,9 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
+        if show_edges == "auto":
+            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+
         if show_edges:
             figure, axes = self.plot_edge_segments(
                 figure,
@@ -2833,7 +2851,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         node_types = self._get_flatten_multi_label_and_unknown_node_types()
 
@@ -2876,14 +2894,16 @@ class GraphVisualizer:
         )
 
         if annotate_nodes:
-            figure, axes = returned_values
-            returned_values = self.annotate_nodes(
+            figure, axes = returned_values[:2]
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
             )
 
-        if not return_caption:
+        if not return_caption or self._rotate:
+            if self._rotate:
+                return returned_values
             return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
@@ -2909,7 +2929,7 @@ class GraphVisualizer:
         show_legend: bool = True,
         return_caption: bool = True,
         loc: str = "best",
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
         edge_scatter_kwargs: Optional[Dict] = None,
         annotate_nodes: Union[str, bool] = "auto",
         **kwargs
@@ -2946,9 +2966,11 @@ class GraphVisualizer:
             Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
             Whether to show edges between the different nodes
             shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
         edge_scatter_kwargs: Optional[Dict] = None,
             Arguments to provide to the scatter plot of the edges
             if they were required.
@@ -2975,6 +2997,9 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
+        if show_edges == "auto":
+            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+
         if show_edges:
             figure, axes = self.plot_edge_segments(
                 figure,
@@ -2984,7 +3009,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         unique_ontologies, ontology_ids = self._get_flatten_unknown_node_ontologies()
 
@@ -3017,8 +3042,8 @@ class GraphVisualizer:
         )
 
         if annotate_nodes:
-            figure, axes = returned_values
-            returned_values = self.annotate_nodes(
+            fig, axes = returned_values[:2]
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
@@ -3052,7 +3077,7 @@ class GraphVisualizer:
         return_caption: bool = True,
         loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
         edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs
     ) -> Tuple[Figure, Axes]:
@@ -3090,9 +3115,15 @@ class GraphVisualizer:
             Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
-        show_edges: bool = False,
+        annotate_nodes: Union[str, bool] = "auto"
+            Whether to show the node names when plotting them.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        show_edges: Union[str, bool] = "auto"
             Whether to show edges between the different nodes
             shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
         edge_scatter_kwargs: Optional[Dict] = None,
             Arguments to provide to the scatter plot of the edges
             if they were required.
@@ -3115,6 +3146,9 @@ class GraphVisualizer:
                 "Node fitting must be executed before plot."
             )
 
+        if show_edges == "auto":
+            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+
         if show_edges:
             figure, axes = self.plot_edge_segments(
                 figure,
@@ -3124,7 +3158,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
 
         components, components_number, _, _ = self._support.get_connected_components()
         sizes = np.bincount(components, minlength=components_number).tolist()
@@ -3227,7 +3261,7 @@ class GraphVisualizer:
 
         if annotate_nodes:
             figure, axes = returned_values[:2]
-            returned_values = self.annotate_nodes(
+            self.annotate_nodes(
                 figure=figure,
                 axes=axes,
                 points=self._node_decomposition,
@@ -3260,7 +3294,7 @@ class GraphVisualizer:
         return_caption: bool = True,
         loc: str = "best",
         annotate_nodes: Union[str, bool] = "auto",
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
         edge_scatter_kwargs: Optional[Dict] = None,
         **kwargs: Dict
     ):
@@ -3296,9 +3330,11 @@ class GraphVisualizer:
             Whether to return a caption.
         loc: str = 'best'
             Position for the legend.
-        show_edges: bool = False,
+        show_edges: Union[str, bool] = "auto",
             Whether to show edges between the different nodes
             shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
         edge_scatter_kwargs: Optional[Dict] = None,
             Arguments to provide to the scatter plot of the edges
             if they were required.
@@ -3333,7 +3369,10 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 100 and not self._rotate
+            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+
+        if show_edges == "auto":
+            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -3342,6 +3381,9 @@ class GraphVisualizer:
                 scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
+
+        if self._rotate:
+            return_caption = False
 
         returned_values = self._wrapped_plot_scatter(
             points=self._node_decomposition,
@@ -3474,6 +3516,9 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
+        if self._rotate:
+            return_caption = False
+
         edge_types = self._get_flatten_unknown_edge_types()
 
         edge_type_names_iter = (
@@ -3512,6 +3557,9 @@ class GraphVisualizer:
             loc=loc,
             **kwargs
         )
+
+        if self._rotate:
+            return returned_values
 
         if not return_caption:
             return self._handle_notebook_display(*returned_values)
@@ -3983,17 +4031,17 @@ class GraphVisualizer:
 
         return figure, axes, caption
 
-    def plot_dot(self, engine: str = "circo"):
+    def plot_dot(self, engine: str = "neato"):
         """Return dot plot of the current graph.
 
         Parameters
         ------------------------------
-        engine: str = "circo",
+        engine: str = "neato"
             The engine to use to visualize the graph.
 
         Raises
         ------------------------------
-        ModuleNotFoundError,
+        ModuleNotFoundError
             If graphviz is not installed.
         """
         try:

@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 
-from embiggen.transformers.edge_transformer import EdgeTransformer
+from embiggen.embedding_transformers.edge_transformer import EdgeTransformer
 
 
 class GraphTransformer:

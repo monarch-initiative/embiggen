@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 
-from embiggen.transformers.node_transformer import NodeTransformer
+from embiggen.embedding_transformers.node_transformer import NodeTransformer
 
 
 class NodeLabelPredictionTransformer:

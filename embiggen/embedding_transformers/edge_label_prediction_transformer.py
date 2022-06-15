@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 
-from embiggen.transformers.graph_transformer import GraphTransformer
+from embiggen.embedding_transformers.graph_transformer import GraphTransformer
 
 
 class EdgeLabelPredictionTransformer:
