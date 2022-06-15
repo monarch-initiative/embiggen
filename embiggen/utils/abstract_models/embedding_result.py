@@ -207,6 +207,11 @@ class EmbeddingResult:
                 f"in position {index}."
             )
         return edge_types_embedding[index]
+    
+    @property
+    def embedding_method_name(self) -> str:
+        """Returns the name of the method used for this embedding."""
+        return self._embedding_method_name
 
     @staticmethod
     def load(cached_embedding_result: Dict[str, Union[str, List[Union[np.ndarray, pd.DataFrame]]]]) -> "EmbeddingResult":

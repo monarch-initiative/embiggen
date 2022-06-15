@@ -163,7 +163,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,

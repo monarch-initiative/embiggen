@@ -1,4 +1,5 @@
 """Module providing abstract edge prediction model."""
+import warnings
 from typing import Optional, Union, List, Dict, Any, Tuple, Iterator
 import pandas as pd
 import numpy as np
@@ -93,13 +94,26 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         random_state: int,
         verbose: bool,
         validation_sample_only_edges_with_heterogeneous_node_types: bool,
-        validation_unbalance_rates: Tuple[float]
+        validation_unbalance_rates: Tuple[float],
+        use_zipfian_sampling: bool
     ) -> Iterator[Tuple[Graph]]:
         """Return iterator over the negative graphs for evaluation."""
         if subgraph_of_interest is None:
             sampler_graph = graph
         else:
             sampler_graph = subgraph_of_interest
+
+        if not use_zipfian_sampling:
+            warnings.warn(
+                "Please do be advised that you have DISABLED the use of zipfian sampling "
+                "for the negative edges for the EVALUATION (not the training) "
+                "of a model. This is a POOR CHOICE as it will introduce a positive bias "
+                "as edges sampled uniformely have a significantly different node degree "
+                "distribution than the positive edges in the graph, and are therefore much easier "
+                "to predict. The only case where it makes sense to use this parameter is when "
+                "evaluating how strongly this bias would have affected your task. "
+                "DO NOT USE THIS CONFIGURATION IN ANY OTHER USE CASE."
+            )
 
         train_size = (
             train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
@@ -112,7 +126,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 ),
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-                use_zipfian_sampling=True,
+                use_zipfian_sampling=use_zipfian_sampling,
                 graph_to_avoid=graph
             ).random_holdout(
                 train_size=train_size,
@@ -139,7 +153,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         random_state: int = 42,
         verbose: bool = True,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        validation_unbalance_rates: Tuple[float] = (1.0, )
+        validation_unbalance_rates: Tuple[float] = (1.0, ),
+        use_zipfian_sampling: bool = True
     ) -> Dict[str, Any]:
         """Return additional custom parameters for the current holdout."""
         return dict(
@@ -153,6 +168,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 verbose=verbose,
                 validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 validation_unbalance_rates=validation_unbalance_rates,
+                use_zipfian_sampling=use_zipfian_sampling
             ))
         )
 
@@ -170,7 +186,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         verbose: bool = True,
         negative_graphs: Optional[List[Tuple[Graph]]] = None,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        validation_unbalance_rates: Tuple[float] = (1.0, )
+        validation_unbalance_rates: Tuple[float] = (1.0, ),
+        use_zipfian_sampling: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         performance = []
@@ -207,6 +224,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             verbose=verbose,
             validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
             validation_unbalance_rates=validation_unbalance_rates,
+            use_zipfian_sampling=use_zipfian_sampling
         ) if negative_graphs is None else negative_graphs
 
         for unbalance_rate, (negative_train, negative_test) in tqdm(

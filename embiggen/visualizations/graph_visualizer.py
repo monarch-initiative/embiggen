@@ -1,7 +1,7 @@
 """Module with embedding visualization tools."""
 import functools
 from multiprocessing import cpu_count
-from typing import Dict, List, Tuple, Union, Optional, Callable
+from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -27,6 +27,8 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
 import itertools
+
+from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
 
 try:
@@ -409,6 +411,12 @@ class GraphVisualizer:
         self._decomposition_method = decomposition_method
         self._decomposition_kwargs = decomposition_kwargs
 
+    def iterate_subsampled_node_ids(self) -> Iterator[int]:
+        """Return iterator over the node IDs of the subsampled graph."""
+        if self._subsampled_node_ids is None:
+            return range(self._graph.get_nodes_number())
+        return iter(self._subsampled_node_ids)
+
     def _handle_notebook_display(
         self,
         *args: List,
@@ -630,7 +638,7 @@ class GraphVisualizer:
 
     def _get_node_embedding(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ) -> np.ndarray:
         """Computes the node embedding if it was not otherwise provided.
@@ -667,15 +675,12 @@ class GraphVisualizer:
                 embedding_model=node_embedding,
                 **node_embedding_kwargs
             ).get_node_embedding_from_index(0)
-            # If this is a node embedding like TransE, which
-            # returns multiple node embeddings.
-            if isinstance(node_embedding, dict):
-                node_embedding = node_embedding["node_embedding"]
-            # For now here we only handle the node embedding and
-            # ignore other possible embeddings such as node type and
-            # edge type embedding.
-            if isinstance(node_embedding, list):
-                node_embedding = node_embedding[0]
+        elif isinstance(node_embedding, EmbeddingResult):
+            if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
+                self._has_autodetermined_node_embedding_name = True
+                self._node_embedding_method_name = node_embedding.embedding_method_name
+            node_embedding = node_embedding.get_node_embedding_from_index(0)
+            
         elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
             self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
@@ -695,8 +700,16 @@ class GraphVisualizer:
 
         # Making sure that if the node embedding is a dataframe, it is surely aligned.
         if isinstance(node_embedding, pd.DataFrame):
-            node_embedding = node_embedding.loc[self._graph.get_node_names(
-            )].to_numpy()
+            for node_id in self.iterate_subsampled_node_ids():
+                node_name = self._graph.get_node_name_from_node_id(node_id)
+                if node_embedding.index[node_id] != node_name:
+                    raise ValueError(
+                        "The provided pandas DataFrame with the node embedding "
+                        "does not seem to be aligned with the provided graph. "
+                        f"Specifically, the value at the row `{node_id}` was expected "
+                        f"to have an index curresponding to the node name `{node_name}`, "
+                        f"but we have found `{node_embedding.index[node_id]}`."
+                    )
 
         return node_embedding
 
@@ -826,7 +839,7 @@ class GraphVisualizer:
 
     def fit_nodes(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
@@ -895,7 +908,7 @@ class GraphVisualizer:
 
     def fit_edges(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting edge embeddings.
@@ -938,7 +951,7 @@ class GraphVisualizer:
 
     def fit_negative_and_positive_edges(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting negative edge embeddings.
@@ -4162,11 +4175,10 @@ class GraphVisualizer:
 
     def fit_and_plot_all(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray, str],
+        node_embedding: Union[pd.DataFrame, np.ndarray, str, EmbeddingResult],
         number_of_columns: int = 4,
         show_letters: bool = True,
         include_distribution_plots: bool = True,
-        skip_constant_metrics: bool = True,
         **node_embedding_kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
@@ -4184,8 +4196,6 @@ class GraphVisualizer:
         include_distribution_plots: bool = True
             Whether to include the distribution plots for the degrees
             and the edge weights, if they are present.
-        skip_constant_metrics: bool = True
-            Whether to skip constant metrics in the visualization.
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
