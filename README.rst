@@ -1,6 +1,6 @@
 Embiggen
 =========================================================================================
-|pip| |downloads| |tutorials| |documentation| |python_version| |DOI| |license| |telegram| |discord|
+|pip| |downloads| |tutorials| |documentation| |python_version| |DOI| |license| |telegram| |discord| |twitter|
 
 Embiggen is the graph machine learning submodule of the `GraPE <https://github.com/AnacletoLAB/grape>`_ library.
 
@@ -69,3 +69,7 @@ Please cite the following paper if it was useful for your research:
 .. |discord| image:: https://badges.aleen42.com/src/discord.svg
     :target: https://discord.gg/Nda2cqYvTN
     :alt: Discord Server
+
+.. |twitter| image:: https://badges.aleen42.com/src/twitter.svg
+    :target: https://twitter.com/grapelib
+    :alt: Twitter
