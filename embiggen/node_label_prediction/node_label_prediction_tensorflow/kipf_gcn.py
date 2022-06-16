@@ -29,7 +29,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
@@ -78,7 +78,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
