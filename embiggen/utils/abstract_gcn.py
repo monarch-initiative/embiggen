@@ -114,6 +114,7 @@ class AbstractGCN(AbstractClassifierModel):
         number_of_graph_convolution_layers: int = 2,
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         dropout_rate: float = 0.5,
+        apply_norm: bool = False,
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -148,6 +149,9 @@ class AbstractGCN(AbstractClassifierModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        apply_norm: bool = False
+            Whether to normalize the output of the convolution operations,
+            after applying the level activations.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float

@@ -1,5 +1,5 @@
 """Submodule providing node-label prediction evaluation pipeline."""
-from typing import Dict, Any, Union, List, Type, Optional
+from typing import Dict, Any, Union, List, Type, Optional, Callable
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
@@ -14,6 +14,7 @@ def node_label_prediction_evaluation(
     evaluation_schema: str = "Stratified Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
+    graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
     number_of_holdouts: int = 10,
     random_state: int = 42,
@@ -41,6 +42,11 @@ def node_label_prediction_evaluation(
         The edge features to use.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
+    graph_callback: Optional[Callable[[Graph], Graph]] = None
+        Callback to use for graph normalization and sanitization, must be
+        a function that receives and returns a graph object.
+        For instance this may be used for filtering the uncertain edges
+        in graphs such as STRING PPIs.
     subgraph_of_interest: Optional[Graph] = None
         The subgraph of interest to focus the task on.
     number_of_holdouts: int = 10
@@ -70,6 +76,7 @@ def node_label_prediction_evaluation(
         expected_parent_class=AbstractNodeLabelPredictionModel,
         node_features=node_features,
         library_names=library_names,
+        graph_callback=graph_callback,
         subgraph_of_interest=subgraph_of_interest,
         number_of_holdouts=number_of_holdouts,
         random_state=random_state,

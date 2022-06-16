@@ -1,10 +1,4 @@
-"""Submodule providing graph convolutional layer.
-
-# References
-The layer is implemented as described in [Semi-Supervised Classification with Graph Convolutional Networks](https://arxiv.org/abs/1609.02907).
-
-In this version of the implementation, we allow for batch sizes of arbitrary size.
-"""
+"""Submodule providing flat embedding layer."""
 from typing import Dict
 import tensorflow as tf
 from tensorflow.keras.layers import GlobalAveragePooling1D, Layer, Embedding  # pylint: disable=import-error,no-name-in-module
@@ -21,7 +15,7 @@ class FlatEmbedding(Layer):
         mask_zero: bool = False,
         **kwargs: Dict
     ):
-        """Create new GraphConvolution layer.
+        """Create new FlatEmbedding layer.
 
         Parameters
         ----------------------

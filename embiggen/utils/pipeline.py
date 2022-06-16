@@ -1,5 +1,5 @@
 """Submodule providing classification evaluation pipeline."""
-from typing import Union, List, Optional, Iterator, Type, Dict, Any
+from typing import Callable, Union, List, Optional, Iterator, Type, Dict, Any
 from ensmallen import Graph
 from ensmallen.datasets import get_dataset
 import pandas as pd
@@ -12,6 +12,7 @@ def iterate_graphs(
     graphs: Union[Graph, List[Graph]],
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
+    graph_callback: Optional[Callable[[Graph], Graph]] = None,
 ) -> Iterator[Graph]:
     """Returns iterator over provided graphs.
 
@@ -29,6 +30,11 @@ def iterate_graphs(
         the one that has been indicated to be the most recent one.
         This only applies for the graph names that are available
         from the ensmallen automatic retrieval.
+    graph_callback: Optional[Callable[[Graph], Graph]] = None
+        Callback to use for graph normalization and sanitization, must be
+        a function that receives and returns a graph object.
+        For instance this may be used for filtering the uncertain edges
+        in graphs such as STRING PPIs.
     """
     if not isinstance(graphs, (list, tuple)):
         graphs = [graphs]
@@ -88,13 +94,14 @@ def iterate_graphs(
         leave=False
     ):
         if isinstance(graph, str):
-            yield get_dataset(
+            graph = get_dataset(
                 name=graph,
                 repository=repository,
                 version=version
             )()
-        else:
-            yield graph
+        if graph_callback is not None:
+            graph = graph_callback(graph)
+        yield graph
 
 
 def classification_evaluation_pipeline(
@@ -107,6 +114,7 @@ def classification_evaluation_pipeline(
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
+    graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
     number_of_holdouts: int = 10,
     random_state: int = 42,
@@ -136,6 +144,11 @@ def classification_evaluation_pipeline(
         The edge features to use.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
+    graph_callback: Optional[Callable[[Graph], Graph]] = None
+        Callback to use for graph normalization and sanitization, must be
+        a function that receives and returns a graph object.
+        For instance this may be used for filtering the uncertain edges
+        in graphs such as STRING PPIs.
     subgraph_of_interest: Optional[Graph] = None
         The subgraph of interest to focus the task on.
     number_of_holdouts: int = 10
@@ -160,6 +173,7 @@ def classification_evaluation_pipeline(
     return pd.concat([
         expected_parent_class.evaluate(
             models=models,
+            library_names=library_names,
             graph=graph,
             evaluation_schema=evaluation_schema,
             holdouts_kwargs=holdouts_kwargs,
@@ -173,7 +187,12 @@ def classification_evaluation_pipeline(
             smoke_test=smoke_test,
             **evaluation_kwargs
         )
-        for graph in iterate_graphs(graphs, repositories, versions)
+        for graph in iterate_graphs(
+            graphs,
+            repositories,
+            versions,
+            graph_callback=graph_callback
+        )
     ])
 
     
