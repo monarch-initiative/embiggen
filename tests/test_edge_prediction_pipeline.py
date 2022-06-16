@@ -1,10 +1,12 @@
 """Unit test class for GraphTransformer objects."""
+from tqdm.auto import tqdm
 from unittest import TestCase
 from embiggen.edge_prediction import edge_prediction_evaluation
-from embiggen import get_available_models_for_edge_prediction
+from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
 from embiggen.embedders import SPINE
 from ensmallen.datasets.linqs import Cora, get_words_data
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
+
 
 class TestEvaluateEdgePrediction(TestCase):
     """Unit test class for GraphTransformer objects."""
@@ -33,7 +35,8 @@ class TestEvaluateEdgePrediction(TestCase):
             verbose=True,
             smoke_test=True
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])
+        self.assertEqual(
+            holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])
 
     def test_evaluate_edge_prediction_in_subgraph(self):
         """Test graph visualization."""
@@ -50,13 +53,15 @@ class TestEvaluateEdgePrediction(TestCase):
             smoke_test=True,
             subgraph_of_interest=self._subgraph_of_interest
         )
-        self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
+        self.assertEqual(holdouts.shape[0],
+                         self._number_of_holdouts*2*df.shape[0])
 
     def test_tree_with_cosine(self):
         """Test graph visualization."""
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(train_size=0.8),
-            models=DecisionTreeEdgePrediction(edge_embedding_method="CosineSimilarity"),
+            models=DecisionTreeEdgePrediction(
+                edge_embedding_method="CosineSimilarity"),
             node_features=SPINE(embedding_size=10),
             evaluation_schema="Connected Monte Carlo",
             graphs=self._graph,
@@ -67,4 +72,37 @@ class TestEvaluateEdgePrediction(TestCase):
             subgraph_of_interest=self._subgraph_of_interest
         )
         self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
-        self.assertTrue(set(holdouts.validation_unbalance_rate) == set((1.0, 2.0)))
+        self.assertTrue(set(holdouts.validation_unbalance_rate)
+                        == set((1.0, 2.0)))
+
+    def test_all_embedding_models_as_feature(self):
+        """Test graph visualization."""
+        df = get_available_models_for_node_embedding()
+        bar = tqdm(
+            df.iterrows(),
+            total=df.shape[0],
+            leave=False,
+            desc="Testing embedding methods"
+        )
+        for _, row in bar:
+            if row.requires_edge_weights:
+                graph_name = "HomoSapiens"
+                repository = "string"
+            else:
+                graph_name = "Cora"
+                repository = "linqs"
+
+            bar.set_description(
+                f"Testing embedding model {row.model_name} from library {row.library_name}")
+
+            edge_prediction_evaluation(
+                holdouts_kwargs=dict(train_size=0.8),
+                models="Perceptron",
+                node_features=row.model_name,
+                evaluation_schema="Connected Monte Carlo",
+                graphs=graph_name,
+                repositories=repository,
+                number_of_holdouts=self._number_of_holdouts,
+                verbose=True,
+                smoke_test=True,
+            )

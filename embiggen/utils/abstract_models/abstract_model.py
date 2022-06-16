@@ -112,8 +112,10 @@ class AbstractModel(Hashable):
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
         raise NotImplementedError((
-            "The `can_use_node_types` method must be implemented "
-            "in the child classes of abstract model."
+            "The `is_using_node_types` method must be implemented "
+            "in the child classes of abstract model, but was not implemented "
+            f"in the class {self.__class__.__name__} implementing the model {self.model_name()} "
+            f"from the library {self.library_name()}."
         ))
 
     @staticmethod
@@ -143,7 +145,7 @@ class AbstractModel(Hashable):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         raise NotImplementedError((
-            "The `can_use_edge_types` method must be implemented "
+            "The `is_using_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
     
