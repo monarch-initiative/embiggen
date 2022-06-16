@@ -17,7 +17,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         epochs: int = 100,
         clipping_value: float = 6.0,
         walk_length: int = 128,
-        iterations: int = 5,
+        iterations: int = 10,
         window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -48,7 +48,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 5
+        iterations: int = 10
             Number of iterations of the single walks.
         window_size: int = 10
             Window size for the local context.

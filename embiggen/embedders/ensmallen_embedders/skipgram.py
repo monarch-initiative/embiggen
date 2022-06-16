@@ -13,7 +13,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
-        iterations: int = 5,
+        iterations: int = 10,
         window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
@@ -48,7 +48,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             This single sample of negative classes is evaluated for each element in the batch.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 5
+        iterations: int = 10
             Number of iterations of the single walks.
         window_size: int = 10
             Window size for the local context.

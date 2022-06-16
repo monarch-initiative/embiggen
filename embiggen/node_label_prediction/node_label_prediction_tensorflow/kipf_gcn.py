@@ -34,7 +34,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = True
+        verbose: bool = False
     ):
         """Create new Kipf GCN object.
 
@@ -97,7 +97,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         """
         super().__init__(
