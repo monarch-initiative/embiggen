@@ -11,10 +11,10 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         embedding_size: int = 100,
         epochs: int = 10,
         clipping_value: float = 6.0,
-        number_of_negative_samples: int = 5,
+        number_of_negative_samples: int = 10,
         walk_length: int = 128,
-        iterations: int = 1,
-        window_size: int = 4,
+        iterations: int = 5,
+        window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -37,20 +37,20 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Dimension of the embedding.
         epochs: int = 10
             Number of epochs to train the model for.
-        window_size: int = 4
+        window_size: int = 10
             Window size for the local context.
             On the borders the window size is trimmed.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
-        number_of_negative_samples: int = 5
+        number_of_negative_samples: int = 10
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 1
+        iterations: int = 5
             Number of iterations of the single walks.
-        window_size: int = 4
+        window_size: int = 10
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0
