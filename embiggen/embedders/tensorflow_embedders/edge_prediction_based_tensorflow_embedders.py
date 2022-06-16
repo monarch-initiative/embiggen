@@ -222,6 +222,10 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         """Returns whether the model can optionally use node types."""
         return False
 
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return False
+
     @staticmethod
     def can_use_edge_weights() -> bool:
         """Returns whether the model can optionally use edge weights."""
