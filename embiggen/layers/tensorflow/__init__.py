@@ -4,11 +4,13 @@ from embiggen.layers.tensorflow.noise_contrastive_estimation import NoiseContras
 from embiggen.layers.tensorflow.sampled_softmax import SampledSoftmax
 from embiggen.layers.tensorflow.embedding_lookup import EmbeddingLookup
 from embiggen.layers.tensorflow.flat_embedding import FlatEmbedding
+from embiggen.layers.tensorflow.l2_norm import L2Norm
 
 __all__ = [
     "GraphConvolution",
     "NoiseContrastiveEstimation",
     "SampledSoftmax",
     "EmbeddingLookup",
-    "FlatEmbedding"
+    "FlatEmbedding",
+    "L2Norm"
 ]

@@ -1,23 +1,13 @@
 """GCN model for node-label prediction."""
-from typing import List, Union, Optional, Dict, Type, Tuple
-
-import numpy as np
-from tensorflow.keras.layers import Dense  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
+from typing import List, Union, Optional
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
-from ensmallen import Graph
-import tensorflow as tf
-from tensorflow.keras.utils import Sequence
-from embiggen.utils.abstract_gcn import AbstractGCN, abstract_class
-from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
-from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
+from embiggen.node_label_prediction.node_label_prediction_tensorflow.gcn import GCNNodeLabelPrediction
 
 
-@abstract_class
-class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
-    """GCN model for node-label prediction."""
+class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
+    """GraphSAGE model for node-label prediction."""
 
     def __init__(
         self,
@@ -27,7 +17,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.1,
-        apply_norm: bool = False,
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 30,
@@ -39,7 +28,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = True,
         node_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
@@ -64,9 +52,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
-        apply_norm: bool = False
-            Whether to normalize the output of the convolution operations,
-            after applying the level activations.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -92,8 +77,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = True
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -116,14 +99,14 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        AbstractNodeLabelPredictionModel.__init__(self)
-        AbstractGCN.__init__(
-            self,
+        super().__init__(
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
+            number_of_head_layers=number_of_head_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
+            number_of_units_per_head_layer=number_of_units_per_head_layer,
             dropout_rate=dropout_rate,
-            apply_norm=apply_norm,
+            apply_norm=True,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -135,7 +118,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
+            use_simmetric_normalized_laplacian=False,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             handling_multi_graph=handling_multi_graph,
@@ -143,130 +126,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
-        self._number_of_units_per_head_layer = normalize_model_list_parameter(
-            number_of_units_per_head_layer,
-            number_of_head_layers,
-            object_type=int,
-            can_be_empty=True
-        )
-
-    def _build_model(
-        self,
-        graph: Graph,
-        graph_convolution_model: Model,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ):
-        """Create new GCN model."""
-        hidden = graph_convolution_model.output
-
-        # Building the head of the model.
-        for units in self._number_of_units_per_head_layer:
-            hidden = Dense(
-                units=units,
-                activation="ReLU"
-            )(hidden)
-
-        output = Dense(
-            units=self.get_output_classes(graph),
-            activation=self.get_output_activation_name(),
-            name="Output"
-        )(hidden)
-
-        # Building the the model.
-        model = Model(
-            inputs=graph_convolution_model.inputs,
-            outputs=output,
-            name=self.model_name().replace(" ", "_")
-        )
-
-        model.compile(
-            loss=self.get_loss_name(),
-            optimizer=self._optimizer,
-            weighted_metrics="accuracy"
-        )
-
-        return model
-
-    def get_output_classes(self, graph: Graph) -> int:
-        """Returns number of output classes."""
-        return graph.get_node_types_number()
-
-    def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
-        """Returns dictionary with class weights."""
-        nodes_number = graph.get_nodes_number()
-        node_types_number = graph.get_node_types_number()
-        return {
-            node_type_id: nodes_number / count / node_types_number
-            for node_type_id, count in graph.get_node_type_id_counts_hashmap().items()
-        }
-
-    def _get_model_training_input(
-        self,
-        graph: Graph,
-        support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
-        """Returns training input tuple."""
-        return (
-            self._graph_to_kernel(support),
-            *(
-                ()
-                if node_features is None
-                else node_features
-            ),
-            *(
-                (graph.get_node_ids(),)
-                if self._use_node_embedding
-                else ()
-            )
-        )
-
-    def _get_model_training_output(
-        self,
-        graph: Graph,
-    ) -> Optional[np.ndarray]:
-        """Returns training output tuple."""
-        if self.is_multilabel_prediction_task():
-            return graph.get_one_hot_encoded_node_types()
-        if self.is_binary_prediction_task():
-            return graph.get_boolean_node_type_ids()
-        return graph.get_single_label_node_type_ids()
-
-    def _get_model_training_sample_weights(
-        self,
-        graph: Graph,
-    ) -> Optional[np.ndarray]:
-        """Returns training output tuple."""
-        return graph.get_known_node_types_mask().astype(tf.float32)
-
-    def _get_model_prediction_input(
-        self,
-        graph: Graph,
-        support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
-        """Returns dictionary with class weights."""
-        return self._get_model_training_input(
-            graph,
-            support,
-            node_features,
-            node_type_features,
-            edge_features
-        )
 
     @staticmethod
-    def requires_edge_types() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return False
+    def model_name() -> str:
+        return "GraphSAGE"

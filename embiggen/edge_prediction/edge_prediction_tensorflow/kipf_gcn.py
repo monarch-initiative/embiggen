@@ -1,20 +1,11 @@
-"""GCN model for edge prediction."""
-from typing import List, Union, Optional, Dict, Any, Type, Tuple
-
-import numpy as np
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
-
-from ensmallen import Graph
-from tensorflow.keras.utils import Sequence
-from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
-from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
-from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
+"""Kipf GCN model for edge-labek prediction."""
+from typing import List, Union, Optional, Type
+from tensorflow.keras.optimizers import Optimizer
+from embiggen.edge_prediction.edge_prediction_tensorflow.gcn import GCNEdgePrediction
 
 
-@abstract_class
-class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
-    """GCN model for edge prediction."""
+class KipfGCNEdgePrediction(GCNEdgePrediction):
+    """Kipf GCN model for edge-label prediction."""
 
     def __init__(
         self,
@@ -27,7 +18,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.2,
         apply_norm: bool = False,
-        optimizer: Union[str, Optimizer] = "adam",
+        optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
         reduce_lr_min_delta: float = 0.0001,
@@ -42,7 +33,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = True,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = True,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
@@ -158,9 +148,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        AbstractEdgePredictionModel.__init__(self)
-        AbstractEdgeGCN.__init__(
-            self,
+        super().__init__(
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -180,9 +168,12 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             reduce_lr_monitor=reduce_lr_monitor,
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
-            use_class_weights=False,
+            avoid_false_negatives=avoid_false_negatives,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
+            random_state=random_state,
+            use_simmetric_normalized_laplacian=True,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
@@ -192,57 +183,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
-        self._random_state = random_state
-        self._avoid_false_negatives = avoid_false_negatives
-        self._training_unbalance_rate = training_unbalance_rate
-        self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
-        
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters used for this model."""
-        return dict(
-            **AbstractEdgeGCN.parameters(self),
-            random_state=self._random_state,
-            training_unbalance_rate=self._training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
-        )
-
-    def _get_model_training_input(
-        self,
-        graph: Graph,
-        support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
-        """Returns training input tuple."""
-        return GCNEdgePredictionTrainingSequence(
-            graph,
-            kernel=self._graph_to_kernel(support),
-            support=support,
-            node_features=node_features,
-            return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
-            node_type_features=node_type_features,
-            use_edge_metrics=self._use_edge_metrics,
-            avoid_false_negatives=self._avoid_false_negatives,
-            negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
-            sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            random_state=self._random_state
-        )
-
-    def get_output_classes(self, graph: Graph) ->int:
-        """Returns number of output classes."""
-        return 1
 
     @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
-        return False
+    def model_name() -> str:
+        return "Kipf GCN"
