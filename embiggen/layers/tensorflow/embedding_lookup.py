@@ -1,11 +1,5 @@
-"""Submodule providing graph convolutional layer.
-
-# References
-The layer is implemented as described in [Semi-Supervised Classification with Graph Convolutional Networks](https://arxiv.org/abs/1609.02907).
-
-In this version of the implementation, we allow for batch sizes of arbitrary size.
-"""
-from typing import Tuple, Union, Dict, List
+"""Submodule providing embedding lookup layer."""
+from typing import Tuple, Dict
 import tensorflow as tf
 from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Flatten, Layer  # pylint: disable=import-error,no-name-in-module
@@ -18,7 +12,7 @@ class EmbeddingLookup(Layer):
         self,
         **kwargs: Dict
     ):
-        """Create new GraphConvolution layer.
+        """Create new Embedding Lookup layer.
 
         Parameters
         ----------------------
