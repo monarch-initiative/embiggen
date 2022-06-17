@@ -33,17 +33,17 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
         """
         self._iterations = iterations
         self._decay = decay
-        self._random_state = random_state
+
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            random_state=self._random_state,
             iterations = self._iterations,
             decay = self._decay
         )

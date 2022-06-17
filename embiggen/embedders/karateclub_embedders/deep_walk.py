@@ -44,7 +44,6 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._random_state = random_state
         self._walk_number=walk_number
         self._walk_length=walk_length
         self._workers=cpu_count()
@@ -54,14 +53,15 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
         self._min_count=min_count
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            random_state=self._random_state,
+
             walk_number=self._walk_number,
             walk_length=self._walk_length,
             window_size=self._window_size,

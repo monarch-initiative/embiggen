@@ -37,17 +37,16 @@ class NetMFKarateClub(AbstractKarateClubEmbedder):
         self._iteration = iteration
         self._order = order
         self._negative_samples = negative_samples
-        self._random_state = random_state
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            random_state=self._random_state,
             iteration=self._iteration,
             negative_samples=self._negative_samples,
             order=self._order

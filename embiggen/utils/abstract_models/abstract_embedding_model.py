@@ -1,5 +1,5 @@
 """Module providing abstract classes for embedding models."""
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ensmallen import Graph
 import warnings
 from cache_decorator import Cache
@@ -14,7 +14,8 @@ class AbstractEmbeddingModel(AbstractModel):
     def __init__(
         self,
         embedding_size: int,
-        enable_cache: bool = False
+        enable_cache: bool = False,
+        random_state: Optional[int] = None
     ):
         """Create new embedding model.
 
@@ -25,8 +26,10 @@ class AbstractEmbeddingModel(AbstractModel):
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         if not isinstance(embedding_size, int) or embedding_size == 0:
             raise ValueError(
                 "The embedding size should be a strictly positive integer "
@@ -38,6 +41,7 @@ class AbstractEmbeddingModel(AbstractModel):
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the embedding model."""
         return {
+            **super().parameters(),
             "embedding_size": self._embedding_size
         }
 

@@ -11,10 +11,17 @@ from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbe
 class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract node label prediction model."""
 
-    def __init__(self):
+    def __init__(self, random_state: Optional[int] = None):
+        """Create new abstract node-label prediction model.
+
+        Parameters
+        ---------------
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
+        """
         self._is_binary_prediction_task = None
         self._is_multilabel_prediction_task = None
-        super().__init__()
+        super().__init__(random_state=random_state)
 
     @staticmethod
     def requires_node_types() -> bool:

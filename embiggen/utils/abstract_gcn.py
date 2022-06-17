@@ -126,6 +126,7 @@ class AbstractGCN(AbstractClassifierModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        random_state: int = 42,
         use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
@@ -177,6 +178,8 @@ class AbstractGCN(AbstractClassifierModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        random_state: int = 42
+            Random state to reproduce the training samples.
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
@@ -208,7 +211,7 @@ class AbstractGCN(AbstractClassifierModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         self._number_of_graph_convolution_layers = number_of_graph_convolution_layers
         self._number_of_units_per_graph_convolution_layers = normalize_model_list_parameter(
             number_of_units_per_graph_convolution_layers,

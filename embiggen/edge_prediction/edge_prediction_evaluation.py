@@ -25,6 +25,7 @@ def edge_prediction_evaluation(
     validation_unbalance_rates: Tuple[float] = (1.0, ),
     use_zipfian_sampling: bool = True,
     enable_cache: bool = False,
+    precompute_constant_automatic_stocastic_features: bool = False,
     smoke_test: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
@@ -99,6 +100,15 @@ def edge_prediction_evaluation(
         in the model performance.
     enable_cache: bool = False
         Whether to enable the cache.
+    precompute_constant_automatic_stocastic_features: bool = False
+        Whether to precompute once the constant automatic stocastic
+        features before starting the embedding loop. This means that,
+        when left set to false, while the features will be computed
+        using the same input data, the random state between runs will
+        be different and therefore the experiment performance will
+        capture more of the variance derived from the stocastic aspect
+        of the considered method. When set to true, they are only computed
+        once and therefore the experiment will be overall faster.
     smoke_test: bool = False
         Whether this run should be considered a smoke test
         and therefore use the smoke test configurations for
@@ -123,6 +133,7 @@ def edge_prediction_evaluation(
         repositories=repositories,
         versions=versions,
         enable_cache=enable_cache,
+        precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
         smoke_test=smoke_test,
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,

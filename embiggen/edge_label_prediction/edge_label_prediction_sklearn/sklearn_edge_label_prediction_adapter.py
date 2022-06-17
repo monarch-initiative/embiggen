@@ -34,9 +34,8 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         ValueError
             If the provided model_instance is not a subclass of `ClassifierMixin`.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         must_be_an_sklearn_classifier_model(model_instance)
-        self._random_state = random_state
         self._model_instance = model_instance
         self._edge_embedding_method = edge_embedding_method
         # We want to mask the decorator class name
@@ -47,7 +46,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """Returns parameters used for this model."""
         return {
             "edge_embedding_method": self._edge_embedding_method,
-            "random_state": self._random_state
+            **super().parameters()
         }
 
     def clone(self) -> Type["SklearnEdgeLabelPredictionAdapter"]:

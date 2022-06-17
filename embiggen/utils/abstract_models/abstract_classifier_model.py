@@ -26,9 +26,18 @@ from sklearn.metrics import (
 class AbstractClassifierModel(AbstractModel):
     """Class defining properties of an abstract classifier model."""
 
-    def __init__(self):
-        """Create new instance of model."""
-        super().__init__()
+    def __init__(
+        self,
+        random_state: Optional[int] = None
+    ):
+        """Create new instance of model.
+
+        Parameters
+        ---------------
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
+        """
+        super().__init__(random_state=random_state)
         self._fitting_was_executed = False
 
     def _fit(
@@ -150,10 +159,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_feature(
         cls,
         graph: Graph,
+        random_state: int,
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -161,6 +172,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
             The node feature to normalize.
         allow_automatic_feature: bool = True
@@ -176,6 +189,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if isinstance(node_feature, str):
             if not allow_automatic_feature:
@@ -206,10 +228,14 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_node_types() and node_feature.is_using_node_types() or
                     cls.task_involves_edge_weights() and node_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_feature.is_topological()
-                )
+                ) or
+                not precompute_constant_automatic_stocastic_features and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
+
+            if node_feature.is_stocastic():
+                node_feature.set_random_state(random_state)
 
             if smoke_test:
                 node_feature = node_feature.__class__(
@@ -272,10 +298,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_features(
         cls,
         graph: Graph,
+        random_state: int,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -283,6 +311,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
             The node features to normalize.
         allow_automatic_feature: bool = True
@@ -298,6 +328,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if node_features is None:
             return None
@@ -310,10 +349,12 @@ class AbstractClassifierModel(AbstractModel):
             for node_feature in node_features
             for normalized_node_feature in cls.normalize_node_feature(
                 graph=graph,
+                random_state=random_state,
                 node_feature=node_feature,
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
-                smoke_test=smoke_test
+                smoke_test=smoke_test,
+                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
             )
         ]
 
@@ -321,10 +362,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_type_feature(
         cls,
         graph: Graph,
+        random_state: int,
         node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -332,6 +375,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
             The node type feature to normalize.
         allow_automatic_feature: bool = True
@@ -347,6 +392,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if isinstance(node_type_feature, str):
             if not allow_automatic_feature:
@@ -377,10 +431,14 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_node_types() and node_type_feature.is_using_node_types() or
                     cls.task_involves_edge_weights() and node_type_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_type_feature.is_topological()
-                )
+                ) or
+                not precompute_constant_automatic_stocastic_features and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
+            
+            if node_type_feature.is_stocastic():
+                node_type_feature.set_random_state(random_state)
 
             if smoke_test:
                 node_type_feature = node_type_feature.__class__(
@@ -440,10 +498,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_type_features(
         cls,
         graph: Graph,
+        random_state: int,
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -451,6 +511,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
             The node features to normalize.
         allow_automatic_feature: bool = True
@@ -466,6 +528,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if node_type_features is None:
             return None
@@ -478,10 +549,12 @@ class AbstractClassifierModel(AbstractModel):
             for node_type_feature in node_type_features
             for normalized_node_type_feature in cls.normalize_node_type_feature(
                 graph=graph,
+                random_state=random_state,
                 node_type_feature=node_type_feature,
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
-                smoke_test=smoke_test
+                smoke_test=smoke_test,
+                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
             )
         ]
 
@@ -489,10 +562,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_feature(
         cls,
         graph: Graph,
+        random_state: int,
         edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -500,6 +575,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray]] = None
             The edge feature to normalize.
         allow_automatic_feature: bool = True
@@ -515,6 +592,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if isinstance(edge_feature, str):
             if not allow_automatic_feature:
@@ -545,10 +631,14 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_node_types() and edge_feature.is_using_node_types() or
                     cls.task_involves_edge_weights() and edge_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and edge_feature.is_topological()
-                )
+                ) or
+                not precompute_constant_automatic_stocastic_features and edge_feature.is_stocastic()
             ):
                 yield edge_feature
                 return None
+
+            if edge_feature.is_stocastic():
+                edge_feature.set_random_state(random_state)
 
             if smoke_test:
                 edge_feature = edge_feature.__class__(
@@ -608,10 +698,12 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_features(
         cls,
         graph: Graph,
+        random_state: int,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
-        smoke_test: bool = False
+        smoke_test: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -619,6 +711,8 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        random_state: int
+            The random state to use for the stochastic automatic features.
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
             The edge features to normalize.
         allow_automatic_feature: bool = True
@@ -634,6 +728,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         """
         if edge_features is None:
             return None
@@ -646,10 +749,12 @@ class AbstractClassifierModel(AbstractModel):
             for edge_feature in edge_features
             for normalized_edge_feature in cls.normalize_edge_feature(
                 graph=graph,
+                random_state=random_state,
                 edge_feature=edge_feature,
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
-                smoke_test=smoke_test
+                smoke_test=smoke_test,
+                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
             )
         ]
 
@@ -707,16 +812,19 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=True,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=True,
                 ),
@@ -832,16 +940,19 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=False,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=False,
                 ),
@@ -1122,6 +1233,8 @@ class AbstractClassifierModel(AbstractModel):
         **validation_kwargs
     ) -> pd.DataFrame:
         """Run inner training and evaluation."""
+        if self.is_stocastic():
+            self.set_random_state(random_state*(holdout_number+1))
         # Fit the model using the training graph
         training_start = time.time()
         self.fit(
@@ -1248,19 +1361,23 @@ class AbstractClassifierModel(AbstractModel):
         # We compute the remaining features
         holdout_node_features = cls.normalize_node_features(
             train,
+            random_state=random_state*(holdout_number+1),
             node_features=node_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
+            precompute_constant_automatic_stocastic_features=True
         )
 
         # We compute the remaining features
         holdout_node_type_features = cls.normalize_node_type_features(
             train,
+            random_state=random_state*(holdout_number+1),
             node_type_features=node_type_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
+            precompute_constant_automatic_stocastic_features=True
         )
 
         # We execute the same thing as described above,
@@ -1268,10 +1385,12 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         holdout_edge_features = cls.normalize_edge_features(
             train,
+            random_state=random_state*(holdout_number+1),
             edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
+            precompute_constant_automatic_stocastic_features=True
         )
 
         if subgraph_of_interest is not None:
@@ -1427,6 +1546,7 @@ class AbstractClassifierModel(AbstractModel):
         random_state: int = 42,
         verbose: bool = True,
         enable_cache: bool = False,
+        precompute_constant_automatic_stocastic_features: bool = False,
         smoke_test: bool = False,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
@@ -1465,6 +1585,15 @@ class AbstractClassifierModel(AbstractModel):
             Whether to show a loading bar while computing holdouts.
         enable_cache: bool = False
             Whether to enable the cache.
+        precompute_constant_automatic_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
         smoke_test: bool = False
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
@@ -1554,9 +1683,11 @@ class AbstractClassifierModel(AbstractModel):
         # that cause biases at each holdout, avoiding said biases.
         node_features = cls.normalize_node_features(
             graph,
+            random_state=random_state,
             node_features=node_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
+            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
 
@@ -1565,9 +1696,11 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         node_type_features = cls.normalize_node_type_features(
             graph,
+            random_state=random_state,
             node_type_features=node_type_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
+            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
 
@@ -1576,9 +1709,11 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         edge_features = cls.normalize_edge_features(
             graph,
+            random_state=random_state,
             edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
+            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
 
@@ -1628,3 +1763,8 @@ class AbstractClassifierModel(AbstractModel):
         # We save the constant values for this model
         # execution.
         return performance
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        return True

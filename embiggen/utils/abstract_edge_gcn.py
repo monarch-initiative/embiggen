@@ -46,6 +46,7 @@ class AbstractEdgeGCN(AbstractGCN):
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
         use_edge_metrics: bool = False,
+        random_state: int = 42,
         use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,

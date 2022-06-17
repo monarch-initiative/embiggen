@@ -37,6 +37,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        random_state: int = 42,
         use_edge_metrics: bool = False,
         use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
@@ -175,7 +176,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         verbose: bool = False
             Whether to show loading bars.
         """
-        AbstractEdgeLabelPredictionModel.__init__(self)
+        AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractEdgeGCN.__init__(
             self,
             epochs=epochs,
@@ -200,6 +201,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
             use_edge_metrics=use_edge_metrics,
+            random_state=random_state,
             use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,

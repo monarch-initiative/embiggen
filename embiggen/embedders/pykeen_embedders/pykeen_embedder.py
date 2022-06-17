@@ -33,7 +33,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
-        random_seed: int = 42,
+        random_state: int = 42,
         enable_cache: bool = False
     ):
         """Create new PyKeen Abstract Embedder model.
@@ -55,7 +55,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
-        random_seed: int = 42
+        random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
             Whether to enable the cache, that is to
@@ -84,12 +84,12 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         self._training_loop = training_loop
         self._epochs = epochs
         self._batch_size = batch_size
-        self._random_seed = random_seed
         self._device = validate_torch_device(device)
 
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     @staticmethod
@@ -106,7 +106,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             **dict(
                 epochs=self._epochs,
                 batch_size=self._batch_size,
-                random_seed = self._random_seed
             )
         }
 
@@ -279,4 +278,9 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
     @staticmethod
     def task_involves_edge_types() -> bool:
         """Returns whether the model task involves edge types."""
+        return True
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
         return True

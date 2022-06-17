@@ -45,7 +45,6 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             store the computed embedding.
         """
         self._renormalize = renormalize
-        self._random_state = random_state
         self._relu_bias = relu_bias
         self._epochs = epochs
         self._learning_rate = learning_rate
@@ -59,7 +58,8 @@ class TransEEnsmallen(AbstractEmbeddingModel):
 
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -69,7 +69,6 @@ class TransEEnsmallen(AbstractEmbeddingModel):
             **dict(
                 renormalize=self._renormalize,
                 relu_bias=self._relu_bias,
-                random_state=self._random_state,
                 epochs=self._epochs,
                 learning_rate=self._learning_rate,
                 learning_rate_decay=self._learning_rate_decay,
@@ -181,4 +180,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
     @staticmethod
     def task_involves_edge_types() -> bool:
         """Returns whether the model task involves edge types."""
+        return True
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
         return True

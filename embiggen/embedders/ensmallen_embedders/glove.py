@@ -14,7 +14,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 100,
+        epochs: int = 500,
         clipping_value: float = 6.0,
         walk_length: int = 128,
         iterations: int = 10,
@@ -110,14 +110,17 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
             normalize_by_degree=normalize_by_degree,
-            random_state=random_state,
         )
 
-        self._model = models.GloVe(**self._model_kwargs)
+        self._model = models.GloVe(
+            **self._model_kwargs,
+            random_state=random_state
+        )
 
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     @staticmethod
@@ -229,3 +232,8 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return self._model_kwargs["change_edge_type_weight"] != 1.0
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        return True

@@ -33,19 +33,12 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the provided model_instance is not a subclass of `ClassifierMixin`.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
-        self._random_state = random_state
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
-
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters used for this model."""
-        return {
-            "random_state": self._random_state
-        }
 
     def clone(self) -> Type["SklearnNodeLabelPredictionAdapter"]:
         """Return copy of self."""
@@ -166,7 +159,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
                 class_predictions[:, 1]
                 for class_predictions in predictions_probabilities
             ]).T
-        
+
         return predictions_probabilities
 
     def _predict(

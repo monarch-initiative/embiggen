@@ -175,7 +175,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         verbose: bool = False
             Whether to show loading bars.
         """
-        AbstractEdgePredictionModel.__init__(self)
+        AbstractEdgePredictionModel.__init__(self, random_state=random_state)
         AbstractEdgeGCN.__init__(
             self,
             epochs=epochs,
@@ -200,6 +200,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=False,
             use_edge_metrics=use_edge_metrics,
+            random_state=random_state,
             use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
@@ -210,7 +211,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
-        self._random_state = random_state
         self._avoid_false_negatives = avoid_false_negatives
         self._training_unbalance_rate = training_unbalance_rate
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
@@ -226,7 +226,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
                 for key, value in AbstractEdgeGCN.parameters(self).items()
                 if key not in removed
             },
-            random_state=self._random_state,
             training_unbalance_rate=self._training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
         )

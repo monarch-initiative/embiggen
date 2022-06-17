@@ -34,20 +34,19 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._random_state = random_state
         self._iterations = iterations
         self._order = order
         self._alpha = alpha
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            random_state=self._random_state,
             iterations=self._iterations,
             order=self._order,
             alpha=self._alpha

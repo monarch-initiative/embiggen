@@ -25,17 +25,11 @@ class HOPEKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._random_state = random_state
+
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
-        )
-
-    def parameters(self) -> Dict[str, Any]:
-        """Returns the parameters used in the model."""
-        return dict(
-            **super().parameters(),
-            random_state=self._random_state
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     def _build_model(self) -> HOPE:
