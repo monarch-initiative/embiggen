@@ -96,7 +96,7 @@ def get_model_or_stub(
         ):
             class StubClass(parent_class):
 
-                def __init__(self) :
+                def __init__(self, *args, **kwargs) :
                     """Raises a useful error message about this class."""
                     super().__init__()
                     self.__class__.__name__ = model_class_name
