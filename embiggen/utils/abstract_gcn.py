@@ -221,6 +221,7 @@ class AbstractGCN(AbstractClassifierModel):
         self._dropout_rate = dropout_rate
         self._optimizer = optimizer
         self._use_simmetric_normalized_laplacian = use_simmetric_normalized_laplacian
+        self._apply_norm = apply_norm
         self._handling_multi_graph = handling_multi_graph
         self._use_node_embedding = use_node_embedding
         self._node_embedding_size = node_embedding_size
@@ -268,6 +269,7 @@ class AbstractGCN(AbstractClassifierModel):
         return dict(
             number_of_units_per_graph_convolution_layers=self._number_of_units_per_graph_convolution_layers,
             epochs=self._epochs,
+            apply_norm=self._apply_norm,
             use_class_weights=self._use_class_weights,
             dropout_rate=self._dropout_rate,
             optimizer=self._optimizer,
@@ -473,6 +475,7 @@ class AbstractGCN(AbstractClassifierModel):
             hidden = GraphConvolution(
                 units=units,
                 dropout_rate=self._dropout_rate,
+                apply_norm=self._apply_norm,
                 name=f"{number_to_ordinal(i+1)}GraphConvolution"
             )((adjacency_matrix, *hidden))
         
