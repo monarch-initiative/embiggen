@@ -39,7 +39,7 @@ def graph_to_sparse_tensor(
     handling_multi_graph: str = "warn"
         How to behave when dealing with multigraphs.
         Possible behaviours are:
-        - "warn"
+        - "warn", which warns the user and drops the multi-edges.
         - "raise"
         - "drop"
 
@@ -127,7 +127,7 @@ class AbstractGCN(AbstractClassifierModel):
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
         use_simmetric_normalized_laplacian: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
@@ -179,7 +179,7 @@ class AbstractGCN(AbstractClassifierModel):
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -209,6 +209,7 @@ class AbstractGCN(AbstractClassifierModel):
             Whether to show loading bars.
         """
         super().__init__()
+        self._number_of_graph_convolution_layers = number_of_graph_convolution_layers
         self._number_of_units_per_graph_convolution_layers = normalize_model_list_parameter(
             number_of_units_per_graph_convolution_layers,
             number_of_graph_convolution_layers,
@@ -388,20 +389,23 @@ class AbstractGCN(AbstractClassifierModel):
         # while with node embedding the vocabulary becomes fixed.
         nodes_number = graph.get_nodes_number() if self._use_node_embedding else None
 
-        # Input layer for the adjacency matrix. Do note that we can use in this
-        # model multiple adjacency matrices because we are building it with an
-        # open world assumption in mind. This means that we can train the model
-        # and use it to run predictions on one
-        # or more graphs that can have different nodes and edges.
-        adjacency_matrix = Input(
-            shape=(nodes_number,),
-            batch_size=nodes_number,
-            sparse=True,
-            name=("Laplacian Matrix" if self._use_simmetric_normalized_laplacian else "Adjacency Matrix")
-        )
-
         # We create the list we will use to collect the input features.
         input_features = []
+
+        if self.has_convolutional_layers():
+            # Input layer for the adjacency matrix. Do note that we can use in this
+            # model multiple adjacency matrices because we are building it with an
+            # open world assumption in mind. This means that we can train the model
+            # and use it to run predictions on one
+            # or more graphs that can have different nodes and edges.
+            adjacency_matrix = Input(
+                shape=(nodes_number,),
+                batch_size=nodes_number,
+                sparse=True,
+                name=("Laplacian Matrix" if self._use_simmetric_normalized_laplacian else "Adjacency Matrix")
+            )
+        else:
+            adjacency_matrix = None
 
         # We create the input layers for all of the node and node type features.
 
@@ -481,7 +485,13 @@ class AbstractGCN(AbstractClassifierModel):
         
         # Returning the convolutional portion of the model.
         return Model(
-            inputs=[adjacency_matrix, *input_features],
+            inputs=[
+                input_layer
+                for input_layer in (
+                    adjacency_matrix, *input_features
+                )
+                if input_layer is not None
+            ],
             outputs=(
                 Concatenate(name="ConcatenatedNodeFeatures")(hidden)
                 if len(hidden) > 1
@@ -660,8 +670,21 @@ class AbstractGCN(AbstractClassifierModel):
             f"in the class {self.__class__.__name__}."
         )
 
-    def _graph_to_kernel(self, graph: Graph) -> tf.SparseTensor:
-        """Returns provided graph converted to a sparse Tensor."""
+    def has_convolutional_layers(self) -> bool:
+        """Returns whether the present model has convolutional layers."""
+        return self._number_of_graph_convolution_layers
+
+    def convert_graph_to_kernel(self, graph: Graph) -> Optional[tf.SparseTensor]:
+        """Returns provided graph converted to a sparse Tensor.
+        
+        Implementation details
+        ---------------------------
+        Do note that when the model does not have convolutional layers
+        the model will return None, as to avoid allocating like object for
+        apparently no reason.
+        """
+        if not self.has_convolutional_layers():
+            return None
         return graph_to_sparse_tensor(
             graph,
             use_weights=graph.has_edge_weights() and not self._use_simmetric_normalized_laplacian,

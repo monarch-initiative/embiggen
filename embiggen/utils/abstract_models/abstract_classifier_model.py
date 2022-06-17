@@ -15,6 +15,7 @@ from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     f1_score,
+    hamming_loss,
     precision_score,
     recall_score,
     roc_auc_score
@@ -877,7 +878,13 @@ class AbstractClassifierModel(AbstractModel):
                 metric.__name__: metric(ground_truth, predictions)
                 for metric in (
                     accuracy_score,
-                    balanced_accuracy_score,
+                    hamming_loss,
+                    *(
+                        ()
+                        if self.is_multilabel_prediction_task()
+                        else
+                        (balanced_accuracy_score, )
+                    )
                 )
             },
             **{
@@ -941,6 +948,7 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         evaluation_schema: str,
         holdout_number: int,
+        number_of_holdouts: int,
         **holdouts_kwargs: Dict
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
@@ -953,6 +961,8 @@ class AbstractClassifierModel(AbstractModel):
             The evaluation schema to follow.
         holdout_number: int
             The current holdout number.
+        number_of_holdouts: int
+            The total number of holdouts.
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
@@ -1082,7 +1092,8 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         for model in bar:
-            bar.set_description(f"Evaluating model {model.model_name()} from library {model.library_name()} on {model.task_name()}")
+            bar.set_description(
+                f"Evaluating model {model.model_name()} from library {model.library_name()} on {model.task_name()}")
             yield model.clone()
 
     @Cache(
@@ -1173,7 +1184,7 @@ class AbstractClassifierModel(AbstractModel):
                     "Please do change the name of the parameter in your model."
                 )
             model_performance[parameter] = str(value)
-        
+
         return model_performance
 
     @classmethod
@@ -1181,7 +1192,7 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test"],
+        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts"],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
     )
@@ -1196,6 +1207,7 @@ class AbstractClassifierModel(AbstractModel):
         edge_features: Optional[List[np.ndarray]],
         random_state: int,
         holdout_number: int,
+        number_of_holdouts: int,
         evaluation_schema: str,
         enable_cache: bool,
         smoke_test: bool,
@@ -1214,6 +1226,7 @@ class AbstractClassifierModel(AbstractModel):
             evaluation_schema=evaluation_schema,
             random_state=random_state,
             holdout_number=holdout_number,
+            number_of_holdouts=number_of_holdouts,
             **holdouts_kwargs
         )
 
@@ -1581,6 +1594,7 @@ class AbstractClassifierModel(AbstractModel):
                 edge_features=edge_features,
                 random_state=random_state,
                 holdout_number=holdout_number,
+                number_of_holdouts=number_of_holdouts,
                 evaluation_schema=evaluation_schema,
                 enable_cache=enable_cache,
                 smoke_test=smoke_test,

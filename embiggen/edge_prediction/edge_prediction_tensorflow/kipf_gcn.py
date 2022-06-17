@@ -1,11 +1,11 @@
-"""Kipf GCN model for edge-labek prediction."""
+"""Kipf GCN model for edge prediction."""
 from typing import List, Union, Optional, Type
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.edge_prediction.edge_prediction_tensorflow.gcn import GCNEdgePrediction
 
 
 class KipfGCNEdgePrediction(GCNEdgePrediction):
-    """Kipf GCN model for edge-label prediction."""
+    """Kipf GCN model for edge prediction."""
 
     def __init__(
         self,
@@ -16,8 +16,9 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         number_of_ffnn_head_layers: int = 1,
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.2,
+        dropout_rate: float = 0.3,
         apply_norm: bool = False,
+        edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -31,16 +32,16 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         avoid_false_negatives: bool = True,
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
         random_state: int = 42,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = True
+        verbose: bool = False
     ):
         """Create new Kipf GCN object.
 
@@ -67,6 +68,22 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        apply_norm: bool = False
+            Whether to normalize the output of the convolution operations,
+            after applying the level activations.
+        edge_embedding_method: str = "Concatenate"
+            The edge embedding method to use to put togheter the
+            source and destination node features, which includes:
+            - Concatenation
+            - Average
+            - Hadamard
+            - L1
+            - L2
+            - Maximum
+            - Minimum
+            - Add
+            - Subtract
+            - Dot
         optimizer: str = "adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -100,7 +117,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             negatives in the training are of the same cardinality.
         training_sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample exclusively edges between nodes with different node types.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
         node_embedding_size: int = 50
@@ -110,7 +127,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             By default, automatically uses them if the graph has them.
         node_type_embedding_size: int = 50
             Size of the embedding for the node types.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -119,7 +136,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             - Preferential attachment
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -145,7 +162,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         """
         super().__init__(
@@ -158,6 +175,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,

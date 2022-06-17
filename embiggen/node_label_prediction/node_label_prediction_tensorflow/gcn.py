@@ -1,5 +1,5 @@
 """GCN model for node-label prediction."""
-from typing import List, Union, Optional, Dict, Type, Tuple
+from typing import List, Union, Optional, Dict, Type, Tuple, Any
 
 import numpy as np
 from tensorflow.keras.layers import Dense  # pylint: disable=import-error,no-name-in-module
@@ -141,6 +141,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            use_node_type_embedding=False,
             verbose=verbose,
         )
         self._number_of_units_per_head_layer = normalize_model_list_parameter(
@@ -209,8 +210,13 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
+        kernel = self.convert_graph_to_kernel(support)
         return (
-            self._graph_to_kernel(support),
+            *(
+                ()
+                if kernel is None
+                else (kernel,)
+            ),
             *(
                 ()
                 if node_features is None
@@ -270,3 +276,17 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return False
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "use_node_type_embedding",
+            "node_type_embedding_size"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in AbstractGCN.parameters(self).items()
+                if key not in removed
+            }
+        )

@@ -64,7 +64,6 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
             random_state=self._random_state,
             walk_number=self._walk_number,
             walk_length=self._walk_length,
-            workers=self._workers,
             window_size=self._window_size,
             epochs=self._epochs,
             learning_rate=self._learning_rate,

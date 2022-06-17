@@ -184,6 +184,11 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             create_inverse_triples=False,
         )
 
+        batch_size = min(
+            self._batch_size,
+            graph.get_number_of_directed_edges()
+        )
+
         model = self._build_model(triples_factory)
 
         if not issubclass(model.__class__, Model):
@@ -205,7 +210,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         training_loop.train(
             triples_factory=triples_factory,
             num_epochs=self._epochs,
-            batch_size=self._batch_size,
+            batch_size=batch_size,
             use_tqdm=True,
             use_tqdm_batch=True,
             tqdm_kwargs=dict(

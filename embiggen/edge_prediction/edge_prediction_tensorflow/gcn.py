@@ -27,6 +27,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.2,
         apply_norm: bool = False,
+        edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -40,17 +41,17 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         avoid_false_negatives: bool = True,
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
         random_state: int = 42,
         use_simmetric_normalized_laplacian: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = True
+        verbose: bool = False
     ):
         """Create new Kipf GCN object.
 
@@ -77,6 +78,22 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        apply_norm: bool = False
+            Whether to normalize the output of the convolution operations,
+            after applying the level activations.
+        edge_embedding_method: str = "Concatenate"
+            The edge embedding method to use to put togheter the
+            source and destination node features, which includes:
+            - Concatenation
+            - Average
+            - Hadamard
+            - L1
+            - L2
+            - Maximum
+            - Minimum
+            - Add
+            - Subtract
+            - Dot
         optimizer: str = "adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -110,7 +127,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             negatives in the training are of the same cardinality.
         training_sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample exclusively edges between nodes with different node types.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
         node_embedding_size: int = 50
@@ -120,7 +137,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             By default, automatically uses them if the graph has them.
         node_type_embedding_size: int = 50
             Size of the embedding for the node types.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -129,7 +146,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             - Preferential attachment
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -155,7 +172,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         """
         AbstractEdgePredictionModel.__init__(self)
@@ -170,6 +187,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -199,8 +217,15 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
+        removed = [
+            "use_class_weights",
+        ]
         return dict(
-            **AbstractEdgeGCN.parameters(self),
+            **{
+                key: value
+                for key, value in AbstractEdgeGCN.parameters(self).items()
+                if key not in removed
+            },
             random_state=self._random_state,
             training_unbalance_rate=self._training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
@@ -217,7 +242,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
             graph,
-            kernel=self._graph_to_kernel(support),
+            kernel=self.convert_graph_to_kernel(support),
             support=support,
             node_features=node_features,
             return_node_ids=self._use_node_embedding,

@@ -1,20 +1,16 @@
-"""GCN model for node-label prediction."""
-from typing import List, Union, Optional, Dict, Any
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
-
+"""Generic GNN model for node-label prediction."""
+from typing import List, Union, Optional, Type, Dict, Any
+from tensorflow.keras.optimizers import Optimizer
 from embiggen.node_label_prediction.node_label_prediction_tensorflow.gcn import GCNNodeLabelPrediction
 
 
-class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
-    """GraphSAGE model for node-label prediction."""
+class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
+    """Generic GNN model for node-label prediction."""
 
     def __init__(
         self,
         epochs: int = 1000,
-        number_of_graph_convolution_layers: int = 2,
         number_of_head_layers: int = 1,
-        number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.1,
         optimizer: Union[str, Optimizer] = "adam",
@@ -30,7 +26,6 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
         use_class_weights: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
-        handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
         verbose: bool = False
@@ -84,12 +79,6 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_embedding_size: int = 50
             Dimension of the node embedding.
-        handling_multi_graph: str = "warn"
-            How to behave when dealing with multigraphs.
-            Possible behaviours are:
-            - "warn"
-            - "raise"
-            - "drop"
         node_feature_names: Optional[List[str]] = None
             Names of the node features.
             This is used as the layer names.
@@ -101,12 +90,11 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
         """
         super().__init__(
             epochs=epochs,
-            number_of_graph_convolution_layers=number_of_graph_convolution_layers,
+            number_of_graph_convolution_layers=0,
             number_of_head_layers=number_of_head_layers,
-            number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
+            number_of_units_per_graph_convolution_layers=0,
             number_of_units_per_head_layer=number_of_units_per_head_layer,
             dropout_rate=dropout_rate,
-            apply_norm=True,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -118,29 +106,47 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
-            use_simmetric_normalized_laplacian=False,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
-            handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
 
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "number_of_units_per_graph_convolution_layers",
+            "handling_multi_graph",
+            "number_of_units_per_head_layer"
+        ]
+        return dict(
+            number_of_units_per_head_layer=1,
+            **{
+                key: value
+                for key, value in GCNNodeLabelPrediction.smoke_test_parameters().items()
+                if key not in removed
+            }
+        )
+
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         removed = [
-            "apply_norm",
-            "use_simmetric_normalized_laplacian"
+            "number_of_units_per_graph_convolution_layers",
+            "handling_multi_graph",
+            "number_of_units_per_head_layer"
         ]
         return dict(
+            number_of_units_per_head_layer=self._number_of_units_per_head_layer,
             **{
                 key: value
-                for key, value in super().parameters().items()
+                for key, value in super().smoke_test_parameters().items()
                 if key not in removed
             }
         )
 
     @staticmethod
     def model_name() -> str:
-        return "GraphSAGE"
+        return "GNN"

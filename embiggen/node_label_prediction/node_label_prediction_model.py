@@ -30,13 +30,14 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     def is_topological() -> bool:
         return False
 
-    def get_available_evaluation_schemas(self) -> List[str]:
+    @staticmethod
+    def get_available_evaluation_schemas() -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
-            "Monte Carlo",
             "Stratified Kfold",
-            "Kfold"
+            "Monte Carlo",
+            "Kfold",
         ]
 
     def is_binary_prediction_task(self) -> bool:
@@ -54,6 +55,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         evaluation_schema: str,
         random_state: int,
         holdout_number: int,
+        number_of_holdouts: int,
         **holdouts_kwargs: Dict
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
@@ -68,6 +70,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The random state for the evaluation
         holdout_number: int
             The current holdout number.
+        number_of_holdouts: int
+            The total number of holdouts.
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
@@ -79,7 +83,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             )
         if evaluation_schema in ("Kfold", "Stratified Kfold"):
             return graph.get_node_label_kfold(
-                **holdouts_kwargs,
+                k=number_of_holdouts,
                 k_index=holdout_number,
                 use_stratification="Stratified" in evaluation_schema,
                 random_state=random_state,

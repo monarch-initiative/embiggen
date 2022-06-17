@@ -1,5 +1,5 @@
-"""GraphSAGE model for edge-labek prediction."""
-from typing import List, Union, Optional, Type
+"""GraphSAGE model for edge-label prediction."""
+from typing import List, Union, Optional, Type, Dict, Any
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.edge_label_prediction.edge_label_prediction_tensorflow.gcn import GCNEdgeLabelPrediction
 
@@ -17,7 +17,8 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         number_of_ffnn_head_layers: int = 1,
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.2,
+        dropout_rate: float = 0.3,
+        edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -29,15 +30,15 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
-        use_edge_metrics: bool = True,
-        use_node_embedding: bool = True,
+        use_edge_metrics: bool = False,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = True
+        verbose: bool = False
     ):
         """Create new GraphSAGE object.
 
@@ -64,6 +65,19 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        edge_embedding_method: str = "Concatenate"
+            The edge embedding method to use to put togheter the
+            source and destination node features, which includes:
+            - Concatenation
+            - Average
+            - Hadamard
+            - L1
+            - L2
+            - Maximum
+            - Minimum
+            - Add
+            - Subtract
+            - Dot
         optimizer: Union[str, Type[Optimizer]] = "adam"
             The optimizer to use while training the model.
             By default, we use `LazyAdam`, which should be faster
@@ -94,7 +108,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
         node_embedding_size: int = 50
@@ -110,7 +124,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Whether to only sample edges between heterogeneous node types.
             This may be useful when training a model to predict between
             two portions in a bipartite graph.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -119,7 +133,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             - Preferential attachment
         random_state: int = 42
             Random state to reproduce the training samples.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -145,7 +159,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         """
         super().__init__(
@@ -158,6 +172,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=True,
+            edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -181,6 +196,20 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             verbose=verbose,
         )
     
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "apply_norm",
+            "use_simmetric_normalized_laplacian"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
+        )
+
     @staticmethod
     def model_name() -> str:
         return "GraphSAGE"

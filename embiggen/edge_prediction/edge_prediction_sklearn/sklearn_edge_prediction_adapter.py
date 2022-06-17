@@ -24,7 +24,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
         use_zipfian_sampling: bool = True,
         prediction_batch_size: int = 2**15,
         random_state: int = 42
@@ -49,7 +49,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             of the graph. This is generally useful, as these negative edges are less
             trivial to predict then edges sampled uniformely.
             We stringly advise AGAINST using uniform sampling.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar

@@ -156,10 +156,18 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        return self._model_instance.predict_proba(self._trasform_graph_into_node_embedding(
+        predictions_probabilities = self._model_instance.predict_proba(self._trasform_graph_into_node_embedding(
             graph=graph,
             node_features=node_features,
         ))
+
+        if self.is_multilabel_prediction_task():
+            return np.array([
+                class_predictions[:, 1]
+                for class_predictions in predictions_probabilities
+            ]).T
+        
+        return predictions_probabilities
 
     def _predict(
         self,
