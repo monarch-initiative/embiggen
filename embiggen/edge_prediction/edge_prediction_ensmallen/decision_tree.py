@@ -56,7 +56,7 @@ class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
             depth=depth,
         )
         self._verbose = verbose
-        self._model = models.EdgePredictionPerceptron(
+        self._model = models.EdgePredictionSingleExtraTree(
             **self._model_kwargs,
             random_state=random_state
         )
@@ -68,8 +68,8 @@ class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
             **self._model_kwargs
         )
 
-    def clone(self) -> "PerceptronEdgePrediction":
-        return PerceptronEdgePrediction(**self.parameters())
+    def clone(self) -> "DecisionTreeEdgePredictionEnsmallen":
+        return DecisionTreeEdgePredictionEnsmallen(**self.parameters())
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
