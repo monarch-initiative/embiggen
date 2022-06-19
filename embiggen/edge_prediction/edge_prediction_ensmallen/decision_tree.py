@@ -6,7 +6,7 @@ from ensmallen import models
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
-class PerceptronEdgePrediction(AbstractEdgePredictionModel):
+class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
     """Perceptron model for edge prediction."""
 
     def __init__(
