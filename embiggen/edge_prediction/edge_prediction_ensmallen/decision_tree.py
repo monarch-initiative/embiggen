@@ -11,11 +11,13 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def __init__(
         self,
+        metric: str = "F1Score",
         edge_embedding_method_name: str = "CosineSimilarity",
-        number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 1024,
+        number_of_edges_to_sample_per_tree_node: int = 2048,
+        number_of_splits_per_tree_node: int = 10,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
-        learning_rate: float = 0.001,
+        negative_edges_rate: float = 0.5,
+        depth: int = 10,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -23,37 +25,41 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
         Parameters
         ------------------------
-        edge_embedding_method_name: str
-            The embedding method to use. By default the cosine similarity is used.
-            The methods that are currently available are:
-            - CosineSimilarity
-            - EuclideanDistance
-            - Hadamard
-        number_of_epochs: int = 100
-            The number of epochs to train the model for. By default, 100.
-        number_of_edges_per_mini_batch: int = 1024
-            The number of samples to include for each mini-batch. By default 1024.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges only with source and
-            destination nodes that have different node types. By default false.
-        learning_rate: float = 0.001
-            Learning rate to use while training the model. By default 0.001.
-        random_state: int = 42
-            The random state to reproduce the model initialization and training. By default, 42.
-        verbose: bool = True
-            Whether to show epochs loading bar.
+        /// metric: str = "F1Score"
+        ///     The metric to use. By default, f1 score.
+        /// edge_embedding_method_name: str = "CosineSimilarity"
+        ///     The embedding method to use. By default the cosine similarity is used.
+        /// number_of_edges_to_sample_per_tree_node: int = 2048
+        ///     The number of epochs to train the model for. By default, 2048.
+        /// number_of_splits_per_tree_node: int = 10
+        ///     The number of samples to include for each mini-batch. By default 10.
+        /// sample_only_edges_with_heterogeneous_node_types: bool = False
+        ///     Whether to sample negative edges only with source and
+        ///     destination nodes that have different node types. By default false.
+        /// negative_edges_rate: float = 0.5
+        ///     Rate of negative edges over total.
+        /// depth: int = 10
+        ///     Depth of tree. By default 10.
+        /// random_state: int = 42
+        ///     The random state to reproduce the model initialization and training. By default, 42.
+        /// verbose: bool = True
+        ///     Whether to show epochs loading bar.
         """
         super().__init__(random_state=random_state)
         self._model_kwargs = dict(
+            metric=metric,
             edge_embedding_method_name=edge_embedding_method_name,
-            number_of_epochs=number_of_epochs,
-            number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
+            number_of_edges_to_sample_per_tree_node=number_of_edges_to_sample_per_tree_node,
+            number_of_splits_per_tree_node=number_of_splits_per_tree_node,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            learning_rate=learning_rate,
+            negative_edges_rate=negative_edges_rate,
+            depth=depth,
         )
         self._verbose = verbose
         self._model = models.EdgePredictionPerceptron(
-            **self._model_kwargs, random_state=random_state)
+            **self._model_kwargs,
+            random_state=random_state
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
@@ -69,7 +75,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            number_of_epochs=1
+            depth=3
         )
 
     def _fit(
@@ -227,7 +233,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     @staticmethod
     def model_name() -> str:
-        return "Perceptron"
+        return "Decision Tree Classifier"
 
     @staticmethod
     def library_name() -> str:

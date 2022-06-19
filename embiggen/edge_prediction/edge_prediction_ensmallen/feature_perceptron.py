@@ -63,7 +63,10 @@ class FeaturePerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
-        return self._model_kwargs
+        return dict(
+            **super().parameters(),
+            **self._model_kwargs
+        )
 
     def clone(self) -> "FeaturePerceptronEdgePrediction":
         return FeaturePerceptronEdgePrediction(**self.parameters())
