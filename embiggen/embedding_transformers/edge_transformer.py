@@ -233,6 +233,7 @@ def get_cosine_similarity(
         destinations=destination_node_ids
     ).reshape((-1, 1))
 
+
 def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
@@ -368,7 +369,8 @@ class EdgeTransformer:
                 "Maybe you meant {}?"
             ).format(
                 method,
-                format_list([method for method in EdgeTransformer.methods.keys() if method is not None]),
+                format_list(
+                    [method for method in EdgeTransformer.methods.keys() if method is not None]),
                 closest(method, [
                     method_name
                     for method_name in EdgeTransformer.methods
@@ -469,10 +471,12 @@ class EdgeTransformer:
                     f"{sources.dtype} and {destinations.dtype}. "
                 )
             if self._transformer._node_feature.dtype != np.float32:
-                raise NotImplementedError(
-                    "The Cosine Similarity is currently implemented exclusively for "
-                    "node features contained in a numpy array of type float32, but "
-                    f"you have provided an object of type {self._transformer._node_feature.dtype}."
+                self._transformer._node_feature = self._transformer._node_feature.astype(
+                    np.float32
+                )
+            if not self._transformer._node_feature.data.c_contiguous:
+                self._transformer._node_feature = np.ascontiguousarray(
+                    self._transformer._node_feature
                 )
 
             edge_embeddings = self._method(
@@ -489,7 +493,7 @@ class EdgeTransformer:
         if edge_features is not None:
             if not isinstance(edge_features, list):
                 edge_features = [edge_features]
-            
+
             for edge_feature in edge_features:
                 if len(edge_feature.shape) != 2:
                     raise ValueError(
