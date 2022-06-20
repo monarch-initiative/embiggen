@@ -18,6 +18,7 @@ class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         negative_edges_rate: float = 0.5,
         depth: int = 10,
+        number_of_epochs: int = 10,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -40,6 +41,11 @@ class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
         ///     Rate of negative edges over total.
         /// depth: int = 10
         ///     Depth of tree. By default 10.
+        /// number_of_epochs: int = 10
+        ///     Number of sampling iterations. In each iterations, we sample
+        ///     a number of positive and negative edges equal to the number
+        ///     of directed edges in the graph.
+        ///     By default, we do 10 iterations.
         /// random_state: int = 42
         ///     The random state to reproduce the model initialization and training. By default, 42.
         /// verbose: bool = True
@@ -54,6 +60,7 @@ class DecisionTreeEdgePredictionEnsmallen(AbstractEdgePredictionModel):
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             negative_edges_rate=negative_edges_rate,
             depth=depth,
+            number_of_epochs=number_of_epochs
         )
         self._verbose = verbose
         self._model = models.EdgePredictionSingleExtraTree(
