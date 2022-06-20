@@ -140,6 +140,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             for i, unbalance_rate in tqdm(
                 enumerate(validation_unbalance_rates),
                 disable=not verbose or len(validation_unbalance_rates) == 1,
+                total=len(validation_unbalance_rates),
                 leave=False,
                 dynamic_ncols=True,
                 desc="Building negative graphs for evaluation"
