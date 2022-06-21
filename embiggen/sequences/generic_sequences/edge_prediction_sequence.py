@@ -30,7 +30,7 @@ class EdgePredictionSequence:
             Whether to return the node types.
         return_edge_types: bool
             Whether to return the edge types.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to return the edge metrics.
         batch_size: int = 2**10,
             The batch size to use.

@@ -1,5 +1,5 @@
 """GCN model for node-label prediction."""
-from typing import List, Union, Optional, Dict, Type, Tuple
+from typing import List, Union, Optional, Dict, Type, Tuple, Any
 
 import numpy as np
 from tensorflow.keras.layers import Dense  # pylint: disable=import-error,no-name-in-module
@@ -39,8 +39,9 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
+        random_state: int = 42,
         use_simmetric_normalized_laplacian: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
@@ -92,9 +93,11 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
+        random_state: int = 42
+            The random state to use to reproduce the training.
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -116,7 +119,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        AbstractNodeLabelPredictionModel.__init__(self)
+        AbstractNodeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractGCN.__init__(
             self,
             epochs=epochs,
@@ -135,12 +138,14 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
+            random_state=random_state,
             use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            use_node_type_embedding=False,
             verbose=verbose,
         )
         self._number_of_units_per_head_layer = normalize_model_list_parameter(
@@ -209,8 +214,13 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
+        kernel = self.convert_graph_to_kernel(support)
         return (
-            self._graph_to_kernel(support),
+            *(
+                ()
+                if kernel is None
+                else (kernel,)
+            ),
             *(
                 ()
                 if node_features is None
@@ -270,3 +280,17 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return False
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "use_node_type_embedding",
+            "node_type_embedding_size"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in AbstractGCN.parameters(self).items()
+                if key not in removed
+            }
+        )

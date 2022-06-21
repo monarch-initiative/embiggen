@@ -29,7 +29,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 5,
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
-        enable_cache: bool = False
+        enable_cache: bool = False,
+        random_state: int = 42
     ):
         """Create new sequence Siamese model.
 
@@ -66,6 +67,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
         """
         self._negative_samples_rate = negative_samples_rate
 
@@ -79,7 +82,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             batch_size=batch_size,
             optimizer=optimizer,
             use_mirrored_strategy=use_mirrored_strategy,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state
         )
 
     @staticmethod
@@ -220,6 +224,10 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
     @staticmethod
     def can_use_node_types() -> bool:
         """Returns whether the model can optionally use node types."""
+        return False
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
         return False
 
     @staticmethod

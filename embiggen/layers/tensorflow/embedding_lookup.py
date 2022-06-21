@@ -1,7 +1,6 @@
 """Submodule providing embedding lookup layer."""
 from typing import Tuple, Dict
 import tensorflow as tf
-from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Flatten, Layer  # pylint: disable=import-error,no-name-in-module
 
 

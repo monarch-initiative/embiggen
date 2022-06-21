@@ -59,7 +59,8 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
         super().__init__(
             embedding_size=kwargs["embedding_size"],
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=kwargs["random_state"]
         )
 
     @staticmethod
@@ -159,3 +160,8 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return self._model_kwargs["change_edge_type_weight"] != 1.0
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        return True

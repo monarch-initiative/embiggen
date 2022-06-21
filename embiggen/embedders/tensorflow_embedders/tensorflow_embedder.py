@@ -29,7 +29,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         batch_size: int = 2**10,
         optimizer: str = "nadam",
         use_mirrored_strategy: bool = False,
-        enable_cache: bool = False
+        enable_cache: bool = False,
+        random_state: int = 42
     ):
         """Create new TensorFlowEmbedder object.
 
@@ -60,6 +61,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
         """
         execute_gpu_checks()
         if use_mirrored_strategy and get_available_gpus_number() <= 1:
@@ -77,7 +80,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._learning_rate_plateau_patience = learning_rate_plateau_patience
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
+            enable_cache=enable_cache,
+            random_state=random_state,
         )
 
     @staticmethod
@@ -270,3 +274,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             model,
             return_dataframe=return_dataframe
         )
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        return True

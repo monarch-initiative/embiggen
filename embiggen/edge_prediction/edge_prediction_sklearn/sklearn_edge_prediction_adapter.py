@@ -24,7 +24,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
         use_zipfian_sampling: bool = True,
         prediction_batch_size: int = 2**15,
         random_state: int = 42
@@ -49,7 +49,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             of the graph. This is generally useful, as these negative edges are less
             trivial to predict then edges sampled uniformely.
             We stringly advise AGAINST using uniform sampling.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -69,12 +69,11 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         ValueError
             If the provided model_instance is not a subclass of `ClassifierMixin`.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
         self._edge_embedding_method = edge_embedding_method
         self._training_unbalance_rate = training_unbalance_rate
-        self._random_state = random_state
         self._prediction_batch_size = prediction_batch_size
         self._use_edge_metrics = use_edge_metrics
         self._use_zipfian_sampling = use_zipfian_sampling
@@ -90,10 +89,10 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "training_sample_only_edges_with_heterogeneous_node_types": self._training_sample_only_edges_with_heterogeneous_node_types,
             "edge_embedding_method": self._edge_embedding_method,
             "training_unbalance_rate": self._training_unbalance_rate,
-            "random_state": self._random_state,
             "prediction_batch_size": self._prediction_batch_size,
             "use_edge_metrics": self._use_edge_metrics,
-            "use_zipfian_sampling": self._use_zipfian_sampling
+            "use_zipfian_sampling": self._use_zipfian_sampling,
+            **super().parameters()
         }
 
     def clone(self) -> Type["SklearnEdgePredictionAdapter"]:

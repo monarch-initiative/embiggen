@@ -43,17 +43,17 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         verbose: bool = True
             Whether to show epochs loading bar.
         """
-        super().__init__()
+        super().__init__(random_state=random_state)
         self._model_kwargs = dict(
-            edge_embedding_method_name = edge_embedding_method_name,
-            number_of_epochs = number_of_epochs,
-            number_of_edges_per_mini_batch = number_of_edges_per_mini_batch,
-            sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types,
-            learning_rate = learning_rate,
-            random_state = random_state,
+            edge_embedding_method_name=edge_embedding_method_name,
+            number_of_epochs=number_of_epochs,
+            number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
+            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+            learning_rate=learning_rate,
         )
         self._verbose = verbose
-        self._model = models.EdgePredictionPerceptron(**self._model_kwargs)
+        self._model = models.EdgePredictionPerceptron(
+            **self._model_kwargs, random_state=random_state)
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""

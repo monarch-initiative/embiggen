@@ -1,4 +1,4 @@
-"""GCN model for edge-labek prediction."""
+"""GCN model for edge-label prediction."""
 from typing import List, Union, Optional, Dict, Type, Any
 
 import numpy as np
@@ -23,8 +23,9 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         number_of_ffnn_head_layers: int = 1,
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.2,
+        dropout_rate: float = 0.3,
         apply_norm: bool = False,
+        edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -36,16 +37,17 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
-        use_edge_metrics: bool = True,
+        random_state: int = 42,
+        use_edge_metrics: bool = False,
         use_simmetric_normalized_laplacian: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = True
+        verbose: bool = False
     ):
         """Create new Kipf GCN object.
 
@@ -75,6 +77,19 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        edge_embedding_method: str = "Concatenate"
+            The edge embedding method to use to put togheter the
+            source and destination node features, which includes:
+            - Concatenation
+            - Average
+            - Hadamard
+            - L1
+            - L2
+            - Maximum
+            - Minimum
+            - Add
+            - Subtract
+            - Dot
         optimizer: Union[str, Type[Optimizer]] = "adam"
             The optimizer to use while training the model.
             By default, we use `LazyAdam`, which should be faster
@@ -105,7 +120,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
         node_embedding_size: int = 50
@@ -121,7 +136,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             Whether to only sample edges between heterogeneous node types.
             This may be useful when training a model to predict between
             two portions in a bipartite graph.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -132,7 +147,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             Random state to reproduce the training samples.
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -158,10 +173,10 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         """
-        AbstractEdgeLabelPredictionModel.__init__(self)
+        AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractEdgeGCN.__init__(
             self,
             epochs=epochs,
@@ -173,6 +188,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -185,6 +201,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
             use_edge_metrics=use_edge_metrics,
+            random_state=random_state,
             use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
@@ -208,7 +225,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         return GCNEdgeLabelPredictionTrainingSequence(
             graph=graph,
             support=support,
-            kernel=self._graph_to_kernel(support),
+            kernel=self.convert_graph_to_kernel(support),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),

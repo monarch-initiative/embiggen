@@ -10,26 +10,6 @@ from embiggen.utils.networkx_utils import convert_ensmallen_graph_to_networkx_gr
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
 
-    def __init__(
-        self,
-        embedding_size: int,
-        enable_cache: bool = False
-    ):
-        """Create new embedding model.
-
-        Parameters
-        ---------------------
-        embedding_size: int
-            The dimensionality of the embedding.
-        enable_cache: bool = False
-            Whether to enable the cache, that is to
-            store the computed embedding.
-        """
-        super().__init__(
-            embedding_size=embedding_size,
-            enable_cache=enable_cache
-        )
-
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
@@ -104,3 +84,8 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
             embedding_method_name=self.model_name(),
             node_embeddings=node_embeddings
         )
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        return True

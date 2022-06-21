@@ -61,7 +61,6 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         random_state: int = 42
             The random state to reproduce the training sequence.
         """
-        self._random_state = random_state
         self._window_size = window_size
         self._walk_length = walk_length
         self._return_weight = return_weight
@@ -72,7 +71,7 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         self._iterations = iterations
         self._normalize_by_degree = normalize_by_degree
 
-        super().__init__(**kwargs)
+        super().__init__(random_state=random_state, **kwargs)
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
@@ -82,7 +81,7 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
             window_size=1,
             walk_length=4,
             iterations=1,
-            max_neighbours= 10,
+            max_neighbours=10,
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -90,7 +89,6 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         return {
             **super().parameters(),
             **dict(
-                random_state=self._random_state,
                 window_size=self._window_size,
                 walk_length=self._walk_length,
                 return_weight=self._return_weight,

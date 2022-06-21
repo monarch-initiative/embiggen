@@ -27,7 +27,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     def is_topological() -> bool:
         return True
 
-    def get_available_evaluation_schemas(self) -> List[str]:
+    @staticmethod
+    def get_available_evaluation_schemas() -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Connected Monte Carlo",
@@ -42,6 +43,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         evaluation_schema: str,
         random_state: int,
         holdout_number: int,
+        number_of_holdouts: int,
         **holdouts_kwargs: Dict[str, Any],
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
@@ -56,6 +58,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The random state for the evaluation
         holdout_number: int
             The current holdout number.
+        number_of_holdouts: int
+            The total number of holdouts.
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
@@ -73,7 +77,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             )
         if evaluation_schema == "Kfold":
             return graph.get_edge_prediction_kfold(
-                **holdouts_kwargs,
+                k=number_of_holdouts,
                 k_index=holdout_number,
                 random_state=random_state,
                 verbose=False
@@ -136,6 +140,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             for i, unbalance_rate in tqdm(
                 enumerate(validation_unbalance_rates),
                 disable=not verbose or len(validation_unbalance_rates) == 1,
+                total=len(validation_unbalance_rates),
                 leave=False,
                 dynamic_ncols=True,
                 desc="Building negative graphs for evaluation"

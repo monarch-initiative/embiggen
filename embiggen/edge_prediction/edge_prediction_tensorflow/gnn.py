@@ -1,34 +1,21 @@
-"""GCN model for edge prediction."""
-from typing import List, Union, Optional, Dict, Any, Type, Tuple
-
-import numpy as np
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
-
-from ensmallen import Graph
-from tensorflow.keras.utils import Sequence
-from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
-from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
-from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
+"""Generic GNN model for edge prediction."""
+from typing import List, Union, Optional, Type, Dict, Any
+from tensorflow.keras.optimizers import Optimizer
+from embiggen.edge_prediction.edge_prediction_tensorflow.gcn import GCNEdgePrediction
 
 
-@abstract_class
-class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
-    """GCN model for edge prediction."""
+class GNNEdgePrediction(GCNEdgePrediction):
+    """Generic GNN model for edge prediction."""
 
     def __init__(
         self,
         epochs: int = 1000,
-        number_of_graph_convolution_layers: int = 2,
-        number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
-        number_of_ffnn_body_layers: int = 2,
-        number_of_ffnn_head_layers: int = 1,
-        number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
-        number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.2,
-        apply_norm: bool = False,
+        number_of_body_layers: int = 2,
+        number_of_head_layers: int = 1,
+        number_of_units_per_body_layer: Union[int, List[int]] = 128,
+        number_of_units_per_head_layer: Union[int, List[int]] = 128,
         edge_embedding_method: str = "Concatenate",
-        optimizer: Union[str, Optimizer] = "adam",
+        optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
         reduce_lr_min_delta: float = 0.0001,
@@ -43,44 +30,28 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
-        handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
-        """Create new Kipf GCN object.
+        """Create new GNN object.
 
         Parameters
         -------------------------------
         epochs: int = 1000
             Epochs to train the model for.
-        number_of_graph_convolution_layers: int = 2
-            Number of layers in the body subsection of the GCN section of the model.
-        number_of_gcn_head_layers: int = 1
-            Number of layers in the head subsection of the GCN section of the model.
-        number_of_ffnn_body_layers: int = 2
+        number_of_body_layers: int = 2
             Number of layers in the body subsection of the FFNN section of the model.
-        number_of_ffnn_head_layers: int = 1
+        number_of_head_layers: int = 1
             Number of layers in the head subsection of the FFNN section of the model.
-        number_of_units_per_gcn_body_layer: Union[int, List[int]] = 128
-            Number of units per gcn body layer.
-        number_of_units_per_gcn_head_layer: Union[int, List[int]] = 128
-            Number of units per gcn head layer.
-        number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128
+        number_of_units_per_body_layer: Union[int, List[int]] = 128
             Number of units per ffnn body layer.
-        number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128
+        number_of_units_per_head_layer: Union[int, List[int]] = 128
             Number of units per ffnn head layer.
-        dropout_rate: float = 0.3
-            Float between 0 and 1.
-            Fraction of the input units to dropout.
-        apply_norm: bool = False
-            Whether to normalize the output of the convolution operations,
-            after applying the level activations.
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
@@ -144,8 +115,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             - Jaccard Coefficient
             - Resource allocation index
             - Preferential attachment
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -160,12 +129,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
-        handling_multi_graph: str = "warn"
-            How to behave when dealing with multigraphs.
-            Possible behaviours are:
-            - "warn"
-            - "raise"
-            - "drop"
         node_feature_names: Optional[List[str]] = None
             Names of the node features.
             This is used as the layer names.
@@ -175,18 +138,14 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         verbose: bool = False
             Whether to show loading bars.
         """
-        AbstractEdgePredictionModel.__init__(self, random_state=random_state)
-        AbstractEdgeGCN.__init__(
-            self,
+        super().__init__(
             epochs=epochs,
-            number_of_graph_convolution_layers=number_of_graph_convolution_layers,
-            number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
-            number_of_ffnn_body_layers=number_of_ffnn_body_layers,
-            number_of_ffnn_head_layers=number_of_ffnn_head_layers,
-            number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
-            number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
-            dropout_rate=dropout_rate,
-            apply_norm=apply_norm,
+            number_of_graph_convolution_layers=0,
+            number_of_units_per_graph_convolution_layers=0,
+            number_of_ffnn_body_layers=number_of_body_layers,
+            number_of_ffnn_head_layers=number_of_head_layers,
+            number_of_units_per_ffnn_body_layer=number_of_units_per_body_layer,
+            number_of_units_per_ffnn_head_layer=number_of_units_per_head_layer,
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -198,75 +157,57 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             reduce_lr_monitor=reduce_lr_monitor,
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
-            use_class_weights=False,
+            avoid_false_negatives=avoid_false_negatives,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
-            handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
-        self._avoid_false_negatives = avoid_false_negatives
-        self._training_unbalance_rate = training_unbalance_rate
-        self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
-        
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters used for this model."""
+
+    @staticmethod
+    def smoke_test_parameters() -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
         removed = [
-            "use_class_weights",
+            "number_of_units_per_graph_convolution_layers",
+            "handling_multi_graph",
+            "number_of_units_per_ffnn_body_layer",
+            "number_of_units_per_ffnn_head_layer"
         ]
         return dict(
+            number_of_units_per_body_layer=1,
+            number_of_units_per_head_layer=1,
             **{
                 key: value
-                for key, value in AbstractEdgeGCN.parameters(self).items()
+                for key, value in GCNEdgePrediction.smoke_test_parameters().items()
                 if key not in removed
-            },
-            training_unbalance_rate=self._training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
+            }
         )
 
-    def _get_model_training_input(
-        self,
-        graph: Graph,
-        support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
-        """Returns training input tuple."""
-        return GCNEdgePredictionTrainingSequence(
-            graph,
-            kernel=self.convert_graph_to_kernel(support),
-            support=support,
-            node_features=node_features,
-            return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
-            node_type_features=node_type_features,
-            use_edge_metrics=self._use_edge_metrics,
-            avoid_false_negatives=self._avoid_false_negatives,
-            negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
-            sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            random_state=self._random_state
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "number_of_units_per_graph_convolution_layers",
+            "handling_multi_graph",
+            "number_of_units_per_ffnn_body_layer",
+            "number_of_units_per_ffnn_head_layer"
+        ]
+        return dict(
+            number_of_units_per_body_layer=self._number_of_units_per_ffnn_body_layer,
+            number_of_units_per_head_layer=self._number_of_units_per_ffnn_head_layer,
+            **{
+                key: value
+                for key, value in super().smoke_test_parameters().items()
+                if key not in removed
+            }
         )
 
-    def get_output_classes(self, graph: Graph) ->int:
-        """Returns number of output classes."""
-        return 1
-
     @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
-        return False
+    def model_name() -> str:
+        return "GNN"

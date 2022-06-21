@@ -9,10 +9,17 @@ from embiggen.utils.abstract_models import AbstractClassifierModel, format_list
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge label prediction model."""
 
-    def __init__(self):
+    def __init__(self, random_state: Optional[int] = None):
+        """Create new abstract edge-label prediction model.
+
+        Parameters
+        ---------------
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
+        """
         self._is_binary_prediction_task = None
         self._is_multilabel_prediction_task = None
-        super().__init__()
+        super().__init__(random_state=random_state)
     
     @staticmethod
     def requires_edge_types() -> bool:
@@ -36,13 +43,12 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns whether the model was fit on a multilabel prediction task."""
         return self._is_multilabel_prediction_task
 
-    def get_available_evaluation_schemas(self) -> List[str]:
+    @staticmethod
+    def get_available_evaluation_schemas() -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
-            "Monte Carlo",
             "Stratified Kfold"
-            "Kfold"
         ]
 
     @classmethod
@@ -52,6 +58,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         evaluation_schema: str,
         random_state: int,
         holdout_number: int,
+        number_of_holdouts: int,
         **holdouts_kwargs: Dict[str, Any],
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
@@ -62,26 +69,26 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             The graph to split.
         evaluation_schema: str
             The evaluation schema to follow.
-        number_of_holdouts: int
-            The number of holdouts that will be generated throught the evaluation.
         random_state: int
             The random state for the evaluation
-        holdouts_kwargs: Dict[str, Any]
-            The kwargs to be forwarded to the holdout method.
         holdout_number: int
             The current holdout number.
+        number_of_holdouts: int
+            The number of holdouts that will be generated throught the evaluation.
+        holdouts_kwargs: Dict[str, Any]
+            The kwargs to be forwarded to the holdout method.
         """
-        if evaluation_schema in ("Stratified Monte Carlo", "Monte Carlo"):
+        if evaluation_schema == "Stratified Monte Carlo":
             return graph.get_edge_label_holdout_graphs(
                 **holdouts_kwargs,
-                use_stratification="Stratified" in evaluation_schema,
+                use_stratification=True,
                 random_state=random_state+holdout_number,
             )
-        if evaluation_schema in ("Kfold", "Stratified Kfold"):
+        if evaluation_schema == "Stratified Kfold":
             return graph.get_edge_label_kfold(
-                **holdouts_kwargs,
+                k=number_of_holdouts,
                 k_index=holdout_number,
-                use_stratification="Stratified" in evaluation_schema,
+                use_stratification=True,
                 random_state=random_state,
             )
         raise ValueError(

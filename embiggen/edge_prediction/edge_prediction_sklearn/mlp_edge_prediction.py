@@ -34,7 +34,7 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
         use_zipfian_sampling: bool = True,
         prediction_batch_size: int = 2**12,
         random_state: int = 42

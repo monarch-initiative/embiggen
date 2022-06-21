@@ -2,7 +2,7 @@
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
 
 import numpy as np
-from tensorflow.keras.layers import Input, Concatenate, Dense  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Input, Concatenate, Dense, Average, Multiply, Maximum, Minimum, Add, Subtract, Dot  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
@@ -14,8 +14,9 @@ from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionSequence
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.utils.abstract_gcn import AbstractGCN
 from embiggen.utils.number_to_ordinal import number_to_ordinal
-from embiggen.layers.tensorflow import EmbeddingLookup
+from embiggen.layers.tensorflow import EmbeddingLookup, ElementWiseL1, ElementWiseL2
 import tensorflow as tf
+
 
 @abstract_class
 class AbstractEdgeGCN(AbstractGCN):
@@ -30,8 +31,9 @@ class AbstractEdgeGCN(AbstractGCN):
         number_of_ffnn_head_layers: int = 1,
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.2,
+        dropout_rate: float = 0.3,
         apply_norm: bool = False,
+        edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -43,9 +45,10 @@ class AbstractEdgeGCN(AbstractGCN):
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
-        use_edge_metrics: bool = True,
+        use_edge_metrics: bool = False,
+        random_state: int = 42,
         use_simmetric_normalized_laplacian: bool = True,
-        use_node_embedding: bool = True,
+        use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
@@ -82,6 +85,19 @@ class AbstractEdgeGCN(AbstractGCN):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        edge_embedding_method: str = "Concatenate"
+            The edge embedding method to use to put togheter the
+            source and destination node features, which includes:
+            - Concatenation
+            - Average
+            - Hadamard
+            - L1
+            - L2
+            - Maximum
+            - Minimum
+            - Add
+            - Subtract
+            - Dot
         optimizer: str = "LazyAdam"
             The optimizer to use while training the model.
             By default, we use `LazyAdam`, which should be faster
@@ -112,7 +128,7 @@ class AbstractEdgeGCN(AbstractGCN):
         use_class_weights: bool = True
             Whether to use class weights to rebalance the loss relative to unbalanced classes.
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
         node_embedding_size: int = 50
@@ -128,7 +144,7 @@ class AbstractEdgeGCN(AbstractGCN):
             Whether to only sample edges between heterogeneous node types.
             This may be useful when training a model to predict between
             two portions in a bipartite graph.
-        use_edge_metrics: bool = True
+        use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
             - Adamic Adar
@@ -139,7 +155,7 @@ class AbstractEdgeGCN(AbstractGCN):
             Random state to reproduce the training samples.
         use_simmetric_normalized_laplacian: bool = True
             Whether to use laplacian transform before training on the graph.
-        use_node_embedding: bool = True
+        use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
             a node embedding layer you are making a closed-world assumption,
@@ -207,6 +223,7 @@ class AbstractEdgeGCN(AbstractGCN):
             object_type=int
         )
 
+        self._edge_embedding_method = edge_embedding_method
         self._use_edge_metrics = use_edge_metrics
         self._use_node_types = None
 
@@ -225,7 +242,7 @@ class AbstractEdgeGCN(AbstractGCN):
             **AbstractGCN.parameters(self),
             number_of_units_per_ffnn_body_layer=self._number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=self._number_of_units_per_ffnn_head_layer,
-            use_edge_metrics = self._use_edge_metrics,
+            use_edge_metrics=self._use_edge_metrics,
         )
 
     def _get_model_prediction_input(
@@ -240,7 +257,7 @@ class AbstractEdgeGCN(AbstractGCN):
         return GCNEdgePredictionSequence(
             graph,
             support=support,
-            kernel=self._graph_to_kernel(support),
+            kernel=self.convert_graph_to_kernel(support),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),
@@ -325,10 +342,59 @@ class AbstractEdgeGCN(AbstractGCN):
                 )(hidden)
 
             ffnn_outputs.append(hidden)
-        
-        hidden = Concatenate(
-            name="EdgeFeatures"
-        )(ffnn_outputs)
+
+        source_and_destination_features = ffnn_outputs[:2]
+        other_features = ffnn_outputs[2:]
+
+        if self._edge_embedding_method == "Concatenate":
+            hidden = Concatenate(
+                name="NodeConcatenation"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Average":
+            hidden = Average(
+                name="NodeAverage"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Hadamard":
+            hidden = Multiply(
+                name="NodeHadamard"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Maximum":
+            hidden = Maximum(
+                name="NodeMaximum"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Minimum":
+            hidden = Minimum(
+                name="NodeMinimum"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Add":
+            hidden = Add(
+                name="NodeAdd"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Subtract":
+            hidden = Subtract(
+                name="NodeSubtract"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "L1":
+            hidden = ElementWiseL1(
+                name="NodeL1"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "L2":
+            hidden = ElementWiseL2(
+                name="NodeL2"
+            )(source_and_destination_features)
+        elif self._edge_embedding_method == "Dot":
+            hidden = Dot(
+                name="NodeDot",
+                normalize=True
+            )(source_and_destination_features)
+
+        if len(other_features) > 0:
+            hidden = Concatenate(
+                name="EdgeFeatures"
+            )([
+                hidden,
+                other_features
+            ])
 
         # Building the head of the model.
         for i, units in enumerate(self._number_of_units_per_ffnn_head_layer):

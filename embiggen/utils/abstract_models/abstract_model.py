@@ -9,11 +9,33 @@ def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
     """Simply adds a descriptor for meta-programming and nothing else."""
     return klass
 
+
 @abstract_class
 class AbstractModel(Hashable):
     """Class defining properties of a generic abstract model."""
 
     MODELS_LIBRARY: Dict[str, Dict[str, Dict[str, Type["AbstractModel"]]]] = {}
+
+    def __init__(self, random_state: Optional[int] = None):
+        """Create new abstract model.
+
+        Parameters
+        ---------------
+        random_state: Optional[int] = None
+            The random state to use if the model is stocastic.
+        """
+        super().__init__()
+        if self.is_stocastic() and random_state is None:
+            raise ValueError(
+                "The provided model is stocastic, but no "
+                "random state was provided."
+            )
+        if not self.is_stocastic() and random_state is not None:
+            raise ValueError(
+                "The provided model is not stocastic, yet a "
+                f"random state of `{random_state}` was provided."
+            )
+        self._random_state = random_state
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
@@ -22,13 +44,14 @@ class AbstractModel(Hashable):
             "The `smoke_test_parameters` method must be implemented "
             "in the child classes of abstract model."
         ))
-    
+
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        raise NotImplementedError((
-            "The `parameters` method must be implemented "
-            "in the child classes of abstract model."
-        ))
+        if self._random_state is None:
+            return dict()
+        return dict(
+            random_state=self._random_state
+        )
 
     @staticmethod
     def requires_edge_weights() -> bool:
@@ -112,8 +135,10 @@ class AbstractModel(Hashable):
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
         raise NotImplementedError((
-            "The `can_use_node_types` method must be implemented "
-            "in the child classes of abstract model."
+            "The `is_using_node_types` method must be implemented "
+            "in the child classes of abstract model, but was not implemented "
+            f"in the class {self.__class__.__name__} implementing the model {self.model_name()} "
+            f"from the library {self.library_name()}."
         ))
 
     @staticmethod
@@ -143,10 +168,10 @@ class AbstractModel(Hashable):
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         raise NotImplementedError((
-            "The `can_use_edge_types` method must be implemented "
+            "The `is_using_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
-    
+
     @staticmethod
     def task_name() -> str:
         """Returns the task for which this model is being used."""
@@ -186,11 +211,28 @@ class AbstractModel(Hashable):
             "library_name": self.library_name(),
             "task_name": self.task_name(),
         })
-    
+
     @staticmethod
     def is_available() -> bool:
         """Returns whether the model class is actually available in the user system."""
         return True
+
+    @staticmethod
+    def is_stocastic() -> bool:
+        """Returns whether the model is stocastic and has therefore a random state."""
+        raise NotImplementedError((
+            "The `is_stocastic` method must be implemented "
+            "in the child classes of abstract model."
+        ))
+
+    def set_random_state(self, random_state: int):
+        """Returns whether the model is stocastic and has therefore a random state."""
+        if not self.is_stocastic():
+            raise ValueError(
+                "It does not make sense to set the random state of a "
+                "non-stocastic model."
+            )
+        self._random_state = random_state
 
     @staticmethod
     def get_model_data(
