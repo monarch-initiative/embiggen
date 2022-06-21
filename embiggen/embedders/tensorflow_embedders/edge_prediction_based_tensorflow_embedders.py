@@ -19,9 +19,9 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 500,
+        embedding_size: int = 100,
         negative_samples_rate: float = 0.5,
-        epochs: int = 200,
+        epochs: int = 500,
         batch_size: int = 2**10,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -44,7 +44,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples_rate equal
             to 0.5, there will be 64 positives and 64 negatives.
-        epochs: int = 10
+        epochs: int = 500
             Number of epochs to train the model for.
         batch_size: int = 2**14
             Batch size to use during the training.
@@ -84,13 +84,6 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache,
             random_state=random_state
-        )
-
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **TensorFlowEmbedder.smoke_test_parameters(),
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -167,6 +160,23 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         """
         return max(graph.get_number_of_directed_edges() // self._batch_size, 1)
 
+    def _build_sequence(
+        self,
+        graph: Graph,
+    ) -> EdgePredictionTrainingSequence:
+        """Returns values to be fed as input into the model.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to build the model for.
+        """
+        return EdgePredictionTrainingSequence(
+            graph=graph,
+            negative_samples_rate=self._negative_samples_rate,
+            batch_size=self._batch_size,
+        )
+
     def _build_input(
         self,
         graph: Graph,
@@ -186,14 +196,10 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             AUTOTUNE = tf.data.AUTOTUNE
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-        sequence = EdgePredictionTrainingSequence(
-            graph=graph,
-            negative_samples_rate=self._negative_samples_rate,
-            batch_size=self._batch_size,
-        )
+        
         return (
-            sequence.into_dataset()
+            self._build_sequence(graph)
+            .into_dataset()
             .repeat()
             .prefetch(AUTOTUNE), )
 

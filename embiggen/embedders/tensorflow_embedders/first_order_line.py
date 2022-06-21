@@ -1,4 +1,4 @@
-"""First order LINE TensorFlo model."""
+"""First order LINE TensorFlow model."""
 from typing import Union, List
 
 import tensorflow as tf
@@ -13,7 +13,7 @@ from embiggen.embedders.tensorflow_embedders.edge_prediction_based_tensorflow_em
 
 
 class FirstOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
-    """First order LINE TensorFlo model."""
+    """First order LINE TensorFlow model."""
 
     def _build_edge_prediction_based_model(
         self,

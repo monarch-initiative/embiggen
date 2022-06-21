@@ -53,6 +53,23 @@ class TestNodeEmbeddingPipeline(TestCase):
             verbose=False,
             smoke_test=True
         )
+
+    def test_tensorflow_foj(self):
+        """Test that embed pipeline works fine in SPINE."""
+        graph_name = "CIO"
+        repository="kgobo"
+
+        for embedding_model in ("First Order Jaccard", "Second Order Jaccard"):
+            embed_graph(
+                graph_name,
+                repository=repository,
+                embedding_model=embedding_model,
+                verbose=False,
+                smoke_test=True,
+                jaccard_type="ancestors",
+                root_node_name="CIO:0000030"
+            )
+
     
     def test_model_recreation(self):
         df = get_available_models_for_node_embedding()
