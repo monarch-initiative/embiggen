@@ -152,7 +152,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         model.compile(
             optimizer=self._optimizer,
             loss="binary_crossentropy",
-            metrics="accuracy"
+            metrics=["accuracy"]
         )
 
         return model
