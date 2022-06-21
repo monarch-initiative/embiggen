@@ -19,9 +19,9 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 500,
+        embedding_size: int = 100,
         negative_samples_rate: float = 0.5,
-        epochs: int = 200,
+        epochs: int = 500,
         batch_size: int = 2**10,
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
