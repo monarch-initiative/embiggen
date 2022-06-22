@@ -10,7 +10,7 @@ from embiggen.sequences.tensorflow_sequences import (
 from embiggen.embedders.tensorflow_embedders.first_order_line import FirstOrderLINETensorFlow
 
 
-class HOPE(FirstOrderLINETensorFlow):
+class HOPETensorFlow(FirstOrderLINETensorFlow):
     """HOPE TensorFlow model."""
 
     def __init__(
