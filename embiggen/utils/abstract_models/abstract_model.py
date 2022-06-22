@@ -1,4 +1,5 @@
 """Module providing generic abstract model."""
+from multiprocessing.sharedctypes import Value
 from embiggen.utils.abstract_models.list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
@@ -35,6 +36,28 @@ class AbstractModel(Hashable):
                 "The provided model is not stocastic, yet a "
                 f"random state of `{random_state}` was provided."
             )
+
+        # Identify and resolve tautological implementations.
+        for can_use, is_using in (
+            ("can_use_edge_types", "is_using_edge_types"),
+            ("can_use_node_types", "is_using_node_types"),
+            ("can_use_edge_weights", "is_using_edge_weights"),
+        ):
+            if not self.__getattribute__(can_use)():
+                try:
+                    self.__getattribute__(is_using)()
+                    raise ValueError(
+                        "We have found an useless method in the "
+                        f"class {self.__class__.__name__}, implementing method "
+                        f"{self.model_name()} from library {self.library_name()} "
+                        f"and task {self.task_name()}. "
+                        "It does not make sense to implement the "
+                        f"`{is_using}` method when the `{can_use}` "
+                        "always returns False."
+                    )
+                except NotImplementedError:
+                    pass
+
         self._random_state = random_state
 
     @staticmethod

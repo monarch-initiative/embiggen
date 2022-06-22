@@ -224,9 +224,9 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    cls.task_involves_edge_types() and node_feature.is_using_edge_types() or
-                    cls.task_involves_node_types() and node_feature.is_using_node_types() or
-                    cls.task_involves_edge_weights() and node_feature.is_using_edge_weights() or
+                    cls.task_involves_edge_types() and node_feature.can_use_edge_types() and node_feature.is_using_edge_types() or
+                    cls.task_involves_node_types() and node_feature.can_use_node_types() and node_feature.is_using_node_types() or
+                    cls.task_involves_edge_weights() and node_feature.can_use_edge_weights() and node_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_feature.is_topological()
                 ) or
                 not precompute_constant_automatic_stocastic_features and node_feature.is_stocastic()
@@ -794,13 +794,13 @@ class AbstractClassifierModel(AbstractModel):
                 "It is unclear how to proceed with this data."
             )
 
-        if (self.requires_node_types() or self.is_using_node_types()) and not graph.has_node_types():
+        if (self.requires_node_types() or self.can_use_node_types() and self.is_using_node_types()) and not graph.has_node_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires or is parametrized to use node types."
             )
 
-        if self.requires_edge_types() and not graph.has_edge_types():
+        if (self.requires_edge_types() or self.can_use_edge_types() and self.is_using_edge_types()) and not graph.has_edge_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."

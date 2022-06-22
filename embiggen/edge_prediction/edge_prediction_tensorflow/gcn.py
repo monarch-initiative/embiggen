@@ -263,9 +263,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         """Returns whether the model can optionally use edge types."""
         return False
 
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return False
 
     @staticmethod
     def requires_edge_types() -> bool:

@@ -1,4 +1,4 @@
-"""Module providing abstract Node2Vec implementation."""
+"""Module providing SPINE implementation."""
 from typing import Optional,  Dict, Any, Union
 from ensmallen import Graph
 import numpy as np
@@ -16,7 +16,7 @@ class SPINE(AbstractEmbeddingModel):
         dtype: Optional[str] = "u8",
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new SPINE method.
 
         Parameters
         --------------------------
@@ -115,26 +115,14 @@ class SPINE(AbstractEmbeddingModel):
         """Returns whether the model can optionally use edge weights."""
         return False
 
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return False
-
     @staticmethod
     def can_use_node_types() -> bool:
         """Returns whether the model can optionally use node types."""
         return False
 
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return False
-
     @staticmethod
     def can_use_edge_types() -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
         return False
 
     @staticmethod

@@ -30,7 +30,7 @@ class TestNodeEmbeddingPipeline(TestCase):
                 graph_name = "CIO"
                 repository="kgobo"
 
-            bar.set_description(f"Testing embedding model {row.model_name} from library {row.library_name}")
+            bar.set_description(f"Testing {row.model_name} from {row.library_name}")
 
             embed_graph(
                 graph_name,

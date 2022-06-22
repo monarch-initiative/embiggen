@@ -1,4 +1,4 @@
-"""Second order LINE TensorFlo model."""
+"""Second order LINE TensorFlow model."""
 from typing import Union, List
 
 import tensorflow as tf
@@ -14,7 +14,7 @@ from embiggen.embedders.tensorflow_embedders.edge_prediction_based_tensorflow_em
 
 
 class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
-    """Second order LINE TensorFlo model."""
+    """Second order LINE TensorFlow model."""
 
     def _build_edge_prediction_based_model(
         self,
@@ -43,7 +43,7 @@ class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
             input_length=1,
             name="context_embeddings"
         )
-        return Activation("sigmoid")(Dot(axes=-1)([
+        return Activation(self._activation)(Dot(axes=-1)([
             Flatten()(node_embedding(sources)),
             Flatten()(context_embedding(destinations))
         ]))
