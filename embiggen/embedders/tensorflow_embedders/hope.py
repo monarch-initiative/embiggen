@@ -2,16 +2,20 @@
 from typing import Optional, Dict, Any
 
 from ensmallen import Graph
-from embiggen.sequences.tensorflow_sequences import EdgeJaccardSequence, AncestorsJaccardSequence
+from embiggen.sequences.tensorflow_sequences import (
+    EdgeJaccardSequence,
+    AncestorsJaccardSequence,
+    EdgeAdamicAdarSequence
+)
 from embiggen.embedders.tensorflow_embedders.first_order_line import FirstOrderLINETensorFlow
 
 
-class FirstOrderJaccard(FirstOrderLINETensorFlow):
-    """First order Jaccard TensorFlow model."""
+class HOPE(FirstOrderLINETensorFlow):
+    """HOPE TensorFlow model."""
 
     def __init__(
         self,
-        jaccard_type: str = "edge",
+        metric: str = "Jaccard",
         root_node_name: Optional[str] = None,
         embedding_size: int = 100,
         negative_samples_rate: float = 0.5,
@@ -30,11 +34,12 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
 
         Parameters
         -------------------------------------------
-        jaccard_type: str = "edge"
-            The Jaccard type to use. Can either be
-            `edge`, for the traditional edge Jaccard,
-            or alternatively the `ancestors` Jaccard,
-            for which is mandatory to provide the root node.
+        metric: str = "Jaccard"
+            The metric to use. Can either be
+            `Jaccard`, for the traditional edge Jaccard,
+            or alternatively the `Ancestors Jaccard` Jaccard,
+            for which is mandatory to provide the root node, or
+            alternatively `Adamic-Adar`.
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
@@ -72,19 +77,19 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
         random_state: Optional[int] = None
             The random state to use if the model is stocastic.
         """
-        if root_node_name is None and jaccard_type == "ancestors":
+        if root_node_name is None and metric == "Ancestors Jaccard":
             raise ValueError(
-                "The provided jaccard type is `ancestors`, but "
+                "The provided metric is `Ancestors Jaccard`, but "
                 "the root node name was not provided."
             )
-        if root_node_name is not None and jaccard_type == "edge":
+        if root_node_name is not None and metric != "Ancestors Jaccard":
             raise ValueError(
-                "The provided jaccard type is `edge`, but "
+                "The provided metric is not `Ancestors Jaccard`, but "
                 "the root node name was provided. It is unclear "
                 "what to do with this parameter."
             )
         self._root_node_name = root_node_name
-        self._jaccard_type = jaccard_type
+        self._metric = metric
         super().__init__(
             embedding_size=embedding_size,
             negative_samples_rate=negative_samples_rate,
@@ -95,6 +100,8 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
+            activation="linear",
+            loss="mse",
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache,
             random_state=random_state
@@ -103,14 +110,18 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
     @staticmethod
     def model_name() -> str:
         """Returns name of the current model."""
-        return "First Order Jaccard"
+        return "HOPE"
 
     def parameters(self) -> Dict[str, Any]:
         return {
-            **super().parameters(),
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in ("activation", )
+            },
             **dict(
                 root_node_name=self._root_node_name,
-                jaccard_type=self._jaccard_type,
+                metric=self._metric,
             )
         }
 
@@ -125,14 +136,14 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
         graph: Graph
             The graph to build the model for.
         """
-        if self._jaccard_type == "edge":
+        if self._metric == "Jaccard":
             return EdgeJaccardSequence(
                 graph=graph,
                 negative_samples_rate=self._negative_samples_rate,
                 batch_size=self._batch_size,
                 random_state=self._random_state
             )
-        if self._jaccard_type == "ancestors":
+        if self._metric == "Ancestors Jaccard":
             return AncestorsJaccardSequence(
                 graph=graph,
                 root_node_name=self._root_node_name,
@@ -140,8 +151,17 @@ class FirstOrderJaccard(FirstOrderLINETensorFlow):
                 batch_size=self._batch_size,
                 random_state=self._random_state
             )
+        if self._metric == "Adamic-Adar":
+            return EdgeAdamicAdarSequence(
+                graph=graph,
+                negative_samples_rate=self._negative_samples_rate,
+                batch_size=self._batch_size,
+                random_state=self._random_state
+            )
         raise NotImplementedError(
-            f"The provided Jaccard Index type {self._jaccard_type} "
-            "is not currently supported."
+            f"The provided metric {self._metric} "
+            "is not currently supported. The supported "
+            "metrics are `Jaccard`, `Ancestors Jaccard` and "
+            "`Adamic-Adar`."
         )
         

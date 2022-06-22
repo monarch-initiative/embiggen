@@ -28,6 +28,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 5,
         use_mirrored_strategy: bool = False,
+        activation: str = "sigmoid",
+        loss: str = "binary_crossentropy",
         optimizer: str = "nadam",
         enable_cache: bool = False,
         random_state: int = 42
@@ -62,6 +64,14 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             performance without decreasing the learning rate.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
+        activation: str = "sigmoid"
+            The activation to be used.
+            For LINE models, this is the Sigmoid, while
+            for the HOPE models this is a linear activation.
+        loss: str = "binary_crossentropy"
+            Loss to be minimezed during the training of the model.
+            For LINE models, this is a  binary ceossentropy (since the output is linear)
+            while for the HOPE models this is an Mean squared error.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
         enable_cache: bool = False
@@ -71,6 +81,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             The random state to use if the model is stocastic.
         """
         self._negative_samples_rate = negative_samples_rate
+        self._activation = activation
+        self._loss = loss
 
         super().__init__(
             embedding_size=embedding_size,
@@ -90,7 +102,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         return {
             **super().parameters(),
             **dict(
-                negative_samples_rate=self._negative_samples_rate
+                negative_samples_rate=self._negative_samples_rate,
+                activation=self._activation
             )
         }
 
@@ -144,8 +157,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
 
         model.compile(
             optimizer=self._optimizer,
-            loss="binary_crossentropy",
-            metrics="accuracy"
+            loss=self._loss,
         )
 
         return model
@@ -196,7 +208,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             AUTOTUNE = tf.data.AUTOTUNE
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
-        
+
         return (
             self._build_sequence(graph)
             .into_dataset()
@@ -232,24 +244,12 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         """Returns whether the model can optionally use node types."""
         return False
 
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return False
-
     @staticmethod
     def can_use_edge_weights() -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False
 
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return False
-
     @staticmethod
     def can_use_edge_types() -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
         return False

@@ -1,4 +1,4 @@
-"""Module providing Perceptron for edge prediction."""
+"""Module providing Feature Perceptron model for edge prediction."""
 from typing import Optional,  Dict, Any, List
 from ensmallen import Graph
 import numpy as np
@@ -6,67 +6,57 @@ from ensmallen import models
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
-class PerceptronEdgePrediction(AbstractEdgePredictionModel):
-    """Perceptron model for edge prediction."""
+class CooccurrenceEnsmallen(AbstractEdgePredictionModel):
+    """Edge prediction model based on cooccurrence."""
 
     def __init__(
         self,
-        edge_embedding_method_name: str = "CosineSimilarity",
-        number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 1024,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
-        learning_rate: float = 0.001,
+        window_size: int = 10,
+        iterations: int = 50,
         random_state: int = 42,
         verbose: bool = True
     ):
-        """Create new Perceptron object.
+        """Create new Feature Percetron object.
 
         Parameters
         ------------------------
-        edge_embedding_method_name: str
-            The embedding method to use. By default the cosine similarity is used.
-            The methods that are currently available are:
-            - CosineSimilarity
-            - EuclideanDistance
-            - Hadamard
-        number_of_epochs: int = 100
-            The number of epochs to train the model for. By default, 100.
-        number_of_edges_per_mini_batch: int = 1024
-            The number of samples to include for each mini-batch. By default 1024.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges only with source and
-            destination nodes that have different node types. By default false.
-        learning_rate: float = 0.001
-            Learning rate to use while training the model. By default 0.001.
+        window_size: int = 10
+            Window size for the local context.
+            On the borders the window size is trimmed.
+        iterations: int = 50
+            Number of iterations of the single walks.
         random_state: int = 42
             The random state to reproduce the model initialization and training. By default, 42.
         verbose: bool = True
             Whether to show epochs loading bar.
         """
         super().__init__(random_state=random_state)
-        self._model_kwargs = dict(
-            edge_embedding_method_name=edge_embedding_method_name,
-            number_of_epochs=number_of_epochs,
-            number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
-            learning_rate=learning_rate,
-        )
+        self._window_size = window_size
+        self._iterations = iterations
         self._verbose = verbose
-        self._model = models.EdgePredictionPerceptron(
-            **self._model_kwargs, random_state=random_state)
+        self._model = models.CooccurrenceEdgePrediction(
+            window_size=window_size,
+            iterations=iterations,
+            random_state=random_state
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
-        return self._model_kwargs
+        return dict(
+            **super().parameters(),
+            window_size=self._window_size,
+            iterations=self._iterations,
+        )
 
-    def clone(self) -> "PerceptronEdgePrediction":
-        return PerceptronEdgePrediction(**self.parameters())
+    def clone(self) -> "CooccurrenceEnsmallen":
+        return CooccurrenceEnsmallen(**self.parameters())
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            number_of_epochs=1
+            iterations=1,
+            window_size=2
         )
 
     def _fit(
@@ -77,36 +67,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
-        """Run fitting on the provided graph.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run predictions on.
-        support: Optional[Graph] = None
-            The graph describiding the topological structure that
-            includes also the above graph. This parameter
-            is mostly useful for topological classifiers
-            such as Graph Convolutional Networks.
-        node_features: Optional[List[np.ndarray]] = None
-            The node features to use.
-        node_type_features: Optional[List[np.ndarray]] = None
-            The node type features to use.
-        edge_features: Optional[List[np.ndarray]] = None
-            The edge features to use.
-        """
-        node_features = np.hstack(node_features)
-        if node_features.dtype != np.float32:
-            node_features = node_features.astype(np.float32)
-        if not node_features.data.c_contiguous:
-            node_features = np.ascontiguousarray(node_features)
-
-        self._model.fit(
-            graph=graph,
-            node_features=node_features,
-            verbose=self._verbose,
-            support=support
-        )
+        pass
 
     def _predict(
         self,
@@ -168,15 +129,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        node_features = np.hstack(node_features)
-        if node_features.dtype != np.float32:
-            node_features = node_features.astype(np.float32)
-        if not node_features.data.c_contiguous:
-            node_features = np.ascontiguousarray(node_features)
-
         return self._model.predict(
             graph=graph,
-            node_features=node_features,
+            support=support,
         )
 
     @staticmethod
@@ -214,7 +169,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     @staticmethod
     def model_name() -> str:
-        return "Perceptron"
+        return "Cooccurrence"
 
     @staticmethod
     def library_name() -> str:

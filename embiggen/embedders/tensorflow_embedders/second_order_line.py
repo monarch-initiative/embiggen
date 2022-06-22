@@ -43,7 +43,7 @@ class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
             input_length=1,
             name="context_embeddings"
         )
-        return Activation("sigmoid")(Dot(axes=-1)([
+        return Activation(self._activation)(Dot(axes=-1)([
             Flatten()(node_embedding(sources)),
             Flatten()(context_embedding(destinations))
         ]))
