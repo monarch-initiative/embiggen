@@ -1283,6 +1283,16 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["nodes_number"] = graph.get_nodes_number()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
+        for parameter_name, parameter_value in self.parameters():
+            if parameter_name in model_performance.columns:
+                raise ValueError(
+                    "There has been a collision between the column names used in "
+                    "the model performance report and the parameter names "
+                    f" of one of the classifiers {self.model_name()}."
+                    f"The parameter that has caused the collision is {parameter}. "
+                    "Please do change the name of the parameter in your model."
+                )
+            model_performance[parameter_name] = parameter_value
         if automatic_features_names:
             model_performance["automatic_features_names"] = format_list(
                 automatic_features_names
@@ -1291,7 +1301,7 @@ class AbstractClassifierModel(AbstractModel):
             if parameter in model_performance.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
-                    f"one of the classifiers, {self.model_name()},  and the parameter "
+                    "one of the embedding models and the parameter "
                     "used for the validation and reporting of the task itself. "
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
