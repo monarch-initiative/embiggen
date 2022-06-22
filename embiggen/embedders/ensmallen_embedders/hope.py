@@ -79,7 +79,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         elif self._metric == "Ancestors Jaccard":
             edges, weights = graph.get_ancestors_jaccard_coo_matrix(
                 graph.get_breadth_first_search_from_node_names(
-                    src_node_name=self.root_node_name,
+                    src_node_name=self._root_node_name,
                     compute_predecessors=True
                 )
             )
