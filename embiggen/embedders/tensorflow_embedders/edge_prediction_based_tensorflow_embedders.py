@@ -23,7 +23,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         negative_samples_rate: float = 0.5,
         epochs: int = 500,
         batch_size: int = 2**10,
-        early_stopping_min_delta: float = 0.0001,
+        early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 5,
