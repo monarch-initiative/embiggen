@@ -146,7 +146,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         else:
             U, sigmas, Vt = randomized_svd(
                 matrix,
-                k=int(self._embedding_size / 2)
+                n_components=int(self._embedding_size / 2)
             )
         
         sigmas = np.diagflat(np.sqrt(sigmas))
