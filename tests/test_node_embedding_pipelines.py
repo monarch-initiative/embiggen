@@ -1,6 +1,7 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 from unittest import TestCase
-from embiggen.embedders import embed_graph
+from embiggen.embedders import embed_graph, HOPEEnsmallen
+from ensmallen.datasets.kgobo import CIO
 from embiggen import get_available_models_for_node_embedding
 from tqdm.auto import tqdm
 
@@ -53,6 +54,26 @@ class TestNodeEmbeddingPipeline(TestCase):
             verbose=False,
             smoke_test=True
         )
+
+    def test_hope_ensmallen(self):
+        """Test that embed pipeline works fine in SPINE."""
+        graph_name = "CIO"
+        repository="kgobo"
+
+        for metric in HOPEEnsmallen.get_available_metrics():
+            if "ancestor" in metric.lower():
+                root_node_name = CIO().get_node_name_from_node_id(0)
+            else:
+                root_node_name = None
+            embed_graph(
+                graph_name,
+                repository=repository,
+                embedding_model="HOPE",
+                verbose=False,
+                smoke_test=True,
+                metric=metric,
+                root_node_name=root_node_name
+            )
     
     def test_model_recreation(self):
         df = get_available_models_for_node_embedding()

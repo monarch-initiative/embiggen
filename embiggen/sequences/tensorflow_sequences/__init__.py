@@ -7,7 +7,6 @@ from embiggen.sequences.tensorflow_sequences.gcn_edge_label_prediction_training_
 from embiggen.sequences.tensorflow_sequences.edge_prediction_sequence import EdgePredictionSequence
 from embiggen.sequences.tensorflow_sequences.edge_jaccard_sequence import EdgeJaccardSequence
 from embiggen.sequences.tensorflow_sequences.edge_adamic_adar_sequence import EdgeAdamicAdarSequence
-from embiggen.sequences.tensorflow_sequences.ancestors_jaccard_sequence import AncestorsJaccardSequence
 from embiggen.sequences.tensorflow_sequences.siamese_sequence import SiameseSequence
 from embiggen.sequences.tensorflow_sequences.kgsiamese_sequence import KGSiameseSequence
 
@@ -22,5 +21,4 @@ __all__ = [
     "KGSiameseSequence",
     "EdgeJaccardSequence",
     "EdgeAdamicAdarSequence",
-    "AncestorsJaccardSequence"
 ]

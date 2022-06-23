@@ -34,7 +34,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         enable_cache: bool = False,
         random_state: int = 42
     ):
-        """Create new sequence Siamese model.
+        """Create new Edge-predicton based model.
 
         Parameters
         -------------------------------------------

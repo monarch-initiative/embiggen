@@ -1,11 +1,12 @@
 """Module providing HOPE implementation."""
-from typing import Optional,  Dict, Any
+from typing import Optional,  Dict, Any, List
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
 from scipy.sparse import coo_matrix
-from scipy.sparse.linalg import svds
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from scipy.sparse.linalg import svds as sparse_svds
+from sklearn.utils.extmath import randomized_svd
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, format_list
 
 
 class HOPEEnsmallen(AbstractEmbeddingModel):
@@ -27,9 +28,13 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         metric: str = "Jaccard"
             The metric to use. Can either be
             `Jaccard`, for the traditional edge Jaccard,
+            or `Neighbours Intersection size` fo the normalized version,
             or alternatively the `Ancestors Jaccard` Jaccard,
-            for which is mandatory to provide the root node, or
+            for which is mandatory to provide the root node, 
+            or `Ancestors size` for the non-normalized version, or
             alternatively `Adamic-Adar`.
+            One other possible metric is simply `Adjacency`,
+            which means we directly use the graph adjacency matrix.
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
@@ -37,20 +42,26 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._metric = metric
-        self._root_node_name = root_node_name
-
-        if root_node_name is None and metric == "Ancestors Jaccard":
+        if metric not in self.get_available_metrics():
             raise ValueError(
-                "The provided metric is `Ancestors Jaccard`, but "
+                f"The provided metric {metric} is not a supported "
+                f"metric. The supported metrics are: {format_list(self.get_available_metrics())}."
+            )
+        ancestral_metric = ("Ancestors Jaccard", "Ancestors size")
+        if root_node_name is None and metric in ancestral_metric:
+            raise ValueError(
+                f"The provided metric is `{metric}`, but "
                 "the root node name was not provided."
             )
-        if root_node_name is not None and metric != "Ancestors Jaccard":
+        if root_node_name is not None and metric not in ancestral_metric:
             raise ValueError(
-                "The provided metric is not `Ancestors Jaccard`, but "
-                "the root node name was provided. It is unclear "
+                "The provided metric is not based on ancestors, but "
+                f"the root node name `{root_node_name}` was provided. It is unclear "
                 "what to do with this parameter."
             )
+
+        self._metric = metric
+        self._root_node_name = root_node_name
 
         super().__init__(
             embedding_size=embedding_size,
@@ -67,6 +78,18 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             )
         }
 
+    @staticmethod
+    def get_available_metrics() -> List[str]:
+        """Returns list of the available metrics."""
+        return [
+            "Jaccard",
+            "Neighbours Intersection size",
+            "Ancestors Jaccard",
+            "Ancestors size",
+            "Adamic-Adar",
+            "Adjacency"
+        ]
+
     def _fit_transform(
         self,
         graph: Graph,
@@ -74,35 +97,58 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
+        matrix = None
         if self._metric == "Jaccard":
             edges, weights = graph.get_jaccard_coo_matrix()
+        elif self._metric == "Neighbours Intersection size":
+            edges, weights = graph.get_neighbours_intersection_size_coo_matrix()
         elif self._metric == "Ancestors Jaccard":
-            edges, weights = graph.get_ancestors_jaccard_coo_matrix(
+            matrix = graph.get_shared_ancestors_jaccard_adjacency_matrix(
                 graph.get_breadth_first_search_from_node_names(
                     src_node_name=self._root_node_name,
                     compute_predecessors=True
-                )
+                ),
+                verbose=verbose
+            )
+        elif self._metric == "Ancestors size":
+            matrix = graph.get_shared_ancestors_size_adjacency_matrix(
+                graph.get_breadth_first_search_from_node_names(
+                    src_node_name=self._root_node_name,
+                    compute_predecessors=True
+                ),
+                verbose=verbose
             )
         elif self._metric == "Adamic-Adar":
             edges, weights = graph.get_adamic_adar_coo_matrix()
+        elif self._metric == "Adjacency":
+            edges, weights = graph.get_directed_edge_node_ids(), np.ones(
+                graph.get_number_of_directed_edges())
         else:
             raise NotImplementedError(
                 f"The provided metric {self._metric} "
-                "is not currently supported. The supported "
-                "metrics are `Jaccard`, `Ancestors Jaccard` and "
-                "`Adamic-Adar`."
+                "is not currently supported."
             )
 
-        coo = coo_matrix(
-            (weights, (edges[:, 0], edges[:, 1])),
-            shape=(
-                graph.get_nodes_number(),
-                graph.get_nodes_number()
-            ),
-            dtype=np.float32
-        )
-
-        U, sigmas, Vt = svds(coo, k=int(self._embedding_size / 2))
+        if matrix is None:
+            matrix = coo_matrix(
+                (weights, (edges[:, 0], edges[:, 1])),
+                shape=(
+                    graph.get_nodes_number(),
+                    graph.get_nodes_number()
+                ),
+                dtype=np.float32
+            )
+            
+            U, sigmas, Vt = sparse_svds(
+                matrix,
+                k=int(self._embedding_size / 2)
+            )
+        else:
+            U, sigmas, Vt = randomized_svd(
+                matrix,
+                k=int(self._embedding_size / 2)
+            )
+        
         sigmas = np.diagflat(np.sqrt(sigmas))
         left_embedding = np.dot(U, sigmas)
         right_embedding = np.dot(Vt.T, sigmas)

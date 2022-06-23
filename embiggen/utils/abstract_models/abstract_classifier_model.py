@@ -1285,7 +1285,7 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["evaluation_schema"] = evaluation_schema
 
         for parameter_name, parameter_value in self.parameters().items():
-            if parameter_name in model_performance.columns:
+            if ("Model", parameter_name) in model_performance.columns:
                 raise ValueError(
                     "There has been a collision between the column names used in "
                     "the model performance report and the parameter names "
@@ -1293,14 +1293,15 @@ class AbstractClassifierModel(AbstractModel):
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
                 )
-            model_performance[parameter_name] = parameter_value
+            if isinstance(parameter_value, (list, tuple)):
+                parameter_value = str(parameter_value)
+            model_performance[("Model", parameter_name)] = parameter_value
         
-        if automatic_features_names:
-            model_performance["automatic_features_names"] = format_list(
-                automatic_features_names
-            )
+        model_performance["automatic_features_names"] = format_list(
+            automatic_features_names
+        )
         
-        for parameter, value in automatic_features_parameters.items():
+        for parameter, value in enumerate(automatic_features_parameters.items()):
             if parameter in model_performance.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
