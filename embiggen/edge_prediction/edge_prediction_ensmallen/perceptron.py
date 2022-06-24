@@ -133,16 +133,14 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
+        new_node_features = []
         if node_features is not None:
-            new_node_features = []
             for node_feature in node_features:
                 if node_feature.dtype != np.float32:
                     node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
-        else:
-            new_node_features = None
 
         self._model.fit(
             graph=graph,
@@ -211,16 +209,14 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
+        new_node_features = []
         if node_features is not None:
-            new_node_features = []
             for node_feature in node_features:
                 if node_feature.dtype != np.float32:
                     node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
-        else:
-            new_node_features = None
 
         return self._model.predict(
             graph=graph,
