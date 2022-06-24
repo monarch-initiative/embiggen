@@ -15,7 +15,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_embeddings: Optional[List[str]] = None,
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
-        number_of_epochs: int = 500,
+        number_of_epochs: int = 100,
         number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         learning_rate: float = 0.001,
