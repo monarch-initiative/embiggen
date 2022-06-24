@@ -119,7 +119,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        AbstractNodeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractGCN.__init__(
             self,
             epochs=epochs,
@@ -148,6 +147,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             use_node_type_embedding=False,
             verbose=verbose,
         )
+        AbstractNodeLabelPredictionModel.__init__(self, random_state=random_state)
         self._number_of_units_per_head_layer = normalize_model_list_parameter(
             number_of_units_per_head_layer,
             number_of_head_layers,

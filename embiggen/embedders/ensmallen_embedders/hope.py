@@ -26,15 +26,18 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         embedding_size: int = 100
             Dimension of the embedding.
         metric: str = "Jaccard"
-            The metric to use. Can either be
-            `Jaccard`, for the traditional edge Jaccard,
-            or `Neighbours Intersection size` fo the normalized version,
-            or alternatively the `Ancestors Jaccard` Jaccard,
-            for which is mandatory to provide the root node, 
-            or `Ancestors size` for the non-normalized version, or
-            alternatively `Adamic-Adar`.
-            One other possible metric is simply `Adjacency`,
-            which means we directly use the graph adjacency matrix.
+            The metric to use.
+            You can either use:
+            - Jaccard
+            - Neighbours Intersection size
+            - Ancestors Jaccard
+            - Ancestors size
+            - Adamic-Adar
+            - Adjacency
+            - Laplacian
+            - Left Normalized Laplacian
+            - Right Normalized Laplacian
+            - Symmetric Normalized Laplacian
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
@@ -87,7 +90,11 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             "Ancestors Jaccard",
             "Ancestors size",
             "Adamic-Adar",
-            "Adjacency"
+            "Adjacency",
+            "Laplacian",
+            "Left Normalized Laplacian",
+            "Right Normalized Laplacian",
+            "Symmetric Normalized Laplacian",
         ]
 
     def _fit_transform(
@@ -100,6 +107,14 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         matrix = None
         if self._metric == "Jaccard":
             edges, weights = graph.get_jaccard_coo_matrix()
+        elif self._metric == "Laplacian":
+            edges, weights = graph.get_laplacian_coo_matrix()
+        elif self._metric == "Left Normalized Laplacian":
+            edges, weights = graph.get_left_normalized_laplacian_coo_matrix()
+        elif self._metric == "Right Normalized Laplacian":
+            edges, weights = graph.get_right_normalized_laplacian_coo_matrix()
+        elif self._metric == "Symmetric Normalized Laplacian":
+            edges, weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
         elif self._metric == "Neighbours Intersection size":
             edges, weights = graph.get_neighbours_intersection_size_coo_matrix()
         elif self._metric == "Ancestors Jaccard":

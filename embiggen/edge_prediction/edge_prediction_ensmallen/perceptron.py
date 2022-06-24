@@ -1,5 +1,5 @@
 """Module providing Perceptron for edge prediction."""
-from typing import Optional,  Dict, Any, List
+from typing import Optional,  Dict, Any, List, Union
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
@@ -11,11 +11,15 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def __init__(
         self,
-        edge_embedding_method_name: str = "CosineSimilarity",
-        number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 1024,
+        edge_features: Union[str, List[str]] = "JaccardCoefficient",
+        edge_embeddings: Optional[List[str]] = None,
+        cooccurrence_iterations: int = 100,
+        cooccurrence_window_size: int = 10,
+        number_of_epochs: int = 500,
+        number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         learning_rate: float = 0.001,
+        learning_rate_decay: float = 0.99,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -23,12 +27,36 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
         Parameters
         ------------------------
-        edge_embedding_method_name: str
-            The embedding method to use. By default the cosine similarity is used.
-            The methods that are currently available are:
-            - CosineSimilarity
-            - EuclideanDistance
-            - Hadamard
+        edge_features: Union[str, List[str]] = "JaccardCoefficient"
+            The edge features to compute for each edge.
+            Zero or more edge features can be used at once.
+            The currently supported edge features are:
+            - Degree,
+            - AdamicAdar,
+            - JaccardCoefficient,
+            - Cooccurrence,
+            - ResourceAllocationIndex,
+            - PreferentialAttachment,
+        edge_embeddings: Optional[List[str]] = None
+            The embedding methods to use for the provided node features.
+            Zero or more edge emmbedding methods can be used at once.
+            The currently supported edge embedding are:
+            - CosineSimilarity,
+            - EuclideanDistance,
+            - Concatenate,
+            - Hadamard,
+            - L1,
+            - L2,
+            - Add,
+            - Sub,
+            - Maximum,
+            - Minimum,
+        cooccurrence_iterations: int = 100
+            Number of iterations to run when computing the cooccurrence metric.
+            By default 100.
+        cooccurrence_window_size: int = 10
+            Window size to consider to measure the cooccurrence.
+            By default 100.
         number_of_epochs: int = 100
             The number of epochs to train the model for. By default, 100.
         number_of_edges_per_mini_batch: int = 1024
@@ -44,16 +72,26 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             Whether to show epochs loading bar.
         """
         super().__init__(random_state=random_state)
+        
+        if isinstance(edge_features, str):
+            edge_features = [edge_features]
+
         self._model_kwargs = dict(
-            edge_embedding_method_name=edge_embedding_method_name,
+            edge_features=edge_features,
+            edge_embeddings=edge_embeddings,
+            cooccurrence_iterations=cooccurrence_iterations,
+            cooccurrence_window_size=cooccurrence_window_size,
             number_of_epochs=number_of_epochs,
             number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay
         )
         self._verbose = verbose
         self._model = models.EdgePredictionPerceptron(
-            **self._model_kwargs, random_state=random_state)
+            **self._model_kwargs,
+            random_state=random_state
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
@@ -95,15 +133,17 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        node_features = np.hstack(node_features)
-        if node_features.dtype != np.float32:
-            node_features = node_features.astype(np.float32)
-        if not node_features.data.c_contiguous:
-            node_features = np.ascontiguousarray(node_features)
+        new_node_features = []
+        for node_feature in node_features:
+            if node_feature.dtype != np.float32:
+                node_feature = node_feature.astype(np.float32)
+            if not node_feature.data.c_contiguous:
+                node_feature = np.ascontiguousarray(node_feature)
+            new_node_features.append(node_feature)
 
         self._model.fit(
             graph=graph,
-            node_features=node_features,
+            node_features=new_node_features,
             verbose=self._verbose,
             support=support
         )
@@ -168,15 +208,18 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
-        node_features = np.hstack(node_features)
-        if node_features.dtype != np.float32:
-            node_features = node_features.astype(np.float32)
-        if not node_features.data.c_contiguous:
-            node_features = np.ascontiguousarray(node_features)
+        new_node_features = []
+        for node_feature in node_features:
+            if node_feature.dtype != np.float32:
+                node_feature = node_feature.astype(np.float32)
+            if not node_feature.data.c_contiguous:
+                node_feature = np.ascontiguousarray(node_feature)
+            new_node_features.append(node_feature)
 
         return self._model.predict(
             graph=graph,
-            node_features=node_features,
+            node_features=new_node_features,
+            support=support
         )
 
     @staticmethod
@@ -205,12 +248,10 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         """Returns whether the model can optionally use node types."""
         return False
 
-
     @staticmethod
     def can_use_edge_types() -> bool:
         """Returns whether the model can optionally use edge types."""
         return False
-
 
     @staticmethod
     def model_name() -> str:

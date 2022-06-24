@@ -211,7 +211,6 @@ class AbstractGCN(AbstractClassifierModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        super().__init__(random_state=random_state)
         self._number_of_graph_convolution_layers = number_of_graph_convolution_layers
         self._number_of_units_per_graph_convolution_layers = normalize_model_list_parameter(
             number_of_units_per_graph_convolution_layers,
@@ -254,6 +253,8 @@ class AbstractGCN(AbstractClassifierModel):
         self._verbose = verbose
         self._model = None
         self.history = None
+
+        super().__init__(random_state=random_state)
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
@@ -717,11 +718,4 @@ class AbstractGCN(AbstractClassifierModel):
         """Returns whether the model is parametrized to use edge weights."""
         return not self._use_simmetric_normalized_laplacian
 
-    @staticmethod
-    def can_use_node_types() -> bool:
-        """Returns whether the model can optionally use node types."""
-        return True
-
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return self._use_node_type_embedding
+    

@@ -458,3 +458,12 @@ class AbstractEdgeGCN(AbstractGCN):
     @staticmethod
     def requires_node_types() -> bool:
         return False
+
+    @staticmethod
+    def can_use_node_types() -> bool:
+        """Returns whether the model can optionally use node types."""
+        return True
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return self._use_node_type_embedding

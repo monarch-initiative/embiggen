@@ -38,25 +38,40 @@ class AbstractModel(Hashable):
             )
 
         # Identify and resolve tautological implementations.
-        for can_use, is_using in (
-            ("can_use_edge_types", "is_using_edge_types"),
-            ("can_use_node_types", "is_using_node_types"),
-            ("can_use_edge_weights", "is_using_edge_weights"),
-        ):
-            if not self.__getattribute__(can_use)():
-                try:
-                    self.__getattribute__(is_using)()
-                    raise ValueError(
-                        "We have found an useless method in the "
-                        f"class {self.__class__.__name__}, implementing method "
-                        f"{self.model_name()} from library {self.library_name()} "
-                        f"and task {self.task_name()}. "
-                        "It does not make sense to implement the "
-                        f"`{is_using}` method when the `{can_use}` "
-                        "always returns False."
-                    )
-                except NotImplementedError:
-                    pass
+        for graph_property in ("edge_types", "node_types", "edge_types"):
+            requires = f"requires_{graph_property}"
+            can_use = f"can_use_{graph_property}"
+            is_using = f"is_using_{graph_property}"
+            if self.__getattribute__(requires)():
+                for method in (can_use, is_using):
+                    try:
+                        self.__getattribute__(method)()
+                        raise ValueError(
+                            "We have found an useless method in the "
+                            f"class {self.__class__.__name__}, implementing method "
+                            f"{self.model_name()} from library {self.library_name()} "
+                            f"and task {self.task_name()}. "
+                            "It does not make sense to implement the "
+                            f"`{method}` method when the `{requires}` "
+                            "always returns True."
+                        )
+                    except NotImplementedError:
+                        pass
+            else:
+                if not self.__getattribute__(can_use)():
+                    try:
+                        self.__getattribute__(is_using)()
+                        raise ValueError(
+                            "We have found an useless method in the "
+                            f"class {self.__class__.__name__}, implementing method "
+                            f"{self.model_name()} from library {self.library_name()} "
+                            f"and task {self.task_name()}. "
+                            "It does not make sense to implement the "
+                            f"`{is_using}` method when the `{can_use}` "
+                            "always returns False."
+                        )
+                    except NotImplementedError:
+                        pass
 
         self._random_state = random_state
 

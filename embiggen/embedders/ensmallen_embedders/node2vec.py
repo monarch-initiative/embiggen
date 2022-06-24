@@ -13,17 +13,16 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     MODELS = {
         "cbow": models.CBOW,
-        "skipgram": models.SkipGram
+        "skipgram": models.SkipGram,
+        "walkletscbow": models.WalkletsCBOW,
+        "walkletsskipgram": models.WalkletsSkipGram,
     }
 
     def __init__(
         self,
         model_name: str,
-        epochs: int = 10,
-        learning_rate: float = 0.01,
-        learning_rate_decay: float = 0.9,
         enable_cache: bool = False,
-        **kwargs
+        **model_kwargs: Dict
     ):
         """Create new abstract Node2Vec method.
 
@@ -31,16 +30,12 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         --------------------------
         model_name: str
             The ensmallen graph embedding model to use.
-            Can either be the SkipGram of CBOW models.
-        epochs: int = 10
-            Number of epochs to train the model for.
-        learning_rate: float = 0.01
-            The learning rate to use to train the Node2Vec model.
-        learning_rate_decay: float = 0.9
-            Factor to reduce the learning rate for at each epoch. By default 0.9.
+            Can either be the SkipGram, WalkletsSkipGram, CBOW and WalkletsCBOW models.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        model_kwargs: Dict
+            Further parameters to forward to the model.
         """
         if model_name.lower() not in self.MODELS:
             raise ValueError(
@@ -50,24 +45,21 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
                 ).format(model_name)
             )
 
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
-        self._model_kwargs = kwargs
+        self._model_kwargs = model_kwargs
 
-        self._model = Node2VecEnsmallen.MODELS[model_name.lower()](**kwargs)
+        self._model = Node2VecEnsmallen.MODELS[model_name.lower()](**model_kwargs)
 
         super().__init__(
-            embedding_size=kwargs["embedding_size"],
+            embedding_size=model_kwargs["embedding_size"],
             enable_cache=enable_cache,
-            random_state=kwargs["random_state"]
+            random_state=model_kwargs["random_state"]
         )
 
     @staticmethod
     def smoke_test_parameters() -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=5,
+            **AbstractEmbeddingModel.smoke_test_parameters(),
             epochs=1,
             window_size=1,
             walk_length=4,
@@ -80,12 +72,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         """Returns parameters of the model."""
         return {
             **super().parameters(),
-            **self._model_kwargs,
-            **dict(
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
+            **self._model_kwargs
         }
 
     @staticmethod
@@ -109,21 +96,21 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=verbose
-        )
+        node_embeddings = self._model.fit_transform(graph)
+        if not isinstance(node_embeddings, list):
+            node_embeddings = [node_embeddings]
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
-            )
+            node_names = graph.get_node_names()
+            node_embeddings = [
+                pd.DataFrame(
+                    node_embedding,
+                    index=node_names
+                )
+                for node_embedding in node_embeddings
+            ]
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings=node_embedding
+            node_embeddings=node_embeddings
         )
 
     @staticmethod
