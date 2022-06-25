@@ -1949,7 +1949,9 @@ class GraphVisualizer:
             **kwargs
         )
 
-        if not return_caption:
+        if not return_caption or self._rotate:
+            if self._rotate:
+                return returned_values
             return self._handle_notebook_display(*returned_values)
 
         fig, axes, types_caption = returned_values
