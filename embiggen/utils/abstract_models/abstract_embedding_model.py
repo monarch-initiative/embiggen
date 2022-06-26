@@ -89,11 +89,9 @@ class AbstractEmbeddingModel(AbstractModel):
         enable_cache_arg_name="self._enable_cache",
         args_to_ignore=["verbose"]
     )
-    def fit_transform(
+    def _cached_fit_transform(
         self,
-        graph: Union[Graph, str],
-        repository: Optional[str] = None,
-        version: Optional[str] = None,
+        graph: Graph,
         return_dataframe: bool = True,
         verbose: bool = True
     ) -> EmbeddingResult:
@@ -103,16 +101,6 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run embedding on.
-        repository: Optional[str] = None
-            The repository from where to retrieve these graphs.
-            This only applies for the graph names that are available
-            from the ensmallen automatic retrieval.
-        version: Optional[str] = None
-            The version of the graphs to be retrieved.
-            When this is left to none, the retrieved version will be
-            the one that has been indicated to be the most recent one.
-            This only applies for the graph names that are available
-            from the ensmallen automatic retrieval.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
         verbose: bool = True
@@ -122,12 +110,6 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         An embedding result, wrapping the complexity of a generic embedding.
         """
-        if isinstance(graph, str):
-            graph = get_dataset(
-                name=graph,
-                repository=repository,
-                version=version
-            )()
         if not graph.has_nodes():
             raise ValueError(
                 f"The provided graph {graph.get_name()} is empty."
@@ -203,3 +185,48 @@ class AbstractEmbeddingModel(AbstractModel):
             )
 
         return result
+
+    def fit_transform(
+        self,
+        graph: Union[Graph, str],
+        repository: Optional[str] = None,
+        version: Optional[str] = None,
+        return_dataframe: bool = True,
+        verbose: bool = True
+    ) -> EmbeddingResult:
+        """Execute embedding on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run embedding on.
+        repository: Optional[str] = None
+            The repository from where to retrieve these graphs.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
+        version: Optional[str] = None
+            The version of the graphs to be retrieved.
+            When this is left to none, the retrieved version will be
+            the one that has been indicated to be the most recent one.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
+        return_dataframe: bool = True
+            Whether to return a pandas DataFrame with the embedding.
+        verbose: bool = True
+            Whether to show loading bars.
+
+        Returns
+        --------------------
+        An embedding result, wrapping the complexity of a generic embedding.
+        """
+        if isinstance(graph, str):
+            graph = get_dataset(
+                name=graph,
+                repository=repository,
+                version=version
+            )()
+        self._cached_fit_transform(
+            graph=graph,
+            return_dataframe=return_dataframe,
+            verbose=verbose
+        )
