@@ -120,7 +120,7 @@ class Siamese(TensorFlowEmbedder):
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
             name="node_embeddings"
@@ -143,7 +143,7 @@ class Siamese(TensorFlowEmbedder):
             ]
 
             node_type_embedding_layer = Embedding(
-                input_dim=graph.get_node_types_number() + node_types_offset,
+                input_dim=graph.get_number_of_node_types() + node_types_offset,
                 output_dim=self._embedding_size,
                 input_length=max_node_types,
                 name="node_type_embeddings",
@@ -168,7 +168,7 @@ class Siamese(TensorFlowEmbedder):
         inputs.extend(node_type_inputs)
         inputs.append(edge_types)
 
-        edge_types_number = graph.get_edge_types_number()
+        edge_types_number = graph.get_number_of_edge_types()
         unknown_edge_types = graph.has_unknown_edge_types()
         edge_types_offset = int(unknown_edge_types)
         edge_type_embedding = GlobalAveragePooling1D()(Embedding(

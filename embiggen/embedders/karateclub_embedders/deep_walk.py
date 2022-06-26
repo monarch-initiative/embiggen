@@ -61,7 +61,6 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-
             walk_number=self._walk_number,
             walk_length=self._walk_length,
             window_size=self._window_size,

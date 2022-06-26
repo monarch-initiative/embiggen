@@ -90,7 +90,7 @@ def graph_to_sparse_tensor(
         return tf.sparse.reorder(tf.SparseTensor(
             edge_node_ids,
             np.abs(weights),
-            (graph.get_nodes_number(), graph.get_nodes_number())
+            (graph.get_number_of_nodes(), graph.get_number_of_nodes())
         ))
 
     return tf.SparseTensor(
@@ -100,7 +100,7 @@ def graph_to_sparse_tensor(
             if use_weights
             else tf.ones(graph.get_number_of_directed_edges())
         ),
-        (graph.get_nodes_number(), graph.get_nodes_number())
+        (graph.get_number_of_nodes(), graph.get_number_of_nodes())
     )
 
 
@@ -391,7 +391,7 @@ class AbstractGCN(AbstractClassifierModel):
         # while without we do not have them we can keep an open world assumption.
         # Basically, without node embedding we can have different vocabularies,
         # while with node embedding the vocabulary becomes fixed.
-        nodes_number = graph.get_nodes_number() if self._use_node_embedding else None
+        nodes_number = graph.get_number_of_nodes() if self._use_node_embedding else None
 
         # We create the list we will use to collect the input features.
         input_features = []
@@ -450,7 +450,7 @@ class AbstractGCN(AbstractClassifierModel):
             input_features.append(node_ids)
 
             node_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_nodes_number(),
+                vocabulary_size=graph.get_number_of_nodes(),
                 dimension=self._node_embedding_size,
                 input_length=1,
                 name="NodesEmbedding"
@@ -467,7 +467,7 @@ class AbstractGCN(AbstractClassifierModel):
             input_features.append(node_type_ids)
 
             node_type_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_nodes_number(),
+                vocabulary_size=graph.get_number_of_nodes(),
                 dimension=self._node_embedding_size,
                 input_length=graph.get_maximum_multilabel_count(),
                 mask_zero=(
@@ -573,7 +573,7 @@ class AbstractGCN(AbstractClassifierModel):
             sample_weight=self._get_model_training_output(graph),
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
             shuffle=False,
             class_weight=class_weight,
             callbacks=[
@@ -617,7 +617,7 @@ class AbstractGCN(AbstractClassifierModel):
                 node_type_features,
                 edge_features,
             ),
-            batch_size=support.get_nodes_number(),
+            batch_size=support.get_number_of_nodes(),
             verbose=False
         )
 
@@ -698,7 +698,7 @@ class AbstractGCN(AbstractClassifierModel):
 
     @staticmethod
     def requires_edge_weights() -> bool:
-        return True
+        return False
 
     @staticmethod
     def requires_positive_edge_weights() -> bool:

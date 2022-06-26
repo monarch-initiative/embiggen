@@ -1,6 +1,7 @@
 """Module providing abstract classes for embedding models."""
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from ensmallen import Graph
+from ensmallen.datasets import get_dataset
 import warnings
 from cache_decorator import Cache
 from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
@@ -90,7 +91,9 @@ class AbstractEmbeddingModel(AbstractModel):
     )
     def fit_transform(
         self,
-        graph: Graph,
+        graph: Union[Graph, str],
+        repository: Optional[str] = None,
+        version: Optional[str] = None,
         return_dataframe: bool = True,
         verbose: bool = True
     ) -> EmbeddingResult:
@@ -100,6 +103,16 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run embedding on.
+        repository: Optional[str] = None
+            The repository from where to retrieve these graphs.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
+        version: Optional[str] = None
+            The version of the graphs to be retrieved.
+            When this is left to none, the retrieved version will be
+            the one that has been indicated to be the most recent one.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
         verbose: bool = True
@@ -109,6 +122,12 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         An embedding result, wrapping the complexity of a generic embedding.
         """
+        if isinstance(graph, str):
+            graph = get_dataset(
+                name=graph,
+                repository=repository,
+                version=version
+            )()
         if not graph.has_nodes():
             raise ValueError(
                 f"The provided graph {graph.get_name()} is empty."
@@ -159,7 +178,7 @@ class AbstractEmbeddingModel(AbstractModel):
                 warnings.warn(
                     (
                         f"Please be advised that the {graph.get_name()} graph "
-                        f"contains {graph.get_disconnected_nodes_number()} disconnected nodes. "
+                        f"contains {graph.get_number_of_disconnected_nodes()} disconnected nodes. "
                         "Consider that node embedding algorithms that only use topological information "
                         "such as CBOW, GloVe, SPINE and SkipGram are not able to provide meaningful "
                         "embeddings for these nodes, and their embedding will be generally "

@@ -206,7 +206,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         negative_graph = graph.sample_negative_graph(
             number_of_negative_samples=int(
-                math.ceil(graph.get_edges_number() *
+                math.ceil(graph.get_number_of_edges() *
                           self._training_unbalance_rate)
             ),
             random_state=self._random_state,

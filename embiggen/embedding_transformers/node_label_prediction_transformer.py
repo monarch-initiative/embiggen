@@ -131,7 +131,7 @@ class NodeLabelPredictionTransformer:
                 (
                     np.nan if node_type_id is None else node_type_id[0]
                     for node_type_id in (graph.get_node_type_ids_from_node_id(node_id)
-                    for node_id in range(graph.get_nodes_number()))
+                    for node_id in range(graph.get_number_of_nodes()))
                 ),
                 dtype=np.float32
             )

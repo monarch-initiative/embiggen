@@ -130,7 +130,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_known_node_types_number() / graph.get_known_node_types_number()
+        train_size = train.get_number_of_known_node_types() / graph.get_number_of_known_node_types()
 
         if self.is_multilabel_prediction_task():
             labels = graph.get_one_hot_encoded_node_types()
@@ -167,7 +167,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_nodes_number": evaluation_graph.get_known_node_types_number(),
+                "known_nodes_number": evaluation_graph.get_number_of_known_node_types(),
                 **self.evaluate_predictions(
                     labels_subset,
                     predictions,
@@ -295,7 +295,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "of the node-label prediction models."
             )
 
-        self._is_binary_prediction_task = graph.get_node_types_number() == 2
+        self._is_binary_prediction_task = graph.get_number_of_node_types() == 2
         self._is_multilabel_prediction_task = graph.has_multilabel_node_types()
 
         node_type_counts = graph.get_node_type_names_counts_hashmap()

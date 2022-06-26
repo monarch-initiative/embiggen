@@ -126,7 +126,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_known_edge_types_number() / graph.get_known_edge_types_number()
+        train_size = train.get_number_of_known_edge_types() / graph.get_number_of_known_edge_types()
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -158,7 +158,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_edges_number": graph.get_known_node_types_number(),
+                "known_edges_number": graph.get_number_of_known_node_types(),
                 **self.evaluate_predictions(
                     labels,
                     predictions,
@@ -203,7 +203,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 "of the edge-label prediction models."
             )
 
-        self._is_binary_prediction_task = graph.get_edge_types_number() == 2
+        self._is_binary_prediction_task = graph.get_number_of_edge_types() == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
 
         super().fit(

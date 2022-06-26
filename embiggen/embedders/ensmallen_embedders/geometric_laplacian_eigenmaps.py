@@ -1,47 +1,34 @@
-"""Module providing abstract Node2Vec implementation."""
-from typing import Dict, Any
+"""Module providing GLEE implementation."""
+from typing import Optional,  Dict, Any
 from ensmallen import Graph
 import pandas as pd
-from ensmallen import models
+import numpy as np
+from scipy.sparse import coo_matrix
+from scipy.sparse.linalg import eigsh
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
-class WeightedSPINE(AbstractEmbeddingModel):
-    """Abstract class for Node2Vec algorithms."""
+class GLEEEnsmallen(AbstractEmbeddingModel):
+    """Class implementing the GLEE algorithm."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        use_edge_weights_as_probabilities: bool = False,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new GLEE method.
 
         Parameters
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        use_edge_weights_as_probabilities: bool = False
-            Whether to treat the weights as probabilities.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._model = models.WeightedSPINE(
-            embedding_size=embedding_size,
-            use_edge_weights_as_probabilities=use_edge_weights_as_probabilities,
-        )
-
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
-        )
-
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            embedding_size=5,
+            enable_cache=enable_cache,
         )
 
     def _fit_transform(
@@ -51,18 +38,33 @@ class WeightedSPINE(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            verbose=verbose,
-        ).T
+        edges, weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
+
+        coo = coo_matrix(
+            (weights, (edges[:, 0], edges[:, 1])),
+            shape=(
+                graph.get_number_of_nodes(),
+                graph.get_number_of_nodes()
+            ),
+            dtype=np.float32
+        )
+
+        embedding = eigsh(
+            coo,
+            k=self._embedding_size + 1,
+            which="LM",
+            return_eigenvectors=True
+        )[1]
+
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
+            node_names = graph.get_node_names()
+            embedding = pd.DataFrame(
+                embedding,
+                index=node_names
             )
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings=node_embedding
+            node_embeddings=embedding
         )
 
     @staticmethod
@@ -72,7 +74,7 @@ class WeightedSPINE(AbstractEmbeddingModel):
     @staticmethod
     def model_name() -> str:
         """Returns name of the model."""
-        return "WeightedSPINE"
+        return "GLEE"
 
     @staticmethod
     def library_name() -> str:
@@ -87,19 +89,24 @@ class WeightedSPINE(AbstractEmbeddingModel):
         return True
 
     @staticmethod
-    def requires_edge_weights() -> bool:
-        return True
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
-        return True
-
-    @staticmethod
     def requires_node_types() -> bool:
         return False
 
     @staticmethod
     def requires_edge_types() -> bool:
+        return False
+
+    @staticmethod
+    def requires_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def requires_positive_edge_weights() -> bool:
+        return False
+
+    @staticmethod
+    def can_use_edge_weights() -> bool:
+        """Returns whether the model can optionally use edge weights."""
         return False
 
     @staticmethod

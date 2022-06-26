@@ -116,12 +116,12 @@ class GCNEdgePredictionSequence(Sequence):
             return_node_types=False,
             return_edge_types=return_edge_types,
             use_edge_metrics=use_edge_metrics,
-            batch_size=support.get_nodes_number()
+            batch_size=support.get_number_of_nodes()
         )
 
         self._edge_features_sequence = None if edge_features is None else VectorSequence(
             edge_features,
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
             shuffle=False
         )
 
@@ -129,7 +129,7 @@ class GCNEdgePredictionSequence(Sequence):
         self._current_index = 0
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
         )
 
     def __call__(self):

@@ -194,12 +194,12 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
-        return graph.get_node_types_number()
+        return graph.get_number_of_node_types()
 
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
         """Returns dictionary with class weights."""
-        nodes_number = graph.get_nodes_number()
-        node_types_number = graph.get_node_types_number()
+        nodes_number = graph.get_number_of_nodes()
+        node_types_number = graph.get_number_of_node_types()
         return {
             node_type_id: nodes_number / count / node_types_number
             for node_type_id, count in graph.get_node_type_id_counts_hashmap().items()

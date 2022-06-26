@@ -36,7 +36,7 @@ class CBOWTensorFlow(Node2Vec):
 
         # Getting the average context embedding
         average_context_embedding = GlobalAveragePooling1D()(Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=self._window_size*2,
             name="node_embedding",
@@ -44,7 +44,7 @@ class CBOWTensorFlow(Node2Vec):
 
         # Adding layer that also executes the loss function
         sampled_softmax = SampledSoftmax(
-            vocabulary_size=graph.get_nodes_number(),
+            vocabulary_size=graph.get_number_of_nodes(),
             embedding_size=self._embedding_size,
             number_of_negative_samples=self._number_of_negative_samples,
         )((average_context_embedding, central_terms))

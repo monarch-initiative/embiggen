@@ -336,7 +336,7 @@ class GraphVisualizer:
         self._positive_graph = graph.sample_positive_graph(
             number_of_samples=min(
                 number_of_subsampled_edges,
-                graph.get_edges_number()
+                graph.get_number_of_edges()
             ),
             random_state=random_state,
             edge_type_names=edge_type_names,
@@ -355,7 +355,7 @@ class GraphVisualizer:
             self._negative_graph = self._subgraph_of_interest.sample_negative_graph(
                 number_of_negative_samples=min(
                     number_of_subsampled_negative_edges,
-                    self._positive_graph.get_edges_number()
+                    self._positive_graph.get_number_of_edges()
                 ),
                 random_state=random_state,
                 use_zipfian_sampling=True,
@@ -414,7 +414,7 @@ class GraphVisualizer:
     def iterate_subsampled_node_ids(self) -> Iterator[int]:
         """Return iterator over the node IDs of the subsampled graph."""
         if self._subsampled_node_ids is None:
-            return range(self._graph.get_nodes_number())
+            return range(self._graph.get_number_of_nodes())
         return iter(self._subsampled_node_ids)
 
     def _handle_notebook_display(
@@ -667,19 +667,17 @@ class GraphVisualizer:
             else:
                 node_embedding = self._node_embedding_method_name
         if isinstance(node_embedding, str):
-            if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
-                self._has_autodetermined_node_embedding_name = True
-                self._node_embedding_method_name = node_embedding
             node_embedding = embed_graph(
                 graph=self._graph,
                 embedding_model=node_embedding,
+                return_dataframe=False,
                 **node_embedding_kwargs
-            ).get_node_embedding_from_index(0)
-        elif isinstance(node_embedding, EmbeddingResult):
+            )
+        if isinstance(node_embedding, EmbeddingResult):
             if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
                 self._has_autodetermined_node_embedding_name = True
                 self._node_embedding_method_name = node_embedding.embedding_method_name
-            node_embedding = node_embedding.get_node_embedding_from_index(0)
+            node_embedding = np.hstack(node_embedding.get_all_node_embedding())
             
         elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
             self._has_autodetermined_node_embedding_name = True
@@ -689,12 +687,12 @@ class GraphVisualizer:
                 else node_embedding
             )
 
-        if node_embedding.shape[0] != self._graph.get_nodes_number():
+        if node_embedding.shape[0] != self._graph.get_number_of_nodes():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
                  "does not match the number of nodes in the graph {}.").format(
                     node_embedding.shape[0],
-                    self._graph.get_nodes_number()
+                    self._graph.get_number_of_nodes()
                 )
             )
 
@@ -769,7 +767,7 @@ class GraphVisualizer:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
-        if self._decomposition_method == "TSNE" and X.shape[1] > 50 and self._graph.get_nodes_number() > 50:
+        if self._decomposition_method == "TSNE" and X.shape[1] > 50 and self._graph.get_number_of_nodes() > 50:
             X = PCA(
                 n_components=50,
                 random_state=self._random_state
@@ -859,9 +857,9 @@ class GraphVisualizer:
         )
 
         # If necessary, we proceed with the subsampling
-        if self._number_of_subsampled_nodes is not None and self._graph.get_nodes_number() > self._number_of_subsampled_nodes:
+        if self._number_of_subsampled_nodes is not None and self._graph.get_number_of_nodes() > self._number_of_subsampled_nodes:
             if self._graph.has_node_types():
-                train_size = self._number_of_subsampled_nodes / self._graph.get_nodes_number()
+                train_size = self._number_of_subsampled_nodes / self._graph.get_number_of_nodes()
                 node_type_counts = self._graph.get_node_type_names_counts_hashmap()
                 _, least_common_count = min(
                     node_type_counts.items(),
@@ -875,7 +873,7 @@ class GraphVisualizer:
                 )
             else:
                 self._subsampled_node_ids = np.random.randint(
-                    self._graph.get_nodes_number(),
+                    self._graph.get_number_of_nodes(),
                     size=self._number_of_subsampled_nodes
                 )
             node_transformer = NodeTransformer(
@@ -1732,10 +1730,10 @@ class GraphVisualizer:
             )
 
         if show_edges == "auto":
-            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -2703,13 +2701,13 @@ class GraphVisualizer:
             node_type: top_10_node_types.get(node_type, 0)
             for node_type in node_types_counts
         }
-        node_types_number = self._graph.get_node_types_number()
+        node_types_number = self._graph.get_number_of_node_types()
         unknown_node_types_id = node_types_number
 
         # According to whether the subsampled node IDs were given,
         # we iterate on them or on the complete set of nodes of the graph.
         if self._subsampled_node_ids is None:
-            nodes_iterator = range(self._graph.get_nodes_number())
+            nodes_iterator = range(self._graph.get_number_of_nodes())
         else:
             nodes_iterator = self._subsampled_node_ids
 
@@ -2736,7 +2734,7 @@ class GraphVisualizer:
     def _get_flatten_unknown_edge_types(self) -> np.ndarray:
         """Returns flattened edge type IDs adjusted for the current instance."""
         # The following is needed to normalize the unknown types
-        unknown_edge_types_id = self._graph.get_edge_types_number()
+        unknown_edge_types_id = self._graph.get_number_of_edge_types()
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
@@ -2842,7 +2840,7 @@ class GraphVisualizer:
             )
 
         if show_edges == "auto":
-            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -2853,13 +2851,13 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         node_types = self._get_flatten_multi_label_and_unknown_node_types()
 
         node_type_names_iter = (
             self._graph.get_node_type_name_from_node_type_id(node_id)
-            for node_id in range(self._graph.get_node_types_number())
+            for node_id in range(self._graph.get_number_of_node_types())
         )
 
         if self._graph.has_unknown_node_types():
@@ -3000,7 +2998,7 @@ class GraphVisualizer:
             )
 
         if show_edges == "auto":
-            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -3011,7 +3009,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         unique_ontologies, ontology_ids = self._get_flatten_unknown_node_ontologies()
 
@@ -3149,7 +3147,7 @@ class GraphVisualizer:
             )
 
         if show_edges == "auto":
-            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -3160,7 +3158,7 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         components, components_number, _, _ = self._support.get_connected_components()
         sizes = np.bincount(components, minlength=components_number).tolist()
@@ -3371,10 +3369,10 @@ class GraphVisualizer:
             )
 
         if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_nodes_number() < 50 and not self._rotate
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges == "auto":
-            show_edges = self._graph.get_nodes_number() < 50 and not self._rotate
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
 
         if show_edges:
             figure, axes = self.plot_edge_segments(
@@ -3527,7 +3525,7 @@ class GraphVisualizer:
 
         edge_type_names_iter = (
             self._graph.get_edge_type_name_from_edge_type_id(edge_id)
-            for edge_id in range(self._graph.get_edge_types_number())
+            for edge_id in range(self._graph.get_number_of_edge_types())
         )
 
         if self._graph.has_unknown_edge_types():
@@ -4094,7 +4092,7 @@ class GraphVisualizer:
             figure.patch.set_facecolor("white")
         number_of_buckets = min(
             100,
-            self._graph.get_nodes_number() // 10
+            self._graph.get_number_of_nodes() // 10
         )
         axes.hist(
             self._support.get_non_zero_subgraph_node_degrees(self._graph),

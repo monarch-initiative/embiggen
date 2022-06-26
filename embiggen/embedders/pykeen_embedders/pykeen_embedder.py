@@ -176,8 +176,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         triples_factory = CoreTriplesFactory(
             torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
-            num_entities=graph.get_nodes_number(),
-            num_relations=graph.get_edge_types_number(),
+            num_entities=graph.get_number_of_nodes(),
+            num_relations=graph.get_number_of_edge_types(),
             entity_ids=graph.get_node_ids(),
             relation_ids=graph.get_unique_edge_type_ids(),
             create_inverse_triples=False,

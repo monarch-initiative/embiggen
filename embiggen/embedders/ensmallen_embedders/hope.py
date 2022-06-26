@@ -148,8 +148,8 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             matrix = coo_matrix(
                 (weights, (edges[:, 0], edges[:, 1])),
                 shape=(
-                    graph.get_nodes_number(),
-                    graph.get_nodes_number()
+                    graph.get_number_of_nodes(),
+                    graph.get_number_of_nodes()
                 ),
                 dtype=np.float32
             )

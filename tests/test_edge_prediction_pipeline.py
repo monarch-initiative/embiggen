@@ -104,7 +104,7 @@ class TestEvaluateEdgePrediction(TestCase):
                 repository = "kgobo"
 
             bar.set_description(
-                f"Testing embedding model {row.model_name} from library {row.library_name}")
+                f"Testing {row.model_name} from library {row.library_name}")
 
             edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),

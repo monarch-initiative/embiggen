@@ -284,7 +284,7 @@ class AbstractEdgeGCN(AbstractGCN):
         # while without we do not have them we can keep an open world assumption.
         # Basically, without node embedding we can have different vocabularies,
         # while with node embedding the vocabulary becomes fixed.
-        nodes_number = graph.get_nodes_number() if self._use_node_embedding else None
+        nodes_number = graph.get_number_of_nodes() if self._use_node_embedding else None
 
         source_nodes = Input(
             (1,),

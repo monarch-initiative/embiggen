@@ -270,7 +270,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_nodes_number() != nf.shape[0]:
+            if graph.get_number_of_nodes() != nf.shape[0]:
                 raise ValueError(
                     (
                         "The provided node features have {rows_number} rows "
@@ -282,7 +282,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_nodes_number()
+                        nodes_number=graph.get_number_of_nodes()
                     )
                 )
 
@@ -470,7 +470,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_node_types_number() != nf.shape[0]:
+            if graph.get_number_of_node_types() != nf.shape[0]:
                 raise ValueError(
                     (
                         "The provided node type features have {rows_number} rows "
@@ -482,7 +482,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_node_types_number()
+                        nodes_number=graph.get_number_of_node_types()
                     )
                 )
 
@@ -682,7 +682,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=ef.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        edges_number=graph.get_edges_number()
+                        edges_number=graph.get_number_of_edges()
                     )
                 )
 
@@ -1280,7 +1280,7 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["model_name"] = self.model_name()
         model_performance["library_name"] = self.library_name()
         model_performance["graph_name"] = graph.get_name()
-        model_performance["nodes_number"] = graph.get_nodes_number()
+        model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
 

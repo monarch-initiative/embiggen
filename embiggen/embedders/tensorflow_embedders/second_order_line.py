@@ -32,13 +32,13 @@ class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
             The destinations nodes to be used in the model.
         """
         node_embedding = Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
             name="node_embeddings"
         )
         context_embedding = Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
             name="context_embeddings"

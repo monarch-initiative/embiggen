@@ -120,13 +120,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             )
 
         train_size = (
-            train.get_edges_number() / (train.get_edges_number() + test.get_edges_number())
+            train.get_number_of_edges() / (train.get_number_of_edges() + test.get_number_of_edges())
         )
 
         return (
             sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(sampler_graph.get_edges_number()*unbalance_rate)
+                    math.ceil(sampler_graph.get_number_of_edges()*unbalance_rate)
                 ),
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,

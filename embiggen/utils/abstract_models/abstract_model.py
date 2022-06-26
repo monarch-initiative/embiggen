@@ -38,10 +38,11 @@ class AbstractModel(Hashable):
             )
 
         # Identify and resolve tautological implementations.
-        for graph_property in ("edge_types", "node_types", "edge_types"):
+        for graph_property in ("edge_types", "node_types", "edge_weights"):
             requires = f"requires_{graph_property}"
             can_use = f"can_use_{graph_property}"
             is_using = f"is_using_{graph_property}"
+            
             if self.__getattribute__(requires)():
                 for method in (can_use, is_using):
                     try:

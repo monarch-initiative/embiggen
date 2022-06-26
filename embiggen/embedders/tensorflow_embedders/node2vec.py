@@ -158,7 +158,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         graph: Graph
             The graph to compute the number of steps.
         """
-        return max(graph.get_nodes_number() // self._batch_size, 1)
+        return max(graph.get_number_of_nodes() // self._batch_size, 1)
 
     def _build_input(
         self,
