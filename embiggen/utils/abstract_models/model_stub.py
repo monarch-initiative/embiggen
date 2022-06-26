@@ -185,7 +185,7 @@ def get_model_or_stub(
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
 
-                @classmethod
+                @staticmethod
                 def task_name() -> str:
                     """Returns name of the task"""
                     return parent_class.task_name()
