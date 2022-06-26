@@ -21,8 +21,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_multilabel_prediction_task = None
         super().__init__(random_state=random_state)
     
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         """Returns whether this method requires node types."""
         return True
 
@@ -31,8 +31,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns name of the task this model is used for."""
         return "Edge Label Prediction"
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return False
 
     def is_binary_prediction_task(self) -> bool:
@@ -43,8 +43,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns whether the model was fit on a multilabel prediction task."""
         return self._is_multilabel_prediction_task
 
-    @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    @classmethod
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
@@ -214,22 +214,22 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             edge_features=edge_features,
         )
 
-    @staticmethod
-    def task_involves_edge_weights() -> bool:
+    @classmethod
+    def task_involves_edge_weights(cls) -> bool:
         """Returns whether the model task involves edge weights."""
         return False
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return True
 
-    @staticmethod
-    def task_involves_node_types() -> bool:
+    @classmethod
+    def task_involves_node_types(cls) -> bool:
         """Returns whether the model task involves node types."""
         return False
 
-    @staticmethod
-    def task_involves_topology() -> bool:
+    @classmethod
+    def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False

@@ -227,8 +227,8 @@ class AbstractEdgeGCN(AbstractGCN):
         self._use_edge_metrics = use_edge_metrics
         self._use_node_types = None
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             AbstractGCN.smoke_test_parameters(),
@@ -272,6 +272,22 @@ class AbstractEdgeGCN(AbstractGCN):
     def _get_model_training_sample_weights(self, graph: Graph) -> Optional[np.ndarray]:
         """Returns training output tuple."""
         return None
+
+    @classmethod
+    def get_available_edge_embedding_methods(cls) -> List[str]:
+        """Returns a list of the available edge embedding methods."""
+        return [
+            "Concatenation",
+            "Average",
+            "Hadamard",
+            "Maximum",
+            "Minimum",
+            "Add",
+            "Subtract",
+            "L1",
+            "L2",
+            "Dot",
+        ]
 
     def _build_model(
         self,
@@ -385,7 +401,8 @@ class AbstractEdgeGCN(AbstractGCN):
         elif self._edge_embedding_method == "Dot":
             hidden = Dot(
                 name="NodeDot",
-                normalize=True
+                normalize=True,
+                axes=-1
             )(source_and_destination_features)
 
         if len(other_features) > 0:
@@ -455,12 +472,12 @@ class AbstractEdgeGCN(AbstractGCN):
         # always requires a batch size equal to the nodes number.
         return predictions[:graph.get_number_of_directed_edges()]
 
-    @staticmethod
-    def requires_node_types() -> bool:
+    @classmethod
+    def requires_node_types(cls) -> bool:
         return False
 
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return True
 

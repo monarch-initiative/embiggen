@@ -23,12 +23,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         # Edge prediction is always a binary prediction task.
         return True
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    @classmethod
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Connected Monte Carlo",
@@ -131,6 +131,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 use_zipfian_sampling=use_zipfian_sampling,
+                support=support,
                 graph_to_avoid=graph
             ).random_holdout(
                 train_size=train_size,
@@ -1178,22 +1179,22 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=None,
         )
 
-    @staticmethod
-    def task_involves_edge_weights() -> bool:
+    @classmethod
+    def task_involves_edge_weights(cls) -> bool:
         """Returns whether the model task involves edge weights."""
         return False
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return False
 
-    @staticmethod
-    def task_involves_node_types() -> bool:
+    @classmethod
+    def task_involves_node_types(cls) -> bool:
         """Returns whether the model task involves node types."""
         return False
 
-    @staticmethod
-    def task_involves_topology() -> bool:
+    @classmethod
+    def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return True

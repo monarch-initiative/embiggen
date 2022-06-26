@@ -73,8 +73,8 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
 
         super().__init__(random_state=random_state, **kwargs)
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **TensorFlowEmbedder.smoke_test_parameters(),
@@ -101,28 +101,28 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
             )
         }
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         return False
 
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_node_types() -> bool:
+    @classmethod
+    def requires_node_types(cls) -> bool:
         return False
 
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         return False
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return True
 
@@ -130,8 +130,8 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         """Returns whether the model is parametrized to use edge weights."""
         return True
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return True
 
@@ -139,8 +139,8 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         """Returns whether the model is parametrized to use edge weights."""
         return True
 
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return True
 
@@ -148,8 +148,8 @@ class AbstractRandomWalkBasedEmbedderModel(TensorFlowEmbedder):
         """Returns whether the model is parametrized to use node types."""
         return self._change_node_type_weight != 1.0
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
         return True
 

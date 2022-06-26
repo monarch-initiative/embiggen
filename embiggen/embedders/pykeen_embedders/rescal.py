@@ -58,8 +58,8 @@ class RESCALPyKeen(EntityRelationEmbeddingModelPyKeen):
             enable_cache=enable_cache
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Return name of the model."""
         return "RESCAL"
 

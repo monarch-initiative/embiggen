@@ -55,8 +55,8 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             random_state=model_kwargs["random_state"]
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **AbstractEmbeddingModel.smoke_test_parameters(),
@@ -113,16 +113,16 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             node_embeddings=node_embeddings
         )
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         return False
 
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
         return True
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return True
 
@@ -130,8 +130,8 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         """Returns whether the model is parametrized to use edge weights."""
         return True
 
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return True
 
@@ -139,8 +139,8 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         """Returns whether the model is parametrized to use node types."""
         return self._model_kwargs["change_node_type_weight"] != 1.0
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
         return True
 

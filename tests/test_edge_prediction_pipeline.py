@@ -4,6 +4,7 @@ from unittest import TestCase
 from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
 from embiggen.embedders import SPINE
 from ensmallen.datasets.linqs import Cora, get_words_data
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
@@ -116,4 +117,19 @@ class TestEvaluateEdgePrediction(TestCase):
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,
+            )
+
+    def test_all_edge_embedding_methods(self):
+        for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
+            edge_prediction_evaluation(
+                holdouts_kwargs=dict(train_size=0.8),
+                models=GraphSAGEEdgePrediction(
+                    edge_embedding_method=edge_embedding_method,
+                    epochs=1
+                ),
+                evaluation_schema="Connected Monte Carlo",
+                graphs=self._graph,
+                node_features="SPINE",
+                number_of_holdouts=self._number_of_holdouts,
+                verbose=False
             )

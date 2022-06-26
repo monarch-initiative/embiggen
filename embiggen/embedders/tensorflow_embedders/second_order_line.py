@@ -48,8 +48,8 @@ class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
             Flatten()(context_embedding(destinations))
         ]))
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the current model."""
         return "Second Order LINE"
 

@@ -125,14 +125,14 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
             )
         }
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             hidden_layer_sizes=(1,),
             max_iter=1
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "MLP Classifier"

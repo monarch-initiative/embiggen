@@ -41,8 +41,8 @@ class FirstOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
             Flatten()(node_embedding(destinations))
         ]))
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the current model."""
         return "First Order LINE"
 

@@ -119,15 +119,15 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             enable_cache=enable_cache
         )
     
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the model."""
         return "Walklets SkipGram"
 
-    @staticmethod
-    def requires_node_types() -> bool:
+    @classmethod
+    def requires_node_types(cls) -> bool:
         return False
 
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         return False

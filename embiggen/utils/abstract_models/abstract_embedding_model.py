@@ -46,8 +46,8 @@ class AbstractEmbeddingModel(AbstractModel):
             "embedding_size": self._embedding_size
         }
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(embedding_size=5)
 
@@ -55,8 +55,8 @@ class AbstractEmbeddingModel(AbstractModel):
     def task_name() -> str:
         return "Node Embedding"
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         """Returns whether this embedding requires the node degrees to be sorted."""
         raise NotImplementedError((
             "The `requires_nodes_sorted_by_decreasing_node_degree` method must be implemented "

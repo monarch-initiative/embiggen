@@ -10,8 +10,8 @@ from embiggen.utils.networkx_utils import convert_ensmallen_graph_to_networkx_gr
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=2,

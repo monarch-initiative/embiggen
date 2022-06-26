@@ -142,8 +142,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             number_of_negative_samples=self._number_of_negative_samples,
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **AbstractRandomWalkBasedEmbedderModel.smoke_test_parameters(),
@@ -196,8 +196,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             .repeat()\
             .prefetch(AUTOTUNE), )
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return True
 
     def _extract_embeddings(

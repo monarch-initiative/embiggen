@@ -65,7 +65,7 @@ def graph_to_sparse_tensor(
     if graph.has_singleton_nodes():
         raise ValueError(
             f"In the provided {graph.get_name()} graph there are "
-            f"{graph.get_singleton_nodes_number()} singleton nodes."
+            f"{graph.get_number_of_singleton_nodes()} singleton nodes."
             "The GCN model does not support operations on graph containing "
             "singletons. You can either choose to drop singletons from "
             "the graph by using the `graph.remove_singleton_nodes()` "
@@ -256,8 +256,8 @@ class AbstractGCN(AbstractClassifierModel):
 
         super().__init__(random_state=random_state)
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             epochs=1,
@@ -696,12 +696,12 @@ class AbstractGCN(AbstractClassifierModel):
             handling_multi_graph=self._handling_multi_graph
         )
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         return False
 
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
         return False
 
     @staticmethod
@@ -709,8 +709,8 @@ class AbstractGCN(AbstractClassifierModel):
         """Return name of the model."""
         return "TensorFlow"
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return True
 

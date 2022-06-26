@@ -70,9 +70,9 @@ class TestNodeEmbeddingPipeline(TestCase):
                 repository=repository,
                 embedding_model="HOPE",
                 verbose=False,
-                smoke_test=True,
                 metric=metric,
-                root_node_name=root_node_name
+                root_node_name=root_node_name,
+                embedding_size=5
             )
     
     def test_model_recreation(self):

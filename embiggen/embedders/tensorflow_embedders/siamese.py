@@ -93,8 +93,8 @@ class Siamese(TensorFlowEmbedder):
             random_state=random_state
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **TensorFlowEmbedder.smoke_test_parameters(),
@@ -291,23 +291,15 @@ class Siamese(TensorFlowEmbedder):
             .repeat()
             .prefetch(AUTOTUNE), )
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return False
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False

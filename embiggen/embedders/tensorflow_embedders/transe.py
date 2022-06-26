@@ -16,17 +16,13 @@ class TransETensorFlow(Siamese):
         """Returns the five input tensors, unchanged."""
         return args[:-1]
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the current model."""
         return "TransE"
 
-    @staticmethod
-    def requires_node_types() -> bool:
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         return True
 
     def _extract_embeddings(
@@ -78,12 +74,12 @@ class TransETensorFlow(Siamese):
             **result
         )
 
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return True

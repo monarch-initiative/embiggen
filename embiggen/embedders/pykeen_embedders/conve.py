@@ -118,8 +118,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             )
         }
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Return name of the model."""
         return "ConvE"
 

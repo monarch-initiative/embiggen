@@ -148,7 +148,7 @@ class AbstractClassifierModel(AbstractModel):
         ))
 
     @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
             "The `get_available_evaluation_schemas` method must be implemented "

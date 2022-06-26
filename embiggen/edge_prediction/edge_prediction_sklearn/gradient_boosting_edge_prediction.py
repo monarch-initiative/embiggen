@@ -108,14 +108,14 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
             )
         }
     
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             max_depth=1,
             n_estimators=1
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "Gradient Boosting Classifier"

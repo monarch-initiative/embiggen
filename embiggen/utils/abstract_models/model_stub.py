@@ -141,47 +141,47 @@ def get_model_or_stub(
                     return formatted_library_name
 
                 @staticmethod
-                def model_name() -> str:
+                def model_name(cls) -> str:
                     """Returns name of the model."""
                     return formatted_model_name
 
                 @staticmethod
-                def requires_node_types() -> str:
+                def requires_node_types(cls) -> str:
                     """Returns whether the model requires node types."""
                     return None
 
                 @staticmethod
-                def can_use_node_types() -> bool:
+                def can_use_node_types(cls) -> bool:
                     """Returns whether the model can optionally use node types."""
                     return None
 
                 @staticmethod
-                def requires_edge_types() -> str:
+                def requires_edge_types(cls) -> str:
                     """Returns whether the model requires edge types."""
                     return None
                 
                 @staticmethod
-                def can_use_edge_types() -> bool:
+                def can_use_edge_types(cls) -> bool:
                     """Returns whether the model can optionally use edge types."""
                     return None
 
                 @staticmethod
-                def requires_positive_edge_weights() -> str:
+                def requires_positive_edge_weights(cls) -> str:
                     """Returns whether the model requires positive edge weights."""
                     return None
 
                 @staticmethod
-                def requires_edge_weights() -> str:
+                def requires_edge_weights(cls) -> str:
                     """Returns whether the model can optionally use edge weights."""
                     return None
 
                 @staticmethod
-                def can_use_edge_weights() -> bool:
+                def can_use_edge_weights(cls) -> bool:
                     """Returns whether the model can optionally use edge weights."""
                     return None
 
                 @staticmethod
-                def is_topological() -> str:
+                def is_topological(cls) -> str:
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
 

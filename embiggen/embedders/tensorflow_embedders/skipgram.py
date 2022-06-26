@@ -21,8 +21,8 @@ class SkipGramTensorFlow(Node2Vec):
 
     NODE_EMBEDDING = "node_embedding"
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the model."""
         return "SkipGram"
 

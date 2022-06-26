@@ -37,8 +37,8 @@ class WeightedSPINE(AbstractEmbeddingModel):
             enable_cache=enable_cache
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=5,
@@ -69,8 +69,8 @@ class WeightedSPINE(AbstractEmbeddingModel):
     def task_name() -> str:
         return "Node Embedding"
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the model."""
         return "WeightedSPINE"
 
@@ -78,37 +78,29 @@ class WeightedSPINE(AbstractEmbeddingModel):
     def library_name() -> str:
         return "Ensmallen"
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return False
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_node_types() -> bool:
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
         return False
 

@@ -84,8 +84,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             random_state=random_state,
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=5,

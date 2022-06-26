@@ -145,6 +145,6 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             }
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "GraphSAGE"
