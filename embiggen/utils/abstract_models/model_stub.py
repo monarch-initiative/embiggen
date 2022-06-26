@@ -140,57 +140,57 @@ def get_model_or_stub(
                     """Returns library name of the model."""
                     return formatted_library_name
 
-                @staticmethod
+                @classmethod
                 def model_name(cls) -> str:
                     """Returns name of the model."""
                     return formatted_model_name
 
-                @staticmethod
+                @classmethod
                 def requires_node_types(cls) -> str:
                     """Returns whether the model requires node types."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def can_use_node_types(cls) -> bool:
                     """Returns whether the model can optionally use node types."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def requires_edge_types(cls) -> str:
                     """Returns whether the model requires edge types."""
                     return None
                 
-                @staticmethod
+                @classmethod
                 def can_use_edge_types(cls) -> bool:
                     """Returns whether the model can optionally use edge types."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def requires_positive_edge_weights(cls) -> str:
                     """Returns whether the model requires positive edge weights."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def requires_edge_weights(cls) -> str:
                     """Returns whether the model can optionally use edge weights."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def can_use_edge_weights(cls) -> bool:
                     """Returns whether the model can optionally use edge weights."""
                     return None
 
-                @staticmethod
+                @classmethod
                 def is_topological(cls) -> str:
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
 
-                @staticmethod
+                @classmethod
                 def task_name() -> str:
                     """Returns name of the task"""
                     return parent_class.task_name()
 
-                @staticmethod
+                @classmethod
                 def is_available() -> bool:
                     """Returns whether the model class is actually available in the user system."""
                     return True
