@@ -5,6 +5,8 @@ from embiggen.layers.tensorflow.sampled_softmax import SampledSoftmax
 from embiggen.layers.tensorflow.embedding_lookup import EmbeddingLookup
 from embiggen.layers.tensorflow.flat_embedding import FlatEmbedding
 from embiggen.layers.tensorflow.l2_norm import L2Norm
+from embiggen.layers.tensorflow.element_wise_l1 import ElementWiseL1
+from embiggen.layers.tensorflow.element_wise_l2 import ElementWiseL2
 
 __all__ = [
     "GraphConvolution",
@@ -12,5 +14,7 @@ __all__ = [
     "SampledSoftmax",
     "EmbeddingLookup",
     "FlatEmbedding",
-    "L2Norm"
+    "L2Norm",
+    "ElementWiseL1",
+    "ElementWiseL2"
 ]

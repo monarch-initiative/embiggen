@@ -1,54 +1,34 @@
-"""Module providing SPINE implementation."""
-from typing import Optional,  Dict, Any, Union
+"""Module providing GLEE implementation."""
+from typing import Optional,  Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
-from ensmallen import models
+import numpy as np
+from scipy.sparse import coo_matrix
+from scipy.sparse.linalg import eigsh
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
-class SPINE(AbstractEmbeddingModel):
-    """Class implementing the SPINE algorithm."""
+class GLEEEnsmallen(AbstractEmbeddingModel):
+    """Class implementing the GLEE algorithm."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        dtype: Optional[str] = "u8",
         enable_cache: bool = False
     ):
-        """Create new SPINE method.
+        """Create new GLEE method.
 
         Parameters
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        dtype: Optional[str] = "u8"
-            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._dtype = dtype
-        self._model = models.SPINE(embedding_size=embedding_size)
-
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache
-        )
-
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters of the model."""
-        return {
-            **super().parameters(),
-            **dict(
-                dtype=self._dtype
-            )
-        }
-    @classmethod
-    def smoke_test_parameters(cls) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            embedding_size=5,
+            enable_cache=enable_cache,
         )
 
     def _fit_transform(
@@ -58,19 +38,33 @@ class SPINE(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            dtype=self._dtype,
-            verbose=verbose,
-        ).T
+        edges, weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
+
+        coo = coo_matrix(
+            (weights, (edges[:, 0], edges[:, 1])),
+            shape=(
+                graph.get_number_of_nodes(),
+                graph.get_number_of_nodes()
+            ),
+            dtype=np.float32
+        )
+
+        embedding = eigsh(
+            coo,
+            k=self._embedding_size + 1,
+            which="LM",
+            return_eigenvectors=True
+        )[1]
+
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
+            node_names = graph.get_node_names()
+            embedding = pd.DataFrame(
+                embedding,
+                index=node_names
             )
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings=node_embedding
+            node_embeddings=embedding
         )
 
     @classmethod
@@ -80,7 +74,7 @@ class SPINE(AbstractEmbeddingModel):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SPINE"
+        return "GLEE"
 
     @classmethod
     def library_name(cls) -> str:
@@ -95,13 +89,13 @@ class SPINE(AbstractEmbeddingModel):
         return True
 
     @classmethod
-    def can_use_node_types(cls) -> bool:
-        """Returns whether the model can optionally use node types."""
+    def can_use_edge_weights(cls) -> bool:
+        """Returns whether the model can optionally use edge weights."""
         return False
 
     @classmethod
-    def can_use_edge_weights(cls) -> bool:
-        """Returns whether the model can optionally use edge weights."""
+    def can_use_node_types(cls) -> bool:
+        """Returns whether the model can optionally use node types."""
         return False
 
     @classmethod

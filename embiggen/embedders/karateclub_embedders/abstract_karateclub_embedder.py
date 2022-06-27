@@ -10,19 +10,19 @@ from embiggen.utils.networkx_utils import convert_ensmallen_graph_to_networkx_gr
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=2,
         )
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "Karate Club"
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
     def _build_model(self) -> Type[Estimator]:
@@ -85,7 +85,7 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
             node_embeddings=node_embeddings
         )
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

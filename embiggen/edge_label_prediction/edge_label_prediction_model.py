@@ -21,18 +21,18 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_multilabel_prediction_task = None
         super().__init__(random_state=random_state)
     
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         """Returns whether this method requires node types."""
         return True
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns name of the task this model is used for."""
         return "Edge Label Prediction"
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return False
 
     def is_binary_prediction_task(self) -> bool:
@@ -43,8 +43,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns whether the model was fit on a multilabel prediction task."""
         return self._is_multilabel_prediction_task
 
-    @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    @classmethod
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
@@ -126,7 +126,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_known_edge_types_number() / graph.get_known_edge_types_number()
+        train_size = train.get_number_of_known_edge_types() / graph.get_number_of_known_edge_types()
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -158,7 +158,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_edges_number": graph.get_known_node_types_number(),
+                "known_edges_number": graph.get_number_of_known_node_types(),
                 **self.evaluate_predictions(
                     labels,
                     predictions,
@@ -203,7 +203,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 "of the edge-label prediction models."
             )
 
-        self._is_binary_prediction_task = graph.get_edge_types_number() == 2
+        self._is_binary_prediction_task = graph.get_number_of_edge_types() == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
 
         super().fit(
@@ -214,31 +214,22 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             edge_features=edge_features,
         )
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return True
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return True
-
-    @staticmethod
-    def task_involves_edge_weights() -> bool:
+    @classmethod
+    def task_involves_edge_weights(cls) -> bool:
         """Returns whether the model task involves edge weights."""
         return False
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return True
 
-    @staticmethod
-    def task_involves_node_types() -> bool:
+    @classmethod
+    def task_involves_node_types(cls) -> bool:
         """Returns whether the model task involves node types."""
         return False
 
-    @staticmethod
-    def task_involves_topology() -> bool:
+    @classmethod
+    def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False

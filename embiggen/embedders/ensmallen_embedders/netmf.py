@@ -1,21 +1,19 @@
-"""Module providing GloVe model implementation."""
-from typing import Optional, Dict, Any, Union
+"""Module providing NetMF implementation."""
+from typing import Optional,  Dict, Any
 from ensmallen import Graph
-from ensmallen import models
-import numpy as np
 import pandas as pd
+import numpy as np
+from scipy.sparse import coo_matrix
+from sklearn.decomposition import TruncatedSVD
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
 
 
-class GloVeEnsmallen(AbstractEmbeddingModel):
-    """Class providing GloVe implemeted in Rust from Ensmallen."""
+class NetMFEnsmallen(AbstractEmbeddingModel):
+    """Class implementing the NetMF algorithm."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        alpha: float = 0.75,
-        epochs: int = 500,
-        clipping_value: float = 6.0,
         walk_length: int = 128,
         iterations: int = 10,
         window_size: int = 10,
@@ -24,28 +22,15 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         change_node_type_weight: float = 1.0,
         change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.01,
-        learning_rate_decay: float = 0.9,
-        normalize_by_degree: bool = False,
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new NetMF method.
 
         Parameters
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        alpha: float = 0.75
-            Alpha parameter for GloVe's loss.
-        epochs: int = 100
-            Number of epochs to train the model for.
-        window_size: int = 10
-            Window size for the local context.
-            On the borders the window size is trimmed.
-        clipping_value: float = 6.0
-            Value at which we clip the dot product, mostly for numerical stability issues.
-            By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
         iterations: int = 10
@@ -79,42 +64,21 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.01
-            The learning rate to use to train the Node2Vec model. By default 0.01.
-        learning_rate_decay: float = 0.9
-            Factor to reduce the learning rate for at each epoch. By default 0.9.
-        normalize_by_degree: bool = False
-            Whether to normalize the random walk by the node degree
-            of the destination node degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
-
-        self._model_kwargs = dict(
-            alpha=alpha,
-            embedding_size=embedding_size,
-            clipping_value=clipping_value,
+        self._walk_parameters = dict(
             walk_length=walk_length,
             iterations=iterations,
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
-            change_edge_type_weight=change_edge_type_weight,
             change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
-            normalize_by_degree=normalize_by_degree,
-        )
-
-        self._model = models.GloVe(
-            **self._model_kwargs,
-            random_state=random_state
         )
 
         super().__init__(
@@ -127,8 +91,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=5,
-            epochs=1,
+            **AbstractEmbeddingModel.smoke_test_parameters(),
             window_size=1,
             walk_length=4,
             iterations=1,
@@ -137,29 +100,10 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
-            **self._model_kwargs,
-            **dict(
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
-        }
-
-    @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
-        return False
-
-    def is_topological(self) -> bool:
-        return True
+            **self._walk_parameters
+        )
 
     def _fit_transform(
         self,
@@ -168,70 +112,72 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=verbose
+        edges, weights = graph.get_log_normalized_cooccurrence_coo_matrix(
+            **self._walk_parameters
         )
+
+        coo = coo_matrix(
+            (weights, (edges[:, 0], edges[:, 1])),
+            shape=(
+                graph.get_number_of_nodes(),
+                graph.get_number_of_nodes()
+            ),
+            dtype=np.float32
+        )
+
+        model = TruncatedSVD(
+            n_components=self._embedding_size,
+            random_state=self._random_state
+        )
+        model.fit(coo)
+        embedding = model.transform(coo)
+
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
+            node_names = graph.get_node_names()
+            embedding = pd.DataFrame(
+                embedding,
+                index=node_names
             )
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings=node_embedding
+            node_embeddings=embedding
         )
 
     @classmethod
-    def requires_edge_weights(cls) -> bool:
-        return False
-
-    @classmethod
-    def requires_positive_edge_weights(cls) -> bool:
-        return True
+    def task_name(cls) -> str:
+        return "Node Embedding"
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "GloVe"
+        return "NetMF"
 
     @classmethod
-    def requires_node_types(cls) -> bool:
+    def library_name(cls) -> str:
+        return "Ensmallen"
+
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return False
 
     @classmethod
-    def requires_edge_types(cls) -> bool:
-        return False
+    def is_topological(cls) -> bool:
+        return True
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
-        return True
-
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return True
+        return False
 
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
-        return True
-
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return self._model_kwargs["change_node_type_weight"] != 1.0
+        return False
 
     @classmethod
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
-        return True
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return self._model_kwargs["change_edge_type_weight"] != 1.0
+        return False
 
     @classmethod
     def is_stocastic(cls) -> bool:

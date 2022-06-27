@@ -258,15 +258,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         """Returns number of output classes."""
         return 1
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
         return False

@@ -147,8 +147,8 @@ class AbstractClassifierModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    @classmethod
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
             "The `get_available_evaluation_schemas` method must be implemented "
@@ -224,9 +224,9 @@ class AbstractClassifierModel(AbstractModel):
             if (
                 skip_evaluation_biased_feature and
                 (
-                    cls.task_involves_edge_types() and node_feature.is_using_edge_types() or
-                    cls.task_involves_node_types() and node_feature.is_using_node_types() or
-                    cls.task_involves_edge_weights() and node_feature.is_using_edge_weights() or
+                    cls.task_involves_edge_types() and node_feature.can_use_edge_types() and node_feature.is_using_edge_types() or
+                    cls.task_involves_node_types() and node_feature.can_use_node_types() and node_feature.is_using_node_types() or
+                    cls.task_involves_edge_weights() and node_feature.can_use_edge_weights() and node_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_feature.is_topological()
                 ) or
                 not precompute_constant_automatic_stocastic_features and node_feature.is_stocastic()
@@ -270,7 +270,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_nodes_number() != nf.shape[0]:
+            if graph.get_number_of_nodes() != nf.shape[0]:
                 raise ValueError(
                     (
                         "The provided node features have {rows_number} rows "
@@ -282,7 +282,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_nodes_number()
+                        nodes_number=graph.get_number_of_nodes()
                     )
                 )
 
@@ -470,7 +470,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_node_types_number() != nf.shape[0]:
+            if graph.get_number_of_node_types() != nf.shape[0]:
                 raise ValueError(
                     (
                         "The provided node type features have {rows_number} rows "
@@ -482,7 +482,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_node_types_number()
+                        nodes_number=graph.get_number_of_node_types()
                     )
                 )
 
@@ -682,7 +682,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=ef.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        edges_number=graph.get_edges_number()
+                        edges_number=graph.get_number_of_edges()
                     )
                 )
 
@@ -794,13 +794,13 @@ class AbstractClassifierModel(AbstractModel):
                 "It is unclear how to proceed with this data."
             )
 
-        if (self.requires_node_types() or self.is_using_node_types()) and not graph.has_node_types():
+        if (self.requires_node_types() or self.can_use_node_types() and self.is_using_node_types()) and not graph.has_node_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires or is parametrized to use node types."
             )
 
-        if self.requires_edge_types() and not graph.has_edge_types():
+        if (self.requires_edge_types() or self.can_use_edge_types() and self.is_using_edge_types()) and not graph.has_edge_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."
@@ -1280,18 +1280,32 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["model_name"] = self.model_name()
         model_performance["library_name"] = self.library_name()
         model_performance["graph_name"] = graph.get_name()
-        model_performance["nodes_number"] = graph.get_nodes_number()
+        model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
-        if automatic_features_names:
-            model_performance["automatic_features_names"] = format_list(
-                automatic_features_names
-            )
-        for parameter, value in automatic_features_parameters.items():
+
+        for parameter_name, parameter_value in self.parameters().items():
+            if ("Model", parameter_name) in model_performance.columns:
+                raise ValueError(
+                    "There has been a collision between the column names used in "
+                    "the model performance report and the parameter names "
+                    f" of one of the classifiers {self.model_name()}."
+                    f"The parameter that has caused the collision is {parameter}. "
+                    "Please do change the name of the parameter in your model."
+                )
+            if isinstance(parameter_value, (list, tuple)):
+                parameter_value = str(parameter_value)
+            model_performance[("Model", parameter_name)] = parameter_value
+        
+        model_performance["automatic_features_names"] = format_list(
+            automatic_features_names
+        )
+        
+        for parameter, value in enumerate(automatic_features_parameters.items()):
             if parameter in model_performance.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
-                    f"one of the classifiers, {self.model_name()},  and the parameter "
+                    "one of the embedding models and the parameter "
                     "used for the validation and reporting of the task itself. "
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
@@ -1764,7 +1778,7 @@ class AbstractClassifierModel(AbstractModel):
         # execution.
         return performance
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

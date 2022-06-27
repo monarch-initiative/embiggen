@@ -132,6 +132,6 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             verbose=verbose,
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "Kipf GCN"

@@ -80,6 +80,13 @@ class EmbeddingResult:
                         "contains NaN values."
                     )
 
+                if np.isclose(numpy_embedding, 0.0).all():
+                    raise ValueError(
+                        f"One of the provided {embedding_list_name} "
+                        f"computed with the {embedding_method_name} method "
+                        "contains exclusively zeros."
+                    )
+
         self._embedding_method_name = embedding_method_name
         self._node_embeddings = node_embeddings
         self._edge_embeddings = edge_embeddings

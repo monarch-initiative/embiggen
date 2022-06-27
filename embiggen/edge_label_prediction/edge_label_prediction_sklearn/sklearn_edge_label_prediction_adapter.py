@@ -221,37 +221,17 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             edge_features=edge_features,
         ))
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Return name of the model."""
         return "scikit-learn"
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def requires_node_types() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False
 
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return False
-
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
-        return False
-
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
         return False

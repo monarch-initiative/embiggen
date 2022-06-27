@@ -212,6 +212,6 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             }
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "GraphSAGE"

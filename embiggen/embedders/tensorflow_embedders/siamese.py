@@ -93,8 +93,8 @@ class Siamese(TensorFlowEmbedder):
             random_state=random_state
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **TensorFlowEmbedder.smoke_test_parameters(),
@@ -120,7 +120,7 @@ class Siamese(TensorFlowEmbedder):
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
             name="node_embeddings"
@@ -143,7 +143,7 @@ class Siamese(TensorFlowEmbedder):
             ]
 
             node_type_embedding_layer = Embedding(
-                input_dim=graph.get_node_types_number() + node_types_offset,
+                input_dim=graph.get_number_of_node_types() + node_types_offset,
                 output_dim=self._embedding_size,
                 input_length=max_node_types,
                 name="node_type_embeddings",
@@ -168,7 +168,7 @@ class Siamese(TensorFlowEmbedder):
         inputs.extend(node_type_inputs)
         inputs.append(edge_types)
 
-        edge_types_number = graph.get_edge_types_number()
+        edge_types_number = graph.get_number_of_edge_types()
         unknown_edge_types = graph.has_unknown_edge_types()
         edge_types_offset = int(unknown_edge_types)
         edge_type_embedding = GlobalAveragePooling1D()(Embedding(
@@ -291,36 +291,15 @@ class Siamese(TensorFlowEmbedder):
             .repeat()
             .prefetch(AUTOTUNE), )
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return False
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False
-
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return False
-
-    @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return True
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return True

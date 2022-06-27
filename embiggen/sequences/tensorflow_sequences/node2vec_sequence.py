@@ -85,7 +85,7 @@ class Node2VecSequence(Sequence):
         self._current_index = 0
 
         super().__init__(
-            sample_number=self._graph.get_unique_source_nodes_number(),
+            sample_number=self._graph.get_number_of_unique_source_nodes(),
             batch_size=batch_size,
         )
 

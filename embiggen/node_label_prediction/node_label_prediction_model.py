@@ -23,22 +23,22 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         self._is_multilabel_prediction_task = None
         super().__init__(random_state=random_state)
 
-    @staticmethod
-    def requires_node_types() -> bool:
+    @classmethod
+    def requires_node_types(cls) -> bool:
         """Returns whether this method requires node types."""
         return True
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns name of the task this model is used for."""
         return "Node Label Prediction"
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return False
 
-    @staticmethod
-    def get_available_evaluation_schemas() -> List[str]:
+    @classmethod
+    def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
@@ -130,7 +130,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_known_node_types_number() / graph.get_known_node_types_number()
+        train_size = train.get_number_of_known_node_types() / graph.get_number_of_known_node_types()
 
         if self.is_multilabel_prediction_task():
             labels = graph.get_one_hot_encoded_node_types()
@@ -167,7 +167,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_nodes_number": evaluation_graph.get_known_node_types_number(),
+                "known_nodes_number": evaluation_graph.get_number_of_known_node_types(),
                 **self.evaluate_predictions(
                     labels_subset,
                     predictions,
@@ -295,7 +295,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "of the node-label prediction models."
             )
 
-        self._is_binary_prediction_task = graph.get_node_types_number() == 2
+        self._is_binary_prediction_task = graph.get_number_of_node_types() == 2
         self._is_multilabel_prediction_task = graph.has_multilabel_node_types()
 
         node_type_counts = graph.get_node_type_names_counts_hashmap()
@@ -329,31 +329,22 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             edge_features=None,
         )
 
-    @staticmethod
-    def can_use_node_types() -> bool:
-        """Returns whether the model can optionally use node types."""
-        return True
-
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return True
-
-    @staticmethod
-    def task_involves_edge_weights() -> bool:
+    @classmethod
+    def task_involves_edge_weights(cls) -> bool:
         """Returns whether the model task involves edge weights."""
         return False
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return False
 
-    @staticmethod
-    def task_involves_node_types() -> bool:
+    @classmethod
+    def task_involves_node_types(cls) -> bool:
         """Returns whether the model task involves node types."""
         return True
 
-    @staticmethod
-    def task_involves_topology() -> bool:
+    @classmethod
+    def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False

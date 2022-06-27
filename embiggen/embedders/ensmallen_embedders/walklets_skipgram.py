@@ -1,10 +1,10 @@
-"""Module providing SkipGram model implementation."""
+"""Module providing WalkletsSkipGram model implementation."""
 from typing import Optional
 from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
 
-class SkipGramEnsmallen(Node2VecEnsmallen):
-    """Class providing SkipGram implemeted in Rust from Ensmallen."""
+class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
+    """Class providing WalkletsSkipGram implemeted in Rust from Ensmallen."""
 
     def __init__(
         self,
@@ -37,9 +37,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Dimension of the embedding.
         epochs: int = 10
             Number of epochs to train the model for.
-        window_size: int = 10
-            Window size for the local context.
-            On the borders the window size is trimmed.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
@@ -99,8 +96,8 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            model_name="SkipGram",
-            embedding_size=embedding_size,
+            model_name="WalkletsSkipGram",
+            embedding_size=embedding_size // window_size,
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
@@ -119,14 +116,14 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_zipfian_sampling=use_zipfian_sampling,
             random_state=random_state,
-            enable_cache=enable_cache,
+            enable_cache=enable_cache
         )
-
+    
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SkipGram"
-    
+        return "Walklets SkipGram"
+
     @classmethod
     def requires_node_types(cls) -> bool:
         return False

@@ -181,8 +181,8 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             verbose=verbose,
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         removed = [
             "number_of_units_per_graph_convolution_layers",
@@ -218,6 +218,6 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             }
         )
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "GNN"

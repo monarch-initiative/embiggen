@@ -92,8 +92,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             random_state=random_state
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=10,
@@ -109,12 +109,12 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             )
         }
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "PyKeen"
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
     def _build_model(self, triples_factory: CoreTriplesFactory) -> Type[Model]:
@@ -176,8 +176,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         triples_factory = CoreTriplesFactory(
             torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
-            num_entities=graph.get_nodes_number(),
-            num_relations=graph.get_edge_types_number(),
+            num_entities=graph.get_number_of_nodes(),
+            num_relations=graph.get_number_of_edge_types(),
             entity_ids=graph.get_node_ids(),
             relation_ids=graph.get_unique_edge_type_ids(),
             create_inverse_triples=False,
@@ -224,63 +224,34 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             return_dataframe=return_dataframe
         )
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         return False
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_node_types() -> bool:
-        return False
-
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         return True
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False
 
-    def is_using_edge_weights(self) -> bool:
-        """Returns whether the model is parametrized to use edge weights."""
-        return False
-
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
 
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return False
-
-    @staticmethod
-    def can_use_edge_types() -> bool:
-        """Returns whether the model can optionally use edge types."""
-        return True
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
-        return True
-
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         return True
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

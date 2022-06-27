@@ -1,6 +1,7 @@
 """Module providing abstract classes for embedding models."""
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from ensmallen import Graph
+from ensmallen.datasets import get_dataset
 import warnings
 from cache_decorator import Cache
 from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
@@ -45,12 +46,17 @@ class AbstractEmbeddingModel(AbstractModel):
             "embedding_size": self._embedding_size
         }
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(embedding_size=5)
+
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
-    @staticmethod
-    def requires_nodes_sorted_by_decreasing_node_degree() -> bool:
+    @classmethod
+    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
         """Returns whether this embedding requires the node degrees to be sorted."""
         raise NotImplementedError((
             "The `requires_nodes_sorted_by_decreasing_node_degree` method must be implemented "
@@ -83,7 +89,7 @@ class AbstractEmbeddingModel(AbstractModel):
         enable_cache_arg_name="self._enable_cache",
         args_to_ignore=["verbose"]
     )
-    def fit_transform(
+    def _cached_fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
@@ -154,7 +160,7 @@ class AbstractEmbeddingModel(AbstractModel):
                 warnings.warn(
                     (
                         f"Please be advised that the {graph.get_name()} graph "
-                        f"contains {graph.get_disconnected_nodes_number()} disconnected nodes. "
+                        f"contains {graph.get_number_of_disconnected_nodes()} disconnected nodes. "
                         "Consider that node embedding algorithms that only use topological information "
                         "such as CBOW, GloVe, SPINE and SkipGram are not able to provide meaningful "
                         "embeddings for these nodes, and their embedding will be generally "
@@ -179,3 +185,48 @@ class AbstractEmbeddingModel(AbstractModel):
             )
 
         return result
+
+    def fit_transform(
+        self,
+        graph: Union[Graph, str],
+        repository: Optional[str] = None,
+        version: Optional[str] = None,
+        return_dataframe: bool = True,
+        verbose: bool = True
+    ) -> EmbeddingResult:
+        """Execute embedding on the provided graph.
+
+        Parameters
+        --------------------
+        graph: Graph
+            The graph to run embedding on.
+        repository: Optional[str] = None
+            The repository from where to retrieve these graphs.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
+        version: Optional[str] = None
+            The version of the graphs to be retrieved.
+            When this is left to none, the retrieved version will be
+            the one that has been indicated to be the most recent one.
+            This only applies for the graph names that are available
+            from the ensmallen automatic retrieval.
+        return_dataframe: bool = True
+            Whether to return a pandas DataFrame with the embedding.
+        verbose: bool = True
+            Whether to show loading bars.
+
+        Returns
+        --------------------
+        An embedding result, wrapping the complexity of a generic embedding.
+        """
+        if isinstance(graph, str):
+            graph = get_dataset(
+                name=graph,
+                repository=repository,
+                version=version
+            )()
+        return self._cached_fit_transform(
+            graph=graph,
+            return_dataframe=return_dataframe,
+            verbose=verbose
+        )

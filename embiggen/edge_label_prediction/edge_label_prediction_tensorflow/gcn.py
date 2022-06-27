@@ -176,7 +176,6 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         verbose: bool = False
             Whether to show loading bars.
         """
-        AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractEdgeGCN.__init__(
             self,
             epochs=epochs,
@@ -212,6 +211,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
+        AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
 
     def _get_model_training_input(
         self,
@@ -237,7 +237,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
         """Returns dictionary with class weights."""
         number_of_directed_edges = graph.get_number_of_directed_edges()
-        edge_types_number = graph.get_edge_types_number()
+        edge_types_number = graph.get_number_of_edge_types()
         return {
             edge_type_id: number_of_directed_edges / count / edge_types_number
             for edge_type_id, count in graph.get_edge_type_id_counts_hashmap().items()
@@ -245,4 +245,4 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
-        return graph.get_edge_types_number()
+        return graph.get_number_of_edge_types()

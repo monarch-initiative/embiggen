@@ -119,7 +119,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        AbstractNodeLabelPredictionModel.__init__(self, random_state=random_state)
         AbstractGCN.__init__(
             self,
             epochs=epochs,
@@ -148,6 +147,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             use_node_type_embedding=False,
             verbose=verbose,
         )
+        AbstractNodeLabelPredictionModel.__init__(self, random_state=random_state)
         self._number_of_units_per_head_layer = normalize_model_list_parameter(
             number_of_units_per_head_layer,
             number_of_head_layers,
@@ -194,12 +194,12 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
-        return graph.get_node_types_number()
+        return graph.get_number_of_node_types()
 
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
         """Returns dictionary with class weights."""
-        nodes_number = graph.get_nodes_number()
-        node_types_number = graph.get_node_types_number()
+        nodes_number = graph.get_number_of_nodes()
+        node_types_number = graph.get_number_of_node_types()
         return {
             node_type_id: nodes_number / count / node_types_number
             for node_type_id, count in graph.get_node_type_id_counts_hashmap().items()
@@ -268,17 +268,9 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             edge_features
         )
 
-    @staticmethod
-    def requires_edge_types() -> bool:
-        return False
-
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
-
-    def is_using_edge_types(self) -> bool:
-        """Returns whether the model is parametrized to use edge types."""
         return False
 
     def parameters(self) -> Dict[str, Any]:

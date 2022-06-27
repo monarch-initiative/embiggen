@@ -75,7 +75,7 @@ setup(
         "extra_keras_metrics>=2.0.7",
         "ensmallen>=0.8.3",
         "validate_version_code",
-        "cache_decorator>=2.1.6",
+        "cache_decorator>=2.1.8",
         "packaging"
     ],
     tests_require=test_deps,

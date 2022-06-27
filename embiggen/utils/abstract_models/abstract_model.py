@@ -1,13 +1,23 @@
 """Module providing generic abstract model."""
+from typing import Callable
 from embiggen.utils.abstract_models.list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
 from userinput.utils import closest
+import inspect
 
 
 def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
     """Simply adds a descriptor for meta-programming and nothing else."""
     return klass
+
+def is_not_implemented(method: Callable) -> bool:
+    """Returns whether this method contains a raise for not being implemented."""
+    return "raise NotImplementedError" in inspect.getsource(method)
+
+def is_implemented(method: Callable) -> bool:
+    """Returns whether this method is implemented."""
+    return not is_not_implemented(method)
 
 
 @abstract_class
@@ -35,10 +45,75 @@ class AbstractModel(Hashable):
                 "The provided model is not stocastic, yet a "
                 f"random state of `{random_state}` was provided."
             )
+
+        if (
+            not self.__getattribute__("can_use_edge_weights")() and
+            is_implemented(self.__getattribute__("requires_positive_edge_weights"))
+        ):
+            raise ValueError(
+                "We have found an useless method in the "
+                f"class {self.__class__.__name__}, implementing method "
+                f"{self.model_name()} from library {self.library_name()} "
+                f"and task {self.task_name()}. "
+                "It does not make sense to implement the "
+                f"`requires_positive_edge_weights` method when the `can_use_edge_weights` "
+                "always returns False, as it is already handled "
+                "in the root abstract model class."
+            )
+
+        # Identify and resolve tautological implementations.
+        for graph_property in ("edge_types", "node_types", "edge_weights"):
+            requires = f"requires_{graph_property}"
+            requires_method = self.__getattribute__(requires)
+            can_use = f"can_use_{graph_property}"
+            can_use_method = self.__getattribute__(can_use)
+            is_using = f"is_using_{graph_property}"
+
+            if (
+                is_not_implemented(requires_method) and
+                is_not_implemented(can_use_method)
+            ):
+                raise ValueError(
+                    "We have found a missing method implementation in the "
+                    f"class {self.__class__.__name__}, implementing method "
+                    f"{self.model_name()} from library {self.library_name()} "
+                    f"and task {self.task_name()}. "
+                    f"It is strictly necessary to implement either the `{requires}` "
+                    f"method or the {can_use} method in order to adhere to the model "
+                    "interface and facilitate the integration with the pipelines."
+                )
+
+            if is_implemented(requires_method) and requires_method():
+                for method in (can_use, is_using):
+                    if is_implemented(self.__getattribute__(method)):
+                        raise ValueError(
+                            "We have found an useless method in the "
+                            f"class {self.__class__.__name__}, implementing method "
+                            f"{self.model_name()} from library {self.library_name()} "
+                            f"and task {self.task_name()}. "
+                            "It does not make sense to implement the "
+                            f"`{method}` method when the `{requires}` "
+                            "always returns True, as it is already handled "
+                            "in the root abstract model class."
+                        )
+            if is_implemented(can_use_method) and not can_use_method():
+                for method in (requires, is_using):
+                    if is_implemented(self.__getattribute__(method)):
+                        raise ValueError(
+                            "We have found an useless method in the "
+                            f"class {self.__class__.__name__}, implementing method "
+                            f"{self.model_name()} from library {self.library_name()} "
+                            f"and task {self.task_name()}. "
+                            "It does not make sense to implement the "
+                            f"`{method}` method when the `{can_use}` "
+                            "always returns False, as it is already handled "
+                            "in the root abstract model class."
+                        )
+
         self._random_state = random_state
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Return parameters to create a model with minimal configuration to test execution."""
         raise NotImplementedError((
             "The `smoke_test_parameters` method must be implemented "
@@ -53,25 +128,35 @@ class AbstractModel(Hashable):
             random_state=self._random_state
         )
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         """Returns whether the model requires edge weights."""
+        try:
+            if not cls.can_use_edge_weights():
+                return False
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `requires_edge_weights` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_involves_edge_weights() -> bool:
+    @classmethod
+    def task_involves_edge_weights(cls) -> bool:
         """Returns whether the model task involves edge weights."""
         raise NotImplementedError((
             "The `task_involves_edge_weights` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
+        try:
+            if cls.requires_edge_weights():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `can_use_edge_weights` method must be implemented "
             "in the child classes of abstract model."
@@ -79,54 +164,74 @@ class AbstractModel(Hashable):
 
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
+        try:
+            if self.requires_edge_weights():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `is_using_edge_weights` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
         """Returns whether the model requires positive edge weights."""
+        try:
+            if not cls.requires_edge_weights():
+                return False
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `requires_positive_edge_weights` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_involves_topology() -> bool:
+    @classmethod
+    def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         raise NotImplementedError((
             "The `task_involves_topology` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def is_topological() -> bool:
+    @classmethod
+    def is_topological(cls) -> bool:
         """Returns whether this embedding is based on graph topology."""
         raise NotImplementedError((
             "The `is_topological` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def requires_node_types() -> bool:
+    @classmethod
+    def requires_node_types(cls) -> bool:
         """Returns whether the model requires node types."""
+        try:
+            if not cls.can_use_node_types():
+                return False
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `requires_node_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_involves_node_types() -> bool:
+    @classmethod
+    def task_involves_node_types(cls) -> bool:
         """Returns whether the model task involves node types."""
         raise NotImplementedError((
             "The `task_involves_node_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def can_use_node_types() -> bool:
+    @classmethod
+    def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
+        try:
+            if cls.requires_node_types():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `can_use_node_types` method must be implemented "
             "in the child classes of abstract model."
@@ -134,6 +239,11 @@ class AbstractModel(Hashable):
 
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
+        try:
+            if self.requires_node_types():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `is_using_node_types` method must be implemented "
             "in the child classes of abstract model, but was not implemented "
@@ -141,25 +251,35 @@ class AbstractModel(Hashable):
             f"from the library {self.library_name()}."
         ))
 
-    @staticmethod
-    def requires_edge_types() -> bool:
+    @classmethod
+    def requires_edge_types(cls) -> bool:
         """Returns whether the model requires edge types."""
+        try:
+            if not cls.can_use_edge_types():
+                return False
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `requires_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_involves_edge_types() -> bool:
+    @classmethod
+    def task_involves_edge_types(cls) -> bool:
         """Returns whether the model task involves edge types."""
         raise NotImplementedError((
             "The `task_involves_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def can_use_edge_types() -> bool:
+    @classmethod
+    def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
+        try:
+            if cls.requires_edge_types():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `can_use_edge_types` method must be implemented "
             "in the child classes of abstract model."
@@ -167,29 +287,34 @@ class AbstractModel(Hashable):
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
+        try:
+            if self.requires_edge_types():
+                return True
+        except NotImplementedError:
+            pass
         raise NotImplementedError((
             "The `is_using_edge_types` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns the task for which this model is being used."""
         raise NotImplementedError((
             "The `task_name` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Returns library name of the model."""
         raise NotImplementedError((
             "The `library_name` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns model name of the model."""
         raise NotImplementedError((
             "The `model_name` method must be implemented "
@@ -205,20 +330,20 @@ class AbstractModel(Hashable):
 
     def consistent_hash(self) -> str:
         """Returns consistent hash describing the model."""
-        return sha256({
+        return sha256(dict(
             **self.parameters(),
-            "model_name": self.model_name(),
-            "library_name": self.library_name(),
-            "task_name": self.task_name(),
-        })
+            model_name= self.model_name(),
+            library_name= self.library_name(),
+            task_name= self.task_name(),
+        ))
 
     @staticmethod
     def is_available() -> bool:
         """Returns whether the model class is actually available in the user system."""
         return True
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         raise NotImplementedError((
             "The `is_stocastic` method must be implemented "

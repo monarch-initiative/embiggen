@@ -88,8 +88,8 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
             random_state=random_state
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             **DecisionTreeEdgePrediction.smoke_test_parameters(),
@@ -123,6 +123,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
             )
         }
     
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "Extra Trees Classifier"

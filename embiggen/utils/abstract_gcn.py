@@ -65,7 +65,7 @@ def graph_to_sparse_tensor(
     if graph.has_singleton_nodes():
         raise ValueError(
             f"In the provided {graph.get_name()} graph there are "
-            f"{graph.get_singleton_nodes_number()} singleton nodes."
+            f"{graph.get_number_of_singleton_nodes()} singleton nodes."
             "The GCN model does not support operations on graph containing "
             "singletons. You can either choose to drop singletons from "
             "the graph by using the `graph.remove_singleton_nodes()` "
@@ -90,7 +90,7 @@ def graph_to_sparse_tensor(
         return tf.sparse.reorder(tf.SparseTensor(
             edge_node_ids,
             np.abs(weights),
-            (graph.get_nodes_number(), graph.get_nodes_number())
+            (graph.get_number_of_nodes(), graph.get_number_of_nodes())
         ))
 
     return tf.SparseTensor(
@@ -100,7 +100,7 @@ def graph_to_sparse_tensor(
             if use_weights
             else tf.ones(graph.get_number_of_directed_edges())
         ),
-        (graph.get_nodes_number(), graph.get_nodes_number())
+        (graph.get_number_of_nodes(), graph.get_number_of_nodes())
     )
 
 
@@ -211,7 +211,6 @@ class AbstractGCN(AbstractClassifierModel):
         verbose: bool = True
             Whether to show loading bars.
         """
-        super().__init__(random_state=random_state)
         self._number_of_graph_convolution_layers = number_of_graph_convolution_layers
         self._number_of_units_per_graph_convolution_layers = normalize_model_list_parameter(
             number_of_units_per_graph_convolution_layers,
@@ -255,8 +254,10 @@ class AbstractGCN(AbstractClassifierModel):
         self._model = None
         self.history = None
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+        super().__init__(random_state=random_state)
+
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             epochs=1,
@@ -390,7 +391,7 @@ class AbstractGCN(AbstractClassifierModel):
         # while without we do not have them we can keep an open world assumption.
         # Basically, without node embedding we can have different vocabularies,
         # while with node embedding the vocabulary becomes fixed.
-        nodes_number = graph.get_nodes_number() if self._use_node_embedding else None
+        nodes_number = graph.get_number_of_nodes() if self._use_node_embedding else None
 
         # We create the list we will use to collect the input features.
         input_features = []
@@ -449,7 +450,7 @@ class AbstractGCN(AbstractClassifierModel):
             input_features.append(node_ids)
 
             node_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_nodes_number(),
+                vocabulary_size=graph.get_number_of_nodes(),
                 dimension=self._node_embedding_size,
                 input_length=1,
                 name="NodesEmbedding"
@@ -466,7 +467,7 @@ class AbstractGCN(AbstractClassifierModel):
             input_features.append(node_type_ids)
 
             node_type_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_nodes_number(),
+                vocabulary_size=graph.get_number_of_nodes(),
                 dimension=self._node_embedding_size,
                 input_length=graph.get_maximum_multilabel_count(),
                 mask_zero=(
@@ -572,7 +573,7 @@ class AbstractGCN(AbstractClassifierModel):
             sample_weight=self._get_model_training_output(graph),
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
             shuffle=False,
             class_weight=class_weight,
             callbacks=[
@@ -616,7 +617,7 @@ class AbstractGCN(AbstractClassifierModel):
                 node_type_features,
                 edge_features,
             ),
-            batch_size=support.get_nodes_number(),
+            batch_size=support.get_number_of_nodes(),
             verbose=False
         )
 
@@ -695,21 +696,21 @@ class AbstractGCN(AbstractClassifierModel):
             handling_multi_graph=self._handling_multi_graph
         )
 
-    @staticmethod
-    def requires_edge_weights() -> bool:
-        return True
-
-    @staticmethod
-    def requires_positive_edge_weights() -> bool:
+    @classmethod
+    def requires_edge_weights(cls) -> bool:
         return False
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def requires_positive_edge_weights(cls) -> bool:
+        return False
+
+    @classmethod
+    def library_name(cls) -> str:
         """Return name of the model."""
         return "TensorFlow"
 
-    @staticmethod
-    def can_use_edge_weights() -> bool:
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return True
 
@@ -717,11 +718,4 @@ class AbstractGCN(AbstractClassifierModel):
         """Returns whether the model is parametrized to use edge weights."""
         return not self._use_simmetric_normalized_laplacian
 
-    @staticmethod
-    def can_use_node_types() -> bool:
-        """Returns whether the model can optionally use node types."""
-        return True
-
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return self._use_node_type_embedding
+    

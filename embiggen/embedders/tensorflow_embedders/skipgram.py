@@ -21,8 +21,8 @@ class SkipGramTensorFlow(Node2Vec):
 
     NODE_EMBEDDING = "node_embedding"
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         """Returns name of the model."""
         return "SkipGram"
 
@@ -36,7 +36,7 @@ class SkipGramTensorFlow(Node2Vec):
 
         # Creating the embedding layer for the contexts
         central_term_embedding = Flatten()(Embedding(
-            input_dim=graph.get_nodes_number(),
+            input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
             name=self.NODE_EMBEDDING,
@@ -44,7 +44,7 @@ class SkipGramTensorFlow(Node2Vec):
 
         # Adding layer that also executes the loss function
         output = NoiseContrastiveEstimation(
-            vocabulary_size=graph.get_nodes_number(),
+            vocabulary_size=graph.get_number_of_nodes(),
             embedding_size=self._embedding_size,
             number_of_negative_samples=self._number_of_negative_samples,
             positive_samples=self._window_size*2,

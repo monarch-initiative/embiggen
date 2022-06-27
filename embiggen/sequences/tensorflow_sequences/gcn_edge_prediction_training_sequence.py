@@ -148,7 +148,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         self._current_index = 0
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
         )
 
     def __call__(self):

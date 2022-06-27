@@ -16,5 +16,7 @@ __all__ = [
     "GCNEdgePredictionSequence",
     "GCNEdgeLabelPredictionTrainingSequence",
     "SiameseSequence",
-    "KGSiameseSequence"
+    "KGSiameseSequence",
+    "EdgeJaccardSequence",
+    "EdgeAdamicAdarSequence",
 ]

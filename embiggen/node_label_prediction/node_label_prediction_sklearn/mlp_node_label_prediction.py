@@ -84,8 +84,8 @@ class MLPNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
             random_state
         )
 
-    @staticmethod
-    def smoke_test_parameters() -> Dict[str, Any]:
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             hidden_layer_sizes=(1,),
@@ -121,6 +121,6 @@ class MLPNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
             )
         }
 
-    @staticmethod
-    def model_name() -> str:
+    @classmethod
+    def model_name(cls) -> str:
         return "MLP Regression"

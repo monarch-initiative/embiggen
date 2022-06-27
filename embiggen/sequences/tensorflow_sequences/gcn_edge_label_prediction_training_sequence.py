@@ -68,7 +68,7 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgePredictionSequence):
 
         self._known_edge_types_mask_sequence = VectorSequence(
             graph.get_known_edge_types_mask().astype(np.float32),
-            batch_size=graph.get_nodes_number(),
+            batch_size=graph.get_number_of_nodes(),
             shuffle=False
         )
 
