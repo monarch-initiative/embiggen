@@ -13,8 +13,8 @@ from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbe
 class AbstractEdgePredictionModel(AbstractClassifierModel):
     """Class defining an abstract edge prediction model."""
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns name of the task this model is used for."""
         return "Edge Prediction"
 

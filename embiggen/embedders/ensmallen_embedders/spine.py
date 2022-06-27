@@ -73,8 +73,8 @@ class SPINE(AbstractEmbeddingModel):
             node_embeddings=node_embedding
         )
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
     @classmethod
@@ -82,8 +82,8 @@ class SPINE(AbstractEmbeddingModel):
         """Returns name of the model."""
         return "SPINE"
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "Ensmallen"
 
     @classmethod
@@ -109,7 +109,7 @@ class SPINE(AbstractEmbeddingModel):
         """Returns whether the model can optionally use edge types."""
         return False
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return False

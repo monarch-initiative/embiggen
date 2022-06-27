@@ -109,12 +109,12 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             )
         }
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "PyKeen"
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
     def _build_model(self, triples_factory: CoreTriplesFactory) -> Type[Model]:
@@ -251,7 +251,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         """Returns whether the model task involves edge types."""
         return True
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

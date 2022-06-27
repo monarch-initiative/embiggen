@@ -51,8 +51,8 @@ class AbstractEmbeddingModel(AbstractModel):
         """Returns parameters for smoke test."""
         return dict(embedding_size=5)
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
     @classmethod

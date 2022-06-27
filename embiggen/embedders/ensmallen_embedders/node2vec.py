@@ -75,12 +75,12 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             **self._model_kwargs
         }
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         return "Node Embedding"
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "Ensmallen"
 
     def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
@@ -148,7 +148,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         """Returns whether the model is parametrized to use edge types."""
         return self._model_kwargs["change_edge_type_weight"] != 1.0
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

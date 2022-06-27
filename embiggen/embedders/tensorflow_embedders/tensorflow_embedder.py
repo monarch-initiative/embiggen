@@ -107,8 +107,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             )
         }
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "TensorFlow"
 
     def _build_model(self, graph: Graph) -> Model:
@@ -275,7 +275,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             return_dataframe=return_dataframe
         )
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

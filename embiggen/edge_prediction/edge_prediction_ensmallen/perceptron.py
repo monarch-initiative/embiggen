@@ -243,6 +243,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def model_name(cls) -> str:
         return "Perceptron"
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         return "Ensmallen"

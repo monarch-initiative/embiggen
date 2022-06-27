@@ -99,8 +99,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """Return copy of self."""
         return copy.deepcopy(self)
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Return name of the model."""
         return "scikit-learn"
 

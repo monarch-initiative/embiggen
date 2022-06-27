@@ -201,8 +201,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             node_features=node_features,
         ))
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Return name of the model."""
         return "scikit-learn"
 

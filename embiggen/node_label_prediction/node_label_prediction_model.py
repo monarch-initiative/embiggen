@@ -28,8 +28,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         """Returns whether this method requires node types."""
         return True
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns name of the task this model is used for."""
         return "Node Label Prediction"
 

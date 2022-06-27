@@ -147,7 +147,7 @@ class AbstractClassifierModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
+    @classmethod
     def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
@@ -1778,7 +1778,7 @@ class AbstractClassifierModel(AbstractModel):
         # execution.
         return performance
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

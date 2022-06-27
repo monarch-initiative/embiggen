@@ -185,13 +185,13 @@ def get_model_or_stub(
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
 
-                @staticmethod
-                def task_name() -> str:
+                @classmethod
+                def task_name(cls) -> str:
                     """Returns name of the task"""
                     return parent_class.task_name()
 
                 @classmethod
-                def is_available() -> bool:
+                def is_available(cls) -> bool:
                     """Returns whether the model class is actually available in the user system."""
                     return True
 

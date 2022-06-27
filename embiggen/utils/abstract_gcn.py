@@ -704,8 +704,8 @@ class AbstractGCN(AbstractClassifierModel):
     def requires_positive_edge_weights(cls) -> bool:
         return False
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Return name of the model."""
         return "TensorFlow"
 

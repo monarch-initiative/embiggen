@@ -297,16 +297,16 @@ class AbstractModel(Hashable):
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def task_name() -> str:
+    @classmethod
+    def task_name(cls) -> str:
         """Returns the task for which this model is being used."""
         raise NotImplementedError((
             "The `task_name` method must be implemented "
             "in the child classes of abstract model."
         ))
 
-    @staticmethod
-    def library_name() -> str:
+    @classmethod
+    def library_name(cls) -> str:
         """Returns library name of the model."""
         raise NotImplementedError((
             "The `library_name` method must be implemented "
@@ -342,8 +342,8 @@ class AbstractModel(Hashable):
         """Returns whether the model class is actually available in the user system."""
         return True
 
-    @staticmethod
-    def is_stocastic() -> bool:
+    @classmethod
+    def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         raise NotImplementedError((
             "The `is_stocastic` method must be implemented "
