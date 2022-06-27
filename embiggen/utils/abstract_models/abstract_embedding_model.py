@@ -225,7 +225,7 @@ class AbstractEmbeddingModel(AbstractModel):
                 repository=repository,
                 version=version
             )()
-        self._cached_fit_transform(
+        return self._cached_fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
             verbose=verbose
