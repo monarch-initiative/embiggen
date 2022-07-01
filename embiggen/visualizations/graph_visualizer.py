@@ -802,7 +802,7 @@ class GraphVisualizer:
         number_of_columns = 1 if len(labels) <= 2 and any(
             len(label) > 20
             for label in labels
-        ) else self.number_of_columns_in_legend
+        ) else self._number_of_columns_in_legend
         legend = axes.legend(
             handles=handles,
             labels=[
