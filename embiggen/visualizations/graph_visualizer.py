@@ -521,7 +521,7 @@ class GraphVisualizer:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
         # in order to avoid false negatives.
-        if self._node_embedding_method_name == "GloVe":
+        if self._node_embedding_method_name in ("GloVe", "First order LINE"):
             metric = self._decomposition_kwargs.get("metric")
             if metric is not None and metric != "cosine":
                 warnings.warn(
@@ -529,7 +529,7 @@ class GraphVisualizer:
                     "such as Glove, which embeds nodes using a dot product, it is "
                     "highly suggested to use a `cosine` metric. Using a different "
                     f"metric, such as the one you have provided ({metric}) may lead "
-                    "to unsuccessfull decompositions using UMAP or t-SNE."
+                    "to worse decompositions using UMAP or t-SNE."
                 )
             else:
                 # Otherwise we switch to using a cosine metric.
