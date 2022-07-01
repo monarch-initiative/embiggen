@@ -89,6 +89,7 @@ class GraphVisualizer:
         destination_nodes_prefixes: Optional[Union[str, List[str]]] = None,
         edge_type_names: Optional[List[Optional[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
+        number_of_columns_in_legend: int = 2,
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
         show_separability_considerations_explanation: bool = True,
@@ -220,6 +221,8 @@ class GraphVisualizer:
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
             name such as `Graph`.
+        number_of_columns_in_legend: int = 2
+            The number of columns to be used with the legend.
         show_node_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
@@ -288,6 +291,7 @@ class GraphVisualizer:
 
         self._support = support
         self._subgraph_of_interest = subgraph_of_interest
+        self._number_of_columns_in_legend = number_of_columns_in_legend
 
         if isinstance(source_node_types_names, str):
             source_node_types_names = [source_node_types_names]
@@ -798,7 +802,7 @@ class GraphVisualizer:
         number_of_columns = 1 if len(labels) <= 2 and any(
             len(label) > 20
             for label in labels
-        ) else 2
+        ) else self.number_of_columns_in_legend
         legend = axes.legend(
             handles=handles,
             labels=[
