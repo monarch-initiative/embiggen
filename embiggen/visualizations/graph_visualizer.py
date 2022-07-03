@@ -2757,7 +2757,12 @@ class GraphVisualizer:
                 if edge_type_id is None
                 else
                 edge_type_id
-                for edge_type_id in self._positive_graph.get_edge_type_ids()
+                for edge_type_id, src, dst in (
+                    self._positive_graph.get_edge_type_ids(),
+                    self._positive_graph.get_directed_source_node_ids(),
+                    self._positive_graph.get_directed_destination_node_ids(),
+                )
+                if src <= dst
             ),
             dtype=np.uint32
         )
