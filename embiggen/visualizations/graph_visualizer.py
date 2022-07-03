@@ -2762,7 +2762,7 @@ class GraphVisualizer:
                     self._positive_graph.get_directed_source_node_ids(),
                     self._positive_graph.get_directed_destination_node_ids(),
                 )
-                if src <= dst
+                if src <= dst or self._positive_graph.is_directed()
             ),
             dtype=np.uint32
         )
