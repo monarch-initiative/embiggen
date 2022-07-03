@@ -3754,7 +3754,7 @@ class GraphVisualizer:
             edge_metrics=np.vstack([
                 graph_transformer.transform(self._negative_graph),
                 graph_transformer.transform(self._positive_graph)
-            ]),
+            ]).flatten(),
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -3766,7 +3766,6 @@ class GraphVisualizer:
         node_features: np.ndarray,
         distance_name: str,
         distance_callback: str,
-        offset: float = 0.0,
         **kwargs: Dict
     ):
         """Plot distances of node features for positive and negative edges.
@@ -3779,10 +3778,6 @@ class GraphVisualizer:
             The title for the heatmap.
         distance_callback: str
             The callback to use to compute the distances.
-        offset: float = 0.0
-            The offset to move the distance when it is not a true distance
-            such as with the cosine similarity and negative value would
-            not be plottable on a logarithmic scale.
         **kwargs: Dict
             Additional kwargs to forward.
 
@@ -4026,7 +4021,6 @@ class GraphVisualizer:
             node_features=node_features,
             distance_name="Cosine similarity",
             distance_callback="CosineSimilarity",
-            offset=1.0,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
