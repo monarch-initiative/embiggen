@@ -181,7 +181,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             edge_features=edge_features,
         ))
 
-    def predict(
+    def _predict(
         self,
         graph: Graph,
         support: Optional[Graph] = None,

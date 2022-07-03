@@ -878,16 +878,19 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=False,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=False,
                 ),

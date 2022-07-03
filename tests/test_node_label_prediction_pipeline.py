@@ -4,6 +4,7 @@ from unittest import TestCase
 from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import get_available_models_for_node_label_prediction, get_available_models_for_node_embedding
 from embiggen.embedders import SPINE
+from ensmallen.datasets.kgobo import MIAPA
 from ensmallen.datasets.linqs import Cora, get_words_data
 import shutil
 import os
@@ -22,7 +23,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         """Test graph visualization."""
         if os.path.exists("experiments"):
             shutil.rmtree("experiments")
-            
+
         df = get_available_models_for_node_label_prediction()
 
         for evaluation_schema in AbstractNodeLabelPredictionModel.get_available_evaluation_schemas():
@@ -45,6 +46,17 @@ class TestEvaluateNodeLabelPrediction(TestCase):
 
         if os.path.exists("experiments"):
             shutil.rmtree("experiments")
+
+    def test_node_label_prediction_models_apis(self):
+        df = get_available_models_for_node_label_prediction()
+        graph = self._graph.remove_singleton_nodes()
+        node_features = SPINE(embedding_size=10).fit_transform(graph)
+        for model_name in tqdm(df.model_name, desc="Testing model APIs"):
+            model = AbstractNodeLabelPredictionModel.get_model_from_library(
+                model_name)()
+            model.fit(graph, node_features=node_features)
+            model.predict(graph, node_features=node_features)
+            model.predict_proba(graph, node_features=node_features)
 
     def test_model_recreation(self):
         """Test graph visualization."""

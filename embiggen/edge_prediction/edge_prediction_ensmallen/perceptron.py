@@ -12,14 +12,13 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def __init__(
         self,
         edge_features: Union[str, List[str]] = "JaccardCoefficient",
-        edge_embeddings: Optional[List[str]] = None,
+        edge_embeddings: Optional[Union[str, List[str]]] = None,
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
         number_of_epochs: int = 100,
         number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         learning_rate: float = 0.001,
-        learning_rate_decay: float = 0.99,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -37,7 +36,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             - Cooccurrence,
             - ResourceAllocationIndex,
             - PreferentialAttachment,
-        edge_embeddings: Optional[List[str]] = None
+        edge_embeddings: Optional[Union[str, List[str]]] = None
             The embedding methods to use for the provided node features.
             Zero or more edge emmbedding methods can be used at once.
             The currently supported edge embedding are:
@@ -59,8 +58,8 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             By default 100.
         number_of_epochs: int = 100
             The number of epochs to train the model for. By default, 100.
-        number_of_edges_per_mini_batch: int = 1024
-            The number of samples to include for each mini-batch. By default 1024.
+        number_of_edges_per_mini_batch: int = 4096
+            The number of samples to include for each mini-batch. By default 4096.
         sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types. By default false.
@@ -76,6 +75,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         if isinstance(edge_features, str):
             edge_features = [edge_features]
 
+        if isinstance(edge_embeddings, str):
+            edge_embeddings = [edge_embeddings]
+
         self._model_kwargs = dict(
             edge_features=edge_features,
             edge_embeddings=edge_embeddings,
@@ -85,7 +87,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             learning_rate=learning_rate,
-            learning_rate_decay=learning_rate_decay
         )
         self._verbose = verbose
         self._model = models.EdgePredictionPerceptron(

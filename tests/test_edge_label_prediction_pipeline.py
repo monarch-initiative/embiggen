@@ -5,6 +5,7 @@ from embiggen.edge_label_prediction import edge_label_prediction_evaluation
 from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 from ensmallen.datasets.kgobo import PDUMDV
+from embiggen.embedders import SPINE
 
 
 class TestEvaluateEdgeLabelPrediction(TestCase):
@@ -33,6 +34,23 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             )
         self.assertEqual(holdouts.shape[0],
                          self._number_of_holdouts*2*df.shape[0])
+
+    def test_edge_label_prediction_models_apis(self):
+        df = get_available_models_for_edge_label_prediction()
+        graph = PDUMDV().remove_singleton_nodes()
+        node_features = SPINE(embedding_size=10).fit_transform(graph)
+        for model_name in tqdm(df.model_name, desc="Testing model APIs"):
+            model = AbstractEdgeLabelPredictionModel.get_model_from_library(model_name)()
+            model.fit(graph, node_features=node_features)
+            model.predict(graph, node_features=node_features)
+            model.predict_proba(graph, node_features=node_features)
+            if "use_edge_metrics" in model.parameters():
+                model = AbstractEdgeLabelPredictionModel.get_model_from_library(model_name)(
+                    use_edge_metrics=True
+                )
+                model.fit(graph, node_features=node_features)
+                model.predict(graph, node_features=node_features)
+                model.predict_proba(graph, node_features=node_features)
 
     def test_model_recreation(self):
         """Test graph visualization."""

@@ -364,7 +364,8 @@ class AbstractEdgeGCN(AbstractGCN):
 
         if self._edge_embedding_method == "Concatenate":
             hidden = Concatenate(
-                name="NodeConcatenation"
+                name="NodeConcatenation",
+                axis=-1
             )(source_and_destination_features)
         elif self._edge_embedding_method == "Average":
             hidden = Average(
@@ -407,10 +408,11 @@ class AbstractEdgeGCN(AbstractGCN):
 
         if len(other_features) > 0:
             hidden = Concatenate(
-                name="EdgeFeatures"
+                name="EdgeFeatures",
+                axis=-1
             )([
                 hidden,
-                other_features
+                *other_features
             ])
 
         # Building the head of the model.

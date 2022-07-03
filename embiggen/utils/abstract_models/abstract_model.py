@@ -450,8 +450,9 @@ class AbstractModel(Hashable):
         # We retrieve the library data.
         return task_data[library_name]
 
-    @staticmethod
+    @classmethod
     def get_model_from_library(
+        cls,
         model_name: str,
         task_name: Optional[str] = None,
         library_name: Optional[str] = None,
@@ -474,18 +475,7 @@ class AbstractModel(Hashable):
             be raised.
         """
         if task_name is None:
-            task_names = list(AbstractModel.get_model_data(model_name).keys())
-            if len(task_names) == 1:
-                task_name = task_names[0]
-            else:
-                formatted_list = format_list(task_names)
-                raise ValueError(
-                    f"The requested model `{model_name}` is available for "
-                    "multiple tasks and no specific task was requested, "
-                    "so it is unclear which task you intend to execute. "
-                    f"Specifically, the available tasks are {formatted_list}."
-                    "Please do provide a task name to resolve this ambiguity."
-                )
+            task_name = cls.task_name()
 
         task_data = AbstractModel.get_task_data(model_name, task_name)
 

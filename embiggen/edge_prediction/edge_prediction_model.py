@@ -6,7 +6,7 @@ import numpy as np
 import math
 from ensmallen import Graph
 from tqdm.auto import tqdm
-from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class, format_list
 
 
 @abstract_class
