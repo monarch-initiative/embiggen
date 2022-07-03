@@ -14,24 +14,33 @@ class GraphTransformer:
         self,
         method: str = "Hadamard",
         aligned_node_mapping: bool = False,
+        include_both_undirected_edges: bool = True
     ):
         """Create new GraphTransformer object.
 
         Parameters
         ------------------------
-        method: str = "hadamard",
+        method: str = "hadamard"
             Method to use for the embedding.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        aligned_node_mapping: bool = False,
+        aligned_node_mapping: bool = False
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
+        include_both_undirected_edges: bool = True
+            Whether to include both undirected edges when parsing an undirected
+            graph, that is both the edge from source to destination and the edge
+            from destination to source. While both edges should be included when
+            training a model, as the model should learn about these simmetries
+            in the graph, these edges are not necessary in the context of visualizations
+            where they create redoundancy.
         """
         self._transformer = EdgeTransformer(
             method=method,
             aligned_node_mapping=aligned_node_mapping,
         )
+        self._include_both_undirected_edges = include_both_undirected_edges
         self._aligned_node_mapping = aligned_node_mapping
 
     @property
@@ -87,10 +96,16 @@ class GraphTransformer:
         """
         if isinstance(graph, Graph):
             if self._aligned_node_mapping:
-                graph = (
-                    graph.get_directed_source_node_ids(),
-                    graph.get_directed_destination_node_ids(),
-                )
+                if graph.is_directed() or self._include_both_undirected_edges:
+                    graph = (
+                        graph.get_directed_source_node_ids(),
+                        graph.get_directed_destination_node_ids(),
+                    )
+                else:
+                    graph = (
+                        graph.get_source_node_ids(directed=False),
+                        graph.get_destination_node_ids(directed=False),
+                    )
             else:
                 graph = graph.get_directed_edge_node_names()
         if isinstance(graph, List):

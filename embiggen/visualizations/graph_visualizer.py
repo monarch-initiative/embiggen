@@ -903,7 +903,8 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_node_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(self._positive_graph)
@@ -944,7 +945,8 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_node_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(
@@ -3729,16 +3731,17 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True
+            aligned_node_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
-            edge_metrics=graph_transformer.transform(np.vstack([
-                self._negative_graph.get_directed_edge_node_ids(),
-                self._positive_graph.get_directed_edge_node_ids(),
-            ])).flatten(),
+            edge_metrics=np.vstack([
+                graph_transformer.transform(self._negative_graph),
+                graph_transformer.transform(self._positive_graph)
+            ]),
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -3781,17 +3784,18 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True
+            aligned_node_mapping=True,
+            include_both_undirected_edges=False
         )
 
         graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
-            edge_metrics=offset + graph_transformer.transform(np.vstack([
-                self._negative_graph.get_directed_edge_node_ids(),
-                self._positive_graph.get_directed_edge_node_ids(),
-            ])),
+            edge_metrics=np.vstack([
+                graph_transformer.transform(self._negative_graph),
+                graph_transformer.transform(self._positive_graph)
+            ]),
             **kwargs,
         )
 

@@ -71,6 +71,14 @@ class TestEvaluateEdgePrediction(TestCase):
                 model.fit(graph, node_features=node_features)
                 model.predict(graph, node_features=node_features)
                 model.predict_proba(graph, node_features=node_features)
+            if "use_node_embedding" in model.parameters():
+                model = AbstractEdgePredictionModel.get_model_from_library(model_name)(
+                    use_node_embedding=True,
+                    use_node_type_embedding=True
+                )
+                model.fit(graph, node_features=node_features)
+                model.predict(graph, node_features=node_features)
+                model.predict_proba(graph, node_features=node_features)
 
     def test_tree_with_cosine(self):
         for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
