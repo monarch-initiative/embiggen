@@ -2055,7 +2055,7 @@ class GraphVisualizer:
             
             # Filter the edge metrics relative to edges that are not
             # to be displayed.
-            if self._graph.is_directed():
+            if not self._graph.is_directed():
                 edge_metrics = edge_metrics[np.concatenate([
                     self._negative_graph.get_directed_source_node_ids() <= self._negative_graph.get_directed_destination_node_ids(),
                     self._positive_graph.get_directed_source_node_ids() <= self._positive_graph.get_directed_destination_node_ids(),
