@@ -4216,7 +4216,7 @@ class GraphVisualizer:
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
 
-        if self._graph.has_constant_non_zero_node_degrees():
+        if not self._graph.has_constant_non_zero_node_degrees():
             node_scatter_plot_methods_to_call.append(
                 self.plot_node_degrees,
             )

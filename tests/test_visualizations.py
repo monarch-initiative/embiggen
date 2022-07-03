@@ -10,18 +10,18 @@ class TestGraphVisualizer(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        self._visualization = GraphVisualizer(
-            "Cora",
-            repository="linqs",
-            decomposition_method="PCA",
-        )
+        pass
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        self._visualization.fit_and_plot_all("SPINE", embedding_size=5)
-
-    def test_graph_visualization(self):
-        """Test graph visualization."""
-        self._visualization.fit_and_plot_all(
-            SPINE(embedding_size=5).fit_transform(self._visualization._graph)
-        )
+        for graph_name in ("CIO", "Usair97", "MIAPA"):
+            for method in ("PCA", "TSNE", "UMAP"):
+                visualization = GraphVisualizer(
+                    graph_name,
+                    decomposition_method=method,
+                )
+                visualization.fit_and_plot_all("HOPE")
+                visualization.plot_dot()
+                visualization.plot_edges()
+                visualization.plot_nodes(annotate_nodes=True)
+        
