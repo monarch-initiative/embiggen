@@ -18,7 +18,7 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
 )
 from tensorflow.keras.models import Model
 from embiggen.utils.abstract_models import abstract_class
-from embiggen.sequences.tensorflow_sequences import SiameseSequence, KGSiameseSequence
+from embiggen.sequences.tensorflow_sequences import SiameseSequence
 from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
 
 
@@ -276,16 +276,10 @@ class Siamese(TensorFlowEmbedder):
         except:
             AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        if self.requires_node_types():
-            sequence = KGSiameseSequence(
-                graph=graph,
-                batch_size=self._batch_size,
-            )
-        else:
-            sequence = SiameseSequence(
-                graph=graph,
-                batch_size=self._batch_size,
-            )
+        sequence = SiameseSequence(
+            graph=graph,
+            batch_size=self._batch_size,
+        )
         return (
             sequence.into_dataset()
             .repeat()

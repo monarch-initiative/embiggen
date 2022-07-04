@@ -881,7 +881,7 @@ class GraphVisualizer:
                     size=self._number_of_subsampled_nodes
                 )
             node_transformer = NodeTransformer(
-                aligned_node_mapping=True
+                aligned_mapping=True
             )
             node_transformer.fit(node_embedding)
             node_embedding = node_transformer.transform(
@@ -903,7 +903,7 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True,
+            aligned_mapping=True,
             include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
@@ -945,7 +945,7 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True,
+            aligned_mapping=True,
             include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
@@ -3747,7 +3747,7 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True,
+            aligned_mapping=True,
             include_both_undirected_edges=False
         )
         graph_transformer.fit(node_features.astype(np.float32))
@@ -3795,7 +3795,7 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True,
+            aligned_mapping=True,
             include_both_undirected_edges=False
         )
 

@@ -13,7 +13,7 @@ class EdgePredictionTransformer:
     def __init__(
         self,
         method: str = "Hadamard",
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
     ):
         """Create new EdgePredictionTransformer object.
 
@@ -22,7 +22,7 @@ class EdgePredictionTransformer:
         method: str = "hadamard",
             Method to use for the embedding.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
@@ -30,23 +30,32 @@ class EdgePredictionTransformer:
         """
         self._transformer = GraphTransformer(
             method=method,
-            aligned_node_mapping=aligned_node_mapping,
+            aligned_mapping=aligned_mapping,
         )
 
-    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
+    def fit(
+        self,
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ):
         """Fit the model.
 
         Parameters
         -------------------------
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
             Node feature to use to fit the transformer.
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Node type feature to use to fit the transformer.
 
         Raises
         -------------------------
         ValueError
             If the given method is None there is no need to call the fit method.
         """
-        self._transformer.fit(node_feature)
+        self._transformer.fit(
+            node_feature,
+            node_type_feature=node_type_feature
+        )
 
     def transform(
         self,
@@ -116,10 +125,12 @@ class EdgePredictionTransformer:
 
         positive_edge_embedding = self._transformer.transform(
             positive_graph,
+            node_types=positive_graph,
             edge_features=positive_edge_features
         )
         negative_edge_embedding = self._transformer.transform(
             negative_graph,
+            node_types=negative_graph,
             edge_features=negative_edge_features
         )
 

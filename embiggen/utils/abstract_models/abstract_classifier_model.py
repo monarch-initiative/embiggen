@@ -670,7 +670,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_directed_edges_number() != ef.shape[0]:
+            if graph.get_number_of_directed_edges() != ef.shape[0]:
                 raise ValueError(
                     (
                         "The provided edge features have {rows_number} rows "
@@ -806,6 +806,9 @@ class AbstractClassifierModel(AbstractModel):
                 f"the {self.model_name()} requires edge types."
             )
 
+        if support is None:
+            support = graph
+
         try:
             self._fit(
                 graph=graph,
@@ -872,6 +875,10 @@ class AbstractClassifierModel(AbstractModel):
                 "Do call the `.fit` method before the `.predict` "
                 "method."
             ))
+
+        if support is None:
+            support = graph
+        
         try:
             return self._predict(
                 graph=graph,
@@ -936,6 +943,9 @@ class AbstractClassifierModel(AbstractModel):
                 "Do call the `.fit` method before the `.predict_proba` "
                 "method."
             ))
+
+        if support is None:
+            support = graph
 
         try:
             return self._predict_proba(

@@ -22,6 +22,7 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         class_weight=None,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the Decision Tree for Edge Label Prediction."""
@@ -55,8 +56,9 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
 
     @classmethod

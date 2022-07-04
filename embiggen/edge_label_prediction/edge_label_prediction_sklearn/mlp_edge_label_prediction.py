@@ -32,6 +32,7 @@ class MLPEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         n_iter_no_change=10,
         max_fun=15000,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the MLP for Edge Label Prediction."""
@@ -82,8 +83,9 @@ class MLPEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 n_iter_no_change=n_iter_no_change,
                 max_fun=max_fun
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
 
     @classmethod

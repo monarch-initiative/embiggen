@@ -1,6 +1,7 @@
 """Unit test class for GraphTransformer objects."""
 from tqdm.auto import tqdm
 from unittest import TestCase
+import numpy as np
 from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
@@ -55,32 +56,63 @@ class TestEvaluateEdgePrediction(TestCase):
         self.assertEqual(
             holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])
 
+    def test_evaluate_edge_prediction_with_node_types_features(self):
+        df = get_available_models_for_edge_prediction()
+        holdouts = edge_prediction_evaluation(
+            holdouts_kwargs=dict(train_size=0.8),
+            models=df.model_name,
+            library_names=df.library_name,
+            node_features=SPINE(embedding_size=5),
+            node_type_features=np.random.uniform(
+                size=(self._graph.get_number_of_node_types(), 5)
+            ),
+            evaluation_schema="Connected Monte Carlo",
+            graphs=self._graph,
+            number_of_holdouts=self._number_of_holdouts,
+            verbose=True,
+            smoke_test=True
+        )
+        self.assertEqual(
+            holdouts.shape[0],
+            self._number_of_holdouts * 2 * df.shape[0]
+        )
+
     def test_edge_prediction_models_apis(self):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
         node_features = SPINE(embedding_size=10).fit_transform(graph)
-        for model_name in tqdm(df.model_name, desc="Testing model APIs"):
-            model = AbstractEdgePredictionModel.get_model_from_library(model_name)()
+        bar = tqdm(
+            df.model_name,
+            total=df.shape[0],
+            leave=False,
+        )
+        for model_name in bar:
+            bar.set_description(
+                f"Testing API of {model_name}")
+            model = AbstractEdgePredictionModel.get_model_from_library(
+                model_name
+            )()
+            parameters = {}
+            if "use_edge_metrics" in model.parameters():
+                parameters["use_edge_metrics"] = True
+            if "use_node_embedding" in model.parameters():
+                parameters["use_node_embedding"] = True
+            if "use_node_type_embedding" in model.parameters():
+                parameters["use_node_type_embedding"] = True
+            model_class = AbstractEdgePredictionModel.get_model_from_library(
+                model_name)
+            model = model_class(
+                **{
+                    **model_class.smoke_test_parameters(),
+                    **parameters
+                }
+            )
             model.fit(graph, node_features=node_features)
             model.predict(graph, node_features=node_features)
             model.predict_proba(graph, node_features=node_features)
-            if "use_edge_metrics" in model.parameters():
-                model = AbstractEdgePredictionModel.get_model_from_library(model_name)(
-                    use_edge_metrics=True
-                )
-                model.fit(graph, node_features=node_features)
-                model.predict(graph, node_features=node_features)
-                model.predict_proba(graph, node_features=node_features)
-            if "use_node_embedding" in model.parameters():
-                model = AbstractEdgePredictionModel.get_model_from_library(model_name)(
-                    use_node_embedding=True,
-                    use_node_type_embedding=True
-                )
-                model.fit(graph, node_features=node_features)
-                model.predict(graph, node_features=node_features)
-                model.predict_proba(graph, node_features=node_features)
 
     def test_tree_with_cosine(self):
+        graph = CIO().remove_singleton_nodes()
         for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
             holdouts = edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
@@ -88,7 +120,7 @@ class TestEvaluateEdgePrediction(TestCase):
                     edge_embedding_method="CosineSimilarity"),
                 node_features=SPINE(embedding_size=10),
                 evaluation_schema=evaluation_schema,
-                graphs="CIO",
+                graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=True,
                 smoke_test=True,

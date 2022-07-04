@@ -16,6 +16,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         self,
         model_instance: Type[ClassifierMixin],
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the adapter for Sklearn object.
@@ -26,6 +27,13 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             The class instance to be adapted into edge-label prediction.
         edge_embedding_method: str = "Concatenate"
             The method to use to compute the edges.
+        use_edge_metrics: bool = False
+            Whether to use the edge metrics from traditional edge prediction.
+            These metrics currently include:
+            - Adamic Adar
+            - Jaccard Coefficient
+            - Resource allocation index
+            - Preferential attachment
         random_state: int = 42
             The random state to use to reproduce the training.
 
@@ -38,6 +46,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         must_be_an_sklearn_classifier_model(model_instance)
         self._model_instance = model_instance
         self._edge_embedding_method = edge_embedding_method
+        self._use_edge_metrics = use_edge_metrics
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
@@ -46,6 +55,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """Returns parameters used for this model."""
         return {
             "edge_embedding_method": self._edge_embedding_method,
+            "use_edge_metrics": self._use_edge_metrics,
             **super().parameters()
         }
 
@@ -56,6 +66,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     def _trasform_graph_into_edge_embedding(
         self,
         graph: Graph,
+        support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -67,6 +78,11 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         graph: Graph
             The graph whose edges are to be embedded and predicted.
             It can either be an Graph or a list of lists of edges.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used in the training of the model.
         node_type_features: np.ndarray
@@ -83,13 +99,30 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         gt = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
-        gt.fit(node_features)
+        gt.fit(
+            node_features,
+            node_type_feature=node_type_features
+        )
+
+        if self._use_edge_metrics:
+            edge_metrics = support.get_all_edge_metrics(
+                normalize=True,
+                subgraph=graph,
+            )
+            if edge_features is not None:
+                edge_features = np.hstack([
+                    edge_features,
+                    edge_metrics
+                ])
+            else:
+                edge_features = edge_metrics
 
         return gt.transform(
             graph=graph,
+            node_types=graph,
             edge_features=edge_features
         )
 
@@ -129,10 +162,26 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         lpt = EdgeLabelPredictionTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
-        lpt.fit(node_features)
+        lpt.fit(
+            node_features,
+            node_type_feature=node_type_features
+        )
+
+        if self._use_edge_metrics:
+            edge_metrics = support.get_all_edge_metrics(
+                normalize=True,
+                subgraph=graph,
+            )
+            if edge_features is not None:
+                edge_features = np.hstack([
+                    edge_features,
+                    edge_metrics
+                ])
+            else:
+                edge_features = edge_metrics
 
         self._model_instance.fit(*lpt.transform(
             graph=graph,
@@ -177,7 +226,9 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
             graph=graph,
+            support=support,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features,
         ))
 
@@ -217,7 +268,9 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         return self._model_instance.predict(self._trasform_graph_into_edge_embedding(
             graph=graph,
+            support=support,
             node_features=node_features,
+            node_type_features=node_type_features,
             edge_features=edge_features,
         ))
 

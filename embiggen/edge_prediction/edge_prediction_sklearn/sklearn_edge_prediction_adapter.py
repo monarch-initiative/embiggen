@@ -24,8 +24,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        use_edge_metrics: bool = False,
         use_scale_free_distribution: bool = True,
+        use_edge_metrics: bool = False,
         prediction_batch_size: int = 2**15,
         random_state: int = 42
     ):
@@ -78,7 +78,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._use_edge_metrics = use_edge_metrics
         self._use_scale_free_distribution = use_scale_free_distribution
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
-        self._support = None
         # We want to mask the decorator class name
         self.__class__.__name__ = model_instance.__class__.__name__
         self.__class__.__doc__ = model_instance.__class__.__doc__
@@ -108,6 +107,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self,
         graph: Union[Graph, np.ndarray],
         node_features: List[np.ndarray],
+        support: Optional[Graph] = None,
+        node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
@@ -119,6 +120,16 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             It can either be an Graph or a list of lists of edges.
         node_features: List[np.ndarray]
             The node features to be used in the training of the model.
+        support: Optional[Graph] = None
+            The graph describiding the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological classifiers
+            such as Graph Convolutional Networks.
+        node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+            List of node types whose embedding is to be returned.
+            This can be either a list of strings, or a graph, or if the
+            aligned_mapping is setted, then this methods also accepts
+            a list of ints.
         node_type_features: Optional[List[np.ndarray]] = None,
             The node type features to be used in the training of the model.
 
@@ -132,25 +143,20 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the edge prediction models from the Sklearn library."
-            )
 
         gt = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
         if self._use_edge_metrics:
             if isinstance(graph, Graph):
-                edge_features = self._support.get_all_edge_metrics(
+                edge_features = support.get_all_edge_metrics(
                     normalize=True,
                     subgraph=graph,
                 )
             elif isinstance(graph, tuple):
-                edge_features = self._support.get_all_edge_metrics_from_node_ids(
+                edge_features = support.get_all_edge_metrics_from_node_ids(
                     *graph,
                     normalize=True,
                 )
@@ -161,10 +167,14 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         else:
             edge_features = None
 
-        gt.fit(node_features)
+        gt.fit(
+            node_features,
+            node_type_feature=node_type_features
+        )
 
         return gt.transform(
             graph=graph,
+            node_types=node_types,
             edge_features=edge_features
         )
 
@@ -196,10 +206,13 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """
         lpt = EdgePredictionTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
-        lpt.fit(node_features)
+        lpt.fit(
+            node_features,
+            node_type_feature=node_type_features
+        )
 
         if support is None:
             support = graph
@@ -215,7 +228,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         )
 
         if self._use_edge_metrics:
-            self._support = support
+            support = support
             edge_features = np.vstack((
                 support.get_all_edge_metrics(
                     normalize=True,
@@ -272,7 +285,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         return np.concatenate([
             self._model_instance.predict(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],
+                support=support,
                 node_features=node_features,
+                node_types=graph,
                 node_type_features=node_type_features,
             ))
             for edges in tqdm(
@@ -321,7 +336,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         return np.concatenate([
             self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],
+                support=support,
                 node_features=node_features,
+                node_types=graph,
                 node_type_features=node_type_features,
             ))
             for edges in tqdm(

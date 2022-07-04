@@ -30,6 +30,7 @@ class RandomForestEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         ccp_alpha=0.0,
         max_samples=None,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the Random Forest for Edge Label Prediction."""
@@ -75,8 +76,9 @@ class RandomForestEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 ccp_alpha=ccp_alpha,
                 max_samples=max_samples
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
     
     @classmethod

@@ -30,6 +30,7 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         tol=1e-4,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Label Prediction."""
@@ -67,8 +68,9 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
     
     @classmethod

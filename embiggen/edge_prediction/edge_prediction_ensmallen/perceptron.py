@@ -3,6 +3,7 @@ from typing import Optional,  Dict, Any, List, Union
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
+from embiggen.embedding_transformers import NodeTransformer
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
@@ -151,6 +152,23 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         new_node_features = []
         if node_features is not None:
             for node_feature in node_features:
+                if node_feature.dtype != np.float32:
+                    node_feature = node_feature.astype(np.float32)
+                if not node_feature.data.c_contiguous:
+                    node_feature = np.ascontiguousarray(node_feature)
+                new_node_features.append(node_feature)
+
+        if node_type_features is not None:
+            for node_type_feature in node_type_features:
+                node_transformer = NodeTransformer(
+                    aligned_mapping=True
+                )
+                node_transformer.fit(
+                    node_type_feature=node_type_feature
+                )
+                node_feature = node_transformer.transform(
+                    node_types=graph
+                )
                 if node_feature.dtype != np.float32:
                     node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:

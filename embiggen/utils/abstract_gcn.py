@@ -424,13 +424,13 @@ class AbstractGCN(AbstractClassifierModel):
                     raise ValueError(
                         f"You have provided {len(feature_names)} "
                         f"{feature_category} names but you have provided {len(features)} "
-                        "{feature_category}s to the model."
+                        f"{feature_category}s to the model."
                     )
                 input_features.extend([
                     Input(
                         shape=node_feature.shape[1:],
                         batch_size=nodes_number,
-                        name=node_feature_name
+                        name=node_feature_name,
                     )
                     for node_feature, node_feature_name in zip(
                         features,

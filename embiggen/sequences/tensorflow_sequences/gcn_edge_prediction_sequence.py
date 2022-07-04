@@ -119,11 +119,14 @@ class GCNEdgePredictionSequence(Sequence):
             batch_size=support.get_number_of_nodes()
         )
 
-        self._edge_features_sequence = None if edge_features is None else VectorSequence(
-            edge_features,
-            batch_size=graph.get_number_of_nodes(),
-            shuffle=False
-        )
+        self._edge_features_sequences = None if edge_features is None else [
+            VectorSequence(
+                edge_feature,
+                batch_size=graph.get_number_of_nodes(),
+                shuffle=False
+            )
+            for edge_feature in edge_features
+        ]
 
         self._use_edge_metrics = use_edge_metrics
         self._current_index = 0
@@ -217,7 +220,10 @@ class GCNEdgePredictionSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         values = self._sequence[idx][0]
-        edge_features = None if self._edge_features_sequence is None else self._edge_features_sequence[idx] 
+        edge_features = None if self._edge_features_sequences is None else [
+            edge_features_sequence[idx]
+            for edge_features_sequence in self._edge_features_sequences
+        ]
         # If necessary, we add the padding as the last batch may be
         # smaller than the required size (number of nodes).
         delta = self.batch_size - values[0].shape[0]
@@ -228,16 +234,22 @@ class GCNEdgePredictionSequence(Sequence):
                 if value is not None
             ]
             if edge_features is not None:
-               edge_features = np.pad(edge_features, [(0, delta), (0, 0)])
+               edge_features = [
+                np.pad(edge_feature, [(0, delta), (0, 0)])
+                   for edge_feature in edge_features
+               ]
+
+        if edge_features is None:
+            edge_features = []
 
         return (tuple([
             value
             for value in (
                 *values,
+                *edge_features,
                 self._kernel,
                 *self._node_features,
                 *self._node_type_features,
-                edge_features,
                 self._node_ids,
                 self._node_types,
             )

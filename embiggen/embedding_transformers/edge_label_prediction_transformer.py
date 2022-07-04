@@ -14,7 +14,7 @@ class EdgeLabelPredictionTransformer:
     def __init__(
         self,
         method: str = "Hadamard",
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
         one_hot_encode_labels: bool = False
     ):
         """Create new EdgeLabelPredictionTransformer object.
@@ -24,7 +24,7 @@ class EdgeLabelPredictionTransformer:
         method: str = "hadamard"
             Method to use for the embedding.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        aligned_node_mapping: bool = False
+        aligned_mapping: bool = False
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
@@ -34,24 +34,33 @@ class EdgeLabelPredictionTransformer:
         """
         self._transformer = GraphTransformer(
             method=method,
-            aligned_node_mapping=aligned_node_mapping,
+            aligned_mapping=aligned_mapping,
         )
         self._one_hot_encode_labels = one_hot_encode_labels
 
-    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
+    def fit(
+        self, 
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ):
         """Fit the model.
 
         Parameters
         -------------------------
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
             Node feature to use to fit the transformer.
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Node type feature to use to fit the transformer.
 
         Raises
         -------------------------
         ValueError
             If the given method is None there is no need to call the fit method.
         """
-        self._transformer.fit(node_feature)
+        self._transformer.fit(
+            node_feature,
+            node_type_feature=node_type_feature
+        )
 
     def transform(
         self,
@@ -108,6 +117,7 @@ class EdgeLabelPredictionTransformer:
                 "The provided graph for the edge-label prediction does "
                 "not contain edge-types."
             )
+        
         if not graph.has_known_edge_types():
             raise ValueError(
                 "The provided graph for the edge-label prediction does "
@@ -115,15 +125,18 @@ class EdgeLabelPredictionTransformer:
                 "an edge type vocabulary but no edge has an edge type "
                 "assigned to it."
             )
+        
         if graph.has_homogeneous_edge_types():
             raise ValueError(
                 "The provided graph for the edge-label prediction contains "
                 "edges of a single type, making predictions pointless."
             )
+        
         if graph.is_multigraph():
             raise NotImplementedError(
                 "Multi-graphs are not currently supported by this class."
             )
+        
         if graph.has_singleton_edge_types():
             warnings.warn(
                 "Please do be advised that this graph contains edges with "
@@ -141,6 +154,7 @@ class EdgeLabelPredictionTransformer:
             edge_type_counts.items(),
             key=lambda x: x[1]
         )
+        
         if most_common_count > least_common_count * 20:
             warnings.warn(
                 (
@@ -167,6 +181,7 @@ class EdgeLabelPredictionTransformer:
 
         edge_embeddings = self._transformer.transform(
             graph,
+            node_types=graph,
             edge_features=edge_features
         )
 

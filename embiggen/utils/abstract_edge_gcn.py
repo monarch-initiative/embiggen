@@ -55,6 +55,7 @@ class AbstractEdgeGCN(AbstractGCN):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -181,6 +182,9 @@ class AbstractEdgeGCN(AbstractGCN):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -225,6 +229,7 @@ class AbstractEdgeGCN(AbstractGCN):
 
         self._edge_embedding_method = edge_embedding_method
         self._use_edge_metrics = use_edge_metrics
+        self._edge_feature_names = edge_feature_names
         self._use_node_types = None
 
     @classmethod
@@ -263,6 +268,7 @@ class AbstractEdgeGCN(AbstractGCN):
             return_node_types=self.is_using_node_types(),
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
+            edge_features=edge_features
         )
 
     def _get_model_training_output(self, graph: Graph) -> Optional[np.ndarray]:
@@ -345,6 +351,30 @@ class AbstractEdgeGCN(AbstractGCN):
             source_and_destination_features.append(edge_metrics)
         else:
             edge_metrics = None
+
+        edge_feature_inputs = []
+        if edge_features is not None:
+            edge_feature_names = self._edge_feature_names
+            if edge_feature_names is None:
+                edge_feature_names = [
+                    f"{number_to_ordinal(i+1)}EdgeFeature"
+                    for i in range(len(edge_features))
+                ]
+            if len(edge_feature_names) != len(edge_features):
+                raise ValueError(
+                    f"You have provided {len(edge_feature_names)} "
+                    f"edge feature names but you have provided {len(edge_features)} "
+                    "edge features to the model."
+                )
+            for edge_feature, feature_name in zip(edge_features, edge_feature_names):
+                feature_names.append(feature_name)
+                edge_feature_input = Input(
+                    shape=edge_feature.shape[1:],
+                    batch_size=nodes_number,
+                    name=feature_name,
+                )
+                edge_feature_inputs.append(edge_feature_input)
+                source_and_destination_features.append(edge_feature_input)
 
         ffnn_outputs = []
 
@@ -437,6 +467,7 @@ class AbstractEdgeGCN(AbstractGCN):
                     source_nodes,
                     destination_nodes,
                     edge_metrics,
+                    *edge_feature_inputs,
                     *graph_convolution_model.inputs,
                 )
                 if input_layer is not None

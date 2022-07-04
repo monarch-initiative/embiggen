@@ -197,12 +197,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the edge-label prediction models."
-            )
-
         self._is_binary_prediction_task = graph.get_number_of_edge_types() == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
 

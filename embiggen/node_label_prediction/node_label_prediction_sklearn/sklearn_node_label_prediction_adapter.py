@@ -64,7 +64,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        gt = NodeTransformer(aligned_node_mapping=True)
+        gt = NodeTransformer(aligned_mapping=True)
         gt.fit(node_features)
         return gt.transform(graph,)
 
@@ -103,7 +103,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             If the two graphs do not share the same node vocabulary.
         """
         nlpt = NodeLabelPredictionTransformer(
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
         nlpt.fit(node_features)

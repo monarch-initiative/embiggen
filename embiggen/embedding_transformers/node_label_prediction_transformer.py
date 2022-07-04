@@ -13,20 +13,20 @@ class NodeLabelPredictionTransformer:
 
     def __init__(
         self,
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
     ):
         """Create new NodeLabelPredictionTransformer object.
 
         Parameters
         ------------------------
-        aligned_node_mapping: bool = False
+        aligned_mapping: bool = False
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated node embedding
             will be meaningless.
         """
         self._transformer = NodeTransformer(
-            aligned_node_mapping=aligned_node_mapping,
+            aligned_mapping=aligned_mapping,
         )
 
     def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
