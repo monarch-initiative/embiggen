@@ -1214,7 +1214,7 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test"],
+        args_to_ignore=["verbose", "smoke_test", "train_of_interest", "test_of_interest", "train",],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )

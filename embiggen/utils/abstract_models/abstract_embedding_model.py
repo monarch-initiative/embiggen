@@ -119,7 +119,7 @@ class AbstractEmbeddingModel(AbstractModel):
             if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
                 raise ValueError(
                     f"The given graph {graph.get_name()} does not have the nodes sorted by decreasing "
-                    "order, therefore the negative sampling (which follows a zipfian "
+                    "order, therefore the negative sampling (which follows a scale free "
                     "distribution) would not approximate well the Softmax.\n"
                     "In order to sort the given graph in such a way that the node IDs "
                     "are sorted by decreasing outbound node degrees, you can use "

@@ -109,5 +109,5 @@ class SiameseSequence(Sequence):
         return (self._graph.get_siamese_mini_batch(
             random_state,
             batch_size=self.batch_size,
-            use_zipfian_sampling=True
+            use_scale_free_distribution=True
         ),)

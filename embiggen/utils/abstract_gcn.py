@@ -96,7 +96,7 @@ def graph_to_sparse_tensor(
     return tf.SparseTensor(
         graph.get_directed_edge_node_ids(),
         (
-            graph.get_edge_weights()
+            graph.get_directed_edge_weights()
             if use_weights
             else tf.ones(graph.get_number_of_directed_edges())
         ),

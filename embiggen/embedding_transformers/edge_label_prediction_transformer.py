@@ -180,7 +180,7 @@ class EdgeLabelPredictionTransformer:
                 edge_labels = graph.get_known_edge_type_ids()
                 edge_embeddings = edge_embeddings[graph.get_edges_with_known_edge_types_mask()]
             else:
-                edge_labels = graph.get_edge_type_ids()
+                edge_labels = graph.get_directed_edge_type_ids()
 
         if shuffle:
             numpy_random_state = np.random.RandomState(  # pylint: disable=no-member

@@ -349,10 +349,10 @@ class GraphVisualizer:
         )
 
         # We sample the negative edges using the subgraph of interest as base graph
-        # to follow its zipfian distribution, which may be different from the
-        # main graph zipfian distribution when particular filters are applied to it.
-        # For instance, the zipfian distribution of one particular edge type
-        # may be very different from the whole graph zipfian distribution.
+        # to follow its scale free distribution, which may be different from the
+        # main graph scale free distribution when particular filters are applied to it.
+        # For instance, the scale free distribution of one particular edge type
+        # may be very different from the whole graph scale free distribution.
         # Furthermore, we avoid sampling false negatives by passing to the
         # method also the support graph.
         try:
@@ -362,7 +362,7 @@ class GraphVisualizer:
                     self._positive_graph.get_number_of_edges()
                 ),
                 random_state=random_state,
-                use_zipfian_sampling=True,
+                use_scale_free_distribution=True,
                 graph_to_avoid=self._support,
                 support=self._support,
                 only_from_same_component=only_from_same_component,
@@ -560,7 +560,7 @@ class GraphVisualizer:
                         leave=False,
                         dynamic_ncols=True
                     ),
-                    verbose=True,
+                    verbose=self._verbose,
                 ),
                 **self._decomposition_kwargs
             }).fit_transform
@@ -2757,12 +2757,12 @@ class GraphVisualizer:
                 if edge_type_id is None
                 else
                 edge_type_id
-                for edge_type_id, src, dst in zip(
-                    self._positive_graph.get_edge_type_ids(),
-                    self._positive_graph.get_directed_source_node_ids(),
-                    self._positive_graph.get_directed_destination_node_ids(),
+                for edge_type_id in (
+                    self._positive_graph.get_directed_edge_type_ids()
+                    if self._positive_graph.is_directed()
+                    else
+                    self._positive_graph.get_undirected_edge_type_ids()
                 )
-                if src <= dst or self._positive_graph.is_directed()
             ),
             dtype=np.uint32
         )
@@ -3663,7 +3663,10 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        weights = self._positive_graph.get_edge_weights()
+        if self._positive_graph.is_directed():
+            weights = self._positive_graph.get_directed_edge_weights()
+        else:
+            weights = self._positive_graph.get_undirected_edge_weights()
 
         returned_values = self._wrapped_plot_scatter(
             points=self._positive_edge_decomposition,
@@ -4164,7 +4167,7 @@ class GraphVisualizer:
             self._graph.get_number_of_directed_edges() // 10
         )
         axes.hist(
-            self._graph.get_edge_weights(),
+            self._graph.get_directed_edge_weights(),
             bins=number_of_buckets,
             log=True
         )

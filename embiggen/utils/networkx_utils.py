@@ -25,7 +25,7 @@ def convert_ensmallen_graph_to_networkx_graph(
             (src_name, dst_name, edge_weight)
             for (src_name, dst_name), edge_weight in zip(
                 graph.get_directed_edge_node_ids(),
-                graph.get_edge_weights()
+                graph.get_directed_edge_weights()
             )
         ])
     else:

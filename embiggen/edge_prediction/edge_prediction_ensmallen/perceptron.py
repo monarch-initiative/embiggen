@@ -16,9 +16,12 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
         number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 4096,
+        number_of_edges_per_mini_batch: int = 256,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         learning_rate: float = 0.001,
+        first_order_decay_factor: float = 0.9,
+        second_order_decay_factor: float = 0.999,
+        use_scale_free_distribution: bool = True,
         random_state: int = 42,
         verbose: bool = True
     ):
@@ -65,13 +68,21 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             destination nodes that have different node types. By default false.
         learning_rate: float = 0.001
             Learning rate to use while training the model. By default 0.001.
+        first_order_decay_factor: float = 0.9
+            First order decay factor for the first order momentum.
+            By default 0.9.
+        second_order_decay_factor: float = 0.999
+            Second order decay factor for the second order momentum.
+            By default 0.999.
+        use_scale_free_distribution: bool = True
+            Whether to train model using a scale free distribution for the negatives.
         random_state: int = 42
             The random state to reproduce the model initialization and training. By default, 42.
         verbose: bool = True
             Whether to show epochs loading bar.
         """
         super().__init__(random_state=random_state)
-        
+
         if isinstance(edge_features, str):
             edge_features = [edge_features]
 
@@ -87,6 +98,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             learning_rate=learning_rate,
+            first_order_decay_factor=first_order_decay_factor,
+            second_order_decay_factor=second_order_decay_factor,
+            use_scale_free_distribution=use_scale_free_distribution,
         )
         self._verbose = verbose
         self._model = models.EdgePredictionPerceptron(

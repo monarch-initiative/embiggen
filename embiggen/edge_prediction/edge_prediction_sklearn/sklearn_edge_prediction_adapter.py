@@ -25,7 +25,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
-        use_zipfian_sampling: bool = True,
+        use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**15,
         random_state: int = 42
     ):
@@ -43,7 +43,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             Whether to sample negative edges exclusively between nodes with different node types
             to generate the negative edges used during the training of the model.
             This can be useful when executing a bipartite edge prediction task.
-        use_zipfian_sampling: bool = True
+        use_scale_free_distribution: bool = True
             Whether to sample the negative edges for the TRAINING of the model
             using a zipfian-like distribution that follows the degree distribution
             of the graph. This is generally useful, as these negative edges are less
@@ -76,7 +76,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._training_unbalance_rate = training_unbalance_rate
         self._prediction_batch_size = prediction_batch_size
         self._use_edge_metrics = use_edge_metrics
-        self._use_zipfian_sampling = use_zipfian_sampling
+        self._use_scale_free_distribution = use_scale_free_distribution
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         self._support = None
         # We want to mask the decorator class name
@@ -91,7 +91,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             "training_unbalance_rate": self._training_unbalance_rate,
             "prediction_batch_size": self._prediction_batch_size,
             "use_edge_metrics": self._use_edge_metrics,
-            "use_zipfian_sampling": self._use_zipfian_sampling,
+            "use_scale_free_distribution": self._use_scale_free_distribution,
             **super().parameters()
         }
 
@@ -211,7 +211,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             ),
             random_state=self._random_state,
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            use_zipfian_sampling=self._use_zipfian_sampling
+            use_scale_free_distribution=self._use_scale_free_distribution
         )
 
         if self._use_edge_metrics:

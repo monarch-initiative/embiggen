@@ -25,7 +25,7 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
         normalize_learning_rate_by_degree: Optional[bool] = False,
-        use_zipfian_sampling: Optional[bool] = True,
+        use_scale_free_distribution: Optional[bool] = True,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -87,7 +87,7 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             Randomly skip samples with probability proportional to the degree of the central node. By default false.
         normalize_learning_rate_by_degree: Optional[bool] = False
             Divide the learning rate by the degree of the central node. By default false.
-        use_zipfian_sampling: Optional[bool] = True
+        use_scale_free_distribution: Optional[bool] = True
             Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
@@ -114,7 +114,7 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
-            use_zipfian_sampling=use_zipfian_sampling,
+            use_scale_free_distribution=use_scale_free_distribution,
             random_state=random_state,
             enable_cache=enable_cache
         )
