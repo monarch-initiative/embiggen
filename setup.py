@@ -73,7 +73,7 @@ setup(
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
         "extra_keras_metrics>=2.0.7",
-        "ensmallen>=0.8.5",
+        "ensmallen>=0.8.6",
         "validate_version_code",
         "cache_decorator>=2.1.8",
         "packaging"
