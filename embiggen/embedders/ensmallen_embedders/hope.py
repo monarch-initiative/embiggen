@@ -6,6 +6,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import svds as sparse_svds
 from sklearn.utils.extmath import randomized_svd
+from userinput.utils import closest
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, format_list
 
 
@@ -48,7 +49,8 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         if metric not in self.get_available_metrics():
             raise ValueError(
                 f"The provided metric {metric} is not a supported "
-                f"metric. The supported metrics are: {format_list(self.get_available_metrics())}."
+                f"metric. This you mean {closest(metric, self.get_available_metrics())}?"
+                f"The supported metrics are: {format_list(self.get_available_metrics())}."
             )
         ancestral_metric = ("Ancestors Jaccard", "Ancestors size")
         if root_node_name is None and metric in ancestral_metric:
@@ -86,6 +88,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         """Returns list of the available metrics."""
         return [
             "Jaccard",
+            "Shortest Paths",
             "Neighbours Intersection size",
             "Ancestors Jaccard",
             "Ancestors size",
@@ -110,6 +113,8 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             edges, weights = graph.get_jaccard_coo_matrix()
         elif self._metric == "Laplacian":
             edges, weights = graph.get_laplacian_coo_matrix()
+        elif self._metric == "Shortest Paths":
+            matrix = graph.get_shortest_paths_matrix()
         elif self._metric == "Modularity":
             matrix = graph.get_dense_modularity_matrix()
         elif self._metric == "Left Normalized Laplacian":

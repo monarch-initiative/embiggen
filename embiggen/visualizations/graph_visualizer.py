@@ -2201,6 +2201,11 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
             figure.patch.set_facecolor("white")
 
+        if self._negative_graph.is_directed() and edge_metrics is None:
+            number_of_negative_edges = self._negative_graph.get_number_of_directed_edges()
+        else:
+            number_of_negative_edges = self._negative_graph.get_number_of_undirected_edges()
+
         if edge_metrics is None:
             edge_metrics = np.concatenate((
                 edge_metric_callback(subgraph=self._negative_graph),
@@ -2209,8 +2214,8 @@ class GraphVisualizer:
 
         axes.hist(
             [
-                edge_metrics[:self._negative_graph.get_number_of_directed_edges()],
-                edge_metrics[self._negative_graph.get_number_of_directed_edges():],
+                edge_metrics[:number_of_negative_edges],
+                edge_metrics[number_of_negative_edges:],
             ],
             bins=10,
             log=True,

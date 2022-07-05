@@ -4,6 +4,7 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import time
+from userinput.utils import closest
 from tqdm.auto import trange, tqdm
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
@@ -1067,8 +1068,9 @@ class AbstractClassifierModel(AbstractModel):
             for metric in metrics
         }
 
-    @staticmethod
+    @classmethod
     def split_graph_following_evaluation_schema(
+        cls,
         graph: Graph,
         evaluation_schema: str,
         holdout_number: int,
@@ -1090,9 +1092,12 @@ class AbstractClassifierModel(AbstractModel):
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
-        raise NotImplementedError(
-            "The `split_graph_following_evaluation_schema` method should be implemented "
-            "in the child classes of abstract classifier model."
+        raise ValueError(
+            f"The requested evaluation schema `{evaluation_schema}` "
+            f"is not available in model for task {cls.task_name()} "
+            "Did you mean {closest(evaluation_schema, cls.get_available_evaluation_schemas())}? "
+            "The available evaluation schemas "
+            f"are: {format_list(cls.get_available_evaluation_schemas())}."
         )
 
     def _evaluate(

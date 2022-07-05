@@ -95,10 +95,13 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 use_stratification="Stratified" in evaluation_schema,
                 random_state=random_state,
             )
-        raise ValueError(
-            f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available. The available evaluation schemas "
-            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        super().split_graph_following_evaluation_schema(
+            graph=graph,
+            evaluation_schema=evaluation_schema,
+            random_state=random_state,
+            holdout_number=holdout_number,
+            number_of_holdouts=number_of_holdouts,
+            **holdouts_kwargs,
         )
 
     @classmethod
