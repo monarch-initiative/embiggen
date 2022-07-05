@@ -117,7 +117,7 @@ class SkipGramKarateClub(AbstractKarateClubEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model"""
-        return "SkipGram"
+        return "Node2Vec SkipGram"
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

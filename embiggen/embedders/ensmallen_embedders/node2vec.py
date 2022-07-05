@@ -137,7 +137,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
-        return self._model_kwargs["change_node_type_weight"] != 1.0
+        return "change_node_type_weight" in self._model_kwargs and self._model_kwargs["change_node_type_weight"] != 1.0
 
     @classmethod
     def can_use_edge_types(cls) -> bool:
@@ -146,7 +146,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
-        return self._model_kwargs["change_edge_type_weight"] != 1.0
+        return "change_edge_type_weight" in self._model_kwargs and  self._model_kwargs["change_edge_type_weight"] != 1.0
 
     @classmethod
     def is_stocastic(cls) -> bool:

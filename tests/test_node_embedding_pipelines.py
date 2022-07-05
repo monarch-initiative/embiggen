@@ -42,19 +42,6 @@ class TestNodeEmbeddingPipeline(TestCase):
                 smoke_test=True
             )
 
-    def test_ensmallen_skipgram(self):
-        """Test that embed pipeline works fine in SPINE."""
-        graph_name = "CIO"
-        repository="kgobo"
-
-        embed_graph(
-            graph_name,
-            repository=repository,
-            embedding_model="SkipGram",
-            verbose=False,
-            smoke_test=True
-        )
-
     def test_hope_ensmallen(self):
         """Test that embed pipeline works fine in SPINE."""
         graph_name = "CIO"

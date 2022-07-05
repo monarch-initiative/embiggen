@@ -1,5 +1,5 @@
 """GCN model for edge-label prediction."""
-from typing import List, Union, Optional, Dict, Type, Any
+from typing import List, Union, Optional, Dict, Type
 
 import numpy as np
 from ensmallen import Graph

@@ -12,7 +12,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def __init__(
         self,
-        edge_features: Union[str, List[str]] = "JaccardCoefficient",
+        edge_features: Optional[Union[str, List[str]]] = "JaccardCoefficient",
         edge_embeddings: Optional[Union[str, List[str]]] = None,
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
@@ -30,7 +30,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
         Parameters
         ------------------------
-        edge_features: Union[str, List[str]] = "JaccardCoefficient"
+        edge_features: Optional[Union[str, List[str]]] = "JaccardCoefficient"
             The edge features to compute for each edge.
             Zero or more edge features can be used at once.
             The currently supported edge features are:

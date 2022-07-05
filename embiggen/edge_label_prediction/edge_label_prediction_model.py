@@ -2,9 +2,8 @@
 from typing import Optional, Union, List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
-from userinput.utils import closest
 from ensmallen import Graph
-from embiggen.utils.abstract_models import AbstractClassifierModel, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel
 
 
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
@@ -132,8 +131,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_number_of_known_edge_types(
-        ) / graph.get_number_of_known_edge_types()
+        train_size = train.get_number_of_known_edge_types() / graph.get_number_of_known_edge_types()
+
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -165,7 +164,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_edges_number": graph.get_number_of_known_node_types(),
+                "known_edges_number": graph.get_number_of_known_edge_types(),
                 **self.evaluate_predictions(
                     labels,
                     predictions,
@@ -204,7 +203,20 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
-        self._is_binary_prediction_task = graph.get_number_of_edge_types() == 2
+
+        non_zero_edge_types = sum([
+            1
+            for count in graph.get_edge_type_names_counts_hashmap().values()
+            if count > 0
+        ])
+
+        if non_zero_edge_types < 2:
+            raise ValueError(
+                "The provided training graph has less than two non-zero edge types. "
+                "It is unclear how to proceeed."
+            )
+
+        self._is_binary_prediction_task = non_zero_edge_types == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
 
         super().fit(

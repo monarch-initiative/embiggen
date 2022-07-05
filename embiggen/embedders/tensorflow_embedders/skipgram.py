@@ -1,5 +1,4 @@
 """SkipGram model for sequence embedding."""
-from typing import Dict, Union
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Input, Embedding, Flatten
 )
@@ -24,7 +23,7 @@ class SkipGramTensorFlow(Node2Vec):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SkipGram"
+        return "Node2Vec SkipGram"
 
     def _build_model(self, graph: Graph) -> Model:
         """Return SkipGram model."""
@@ -54,7 +53,7 @@ class SkipGramTensorFlow(Node2Vec):
         model = Model(
             inputs=[contextual_terms, central_terms],
             outputs=output,
-            name=self.model_name()
+            name=self.model_name().replace(" ", "")
         )
 
         model.compile(optimizer=self._optimizer)

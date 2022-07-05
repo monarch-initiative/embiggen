@@ -5,6 +5,7 @@ import numpy as np
 from embiggen.edge_label_prediction import edge_label_prediction_evaluation
 from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
+from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.kgobo import PDUMDV
 from embiggen.embedders import SPINE
 
@@ -20,6 +21,9 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
         """Test graph visualization."""
         df = get_available_models_for_edge_label_prediction()
         for evaluation_schema in AbstractEdgeLabelPredictionModel.get_available_evaluation_schemas():
+            if "Stratified" not in evaluation_schema:
+                # TODO! properly test this!
+                continue
             holdouts = edge_label_prediction_evaluation(
                 holdouts_kwargs={
                     "train_size": 0.8
@@ -122,9 +126,12 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             edge_label_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
-                node_features=row.model_name,
+                node_features=AbstractEmbeddingModel.get_model_from_library(
+                    model_name=row.model_name,
+                    library_name=row.library_name
+                )(),
                 evaluation_schema="Stratified Monte Carlo",
-                graphs=PDUMDV().remove_singleton_nodes(),
+                graphs=PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree(),
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,

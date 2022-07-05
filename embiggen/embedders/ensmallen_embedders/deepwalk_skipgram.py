@@ -1,10 +1,10 @@
-"""Module providing SkipGram model implementation."""
-from typing import Optional
+"""Module providing DeepWalk SkipGram model implementation."""
+from typing import Optional, Dict, Any
 from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
 
-class SkipGramEnsmallen(Node2VecEnsmallen):
-    """Class providing SkipGram implemeted in Rust from Ensmallen."""
+class DeepWalkSkipGramEnsmallen(Node2VecEnsmallen):
+    """Class providing DeepWalk SkipGram implemeted in Rust from Ensmallen."""
 
     def __init__(
         self,
@@ -15,10 +15,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         walk_length: int = 128,
         iterations: int = 10,
         window_size: int = 10,
-        return_weight: float = 1.0,
-        explore_weight: float = 1.0,
-        change_node_type_weight: float = 1.0,
-        change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -29,7 +25,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new abstract DeepWalk method.
 
         Parameters
         --------------------------
@@ -37,9 +33,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Dimension of the embedding.
         epochs: int = 10
             Number of epochs to train the model for.
-        window_size: int = 10
-            Window size for the local context.
-            On the borders the window size is trimmed.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
@@ -53,28 +46,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         window_size: int = 10
             Window size for the local context.
             On the borders the window size is trimmed.
-        return_weight: float = 1.0
-            Weight on the probability of returning to the same node the walk just came from
-            Having this higher tends the walks to be
-            more like a Breadth-First Search.
-            Having this very high  (> 2) makes search very local.
-            Equal to the inverse of p in the Node2Vec paper.
-        explore_weight: float = 1.0
-            Weight on the probability of visiting a neighbor node
-            to the one we're coming from in the random walk
-            Having this higher tends the walks to be
-            more like a Depth-First Search.
-            Having this very high makes search more outward.
-            Having this very low makes search very local.
-            Equal to the inverse of q in the Node2Vec paper.
-        change_node_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor node of a
-            different type than the previous node. This only applies to
-            colored graphs, otherwise it has no impact.
-        change_edge_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor edge of a
-            different type than the previous edge. This only applies to
-            multigraphs, otherwise it has no impact.
         max_neighbours: Optional[int] = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
@@ -107,10 +78,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             walk_length=walk_length,
             iterations=iterations,
             window_size=window_size,
-            return_weight=return_weight,
-            explore_weight=explore_weight,
-            change_edge_type_weight=change_edge_type_weight,
-            change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
@@ -119,14 +86,30 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_scale_free_distribution=use_scale_free_distribution,
             random_state=random_state,
-            enable_cache=enable_cache,
+            enable_cache=enable_cache
         )
 
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "return_weight",
+            "explore_weight",
+            "change_node_type_weight",
+            "change_edge_type_weight"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
+        )
+    
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SkipGram"
-    
+        return "DeepWalk SkipGram"
+
     @classmethod
     def requires_node_types(cls) -> bool:
         return False

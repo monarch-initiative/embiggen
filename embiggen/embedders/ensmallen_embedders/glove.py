@@ -1,12 +1,11 @@
 """Module providing GloVe model implementation."""
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 from ensmallen import Graph
 from ensmallen import models
-import numpy as np
 import pandas as pd
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, abstract_class
 
-
+@abstract_class
 class GloVeEnsmallen(AbstractEmbeddingModel):
     """Class providing GloVe implemeted in Rust from Ensmallen."""
 
@@ -194,11 +193,6 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
         return True
 
     @classmethod
-    def model_name(cls) -> str:
-        """Returns name of the model."""
-        return "GloVe"
-
-    @classmethod
     def requires_node_types(cls) -> bool:
         return False
 
@@ -222,7 +216,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
 
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
-        return self._model_kwargs["change_node_type_weight"] != 1.0
+        return "change_node_type_weight" in self._model_kwargs and self._model_kwargs["change_node_type_weight"] != 1.0
 
     @classmethod
     def can_use_edge_types(cls) -> bool:
@@ -231,7 +225,7 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
-        return self._model_kwargs["change_edge_type_weight"] != 1.0
+        return "change_edge_type_weight" in self._model_kwargs and self._model_kwargs["change_edge_type_weight"] != 1.0
 
     @classmethod
     def is_stocastic(cls) -> bool:

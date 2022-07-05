@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from ensmallen import Graph
-from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
 
 
 @abstract_class
@@ -133,7 +133,8 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         verbose: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
-        train_size = train.get_number_of_known_node_types() / graph.get_number_of_known_node_types()
+        train_size = train.get_number_of_known_node_types(
+        ) / graph.get_number_of_known_node_types()
 
         if self.is_multilabel_prediction_task():
             labels = graph.get_one_hot_encoded_node_types()
@@ -298,7 +299,19 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 "of the node-label prediction models."
             )
 
-        self._is_binary_prediction_task = graph.get_number_of_node_types() == 2
+        non_zero_node_types = sum([
+            1
+            for count in graph.get_node_type_names_counts_hashmap().values()
+            if count > 0
+        ])
+
+        if non_zero_node_types < 2:
+            raise ValueError(
+                "The provided training graph has less than two non-zero node types. "
+                "It is unclear how to proceeed."
+            )
+
+        self._is_binary_prediction_task = non_zero_node_types == 2
         self._is_multilabel_prediction_task = graph.has_multilabel_node_types()
 
         node_type_counts = graph.get_node_type_names_counts_hashmap()

@@ -7,8 +7,10 @@ from embiggen import get_available_models_for_edge_prediction, get_available_mod
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
 from embiggen.embedders import SPINE
+from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.linqs import Cora, get_words_data
 from ensmallen.datasets.kgobo import CIO
+from ensmallen.datasets.networkrepository import Usair97
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
 
 
@@ -112,7 +114,7 @@ class TestEvaluateEdgePrediction(TestCase):
             model.predict_proba(graph, node_features=node_features)
 
     def test_tree_with_cosine(self):
-        graph = CIO().remove_singleton_nodes()
+        graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
             holdouts = edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
@@ -140,22 +142,28 @@ class TestEvaluateEdgePrediction(TestCase):
         )
         for _, row in bar:
             if row.requires_edge_weights:
-                graph_name = "Usair97"
-                repository = "networkrepository"
+                graph_name = Usair97
             else:
-                graph_name = "CIO"
-                repository = "kgobo"
+                graph_name = CIO
 
             bar.set_description(
                 f"Testing {row.model_name} from library {row.library_name}")
 
+            embedding_model = AbstractEmbeddingModel.get_model_from_library(
+                model_name=row.model_name,
+                library_name=row.library_name
+            )()
+
+            if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
+                continue
+
             edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Perceptron",
-                node_features=row.model_name,
+                node_features=embedding_model,
                 evaluation_schema="Connected Monte Carlo",
-                graphs=graph_name,
-                repositories=repository,
+                graphs=graph_name()\
+                    .remove_singleton_nodes(),
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,

@@ -881,7 +881,7 @@ class AbstractClassifierModel(AbstractModel):
             support = graph
         
         try:
-            return self._predict(
+            predictions = self._predict(
                 graph=graph,
                 support=support,
                 node_features=self.normalize_node_features(
@@ -909,6 +909,8 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
+            
+        return predictions
 
     def predict_proba(
         self,
@@ -949,7 +951,7 @@ class AbstractClassifierModel(AbstractModel):
             support = graph
 
         try:
-            return self._predict_proba(
+            predictions = self._predict_proba(
                 graph=graph,
                 support=support,
                 node_features=self.normalize_node_features(
@@ -977,6 +979,23 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
+
+        if (
+            not self.is_binary_prediction_task() and
+            not self.is_multilabel_prediction_task() and
+            (
+                len(predictions.shape) == 1 or
+                predictions.shape[1] == 2
+            )
+        ):
+            raise ValueError(
+                "This task is not a binary prediction, "
+                f"yet the {self.model_name()} model predict proba method has "
+                "returned a vector of prediction probabilities with "
+                f"shape {predictions.shape}."
+            )
+            
+        return predictions
 
     def evaluate_predictions(
         self,
@@ -1016,7 +1035,7 @@ class AbstractClassifierModel(AbstractModel):
                 metric.__name__: metric(
                     ground_truth,
                     predictions,
-                    average="binary" if self.is_binary_prediction_task() else "macro",
+                    average="macro",
                     zero_division=0
                 )
                 for metric in (
@@ -1041,7 +1060,6 @@ class AbstractClassifierModel(AbstractModel):
         prediction_probabilities: np.ndarray
             The predictions to be evaluated.
         """
-        metrics = []
         if self.is_binary_prediction_task():
             return {
                 "auroc": express_measures.binary_auroc(
@@ -1058,14 +1076,11 @@ class AbstractClassifierModel(AbstractModel):
         def wrapper_roc_auc_score(*args, **kwargs):
             return roc_auc_score(*args, **kwargs, multi_class="ovr")
 
-        metrics.append(wrapper_roc_auc_score)
-
         return {
-            metric.__name__: metric(
+            "auroc": wrapper_roc_auc_score(
                 ground_truth,
-                prediction_probabilities,
+                prediction_probabilities
             )
-            for metric in metrics
         }
 
     @classmethod
@@ -1095,7 +1110,7 @@ class AbstractClassifierModel(AbstractModel):
         raise ValueError(
             f"The requested evaluation schema `{evaluation_schema}` "
             f"is not available in model for task {cls.task_name()} "
-            "Did you mean {closest(evaluation_schema, cls.get_available_evaluation_schemas())}? "
+            f"Did you mean {closest(evaluation_schema, cls.get_available_evaluation_schemas())}? "
             "The available evaluation schemas "
             f"are: {format_list(cls.get_available_evaluation_schemas())}."
         )

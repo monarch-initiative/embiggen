@@ -90,9 +90,6 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         for _, row in bar:
             if row.requires_edge_weights:
                 continue
-            else:
-                graph_name = "MIAPA"
-                repository = "kgobo"
 
             bar.set_description(
                 f"Testing {row.model_name} from library {row.library_name}")
@@ -101,8 +98,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
                 node_features=row.model_name,
-                graphs=graph_name,
-                repositories=repository,
+                graphs=MIAPA().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree(),
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema="Monte Carlo",
                 verbose=False,
