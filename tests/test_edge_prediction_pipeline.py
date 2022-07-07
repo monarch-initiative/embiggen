@@ -36,11 +36,17 @@ class TestEvaluateEdgePrediction(TestCase):
                 task_name=AbstractEdgePredictionModel.task_name(),
                 library_name=row.library_name
             )()
-            AbstractEdgePredictionModel.get_model_from_library(
-                model_name=row.model_name,
-                task_name=AbstractEdgePredictionModel.task_name(),
-                library_name=row.library_name
-            )(**model.parameters())
+            try:
+                AbstractEdgePredictionModel.get_model_from_library(
+                    model_name=row.model_name,
+                    task_name=AbstractEdgePredictionModel.task_name(),
+                    library_name=row.library_name
+                )(**model.parameters())
+            except Exception as e:
+                raise ValueError(
+                    f"Found an error in model {row.model_name} "
+                    f"implemented in library {row.library_name}."
+                ) from e
 
     def test_evaluate_edge_prediction(self):
         df = get_available_models_for_edge_prediction()

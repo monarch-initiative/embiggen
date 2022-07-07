@@ -72,11 +72,17 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                 task_name=AbstractNodeLabelPredictionModel.task_name(),
                 library_name=row.library_name
             )()
-            AbstractNodeLabelPredictionModel.get_model_from_library(
-                model_name=row.model_name,
-                task_name=AbstractNodeLabelPredictionModel.task_name(),
-                library_name=row.library_name
-            )(**model.parameters())
+            try:
+                AbstractNodeLabelPredictionModel.get_model_from_library(
+                    model_name=row.model_name,
+                    task_name=AbstractNodeLabelPredictionModel.task_name(),
+                    library_name=row.library_name
+                )(**model.parameters())
+            except Exception as e:
+                raise ValueError(
+                    f"Found an error in model {row.model_name} "
+                    f"implemented in library {row.library_name}."
+                ) from e
 
     def test_all_embedding_models_as_feature(self):
         """Test graph visualization."""

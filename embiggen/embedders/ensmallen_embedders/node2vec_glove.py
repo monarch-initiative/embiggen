@@ -112,4 +112,4 @@ class Node2VecGloVeEnsmallen(GloVeEnsmallen):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "Nod2Vec GloVe"
+        return "Node2Vec GloVe"

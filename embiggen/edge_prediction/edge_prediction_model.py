@@ -272,6 +272,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 performance.append({
                     "evaluation_mode": evaluation_mode,
                     "validation_unbalance_rate": unbalance_rate,
+                    "use_scale_free_distribution": use_scale_free_distribution,
                     "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
                     **self.evaluate_predictions(
                         labels,

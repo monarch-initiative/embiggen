@@ -115,6 +115,7 @@ class AbstractGCN(AbstractClassifierModel):
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         dropout_rate: float = 0.5,
         apply_norm: bool = False,
+        combiner: str = "mean",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -153,6 +154,13 @@ class AbstractGCN(AbstractClassifierModel):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        combiner: str = "mean"
+            A string specifying the reduction op.
+            Currently "mean", "sqrtn" and "sum" are supported. 
+            "sum" computes the weighted sum of the embedding results for each row.
+            "mean" is the weighted sum divided by the total weight.
+            "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
+            Defaults to mean.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -219,6 +227,7 @@ class AbstractGCN(AbstractClassifierModel):
             can_be_empty=True
         )
 
+        self._combiner = combiner
         self._epochs = epochs
         self._use_class_weights = use_class_weights
         self._dropout_rate = dropout_rate
@@ -275,6 +284,7 @@ class AbstractGCN(AbstractClassifierModel):
             number_of_units_per_graph_convolution_layers=self._number_of_units_per_graph_convolution_layers,
             epochs=self._epochs,
             apply_norm=self._apply_norm,
+            combiner=self._combiner,
             use_class_weights=self._use_class_weights,
             dropout_rate=self._dropout_rate,
             optimizer=self._optimizer,
@@ -482,6 +492,7 @@ class AbstractGCN(AbstractClassifierModel):
         for i, units in enumerate(self._number_of_units_per_graph_convolution_layers):
             hidden = GraphConvolution(
                 units=units,
+                combiner=self._combiner,
                 dropout_rate=self._dropout_rate,
                 apply_norm=self._apply_norm,
                 name=f"{number_to_ordinal(i+1)}GraphConvolution"

@@ -110,6 +110,7 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             number_of_units_per_head_layer=number_of_units_per_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=True,
+            combiner="mean",
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -135,6 +136,7 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "apply_norm",
+            "combiner",
             "use_simmetric_normalized_laplacian"
         ]
         return dict(

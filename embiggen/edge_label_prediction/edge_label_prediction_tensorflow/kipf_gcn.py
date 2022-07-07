@@ -1,5 +1,5 @@
 """Kipf GCN model for edge-label prediction."""
-from typing import List, Union, Optional, Type
+from typing import List, Union, Optional, Type, Dict, Any
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.edge_label_prediction.edge_label_prediction_tensorflow.gcn import GCNEdgeLabelPrediction
 
@@ -177,6 +177,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner="sum",
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -200,6 +201,19 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
+        )
+    
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "combiner"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
         )
     
     @classmethod

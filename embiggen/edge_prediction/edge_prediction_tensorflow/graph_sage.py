@@ -170,6 +170,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            combiner="mean",
             apply_norm=True,
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
@@ -202,7 +203,8 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         """Returns parameters for smoke test."""
         removed = [
             "apply_norm",
-            "use_simmetric_normalized_laplacian"
+            "use_simmetric_normalized_laplacian",
+            "combiner"
         ]
         return dict(
             **{

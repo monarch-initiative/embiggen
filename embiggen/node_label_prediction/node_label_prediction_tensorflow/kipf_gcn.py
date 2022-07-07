@@ -1,5 +1,5 @@
 """GCN model for node-label prediction."""
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict, Any
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
@@ -111,6 +111,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             number_of_units_per_head_layer=number_of_units_per_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner="sum",
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -130,6 +131,19 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
+        )
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "combiner",
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
         )
 
     @classmethod

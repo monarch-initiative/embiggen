@@ -28,6 +28,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.1,
         apply_norm: bool = False,
+        combiner: str = "mean",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 30,
@@ -68,6 +69,13 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        combiner: str = "mean"
+            A string specifying the reduction op.
+            Currently "mean", "sqrtn" and "sum" are supported. 
+            "sum" computes the weighted sum of the embedding results for each row.
+            "mean" is the weighted sum divided by the total weight.
+            "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
+            Defaults to mean.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -126,6 +134,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner=combiner,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
