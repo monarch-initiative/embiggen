@@ -603,6 +603,7 @@ class GraphVisualizer:
                             n_jobs=cpu_count(),
                             random_state=self._random_state,
                             verbose=self._verbose,
+                            learning_rate=200,
                             n_iter=400,
                             init="random",
                             method="exact" if self._n_components == 4 else "barnes_hut",
