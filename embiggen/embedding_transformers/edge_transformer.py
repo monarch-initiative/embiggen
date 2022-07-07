@@ -3,7 +3,7 @@ from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 from ensmallen import express_measures
 from embiggen.utils.abstract_models import format_list
 from embiggen.embedding_transformers.node_transformer import NodeTransformer
@@ -346,35 +346,16 @@ class EdgeTransformer:
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
         """
-        if isinstance(method, str) and method.lower() not in [
-            None if method_name is None else method_name.lower()
-            for method_name in EdgeTransformer.methods
-        ]:
-            raise ValueError((
-                "Given method '{}' is not supported. "
-                "Supported methods are {}, or alternatively a lambda. "
-                "Maybe you meant {}?"
-            ).format(
-                method,
-                format_list(
-                    [method for method in EdgeTransformer.methods.keys() if method is not None]),
-                closest(method, [
-                    method_name
-                    for method_name in EdgeTransformer.methods
-                    if method_name is not None
-                ])
-            ))
+        method = must_be_in_set(
+            method,
+            self.methods,
+            "edge embedding method"
+        )
         self._transformer = NodeTransformer(
             aligned_mapping=aligned_mapping,
         )
         self._method_name = method
-        if self._method_name is None:
-            self._method = EdgeTransformer.methods[None]
-        else:
-            self._method = {
-                None if method_name is None else method_name.lower(): callback
-                for method_name, callback in EdgeTransformer.methods.items()
-            }[self._method_name.lower()]
+        self._method = self.methods[method]
 
     @property
     def method(self) -> str:

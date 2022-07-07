@@ -6,7 +6,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import svds as sparse_svds
 from sklearn.utils.extmath import randomized_svd
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, format_list
 
 
@@ -46,12 +46,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        if metric not in self.get_available_metrics():
-            raise ValueError(
-                f"The provided metric {metric} is not a supported "
-                f"metric. This you mean {closest(metric, self.get_available_metrics())}?"
-                f"The supported metrics are: {format_list(self.get_available_metrics())}."
-            )
+        metric = must_be_in_set(metric, self.get_available_metrics(), "metric")
         ancestral_metric = ("Ancestors Jaccard", "Ancestors size")
         if root_node_name is None and metric in ancestral_metric:
             raise ValueError(

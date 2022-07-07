@@ -1,8 +1,8 @@
 """Module providing abstract Node2Vec implementation."""
-from typing import Optional, Union, Dict, Any
+from typing import Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
+from userinput.utils import must_be_in_set
 from ensmallen import models
 from embiggen.utils.abstract_models import abstract_class, AbstractEmbeddingModel, EmbeddingResult
 
@@ -12,10 +12,10 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
-        "cbow": models.CBOW,
-        "skipgram": models.SkipGram,
-        "walkletscbow": models.WalkletsCBOW,
-        "walkletsskipgram": models.WalkletsSkipGram,
+        "CBOW": models.CBOW,
+        "SkipGram": models.SkipGram,
+        "WalkletsCBOW": models.WalkletsCBOW,
+        "WalkletsSkipGram": models.WalkletsSkipGram,
     }
 
     def __init__(
@@ -37,17 +37,9 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
         model_kwargs: Dict
             Further parameters to forward to the model.
         """
-        if model_name.lower() not in self.MODELS:
-            raise ValueError(
-                (
-                    "The provided model name {} is not supported. "
-                    "The supported models are `CBOW` and `SkipGram`."
-                ).format(model_name)
-            )
-
+        model_name = must_be_in_set(model_name, self.MODELS.keys(), "model name")
         self._model_kwargs = model_kwargs
-
-        self._model = Node2VecEnsmallen.MODELS[model_name.lower()](**model_kwargs)
+        self._model = Node2VecEnsmallen.MODELS[model_name](**model_kwargs)
 
         super().__init__(
             embedding_size=model_kwargs["embedding_size"],

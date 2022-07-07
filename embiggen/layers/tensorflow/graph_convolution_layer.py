@@ -7,7 +7,7 @@ In this version of the implementation, we allow for batch sizes of arbitrary siz
 """
 from typing import Tuple, Union, Dict, Optional, List
 import tensorflow as tf
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 from tensorflow.python.ops import embedding_ops  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import Dropout, Layer, Dense  # pylint: disable=import-error,no-name-in-module
 from embiggen.layers.tensorflow.l2_norm import L2Norm
@@ -51,11 +51,7 @@ class GraphConvolution(Layer):
             Kwargs to pass to the parent Layer class.
         """
         super().__init__(**kwargs)
-        if combiner not in self.available_combiner:
-            raise ValueError(
-                f"The provided combiner method `{combiner}` "
-                f"is not available, did you mean `{closest(combiner, self.available_combiner)}`?"
-            )
+        combiner = must_be_in_set(combiner, self.available_combiner, "combiner")
         self._combiner = combiner
         self._units = units
         self._activation = activation

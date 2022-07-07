@@ -4,7 +4,7 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import time
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
@@ -1107,12 +1107,10 @@ class AbstractClassifierModel(AbstractModel):
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
-        raise ValueError(
-            f"The requested evaluation schema `{evaluation_schema}` "
-            f"is not available in model for task {cls.task_name()} "
-            f"Did you mean {closest(evaluation_schema, cls.get_available_evaluation_schemas())}? "
-            "The available evaluation schemas "
-            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        must_be_in_set(
+            evaluation_schema,
+            cls.get_available_evaluation_schemas(),
+            f"evaluation schema for {cls.task_name()} and model {cls.model_name()}"
         )
 
     def _evaluate(
