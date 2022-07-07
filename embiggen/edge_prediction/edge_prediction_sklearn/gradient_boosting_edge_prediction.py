@@ -19,7 +19,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         min_weight_fraction_leaf=0.,
         max_depth=3,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         init=None,
         max_features=None,
         verbose=0,
@@ -51,7 +50,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         self._max_features=max_features,
         self._max_leaf_nodes=max_leaf_nodes,
         self._min_impurity_decrease=min_impurity_decrease,
-        self._min_impurity_split=min_impurity_split,
         self._warm_start=warm_start
         self._validation_fraction=validation_fraction,
         self._n_iter_no_change=n_iter_no_change
@@ -68,7 +66,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state=random_state, verbose=verbose,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
@@ -99,7 +96,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features=self._max_features,
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
-                min_impurity_split=self._min_impurity_split,
                 warm_start=self._warm_start,
                 validation_fraction=self._validation_fraction,
                 n_iter_no_change=self._n_iter_no_change,

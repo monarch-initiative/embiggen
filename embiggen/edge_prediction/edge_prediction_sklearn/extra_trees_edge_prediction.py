@@ -19,7 +19,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         max_features="auto",
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         bootstrap=True,
         oob_score=False,
         n_jobs=-1,
@@ -46,7 +45,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         self._max_features = max_features
         self._max_leaf_nodes = max_leaf_nodes
         self._min_impurity_decrease = min_impurity_decrease
-        self._min_impurity_split = min_impurity_split
         self._bootstrap = bootstrap
         self._oob_score = oob_score
         self._n_jobs = n_jobs
@@ -68,7 +66,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features=max_features,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 bootstrap=bootstrap,
                 oob_score=oob_score,
                 n_jobs=n_jobs,
@@ -110,7 +107,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features = self._max_features,
                 max_leaf_nodes = self._max_leaf_nodes,
                 min_impurity_decrease = self._min_impurity_decrease,
-                min_impurity_split = self._min_impurity_split,
                 bootstrap = self._bootstrap,
                 oob_score = self._oob_score,
                 n_jobs = self._n_jobs,
