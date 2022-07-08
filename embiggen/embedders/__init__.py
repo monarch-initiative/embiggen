@@ -2,6 +2,7 @@
 from embiggen.embedders.ensmallen_embedders import *
 from embiggen.embedders.tensorflow_embedders import *
 from embiggen.embedders.pykeen_embedders import *
+from embiggen.embedders.non_existent_embedders import *
 from embiggen.embedders.karateclub_embedders import *
 from embiggen.embedders.graph_embedding_pipeline import embed_graph
 

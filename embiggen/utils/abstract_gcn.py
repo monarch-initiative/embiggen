@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen import Graph
 import tensorflow as tf
-from tensorflow.keras.utils import Sequence
+from keras_mixed_sequence import Sequence
 from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding
@@ -572,14 +572,16 @@ class AbstractGCN(AbstractClassifierModel):
             edge_features=edge_features,
         )
 
+        model_input = self._get_model_training_input(
+            graph,
+            support=support,
+            edge_features=edge_features,
+            node_type_features=node_type_features,
+            node_features=node_features
+        )
+
         self.history = self._model.fit(
-            x=self._get_model_training_input(
-                graph,
-                support=support,
-                edge_features=edge_features,
-                node_type_features=node_type_features,
-                node_features=node_features
-            ),
+            x=model_input,
             y=self._get_model_training_output(graph),
             sample_weight=self._get_model_training_output(graph),
             epochs=self._epochs,
@@ -620,14 +622,17 @@ class AbstractGCN(AbstractClassifierModel):
         """Run predictions on the provided graph."""
         if support is None:
             support = graph
+
+        model_input = self._get_model_prediction_input(
+            graph,
+            support,
+            node_features,
+            node_type_features,
+            edge_features,
+        )
+
         return self._model.predict(
-            self._get_model_prediction_input(
-                graph,
-                support,
-                node_features,
-                node_type_features,
-                edge_features,
-            ),
+            model_input,
             batch_size=support.get_number_of_nodes(),
             verbose=False
         )

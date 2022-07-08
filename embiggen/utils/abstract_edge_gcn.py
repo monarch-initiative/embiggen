@@ -468,6 +468,18 @@ class AbstractEdgeGCN(AbstractGCN):
             name="Output"
         )(hidden)
 
+        inputs=[
+            input_layer
+            for input_layer in (
+                source_nodes,
+                destination_nodes,
+                edge_metrics,
+                *edge_feature_inputs,
+                *graph_convolution_model.inputs,
+            )
+            if input_layer is not None
+        ]
+
         # Building the the model.
         model = Model(
             inputs=[

@@ -5,7 +5,7 @@ from multiprocessing import cpu_count
 from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
-class DeepWalkKarateClub(AbstractKarateClubEmbedder):
+class DeepWalkSkipGramKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
@@ -97,7 +97,7 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model"""
-        return "DeepWalk"
+        return "DeepWalk SkipGram"
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

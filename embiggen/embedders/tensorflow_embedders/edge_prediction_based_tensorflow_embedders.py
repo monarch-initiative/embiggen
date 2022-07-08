@@ -204,16 +204,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             Whether to show loading bars.
             Not used in this context.
         """
-        try:
-            AUTOTUNE = tf.data.AUTOTUNE
-        except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-        return (
-            self._build_sequence(graph)
-            .into_dataset()
-            .repeat()
-            .prefetch(AUTOTUNE), )
+        return (self._build_sequence(graph), )
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

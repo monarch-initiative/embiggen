@@ -83,26 +83,6 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgePredictionSequence):
         else:
             self._edge_label_index = 2
 
-    def __call__(self):
-        """Return next batch using an infinite generator model."""
-        self._current_index += 1
-        return (self[self._current_index],) 
-
-    def into_dataset(self) -> tf.data.Dataset:
-        """Return dataset generated out of the current sequence instance.
-
-        Implementative details
-        ---------------------------------
-        This method handles the conversion of this Keras Sequence into
-        a TensorFlow dataset, also handling the proper dispatching according
-        to what version of TensorFlow is installed in this system.
-
-        Returns
-        ----------------------------------
-        Dataset to be used for the training of a model
-        """
-        raise NotImplementedError("TODO!")
-
     def __getitem__(self, idx: int):
         """Return batch corresponding to given index.
 

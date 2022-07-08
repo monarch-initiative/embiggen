@@ -3,7 +3,7 @@ from typing import List, Union, Optional, Dict, Type
 
 import numpy as np
 from ensmallen import Graph
-
+import tensorflow as tf
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel

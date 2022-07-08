@@ -10,7 +10,6 @@ __all__ = [
     "EdgeTransformer",
     "NodeTransformer",
     "GraphTransformer",
-    "CorpusTransformer",
     "EdgePredictionTransformer",
     "EdgeLabelPredictionTransformer",
     "NodeLabelPredictionTransformer"

@@ -181,6 +181,11 @@ def get_model_or_stub(
                     return None
 
                 @classmethod
+                def is_stocastic(cls) -> bool:
+                    """Returns whether the model can optionally use edge weights."""
+                    return None
+
+                @classmethod
                 def is_topological(cls) -> str:
                     """Returns whether this embedding is based on graph topology."""
                     return parent_class.is_topological()
@@ -193,7 +198,7 @@ def get_model_or_stub(
                 @classmethod
                 def is_available(cls) -> bool:
                     """Returns whether the model class is actually available in the user system."""
-                    return True
+                    return False
 
             model_class = StubClass
         else:
