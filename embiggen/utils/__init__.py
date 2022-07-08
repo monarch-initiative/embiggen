@@ -21,7 +21,6 @@ __all__ = [
     "EmbeddingResult",
     "AbstractModel",
     "classification_evaluation_pipeline",
-    "build_init",
     "format_list",
     "get_models_dataframe",
     "get_available_models_for_node_label_prediction",
@@ -30,5 +29,4 @@ __all__ = [
     "get_available_models_for_node_embedding",
     "abstract_class",
     "number_to_ordinal",
-    "format_list"
 ]

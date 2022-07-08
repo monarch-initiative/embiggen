@@ -16,7 +16,6 @@ __all__ = [
     "AbstractClassifierModel",
     "AbstractEmbeddingModel",
     "EmbeddingResult",
-    "get_standardized_model_map",
     "abstract_class",
     "AbstractModel",
     "get_models_dataframe",
