@@ -24,5 +24,5 @@ __all__ = [
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_node_embedding",
     "build_init",
-    "format_list"
+    "format_list",
 ]
