@@ -9,7 +9,7 @@ class DeepWalkSkipGramKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         walk_number: int = 10,
         walk_length: int = 80,
         window_size: int = 5,
@@ -23,7 +23,7 @@ class DeepWalkSkipGramKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         walk_number: int = 10
             Number of random walks. Default is 10.

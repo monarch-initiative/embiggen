@@ -16,7 +16,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
     def __init__(
         self,
         embedding_size: int = 100,
-        metric: str = "Jaccard",
+        metric: str = "Neighbours Intersection size",
         root_node_name: Optional[str] = None,
         enable_cache: bool = False
     ):
@@ -26,7 +26,7 @@ class HOPEEnsmallen(AbstractEmbeddingModel):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        metric: str = "Jaccard"
+        metric: str = "Neighbours Intersection size"
             The metric to use.
             You can either use:
             - Jaccard

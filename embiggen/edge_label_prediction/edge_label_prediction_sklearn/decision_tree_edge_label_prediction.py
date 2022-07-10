@@ -18,7 +18,7 @@ class DecisionTreeEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         max_features=None,
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        class_weight=None,
+        class_weight="balanced",
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
         use_edge_metrics: bool = False,

@@ -24,7 +24,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         n_jobs=-1,
         verbose=0,
         warm_start=False,
-        class_weight=None,
         ccp_alpha=0.0,
         max_samples=None,
         edge_embedding_method: str = "Concatenate",
@@ -51,7 +50,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         self._random_state = random_state
         self._verbose = verbose
         self._warm_start = warm_start
-        self._class_weight = class_weight
         self._ccp_alpha = ccp_alpha
         self._max_samples = max_samples
 
@@ -72,7 +70,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state=random_state,
                 verbose=verbose,
                 warm_start=warm_start,
-                class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
                 max_samples=max_samples
             ),
@@ -113,7 +110,6 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state = self._random_state,
                 verbose = self._verbose,
                 warm_start = self._warm_start,
-                class_weight = self._class_weight,
                 ccp_alpha = self._ccp_alpha,
                 max_samples = self._max_samples,
             )

@@ -8,7 +8,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         iterations: int = 16,
         order: int = 2,
         alpha: float = 0.01,
@@ -19,7 +19,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         iterations: int = 16
             Number of boosting iterations. Default is 16.

@@ -1,5 +1,5 @@
 """Module providing WalkletsSkipGram model implementation."""
-from typing import Optional
+from typing import Optional, Dict, Any
 from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
 
@@ -17,8 +17,6 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
         window_size: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
-        change_node_type_weight: float = 1.0,
-        change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -64,14 +62,6 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
-        change_node_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor node of a
-            different type than the previous node. This only applies to
-            colored graphs, otherwise it has no impact.
-        change_edge_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor edge of a
-            different type than the previous edge. This only applies to
-            multigraphs, otherwise it has no impact.
         max_neighbours: Optional[int] = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
@@ -106,8 +96,6 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
-            change_edge_type_weight=change_edge_type_weight,
-            change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
@@ -118,6 +106,13 @@ class WalkletsSkipGramEnsmallen(Node2VecEnsmallen):
             random_state=random_state,
             enable_cache=enable_cache
         )
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters of the model."""
+        parameters = super().parameters()
+        parameters["embedding_size"] = parameters["embedding_size"] * parameters["window_size"]
+        
+        return parameters
     
     @classmethod
     def model_name(cls) -> str:

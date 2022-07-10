@@ -25,7 +25,7 @@ class RandomForestNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         n_jobs=-1,
         verbose=0,
         warm_start=False,
-        class_weight=None,
+        class_weight="balanced",
         ccp_alpha=0.0,
         max_samples=None,
         random_state: int = 42

@@ -7,7 +7,7 @@ class SocioDimKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -15,7 +15,7 @@ class SocioDimKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         random_state: int = 42
             Random state to use for the stocastic

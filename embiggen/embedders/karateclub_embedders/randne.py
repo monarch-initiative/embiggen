@@ -8,7 +8,7 @@ class RandNEKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         alphas: Union[List[float], Tuple[float]] = (0.5, 0.5),
         random_state: int = 42,
         enable_cache: bool = False
@@ -17,7 +17,7 @@ class RandNEKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         alphas: Union[List[float], Tuple[float]] = (0.5, 0.5)
             Smoothing weights for adjacency matrix powers. Default is [0.5, 0.5].
