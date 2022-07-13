@@ -258,7 +258,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         graph: Graph,
     ) -> Optional[np.ndarray]:
         """Returns training output tuple."""
-        return graph.get_known_node_types_mask().astype(tf.float32)
+        return graph.get_known_node_types_mask().astype(np.float32)
 
     def _get_model_prediction_input(
         self,

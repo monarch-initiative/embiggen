@@ -89,56 +89,60 @@ class TestEvaluateEdgePrediction(TestCase):
     def test_edge_prediction_models_apis(self):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
-        graph = graph.set_all_node_types("hu") | graph
+        multi_label_graph = graph.set_all_node_types("hu") | graph
         graph, _ = graph.get_node_label_holdout_graphs(0.8)
+        multi_label_graph, _ = multi_label_graph.get_node_label_holdout_graphs(
+            0.8)
         node_features = SPINE(embedding_size=10).fit_transform(graph)
-        node_type_features = np.random.uniform(size=(
-            graph.get_number_of_node_types(),
-            7
-        ))
+
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
             leave=False,
         )
-        for model_name in bar:
-            bar.set_description(
-                f"Testing API of {model_name}"
-            )
-            model = AbstractEdgePredictionModel.get_model_from_library(
-                model_name
-            )()
-            parameters = {}
-            if "use_edge_metrics" in model.parameters():
-                parameters["use_edge_metrics"] = True
-            if "use_node_embedding" in model.parameters():
-                parameters["use_node_embedding"] = True
-            if "use_node_type_embedding" in model.parameters():
-                parameters["use_node_type_embedding"] = True
-            model_class = AbstractEdgePredictionModel.get_model_from_library(
-                model_name
-            )
-            model = model_class(
-                **{
-                    **model_class.smoke_test_parameters(),
-                    **parameters
-                },
-            )
-            model.fit(
-                graph,
-                node_features=node_features,
-                node_type_features=node_type_features
-            )
-            model.predict(
-                graph,
-                node_features=node_features,
-                node_type_features=node_type_features
-            )
-            model.predict_proba(
-                graph,
-                node_features=node_features,
-                node_type_features=node_type_features
-            )
+        for g in (multi_label_graph, graph):
+            for model_name in bar:
+                bar.set_description(
+                    f"Testing API of {model_name}"
+                )
+                model = AbstractEdgePredictionModel.get_model_from_library(
+                    model_name
+                )()
+                parameters = {}
+                if "use_edge_metrics" in model.parameters():
+                    parameters["use_edge_metrics"] = True
+                if "use_node_embedding" in model.parameters():
+                    parameters["use_node_embedding"] = True
+                if "use_node_type_embedding" in model.parameters():
+                    parameters["use_node_type_embedding"] = True
+                model_class = AbstractEdgePredictionModel.get_model_from_library(
+                    model_name
+                )
+                node_type_features = np.random.uniform(size=(
+                    g.get_number_of_node_types(),
+                    7
+                ))
+                model = model_class(
+                    **{
+                        **model_class.smoke_test_parameters(),
+                        **parameters
+                    },
+                )
+                model.fit(
+                    g,
+                    node_features=node_features,
+                    node_type_features=node_type_features
+                )
+                model.predict(
+                    g,
+                    node_features=node_features,
+                    node_type_features=node_type_features
+                )
+                model.predict_proba(
+                    g,
+                    node_features=node_features,
+                    node_type_features=node_type_features
+                )
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
@@ -189,8 +193,8 @@ class TestEvaluateEdgePrediction(TestCase):
                 models="Perceptron",
                 node_features=embedding_model,
                 evaluation_schema="Connected Monte Carlo",
-                graphs=graph_name()\
-                    .remove_singleton_nodes(),
+                graphs=graph_name()
+                .remove_singleton_nodes(),
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,

@@ -591,7 +591,7 @@ class AbstractGCN(AbstractClassifierModel):
         self.history = self._model.fit(
             x=model_input,
             y=self._get_model_training_output(graph),
-            sample_weight=self._get_model_training_output(graph),
+            sample_weight=self._get_model_training_sample_weights(graph),
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
             batch_size=graph.get_number_of_nodes(),

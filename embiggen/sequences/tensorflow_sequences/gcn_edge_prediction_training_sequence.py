@@ -107,12 +107,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         
         self._node_types = node_types if return_node_types else None
 
-        if node_type_features is not None:
-            if graph.has_multilabel_node_types():
-                node_types = graph.get_one_hot_encoded_node_types()
-            else:
-                node_types = graph.get_single_label_node_type_ids()
-            
+        if node_type_features is not None:            
             if self._graph.has_multilabel_node_types():
                 self._node_type_features = []
                 node_types_mask = node_types==0
@@ -133,6 +128,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
                     self._node_type_features = []
                     node_types_mask = node_types==0
                     minus_node_types = node_types - 1
+                    minus_node_types[node_types_mask] = 0
                     for node_type_feature in node_type_features:
                         ntf = node_type_feature[minus_node_types]
                         # Masking the unknown values to zero.

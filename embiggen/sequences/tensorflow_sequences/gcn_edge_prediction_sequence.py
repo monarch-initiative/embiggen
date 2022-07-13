@@ -100,6 +100,7 @@ class GCNEdgePredictionSequence(Sequence):
                     self._node_type_features = []
                     minus_node_types = node_types - 1
                     node_types_mask = node_types == 0
+                    minus_node_types[node_types_mask] = 0
                     for node_type_feature in node_type_features:
                         ntf = node_type_feature[minus_node_types]
                         # Masking the unknown values to zero.
