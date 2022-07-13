@@ -1,5 +1,5 @@
 """Abstract Torch/PyKeen Model wrapper for embedding models."""
-from typing import Dict, List, Sequence, Union, Optional, Tuple, Any, Type
+from typing import Dict, Union, Tuple, Any, Type
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ import torch
 from pykeen.models import Model
 from pykeen.triples import CoreTriplesFactory
 from pykeen.training import SLCWATrainingLoop, LCWATrainingLoop, TrainingLoop
-from torch.optim import Optimizer
 
 
 @abstract_class

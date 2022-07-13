@@ -78,8 +78,3 @@ class TransETensorFlow(Siamese):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
-
-    @classmethod
-    def task_involves_edge_types(cls) -> bool:
-        """Returns whether the model task involves edge types."""
-        return True

@@ -118,11 +118,6 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         return False
 
     @classmethod
-    def task_involves_edge_types(cls) -> bool:
-        """Returns whether the model task involves edge types."""
-        return False
-
-    @classmethod
     def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True

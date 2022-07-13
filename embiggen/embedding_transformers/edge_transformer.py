@@ -375,18 +375,7 @@ class EdgeTransformer:
             Node feature to use to fit the transformer.
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             Node type feature to use to fit the transformer.
-
-        Raises
-        -------------------------
-        ValueError
-            If the given method is None there is no need to call the fit method.
         """
-        if self._method is None:
-            raise ValueError(
-                "There is no need to call the fit when edge method is None, "
-                "as the transformer will exclusively return the numeric node "
-                "indices and not any node feature."
-            )
         self._transformer.fit(
             node_feature,
             node_type_feature=node_type_feature

@@ -7,6 +7,7 @@ from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
+from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.embedders import SPINE
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.linqs import Cora, get_words_data
@@ -146,22 +147,29 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
-        for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
-            holdouts = edge_prediction_evaluation(
-                holdouts_kwargs=dict(train_size=0.8),
-                models=DecisionTreeEdgePrediction(
-                    edge_embedding_method="CosineSimilarity"),
-                node_features=SPINE(embedding_size=10),
-                evaluation_schema=evaluation_schema,
-                graphs=graph,
-                number_of_holdouts=self._number_of_holdouts,
-                verbose=True,
-                smoke_test=True,
-                validation_unbalance_rates=(1.0, 2.0,),
-            )
-            self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
-            self.assertTrue(set(holdouts.validation_unbalance_rate)
-                            == set((1.0, 2.0)))
+        for edge_embedding in EdgeTransformer.methods:
+            for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
+                model = DecisionTreeEdgePrediction(
+                    edge_embedding_method=edge_embedding
+                )
+                holdouts = edge_prediction_evaluation(
+                    holdouts_kwargs=dict(train_size=0.8),
+                    models=DecisionTreeEdgePrediction(
+                        **{
+                            **model.parameters(),
+                            **model.smoke_test_parameters(),
+                        }
+                    ),
+                    node_features=SPINE(embedding_size=10),
+                    evaluation_schema=evaluation_schema,
+                    graphs=graph,
+                    number_of_holdouts=self._number_of_holdouts,
+                    verbose=True,
+                    validation_unbalance_rates=(1.0, 2.0,),
+                )
+                self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
+                self.assertTrue(set(holdouts.validation_unbalance_rate)
+                                == set((1.0, 2.0)))
 
     def test_all_embedding_models_as_feature(self):
         df = get_available_models_for_node_embedding()
