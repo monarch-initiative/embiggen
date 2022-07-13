@@ -64,7 +64,7 @@ def embed_graph(
             model_name=embedding_model,
             library_name=library_name
         )(**kwargs)
-    elif kwargs is not None:
+    elif kwargs:
         raise ValueError(
             "Please be advised that even though you have provided yourself "
             "the embedding model, you have also provided the kwargs which "

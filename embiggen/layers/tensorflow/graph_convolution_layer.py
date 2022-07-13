@@ -13,7 +13,6 @@ from tensorflow.keras.layers import Dropout, Layer, Dense  # pylint: disable=imp
 from embiggen.layers.tensorflow.l2_norm import L2Norm
 
 
-
 class GraphConvolution(Layer):
     """Layer implementing graph convolution layer."""
 
@@ -51,7 +50,8 @@ class GraphConvolution(Layer):
             Kwargs to pass to the parent Layer class.
         """
         super().__init__(**kwargs)
-        combiner = must_be_in_set(combiner, self.available_combiner, "combiner")
+        combiner = must_be_in_set(
+            combiner, self.available_combiner, "combiner")
         self._combiner = combiner
         self._units = units
         self._activation = activation
@@ -60,8 +60,8 @@ class GraphConvolution(Layer):
         self._dropout_rate = dropout_rate
         self._apply_norm = apply_norm
         self._dense_layers = []
-        self._dropout_layer = None
-        self._l2_norm = None
+        self._dropout_layers = []
+        self._l2_norms = []
 
     def build(self, input_shape) -> None:
         """Build the Graph Convolution layer.
@@ -84,6 +84,7 @@ class GraphConvolution(Layer):
                 "has a single element. It should contain exactly two elements, "
                 "the adjacency matrix and the node features."
             )
+
         for node_feature_shape in input_shape[1:]:
             dense_layer = Dense(
                 units=self._units,
@@ -92,17 +93,19 @@ class GraphConvolution(Layer):
             dense_layer.build(node_feature_shape)
             self._dense_layers.append(dense_layer)
 
-        if self._dropout_rate is not None:
-            self._dropout_layer = Dropout(self._dropout_rate)
-            self._dropout_layer.build(node_feature_shape)
-        else:
-            self._dropout_layer = lambda x: x
+            if self._dropout_rate is not None:
+                dropout_layer = Dropout(self._dropout_rate)
+                dropout_layer.build(node_feature_shape)
+            else:
+                def dropout_layer(x): return x
+            self._dropout_layers.append(dropout_layer)
 
-        if self._apply_norm:
-            self._l2_norm = L2Norm()
-            self._l2_norm.build(node_feature_shape)
-        else:
-            self._l2_norm = lambda x: x
+            if self._apply_norm:
+                l2_norm = L2Norm()
+                l2_norm.build((self._units,))
+            else:
+                def l2_norm(x): return x
+            self._l2_norms.append(l2_norm)
 
         super().build(input_shape)
 
@@ -125,14 +128,16 @@ class GraphConvolution(Layer):
         )
 
         return [
-            self._l2_norm(dense(embedding_ops.embedding_lookup_sparse_v2(
-                self._dropout_layer(node_feature),
+            dense(embedding_ops.embedding_lookup_sparse_v2(
+                node_feature,
                 ids,
                 adjacency,
                 combiner=self._combiner
-            )))
-            for dense, node_feature in zip(
+            ))
+            for dense, dropout, l2_norm, node_feature in zip(
                 self._dense_layers,
+                self._dropout_layers,
+                self._l2_norms,
                 node_features
             )
         ]

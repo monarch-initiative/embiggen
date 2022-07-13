@@ -5,10 +5,11 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import eigsh
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class GLEEEnsmallen(AbstractEmbeddingModel):
+class GLEEEnsmallen(EnsmallenEmbedder):
     """Class implementing the GLEE algorithm."""
 
     def __init__(
@@ -68,25 +69,9 @@ class GLEEEnsmallen(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "GLEE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:

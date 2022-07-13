@@ -4,11 +4,13 @@ from ensmallen import Graph
 import pandas as pd
 from userinput.utils import must_be_in_set
 from ensmallen import models
-from embiggen.utils.abstract_models import abstract_class, AbstractEmbeddingModel, EmbeddingResult
+from embiggen.utils.abstract_models import abstract_class
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
 @abstract_class
-class Node2VecEnsmallen(AbstractEmbeddingModel):
+class Node2VecEnsmallen(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
@@ -51,7 +53,7 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **AbstractEmbeddingModel.smoke_test_parameters(),
+            **EnsmallenEmbedder.smoke_test_parameters(),
             epochs=1,
             window_size=1,
             walk_length=4,
@@ -66,20 +68,6 @@ class Node2VecEnsmallen(AbstractEmbeddingModel):
             **super().parameters(),
             **self._model_kwargs
         }
-
-    @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
-        return False
-
-    def is_topological(self) -> bool:
-        return True
 
     def _fit_transform(
         self,

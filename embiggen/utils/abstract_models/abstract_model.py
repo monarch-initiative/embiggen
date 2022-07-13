@@ -11,9 +11,11 @@ def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
     """Simply adds a descriptor for meta-programming and nothing else."""
     return klass
 
+
 def is_not_implemented(method: Callable) -> bool:
     """Returns whether this method contains a raise for not being implemented."""
     return "raise NotImplementedError" in inspect.getsource(method)
+
 
 def is_implemented(method: Callable) -> bool:
     """Returns whether this method is implemented."""
@@ -46,9 +48,14 @@ class AbstractModel(Hashable):
                 f"random state of `{random_state}` was provided."
             )
 
+        can_use_edge_weights = self.__getattribute__("can_use_edge_weights")
+        requires_positive_edge_weights = self.__getattribute__(
+            "requires_positive_edge_weights")
+
         if (
-            not self.__getattribute__("can_use_edge_weights")() and
-            is_implemented(self.__getattribute__("requires_positive_edge_weights"))
+            is_implemented(can_use_edge_weights) and
+            not can_use_edge_weights() and
+            is_implemented(requires_positive_edge_weights)
         ):
             raise ValueError(
                 "We have found an useless method in the "
@@ -153,7 +160,10 @@ class AbstractModel(Hashable):
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         try:
-            if cls.requires_edge_weights():
+            if (
+                is_implemented(cls.requires_edge_weights) and
+                cls.requires_edge_weights()
+            ):
                 return True
         except NotImplementedError:
             pass
@@ -332,9 +342,9 @@ class AbstractModel(Hashable):
         """Returns consistent hash describing the model."""
         return sha256(dict(
             **self.parameters(),
-            model_name= self.model_name(),
-            library_name= self.library_name(),
-            task_name= self.task_name(),
+            model_name=self.model_name(),
+            library_name=self.library_name(),
+            task_name=self.task_name(),
         ))
 
     @staticmethod
@@ -369,7 +379,7 @@ class AbstractModel(Hashable):
             raise ValueError(
                 "The provided model name is empty."
             )
-        
+
         # We check if the provided string is not an empty string.
         if len(task_name) == 0:
             raise ValueError(
@@ -382,12 +392,12 @@ class AbstractModel(Hashable):
             "task name"
         )
 
-        model_name  = must_be_in_set(
+        model_name = must_be_in_set(
             model_name,
             AbstractModel.MODELS_LIBRARY[task_name].keys(),
             "model name"
         )
-        
+
         # We retrieve the task data.
         return AbstractModel.MODELS_LIBRARY[task_name][model_name]
 
@@ -477,11 +487,6 @@ class AbstractModel(Hashable):
         # Otherwise if the model is available, we return
         # its class to let the user do whathever they want.
         return model_class
-
-    @staticmethod
-    def get_available_model_names() -> List[str]:
-        """Returns list of available model names."""
-        return list(AbstractModel.MODELS_LIBRARY.keys())
 
     @staticmethod
     def find_available_models(

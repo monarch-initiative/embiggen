@@ -16,9 +16,13 @@ class TestGraphVisualizer(TestCase):
         """Test graph visualization."""
         for graph_name in ("CIO", "Usair97", "MIAPA"):
             for method in ("PCA", "TSNE", "UMAP"):
+                decomposition_kwargs = None
+                if method == "TSNE":
+                    decomposition_kwargs = dict(n_iter=1)
                 visualization = GraphVisualizer(
                     graph_name,
                     decomposition_method=method,
+                    decomposition_kwargs=decomposition_kwargs
                 )
                 visualization.fit_and_plot_all("HOPE")
                 visualization.plot_dot()

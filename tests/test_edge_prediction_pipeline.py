@@ -1,4 +1,5 @@
 """Unit test class for GraphTransformer objects."""
+from tabnanny import verbose
 from tqdm.auto import tqdm
 from unittest import TestCase
 import numpy as np
@@ -88,7 +89,13 @@ class TestEvaluateEdgePrediction(TestCase):
     def test_edge_prediction_models_apis(self):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
+        graph = graph.set_all_node_types("hu") | graph
+        graph, _ = graph.get_node_label_holdout_graphs(0.8)
         node_features = SPINE(embedding_size=10).fit_transform(graph)
+        node_type_features = np.random.uniform(size=(
+            graph.get_number_of_node_types(),
+            7
+        ))
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
@@ -96,7 +103,8 @@ class TestEvaluateEdgePrediction(TestCase):
         )
         for model_name in bar:
             bar.set_description(
-                f"Testing API of {model_name}")
+                f"Testing API of {model_name}"
+            )
             model = AbstractEdgePredictionModel.get_model_from_library(
                 model_name
             )()
@@ -108,16 +116,29 @@ class TestEvaluateEdgePrediction(TestCase):
             if "use_node_type_embedding" in model.parameters():
                 parameters["use_node_type_embedding"] = True
             model_class = AbstractEdgePredictionModel.get_model_from_library(
-                model_name)
+                model_name
+            )
             model = model_class(
                 **{
                     **model_class.smoke_test_parameters(),
                     **parameters
-                }
+                },
             )
-            model.fit(graph, node_features=node_features)
-            model.predict(graph, node_features=node_features)
-            model.predict_proba(graph, node_features=node_features)
+            model.fit(
+                graph,
+                node_features=node_features,
+                node_type_features=node_type_features
+            )
+            model.predict(
+                graph,
+                node_features=node_features,
+                node_type_features=node_type_features
+            )
+            model.predict_proba(
+                graph,
+                node_features=node_features,
+                node_type_features=node_type_features
+            )
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()

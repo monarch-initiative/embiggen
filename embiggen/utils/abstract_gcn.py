@@ -1,5 +1,6 @@
 """Kipf GCN model for node-label prediction."""
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
+from matplotlib.pyplot import axis
 
 import numpy as np
 import pandas as pd
@@ -429,7 +430,10 @@ class AbstractGCN(AbstractClassifierModel):
         ):
             if features is not None:
                 if feature_names is None:
-                    feature_names = [None] * len(features)
+                    feature_names = [
+                        f"{number_to_ordinal(i+1)} {feature_category}"
+                        for i in range(len(features))
+                    ]
                 if len(feature_names) != len(features):
                     raise ValueError(
                         f"You have provided {len(feature_names)} "
@@ -503,12 +507,16 @@ class AbstractGCN(AbstractClassifierModel):
             inputs=[
                 input_layer
                 for input_layer in (
-                    adjacency_matrix, *input_features
+                    adjacency_matrix,
+                    *input_features
                 )
                 if input_layer is not None
             ],
             outputs=(
-                Concatenate(name="ConcatenatedNodeFeatures")(hidden)
+                Concatenate(
+                    name="ConcatenatedNodeFeatures",
+                    axis=-1
+                )(hidden)
                 if len(hidden) > 1
                 else hidden[0]
             )

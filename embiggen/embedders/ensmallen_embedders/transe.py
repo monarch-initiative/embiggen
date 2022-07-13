@@ -1,13 +1,13 @@
 """Module providing TransE implementation."""
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
 from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class TransEEnsmallen(AbstractEmbeddingModel):
+class TransEEnsmallen(EnsmallenEmbedder):
     """Class implementing the TransE algorithm."""
 
     def __init__(
@@ -114,25 +114,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "TransE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def requires_edge_types(cls) -> bool:

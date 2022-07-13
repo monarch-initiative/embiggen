@@ -5,10 +5,11 @@ import pandas as pd
 import numpy as np
 from scipy.sparse import coo_matrix
 from sklearn.decomposition import TruncatedSVD
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class NetMFEnsmallen(AbstractEmbeddingModel):
+class NetMFEnsmallen(EnsmallenEmbedder):
     """Class implementing the NetMF algorithm."""
 
     def __init__(
@@ -61,7 +62,7 @@ class NetMFEnsmallen(AbstractEmbeddingModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **AbstractEmbeddingModel.smoke_test_parameters(),
+            **EnsmallenEmbedder.smoke_test_parameters(),
             window_size=1,
             walk_length=4,
             iterations=1,
@@ -114,25 +115,9 @@ class NetMFEnsmallen(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "NetMF"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:

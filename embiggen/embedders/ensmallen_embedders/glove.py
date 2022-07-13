@@ -3,10 +3,11 @@ from typing import Optional, Dict, Any
 from ensmallen import Graph
 from ensmallen import models
 import pandas as pd
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, abstract_class
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult, abstract_class
 
 @abstract_class
-class GloVeEnsmallen(AbstractEmbeddingModel):
+class GloVeEnsmallen(EnsmallenEmbedder):
     """Class providing GloVe implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -145,20 +146,6 @@ class GloVeEnsmallen(AbstractEmbeddingModel):
                 learning_rate_decay=self._learning_rate_decay,
             )
         }
-
-    @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    def requires_nodes_sorted_by_decreasing_node_degree(self) -> bool:
-        return False
-
-    def is_topological(self) -> bool:
-        return True
 
     def _fit_transform(
         self,

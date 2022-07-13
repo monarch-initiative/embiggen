@@ -43,7 +43,7 @@ class NodeTransformer:
         if node_feature is not None and not isinstance(node_feature, list):
             node_feature = [node_feature]
 
-        if node_type_feature is not None and not isinstance(node_feature, list):
+        if node_type_feature is not None and not isinstance(node_type_feature, list):
             node_type_feature = [node_type_feature]
 
         if (node_feature is None or len(node_feature) == 0) and (node_type_feature is None or len(node_type_feature) == 0):

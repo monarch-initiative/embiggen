@@ -1,4 +1,4 @@
-"""Keras Sequence for running Neural Network on graph edge prediction."""
+"""Keras Sequence for running Siamese Neural Network based on currupted triples sampling."""
 from typing import List
 
 import numpy as np
@@ -17,7 +17,7 @@ class SiameseSequence(Sequence):
         batch_size: int = 2**10,
         random_state: int = 42
     ):
-        """Create new EdgePredictionSequence object.
+        """Create new SiameseSequence object.
 
         Parameters
         --------------------------------
@@ -54,47 +54,15 @@ class SiameseSequence(Sequence):
         ----------------------------------
         Dataset to be used for the training of a model
         """
-
-        #################################################################
-        # Handling kernel creation when TensorFlow is a modern version. #
-        #################################################################
-
-        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
-            input_tensor_specs = []
-
-            # For both the real and fake nodes.
-            for _ in range(4):
-                # Shapes of the source and destination node IDs
-                input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size, ),
-                    dtype=tf.uint32
-                ))
-
-            # Shapes of the edge type IDs
-            input_tensor_specs.append(tf.TensorSpec(
-                shape=(self._batch_size,),
-                dtype=tf.uint32
-            ))
-
-            return tf.data.Dataset.from_generator(
-                self,
-                output_signature=(tuple(input_tensor_specs),)
-            )
-
-        input_tensor_types = []
-        input_tensor_shapes = []
-
-        for _ in range(4):
-            input_tensor_types.append(tf.uint32,)
-            input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
-
-        input_tensor_types.append(tf.uint32,)
-        input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
-
         return tf.data.Dataset.from_generator(
             self,
-            output_types=input_tensor_types,
-            output_shapes=input_tensor_shapes
+            output_signature=(tuple([
+                tf.TensorSpec(
+                    shape=(self._batch_size, ),
+                    dtype=tf.uint32
+                )
+                for _ in range(5)
+            ]),)
         )
 
     def __getitem__(self, idx: int) -> List[np.ndarray]:

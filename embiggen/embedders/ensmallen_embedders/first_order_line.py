@@ -4,10 +4,11 @@ from ensmallen import Graph
 import numpy as np
 import pandas as pd
 from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class FirstOrderLINEEnsmallen(AbstractEmbeddingModel):
+class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
     """Class implementing the first-order LINE algorithm."""
 
     def __init__(
@@ -97,25 +98,9 @@ class FirstOrderLINEEnsmallen(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "First-order LINE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
     
     @classmethod
     def can_use_edge_weights(cls) -> bool:
@@ -130,11 +115,6 @@ class FirstOrderLINEEnsmallen(AbstractEmbeddingModel):
     @classmethod
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
-
-    @classmethod
-    def task_involves_edge_types(cls) -> bool:
-        """Returns whether the model task involves edge types."""
         return False
 
     @classmethod

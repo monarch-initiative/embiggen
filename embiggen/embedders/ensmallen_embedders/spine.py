@@ -1,13 +1,13 @@
 """Module providing SPINE implementation."""
-from typing import Optional,  Dict, Any, Union
+from typing import Optional,  Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
 from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class SPINE(AbstractEmbeddingModel):
+class SPINE(EnsmallenEmbedder):
     """Class implementing the SPINE algorithm."""
 
     def __init__(
@@ -74,25 +74,9 @@ class SPINE(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "SPINE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def can_use_node_types(cls) -> bool:

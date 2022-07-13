@@ -3,10 +3,11 @@ from typing import Dict, Any
 from ensmallen import Graph
 import pandas as pd
 from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class WeightedSPINE(AbstractEmbeddingModel):
+class WeightedSPINE(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     def __init__(
@@ -66,25 +67,9 @@ class WeightedSPINE(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "WeightedSPINE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def requires_edge_weights(cls) -> bool:
