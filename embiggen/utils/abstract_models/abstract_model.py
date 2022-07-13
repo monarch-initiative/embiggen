@@ -394,7 +394,7 @@ class AbstractModel(Hashable):
 
         model_name = must_be_in_set(
             model_name,
-            AbstractModel.MODELS_LIBRARY[task_name].keys(),
+            AbstractModel.MODELS_LIBRARY[task_name],
             "model name"
         )
 
