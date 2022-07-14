@@ -51,7 +51,7 @@ class SecondOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the current model."""
-        return "Second Order LINE"
+        return "Second-order LINE"
 
     def _extract_embeddings(
         self,
