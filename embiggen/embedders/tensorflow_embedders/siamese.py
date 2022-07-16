@@ -2,7 +2,6 @@
 from typing import Dict, Tuple, Any, Optional
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras import \
@@ -15,7 +14,7 @@ from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in
     Input
 )
 from tensorflow.keras.models import Model
-from embiggen.layers.tensorflow import FlatEmbedding
+from embiggen.layers.tensorflow import FlatEmbedding, ElementWiseL2
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.sequences.tensorflow_sequences import SiameseSequence
 from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
@@ -29,11 +28,11 @@ class Siamese(TensorFlowEmbedder):
         self,
         embedding_size: int = 100,
         relu_bias: float = 1.0,
-        epochs: int = 10,
-        batch_size: int = 2**10,
-        early_stopping_min_delta: float = 0.001,
+        epochs: int = 100,
+        batch_size: int = 2**5,
+        early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 5,
-        learning_rate_plateau_min_delta: float = 0.001,
+        learning_rate_plateau_min_delta: float = 0.0001,
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
@@ -117,31 +116,33 @@ class Siamese(TensorFlowEmbedder):
             )
         ]
 
-        edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
-
         # Creating the embedding layer for the contexts
-        node_embedding_layer = Embedding(
-            input_dim=graph.get_number_of_nodes(),
-            output_dim=self._embedding_size,
+        node_embedding_layer = FlatEmbedding(
+            vocabulary_size=graph.get_number_of_nodes(),
+            dimension=self._embedding_size,
             input_length=1,
             name="NodeEmbedding"
         )
 
         # Get the node embedding
         node_embeddings = [
-            UnitNorm(axis=-1)(node_embedding_layer(node_input))
+            UnitNorm()(node_embedding_layer(node_input))
             for node_input in inputs
         ]
 
-        inputs.append(edge_types)
-
-        edge_type_embedding = FlatEmbedding(
-            vocabulary_size=graph.get_number_of_edge_types(),
-            dimension=self._embedding_size,
-            input_length=1,
-            mask_zero=graph.has_unknown_edge_types(),
-            name="BiasEdgeTypeEmbedding",
-        )(edge_types)
+        if self.requires_edge_types():
+            edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
+            inputs.append(edge_types)
+            edge_type_embedding = FlatEmbedding(
+                vocabulary_size=graph.get_number_of_edge_types(),
+                dimension=self._embedding_size,
+                input_length=1,
+                mask_zero=graph.has_unknown_edge_types(),
+                name="BiasEdgeTypeEmbedding",
+            )(edge_types)
+        else:
+            edge_type_embedding = 0.0
+            edge_types = None
 
         (
             srcs_embedding,
@@ -156,13 +157,13 @@ class Siamese(TensorFlowEmbedder):
             graph
         )
 
-        loss = K.relu(self._relu_bias + tf.norm(
-            srcs_embedding + edge_type_embedding - dsts_embedding,
-            axis=-1
-        ) - tf.norm(
-            not_srcs_embedding + edge_type_embedding - not_dsts_embedding,
-            axis=-1
-        ))
+        loss = K.relu(self._relu_bias + ElementWiseL2()([
+            srcs_embedding + edge_type_embedding,
+            dsts_embedding
+        ]) - ElementWiseL2()([
+            not_srcs_embedding + edge_type_embedding,
+            not_dsts_embedding
+        ]))
 
         # Creating the actual model
         model = Model(
