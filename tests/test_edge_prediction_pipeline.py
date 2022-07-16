@@ -61,10 +61,27 @@ class TestEvaluateEdgePrediction(TestCase):
             graphs=[self._graph, self._graph_without_node_types],
             number_of_holdouts=self._number_of_holdouts,
             verbose=True,
-            smoke_test=True
+            smoke_test=True,
         )
         self.assertEqual(
             holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])
+
+    def test_evaluate_edge_prediction_with_subgraphs(self):
+        df = get_available_models_for_edge_prediction()
+        holdouts = edge_prediction_evaluation(
+            holdouts_kwargs=dict(train_size=0.8),
+            models=df.model_name,
+            library_names=df.library_name,
+            node_features=SPINE(embedding_size=5),
+            evaluation_schema="Connected Monte Carlo",
+            graphs=self._graph,
+            number_of_holdouts=self._number_of_holdouts,
+            verbose=True,
+            smoke_test=True,
+            subgraph_of_interest=self._subgraph_of_interest
+        )
+        self.assertEqual(
+            holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
 
     def test_evaluate_edge_prediction_with_node_types_features(self):
         df = get_available_models_for_edge_prediction()
@@ -167,7 +184,8 @@ class TestEvaluateEdgePrediction(TestCase):
                     verbose=True,
                     validation_unbalance_rates=(1.0, 2.0,),
                 )
-                self.assertEqual(holdouts.shape[0], self._number_of_holdouts*2*2)
+                self.assertEqual(
+                    holdouts.shape[0], self._number_of_holdouts*2*2)
                 self.assertTrue(set(holdouts.validation_unbalance_rate)
                                 == set((1.0, 2.0)))
 
@@ -201,8 +219,7 @@ class TestEvaluateEdgePrediction(TestCase):
                 models="Perceptron",
                 node_features=embedding_model,
                 evaluation_schema="Connected Monte Carlo",
-                graphs=graph_name()
-                .remove_singleton_nodes(),
+                graphs=graph_name().remove_singleton_nodes(),
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,
