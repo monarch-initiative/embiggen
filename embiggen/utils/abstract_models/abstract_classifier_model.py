@@ -239,9 +239,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_feature.set_random_state(random_state)
 
             if smoke_test:
-                node_feature = node_feature.__class__(
-                    **node_feature.smoke_test_parameters()
-                )
+                node_feature = node_feature.into_smoke_test()
 
             node_feature = node_feature.fit_transform(
                 graph=graph,
@@ -438,9 +436,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_type_feature.set_random_state(random_state)
 
             if smoke_test:
-                node_type_feature = node_type_feature.__class__(
-                    **node_type_feature.smoke_test_parameters()
-                )
+                node_type_feature = node_type_feature.into_smoke_test()
 
             node_type_feature = node_type_feature.fit_transform(
                 graph=graph,
@@ -637,9 +633,7 @@ class AbstractClassifierModel(AbstractModel):
                 edge_feature.set_random_state(random_state)
 
             if smoke_test:
-                edge_feature = edge_feature.__class__(
-                    **edge_feature.smoke_test_parameters()
-                )
+                edge_feature = edge_feature.into_smoke_test()
 
             edge_feature = edge_feature.fit_transform(
                 graph=graph,

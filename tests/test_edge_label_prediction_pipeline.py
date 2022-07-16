@@ -20,6 +20,8 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
     def test_evaluate_embedding_for_edge_label_prediction(self):
         """Test graph visualization."""
         df = get_available_models_for_edge_label_prediction()
+        graph = PDUMDV().remove_singleton_nodes()
+        feature = SPINE(embedding_size=5)
         for evaluation_schema in AbstractEdgeLabelPredictionModel.get_available_evaluation_schemas():
             if "Stratified" not in evaluation_schema:
                 # TODO! properly test this!
@@ -28,10 +30,10 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                 holdouts_kwargs={
                     "train_size": 0.8
                 },
-                node_features="SPINE",
+                node_features=feature,
                 models=df.model_name,
                 library_names=df.library_name,
-                graphs=PDUMDV().remove_singleton_nodes(),
+                graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema=evaluation_schema,
                 verbose=True,
@@ -122,6 +124,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             leave=False,
             desc="Testing embedding methods"
         )
+        graph = PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for _, row in bar:
             if row.requires_edge_weights or row.requires_edge_types:
                 continue
@@ -137,7 +140,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     library_name=row.library_name
                 )(),
                 evaluation_schema="Stratified Monte Carlo",
-                graphs=PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree(),
+                graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,

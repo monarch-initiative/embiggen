@@ -86,24 +86,25 @@ class NodeLabelPredictionTransformer:
         """
         if not graph.has_node_types():
             raise ValueError(
-                "The provided graph for the node-label prediction does "
+                f"The provided graph {graph.get_name()} "
+                "for the node-label prediction does "
                 "not contain node-types."
             )
         if not graph.has_known_node_types():
             raise ValueError(
-                "The provided graph for the node-label prediction does "
+                "fThe provided graph {graph.get_name()} for the node-label prediction does "
                 "not contain known node-types, that is, it contains "
                 "an node type vocabulary but no node has an node type "
                 "assigned to it."
             )
         if graph.has_homogeneous_node_types():
             raise ValueError(
-                "The provided graph for the node-label prediction contains "
+                f"The provided graph {graph.get_name()} for the node-label prediction contains "
                 "nodes of a single type, making predictions pointless."
             )
         if graph.has_singleton_node_types():
             warnings.warn(
-                "Please do be advised that this graph contains nodes with "
+                f"Please do be advised that the {graph.get_name()} graph contains nodes with "
                 "a singleton node type, that is an node type that appears "
                 "only once in the graph. Predictions on such rare node types "
                 "will be unlikely to generalize well."

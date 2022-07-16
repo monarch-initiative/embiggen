@@ -25,13 +25,13 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             shutil.rmtree("experiments")
 
         df = get_available_models_for_node_label_prediction()
-
+        feature = SPINE(embedding_size=5)
         for evaluation_schema in AbstractNodeLabelPredictionModel.get_available_evaluation_schemas():
             holdouts = node_label_prediction_evaluation(
                 holdouts_kwargs={
                     "train_size": 0.8
                 },
-                node_features=[SPINE(embedding_size=5), self._data],
+                node_features=[feature, self._data],
                 models=df.model_name,
                 library_names=df.library_name,
                 graphs=self._graph,
@@ -50,19 +50,24 @@ class TestEvaluateNodeLabelPrediction(TestCase):
     def test_node_label_prediction_models_apis(self):
         df = get_available_models_for_node_label_prediction()
         graph = self._graph.remove_singleton_nodes()
-        node_features = SPINE(embedding_size=10).fit_transform(graph)
-        for model_name in tqdm(df.model_name, desc="Testing model APIs"):
-            model = AbstractNodeLabelPredictionModel.get_model_from_library(
-                model_name
-            )().into_smoke_test()
-            model.fit(graph, node_features=node_features)
-            model.predict(graph, node_features=node_features)
-            model.predict_proba(graph, node_features=node_features)
+        red = self._graph.set_all_node_types("red")
+        multilabel_graph = (Cora().remove_edge_weights().remove_edge_types() | red).add_selfloops()
+        binary_graph = (red | MIAPA().remove_edge_types().set_all_node_types("blue")).add_selfloops()
+        for g in (graph, multilabel_graph, binary_graph):
+            node_features = SPINE(embedding_size=10).fit_transform(g)
+            for model_name in tqdm(df.model_name, desc="Testing model APIs"):
+                if g.has_multilabel_node_types() and model_name in ("Gradient Boosting Classifier", ):
+                    continue
+                model = AbstractNodeLabelPredictionModel.get_model_from_library(
+                    model_name
+                )().into_smoke_test()
+                model.fit(g, node_features=node_features)
+                model.predict(g, node_features=node_features)
+                model.predict_proba(g, node_features=node_features)
 
     def test_model_recreation(self):
         """Test graph visualization."""
         df = get_available_models_for_node_label_prediction()
-
         for _, row in df.iterrows():
             model = AbstractNodeLabelPredictionModel.get_model_from_library(
                 model_name=row.model_name,
@@ -90,6 +95,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             leave=False,
             desc="Testing embedding methods"
         )
+        graph = MIAPA().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for _, row in bar:
             if row.requires_edge_weights:
                 continue
@@ -101,7 +107,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
                 node_features=row.model_name,
-                graphs=MIAPA().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree(),
+                graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema="Monte Carlo",
                 verbose=False,

@@ -155,10 +155,18 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ))
 
         if self.is_multilabel_prediction_task():
-            return np.array([
-                class_predictions[:, 1]
-                for class_predictions in predictions_probabilities
-            ]).T
+            if isinstance(predictions_probabilities, np.ndarray):
+                return predictions_probabilities
+            if isinstance(predictions_probabilities, list):
+                return np.array([
+                    class_predictions[:, 1]
+                    for class_predictions in predictions_probabilities
+                ]).T
+            raise NotImplementedError(
+                f"The model {self.model_name()} from library {self.library_name()} "
+                f"returned an object of type {type(predictions_probabilities)} during "
+                "the execution of the predict proba method."
+            )
 
         return predictions_probabilities
 

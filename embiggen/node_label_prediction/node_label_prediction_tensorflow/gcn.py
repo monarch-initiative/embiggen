@@ -203,6 +203,8 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
+        if self.is_binary_prediction_task():
+            return 1
         return graph.get_number_of_node_types()
 
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:

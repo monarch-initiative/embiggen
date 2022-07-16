@@ -259,4 +259,6 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
+        if self.is_binary_prediction_task():
+            return 1
         return graph.get_number_of_edge_types()
