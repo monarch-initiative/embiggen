@@ -1,12 +1,12 @@
-"""Module providing TransE implementation."""
+"""Module providing TransH implementation."""
 from ensmallen import Graph
 import pandas as pd
 from embiggen.embedders.ensmallen_embedders.siamese_model import SiameseEnsmallen
 from embiggen.utils import EmbeddingResult
 
 
-class TransEEnsmallen(SiameseEnsmallen):
-    """Class implementing the TransE algorithm."""
+class TransHEnsmallen(SiameseEnsmallen):
+    """Class implementing the TransH algorithm."""
 
     def __init__(
         self,
@@ -29,7 +29,7 @@ class TransEEnsmallen(SiameseEnsmallen):
             Dimension of the embedding.
         relu_bias: float = 1.0
             Bias to use for the relu.
-            In the TransE paper it is called gamma.
+            In the TransH paper it is called gamma.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
         learning_rate: float = 0.01
@@ -61,7 +61,7 @@ class TransEEnsmallen(SiameseEnsmallen):
         return_dataframe: bool = True,
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding, edge_type_embedding = self._model.fit_transform(
+        node_embedding, mult_edge_type_embedding, bias_edge_type_embedding = self._model.fit_transform(
             graph,
         )
         if return_dataframe:
@@ -69,21 +69,28 @@ class TransEEnsmallen(SiameseEnsmallen):
                 node_embedding,
                 index=graph.get_node_names()
             )
-            edge_type_embedding = pd.DataFrame(
-                edge_type_embedding,
+            mult_edge_type_embedding = pd.DataFrame(
+                mult_edge_type_embedding,
+                index=graph.get_unique_edge_type_names()
+            )
+            bias_edge_type_embedding = pd.DataFrame(
+                bias_edge_type_embedding,
                 index=graph.get_unique_edge_type_names()
             )
 
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
             node_embeddings=node_embedding,
-            edge_type_embeddings=edge_type_embedding,
+            edge_type_embeddings=[
+                mult_edge_type_embedding,
+                bias_edge_type_embedding
+            ]
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "TransE"
+        return "TransH"
 
     @classmethod
     def requires_edge_types(cls) -> bool:

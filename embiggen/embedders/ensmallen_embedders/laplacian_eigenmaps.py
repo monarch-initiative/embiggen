@@ -35,7 +35,6 @@ class LaplacianEigenmapsEnsmallen(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         edges, weights = graph.get_symmetric_normalized_laplacian_coo_matrix()

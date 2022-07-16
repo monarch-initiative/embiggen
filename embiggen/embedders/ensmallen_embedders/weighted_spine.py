@@ -14,6 +14,7 @@ class WeightedSPINE(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         use_edge_weights_as_probabilities: bool = False,
+        verbose: bool = True,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -24,10 +25,13 @@ class WeightedSPINE(EnsmallenEmbedder):
             Dimension of the embedding.
         use_edge_weights_as_probabilities: bool = False
             Whether to treat the weights as probabilities.
+        verbose: bool = True
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
+        self._verbose = verbose
         self._model = models.WeightedSPINE(
             embedding_size=embedding_size,
             use_edge_weights_as_probabilities=use_edge_weights_as_probabilities,
@@ -49,12 +53,11 @@ class WeightedSPINE(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,
-            verbose=verbose,
+            verbose=self._verbose,
         ).T
         if return_dataframe:
             node_embedding = pd.DataFrame(

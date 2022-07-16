@@ -14,6 +14,7 @@ class SPINE(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
+        verbose: bool = True,
         enable_cache: bool = False
     ):
         """Create new SPINE method.
@@ -24,11 +25,14 @@ class SPINE(EnsmallenEmbedder):
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+        verbose: bool = True
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
         self._dtype = dtype
+        self._verbose = verbose
         self._model = models.SPINE(embedding_size=embedding_size)
 
         super().__init__(
@@ -55,13 +59,12 @@ class SPINE(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,
             dtype=self._dtype,
-            verbose=verbose,
+            verbose=self._verbose,
         ).T
         if return_dataframe:
             node_embedding = pd.DataFrame(

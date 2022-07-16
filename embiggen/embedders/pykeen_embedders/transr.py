@@ -17,6 +17,7 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
+        verbose: bool = True,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -49,6 +50,8 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        verbose: bool = True
+            Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
@@ -62,6 +65,7 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
             epochs=epochs,
             batch_size=batch_size,
             training_loop=training_loop,
+            verbose=verbose,
             random_state=random_state,
             enable_cache=enable_cache
         )
@@ -76,13 +80,13 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 scoring_fct_norm=self._scoring_fct_norm,
                 relation_dim=self._relation_dim
             )
-        }
+        )
 
     @classmethod
     def model_name(cls) -> str:

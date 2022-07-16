@@ -1,19 +1,26 @@
-"""Module providing second-order LINE implementation."""
-from typing import Dict, Any, Union
-from ensmallen import Graph
-import numpy as np
+"""Module providing Siamese implementation."""
+from typing import Dict, Any
 import pandas as pd
 from ensmallen import models
+from userinput.utils import must_be_in_set
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
-from embiggen.utils import EmbeddingResult
+from embiggen.utils import abstract_class
 
 
-class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
-    """Class implementing the second-order LINE algorithm."""
+@abstract_class
+class SiameseEnsmallen(EnsmallenEmbedder):
+    """Class implementing the Siamese algorithm."""
+
+    models = {
+        "TransE": models.TransE,
+        "TransH": models.TransH,
+        "Unstructured": models.Unstructured,
+    }
 
     def __init__(
         self,
         embedding_size: int = 100,
+        relu_bias: float = 1.0,
         epochs: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -27,6 +34,9 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
+        relu_bias: float = 1.0
+            Bias to use for the relu.
+            In the Siamese paper it is called gamma.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
         learning_rate: float = 0.01
@@ -41,14 +51,24 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
-        self._verbose = verbose
+        self._kwargs = dict(
+            relu_bias=relu_bias,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay,
+            verbose=verbose,
+        )
 
-        self._model = models.SecondOrderLINE(
+        self._model_name = must_be_in_set(
+            self.model_name(),
+            SiameseEnsmallen.models,
+            "Siamese models"
+        )
+
+        self._model = SiameseEnsmallen.models[self._model_name](
             embedding_size=embedding_size,
-            random_state=random_state
+            random_state=random_state,
+            **self._kwargs
         )
 
         super().__init__(
@@ -61,12 +81,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         """Returns parameters of the model."""
         return dict(
             **super().parameters(),
-            **dict(
-                verbose=self._verbose,
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
+            **self._kwargs,
         )
 
     @classmethod
@@ -77,35 +92,6 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             epochs=1
         )
 
-    def _fit_transform(
-        self,
-        graph: Graph,
-        return_dataframe: bool = True,
-    ) -> EmbeddingResult:
-        """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=self._verbose,
-        )
-        if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
-            )
-
-        return EmbeddingResult(
-            embedding_method_name=self.model_name(),
-            node_embeddings= node_embedding,
-        )
-
-    @classmethod
-    def model_name(cls) -> str:
-        """Returns name of the model."""
-        return "Second-order LINE"
-    
     @classmethod
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
@@ -114,11 +100,6 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
-        return False
-
-    @classmethod
-    def can_use_edge_types(cls) -> bool:
-        """Returns whether the model can optionally use edge types."""
         return False
 
     @classmethod

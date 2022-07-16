@@ -36,6 +36,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         normalize_by_degree: bool = False,
         random_state: int = 42,
         optimizer: str = "sgd",
+        verbose: bool = True,
         use_mirrored_strategy: bool = False,
         enable_cache: bool = False
     ):
@@ -104,6 +105,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             The random state to reproduce the training sequence.
         optimizer: str = "sgd"
             Optimizer to use during the training.
+        verbose: bool = True
+            Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
         enable_cache: bool = False
@@ -163,7 +166,6 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
     def _build_input(
         self,
         graph: Graph,
-        verbose: bool
     ) -> Tuple[np.ndarray]:
         """Returns values to be fed as input into the model.
 
@@ -171,9 +173,6 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         ------------------
         graph: Graph
             The graph to build the model for.
-        verbose: bool
-            Whether to show loading bars.
-            Not used in this context.
         """
         try:
             AUTOTUNE = tf.data.AUTOTUNE

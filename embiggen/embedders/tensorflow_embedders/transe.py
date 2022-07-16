@@ -14,7 +14,7 @@ class TransETensorFlow(Siamese):
         *args
     ):
         """Returns the five input tensors, unchanged."""
-        return args[:-1]
+        return args[:-2]
 
     @classmethod
     def model_name(cls) -> str:
@@ -42,36 +42,31 @@ class TransETensorFlow(Siamese):
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """
+        node_embedding = self.get_layer_weights(
+            "NodeEmbedding",
+            model,
+            drop_first_row=False
+        )
+        edge_type_embedding = self.get_layer_weights(
+            "BiasEdgeTypeEmbedding",
+            model,
+            drop_first_row=graph.has_unknown_edge_types()
+        )
+
         if return_dataframe:
-            result = {
-                layer_name: pd.DataFrame(
-                    self.get_layer_weights(
-                        layer_name,
-                        model,
-                        drop_first_row=drop_first_row
-                    ),
-                    index=names
-                )
-                for layer_name, names, drop_first_row in (
-                    ("node_embeddings", graph.get_node_names(), False),
-                    ("edge_type_embeddings", graph.get_unique_edge_type_names(), graph.has_unknown_edge_types())
-                )
-            }
-        else:
-            result = {
-                layer_name: self.get_layer_weights(
-                    layer_name,
-                    model,
-                    drop_first_row=drop_first_row
-                )
-                for layer_name, drop_first_row in (
-                    ("node_embeddings", False),
-                    ("edge_type_embeddings", graph.has_unknown_edge_types())
-                )
-            }
+            node_embedding = pd.DataFrame(
+                node_embedding,
+                index=graph.get_node_names()
+            )
+            edge_type_embedding = pd.DataFrame(
+                edge_type_embedding,
+                index=graph.get_unique_edge_type_names()
+            )
+
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            **result
+            node_embeddings=node_embedding,
+            edge_type_embeddings=edge_type_embedding
         )
 
     @classmethod

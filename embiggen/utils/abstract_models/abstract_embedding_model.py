@@ -67,7 +67,6 @@ class AbstractEmbeddingModel(AbstractModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Run embedding on the provided graph.
 
@@ -75,8 +74,6 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
-        verbose: bool
-            Whether to show loading bars.
         """
         raise NotImplementedError((
             "The `_fit_transform` method must be implemented "
@@ -87,13 +84,11 @@ class AbstractEmbeddingModel(AbstractModel):
         cache_path="{cache_dir}/{self.model_name()}/{self.library_name()}/{graph.get_name()}/{_hash}.pkl.gz",
         cache_dir="embedding",
         enable_cache_arg_name="self._enable_cache",
-        args_to_ignore=["verbose"]
     )
     def _cached_fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Execute embedding on the provided graph.
 
@@ -103,8 +98,6 @@ class AbstractEmbeddingModel(AbstractModel):
             The graph to run embedding on.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
-        verbose: bool = True
-            Whether to show loading bars.
 
         Returns
         --------------------
@@ -173,7 +166,6 @@ class AbstractEmbeddingModel(AbstractModel):
         result = self._fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )
 
         if not isinstance(result, EmbeddingResult):
@@ -192,7 +184,6 @@ class AbstractEmbeddingModel(AbstractModel):
         repository: Optional[str] = None,
         version: Optional[str] = None,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Execute embedding on the provided graph.
 
@@ -212,8 +203,6 @@ class AbstractEmbeddingModel(AbstractModel):
             from the ensmallen automatic retrieval.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
-        verbose: bool = True
-            Whether to show loading bars.
 
         Returns
         --------------------
@@ -228,5 +217,4 @@ class AbstractEmbeddingModel(AbstractModel):
         return self._cached_fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )

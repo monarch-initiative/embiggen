@@ -32,6 +32,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
+        verbose: bool = True,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -54,6 +55,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        verbose: bool = True
+            Whether to show the loading bar.
         random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
@@ -82,6 +85,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         self._training_loop = training_loop
         self._epochs = epochs
+        self._verbose = verbose
         self._batch_size = batch_size
         self._device = validate_torch_device(device)
 
@@ -100,13 +104,13 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 epochs=self._epochs,
                 batch_size=self._batch_size,
             )
-        }
+        )
 
     @classmethod
     def library_name(cls) -> str:
@@ -167,7 +171,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
         """Return node embedding"""
 
@@ -212,7 +215,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             use_tqdm=True,
             use_tqdm_batch=True,
             tqdm_kwargs=dict(
-                disable=not verbose
+                disable=not self._verbose
             )
         )
 

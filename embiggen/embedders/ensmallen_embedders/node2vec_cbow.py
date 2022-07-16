@@ -86,7 +86,6 @@ class Node2VecCBOWEnsmallen(Node2VecEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            model_name="CBOW",
             embedding_size=embedding_size,
             epochs=epochs,
             clipping_value=clipping_value,
@@ -111,7 +110,8 @@ class Node2VecCBOWEnsmallen(Node2VecEnsmallen):
         """Returns parameters for smoke test."""
         removed = [
             "change_node_type_weight",
-            "change_edge_type_weight"
+            "change_edge_type_weight",
+            "alpha"
         ]
         return dict(
             **{
@@ -125,11 +125,3 @@ class Node2VecCBOWEnsmallen(Node2VecEnsmallen):
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "Node2Vec CBOW"
-
-    @classmethod
-    def requires_node_types(cls) -> bool:
-        return False
-
-    @classmethod
-    def requires_edge_types(cls) -> bool:
-        return False

@@ -12,11 +12,10 @@ from tensorflow.keras.constraints import \
 from tensorflow.keras.layers import \
     Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
-    Add,
-    GlobalAveragePooling1D,
     Input
 )
 from tensorflow.keras.models import Model
+from embiggen.layers.tensorflow import FlatEmbedding
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.sequences.tensorflow_sequences import SiameseSequence
 from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
@@ -38,6 +37,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
+        verbose: bool = True,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -71,6 +71,8 @@ class Siamese(TensorFlowEmbedder):
             Whether to use mirrored strategy.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
+        verbose: bool = True
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -88,42 +90,41 @@ class Siamese(TensorFlowEmbedder):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
+            verbose=verbose,
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache,
             random_state=random_state
         )
 
-    @classmethod
-    def smoke_test_parameters(cls) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            **TensorFlowEmbedder.smoke_test_parameters(),
-        )
-
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 relu_bias = self._relu_bias
             )
-        }
+        )
 
     def _build_model(self, graph: Graph):
         """Return Siamese model."""
         # Creating the inputs layers
         inputs = [
-            Input((1,), dtype=tf.int32)
-            for _ in range(4)
+            Input((1,), dtype=tf.int32, name=node_name)
+            for node_name in (
+                "Sources",
+                "Destinations",
+                "Corrupted Sources",
+                "Corrupted Destinations",
+            )
         ]
 
-        edge_types = Input((1,), dtype=tf.int32)
+        edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
 
         # Creating the embedding layer for the contexts
         node_embedding_layer = Embedding(
             input_dim=graph.get_number_of_nodes(),
             output_dim=self._embedding_size,
             input_length=1,
-            name="node_embeddings"
+            name="NodeEmbedding"
         )
 
         # Get the node embedding
@@ -132,52 +133,15 @@ class Siamese(TensorFlowEmbedder):
             for node_input in inputs
         ]
 
-        if self.requires_node_types():
-            max_node_types = graph.get_maximum_multilabel_count()
-            multilabel = graph.has_multilabel_node_types()
-            unknown_node_types = graph.has_unknown_node_types()
-            node_types_offset = int(multilabel or unknown_node_types)
-            node_type_inputs = [
-                Input((max_node_types,), dtype=tf.int32)
-                for _ in range(4)
-            ]
-
-            node_type_embedding_layer = Embedding(
-                input_dim=graph.get_number_of_node_types() + node_types_offset,
-                output_dim=self._embedding_size,
-                input_length=max_node_types,
-                name="node_type_embeddings",
-                mask_zero=multilabel or unknown_node_types
-            )
-
-            node_embeddings = [
-                Add()([
-                    GlobalAveragePooling1D()(
-                        node_type_embedding_layer(node_type_input)
-                    ),
-                    node_embedding
-                ])
-                for node_type_input, node_embedding in zip(
-                    node_type_inputs,
-                    node_embeddings
-                )
-            ]
-        else:
-            node_type_inputs = []
-
-        inputs.extend(node_type_inputs)
         inputs.append(edge_types)
 
-        edge_types_number = graph.get_number_of_edge_types()
-        unknown_edge_types = graph.has_unknown_edge_types()
-        edge_types_offset = int(unknown_edge_types)
-        edge_type_embedding = GlobalAveragePooling1D()(Embedding(
-            input_dim=edge_types_number,
-            output_dim=self._embedding_size,
-            input_length=1 + edge_types_offset,
-            mask_zero=unknown_edge_types,
-            name="edge_type_embeddings",
-        )(edge_types))
+        edge_type_embedding = FlatEmbedding(
+            vocabulary_size=graph.get_number_of_edge_types(),
+            dimension=self._embedding_size,
+            input_length=1,
+            mask_zero=graph.has_unknown_edge_types(),
+            name="BiasEdgeTypeEmbedding",
+        )(edge_types)
 
         (
             srcs_embedding,
@@ -188,7 +152,8 @@ class Siamese(TensorFlowEmbedder):
         ) = self._build_output(
             *node_embeddings,
             edge_type_embedding,
-            edge_types
+            edge_types,
+            graph
         )
 
         loss = K.relu(self._relu_bias + tf.norm(
@@ -219,7 +184,8 @@ class Siamese(TensorFlowEmbedder):
         not_srcs_embedding: tf.Tensor,
         not_dsts_embedding: tf.Tensor,
         edge_type_embedding: tf.Tensor,
-        edge_type_input: Optional[Input]
+        edge_type_input: Optional[Input],
+        graph: Graph
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Returns the five input tensors, arbitrarily changed.
 
@@ -239,6 +205,9 @@ class Siamese(TensorFlowEmbedder):
             Input of the edge types. This is not None
             only when there is one such input in the
             model, when edge types are requested.
+        graph: Graph
+            Graph whose structure is to be used to build
+            the model.
         """
         raise NotImplementedError(
             "The method `_build_output` should be implemented in the child "
@@ -259,7 +228,6 @@ class Siamese(TensorFlowEmbedder):
     def _build_input(
         self,
         graph: Graph,
-        verbose: bool
     ) -> Tuple[np.ndarray]:
         """Returns values to be fed as input into the model.
 
@@ -267,9 +235,6 @@ class Siamese(TensorFlowEmbedder):
         ------------------
         graph: Graph
             The graph to build the model for.
-        verbose: bool
-            Whether to show loading bars.
-            Not used in this context.
         """
         try:
             AUTOTUNE = tf.data.AUTOTUNE
@@ -279,6 +244,7 @@ class Siamese(TensorFlowEmbedder):
         sequence = SiameseSequence(
             graph=graph,
             batch_size=self._batch_size,
+            return_edge_types=self.requires_edge_types()
         )
         return (
             sequence.into_dataset()

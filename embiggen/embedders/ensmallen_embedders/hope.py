@@ -19,6 +19,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         embedding_size: int = 100,
         metric: str = "Neighbours Intersection size",
         root_node_name: Optional[str] = None,
+        verbose: bool = True,
         enable_cache: bool = False
     ):
         """Create new HOPE method.
@@ -43,6 +44,8 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
+        verbose: bool = True
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -63,6 +66,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
 
         self._metric = metric
         self._root_node_name = root_node_name
+        self._verbose = verbose
 
         super().__init__(
             embedding_size=embedding_size,
@@ -71,13 +75,14 @@ class HOPEEnsmallen(EnsmallenEmbedder):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 metric=self._metric,
+                verbose=self._verbose,
                 root_node_name=self._root_node_name
             )
-        }
+        )
 
     @classmethod
     def get_available_metrics(cls) -> List[str]:
@@ -101,7 +106,6 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         matrix = None
@@ -127,7 +131,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
                     src_node_name=self._root_node_name,
                     compute_predecessors=True
                 ),
-                verbose=verbose
+                verbose=self._verbose
             )
         elif self._metric == "Ancestors size":
             matrix = graph.get_shared_ancestors_size_adjacency_matrix(
@@ -135,7 +139,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
                     src_node_name=self._root_node_name,
                     compute_predecessors=True
                 ),
-                verbose=verbose
+                verbose=self._verbose
             )
         elif self._metric == "Adamic-Adar":
             edges, weights = graph.get_adamic_adar_coo_matrix()

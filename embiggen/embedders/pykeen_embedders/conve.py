@@ -25,6 +25,7 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
+        verbose: bool = True,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -76,6 +77,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        verbose: bool = True
+            Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
@@ -97,12 +100,13 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             epochs=epochs,
             batch_size=batch_size,
             training_loop=training_loop,
+            verbose=verbose,
             random_state=random_state,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 input_channels=self._input_channels,
@@ -116,7 +120,7 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
                 feature_map_dropout=self._feature_map_dropout,
                 apply_batch_normalization=self._apply_batch_normalization,
             )
-        }
+        )
 
     @classmethod
     def model_name(cls) -> str:

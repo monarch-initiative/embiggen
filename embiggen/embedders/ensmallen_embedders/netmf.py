@@ -80,7 +80,6 @@ class NetMFEnsmallen(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         edges, weights = graph.get_log_normalized_cooccurrence_coo_matrix(

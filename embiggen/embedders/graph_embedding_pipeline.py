@@ -15,7 +15,6 @@ def embed_graph(
     library_name: Optional[str] = None,
     smoke_test: bool = False,
     return_dataframe: bool = True,
-    verbose: bool = True,
     **kwargs: Dict
 ) -> EmbeddingResult:
     """Return embedding of the provided graph.
@@ -45,14 +44,11 @@ def embed_graph(
         Path where to store the cache if it is enabled.
     return_dataframe: bool = True
         Whether to return a pandas DataFrame with the embedding.
-    verbose: bool
-        Whether to show loading bars.
     **kwargs: Dict
         Kwargs to forward to the embedding model creation.
         If a model name was NOT provided, an exception will
         be raised as it is unclear how to behave.
     """
-
     graph = next(iterate_graphs(
         graphs=graph,
         repositories=repository,
@@ -100,7 +96,6 @@ def embed_graph(
         return embedding_model.fit_transform(
             graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )
     except Exception as e:
         raise ValueError(

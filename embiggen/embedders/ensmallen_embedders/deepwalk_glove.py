@@ -1,8 +1,8 @@
 """Module providing DeepWalk GloVe model implementation."""
 from typing import Optional, Dict, Any
-from embiggen.embedders.ensmallen_embedders.glove import GloVeEnsmallen
+from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
-class DeepWalkGloVeEnsmallen(GloVeEnsmallen):
+class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
     """Class providing DeepWalk GloVe implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -83,7 +83,8 @@ class DeepWalkGloVeEnsmallen(GloVeEnsmallen):
             "return_weight",
             "explore_weight",
             "change_node_type_weight",
-            "change_edge_type_weight"
+            "change_edge_type_weight",
+            "number_of_negative_samples"
         ]
         return dict(
             **{

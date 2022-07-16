@@ -15,6 +15,7 @@ class SiameseSequence(Sequence):
         self,
         graph: Graph,
         batch_size: int = 2**10,
+        return_edge_types: bool = False,
         random_state: int = 42
     ):
         """Create new SiameseSequence object.
@@ -25,10 +26,13 @@ class SiameseSequence(Sequence):
             The graph from which to sample the triples.
         batch_size: int = 2**10,
             The batch size to use.
+        return_edge_types: bool = False
+            Whether to return the edge types.
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
         self._graph = graph
+        self._return_edge_types = return_edge_types
         self._random_state = random_state
         self._current_index = 0
         super().__init__(
@@ -61,7 +65,7 @@ class SiameseSequence(Sequence):
                     shape=(self._batch_size, ),
                     dtype=tf.uint32
                 )
-                for _ in range(5)
+                for _ in range(4 + int(self._return_edge_types))
             ]),)
         )
 
@@ -74,8 +78,14 @@ class SiameseSequence(Sequence):
             Index corresponding to batch to be returned.
         """
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
-        return (self._graph.get_siamese_mini_batch(
-            random_state,
-            batch_size=self.batch_size,
-            use_scale_free_distribution=True
-        ),)
+        return (
+            self._graph.get_siamese_mini_batch_with_edge_types(
+                random_state,
+                batch_size=self.batch_size,
+            )
+            if self._return_edge_types
+            else self._graph.get_siamese_mini_batch(
+                random_state,
+                batch_size=self.batch_size,
+            ),
+        )

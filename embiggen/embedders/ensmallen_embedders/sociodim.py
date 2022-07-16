@@ -2,7 +2,6 @@
 from typing import Dict, Any
 from ensmallen import Graph
 import pandas as pd
-import numpy as np
 from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
@@ -53,7 +52,6 @@ class SocioDimEnsmallen(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         if self._use_sparse_reduce:

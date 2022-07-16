@@ -1,8 +1,8 @@
 """Module providing Node2Vec GloVe model implementation."""
 from typing import Optional, Dict, Any
-from embiggen.embedders.ensmallen_embedders.glove import GloVeEnsmallen
+from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
 
-class Node2VecGloVeEnsmallen(GloVeEnsmallen):
+class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
     """Class providing Node2Vec GloVe implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -23,7 +23,7 @@ class Node2VecGloVeEnsmallen(GloVeEnsmallen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new Node2Vec GloVe model.
 
         Parameters
         --------------------------
@@ -99,7 +99,8 @@ class Node2VecGloVeEnsmallen(GloVeEnsmallen):
         """Returns parameters for smoke test."""
         removed = [
             "change_node_type_weight",
-            "change_edge_type_weight"
+            "change_edge_type_weight",
+            "number_of_negative_samples"
         ]
         return dict(
             **{

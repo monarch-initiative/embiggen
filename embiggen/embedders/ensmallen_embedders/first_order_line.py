@@ -1,7 +1,6 @@
 """Module providing first-order LINE implementation."""
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
 from ensmallen import models
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
@@ -18,6 +17,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         random_state: int = 42,
+        verbose: bool = True,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -34,15 +34,21 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         random_state: int = 42
             Random state to reproduce the embeddings.
+        verbose: bool = True
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
+        self._kwargs = dict(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay,
+            verbose=verbose
+        )
 
         self._model = models.FirstOrderLINE(
+            **self._kwargs,
             embedding_size=embedding_size,
             random_state=random_state
         )
@@ -55,14 +61,10 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
-            **dict(
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
-        }
+            **self._kwargs,
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
@@ -76,15 +78,10 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
-            graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=verbose,
+            graph
         )
         if return_dataframe:
             node_embedding = pd.DataFrame(

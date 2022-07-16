@@ -70,7 +70,6 @@ class DeepWalkCBOWEnsmallen(Node2VecEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            model_name="CBOW",
             embedding_size=embedding_size,
             epochs=epochs,
             clipping_value=clipping_value,
@@ -95,7 +94,8 @@ class DeepWalkCBOWEnsmallen(Node2VecEnsmallen):
             "return_weight",
             "explore_weight",
             "change_node_type_weight",
-            "change_edge_type_weight"
+            "change_edge_type_weight",
+            "alpha"
         ]
         return dict(
             **{
@@ -109,11 +109,3 @@ class DeepWalkCBOWEnsmallen(Node2VecEnsmallen):
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "DeepWalk CBOW"
-
-    @classmethod
-    def requires_node_types(cls) -> bool:
-        return False
-
-    @classmethod
-    def requires_edge_types(cls) -> bool:
-        return False

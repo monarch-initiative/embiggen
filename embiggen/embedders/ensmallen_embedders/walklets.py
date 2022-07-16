@@ -1,11 +1,12 @@
-"""Module providing WalkletsSkipGram model implementation."""
+"""Module providing WalkletsEnsmallen model implementation."""
 from typing import Optional, Dict, Any
-from embiggen.embedders.ensmallen_embedders.walklets import WalkletsEnsmallen
+from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
+from embiggen.utils.abstract_models.abstract_model import abstract_class
 
-
-class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
-    """Class providing WalkletsSkipGram implemeted in Rust from Ensmallen."""
-
+@abstract_class
+class WalkletsEnsmallen(Node2VecEnsmallen):
+    """Class providing WalkletsEnsmallen implemeted in Rust from Ensmallen."""
+    
     def __init__(
         self,
         embedding_size: int = 100,
@@ -20,6 +21,7 @@ class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        alpha: float = 0.75,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
         normalize_learning_rate_by_degree: Optional[bool] = False,
@@ -70,6 +72,8 @@ class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        alpha: float = 0.75
+            Alpha parameter for GloVe's loss.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -86,7 +90,7 @@ class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            embedding_size=embedding_size,
+            embedding_size=embedding_size // window_size,
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
@@ -98,6 +102,7 @@ class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            alpha=alpha,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
@@ -105,21 +110,17 @@ class WalkletsSkipGramEnsmallen(WalkletsEnsmallen):
             random_state=random_state,
             enable_cache=enable_cache
         )
-
+    
     def parameters(self) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        removed = [
-            "alpha",
-        ]
-        return dict(
-            **{
-                key: value
-                for key, value in super().parameters().items()
-                if key not in removed
-            }
-        )
+        """Returns parameters of the model."""
+        parameters = super().parameters()
+        parameters["embedding_size"] = parameters["embedding_size"] * parameters["window_size"]
+        return parameters
 
     @classmethod
-    def model_name(cls) -> str:
-        """Returns name of the model."""
-        return "Walklets SkipGram"
+    def requires_node_types(cls) -> bool:
+        return False
+
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        return False

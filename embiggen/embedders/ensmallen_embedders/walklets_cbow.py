@@ -1,9 +1,9 @@
 """Module providing WalkletsCBOW model implementation."""
 from typing import Optional, Dict, Any
-from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
+from embiggen.embedders.ensmallen_embedders.walklets import WalkletsEnsmallen
 
 
-class WalkletsCBOWEnsmallen(Node2VecEnsmallen):
+class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
     """Class providing WalkletsCBOW implemeted in Rust from Ensmallen."""
 
     def __init__(
@@ -86,8 +86,7 @@ class WalkletsCBOWEnsmallen(Node2VecEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            model_name="WalkletsCBOW",
-            embedding_size=embedding_size // window_size,
+            embedding_size=embedding_size,
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
@@ -106,22 +105,21 @@ class WalkletsCBOWEnsmallen(Node2VecEnsmallen):
             random_state=random_state,
             enable_cache=enable_cache
         )
-    
+
     def parameters(self) -> Dict[str, Any]:
-        """Returns parameters of the model."""
-        parameters = super().parameters()
-        parameters["embedding_size"] = parameters["embedding_size"] * parameters["window_size"]
-        return parameters
+        """Returns parameters for smoke test."""
+        removed = [
+            "alpha",
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
+        )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "Walklets CBOW"
-
-    @classmethod
-    def requires_node_types(cls) -> bool:
-        return False
-
-    @classmethod
-    def requires_edge_types(cls) -> bool:
-        return False

@@ -38,7 +38,6 @@ class TestNodeEmbeddingPipeline(TestCase):
                 repository=repository,
                 embedding_model=row.model_name,
                 library_name=row.library_name,
-                verbose=False,
                 smoke_test=True
             )
 
@@ -56,7 +55,6 @@ class TestNodeEmbeddingPipeline(TestCase):
                 graph_name,
                 repository=repository,
                 embedding_model="HOPE",
-                verbose=False,
                 metric=metric,
                 root_node_name=root_node_name,
                 embedding_size=5

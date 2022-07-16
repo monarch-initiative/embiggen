@@ -14,15 +14,21 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     MODELS = {
-        "CBOW": models.CBOW,
-        "SkipGram": models.SkipGram,
-        "WalkletsCBOW": models.WalkletsCBOW,
-        "WalkletsSkipGram": models.WalkletsSkipGram,
+        "DeepWalk CBOW": models.CBOW,
+        "DeepWalk SkipGram": models.SkipGram,
+        "DeepWalk GloVe": models.GloVe,
+        "Node2Vec CBOW": models.CBOW,
+        "Node2Vec SkipGram": models.SkipGram,
+        "Node2Vec GloVe": models.GloVe,
+        "Walklets CBOW": models.WalkletsCBOW,
+        "Walklets SkipGram": models.WalkletsSkipGram,
+        "Walklets GloVe": models.WalkletsGloVe,
     }
 
     def __init__(
         self,
-        model_name: str,
+        embedding_size: int = 100,
+        random_state: int = 42,
         enable_cache: bool = False,
         **model_kwargs: Dict
     ):
@@ -30,23 +36,24 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
 
         Parameters
         --------------------------
-        model_name: str
-            The ensmallen graph embedding model to use.
-            Can either be the SkipGram, WalkletsSkipGram, CBOW and WalkletsCBOW models.
+        embedding_size: int = 100
+            Dimension of the embedding.
+        random_state: int = 42
+            The random state to reproduce the training sequence.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         model_kwargs: Dict
             Further parameters to forward to the model.
         """
-        model_name = must_be_in_set(model_name, self.MODELS.keys(), "model name")
+        model_name = must_be_in_set(self.model_name(), self.MODELS.keys(), "model name")
         self._model_kwargs = model_kwargs
         self._model = Node2VecEnsmallen.MODELS[model_name](**model_kwargs)
 
         super().__init__(
-            embedding_size=model_kwargs["embedding_size"],
+            embedding_size=embedding_size,
             enable_cache=enable_cache,
-            random_state=model_kwargs["random_state"]
+            random_state=random_state
         )
 
     @classmethod
@@ -59,21 +66,19 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
             walk_length=4,
             iterations=1,
             max_neighbours=10,
-            number_of_negative_samples=1
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **self._model_kwargs
-        }
+        )
 
     def _fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embeddings = self._model.fit_transform(graph)
@@ -132,3 +137,11 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
     def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True
+
+    @classmethod
+    def requires_node_types(cls) -> bool:
+        return False
+
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        return False
