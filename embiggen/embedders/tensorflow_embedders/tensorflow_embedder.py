@@ -28,7 +28,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         epochs: int = 10,
         batch_size: int = 2**10,
         optimizer: str = "nadam",
-        verbose: bool = True,
+        verbose: bool = False,
         use_mirrored_strategy: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
@@ -57,7 +57,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Batch size to use during the training.
         optimizer: str = "nadam"
             Optimizer to use during the training.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.

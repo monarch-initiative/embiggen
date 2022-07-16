@@ -36,7 +36,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 2,
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -70,7 +70,7 @@ class Siamese(TensorFlowEmbedder):
             Whether to use mirrored strategy.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to

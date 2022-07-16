@@ -36,7 +36,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         normalize_by_degree: bool = False,
         random_state: int = 42,
         optimizer: str = "sgd",
-        verbose: bool = True,
+        verbose: bool = False,
         use_mirrored_strategy: bool = False,
         enable_cache: bool = False
     ):
@@ -105,7 +105,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             The random state to reproduce the training sequence.
         optimizer: str = "sgd"
             Optimizer to use during the training.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.

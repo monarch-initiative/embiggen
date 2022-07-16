@@ -31,7 +31,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         activation: str = "sigmoid",
         loss: str = "binary_crossentropy",
         optimizer: str = "nadam",
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -75,7 +75,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             while for the HOPE models this is an Mean squared error.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show the loading bar while training the model.
         enable_cache: bool = False
             Whether to enable the cache, that is to
