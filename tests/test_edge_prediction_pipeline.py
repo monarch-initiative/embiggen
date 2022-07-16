@@ -7,6 +7,7 @@ from embiggen import get_available_models_for_edge_prediction, get_available_mod
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
 from embiggen.embedding_transformers import EdgeTransformer
+from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import PerceptronEdgePrediction
 from embiggen.embedders import SPINE
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.linqs import Cora, get_words_data
@@ -215,7 +216,7 @@ class TestEvaluateEdgePrediction(TestCase):
 
             edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
-                models="Perceptron",
+                models=PerceptronEdgePrediction(edge_embeddings="CosineSimilarity"),
                 node_features=embedding_model,
                 evaluation_schema="Connected Monte Carlo",
                 graphs=graph_name().remove_singleton_nodes(),

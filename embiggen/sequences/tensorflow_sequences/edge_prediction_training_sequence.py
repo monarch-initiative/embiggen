@@ -56,10 +56,6 @@ class EdgePredictionTrainingSequence(Sequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
-        if not graph.has_edges():
-            raise ValueError(
-                f"An empty instance of graph {graph.get_name()} was provided!"
-            )
         self._graph = graph
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
