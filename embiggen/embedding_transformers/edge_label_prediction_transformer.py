@@ -67,8 +67,6 @@ class EdgeLabelPredictionTransformer:
         graph: Graph,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
         behaviour_for_unknown_edge_labels: Optional[str] = None,
-        shuffle: bool = False,
-        random_state: int = 42
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Return edge embedding for given graph using provided method.
 
@@ -89,11 +87,6 @@ class EdgeLabelPredictionTransformer:
             By default, we drop these edges.
             If the behaviour has not been specified and left to None,
             a warning will be raised to notify the user of this uncertainty.
-        shuffle: bool = False
-            Whether to shuffle the labels.
-            In some models, this is necessary.
-        random_state: int = 42,
-            The random state to use to shuffle the labels.
 
         Raises
         --------------------------
@@ -196,12 +189,5 @@ class EdgeLabelPredictionTransformer:
                 edge_embeddings = edge_embeddings[graph.get_edges_with_known_edge_types_mask()]
             else:
                 edge_labels = graph.get_directed_edge_type_ids()
-
-        if shuffle:
-            numpy_random_state = np.random.RandomState(  # pylint: disable=no-member
-                seed=random_state
-            )
-            indices = numpy_random_state.permutation(len(edge_labels))
-            edge_embeddings, edge_labels = edge_embeddings[indices], edge_labels[indices]
 
         return edge_embeddings, edge_labels

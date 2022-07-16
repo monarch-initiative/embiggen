@@ -187,7 +187,6 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             graph=graph,
             edge_features=edge_features,
             behaviour_for_unknown_edge_labels="drop",
-            random_state=self._random_state
         ))
 
     def _predict_proba(

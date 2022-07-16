@@ -203,7 +203,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
-
         non_zero_edge_types = sum([
             1
             for count in graph.get_edge_type_names_counts_hashmap().values()

@@ -20,7 +20,7 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
-        verbose: bool = True,
+        verbose: bool = False,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -59,7 +59,7 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
