@@ -52,12 +52,9 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         graph = self._graph.remove_singleton_nodes()
         node_features = SPINE(embedding_size=10).fit_transform(graph)
         for model_name in tqdm(df.model_name, desc="Testing model APIs"):
-            model_class = AbstractNodeLabelPredictionModel.get_model_from_library(
+            model = AbstractNodeLabelPredictionModel.get_model_from_library(
                 model_name
-            )
-            model = model_class(
-                **model_class.smoke_test_parameters(),
-            )
+            )().into_smoke_test()
             model.fit(graph, node_features=node_features)
             model.predict(graph, node_features=node_features)
             model.predict_proba(graph, node_features=node_features)

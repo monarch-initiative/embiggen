@@ -135,6 +135,13 @@ class AbstractModel(Hashable):
             random_state=self._random_state
         )
 
+    def into_smoke_test(self) -> "Self":
+        """Creates new instance with smoke test parameters."""
+        return self.__class__(**{
+            **self.parameters(),
+            **self.smoke_test_parameters()
+        })
+
     @classmethod
     def requires_edge_weights(cls) -> bool:
         """Returns whether the model requires edge weights."""

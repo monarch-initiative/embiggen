@@ -33,19 +33,19 @@ class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         """Create the Gradient Boosting for node label Prediction."""
         self._loss=loss
         self._learning_rate=learning_rate
-        self._n_estimators=n_estimators,
+        self._n_estimators=n_estimators
         self._criterion=criterion
-        self._min_samples_split=min_samples_split,
-        self._min_samples_leaf=min_samples_leaf,
-        self._min_weight_fraction_leaf=min_weight_fraction_leaf,
+        self._min_samples_split=min_samples_split
+        self._min_samples_leaf=min_samples_leaf
+        self._min_weight_fraction_leaf=min_weight_fraction_leaf
         self._max_depth=max_depth
         self._init=init
-        self._subsample=subsample,
-        self._max_features=max_features,
-        self._max_leaf_nodes=max_leaf_nodes,
-        self._min_impurity_decrease=min_impurity_decrease,
+        self._subsample=subsample
+        self._max_features=max_features
+        self._max_leaf_nodes=max_leaf_nodes
+        self._min_impurity_decrease=min_impurity_decrease
         self._warm_start=warm_start
-        self._validation_fraction=validation_fraction,
+        self._validation_fraction=validation_fraction
         self._n_iter_no_change=n_iter_no_change
         self._tol=tol
         self._ccp_alpha=ccp_alpha
@@ -68,29 +68,27 @@ class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
-        return {
+        return dict(
             **super().parameters(),
-            **dict(
-                loss=self._loss,
-                learning_rate=self._learning_rate,
-                n_estimators=self._n_estimators,
-                criterion=self._criterion,
-                min_samples_split=self._min_samples_split,
-                min_samples_leaf=self._min_samples_leaf,
-                min_weight_fraction_leaf=self._min_weight_fraction_leaf,
-                max_depth=self._max_depth,
-                init=self._init,
-                subsample=self._subsample,
-                max_features=self._max_features,
-                max_leaf_nodes=self._max_leaf_nodes,
-                min_impurity_decrease=self._min_impurity_decrease,
-                warm_start=self._warm_start,
-                validation_fraction=self._validation_fraction,
-                n_iter_no_change=self._n_iter_no_change,
-                tol=self._tol,
-                ccp_alpha=self._ccp_alpha
-            )
-        }
+            loss=self._loss,
+            learning_rate=self._learning_rate,
+            n_estimators=self._n_estimators,
+            criterion=self._criterion,
+            min_samples_split=self._min_samples_split,
+            min_samples_leaf=self._min_samples_leaf,
+            min_weight_fraction_leaf=self._min_weight_fraction_leaf,
+            max_depth=self._max_depth,
+            init=self._init,
+            subsample=self._subsample,
+            max_features=self._max_features,
+            max_leaf_nodes=self._max_leaf_nodes,
+            min_impurity_decrease=self._min_impurity_decrease,
+            warm_start=self._warm_start,
+            validation_fraction=self._validation_fraction,
+            n_iter_no_change=self._n_iter_no_change,
+            tol=self._tol,
+            ccp_alpha=self._ccp_alpha
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:

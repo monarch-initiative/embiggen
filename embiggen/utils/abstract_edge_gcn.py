@@ -362,28 +362,29 @@ class AbstractEdgeGCN(AbstractGCN):
             edge_metrics = None
 
         edge_feature_inputs = []
-        if edge_features is not None:
-            edge_feature_names = self._edge_feature_names
-            if edge_feature_names is None:
-                edge_feature_names = [
-                    f"{number_to_ordinal(i+1)}EdgeFeature"
-                    for i in range(len(edge_features))
-                ]
-            if len(edge_feature_names) != len(edge_features):
-                raise ValueError(
-                    f"You have provided {len(edge_feature_names)} "
-                    f"edge feature names but you have provided {len(edge_features)} "
-                    "edge features to the model."
-                )
-            for edge_feature, feature_name in zip(edge_features, edge_feature_names):
-                feature_names.append(feature_name)
-                edge_feature_input = Input(
-                    shape=edge_feature.shape[1:],
-                    batch_size=nodes_number,
-                    name=feature_name,
-                )
-                edge_feature_inputs.append(edge_feature_input)
-                source_and_destination_features.append(edge_feature_input)
+        if edge_features is None:
+            edge_features = []
+        edge_feature_names = self._edge_feature_names
+        if edge_feature_names is None:
+            edge_feature_names = [
+                f"{number_to_ordinal(i+1)}EdgeFeature"
+                for i in range(len(edge_features))
+            ]
+        if len(edge_feature_names) != len(edge_features):
+            raise ValueError(
+                f"You have provided {len(edge_feature_names)} "
+                f"edge feature names but you have provided {len(edge_features)} "
+                "edge features to the model."
+            )
+        for edge_feature, feature_name in zip(edge_features, edge_feature_names):
+            feature_names.append(feature_name)
+            edge_feature_input = Input(
+                shape=edge_feature.shape[1:],
+                batch_size=nodes_number,
+                name=feature_name,
+            )
+            edge_feature_inputs.append(edge_feature_input)
+            source_and_destination_features.append(edge_feature_input)
 
         ffnn_outputs = []
 

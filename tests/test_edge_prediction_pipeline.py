@@ -1,5 +1,4 @@
 """Unit test class for GraphTransformer objects."""
-from tabnanny import verbose
 from tqdm.auto import tqdm
 from unittest import TestCase
 import numpy as np

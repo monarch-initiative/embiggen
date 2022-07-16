@@ -218,6 +218,11 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_binary_prediction_task = non_zero_edge_types == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
 
+        if self._is_multilabel_prediction_task:
+            raise ValueError(
+                "Currently we do not support multi-label edge prediction."
+            )
+
         super().fit(
             graph=graph,
             support=support,
