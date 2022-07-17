@@ -6,7 +6,7 @@ from embiggen.edge_label_prediction import edge_label_prediction_evaluation
 from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 from embiggen.utils import AbstractEmbeddingModel
-from ensmallen.datasets.kgobo import PDUMDV
+from ensmallen.datasets.kgobo import PDUMDV, CIO
 from embiggen.embedders import SPINE
 
 
@@ -22,6 +22,9 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
         df = get_available_models_for_edge_label_prediction()
         graph = PDUMDV().remove_singleton_nodes()
         feature = SPINE(embedding_size=5)
+        red = graph.set_all_edge_types("red")
+        blue = CIO().remove_singleton_nodes().set_all_edge_types("blue")
+        binary_graph = red | blue
         for evaluation_schema in AbstractEdgeLabelPredictionModel.get_available_evaluation_schemas():
             if "Stratified" not in evaluation_schema:
                 # TODO! properly test this!
@@ -33,40 +36,60 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                 node_features=feature,
                 models=df.model_name,
                 library_names=df.library_name,
-                graphs=graph,
+                graphs=[graph, binary_graph],
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema=evaluation_schema,
                 verbose=True,
                 smoke_test=True
             )
         self.assertEqual(holdouts.shape[0],
-                         self._number_of_holdouts*2*df.shape[0])
+                         self._number_of_holdouts*2*2*df.shape[0])
 
     def test_edge_label_prediction_models_apis(self):
         df = get_available_models_for_edge_label_prediction()
         graph = PDUMDV().remove_singleton_nodes()
-        node_features = SPINE(embedding_size=10).fit_transform(graph)
+        red = graph.set_all_edge_types("red")
+        blue = CIO().remove_singleton_nodes().set_all_edge_types("blue")
+        binary_graph = red | blue
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
             leave=False,
         )
-        for model_name in bar:
-            bar.set_description(
-                f"Testing API of {model_name}")
-            model_class = AbstractEdgeLabelPredictionModel.get_model_from_library(model_name)
-            model = model_class()
-            use_edge_metrics = "use_edge_metrics" in model.parameters()
-            model = model_class(
-                **{
-                    **model_class.smoke_test_parameters(),
-                    **dict(use_edge_metrics=use_edge_metrics)
-                }
+        for g in (graph, binary_graph):
+            node_features = SPINE(embedding_size=10).fit_transform(g)
+            edge_features=np.random.uniform(
+                size=(g.get_number_of_directed_edges(), 5)
             )
+            for ef in (edge_features, None):
+                for model_name in bar:
+                    bar.set_description(
+                        f"Testing API of {model_name}")
+                    model_class = AbstractEdgeLabelPredictionModel.get_model_from_library(model_name)
+                    model = model_class()
+                    use_edge_metrics = "use_edge_metrics" in model.parameters()
+                    model = model_class(
+                        **{
+                            **model_class.smoke_test_parameters(),
+                            **dict(use_edge_metrics=use_edge_metrics)
+                        }
+                    )
 
-            model.fit(graph, node_features=node_features)
-            model.predict(graph, node_features=node_features)
-            model.predict_proba(graph, node_features=node_features)
+                    model.fit(
+                        g,
+                        node_features=node_features,
+                        edge_features=ef
+                    )
+                    model.predict(
+                        g,
+                        node_features=node_features,
+                        edge_features=ef
+                    )
+                    model.predict_proba(
+                        g,
+                        node_features=node_features,
+                        edge_features=ef
+                    )
 
     def test_evaluate_edge_label_prediction_with_node_types_features(self):
         df = get_available_models_for_edge_label_prediction()

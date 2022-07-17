@@ -1,5 +1,7 @@
 """Test to validate that the model GloVe works properly with graph walks."""
 from unittest import TestCase
+
+import pytest
 from embiggen.embedders import embed_graph, HOPEEnsmallen
 from ensmallen.datasets.kgobo import CIO
 from embiggen import get_available_models_for_node_embedding
@@ -45,6 +47,26 @@ class TestNodeEmbeddingPipeline(TestCase):
         """Test that embed pipeline works fine in SPINE."""
         graph_name = "CIO"
         repository="kgobo"
+
+        with pytest.raises(ValueError):
+            embed_graph(
+                graph_name,
+                repository=repository,
+                embedding_model="HOPE",
+                metric="Jaccard",
+                root_node_name="Hallo!",
+                embedding_size=5
+            )
+        
+        with pytest.raises(ValueError):
+            embed_graph(
+                graph_name,
+                repository=repository,
+                embedding_model="HOPE",
+                metric="Ancestors Jaccard",
+                root_node_name=None,
+                embedding_size=5
+            )
 
         for metric in HOPEEnsmallen.get_available_metrics():
             if "ancestor" in metric.lower():

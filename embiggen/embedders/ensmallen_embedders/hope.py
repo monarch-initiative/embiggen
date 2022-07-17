@@ -146,11 +146,6 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         elif self._metric == "Adjacency":
             edges, weights = graph.get_directed_edge_node_ids(), np.ones(
                 graph.get_number_of_directed_edges())
-        else:
-            raise NotImplementedError(
-                f"The provided metric {self._metric} "
-                "is not currently supported."
-            )
 
         if matrix is None:
             matrix = coo_matrix(

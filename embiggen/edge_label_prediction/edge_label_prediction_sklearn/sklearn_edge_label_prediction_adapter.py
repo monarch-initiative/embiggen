@@ -114,7 +114,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             )
             if edge_features is not None:
                 edge_features = np.hstack([
-                    edge_features,
+                    *edge_features,
                     edge_metrics
                 ])
             else:
@@ -177,7 +177,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             )
             if edge_features is not None:
                 edge_features = np.hstack([
-                    edge_features,
+                    *edge_features,
                     edge_metrics
                 ])
             else:
@@ -223,13 +223,22 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        return self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
-            graph=graph,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features,
-        ))
+        prediction_probabilities = self._model_instance.predict_proba(
+            self._trasform_graph_into_edge_embedding(
+                graph=graph,
+                support=support,
+                node_features=node_features,
+                node_type_features=node_type_features,
+                edge_features=edge_features,
+            )
+        )
+        # In the majority but not totality of sklearn models,
+        # the predictions of binary models are returned as
+        # a couple of vectors for the positive and negative class. 
+        if self.is_binary_prediction_task() and prediction_probabilities.shape[1] == 2:
+            prediction_probabilities = prediction_probabilities[:, 1]
+        return prediction_probabilities
+
 
     def _predict(
         self,
