@@ -94,4 +94,5 @@ class CrossEPyKeen(EntityRelationEmbeddingModelPyKeen):
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
             combination_dropout=self._combination_dropout,
+            random_seed=self._random_state
         )

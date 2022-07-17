@@ -8,13 +8,11 @@ from tensorflow.keras import \
     backend as K  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.constraints import \
     UnitNorm  # pylint: disable=import-error,no-name-in-module,no-name-in-module
-from tensorflow.keras.layers import \
-    Embedding  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Input
 )
 from tensorflow.keras.models import Model
-from embiggen.layers.tensorflow import FlatEmbedding, ElementWiseL2
+from embiggen.layers.tensorflow import FlatEmbedding, ElementWiseL2, ElementWiseL1
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.sequences.tensorflow_sequences import SiameseSequence
 from embiggen.embedders.tensorflow_embedders.tensorflow_embedder import TensorFlowEmbedder
@@ -28,12 +26,13 @@ class Siamese(TensorFlowEmbedder):
         self,
         embedding_size: int = 100,
         relu_bias: float = 1.0,
-        epochs: int = 100,
-        batch_size: int = 2**5,
+        epochs: int = 50,
+        batch_size: int = 2**8,
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 5,
         learning_rate_plateau_min_delta: float = 0.0001,
         learning_rate_plateau_patience: int = 2,
+        norm: str = "L2",
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
         verbose: bool = False,
@@ -50,9 +49,9 @@ class Siamese(TensorFlowEmbedder):
             It is not possible to provide both at once.
         relu_bias: float = 1.0
             The bias to use for the ReLu.
-        epochs: int = 10
+        epochs: int = 50
             Number of epochs to train the model for.
-        batch_size: int = 2**14
+        batch_size: int = 2**8
             Batch size to use during the training.
         early_stopping_min_delta: float = 0.001
             The minimum variation in the provided patience time
@@ -66,6 +65,9 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 1
             The amount of epochs to wait for better training
             performance without decreasing the learning rate.
+        norm: str = "L2"
+            Normalization to use.
+            Can either be `L1` or `L2`.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
         optimizer: str = "nadam"
@@ -79,7 +81,7 @@ class Siamese(TensorFlowEmbedder):
             The random state to use if the model is stocastic.
         """
         self._relu_bias = relu_bias
-
+        self._norm = norm
         super().__init__(
             embedding_size=embedding_size,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -99,7 +101,8 @@ class Siamese(TensorFlowEmbedder):
         return dict(
             **super().parameters(),
             **dict(
-                relu_bias = self._relu_bias
+                relu_bias=self._relu_bias,
+                norm=self._norm
             )
         )
 
@@ -130,50 +133,41 @@ class Siamese(TensorFlowEmbedder):
             for node_input in inputs
         ]
 
-        if self.requires_edge_types():
-            edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
-            inputs.append(edge_types)
-            edge_type_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_number_of_edge_types(),
-                dimension=self._embedding_size,
-                input_length=1,
-                mask_zero=graph.has_unknown_edge_types(),
-                name="BiasEdgeTypeEmbedding",
-            )(edge_types)
-        else:
-            edge_type_embedding = 0.0
-            edge_types = None
-
         (
+            edge_types,
             srcs_embedding,
             dsts_embedding,
             not_srcs_embedding,
             not_dsts_embedding,
-            edge_type_embedding
         ) = self._build_output(
             *node_embeddings,
-            edge_type_embedding,
-            edge_types,
             graph
         )
 
-        loss = K.relu(self._relu_bias + ElementWiseL2()([
-            srcs_embedding + edge_type_embedding,
+        if self._norm == "L2":
+            norm_layer = ElementWiseL2
+        else:
+            norm_layer = ElementWiseL1
+
+        loss = K.relu(self._relu_bias + norm_layer()([
+            srcs_embedding,
             dsts_embedding
-        ]) - ElementWiseL2()([
-            not_srcs_embedding + edge_type_embedding,
+        ]) - norm_layer()([
+            not_srcs_embedding,
             not_dsts_embedding
         ]))
+
+        if edge_types is not None:
+            inputs.append(edge_types)
 
         # Creating the actual model
         model = Model(
             inputs=inputs,
             outputs=loss,
-            name=self.model_name()
+            name=self.model_name().replace(" ", "")
         )
 
         model.add_loss(loss)
-
         model.compile(optimizer=self._optimizer)
 
         return model
@@ -184,10 +178,8 @@ class Siamese(TensorFlowEmbedder):
         dsts_embedding: tf.Tensor,
         not_srcs_embedding: tf.Tensor,
         not_dsts_embedding: tf.Tensor,
-        edge_type_embedding: tf.Tensor,
-        edge_type_input: Optional[Input],
         graph: Graph
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+    ) -> Tuple[Optional[Input], tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
         """Returns the five input tensors, arbitrarily changed.
 
         Parameters
@@ -200,12 +192,6 @@ class Siamese(TensorFlowEmbedder):
             Embedding of the fake source node.
         not_dsts_embedding: tf.Tensor
             Embedding of the fake destination node.
-        edge_type_embedding: tf.Tensor
-            Embedding of the edge types.
-        edge_type_input: Optional[Input]
-            Input of the edge types. This is not None
-            only when there is one such input in the
-            model, when edge types are requested.
         graph: Graph
             Graph whose structure is to be used to build
             the model.
@@ -237,11 +223,6 @@ class Siamese(TensorFlowEmbedder):
         graph: Graph
             The graph to build the model for.
         """
-        try:
-            AUTOTUNE = tf.data.AUTOTUNE
-        except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE
-
         sequence = SiameseSequence(
             graph=graph,
             batch_size=self._batch_size,
@@ -250,7 +231,7 @@ class Siamese(TensorFlowEmbedder):
         return (
             sequence.into_dataset()
             .repeat()
-            .prefetch(AUTOTUNE), )
+            .prefetch(tf.data.AUTOTUNE), )
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

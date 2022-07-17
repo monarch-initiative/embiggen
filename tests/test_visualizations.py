@@ -22,10 +22,23 @@ class TestGraphVisualizer(TestCase):
                 visualization = GraphVisualizer(
                     graph_name,
                     decomposition_method=method,
-                    decomposition_kwargs=decomposition_kwargs
+                    decomposition_kwargs=decomposition_kwargs,
+                    number_of_subsampled_nodes=20,
+                    number_of_subsampled_edges=20,
+                    number_of_subsampled_negative_edges=20
                 )
-                visualization.fit_and_plot_all("HOPE")
+                visualization.fit_and_plot_all("SPINE", embedding_size=5)
                 visualization.plot_dot()
                 visualization.plot_edges()
                 visualization.plot_nodes(annotate_nodes=True)
-        
+                visualization.fit_and_plot_all("SPINE", embedding_size=2)
+                visualization = GraphVisualizer(
+                    graph_name,
+                    decomposition_method=method,
+                    decomposition_kwargs=decomposition_kwargs,
+                )
+                visualization.fit_and_plot_all("SPINE", embedding_size=5)
+                visualization.plot_dot()
+                visualization.plot_edges()
+                visualization.plot_nodes(annotate_nodes=True)
+                visualization.fit_and_plot_all("SPINE", embedding_size=2)

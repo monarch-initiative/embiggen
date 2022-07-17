@@ -94,4 +94,5 @@ class CPPyKeen(EntityRelationEmbeddingModelPyKeen):
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
             rank=self._rank,
+            random_seed=self._random_state
         )

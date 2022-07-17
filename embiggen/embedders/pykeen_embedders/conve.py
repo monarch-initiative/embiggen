@@ -151,4 +151,5 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             output_dropout=self._output_dropout,
             feature_map_dropout=self._feature_map_dropout,
             apply_batch_normalization=self._apply_batch_normalization,
+            random_seed=self._random_state
         )

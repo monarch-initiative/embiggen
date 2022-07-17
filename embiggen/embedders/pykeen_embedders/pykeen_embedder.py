@@ -212,10 +212,12 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             triples_factory=triples_factory,
             num_epochs=self._epochs,
             batch_size=batch_size,
-            use_tqdm=True,
-            use_tqdm_batch=True,
+            use_tqdm=self._verbose,
+            use_tqdm_batch=self._verbose,
             tqdm_kwargs=dict(
-                disable=not self._verbose
+                disable=not self._verbose,
+                dynamic_ncols=True,
+                leave=False
             )
         )
 

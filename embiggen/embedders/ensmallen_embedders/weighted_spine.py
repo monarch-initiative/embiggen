@@ -14,7 +14,7 @@ class WeightedSPINE(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         use_edge_weights_as_probabilities: bool = False,
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -25,7 +25,7 @@ class WeightedSPINE(EnsmallenEmbedder):
             Dimension of the embedding.
         use_edge_weights_as_probabilities: bool = False
             Whether to treat the weights as probabilities.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to

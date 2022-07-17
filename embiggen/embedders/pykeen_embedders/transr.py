@@ -108,5 +108,6 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
             relation_dim=self._relation_dim,
-            scoring_fct_norm=self._scoring_fct_norm
+            scoring_fct_norm=self._scoring_fct_norm,
+            random_seed=self._random_state
         )

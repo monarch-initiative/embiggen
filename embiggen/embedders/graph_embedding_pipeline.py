@@ -76,9 +76,7 @@ def embed_graph(
 
     if smoke_test:
         try:
-            embedding_model = embedding_model.__class__(
-                **embedding_model.smoke_test_parameters()
-            )
+            embedding_model = embedding_model.into_smoke_test()
         except Exception as e:
             raise ValueError(
                 "An exception was raised while trying to create "

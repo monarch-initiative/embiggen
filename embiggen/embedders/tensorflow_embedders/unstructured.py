@@ -1,6 +1,7 @@
 """Unstructured model."""
 from ensmallen import Graph
 import pandas as pd
+import tensorflow as tf
 from tensorflow.keras import Model
 from embiggen.embedders.tensorflow_embedders.siamese import Siamese
 from embiggen.utils.abstract_models import EmbeddingResult
@@ -11,10 +12,20 @@ class UnstructuredTensorFlow(Siamese):
 
     def _build_output(
         self,
-        *args
+        srcs_embedding: tf.Tensor,
+        dsts_embedding: tf.Tensor,
+        not_srcs_embedding: tf.Tensor,
+        not_dsts_embedding: tf.Tensor,
+        graph: Graph
     ):
         """Returns the five input tensors, unchanged."""
-        return args[:-2]
+        return (
+            None,
+            srcs_embedding,
+            dsts_embedding,
+            not_srcs_embedding,
+            not_dsts_embedding
+        )
 
     @classmethod
     def model_name(cls) -> str:

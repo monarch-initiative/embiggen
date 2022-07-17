@@ -19,7 +19,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         embedding_size: int = 100,
         metric: str = "Neighbours Intersection size",
         root_node_name: Optional[str] = None,
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
         """Create new HOPE method.
@@ -44,7 +44,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to

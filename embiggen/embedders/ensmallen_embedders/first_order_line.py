@@ -17,7 +17,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         random_state: int = 42,
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -34,7 +34,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         random_state: int = 42
             Random state to reproduce the embeddings.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to

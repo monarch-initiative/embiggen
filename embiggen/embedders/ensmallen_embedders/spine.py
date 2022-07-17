@@ -14,7 +14,7 @@ class SPINE(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
-        verbose: bool = True,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
         """Create new SPINE method.
@@ -25,7 +25,7 @@ class SPINE(EnsmallenEmbedder):
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding. Note that an improper dtype may cause overflows.
-        verbose: bool = True
+        verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to

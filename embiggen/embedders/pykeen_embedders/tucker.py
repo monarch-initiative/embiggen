@@ -117,5 +117,6 @@ class TuckERPyKeen(EntityRelationEmbeddingModelPyKeen):
             dropout_0=self._dropout_0,
             dropout_1=self._dropout_1,
             dropout_2=self._dropout_2,
-            apply_batch_normalization=self._apply_batch_normalization
+            apply_batch_normalization=self._apply_batch_normalization,
+            random_seed=self._random_state
         )

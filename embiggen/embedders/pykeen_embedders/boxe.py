@@ -108,4 +108,5 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
             tanh_map=self._tanh_map,
             p=self._p,
             power_norm=self._power_norm,
+            random_seed=self._random_state
         )

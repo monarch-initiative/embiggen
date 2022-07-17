@@ -4236,13 +4236,12 @@ class GraphVisualizer:
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
 
-        if not self._graph.has_constant_non_zero_node_degrees():
-            node_scatter_plot_methods_to_call.append(
-                self.plot_node_degrees,
-            )
-            distribution_plot_methods_to_call.append(
-                self.plot_node_degree_distribution,
-            )
+        node_scatter_plot_methods_to_call.append(
+            self.plot_node_degrees,
+        )
+        distribution_plot_methods_to_call.append(
+            self.plot_node_degree_distribution,
+        )
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)

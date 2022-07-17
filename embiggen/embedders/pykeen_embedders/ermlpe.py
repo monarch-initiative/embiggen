@@ -101,5 +101,6 @@ class ERMLPEPyKeen(EntityRelationEmbeddingModelPyKeen):
         return ERMLPE(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            hidden_dim=self._hidden_dim
+            hidden_dim=self._hidden_dim,
+            random_seed=self._random_state
         )

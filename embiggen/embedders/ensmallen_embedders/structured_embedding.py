@@ -1,12 +1,12 @@
-"""Module providing TransH implementation."""
+"""Module providing Structured Embedding implementation."""
 from ensmallen import Graph
 import pandas as pd
 from embiggen.embedders.ensmallen_embedders.siamese_model import SiameseEnsmallen
 from embiggen.utils import EmbeddingResult
 
 
-class TransHEnsmallen(SiameseEnsmallen):
-    """Class implementing the TransH algorithm."""
+class StructuredEmbeddingEnsmallen(SiameseEnsmallen):
+    """Class implementing the Structured Embedding algorithm."""
 
     def __init__(
         self,
@@ -19,7 +19,7 @@ class TransHEnsmallen(SiameseEnsmallen):
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new TransH method.
+        """Create new Structured Embedding method.
 
         Parameters
         --------------------------
@@ -29,7 +29,7 @@ class TransHEnsmallen(SiameseEnsmallen):
             Dimension of the embedding.
         relu_bias: float = 1.0
             Bias to use for the relu.
-            In the TransH paper it is called gamma.
+            In the StructuredEmbedding paper it is called gamma.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
         learning_rate: float = 0.01
@@ -61,7 +61,7 @@ class TransHEnsmallen(SiameseEnsmallen):
         return_dataframe: bool = True,
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding, mult_edge_type_embedding, bias_edge_type_embedding = self._model.fit_transform(
+        node_embedding, source_edge_type_embedding, destination_edge_type_embedding = self._model.fit_transform(
             graph,
         )
         if return_dataframe:
@@ -69,12 +69,12 @@ class TransHEnsmallen(SiameseEnsmallen):
                 node_embedding,
                 index=graph.get_node_names()
             )
-            mult_edge_type_embedding = pd.DataFrame(
-                mult_edge_type_embedding,
+            source_edge_type_embedding = pd.DataFrame(
+                source_edge_type_embedding,
                 index=graph.get_unique_edge_type_names()
             )
-            bias_edge_type_embedding = pd.DataFrame(
-                bias_edge_type_embedding,
+            destination_edge_type_embedding = pd.DataFrame(
+                destination_edge_type_embedding,
                 index=graph.get_unique_edge_type_names()
             )
 
@@ -82,15 +82,15 @@ class TransHEnsmallen(SiameseEnsmallen):
             embedding_method_name=self.model_name(),
             node_embeddings=node_embedding,
             edge_type_embeddings=[
-                mult_edge_type_embedding,
-                bias_edge_type_embedding
+                source_edge_type_embedding,
+                destination_edge_type_embedding
             ]
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "TransH"
+        return "Structured Embedding"
 
     @classmethod
     def requires_edge_types(cls) -> bool:

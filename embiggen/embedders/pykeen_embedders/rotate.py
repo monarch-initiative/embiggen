@@ -27,4 +27,5 @@ class RotatEPyKeen(EntityRelationEmbeddingModelPyKeen):
         return RotatE(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
+            random_seed=self._random_state
         )

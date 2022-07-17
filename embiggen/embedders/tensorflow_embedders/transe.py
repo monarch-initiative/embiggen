@@ -2,19 +2,39 @@
 from ensmallen import Graph
 import pandas as pd
 from tensorflow.keras import Model
+from tensorflow.keras.layers import Input
+import tensorflow as tf
 from embiggen.embedders.tensorflow_embedders.siamese import Siamese
 from embiggen.utils.abstract_models import EmbeddingResult
-
+from embiggen.layers.tensorflow import FlatEmbedding
 
 class TransETensorFlow(Siamese):
     """TransE model."""
 
     def _build_output(
         self,
-        *args
+        srcs_embedding: tf.Tensor,
+        dsts_embedding: tf.Tensor,
+        not_srcs_embedding: tf.Tensor,
+        not_dsts_embedding: tf.Tensor,
+        graph: Graph
     ):
         """Returns the five input tensors, unchanged."""
-        return args[:-2]
+        edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
+        edge_type_embedding = FlatEmbedding(
+            vocabulary_size=graph.get_number_of_edge_types(),
+            dimension=self._embedding_size,
+            input_length=1,
+            mask_zero=graph.has_unknown_edge_types(),
+            name="EdgeTypeEmbedding",
+        )(edge_types)
+        return (
+            edge_types,
+            srcs_embedding + edge_type_embedding,
+            dsts_embedding,
+            not_srcs_embedding + edge_type_embedding,
+            not_dsts_embedding,
+        )
 
     @classmethod
     def model_name(cls) -> str:
@@ -48,7 +68,7 @@ class TransETensorFlow(Siamese):
             drop_first_row=False
         )
         edge_type_embedding = self.get_layer_weights(
-            "BiasEdgeTypeEmbedding",
+            "EdgeTypeEmbedding",
             model,
             drop_first_row=graph.has_unknown_edge_types()
         )

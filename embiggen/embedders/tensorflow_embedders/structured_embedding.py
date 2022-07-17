@@ -1,16 +1,16 @@
-"""TransH model."""
+"""StructuredEmbedding model."""
 import tensorflow as tf
 from ensmallen import Graph
 import pandas as pd
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Dot
+from tensorflow.keras.layers import Input, Reshape
 from embiggen.embedders.tensorflow_embedders.siamese import Siamese
 from embiggen.utils.abstract_models import EmbeddingResult
 from embiggen.layers.tensorflow import FlatEmbedding
 
 
-class TransHTensorFlow(Siamese):
-    """TransH model."""
+class StructuredEmbeddingTensorFlow(Siamese):
+    """StructuredEmbedding model."""
 
     def _build_output(
         self,
@@ -22,45 +22,63 @@ class TransHTensorFlow(Siamese):
     ):
         """Returns the five input tensors, unchanged."""
         edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
-        bias_edge_type_embedding = FlatEmbedding(
+        source_edge_type_embedding = Reshape((
+            self._embedding_size,
+            self._embedding_size
+        ))(FlatEmbedding(
             vocabulary_size=graph.get_number_of_edge_types(),
-            dimension=self._embedding_size,
+            dimension=self._embedding_size*self._embedding_size,
             input_length=1,
             mask_zero=graph.has_unknown_edge_types(),
-            name="BiasEdgeTypeEmbedding",
-        )(edge_types)
-        multiplicative_edge_type_embedding = FlatEmbedding(
+            name="SourceEdgeTypeEmbedding",
+        )(edge_types))
+        destination_edge_type_embedding = Reshape((
+            self._embedding_size,
+            self._embedding_size
+        ))(FlatEmbedding(
             vocabulary_size=graph.get_number_of_edge_types(),
-            dimension=self._embedding_size,
+            dimension=self._embedding_size*self._embedding_size,
             input_length=1,
             mask_zero=graph.has_unknown_edge_types(),
-            name="MultiplicativeEdgeTypeEmbedding",
-        )(edge_types)
+            name="DestinationEdgeTypeEmbedding",
+        )(edge_types))
 
         return (
             edge_types,
-            srcs_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
-                srcs_embedding
-            ]) + bias_edge_type_embedding,
-            dsts_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
-                dsts_embedding
-            ]),
-            not_srcs_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
-                not_srcs_embedding
-            ]) + bias_edge_type_embedding,
-            not_dsts_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
-                not_dsts_embedding
-            ])
+            tf.reduce_sum(
+                tf.linalg.matvec(
+                    source_edge_type_embedding,
+                    srcs_embedding
+                ),
+                axis=1
+            ),
+            tf.reduce_sum(
+                tf.linalg.matvec(
+                    destination_edge_type_embedding,
+                    dsts_embedding
+                ),
+                axis=1
+            ),
+            tf.reduce_sum(
+                tf.linalg.matvec(
+                    source_edge_type_embedding,
+                    not_srcs_embedding
+                ),
+                axis=1
+            ),
+            tf.reduce_sum(
+                tf.linalg.matvec(
+                    destination_edge_type_embedding,
+                    not_dsts_embedding
+                ),
+                axis=1
+            ),
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the current model."""
-        return "TransH"
+        return "Structured Embedding"
 
     @classmethod
     def requires_edge_types(cls) -> bool:
@@ -88,13 +106,13 @@ class TransHTensorFlow(Siamese):
             model,
             drop_first_row=False
         )
-        bias_edge_type_embedding = self.get_layer_weights(
-            "BiasEdgeTypeEmbedding",
+        source_edge_type_embedding = self.get_layer_weights(
+            "SourceEdgeTypeEmbedding",
             model,
             drop_first_row=graph.has_unknown_edge_types()
         )
-        multiplicative_edge_type_embedding = self.get_layer_weights(
-            "MultiplicativeEdgeTypeEmbedding",
+        destination_edge_type_embedding = self.get_layer_weights(
+            "DestinationEdgeTypeEmbedding",
             model,
             drop_first_row=graph.has_unknown_edge_types()
         )
@@ -107,13 +125,13 @@ class TransHTensorFlow(Siamese):
 
             edge_type_names = graph.get_unique_edge_type_names()
 
-            bias_edge_type_embedding = pd.DataFrame(
-                bias_edge_type_embedding,
+            source_edge_type_embedding = pd.DataFrame(
+                source_edge_type_embedding,
                 index=edge_type_names
             )
 
-            multiplicative_edge_type_embedding = pd.DataFrame(
-                multiplicative_edge_type_embedding,
+            destination_edge_type_embedding = pd.DataFrame(
+                destination_edge_type_embedding,
                 index=edge_type_names
             )
 
@@ -121,8 +139,8 @@ class TransHTensorFlow(Siamese):
             embedding_method_name=self.model_name(),
             node_embeddings=node_embedding,
             edge_type_embeddings=[
-                bias_edge_type_embedding,
-                multiplicative_edge_type_embedding
+                source_edge_type_embedding,
+                destination_edge_type_embedding
             ]
         )
 

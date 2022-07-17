@@ -100,4 +100,5 @@ class TorusEPyKeen(EntityRelationEmbeddingModelPyKeen):
             embedding_dim=self._embedding_size,
             p=self._p,
             power_norm=self._power_norm,
+            random_seed=self._random_state
         )

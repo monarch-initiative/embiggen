@@ -93,5 +93,6 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
         return AutoSF(
             triples_factory=triples_factory,
             embedding_dim=self._embedding_size,
-            num_components=self._num_components
+            num_components=self._num_components,
+            random_seed=self._random_state
         )
