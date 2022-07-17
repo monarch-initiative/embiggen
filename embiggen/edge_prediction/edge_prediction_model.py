@@ -209,9 +209,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if len(train_predic_proba.shape) > 1 and train_predic_proba.shape[1] > 1:
-            train_predic_proba = train_predic_proba[:, 1]
-
         test_predict_proba = self.predict_proba(
             test,
             support=support,
@@ -219,9 +216,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_features=edge_features
         )
-
-        if len(test_predict_proba.shape) > 1 and test_predict_proba.shape[1] > 1:
-            test_predict_proba = test_predict_proba[:, 1]
 
         negative_graph_iterator = self.__iterate_negative_graphs(
             graph=graph,
@@ -326,7 +320,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
-        )
+        ).flatten()
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
@@ -755,7 +749,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
-        )
+        ).flatten()
+
+        if np.isnan(predictions).any():
+            raise ValueError(
+                "There are NaN values in the predicted probabilities!"
+            )
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(

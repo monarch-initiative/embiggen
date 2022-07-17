@@ -4419,5 +4419,7 @@ class GraphVisualizer:
         self._show_graph_name = show_name_backup
 
         return self._handle_notebook_display(
-            figure, axes, caption=complete_caption
+            figure,
+            axes,
+            caption=complete_caption
         )

@@ -54,10 +54,16 @@ class GCNEdgePredictionSequence(Sequence):
         use_edge_metrics: bool = False
             Whether to return the edge metrics.
         """
-        if not graph.has_edges():
+        if (
+            return_node_types or
+            node_type_features is not None
+        ) and graph.has_unknown_node_types():
             raise ValueError(
-                f"An empty instance of graph {graph.get_name()} was provided!"
+                f"The provided graph {graph.get_name()} "
+                "contains unknown node types but node types "
+                "have been requested for the sequence."
             )
+        
         self._graph = graph
         self._kernel = kernel
         if node_features is None:
@@ -96,21 +102,10 @@ class GCNEdgePredictionSequence(Sequence):
                         ))
                     ).mean(axis=-2).data)
             else:
-                if self._graph.has_unknown_node_types():
-                    self._node_type_features = []
-                    minus_node_types = node_types - 1
-                    node_types_mask = node_types == 0
-                    minus_node_types[node_types_mask] = 0
-                    for node_type_feature in node_type_features:
-                        ntf = node_type_feature[minus_node_types]
-                        # Masking the unknown values to zero.
-                        ntf[node_types_mask] = 0.0
-                        self._node_type_features.append(ntf)
-                else:
-                    self._node_type_features = [
-                        node_type_feature[node_types]
-                        for node_type_feature in node_type_features
-                    ]
+                self._node_type_features = [
+                    node_type_feature[node_types]
+                    for node_type_feature in node_type_features
+                ]
         else:
             self._node_type_features = []
 

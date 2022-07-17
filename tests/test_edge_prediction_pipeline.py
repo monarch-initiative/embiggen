@@ -1,6 +1,7 @@
 """Unit test class for GraphTransformer objects."""
 from tqdm.auto import tqdm
 from unittest import TestCase
+import pytest
 import numpy as np
 from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
@@ -21,11 +22,10 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        self._graph, _ = get_words_data(Cora())
-        self._graph = self._graph.remove_singleton_nodes()
+        self._graph = Cora().remove_singleton_nodes()
         self._graph_without_node_types = self._graph.remove_node_types()
         self._subgraph_of_interest = self._graph.filter_from_names(
-            source_node_type_name_to_keep=["Neural_Networks"]
+            edge_type_names_to_keep=["Paper2Paper"]
         )
         self._number_of_holdouts = 2
 
@@ -64,7 +64,9 @@ class TestEvaluateEdgePrediction(TestCase):
             smoke_test=True,
         )
         self.assertEqual(
-            holdouts.shape[0], self._number_of_holdouts*2*2*df.shape[0])
+            holdouts.shape[0],
+            self._number_of_holdouts*2*2*df.shape[0]
+        )
 
     def test_evaluate_edge_prediction_with_subgraphs(self):
         df = get_available_models_for_edge_prediction()
@@ -108,11 +110,7 @@ class TestEvaluateEdgePrediction(TestCase):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
         multi_label_graph = graph.set_all_node_types("hu") | graph
-        graph, _ = graph.get_node_label_holdout_graphs(0.8)
-        multi_label_graph, _ = multi_label_graph.get_node_label_holdout_graphs(
-            0.8)
         node_features = SPINE(embedding_size=10).fit_transform(graph)
-
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
@@ -151,16 +149,40 @@ class TestEvaluateEdgePrediction(TestCase):
                     node_features=node_features,
                     node_type_features=node_type_features
                 )
-                model.predict(
-                    g,
-                    node_features=node_features,
-                    node_type_features=node_type_features
-                )
-                model.predict_proba(
-                    g,
-                    node_features=node_features,
-                    node_type_features=node_type_features
-                )
+                with pytest.raises(NotImplementedError):
+                    model.fit(
+                        g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        edge_features=67
+                    )
+                with pytest.raises(NotImplementedError):
+                    model.predict(
+                        g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        edge_features=67
+                    )
+                with pytest.raises(NotImplementedError):
+                    model.predict_proba(
+                        g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        edge_features=67
+                    )
+                for return_predictions_dataframe in (True, False):
+                    model.predict(
+                        g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba(
+                        g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()

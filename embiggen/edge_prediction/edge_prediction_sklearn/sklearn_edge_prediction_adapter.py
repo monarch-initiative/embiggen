@@ -333,7 +333,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
-        return np.concatenate([
+        prediction_probabilities = np.concatenate([
             self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],
                 support=support,
@@ -349,6 +349,14 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 leave=False
             )
         ])
+
+        # In the majority but not totality of sklearn models,
+        # the predictions of binary models are returned as
+        # a couple of vectors for the positive and negative class. 
+        if len(prediction_probabilities.shape) > 1 and prediction_probabilities.shape[1] > 1:
+            prediction_probabilities = prediction_probabilities[:, 1]
+
+        return prediction_probabilities
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:
