@@ -25,6 +25,7 @@ from matplotlib import collections as mc
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from userinput.utils import must_be_in_set
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
 import itertools
@@ -429,7 +430,12 @@ class GraphVisualizer:
             decomposition_kwargs = {}
 
         self._n_components = n_components
-        self._decomposition_method = decomposition_method
+
+        self._decomposition_method = must_be_in_set(
+            decomposition_method,
+            ("PCA", "TSNE", "UMAP"),
+            "decomposition method"
+        )
         self._decomposition_kwargs = decomposition_kwargs
 
     def iterate_subsampled_node_ids(self) -> Iterator[int]:
@@ -542,7 +548,9 @@ class GraphVisualizer:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
         # in order to avoid false negatives.
-        if self._node_embedding_method_name in ("GloVe", "First order LINE"):
+        if self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
+            "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
+        ):
             metric = self._decomposition_kwargs.get("metric")
             if metric is not None and metric != "cosine":
                 warnings.warn(
@@ -653,10 +661,6 @@ class GraphVisualizer:
                 ),
                 **self._decomposition_kwargs
             }).fit_transform
-        else:
-            raise ValueError(
-                "We currently only support PCA and TSNE decomposition methods."
-            )
 
     def _get_node_embedding(
         self,

@@ -45,33 +45,26 @@ class StructuredEmbeddingTensorFlow(Siamese):
 
         return (
             edge_types,
-            tf.reduce_sum(
-                tf.linalg.matvec(
-                    source_edge_type_embedding,
-                    srcs_embedding
-                ),
-                axis=1
+            0.0,
+            tf.einsum(
+                'ijk,ij->ij',
+                source_edge_type_embedding,
+                srcs_embedding
             ),
-            tf.reduce_sum(
-                tf.linalg.matvec(
-                    destination_edge_type_embedding,
-                    dsts_embedding
-                ),
-                axis=1
+            tf.einsum(
+                'ijk,ij->ij',
+                destination_edge_type_embedding,
+                dsts_embedding
             ),
-            tf.reduce_sum(
-                tf.linalg.matvec(
-                    source_edge_type_embedding,
-                    not_srcs_embedding
-                ),
-                axis=1
+            tf.einsum(
+                'ijk,ij->ij',
+                source_edge_type_embedding,
+                not_srcs_embedding
             ),
-            tf.reduce_sum(
-                tf.linalg.matvec(
-                    destination_edge_type_embedding,
-                    not_dsts_embedding
-                ),
-                axis=1
+            tf.einsum(
+                'ijk,ij->ij',
+                destination_edge_type_embedding,
+                not_dsts_embedding
             ),
         )
 
@@ -148,3 +141,8 @@ class StructuredEmbeddingTensorFlow(Siamese):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
+
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        """Returns whether the model requires edge types."""
+        return True

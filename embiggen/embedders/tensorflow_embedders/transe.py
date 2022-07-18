@@ -30,6 +30,7 @@ class TransETensorFlow(Siamese):
         )(edge_types)
         return (
             edge_types,
+            0.0,
             srcs_embedding + edge_type_embedding,
             dsts_embedding,
             not_srcs_embedding + edge_type_embedding,
@@ -93,3 +94,8 @@ class TransETensorFlow(Siamese):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
+
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        """Returns whether the model requires edge types."""
+        return True

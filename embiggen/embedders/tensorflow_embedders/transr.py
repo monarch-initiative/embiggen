@@ -1,17 +1,16 @@
-"""TransH model."""
+"""TransR model."""
 import tensorflow as tf
 from ensmallen import Graph
 import pandas as pd
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Dot, ReLU
+from tensorflow.keras.layers import Input, Reshape
 from embiggen.embedders.tensorflow_embedders.siamese import Siamese
 from embiggen.utils.abstract_models import EmbeddingResult
 from embiggen.layers.tensorflow import FlatEmbedding
 
 
-class TransHTensorFlow(Siamese):
-    """TransH model."""
+class TransRTensorFlow(Siamese):
+    """TransR model."""
 
     def _build_output(
         self,
@@ -21,56 +20,64 @@ class TransHTensorFlow(Siamese):
         not_dsts_embedding: tf.Tensor,
         graph: Graph
     ):
-        """Returns the five input tensors, unchanged."""
         edge_types = Input((1,), dtype=tf.int32, name="Edge Types")
-        bias_edge_type_embedding = FlatEmbedding(
+        edge_type_embedding = FlatEmbedding(
             vocabulary_size=graph.get_number_of_edge_types(),
             dimension=self._embedding_size,
             input_length=1,
             mask_zero=graph.has_unknown_edge_types(),
-            name="BiasEdgeTypeEmbedding",
+            name="EdgeTypeEmbedding",
         )(edge_types)
-        multiplicative_edge_type_embedding = UnitNorm()(FlatEmbedding(
+        source_edge_type_embedding = Reshape((
+            self._embedding_size,
+            self._embedding_size
+        ))(FlatEmbedding(
             vocabulary_size=graph.get_number_of_edge_types(),
-            dimension=self._embedding_size,
+            dimension=self._embedding_size*self._embedding_size,
             input_length=1,
             mask_zero=graph.has_unknown_edge_types(),
-            name="MultiplicativeEdgeTypeEmbedding",
+            name="SourceEdgeTypeEmbedding",
         )(edge_types))
-
-        dot = Dot(axes=-1)([
-            bias_edge_type_embedding,
-            multiplicative_edge_type_embedding
-        ])
+        destination_edge_type_embedding = Reshape((
+            self._embedding_size,
+            self._embedding_size
+        ))(FlatEmbedding(
+            vocabulary_size=graph.get_number_of_edge_types(),
+            dimension=self._embedding_size*self._embedding_size,
+            input_length=1,
+            mask_zero=graph.has_unknown_edge_types(),
+            name="DestinationEdgeTypeEmbedding",
+        )(edge_types))
 
         return (
             edge_types,
-            dot * dot / Dot(axes=-1)([
-                bias_edge_type_embedding,
-                bias_edge_type_embedding
-            ]),
-            srcs_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
+            0.0,
+            tf.einsum(
+                'ijk,ij->ij',
+                source_edge_type_embedding,
                 srcs_embedding
-            ]) + bias_edge_type_embedding,
-            dsts_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
+            ) + edge_type_embedding,
+            tf.einsum(
+                'ijk,ij->ij',
+                destination_edge_type_embedding,
                 dsts_embedding
-            ]),
-            not_srcs_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
+            ),
+            tf.einsum(
+                'ijk,ij->ij',
+                source_edge_type_embedding,
                 not_srcs_embedding
-            ]) + bias_edge_type_embedding,
-            not_dsts_embedding - multiplicative_edge_type_embedding*Dot(axes=-1)([
-                multiplicative_edge_type_embedding,
+            ) + edge_type_embedding,
+            tf.einsum(
+                'ijk,ij->ij',
+                destination_edge_type_embedding,
                 not_dsts_embedding
-            ])
+            )
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the current model."""
-        return "TransH"
+        return "TransR"
 
     @classmethod
     def requires_edge_types(cls) -> bool:
@@ -98,13 +105,18 @@ class TransHTensorFlow(Siamese):
             model,
             drop_first_row=False
         )
-        bias_edge_type_embedding = self.get_layer_weights(
-            "BiasEdgeTypeEmbedding",
+        edge_type_embedding = self.get_layer_weights(
+            "EdgeTypeEmbedding",
             model,
             drop_first_row=graph.has_unknown_edge_types()
         )
-        multiplicative_edge_type_embedding = self.get_layer_weights(
-            "MultiplicativeEdgeTypeEmbedding",
+        source_edge_type_embedding = self.get_layer_weights(
+            "SourceEdgeTypeEmbedding",
+            model,
+            drop_first_row=graph.has_unknown_edge_types()
+        )
+        destination_edge_type_embedding = self.get_layer_weights(
+            "DestinationEdgeTypeEmbedding",
             model,
             drop_first_row=graph.has_unknown_edge_types()
         )
@@ -117,13 +129,18 @@ class TransHTensorFlow(Siamese):
 
             edge_type_names = graph.get_unique_edge_type_names()
 
-            bias_edge_type_embedding = pd.DataFrame(
-                bias_edge_type_embedding,
+            edge_type_embedding = pd.DataFrame(
+                edge_type_embedding,
                 index=edge_type_names
             )
 
-            multiplicative_edge_type_embedding = pd.DataFrame(
-                multiplicative_edge_type_embedding,
+            source_edge_type_embedding = pd.DataFrame(
+                source_edge_type_embedding,
+                index=edge_type_names
+            )
+
+            destination_edge_type_embedding = pd.DataFrame(
+                destination_edge_type_embedding,
                 index=edge_type_names
             )
 
@@ -131,8 +148,9 @@ class TransHTensorFlow(Siamese):
             embedding_method_name=self.model_name(),
             node_embeddings=node_embedding,
             edge_type_embeddings=[
-                bias_edge_type_embedding,
-                multiplicative_edge_type_embedding
+                edge_type_embedding,
+                source_edge_type_embedding,
+                destination_edge_type_embedding
             ]
         )
 

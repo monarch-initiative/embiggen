@@ -6,10 +6,9 @@ import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras import \
     backend as K  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import \
-    UnitNorm  # pylint: disable=import-error,no-name-in-module,no-name-in-module
+from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
-    Input
+    Input, ReLU
 )
 from tensorflow.keras.models import Model
 from embiggen.layers.tensorflow import FlatEmbedding, ElementWiseL2, ElementWiseL1
@@ -135,6 +134,7 @@ class Siamese(TensorFlowEmbedder):
 
         (
             edge_types,
+            regularization,
             srcs_embedding,
             dsts_embedding,
             not_srcs_embedding,
@@ -144,18 +144,15 @@ class Siamese(TensorFlowEmbedder):
             graph
         )
 
-        if self._norm == "L2":
-            norm_layer = ElementWiseL2
-        else:
-            norm_layer = ElementWiseL1
+        if dsts_embedding is not None:
+            srcs_embedding = tf.norm(srcs_embedding - dsts_embedding)
 
-        loss = K.relu(self._relu_bias + norm_layer()([
-            srcs_embedding,
-            dsts_embedding
-        ]) - norm_layer()([
-            not_srcs_embedding,
-            not_dsts_embedding
-        ]))
+        if not_dsts_embedding is not None:
+            not_srcs_embedding = tf.norm(not_srcs_embedding - not_dsts_embedding)
+
+        loss = ReLU()(
+            self._relu_bias + srcs_embedding - not_srcs_embedding
+        ) + regularization
 
         if edge_types is not None:
             inputs.append(edge_types)
@@ -179,8 +176,8 @@ class Siamese(TensorFlowEmbedder):
         not_srcs_embedding: tf.Tensor,
         not_dsts_embedding: tf.Tensor,
         graph: Graph
-    ) -> Tuple[Optional[Input], tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        """Returns the five input tensors, arbitrarily changed.
+    ) -> Tuple[Optional[Input], tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+        """Returns the inputs, if any, the regularization loss, and the received node embedding arbitrarily modified.
 
         Parameters
         ----------------------

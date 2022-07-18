@@ -3,6 +3,7 @@ from unittest import TestCase
 
 import pytest
 import numpy as np
+import pandas as pd
 from embiggen import GraphVisualizer
 from ensmallen.datasets.kgobo import CIO, MIAPA
 from ensmallen.datasets.networkrepository import Usair97
@@ -31,23 +32,49 @@ class TestGraphVisualizer(TestCase):
                     gr.get_number_of_node_types(),
                     size=gr.get_number_of_nodes()
                 )
+            if gr.has_edge_types():
+                gr, _ = gr.get_edge_label_holdout_graphs(
+                    train_size=0.8,
+                )
             for graph in (gr, gr.to_directed()):
                 for method in ("PCA", "TSNE", "UMAP"):
                     decomposition_kwargs = None
                     if method == "TSNE":
-                        decomposition_kwargs = dict(n_iter=1)
+                        decomposition_kwargs = dict(n_iter=250)
                     visualization = GraphVisualizer(
                         graph,
                         decomposition_method=method,
                         decomposition_kwargs=decomposition_kwargs,
+                        source_node_types_names=graph.get_unique_node_type_names() if graph.has_node_types() else None,
+                        destination_node_types_names=graph.get_unique_node_type_names() if graph.has_node_types() else None,
+                        source_edge_types_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
+                        destination_edge_types_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
+                        edge_type_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
                         number_of_subsampled_nodes=20,
                         number_of_subsampled_edges=20,
                         number_of_subsampled_negative_edges=20
                     )
+                    for callback_method in (
+                        "plot_connected_components",
+                        "plot_node_ontologies",
+                        "plot_connected_components",
+                        "plot_node_degrees",
+                        "plot_edge_segments",
+                        "plot_nodes",
+                        "plot_node_types",
+                        "plot_edge_types",
+                        "plot_edge_weights",
+                        "plot_edges",
+                        "plot_positive_and_negative_edges",
+                        "plot_positive_and_negative_edges_adamic_adar"
+                    ):
+                        with pytest.raises(ValueError):
+                            visualization.__getattribute__(callback_method)()
                     visualization.fit_and_plot_all("SPINE", embedding_size=5)
                     visualization.plot_dot()
                     visualization.plot_edges()
                     visualization.plot_node_degree_distribution()
+                    visualization.plot_positive_and_negative_edges()
                     visualization.plot_nodes(annotate_nodes=True, show_edges=True)
                     visualization.plot_node_degrees(
                         annotate_nodes=True,
@@ -83,10 +110,13 @@ class TestGraphVisualizer(TestCase):
                         with pytest.raises(ValueError):
                             visualization.plot_edge_types()
                     if graph.has_edge_weights():
+                        visualization.plot_edge_weights()
                         visualization.plot_edge_weight_distribution()
                     else:
                         with pytest.raises(ValueError):
                             visualization.plot_edge_weight_distribution()
+                        with pytest.raises(ValueError):
+                            visualization.plot_edge_weights()
                     visualization.fit_and_plot_all("SPINE", embedding_size=2)
                     visualization = GraphVisualizer(
                         graph,
@@ -94,7 +124,6 @@ class TestGraphVisualizer(TestCase):
                         n_components=3,
                         decomposition_kwargs=decomposition_kwargs,
                     )
-                    visualization.fit_and_plot_all("SPINE", embedding_size=5)
                     visualization.fit_and_plot_all(
                         DeepWalkGloVeEnsmallen().into_smoke_test()
                     )
@@ -115,13 +144,20 @@ class TestGraphVisualizer(TestCase):
                         duration=1,
                         decomposition_kwargs=decomposition_kwargs,
                     )
-                    visualization.fit_edges("SPINE", embedding_size=3)
-                    visualization.fit_nodes("SPINE", embedding_size=3)
+                    visualization.fit_negative_and_positive_edges("SPINE", embedding_size=3)
+                    visualization.fit_nodes(pd.DataFrame(
+                        np.random.uniform(size=(
+                            graph.get_number_of_nodes(),
+                            768
+                        )).astype(np.float16),
+                        index=graph.get_node_names()
+                    ))
                     visualization.plot_node_degrees()
                     if graph.has_node_ontologies():
                         visualization.plot_node_types()
                     if not graph.is_directed():
                         visualization.plot_connected_components()
+                    visualization.plot_positive_and_negative_edges()
                     if graph.has_node_types():
                         visualization.plot_node_types(
                             train_indices=train_nodes,
