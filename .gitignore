@@ -34,3 +34,4 @@ embedding.npy
 build
 graphs
 embeddings
+*.webm

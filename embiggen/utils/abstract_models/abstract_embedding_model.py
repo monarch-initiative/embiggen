@@ -41,10 +41,10 @@ class AbstractEmbeddingModel(AbstractModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the embedding model."""
-        return {
+        return dict(
             **super().parameters(),
-            "embedding_size": self._embedding_size
-        }
+            embedding_size=self._embedding_size
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
