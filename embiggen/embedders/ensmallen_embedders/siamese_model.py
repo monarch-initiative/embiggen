@@ -14,8 +14,6 @@ class SiameseEnsmallen(EnsmallenEmbedder):
     models = {
         "TransE": models.TransE,
         "TransH": models.TransH,
-        "TransR": models.TransR,
-        "DistMult": models.DistMult,
         "Unstructured": models.Unstructured,
         "Structured Embedding": models.StructuredEmbedding,
     }
