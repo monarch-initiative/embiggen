@@ -6,7 +6,6 @@ import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras import \
     backend as K  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Input, ReLU
 )
@@ -28,9 +27,9 @@ class Siamese(TensorFlowEmbedder):
         epochs: int = 50,
         batch_size: int = 2**8,
         early_stopping_min_delta: float = 0.0001,
-        early_stopping_patience: int = 5,
+        early_stopping_patience: int = 10,
         learning_rate_plateau_min_delta: float = 0.0001,
-        learning_rate_plateau_patience: int = 2,
+        learning_rate_plateau_patience: int = 5,
         norm: str = "L2",
         use_mirrored_strategy: bool = False,
         optimizer: str = "nadam",
@@ -128,7 +127,7 @@ class Siamese(TensorFlowEmbedder):
 
         # Get the node embedding
         node_embeddings = [
-            UnitNorm()(node_embedding_layer(node_input))
+            node_embedding_layer(node_input)
             for node_input in inputs
         ]
 
@@ -144,11 +143,22 @@ class Siamese(TensorFlowEmbedder):
             graph
         )
 
+        if self._norm == "L2":
+            norm_layer = ElementWiseL2
+        else:
+            norm_layer = ElementWiseL1
+
         if dsts_embedding is not None:
-            srcs_embedding = tf.norm(srcs_embedding - dsts_embedding)
+            srcs_embedding = norm_layer()([
+                srcs_embedding,
+                dsts_embedding
+            ])
 
         if not_dsts_embedding is not None:
-            not_srcs_embedding = tf.norm(not_srcs_embedding - not_dsts_embedding)
+            not_srcs_embedding = norm_layer()([
+                not_srcs_embedding,
+                not_dsts_embedding
+            ])
 
         loss = ReLU()(
             self._relu_bias + srcs_embedding - not_srcs_embedding

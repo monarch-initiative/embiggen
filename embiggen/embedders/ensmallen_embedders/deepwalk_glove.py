@@ -15,7 +15,7 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         iterations: int = 10,
         window_size: int = 10,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         random_state: int = 42,
@@ -48,7 +48,7 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.01
+        learning_rate: float = 0.05
             The learning rate to use to train the DeepWalk model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.

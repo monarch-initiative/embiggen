@@ -2,9 +2,8 @@
 import tensorflow as tf
 from ensmallen import Graph
 import pandas as pd
-from tensorflow.keras.constraints import UnitNorm
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Dot, ReLU
+from tensorflow.keras.layers import Input, Dot
 from embiggen.embedders.tensorflow_embedders.siamese import Siamese
 from embiggen.utils.abstract_models import EmbeddingResult
 from embiggen.layers.tensorflow import FlatEmbedding
@@ -30,13 +29,13 @@ class TransHTensorFlow(Siamese):
             mask_zero=graph.has_unknown_edge_types(),
             name="BiasEdgeTypeEmbedding",
         )(edge_types)
-        multiplicative_edge_type_embedding = UnitNorm()(FlatEmbedding(
+        multiplicative_edge_type_embedding = FlatEmbedding(
             vocabulary_size=graph.get_number_of_edge_types(),
             dimension=self._embedding_size,
             input_length=1,
             mask_zero=graph.has_unknown_edge_types(),
             name="MultiplicativeEdgeTypeEmbedding",
-        )(edge_types))
+        )(edge_types)
 
         dot = Dot(axes=-1)([
             bias_edge_type_embedding,

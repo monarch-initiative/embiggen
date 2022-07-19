@@ -13,7 +13,7 @@ class TransHEnsmallen(SiameseEnsmallen):
         embedding_size: int = 100,
         relu_bias: float = 1.0,
         epochs: int = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.1,
         learning_rate_decay: float = 0.9,
         random_state: int = 42,
         verbose: bool = False,
@@ -32,7 +32,7 @@ class TransHEnsmallen(SiameseEnsmallen):
             In the TransH paper it is called gamma.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
-        learning_rate: float = 0.01
+        learning_rate: float = 0.05
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.

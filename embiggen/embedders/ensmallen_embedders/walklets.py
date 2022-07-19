@@ -19,7 +19,7 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         alpha: float = 0.75,
         normalize_by_degree: bool = False,
@@ -68,7 +68,7 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.01
+        learning_rate: float = 0.05
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
