@@ -22,9 +22,6 @@ test_deps = [
     "silence_tensorflow"
 ]
 
-extras = {
-    'test': test_deps,
-}
 
 def read(*parts):
     with copen(os.path.join(here, *parts), 'r') as fp:
@@ -56,11 +53,11 @@ setup(
     description='Graph embedding, machine learning, and visualization library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
-    keywords='node2vec,word2vec,CBOW,SkipGram,GloVe',
+    keywords='Graph Representation Learning,LINE,TransE,Node2Vec,DeeWalk',
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    python_requires='>=3.6.0',
+    python_requires='>=3.7.0',
     packages=find_packages(
         exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
@@ -73,14 +70,14 @@ setup(
         "ddd_subplots>=1.0.19",
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
-        "extra_keras_metrics>=2.0.7",
-        "ensmallen>=0.8.6",
+        "ensmallen>=0.8.7",
         "validate_version_code",
         "cache_decorator>=2.1.8",
         "packaging"
     ],
     tests_require=test_deps,
     include_package_data=True,
-    zip_safe=False,
-    extras_require=extras,
+    extras_require={
+        'test': test_deps,
+    },
 )
