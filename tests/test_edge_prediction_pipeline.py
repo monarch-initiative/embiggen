@@ -11,7 +11,7 @@ from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import PerceptronEdgePrediction
 from embiggen.embedders import SPINE
 from embiggen.utils import AbstractEmbeddingModel
-from ensmallen.datasets.linqs import Cora, get_words_data
+from ensmallen.datasets.linqs import Cora
 from ensmallen.datasets.kgobo import CIO
 from ensmallen.datasets.networkrepository import Usair97
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
@@ -117,6 +117,8 @@ class TestEvaluateEdgePrediction(TestCase):
             leave=False,
         )
         for g in (multi_label_graph, graph):
+            first_names = g.get_node_names()[:5]
+            second_names = g.get_node_names()[5:10]
             for model_name in bar:
                 bar.set_description(
                     f"Testing API of {model_name}"
@@ -183,6 +185,126 @@ class TestEvaluateEdgePrediction(TestCase):
                         node_type_features=node_type_features,
                         return_predictions_dataframe=return_predictions_dataframe
                     )
+                    model.predict_bipartite_graph_from_edge_node_ids(
+                        graph=g,
+                        source_node_ids=[0, 1, 2, 3],
+                        destination_node_ids=[4, 5, 6, 7],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_ids(
+                        graph=g,
+                        source_node_ids=[0, 1, 2, 3],
+                        destination_node_ids=[4, 5, 6, 7],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_bipartite_graph_from_edge_node_names(
+                        graph=g,
+                        source_node_names=first_names,
+                        destination_node_names=second_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_names(
+                        graph=g,
+                        source_node_names=first_names,
+                        destination_node_names=second_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_bipartite_graph_from_edge_node_prefixes(
+                        graph=g,
+                        source_node_prefixes=["OIO"],
+                        destination_node_prefixes=["IAO", "CIO"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_prefixes(
+                        graph=g,
+                        source_node_prefixes=["OIO"],
+                        destination_node_prefixes=["IAO", "CIO"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_ids(
+                        graph=g,
+                        node_ids=[0, 1, 2],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_ids(
+                        graph=g,
+                        node_ids=[0, 1, 2],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_names(
+                        graph=g,
+                        node_names=first_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_names(
+                        graph=g,
+                        node_names=first_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_prefixes(
+                        graph=g,
+                        node_prefixes=["OIO:"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_prefixes(
+                        graph=g,
+                        node_prefixes=["OIO:"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_types(
+                        graph=g,
+                        node_types=["biolink:NamedThing"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_types(
+                        graph=g,
+                        node_types=["biolink:NamedThing"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    
+
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
