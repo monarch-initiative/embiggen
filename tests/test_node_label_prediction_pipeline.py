@@ -3,7 +3,7 @@ from tqdm.auto import tqdm
 from unittest import TestCase
 from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import get_available_models_for_node_label_prediction, get_available_models_for_node_embedding
-from embiggen.embedders import SPINE
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 from ensmallen.datasets.kgobo import MIAPA
 from ensmallen.datasets.linqs import Cora, get_words_data
 import shutil
@@ -25,7 +25,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             shutil.rmtree("experiments")
 
         df = get_available_models_for_node_label_prediction()
-        feature = SPINE(embedding_size=5)
+        feature = DegreeSPINE(embedding_size=5)
         for evaluation_schema in AbstractNodeLabelPredictionModel.get_available_evaluation_schemas():
             holdouts = node_label_prediction_evaluation(
                 holdouts_kwargs={
@@ -54,7 +54,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         multilabel_graph = (Cora().remove_edge_weights().remove_edge_types() | red).add_selfloops()
         binary_graph = (red | MIAPA().remove_edge_types().set_all_node_types("blue")).add_selfloops()
         for g in (graph, multilabel_graph, binary_graph):
-            node_features = SPINE(embedding_size=10).fit_transform(g)
+            node_features = DegreeSPINE(embedding_size=10).fit_transform(g)
             for model_name in tqdm(df.model_name, desc="Testing model APIs"):
                 if g.has_multilabel_node_types() and model_name in ("Gradient Boosting Classifier", ):
                     continue

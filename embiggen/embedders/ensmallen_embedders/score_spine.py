@@ -1,30 +1,38 @@
-"""Module providing SPINE implementation."""
-from typing import Optional,  Dict, Any
+"""Module providing Score-based SPINE implementation."""
+from typing import Optional, Dict, Any
 from ensmallen import Graph
 import pandas as pd
+import numpy as np
 from ensmallen import models
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
 from embiggen.utils import EmbeddingResult
 
 
-class SPINE(EnsmallenEmbedder):
-    """Class implementing the SPINE algorithm."""
+class ScoreSPINE(EnsmallenEmbedder):
+    """Class implementing the Score-based SPINE algorithm."""
 
     def __init__(
         self,
+        scores: np.ndarray,
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
+        maximum_depth: Optional[int] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new SPINE method.
+        """Create new Score-based SPINE method.
 
         Parameters
         --------------------------
+        scores: np.ndarray
+            Numpy array to be used to sort the anchor nodes.
         embedding_size: int = 100
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
-            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+            Dtype to use for the embedding.
+            Note that an improper dtype may cause overflows.
+        maximum_depth: Optional[int] = None
+            Maximum depth of the shortest path.
         verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
@@ -33,7 +41,13 @@ class SPINE(EnsmallenEmbedder):
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._model = models.SPINE(embedding_size=embedding_size)
+        self._maximum_depth = maximum_depth
+        self._scores = scores
+        self._model = models.ScoreSPINE(
+            embedding_size=embedding_size,
+            verbose=self._verbose,
+            maximum_depth=self._maximum_depth
+        )
 
         super().__init__(
             embedding_size=embedding_size,
@@ -62,10 +76,10 @@ class SPINE(EnsmallenEmbedder):
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
-            graph,
+            scores=self._scores,
+            graph=graph,
             dtype=self._dtype,
-            verbose=self._verbose,
-        ).T
+        )
         if return_dataframe:
             node_embedding = pd.DataFrame(
                 node_embedding,
@@ -79,7 +93,7 @@ class SPINE(EnsmallenEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SPINE"
+        return "Score-based SPINE"
 
     @classmethod
     def can_use_node_types(cls) -> bool:

@@ -9,7 +9,7 @@ from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictio
 from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
 from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import PerceptronEdgePrediction
-from embiggen.embedders import SPINE
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.linqs import Cora
 from ensmallen.datasets.kgobo import CIO
@@ -56,7 +56,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             evaluation_schema="Connected Monte Carlo",
             graphs=[self._graph, self._graph_without_node_types],
             number_of_holdouts=self._number_of_holdouts,
@@ -74,7 +74,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             evaluation_schema="Connected Monte Carlo",
             graphs=self._graph,
             number_of_holdouts=self._number_of_holdouts,
@@ -91,7 +91,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             node_type_features=np.random.uniform(
                 size=(self._graph.get_number_of_node_types(), 5)
             ),
@@ -110,7 +110,7 @@ class TestEvaluateEdgePrediction(TestCase):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
         multi_label_graph = graph.set_all_node_types("hu") | graph
-        node_features = SPINE(embedding_size=10).fit_transform(graph)
+        node_features = DegreeSPINE(embedding_size=10).fit_transform(graph)
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
@@ -321,7 +321,7 @@ class TestEvaluateEdgePrediction(TestCase):
                             **model.smoke_test_parameters(),
                         }
                     ),
-                    node_features=SPINE(embedding_size=10),
+                    node_features=DegreeSPINE(embedding_size=10),
                     evaluation_schema=evaluation_schema,
                     graphs=graph,
                     number_of_holdouts=self._number_of_holdouts,

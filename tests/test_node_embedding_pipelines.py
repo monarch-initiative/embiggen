@@ -17,7 +17,7 @@ class TestNodeEmbeddingPipeline(TestCase):
         super().setUp()
 
     def test_embedding_pipeline(self):
-        """Test that embed pipeline works fine in SPINE."""
+        """Test that embed pipeline works."""
         df = get_available_models_for_node_embedding()
         bar = tqdm(
             df.iterrows(),
@@ -44,7 +44,7 @@ class TestNodeEmbeddingPipeline(TestCase):
             )
 
     def test_hope_ensmallen(self):
-        """Test that embed pipeline works fine in SPINE."""
+        """Test that embed pipeline works."""
         graph_name = "CIO"
         repository="kgobo"
 

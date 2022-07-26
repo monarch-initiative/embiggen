@@ -2,7 +2,7 @@ import pytest
 from unittest import TestCase
 from embiggen.edge_label_prediction.edge_label_prediction_tensorflow.graph_sage import GraphSAGEEdgeLabelPrediction
 from ensmallen.datasets.string import SpeciesTree
-from embiggen.embedders.ensmallen_embedders.spine import SPINE
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 
 class TestGCNEdgeLabelPrediction(TestCase):
 
@@ -18,5 +18,5 @@ class TestGCNEdgeLabelPrediction(TestCase):
         with pytest.raises(RuntimeError):
             model.fit(
                 SpeciesTree(),
-                node_features=SPINE(embedding_size=4)
+                node_features=DegreeSPINE(embedding_size=4)
             )

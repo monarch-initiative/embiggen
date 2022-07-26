@@ -41,6 +41,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
             - Left Normalized Laplacian
             - Right Normalized Laplacian
             - Symmetric Normalized Laplacian
+            - Resnik
         root_node_name: Optional[str] = None
             Root node to use when the ancestors mode for
             the Jaccard index is selected.
@@ -88,6 +89,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
     def get_available_metrics(cls) -> List[str]:
         """Returns list of the available metrics."""
         return [
+            "Resnik",
             "Jaccard",
             "Shortest Paths",
             "Neighbours Intersection size",
