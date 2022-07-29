@@ -17,7 +17,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
 
     def __init__(
         self,
-        number_of_negative_samples: int = 5,
+        number_of_negative_samples: int = 10,
         batch_size: int = 128,
         embedding_size: int = 100,
         epochs: int = 10,
@@ -35,7 +35,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         max_neighbours: int = 100,
         normalize_by_degree: bool = False,
         random_state: int = 42,
-        optimizer: str = "sgd",
+        optimizer: str = "nadam",
         verbose: bool = False,
         use_mirrored_strategy: bool = False,
         enable_cache: bool = False
@@ -44,7 +44,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
 
         Parameters
         -------------------------------
-        number_of_negative_samples: int = 5
+        number_of_negative_samples: int = 10
             The number of negative classes to randomly sample per batch.
             This single sample of negative classes is evaluated for each element in the batch.
         batch_size: int = 128
@@ -103,7 +103,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             of the destination node degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
-        optimizer: str = "sgd"
+        optimizer: str = "nadam"
             Optimizer to use during the training.
         verbose: bool = False
             Whether to show loading bars.
@@ -134,6 +134,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
+            verbose=verbose,
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache
         )
