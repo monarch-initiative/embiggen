@@ -25,9 +25,9 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         early_stopping_patience: int = 5,
         learning_rate_plateau_min_delta: float = 0.001,
         learning_rate_plateau_patience: int = 3,
-        window_size: int = 4,
+        window_size: int = 10,
         walk_length: int = 128,
-        iterations: int = 1,
+        iterations: int = 10,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         change_node_type_weight: float = 1.0,
@@ -51,7 +51,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             The number of nodes to consider for each walk.
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 50
             Number of epochs to train the model for.
         early_stopping_min_delta: float
             The minimum variation in the provided patience time

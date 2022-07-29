@@ -41,28 +41,60 @@ class DAGResnik:
 
         Arguments
         --------------------
-        first_node_id: NodeT
+        first_node_id: int
             The first node for which to compute the similarity.
-        second_node_id: NodeT
+        second_node_id: int
             The second node for which to compute the similarity.
         """
         return self._model.get_similarity_from_node_id(first_node_id, second_node_id)
 
+    def get_similarity_from_node_ids(
+        self,
+        first_node_ids: List[int],
+        second_node_ids: List[int]
+    ) -> np.ndarray:
+        """Return the similarity between the two provided nodes.
+
+        Arguments
+        --------------------
+        first_node_ids: List[int]
+            The first node for which to compute the similarity.
+        second_node_ids: List[int]
+            The second node for which to compute the similarity.
+        """
+        return self._model.get_similarity_from_node_ids(first_node_ids, second_node_ids)
+
     def get_similarity_from_node_name(
         self,
-        first_node_name: int,
-        second_node_name: int
+        first_node_name: str,
+        second_node_name: str
     ) -> float:
         """Return the similarity between the two provided nodes.
 
         Arguments
         --------------------
-        first_node_name: NodeT
+        first_node_name: str
             The first node for which to compute the similarity.
-        second_node_name: NodeT
+        second_node_name: str
             The second node for which to compute the similarity.
         """
         return self._model.get_similarity_from_node_name(first_node_name, second_node_name)
+
+    def get_similarity_from_node_names(
+        self,
+        first_node_names: List[str],
+        second_node_names: List[str]
+    ) -> np.ndarray:
+        """Return the similarity between the two provided nodes.
+
+        Arguments
+        --------------------
+        first_node_names: List[str]
+            The first node for which to compute the similarity.
+        second_node_names: List[str]
+            The second node for which to compute the similarity.
+        """
+        return self._model.get_similarity_from_node_names(first_node_names, second_node_names)
 
     def get_pairwise_similarities(
         self,
