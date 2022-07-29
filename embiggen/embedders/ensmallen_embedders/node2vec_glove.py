@@ -9,11 +9,11 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 500,
+        epochs: int = 100,
         clipping_value: float = 6.0,
         walk_length: int = 128,
-        iterations: int = 10,
-        window_size: int = 10,
+        iterations: int = 3,
+        window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
         max_neighbours: Optional[int] = 100,
@@ -41,9 +41,9 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 10
+        iterations: int = 3
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 0.25

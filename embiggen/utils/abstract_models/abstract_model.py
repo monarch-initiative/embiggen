@@ -11,7 +11,6 @@ def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
     """Simply adds a descriptor for meta-programming and nothing else."""
     return klass
 
-
 def is_not_implemented(method: Callable) -> bool:
     """Returns whether this method contains a raise for not being implemented."""
     return "raise NotImplementedError" in inspect.getsource(method)

@@ -9,11 +9,11 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 500,
+        epochs: int = 100,
         clipping_value: float = 6.0,
         walk_length: int = 128,
-        iterations: int = 10,
-        window_size: int = 10,
+        iterations: int = 3,
+        window_size: int = 5,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -39,9 +39,9 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 10
+        iterations: int = 3
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         max_neighbours: Optional[int] = 100
