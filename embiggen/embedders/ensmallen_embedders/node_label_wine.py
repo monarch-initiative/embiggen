@@ -1,4 +1,4 @@
-"""Module providing Node-label-based SPINE implementation."""
+"""Module providing Node-label-based WINE implementation."""
 from typing import Optional, Dict, Any
 from ensmallen import Graph
 import pandas as pd
@@ -7,25 +7,26 @@ from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenE
 from embiggen.utils import EmbeddingResult
 
 
-class NodeLabelSPINE(EnsmallenEmbedder):
-    """Class implementing the Node-label-based SPINE algorithm."""
+class NodeLabelWINE(EnsmallenEmbedder):
+    """Class implementing the Node-label-based WINE algorithm."""
 
     def __init__(
         self,
         dtype: Optional[str] = "u8",
-        maximum_depth: Optional[int] = None,
+        walk_length: Optional[int] = None,
         path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new Node-label-based SPINE method.
+        """Create new Node-label-based WINE method.
 
         Parameters
         --------------------------
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-        maximum_depth: Optional[int] = None
-            Maximum depth of the shortest path.
+        walk_length: int = 2
+            Length of the random walk.
+            By default 2, to capture exclusively the immediate context.
         path: Optional[str] = None
             Path where to store the mmap-ed embedding.
             This parameter is necessary to embed very large graphs.
@@ -37,11 +38,11 @@ class NodeLabelSPINE(EnsmallenEmbedder):
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._maximum_depth = maximum_depth
+        self._walk_length = walk_length
         self._path = path
-        self._model = models.NodeLabelSPINE(
+        self._model = models.NodeLabelWINE(
             verbose=self._verbose,
-            maximum_depth=self._maximum_depth,
+            walk_length=self._walk_length,
             path=self._path
         )
 
@@ -59,7 +60,7 @@ class NodeLabelSPINE(EnsmallenEmbedder):
             },
             **dict(
                 dtype=self._dtype,
-                maximum_depth=self._maximum_depth,
+                walk_length=self._walk_length,
                 path=self._path,
             )
         )
@@ -91,7 +92,7 @@ class NodeLabelSPINE(EnsmallenEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "Node-label-based SPINE"
+        return "Node-label-based WINE"
 
     @classmethod
     def requires_node_types(cls) -> bool:

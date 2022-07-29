@@ -70,7 +70,7 @@ class TestGraphVisualizer(TestCase):
                     ):
                         with pytest.raises(ValueError):
                             visualization.__getattribute__(callback_method)()
-                    visualization.fit_and_plot_all("SPINE", embedding_size=5)
+                    visualization.fit_and_plot_all("Degree-based SPINE", embedding_size=5)
                     visualization.plot_dot()
                     visualization.plot_edges()
                     visualization.plot_node_degree_distribution()
@@ -117,7 +117,7 @@ class TestGraphVisualizer(TestCase):
                             visualization.plot_edge_weight_distribution()
                         with pytest.raises(ValueError):
                             visualization.plot_edge_weights()
-                    visualization.fit_and_plot_all("SPINE", embedding_size=2)
+                    visualization.fit_and_plot_all("Degree-based SPINE", embedding_size=2)
                     visualization = GraphVisualizer(
                         graph,
                         decomposition_method=method,
@@ -131,7 +131,7 @@ class TestGraphVisualizer(TestCase):
                     visualization.plot_edges()
                     visualization.plot_nodes(annotate_nodes=True, show_edges=True)
                     visualization.fit_and_plot_all(
-                        "SPINE",
+                        "Degree-based SPINE",
                         embedding_size=3,
                         include_distribution_plots=False
                     )
@@ -144,7 +144,7 @@ class TestGraphVisualizer(TestCase):
                         duration=1,
                         decomposition_kwargs=decomposition_kwargs,
                     )
-                    visualization.fit_negative_and_positive_edges("SPINE", embedding_size=3)
+                    visualization.fit_negative_and_positive_edges("Degree-based SPINE", embedding_size=3)
                     visualization.fit_nodes(pd.DataFrame(
                         np.random.uniform(size=(
                             graph.get_number_of_nodes(),

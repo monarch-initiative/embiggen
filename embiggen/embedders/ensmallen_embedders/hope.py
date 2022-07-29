@@ -89,7 +89,6 @@ class HOPEEnsmallen(EnsmallenEmbedder):
     def get_available_metrics(cls) -> List[str]:
         """Returns list of the available metrics."""
         return [
-            "Resnik",
             "Jaccard",
             "Shortest Paths",
             "Neighbours Intersection size",

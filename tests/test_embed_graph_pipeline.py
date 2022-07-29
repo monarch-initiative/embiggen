@@ -89,7 +89,7 @@ class TestEmbedGraph(TestCase):
 
         embed_graph(
             "Cora",
-            embedding_model="SPINE",
+            embedding_model="Degree-based SPINE",
             repository="linqs"
         )
 

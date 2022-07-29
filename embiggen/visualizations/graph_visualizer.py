@@ -855,9 +855,6 @@ class GraphVisualizer:
 
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
-        # Rules to detect SPINE embedding
-        if node_embedding.dtype == "uint8" and node_embedding.min() == 0:
-            return "SPINE"
         # Rules to detect TFIDF/BERT embedding
         if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
             return "TFIDF-weighted BERT"

@@ -63,6 +63,11 @@ class AbstractEmbeddingModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
+    @classmethod
+    def get_minimum_required_number_of_node_types(cls) -> int:
+        """Requires minimum number of required node types."""
+        return 0
+
     def _fit_transform(
         self,
         graph: Graph,
@@ -123,6 +128,14 @@ class AbstractEmbeddingModel(AbstractModel):
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires node types."
+            )
+        
+        if self.requires_node_types() and graph.get_number_of_node_types() <= 1:
+            raise ValueError(
+                f"The {self.model_name()} requires the graph to have "
+                f"at least {self.get_minimum_required_number_of_node_types()} node types, "
+                f"but the provided one has {graph.get_number_of_node_types()} "
+                "node types."
             )
 
         if self.requires_edge_types() and not graph.has_edge_types():

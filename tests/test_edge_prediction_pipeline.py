@@ -342,6 +342,8 @@ class TestEvaluateEdgePrediction(TestCase):
             desc="Testing embedding methods"
         )
         for _, row in bar:
+            if row.requires_node_types:
+                continue
             if row.requires_edge_weights:
                 graph_name = Usair97
             else:
@@ -379,7 +381,7 @@ class TestEvaluateEdgePrediction(TestCase):
                 ),
                 evaluation_schema="Connected Monte Carlo",
                 graphs=self._graph,
-                node_features="SPINE",
+                node_features="Degree-based SPINE",
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False
             )

@@ -15,6 +15,7 @@ class DegreeSPINE(EnsmallenEmbedder):
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
         maximum_depth: Optional[int] = None,
+        path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
@@ -26,9 +27,11 @@ class DegreeSPINE(EnsmallenEmbedder):
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-            Note that an improper dtype may cause overflows.
         maximum_depth: Optional[int] = None
             Maximum depth of the shortest path.
+        path: Optional[str] = None
+            Path where to store the mmap-ed embedding.
+            This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
@@ -38,10 +41,12 @@ class DegreeSPINE(EnsmallenEmbedder):
         self._dtype = dtype
         self._verbose = verbose
         self._maximum_depth = maximum_depth
+        self._path = path
         self._model = models.DegreeSPINE(
             embedding_size=embedding_size,
             verbose=self._verbose,
-            maximum_depth=self._maximum_depth
+            maximum_depth=self._maximum_depth,
+            path=self._path
         )
 
         super().__init__(
@@ -54,7 +59,9 @@ class DegreeSPINE(EnsmallenEmbedder):
         return {
             **super().parameters(),
             **dict(
-                dtype=self._dtype
+                dtype=self._dtype,
+                maximum_depth=self._maximum_depth,
+                path=self._path,
             )
         }
     @classmethod

@@ -149,7 +149,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
         )
         graph = PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for _, row in bar:
-            if row.requires_edge_weights or row.requires_edge_types:
+            if row.requires_edge_weights or row.requires_edge_types or row.requires_node_types:
                 continue
 
             bar.set_description(

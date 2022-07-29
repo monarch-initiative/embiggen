@@ -30,8 +30,8 @@ class TestNodeEmbeddingPipeline(TestCase):
                 graph_name = "Usair97"
                 repository = "networkrepository"
             else:
-                graph_name = "CIO"
-                repository="kgobo"
+                graph_name = "Cora"
+                repository="linqs"
 
             bar.set_description(f"Testing {row.model_name} from {row.library_name}")
 

@@ -1,4 +1,4 @@
-"""Module providing Node-label-based SPINE implementation."""
+"""Module providing Degree-based WINE implementation."""
 from typing import Optional, Dict, Any
 from ensmallen import Graph
 import pandas as pd
@@ -7,25 +7,29 @@ from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenE
 from embiggen.utils import EmbeddingResult
 
 
-class NodeLabelSPINE(EnsmallenEmbedder):
-    """Class implementing the Node-label-based SPINE algorithm."""
+class DegreeWINE(EnsmallenEmbedder):
+    """Class implementing the Degree-based WINE algorithm."""
 
     def __init__(
         self,
+        embedding_size: int = 100,
         dtype: Optional[str] = "u8",
-        maximum_depth: Optional[int] = None,
+        walk_length: int = 2,
         path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new Node-label-based SPINE method.
+        """Create new Degree-based WINE method.
 
         Parameters
         --------------------------
+        embedding_size: int = 100
+            Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-        maximum_depth: Optional[int] = None
-            Maximum depth of the shortest path.
+        walk_length: int = 2
+            Length of the random walk.
+            By default 2, to capture exclusively the immediate context.
         path: Optional[str] = None
             Path where to store the mmap-ed embedding.
             This parameter is necessary to embed very large graphs.
@@ -37,36 +41,36 @@ class NodeLabelSPINE(EnsmallenEmbedder):
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._maximum_depth = maximum_depth
+        self._walk_length = walk_length
         self._path = path
-        self._model = models.NodeLabelSPINE(
+        self._model = models.DegreeWINE(
+            embedding_size=embedding_size,
             verbose=self._verbose,
-            maximum_depth=self._maximum_depth,
+            walk_length=self._walk_length,
             path=self._path
         )
 
         super().__init__(
+            embedding_size=embedding_size,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return dict(
-            **{
-                key: value
-                for key, value in super().parameters().items()
-                if key != "embedding_size"
-            },
+        return {
+            **super().parameters(),
             **dict(
                 dtype=self._dtype,
-                maximum_depth=self._maximum_depth,
+                walk_length=self._walk_length,
                 path=self._path,
             )
-        )
+        }
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
-        return dict()
+        return dict(
+            embedding_size=5,
+        )
 
     def _fit_transform(
         self,
@@ -91,17 +95,12 @@ class NodeLabelSPINE(EnsmallenEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "Node-label-based SPINE"
+        return "Degree-based WINE"
 
     @classmethod
-    def requires_node_types(cls) -> bool:
-        """Returns whether the model requires node types."""
-        return True
-
-    @classmethod
-    def get_minimum_required_number_of_node_types(cls) -> int:
-        """Requires minimum number of required node types."""
-        return 2
+    def can_use_node_types(cls) -> bool:
+        """Returns whether the model can optionally use node types."""
+        return False
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:

@@ -13,10 +13,11 @@ class ScoreSPINE(EnsmallenEmbedder):
 
     def __init__(
         self,
-        scores: np.ndarray,
+        scores: Optional[np.ndarray] = None,
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
         maximum_depth: Optional[int] = None,
+        path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
@@ -24,15 +25,17 @@ class ScoreSPINE(EnsmallenEmbedder):
 
         Parameters
         --------------------------
-        scores: np.ndarray
+        scores: Optional[np.ndarray] = None
             Numpy array to be used to sort the anchor nodes.
         embedding_size: int = 100
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-            Note that an improper dtype may cause overflows.
         maximum_depth: Optional[int] = None
             Maximum depth of the shortest path.
+        path: Optional[str] = None
+            Path where to store the mmap-ed embedding.
+            This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
@@ -42,11 +45,13 @@ class ScoreSPINE(EnsmallenEmbedder):
         self._dtype = dtype
         self._verbose = verbose
         self._maximum_depth = maximum_depth
+        self._path = path
         self._scores = scores
         self._model = models.ScoreSPINE(
             embedding_size=embedding_size,
             verbose=self._verbose,
-            maximum_depth=self._maximum_depth
+            maximum_depth=self._maximum_depth,
+            path=self._path
         )
 
         super().__init__(
@@ -59,9 +64,12 @@ class ScoreSPINE(EnsmallenEmbedder):
         return {
             **super().parameters(),
             **dict(
-                dtype=self._dtype
+                dtype=self._dtype,
+                maximum_depth=self._maximum_depth,
+                path=self._path,
             )
         }
+
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
@@ -76,7 +84,8 @@ class ScoreSPINE(EnsmallenEmbedder):
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
-            scores=self._scores,
+            scores=(np.ones(graph.get_number_of_nodes())
+                    if self._scores is None else self._scores).astype(np.float32),
             graph=graph,
             dtype=self._dtype,
         )
