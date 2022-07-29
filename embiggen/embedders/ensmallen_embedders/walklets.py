@@ -15,11 +15,11 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         alpha: float = 0.75,
         normalize_by_degree: bool = False,
@@ -35,7 +35,7 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 30
             Number of epochs to train the model for.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
@@ -47,7 +47,7 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 4
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0
@@ -68,7 +68,7 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.05
+        learning_rate: float = 0.01
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.

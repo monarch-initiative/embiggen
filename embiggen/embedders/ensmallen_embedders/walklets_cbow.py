@@ -14,11 +14,11 @@ class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
@@ -45,7 +45,7 @@ class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 4
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0
