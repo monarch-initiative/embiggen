@@ -9,15 +9,15 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 100,
+        epochs: int = 30,
         clipping_value: float = 6.0,
         walk_length: int = 128,
-        iterations: int = 3,
+        iterations: int = 10,
         window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.001,
         learning_rate_decay: float = 0.9,
         central_nodes_embedding_path: Optional[str] = None,
         contextual_nodes_embedding_path: Optional[str] = None,
@@ -43,7 +43,7 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 3
+        iterations: int = 10
             Number of iterations of the single walks.
         window_size: int = 5
             Window size for the local context.
@@ -66,7 +66,7 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.01
+        learning_rate: float = 0.001
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.

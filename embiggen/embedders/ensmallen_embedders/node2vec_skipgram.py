@@ -9,7 +9,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 10,
+        epochs: int = 30,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
@@ -35,7 +35,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 30
             Number of epochs to train the model for.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
