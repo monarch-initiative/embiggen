@@ -21,6 +21,8 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        central_nodes_embedding_path: Optional[str] = None,
+        contextual_nodes_embedding_path: Optional[str] = None,
         alpha: float = 0.75,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
@@ -72,6 +74,18 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        central_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         alpha: float = 0.75
             Alpha parameter for GloVe's loss.
         normalize_by_degree: bool = False
@@ -102,6 +116,8 @@ class WalkletsEnsmallen(Node2VecEnsmallen):
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            central_nodes_embedding_path=central_nodes_embedding_path,
+            contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             alpha=alpha,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,

@@ -20,6 +20,8 @@ class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        central_nodes_embedding_path: Optional[str] = None,
+        contextual_nodes_embedding_path: Optional[str] = None,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
         normalize_learning_rate_by_degree: Optional[bool] = False,
@@ -70,6 +72,18 @@ class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        central_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -98,6 +112,8 @@ class WalkletsCBOWEnsmallen(WalkletsEnsmallen):
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            central_nodes_embedding_path=central_nodes_embedding_path,
+            contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,

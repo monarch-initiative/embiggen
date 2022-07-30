@@ -1,5 +1,5 @@
 """Module providing first-order LINE implementation."""
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ensmallen import Graph
 import pandas as pd
 from ensmallen import models
@@ -16,6 +16,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         epochs: int = 100,
         learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
+        node_embedding_path: Optional[str] = None,
         random_state: int = 42,
         verbose: bool = False,
         enable_cache: bool = False
@@ -32,6 +33,10 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        node_embedding_path: Optional[str] = None
+            Path where to mmap and store the nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
@@ -44,6 +49,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             epochs=epochs,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            node_embedding_path=node_embedding_path,
             verbose=verbose
         )
 

@@ -1,4 +1,5 @@
 """Module providing Unstructured implementation."""
+from typing import Optional
 from ensmallen import Graph
 import pandas as pd
 from embiggen.embedders.ensmallen_embedders.siamese_model import SiameseEnsmallen
@@ -15,6 +16,7 @@ class UnstructuredEnsmallen(SiameseEnsmallen):
         epochs: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        node_embedding_path: Optional[str] = None,
         random_state: int = 42,
         verbose: bool = False,
         enable_cache: bool = False
@@ -36,6 +38,10 @@ class UnstructuredEnsmallen(SiameseEnsmallen):
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        node_embedding_path: Optional[str] = None
+            Path where to mmap and store the nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
@@ -50,6 +56,7 @@ class UnstructuredEnsmallen(SiameseEnsmallen):
             epochs=epochs,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            node_embedding_path=node_embedding_path,
             random_state=random_state,
             verbose=verbose,
             enable_cache=enable_cache,

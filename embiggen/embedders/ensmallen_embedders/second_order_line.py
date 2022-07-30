@@ -1,5 +1,5 @@
 """Module providing second-order LINE implementation."""
-from typing import Dict, Any, Union
+from typing import Dict, Any, Optional
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
@@ -15,8 +15,10 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         epochs: int = 100,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        node_embedding_path: Optional[str] = None,
+        contextual_node_embedding_path: Optional[str] = None,
         random_state: int = 42,
         verbose: bool = False,
         enable_cache: bool = False
@@ -29,10 +31,18 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Dimension of the embedding.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
-        learning_rate: float = 0.05
+        learning_rate: float = 0.01
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        node_embedding_path: Optional[str] = None
+            Path where to mmap and store the nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_node_embedding_path: Optional[str] = None
+            Path where to mmap and store the contextual nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
@@ -41,14 +51,19 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
-        self._verbose = verbose
+        self._kwargs = dict(
+            epochs=epochs,
+            learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay,
+            node_embedding_path=node_embedding_path,
+            contextual_node_embedding_path=contextual_node_embedding_path,
+            verbose=verbose
+        )
 
         self._model = models.SecondOrderLINE(
             embedding_size=embedding_size,
-            random_state=random_state
+            random_state=random_state,
+            **self._kwargs
         )
 
         super().__init__(
@@ -61,12 +76,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         """Returns parameters of the model."""
         return dict(
             **super().parameters(),
-            **dict(
-                verbose=self._verbose,
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
+            **self._kwargs
         )
 
     @classmethod
@@ -83,22 +93,20 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         return_dataframe: bool = True,
     ) -> EmbeddingResult:
         """Return node embedding."""
-        node_embedding = self._model.fit_transform(
-            graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=self._verbose,
-        )
+        node_embeddings = self._model.fit_transform(graph)
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
-            )
+            node_names = graph.get_node_names()
+            node_embeddings = [
+                pd.DataFrame(
+                    node_embedding,
+                    index=node_names
+                )
+                for node_embedding in node_embeddings
+            ]
 
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings= node_embedding,
+            node_embeddings=node_embeddings,
         )
 
     @classmethod
