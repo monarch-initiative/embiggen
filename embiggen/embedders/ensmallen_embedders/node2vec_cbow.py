@@ -14,7 +14,7 @@ class Node2VecCBOWEnsmallen(Node2VecEnsmallen):
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
         max_neighbours: Optional[int] = 100,
@@ -47,7 +47,7 @@ class Node2VecCBOWEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 0.25

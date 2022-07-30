@@ -14,7 +14,7 @@ class DeepWalkSkipGramEnsmallen(Node2VecEnsmallen):
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 5,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -45,7 +45,7 @@ class DeepWalkSkipGramEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         max_neighbours: Optional[int] = 100
