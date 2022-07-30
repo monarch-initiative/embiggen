@@ -36,9 +36,6 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             Dimension of the embedding.
         epochs: int = 30
             Number of epochs to train the model for.
-        clipping_value: float = 6.0
-            Value at which we clip the dot product, mostly for numerical stability issues.
-            By default, `6.0`, where the loss is already close to zero.
         walk_length: int = 128
             Maximal length of the walks.
         iterations: int = 10
