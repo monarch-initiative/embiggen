@@ -31,8 +31,23 @@ class TestDAGResnik(TestCase):
             }
         )
 
-    def test_resnik_api1(self):
+    def test_resnik_api1_a(self):
         self._model.get_similarity_from_node_id(10, 20)
+
+    def test_resnik_api1_b(self):
+        self._model.get_similarity_from_node_ids([10], [20])
+
+    def test_resnik_api1_c(self):
+        self._model.get_similarity_from_node_name(
+            self._graph.get_node_name_from_node_id(0),
+            self._graph.get_node_name_from_node_id(1)
+        )
+
+    def test_resnik_api1_d(self):
+        self._model.get_similarity_from_node_names(
+            [self._graph.get_node_name_from_node_id(0)],
+            [self._graph.get_node_name_from_node_id(1)]
+        )
 
     def test_resnik_api2(self):
         for return_similarities_dataframe in (True, False):
