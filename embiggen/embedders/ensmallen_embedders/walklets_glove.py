@@ -9,8 +9,7 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 10,
-        clipping_value: float = 6.0,
+        epochs: int = 30,
         walk_length: int = 128,
         iterations: int = 10,
         window_size: int = 4,
@@ -35,7 +34,7 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 30
             Number of epochs to train the model for.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
@@ -101,7 +100,6 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         super().__init__(
             embedding_size=embedding_size,
             epochs=epochs,
-            clipping_value=clipping_value,
             alpha=alpha,
             walk_length=walk_length,
             iterations=iterations,
@@ -129,7 +127,8 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         removed = [
-            "number_of_negative_samples"
+            "number_of_negative_samples",
+            "clipping_value"
         ]
         return dict(
             **{
