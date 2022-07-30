@@ -22,6 +22,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         learning_rate: float = 0.001,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
+        avoid_false_negatives: bool = False,
         use_scale_free_distribution: bool = True,
         random_state: int = 42,
         verbose: bool = True
@@ -75,6 +76,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         second_order_decay_factor: float = 0.999
             Second order decay factor for the second order momentum.
             By default 0.999.
+        avoid_false_negatives: bool = False
+            Whether to avoid sampling false negatives.
+            This may cause a slower training.
         use_scale_free_distribution: bool = True
             Whether to train model using a scale free distribution for the negatives.
         random_state: int = 42
@@ -101,6 +105,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             learning_rate=learning_rate,
             first_order_decay_factor=first_order_decay_factor,
             second_order_decay_factor=second_order_decay_factor,
+            avoid_false_negatives=avoid_false_negatives,
             use_scale_free_distribution=use_scale_free_distribution,
         )
         self._verbose = verbose

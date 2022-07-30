@@ -17,6 +17,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         epochs: int = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        avoid_false_negatives: bool = False,
         node_embedding_path: Optional[str] = None,
         contextual_node_embedding_path: Optional[str] = None,
         random_state: int = 42,
@@ -35,6 +36,9 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        avoid_false_negatives: bool = False
+            Whether to avoid sampling false negatives.
+            This may cause a slower training.
         node_embedding_path: Optional[str] = None
             Path where to mmap and store the nodes embedding.
             This is necessary to embed large graphs whose embedding will not
@@ -55,6 +59,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             epochs=epochs,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            avoid_false_negatives=avoid_false_negatives,
             node_embedding_path=node_embedding_path,
             contextual_node_embedding_path=contextual_node_embedding_path,
             verbose=verbose
