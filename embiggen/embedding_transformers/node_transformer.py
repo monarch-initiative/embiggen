@@ -89,21 +89,22 @@ class NodeTransformer:
 
         if self._aligned_mapping:
             if node_feature is not None:
-                self._node_feature = np.hstack([
-                    nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
-                    for nf in node_feature
-                ])
-                if not self._node_feature.data.c_contiguous:
-                    self._node_feature = np.ascontiguousarray(self._node_feature)
+                if len(node_feature) > 1:
+                    self._node_feature = np.hstack([
+                        nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
+                        for nf in node_feature
+                    ])
+                else:
+                    self._node_feature = node_feature
 
             if node_type_feature is not None:
-                self._node_type_feature = np.hstack([
-                    nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
-                    for nf in node_type_feature
-                ])
-                if not self._node_type_feature.data.c_contiguous:
-                    self._node_type_feature = np.ascontiguousarray(
-                        self._node_type_feature)
+                if len(node_type_feature) > 1:
+                    self._node_type_feature = np.hstack([
+                        nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
+                        for nf in node_type_feature
+                    ])
+                else:
+                    self._node_type_feature = node_type_feature
         else:
             if node_feature is not None:
                 self._node_feature = pd.concat(node_feature, axis=1)
