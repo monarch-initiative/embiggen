@@ -95,7 +95,7 @@ class NodeTransformer:
                         for nf in node_feature
                     ])
                 else:
-                    self._node_feature = node_feature
+                    self._node_feature = node_feature[0]
 
             if node_type_feature is not None:
                 if len(node_type_feature) > 1:
@@ -104,7 +104,7 @@ class NodeTransformer:
                         for nf in node_type_feature
                     ])
                 else:
-                    self._node_type_feature = node_type_feature
+                    self._node_type_feature = node_type_feature[0]
         else:
             if node_feature is not None:
                 self._node_feature = pd.concat(node_feature, axis=1)
