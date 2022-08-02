@@ -442,10 +442,6 @@ class EdgeTransformer:
                     "numpy arrays of type uint32, but you have provided objects of type "
                     f"{sources.dtype} and {destinations.dtype}. "
                 )
-            if self._transformer._node_feature.dtype != np.float32:
-                self._transformer._node_feature = self._transformer._node_feature.astype(
-                    np.float32
-                )
             if not self._transformer._node_feature.data.c_contiguous:
                 self._transformer._node_feature = np.ascontiguousarray(
                     self._transformer._node_feature

@@ -157,8 +157,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         new_node_features = []
         if node_features is not None:
             for node_feature in node_features:
-                if node_feature.dtype != np.float32:
-                    node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
@@ -174,12 +172,11 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
                 node_feature = node_transformer.transform(
                     node_types=graph
                 )
-                if node_feature.dtype != np.float32:
-                    node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
 
+        
         self._model.fit(
             graph=graph,
             node_features=new_node_features,
@@ -250,8 +247,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         new_node_features = []
         if node_features is not None:
             for node_feature in node_features:
-                if node_feature.dtype != np.float32:
-                    node_feature = node_feature.astype(np.float32)
                 if not node_feature.data.c_contiguous:
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
