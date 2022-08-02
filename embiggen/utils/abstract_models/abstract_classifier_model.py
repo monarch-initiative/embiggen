@@ -4,6 +4,7 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import time
+from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
@@ -238,17 +239,11 @@ class AbstractClassifierModel(AbstractModel):
                 node_feature.set_random_state(random_state)
 
             if smoke_test:
-                node_feature = node_feature.__class__(
-                    **node_feature.smoke_test_parameters()
-                )
+                node_feature = node_feature.into_smoke_test()
 
             node_feature = node_feature.fit_transform(
                 graph=graph,
-                return_dataframe=False,
-                # If this is an Ensmallen model, we can enable the verbosity
-                # as it will only show up in the jupyter kernel and it won't bother the
-                # other loading bars.
-                verbose="Ensmallen" == node_feature.library_name()
+                return_dataframe=False
             )
 
         if isinstance(node_feature, EmbeddingResult):
@@ -441,14 +436,11 @@ class AbstractClassifierModel(AbstractModel):
                 node_type_feature.set_random_state(random_state)
 
             if smoke_test:
-                node_type_feature = node_type_feature.__class__(
-                    **node_type_feature.smoke_test_parameters()
-                )
+                node_type_feature = node_type_feature.into_smoke_test()
 
             node_type_feature = node_type_feature.fit_transform(
                 graph=graph,
                 return_dataframe=False,
-                verbose=False
             )
 
         if isinstance(node_type_feature, EmbeddingResult):
@@ -641,14 +633,11 @@ class AbstractClassifierModel(AbstractModel):
                 edge_feature.set_random_state(random_state)
 
             if smoke_test:
-                edge_feature = edge_feature.__class__(
-                    **edge_feature.smoke_test_parameters()
-                )
+                edge_feature = edge_feature.into_smoke_test()
 
             edge_feature = edge_feature.fit_transform(
                 graph=graph,
                 return_dataframe=False,
-                verbose=False
             )
 
         if isinstance(edge_feature, EmbeddingResult):
@@ -670,7 +659,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_directed_edges_number() != ef.shape[0]:
+            if graph.get_number_of_directed_edges() != ef.shape[0]:
                 raise ValueError(
                     (
                         "The provided edge features have {rows_number} rows "
@@ -806,6 +795,9 @@ class AbstractClassifierModel(AbstractModel):
                 f"the {self.model_name()} requires edge types."
             )
 
+        if support is None:
+            support = graph
+
         try:
             self._fit(
                 graph=graph,
@@ -872,22 +864,29 @@ class AbstractClassifierModel(AbstractModel):
                 "Do call the `.fit` method before the `.predict` "
                 "method."
             ))
+
+        if support is None:
+            support = graph
+        
         try:
-            return self._predict(
+            predictions = self._predict(
                 graph=graph,
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=False,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=False,
                 ),
@@ -898,6 +897,8 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
+            
+        return predictions
 
     def predict_proba(
         self,
@@ -934,8 +935,11 @@ class AbstractClassifierModel(AbstractModel):
                 "method."
             ))
 
+        if support is None:
+            support = graph
+
         try:
-            return self._predict_proba(
+            predictions = self._predict_proba(
                 graph=graph,
                 support=support,
                 node_features=self.normalize_node_features(
@@ -963,6 +967,23 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
+
+        if (
+            not self.is_binary_prediction_task() and
+            not self.is_multilabel_prediction_task() and
+            (
+                len(predictions.shape) == 1 or
+                predictions.shape[1] == 2
+            )
+        ):
+            raise ValueError(
+                "This task is not a binary prediction, "
+                f"yet the {self.model_name()} model predict proba method has "
+                "returned a vector of prediction probabilities with "
+                f"shape {predictions.shape}."
+            )
+            
+        return predictions
 
     def evaluate_predictions(
         self,
@@ -1002,7 +1023,7 @@ class AbstractClassifierModel(AbstractModel):
                 metric.__name__: metric(
                     ground_truth,
                     predictions,
-                    average="binary" if self.is_binary_prediction_task() else "macro",
+                    average="macro",
                     zero_division=0
                 )
                 for metric in (
@@ -1027,7 +1048,6 @@ class AbstractClassifierModel(AbstractModel):
         prediction_probabilities: np.ndarray
             The predictions to be evaluated.
         """
-        metrics = []
         if self.is_binary_prediction_task():
             return {
                 "auroc": express_measures.binary_auroc(
@@ -1044,18 +1064,16 @@ class AbstractClassifierModel(AbstractModel):
         def wrapper_roc_auc_score(*args, **kwargs):
             return roc_auc_score(*args, **kwargs, multi_class="ovr")
 
-        metrics.append(wrapper_roc_auc_score)
-
         return {
-            metric.__name__: metric(
+            "auroc": wrapper_roc_auc_score(
                 ground_truth,
-                prediction_probabilities,
+                prediction_probabilities
             )
-            for metric in metrics
         }
 
-    @staticmethod
+    @classmethod
     def split_graph_following_evaluation_schema(
+        cls,
         graph: Graph,
         evaluation_schema: str,
         holdout_number: int,
@@ -1077,9 +1095,10 @@ class AbstractClassifierModel(AbstractModel):
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
-        raise NotImplementedError(
-            "The `split_graph_following_evaluation_schema` method should be implemented "
-            "in the child classes of abstract classifier model."
+        must_be_in_set(
+            evaluation_schema,
+            cls.get_available_evaluation_schemas(),
+            f"evaluation schema for {cls.task_name()} and model {cls.model_name()}"
         )
 
     def _evaluate(
@@ -1211,7 +1230,7 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test"],
+        args_to_ignore=["verbose", "smoke_test", "train_of_interest", "test_of_interest", "train",],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )

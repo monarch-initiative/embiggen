@@ -39,6 +39,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new GraphSAGE object.
@@ -160,6 +161,9 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -173,6 +177,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=True,
+            combiner="mean",
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -195,6 +200,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_feature_names=edge_feature_names,
             verbose=verbose,
         )
     
@@ -202,7 +208,8 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "apply_norm",
-            "use_simmetric_normalized_laplacian"
+            "use_simmetric_normalized_laplacian",
+            "combiner"
         ]
         return dict(
             **{

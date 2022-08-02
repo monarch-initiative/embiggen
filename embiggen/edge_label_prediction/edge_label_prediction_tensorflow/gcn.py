@@ -1,9 +1,9 @@
 """GCN model for edge-label prediction."""
-from typing import List, Union, Optional, Dict, Type, Any
+from typing import List, Union, Optional, Dict, Type
 
 import numpy as np
 from ensmallen import Graph
-
+import tensorflow as tf
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
@@ -25,6 +25,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
         apply_norm: bool = False,
+        combiner: str = "mean",
         edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -47,6 +48,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -77,6 +79,13 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        combiner: str = "mean"
+            A string specifying the reduction op.
+            Currently "mean", "sqrtn" and "sum" are supported. 
+            "sum" computes the weighted sum of the embedding results for each row.
+            "mean" is the weighted sum divided by the total weight.
+            "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
+            Defaults to mean.
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
@@ -173,6 +182,9 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -187,6 +199,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner=combiner,
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -209,6 +222,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_feature_names=edge_feature_names,
             verbose=verbose,
         )
         AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
@@ -245,4 +259,6 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
 
     def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
+        if self.is_binary_prediction_task():
+            return 1
         return graph.get_number_of_edge_types()

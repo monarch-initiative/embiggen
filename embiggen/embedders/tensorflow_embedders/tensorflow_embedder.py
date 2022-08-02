@@ -28,6 +28,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         epochs: int = 10,
         batch_size: int = 2**10,
         optimizer: str = "nadam",
+        verbose: bool = False,
         use_mirrored_strategy: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
@@ -56,6 +57,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Batch size to use during the training.
         optimizer: str = "nadam"
             Optimizer to use during the training.
+        verbose: bool = False
+            Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
         enable_cache: bool = False
@@ -74,6 +77,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self._epochs = epochs
         self._batch_size = batch_size
         self._optimizer = optimizer
+        self._verbose = verbose
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
         self._learning_rate_plateau_min_delta = learning_rate_plateau_min_delta
@@ -93,19 +97,20 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 use_mirrored_strategy=self._use_mirrored_strategy,
                 epochs=self._epochs,
                 batch_size=self._batch_size,
                 optimizer=self._optimizer,
+                verbose=self._verbose,
                 early_stopping_min_delta=self._early_stopping_min_delta,
                 early_stopping_patience=self._early_stopping_patience,
                 learning_rate_plateau_min_delta=self._learning_rate_plateau_min_delta,
                 learning_rate_plateau_patience=self._learning_rate_plateau_patience,
             )
-        }
+        )
 
     @classmethod
     def library_name(cls) -> str:
@@ -125,7 +130,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             "called `_build_model`. Please do implement it."
         )
 
-    def _build_input(self, graph: Graph, verbose: bool) -> Tuple[Any]:
+    def _build_input(self, graph: Graph) -> Tuple[Any]:
         """Returns values to be fed as input into the model.
 
         Parameters
@@ -209,7 +214,6 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding"""
         try:
@@ -230,7 +234,6 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         # Get the model input
         training_input = self._build_input(
             graph,
-            verbose=verbose
         )
 
         if not isinstance(training_input, tuple):
@@ -242,7 +245,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         model.fit(
             *training_input,
             epochs=self._epochs,
-            verbose=traditional_verbose and verbose > 0,
+            verbose=traditional_verbose and self._verbose > 0,
             batch_size=(
                 self._batch_size
                 if issubclass(training_input[0].__class__, Sequence)
@@ -264,7 +267,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
                     mode="min",
                 ),
                 *((TqdmCallback(verbose=1, leave=False),)
-                  if not traditional_verbose and verbose > 0 else ()),
+                  if not traditional_verbose and self._verbose > 0 else ()),
             ],
         )
 

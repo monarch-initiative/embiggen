@@ -1,101 +1,81 @@
 """Module providing TransE implementation."""
-from typing import Dict, Any, Union
+from typing import Optional
 from ensmallen import Graph
-import numpy as np
 import pandas as pd
-from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.siamese_model import SiameseEnsmallen
+from embiggen.utils import EmbeddingResult
 
 
-class TransEEnsmallen(AbstractEmbeddingModel):
+class TransEEnsmallen(SiameseEnsmallen):
     """Class implementing the TransE algorithm."""
 
     def __init__(
         self,
         embedding_size: int = 100,
-        renormalize: bool = True,
         relu_bias: float = 1.0,
         epochs: int = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
+        node_embedding_path: Optional[str] = None,
+        edge_type_embedding_path: Optional[str] = None,
         random_state: int = 42,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new TransE method.
 
         Parameters
         --------------------------
+        model_name: str
+            The model to instantiate.
         embedding_size: int = 100
             Dimension of the embedding.
-        renormalize: bool = True
-            Whether to renormalize at each loop, by default true.
         relu_bias: float = 1.0
             Bias to use for the relu.
             In the TransE paper it is called gamma.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
-        learning_rate: float = 0.01
+        learning_rate: float = 0.05
             The learning rate to update the gradient, by default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        node_embedding_path: Optional[str] = None
+            Path where to mmap and store the nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        edge_type_embedding_path: Optional[str] = None
+            Path where to mmap and store the edge type embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         random_state: int = 42
             Random state to reproduce the embeddings.
+        verbose: bool = False
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._renormalize = renormalize
-        self._relu_bias = relu_bias
-        self._epochs = epochs
-        self._learning_rate = learning_rate
-        self._learning_rate_decay = learning_rate_decay
-
-        self._model = models.TransE(
-            embedding_size=embedding_size,
-            renormalize=renormalize,
-            random_state=random_state
-        )
-
         super().__init__(
             embedding_size=embedding_size,
+            relu_bias=relu_bias,
+            epochs=epochs,
+            learning_rate=learning_rate,
+            learning_rate_decay=learning_rate_decay,
+            node_embedding_path=node_embedding_path,
+            edge_type_embedding_path=edge_type_embedding_path,
+            random_state=random_state,
+            verbose=verbose,
             enable_cache=enable_cache,
-            random_state=random_state
-        )
-
-    def parameters(self) -> Dict[str, Any]:
-        """Returns parameters of the model."""
-        return {
-            **super().parameters(),
-            **dict(
-                renormalize=self._renormalize,
-                relu_bias=self._relu_bias,
-                epochs=self._epochs,
-                learning_rate=self._learning_rate,
-                learning_rate_decay=self._learning_rate_decay,
-            )
-        }
-
-    @classmethod
-    def smoke_test_parameters(cls) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            embedding_size=5,
-            epochs=1
         )
 
     def _fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding, edge_type_embedding = self._model.fit_transform(
             graph,
-            epochs=self._epochs,
-            learning_rate=self._learning_rate,
-            learning_rate_decay=self._learning_rate_decay,
-            verbose=verbose,
         )
         if return_dataframe:
             node_embedding = pd.DataFrame(
@@ -109,13 +89,9 @@ class TransEEnsmallen(AbstractEmbeddingModel):
 
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings= node_embedding,
-            edge_type_embeddings= edge_type_embedding,
+            node_embeddings=node_embedding,
+            edge_type_embeddings=edge_type_embedding,
         )
-
-    @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
 
     @classmethod
     def model_name(cls) -> str:
@@ -123,37 +99,5 @@ class TransEEnsmallen(AbstractEmbeddingModel):
         return "TransE"
 
     @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
-
-    @classmethod
     def requires_edge_types(cls) -> bool:
-        return True
-
-    @classmethod
-    def can_use_edge_weights(cls) -> bool:
-        """Returns whether the model can optionally use edge weights."""
-        return False
-
-    @classmethod
-    def can_use_node_types(cls) -> bool:
-        """Returns whether the model can optionally use node types."""
-        return False
-
-    @classmethod
-    def task_involves_edge_types(cls) -> bool:
-        """Returns whether the model task involves edge types."""
-        return True
-
-    @classmethod
-    def is_stocastic(cls) -> bool:
-        """Returns whether the model is stocastic and has therefore a random state."""
         return True

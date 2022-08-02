@@ -41,10 +41,10 @@ class AbstractEmbeddingModel(AbstractModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the embedding model."""
-        return {
+        return dict(
             **super().parameters(),
-            "embedding_size": self._embedding_size
-        }
+            embedding_size=self._embedding_size
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
@@ -63,11 +63,15 @@ class AbstractEmbeddingModel(AbstractModel):
             "in the child classes of abstract model."
         ))
 
+    @classmethod
+    def get_minimum_required_number_of_node_types(cls) -> int:
+        """Requires minimum number of required node types."""
+        return 0
+
     def _fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Run embedding on the provided graph.
 
@@ -75,8 +79,6 @@ class AbstractEmbeddingModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
-        verbose: bool
-            Whether to show loading bars.
         """
         raise NotImplementedError((
             "The `_fit_transform` method must be implemented "
@@ -87,13 +89,11 @@ class AbstractEmbeddingModel(AbstractModel):
         cache_path="{cache_dir}/{self.model_name()}/{self.library_name()}/{graph.get_name()}/{_hash}.pkl.gz",
         cache_dir="embedding",
         enable_cache_arg_name="self._enable_cache",
-        args_to_ignore=["verbose"]
     )
     def _cached_fit_transform(
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Execute embedding on the provided graph.
 
@@ -103,8 +103,6 @@ class AbstractEmbeddingModel(AbstractModel):
             The graph to run embedding on.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
-        verbose: bool = True
-            Whether to show loading bars.
 
         Returns
         --------------------
@@ -119,7 +117,7 @@ class AbstractEmbeddingModel(AbstractModel):
             if not graph.has_nodes_sorted_by_decreasing_outbound_node_degree():
                 raise ValueError(
                     f"The given graph {graph.get_name()} does not have the nodes sorted by decreasing "
-                    "order, therefore the negative sampling (which follows a zipfian "
+                    "order, therefore the negative sampling (which follows a scale free "
                     "distribution) would not approximate well the Softmax.\n"
                     "In order to sort the given graph in such a way that the node IDs "
                     "are sorted by decreasing outbound node degrees, you can use "
@@ -130,6 +128,14 @@ class AbstractEmbeddingModel(AbstractModel):
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires node types."
+            )
+        
+        if self.requires_node_types() and graph.get_number_of_node_types() <= 1:
+            raise ValueError(
+                f"The {self.model_name()} requires the graph to have "
+                f"at least {self.get_minimum_required_number_of_node_types()} node types, "
+                f"but the provided one has {graph.get_number_of_node_types()} "
+                "node types."
             )
 
         if self.requires_edge_types() and not graph.has_edge_types():
@@ -173,7 +179,6 @@ class AbstractEmbeddingModel(AbstractModel):
         result = self._fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )
 
         if not isinstance(result, EmbeddingResult):
@@ -192,7 +197,6 @@ class AbstractEmbeddingModel(AbstractModel):
         repository: Optional[str] = None,
         version: Optional[str] = None,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Execute embedding on the provided graph.
 
@@ -212,8 +216,6 @@ class AbstractEmbeddingModel(AbstractModel):
             from the ensmallen automatic retrieval.
         return_dataframe: bool = True
             Whether to return a pandas DataFrame with the embedding.
-        verbose: bool = True
-            Whether to show loading bars.
 
         Returns
         --------------------
@@ -228,5 +230,4 @@ class AbstractEmbeddingModel(AbstractModel):
         return self._cached_fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )

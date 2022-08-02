@@ -1,9 +1,9 @@
 """Submodule providing utilities to normalize parameters for modular models."""
-from typing import List, Any, Union, Type
+from typing import List, Any, Union, Type, Optional
 
 
 def normalize_model_list_parameter(
-    candidate_list: Union[Any, List[Any]],
+    candidate_list: Optional[Union[Any, List[Any]]],
     elements_number: int,
     object_type: Type,
     default_value: Any = None,
@@ -104,7 +104,7 @@ def normalize_model_list_parameter(
 
 
 def normalize_model_ragged_list_parameter(
-    candidate_ragged_list: Union[Any, List[Any], List[List[Any]]],
+    candidate_ragged_list: Optional[Union[Any, List[Any], List[List[Any]]]],
     submodules_number: int,
     layers_per_submodule: List[int],
     object_type: Type,

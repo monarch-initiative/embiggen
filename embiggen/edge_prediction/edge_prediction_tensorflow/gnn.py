@@ -196,14 +196,17 @@ class GNNEdgePrediction(GCNEdgePrediction):
             "number_of_units_per_graph_convolution_layers",
             "handling_multi_graph",
             "number_of_units_per_ffnn_body_layer",
-            "number_of_units_per_ffnn_head_layer"
+            "number_of_units_per_ffnn_head_layer",
+            "combiner",
+            "apply_norm",
+            "dropout_rate"
         ]
         return dict(
             number_of_units_per_body_layer=self._number_of_units_per_ffnn_body_layer,
             number_of_units_per_head_layer=self._number_of_units_per_ffnn_head_layer,
             **{
                 key: value
-                for key, value in super().smoke_test_parameters().items()
+                for key, value in super().parameters().items()
                 if key not in removed
             }
         )

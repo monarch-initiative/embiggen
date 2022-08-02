@@ -1,7 +1,7 @@
 """Module with embedding visualization tools."""
 import functools
 from multiprocessing import cpu_count
-from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable
+from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable, Type
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,14 +22,32 @@ from matplotlib.figure import Figure
 from sklearn.tree import DecisionTreeClassifier
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib import collections as mc
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
+from userinput.utils import must_be_in_set
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit
 import itertools
+from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
 
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
+from mpl_toolkits.mplot3d.proj3d import proj_transform
+from matplotlib.text import Annotation
+
+class Annotation3D(Annotation):
+    '''Annotate the point xyz with text s'''
+
+    def __init__(self, s, xyz, *args, **kwargs):
+        Annotation.__init__(self,s, xy=(0,0), *args, **kwargs)
+        self._verts3d = xyz        
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.xy=(xs,ys)
+        Annotation.draw(self, renderer)
 
 try:
     from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
@@ -89,6 +107,7 @@ class GraphVisualizer:
         destination_nodes_prefixes: Optional[Union[str, List[str]]] = None,
         edge_type_names: Optional[List[Optional[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
+        number_of_columns_in_legend: int = 2,
         show_node_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
         show_separability_considerations_explanation: bool = True,
@@ -220,6 +239,8 @@ class GraphVisualizer:
             Whether to show the graph name in the plots.
             By default, it is shown if the graph does not have a trivial
             name such as `Graph`.
+        number_of_columns_in_legend: int = 2
+            The number of columns to be used with the legend.
         show_node_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
@@ -288,6 +309,7 @@ class GraphVisualizer:
 
         self._support = support
         self._subgraph_of_interest = subgraph_of_interest
+        self._number_of_columns_in_legend = number_of_columns_in_legend
 
         if isinstance(source_node_types_names, str):
             source_node_types_names = [source_node_types_names]
@@ -345,10 +367,10 @@ class GraphVisualizer:
         )
 
         # We sample the negative edges using the subgraph of interest as base graph
-        # to follow its zipfian distribution, which may be different from the
-        # main graph zipfian distribution when particular filters are applied to it.
-        # For instance, the zipfian distribution of one particular edge type
-        # may be very different from the whole graph zipfian distribution.
+        # to follow its scale free distribution, which may be different from the
+        # main graph scale free distribution when particular filters are applied to it.
+        # For instance, the scale free distribution of one particular edge type
+        # may be very different from the whole graph scale free distribution.
         # Furthermore, we avoid sampling false negatives by passing to the
         # method also the support graph.
         try:
@@ -358,7 +380,7 @@ class GraphVisualizer:
                     self._positive_graph.get_number_of_edges()
                 ),
                 random_state=random_state,
-                use_zipfian_sampling=True,
+                use_scale_free_distribution=True,
                 graph_to_avoid=self._support,
                 support=self._support,
                 only_from_same_component=only_from_same_component,
@@ -408,7 +430,12 @@ class GraphVisualizer:
             decomposition_kwargs = {}
 
         self._n_components = n_components
-        self._decomposition_method = decomposition_method
+
+        self._decomposition_method = must_be_in_set(
+            decomposition_method,
+            ("PCA", "TSNE", "UMAP"),
+            "decomposition method"
+        )
         self._decomposition_kwargs = decomposition_kwargs
 
     def iterate_subsampled_node_ids(self) -> Iterator[int]:
@@ -521,7 +548,9 @@ class GraphVisualizer:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
         # in order to avoid false negatives.
-        if self._node_embedding_method_name == "GloVe":
+        if self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
+            "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
+        ):
             metric = self._decomposition_kwargs.get("metric")
             if metric is not None and metric != "cosine":
                 warnings.warn(
@@ -529,7 +558,7 @@ class GraphVisualizer:
                     "such as Glove, which embeds nodes using a dot product, it is "
                     "highly suggested to use a `cosine` metric. Using a different "
                     f"metric, such as the one you have provided ({metric}) may lead "
-                    "to unsuccessfull decompositions using UMAP or t-SNE."
+                    "to worse decompositions using UMAP or t-SNE."
                 )
             else:
                 # Otherwise we switch to using a cosine metric.
@@ -556,7 +585,7 @@ class GraphVisualizer:
                         leave=False,
                         dynamic_ncols=True
                     ),
-                    verbose=True,
+                    verbose=self._verbose,
                 ),
                 **self._decomposition_kwargs
             }).fit_transform
@@ -599,6 +628,7 @@ class GraphVisualizer:
                             n_jobs=cpu_count(),
                             random_state=self._random_state,
                             verbose=self._verbose,
+                            learning_rate=200,
                             n_iter=400,
                             init="random",
                             method="exact" if self._n_components == 4 else "barnes_hut",
@@ -631,14 +661,10 @@ class GraphVisualizer:
                 ),
                 **self._decomposition_kwargs
             }).fit_transform
-        else:
-            raise ValueError(
-                "We currently only support PCA and TSNE decomposition methods."
-            )
 
     def _get_node_embedding(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
+        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
         **node_embedding_kwargs: Dict
     ) -> np.ndarray:
         """Computes the node embedding if it was not otherwise provided.
@@ -666,7 +692,10 @@ class GraphVisualizer:
                 )
             else:
                 node_embedding = self._node_embedding_method_name
-        if isinstance(node_embedding, str):
+        if (
+            isinstance(node_embedding, str) or
+            issubclass(node_embedding.__class__, AbstractEmbeddingModel)
+        ):
             node_embedding = embed_graph(
                 graph=self._graph,
                 embedding_model=node_embedding,
@@ -678,7 +707,6 @@ class GraphVisualizer:
                 self._has_autodetermined_node_embedding_name = True
                 self._node_embedding_method_name = node_embedding.embedding_method_name
             node_embedding = np.hstack(node_embedding.get_all_node_embedding())
-            
         elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
             self._has_autodetermined_node_embedding_name = True
             self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
@@ -798,7 +826,7 @@ class GraphVisualizer:
         number_of_columns = 1 if len(labels) <= 2 and any(
             len(label) > 20
             for label in labels
-        ) else 2
+        ) else self._number_of_columns_in_legend
         legend = axes.legend(
             handles=handles,
             labels=[
@@ -827,9 +855,6 @@ class GraphVisualizer:
 
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
-        # Rules to detect SPINE embedding
-        if node_embedding.dtype == "uint8" and node_embedding.min() == 0:
-            return "SPINE"
         # Rules to detect TFIDF/BERT embedding
         if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
             return "TFIDF-weighted BERT"
@@ -877,7 +902,7 @@ class GraphVisualizer:
                     size=self._number_of_subsampled_nodes
                 )
             node_transformer = NodeTransformer(
-                aligned_node_mapping=True
+                aligned_mapping=True
             )
             node_transformer.fit(node_embedding)
             node_embedding = node_transformer.transform(
@@ -899,7 +924,8 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(self._positive_graph)
@@ -940,7 +966,8 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_node_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_embedding)
         return graph_transformer.transform(
@@ -1020,19 +1047,30 @@ class GraphVisualizer:
                 "them can be None."
             ))
         if self._n_components == 2:
-            figure, axes = plt.subplots(**{
-                **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
-                **kwargs
-            })
-            figure.patch.set_facecolor("white")
-            axes.axis('equal')
+            figure, axes = plt.subplots(
+                **{
+                    **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
+                    **kwargs
+                },
+                squeeze=False
+            )
+            for ax in axes.flatten():
+                ax.axis('equal')
+            if axes.size == 1:
+                axes = axes.flatten()[0]
         else:
-            figure, axes = subplots_3d(**{
-                **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
-                **kwargs
-            })
-            figure.patch.set_facecolor("white")
-            axes.axis('auto')
+            figure, axes = subplots_3d(
+                **{
+                    **GraphVisualizer.DEFAULT_SUBPLOT_KWARGS,
+                    **kwargs
+                },
+                squeeze=False
+            )
+            for ax in axes.flatten():
+                ax.axis('auto')
+            if axes.size == 1:
+                axes = axes.flatten()[0]
+        figure.patch.set_facecolor("white")
         return figure, axes
 
     def _get_complete_title(
@@ -1208,15 +1246,16 @@ class GraphVisualizer:
         if train_indices is None and test_indices is None:
             scatter = axes.scatter(
                 *points.T,
-                **{
+                **dict(
                     **dict(
                         c=colors,
-                        edgecolors=None if edgecolors is None else cmap(edgecolors),
+                        edgecolors=None if edgecolors is None else cmap(
+                            edgecolors),
                         marker=train_marker,
                         cmap=cmap,
                     ),
                     **scatter_kwargs
-                }
+                )
             )
             collections.append(scatter)
             legend_elements += scatter.legend_elements()[0]
@@ -1325,19 +1364,6 @@ class GraphVisualizer:
 
     def _wrapped_plot_scatter(self, **kwargs):
         if self._rotate:
-            # These backups are needed for two reasons:
-            # 1) Processes in python necessarily copy the instance objects for each process
-            #    and this can cause a considerable memery peak to occour.
-            # 2) Some of the objects considered are not picklable, such as, at the time of writing
-            #    the lambdas used in the graph transformer or the graph object itself.
-            graph_backup = self._graph
-            node_embedding = self._node_decomposition
-            edge_embedding = self._positive_edge_decomposition
-            negative_edge_embedding = self._negative_edge_decomposition
-            self._node_decomposition = None
-            self._positive_edge_decomposition = None
-            self._negative_edge_decomposition = None
-            self._graph = None
             try:
                 kwargs["loc"] = "lower right"
                 path = "{}.{}".format(
@@ -1350,20 +1376,15 @@ class GraphVisualizer:
                     path=path,
                     duration=self._duration,
                     fps=self._fps,
-                    verbose=True,
+                    verbose=self._verbose,
                     **kwargs
                 )
             except (Exception, KeyboardInterrupt) as e:
-                self._node_decomposition = node_embedding
-                self._positive_edge_decomposition = edge_embedding
-                self._negative_edge_decomposition = negative_edge_embedding
-                self._graph = graph_backup
                 raise e
-            self._node_decomposition = node_embedding
-            self._positive_edge_decomposition = edge_embedding
-            self._negative_edge_decomposition = negative_edge_embedding
-            self._graph = graph_backup
-            return display_video_at_path(path)
+            to_display = display_video_at_path(path)
+            if to_display is None:
+                return ()
+            return to_display
         return self._plot_scatter(**kwargs)
 
     def _plot_types(
@@ -1634,22 +1655,46 @@ class GraphVisualizer:
                 add_selfloops_where_missing=False,
                 complete=False,
             )
+            edge_node_ids = np.array([
+                [
+                    np.where(self._subsampled_node_ids == src)[0][0],
+                    np.where(self._subsampled_node_ids == dst)[0][0]
+                ]
+                for src, dst in edge_node_ids
+                if src in self._subsampled_node_ids and dst in self._subsampled_node_ids
+            ])
         else:
             edge_node_ids = self._graph.get_edge_node_ids(
                 directed=False
             )
 
-        lines_collection = mc.LineCollection(
-            self._node_decomposition[edge_node_ids],
-            linewidths=1,
-            zorder=0,
-            **{
-                **GraphVisualizer.DEFAULT_EDGES_SCATTER_KWARGS,
-                **(
-                    {} if scatter_kwargs is None else scatter_kwargs
-                )
-            }
-        )
+        if edge_node_ids.size == 0:
+            return figure, axes
+
+        if self._n_components == 3:
+            lines_collection = Line3DCollection(
+                self._node_decomposition[edge_node_ids],
+                linewidths=1,
+                zorder=0,
+                **{
+                    **GraphVisualizer.DEFAULT_EDGES_SCATTER_KWARGS,
+                    **(
+                        {} if scatter_kwargs is None else scatter_kwargs
+                    )
+                }
+            )
+        else:
+            lines_collection = mc.LineCollection(
+                self._node_decomposition[edge_node_ids],
+                linewidths=1,
+                zorder=0,
+                **{
+                    **GraphVisualizer.DEFAULT_EDGES_SCATTER_KWARGS,
+                    **(
+                        {} if scatter_kwargs is None else scatter_kwargs
+                    )
+                }
+            )
         axes.add_collection(lines_collection)
 
         return figure, axes
@@ -1759,7 +1804,7 @@ class GraphVisualizer:
             **kwargs
         )
 
-        if annotate_nodes:
+        if annotate_nodes and returned_values:
             figure, axes = returned_values[:2]
             self.annotate_nodes(
                 figure=figure,
@@ -1775,15 +1820,26 @@ class GraphVisualizer:
         axes: Axes,
         points: np.ndarray
     ) -> Tuple[Figure, Axes]:
-        if self._subsampled_node_ids is not None:
-            node_names = [
-                self._graph.get_node_name_from_node_id(node_id)
-                for node_id in self._subsampled_node_ids
-            ]
-        else:
-            node_names = self._graph.get_node_names()
-        for i, txt in enumerate(node_names):
-            axes.annotate(txt, points[i], fontsize=8, ha="center", va="center")
+        for node_name, point in zip((
+            self._graph.get_node_name_from_node_id(node_id)
+            for node_id in self.iterate_subsampled_node_ids()
+        ), points):
+            if point.size == 3:
+                axes.add_artist(Annotation3D(
+                    node_name,
+                    point,
+                    fontsize=8,
+                    ha="center",
+                    va="center"
+                ))
+            else:
+                axes.annotate(
+                    node_name,
+                    point,
+                    fontsize=8,
+                    ha="center",
+                    va="center"
+                )
         return (figure, axes)
 
     def plot_edges(
@@ -2047,6 +2103,16 @@ class GraphVisualizer:
                 edge_metric_callback(subgraph=self._positive_graph),
             ))
 
+            # Filter the edge metrics relative to edges that are not
+            # to be displayed.
+            if not self._graph.is_directed():
+                edge_metrics = edge_metrics[np.concatenate([
+                    self._negative_graph.get_directed_source_node_ids(
+                    ) <= self._negative_graph.get_directed_destination_node_ids(),
+                    self._positive_graph.get_directed_source_node_ids(
+                    ) <= self._positive_graph.get_directed_destination_node_ids(),
+                ])]
+
         points = np.vstack([
             self._negative_edge_decomposition,
             self._positive_edge_decomposition,
@@ -2187,6 +2253,11 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
             figure.patch.set_facecolor("white")
 
+        if self._negative_graph.is_directed() and edge_metrics is None:
+            number_of_negative_edges = self._negative_graph.get_number_of_directed_edges()
+        else:
+            number_of_negative_edges = self._negative_graph.get_number_of_undirected_edges()
+
         if edge_metrics is None:
             edge_metrics = np.concatenate((
                 edge_metric_callback(subgraph=self._negative_graph),
@@ -2195,8 +2266,8 @@ class GraphVisualizer:
 
         axes.hist(
             [
-                edge_metrics[:self._negative_graph.get_number_of_directed_edges()],
-                edge_metrics[self._negative_graph.get_number_of_directed_edges():],
+                edge_metrics[:number_of_negative_edges],
+                edge_metrics[number_of_negative_edges:],
             ],
             bins=10,
             log=True,
@@ -2652,13 +2723,10 @@ class GraphVisualizer:
 
     def _get_flatten_unknown_node_ontologies(self) -> Tuple[List[str], np.ndarray]:
         """Returns unique ontologies and node ontologies adjusted for the current instance."""
-        if self._subsampled_node_ids is None:
-            ontology_names = self._graph.get_node_ontologies()
-        else:
-            ontology_names = [
-                self._graph.get_ontology_from_node_id(node_id)
-                for node_id in self._subsampled_node_ids
-            ]
+        ontology_names = [
+            self._graph.get_ontology_from_node_id(node_id)
+            for node_id in self.iterate_subsampled_node_ids()
+        ]
 
         # The following is needed to normalize the multiple types
         ontologies_counts = Counter(ontology_names)
@@ -2704,13 +2772,6 @@ class GraphVisualizer:
         node_types_number = self._graph.get_number_of_node_types()
         unknown_node_types_id = node_types_number
 
-        # According to whether the subsampled node IDs were given,
-        # we iterate on them or on the complete set of nodes of the graph.
-        if self._subsampled_node_ids is None:
-            nodes_iterator = range(self._graph.get_number_of_nodes())
-        else:
-            nodes_iterator = self._subsampled_node_ids
-
         # When we have multiple node types for a given node, we set it to
         # the most common node type of the set.
         return np.fromiter(
@@ -2725,7 +2786,7 @@ class GraphVisualizer:
                 )[0]
                 for node_type_ids in (
                     self._graph.get_node_type_ids_from_node_id(node_id)
-                    for node_id in nodes_iterator
+                    for node_id in self.iterate_subsampled_node_ids()
                 )
             ),
             dtype=np.uint32
@@ -2743,7 +2804,12 @@ class GraphVisualizer:
                 if edge_type_id is None
                 else
                 edge_type_id
-                for edge_type_id in self._positive_graph.get_edge_type_ids()
+                for edge_type_id in (
+                    self._positive_graph.get_directed_edge_type_ids()
+                    if self._positive_graph.is_directed()
+                    else
+                    self._positive_graph.get_undirected_edge_type_ids()
+                )
             ),
             dtype=np.uint32
         )
@@ -2849,6 +2915,29 @@ class GraphVisualizer:
                 scatter_kwargs=edge_scatter_kwargs,
                 **kwargs
             )
+
+        if self._subsampled_node_ids is not None:
+            if node_type_predictions is not None:
+                node_type_predictions = node_type_predictions[self._subsampled_node_ids]
+            
+            if train_indices is not None:
+                train_indices = np.fromiter(
+                    (
+                        np.where(self._subsampled_node_ids == node_id)[0][0]
+                        for node_id in train_indices
+                        if node_id in self._subsampled_node_ids
+                    ),
+                    dtype=train_indices.dtype
+                )
+            if test_indices is not None:
+                test_indices = np.fromiter(
+                    (
+                        np.where(self._subsampled_node_ids == node_id)[0][0]
+                        for node_id in test_indices
+                        if node_id in self._subsampled_node_ids
+                    ),
+                    dtype=test_indices.dtype
+                )
 
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
@@ -3267,7 +3356,9 @@ class GraphVisualizer:
                 points=self._node_decomposition,
             )
 
-        if not return_caption:
+        if not return_caption or self._rotate:
+            if self._rotate:
+                return returned_values
             return self._handle_notebook_display(*returned_values)
 
         # TODO! Add caption node abount gaussian ball!
@@ -3357,16 +3448,13 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        if self._subsampled_node_ids is None:
-            degrees = self._support.get_node_degrees()
-        else:
-            degrees = np.fromiter(
-                (
-                    self._support.get_node_degree_from_node_id(node_id)
-                    for node_id in self._subsampled_node_ids
-                ),
-                dtype=np.uint32
-            )
+        degrees = np.fromiter(
+            (
+                self._support.get_node_degree_from_node_id(node_id)
+                for node_id in self.iterate_subsampled_node_ids()
+            ),
+            dtype=np.uint32
+        )
 
         if annotate_nodes == "auto":
             annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
@@ -3644,7 +3732,10 @@ class GraphVisualizer:
                 "method before plotting the nodes."
             )
 
-        weights = self._positive_graph.get_edge_weights()
+        if self._positive_graph.is_directed():
+            weights = self._positive_graph.get_directed_edge_weights()
+        else:
+            weights = self._positive_graph.get_undirected_edge_weights()
 
         returned_values = self._wrapped_plot_scatter(
             points=self._positive_edge_decomposition,
@@ -3725,16 +3816,17 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
         graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
-            edge_metrics=graph_transformer.transform(np.vstack([
-                self._negative_graph.get_directed_edge_node_ids(),
-                self._positive_graph.get_directed_edge_node_ids(),
-            ])).flatten(),
+            edge_metrics=np.vstack([
+                graph_transformer.transform(self._negative_graph),
+                graph_transformer.transform(self._positive_graph)
+            ]).flatten(),
             figure=figure,
             axes=axes,
             apply_tight_layout=apply_tight_layout,
@@ -3746,7 +3838,6 @@ class GraphVisualizer:
         node_features: np.ndarray,
         distance_name: str,
         distance_callback: str,
-        offset: float = 0.0,
         **kwargs: Dict
     ):
         """Plot distances of node features for positive and negative edges.
@@ -3759,10 +3850,6 @@ class GraphVisualizer:
             The title for the heatmap.
         distance_callback: str
             The callback to use to compute the distances.
-        offset: float = 0.0
-            The offset to move the distance when it is not a true distance
-            such as with the cosine similarity and negative value would
-            not be plottable on a logarithmic scale.
         **kwargs: Dict
             Additional kwargs to forward.
 
@@ -3777,17 +3864,18 @@ class GraphVisualizer:
         """
         graph_transformer = GraphTransformer(
             method=distance_callback,
-            aligned_node_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
 
         graph_transformer.fit(node_features.astype(np.float32))
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
-            edge_metrics=offset + graph_transformer.transform(np.vstack([
-                self._negative_graph.get_directed_edge_node_ids(),
-                self._positive_graph.get_directed_edge_node_ids(),
-            ])),
+            edge_metrics=np.vstack([
+                graph_transformer.transform(self._negative_graph),
+                graph_transformer.transform(self._positive_graph)
+            ]),
             **kwargs,
         )
 
@@ -4005,7 +4093,6 @@ class GraphVisualizer:
             node_features=node_features,
             distance_name="Cosine similarity",
             distance_callback="CosineSimilarity",
-            offset=1.0,
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -4149,7 +4236,7 @@ class GraphVisualizer:
             self._graph.get_number_of_directed_edges() // 10
         )
         axes.hist(
-            self._graph.get_edge_weights(),
+            self._graph.get_directed_edge_weights(),
             bins=number_of_buckets,
             log=True
         )
@@ -4212,13 +4299,12 @@ class GraphVisualizer:
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
 
-        if self._graph.has_constant_non_zero_node_degrees():
-            node_scatter_plot_methods_to_call.append(
-                self.plot_node_degrees,
-            )
-            distribution_plot_methods_to_call.append(
-                self.plot_node_degree_distribution,
-            )
+        node_scatter_plot_methods_to_call.append(
+            self.plot_node_degrees,
+        )
+        distribution_plot_methods_to_call.append(
+            self.plot_node_degree_distribution,
+        )
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)
@@ -4262,7 +4348,7 @@ class GraphVisualizer:
                 self.plot_node_ontologies
             )
 
-        if not self._support.is_connected():
+        if not self._support.is_connected() and not self._support.is_directed():
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
@@ -4290,7 +4376,7 @@ class GraphVisualizer:
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
-        figure, axes = plt.subplots(
+        figure, axes = self._get_figure_and_axes(
             nrows=nrows,
             ncols=ncols,
             figsize=(5*ncols, 5*nrows),
@@ -4348,16 +4434,22 @@ class GraphVisualizer:
             complete_caption += f" <b>({letter})</b> {caption}"
 
             if show_letters:
+                if self._n_components == 3:
+                    additional_kwargs = dict(z=0.0)
+                else:
+                    additional_kwargs = dict()
+
                 ax.text(
-                    0.0,
-                    1.1,
-                    letter,
+                    x=0.0,
+                    y=1.1,
+                    s=letter,
                     size=18,
                     color="black",
                     weight="bold",
                     horizontalalignment="left",
                     verticalalignment="center",
                     transform=ax.transAxes,
+                    **additional_kwargs
                 )
 
         complete_caption += "<br>"
@@ -4378,6 +4470,8 @@ class GraphVisualizer:
         complete_caption += self.get_non_existing_edges_sampling_description()
 
         for axis in flat_axes[number_of_total_plots:]:
+            for spine in axis.spines.values():
+                spine.set_visible(False)
             axis.axis("off")
 
         if show_name_backup:
@@ -4388,12 +4482,15 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            figure.tight_layout(rect=[0, 0.03, 1, 0.96])
-        else:
+            if self._n_components != 3:
+                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+        elif self._n_components != 3:
             figure.tight_layout()
 
         self._show_graph_name = show_name_backup
 
         return self._handle_notebook_display(
-            figure, axes, caption=complete_caption
+            figure,
+            axes,
+            caption=complete_caption
         )

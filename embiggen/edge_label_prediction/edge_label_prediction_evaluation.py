@@ -13,6 +13,7 @@ def edge_label_prediction_evaluation(
     models: Union[Type[AbstractEdgeLabelPredictionModel], List[Type[AbstractEdgeLabelPredictionModel]]],
     evaluation_schema: str = "Stratified Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
@@ -40,6 +41,8 @@ def edge_label_prediction_evaluation(
         The evaluation schema to follow.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
+    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
+        The node type features to use.
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
     library_names: Optional[Union[str, List[str]]] = None
@@ -86,6 +89,7 @@ def edge_label_prediction_evaluation(
         models=models,
         expected_parent_class=AbstractEdgeLabelPredictionModel,
         node_features=node_features,
+        node_type_features=node_type_features,
         edge_features=edge_features,
         library_names=library_names,
         graph_callback=graph_callback,

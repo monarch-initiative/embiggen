@@ -15,7 +15,6 @@ def embed_graph(
     library_name: Optional[str] = None,
     smoke_test: bool = False,
     return_dataframe: bool = True,
-    verbose: bool = True,
     **kwargs: Dict
 ) -> EmbeddingResult:
     """Return embedding of the provided graph.
@@ -45,14 +44,11 @@ def embed_graph(
         Path where to store the cache if it is enabled.
     return_dataframe: bool = True
         Whether to return a pandas DataFrame with the embedding.
-    verbose: bool
-        Whether to show loading bars.
     **kwargs: Dict
         Kwargs to forward to the embedding model creation.
         If a model name was NOT provided, an exception will
         be raised as it is unclear how to behave.
     """
-
     graph = next(iterate_graphs(
         graphs=graph,
         repositories=repository,
@@ -64,7 +60,7 @@ def embed_graph(
             model_name=embedding_model,
             library_name=library_name
         )(**kwargs)
-    elif kwargs is not None:
+    elif kwargs:
         raise ValueError(
             "Please be advised that even though you have provided yourself "
             "the embedding model, you have also provided the kwargs which "
@@ -80,9 +76,7 @@ def embed_graph(
 
     if smoke_test:
         try:
-            embedding_model = embedding_model.__class__(
-                **embedding_model.smoke_test_parameters()
-            )
+            embedding_model = embedding_model.into_smoke_test()
         except Exception as e:
             raise ValueError(
                 "An exception was raised while trying to create "
@@ -100,7 +94,6 @@ def embed_graph(
         return embedding_model.fit_transform(
             graph,
             return_dataframe=return_dataframe,
-            verbose=verbose
         )
     except Exception as e:
         raise ValueError(
@@ -109,5 +102,5 @@ def embed_graph(
             f"using the model called {embedding_model.model_name()} "
             f"from the library {library_name}, specifically "
             f"implemented in the class {embedding_model.__class__.__name__}. "
-            f"The body of the exception was: {str(e)}."
+            f"The body of the exception was: {str(e)}"
         ) from e

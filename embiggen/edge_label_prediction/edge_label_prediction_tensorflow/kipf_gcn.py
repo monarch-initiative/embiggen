@@ -1,5 +1,5 @@
 """Kipf GCN model for edge-label prediction."""
-from typing import List, Union, Optional, Type
+from typing import List, Union, Optional, Type, Dict, Any
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.edge_label_prediction.edge_label_prediction_tensorflow.gcn import GCNEdgeLabelPrediction
 
@@ -40,6 +40,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -164,6 +165,9 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -177,6 +181,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner="sum",
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -199,7 +204,21 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_feature_names=edge_feature_names,
             verbose=verbose,
+        )
+    
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "combiner"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
         )
     
     @classmethod

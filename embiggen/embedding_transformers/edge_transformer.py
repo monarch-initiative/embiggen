@@ -3,7 +3,7 @@ from typing import List, Union, Optional
 
 import numpy as np
 import pandas as pd
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 from ensmallen import express_measures
 from embiggen.utils.abstract_models import format_list
 from embiggen.embedding_transformers.node_transformer import NodeTransformer
@@ -308,18 +308,6 @@ def get_max_edge_embedding(
         axis=0
     )
 
-
-def get_indices_edge_embedding(
-    source_node_embedding: np.ndarray,
-    destination_node_embedding: np.ndarray
-) -> np.ndarray:
-    """Placeholder method."""
-    return np.vstack((
-        source_node_embedding,
-        destination_node_embedding
-    )).T
-
-
 class EdgeTransformer:
     """EdgeTransformer class to convert edges to edge embeddings."""
 
@@ -336,13 +324,12 @@ class EdgeTransformer:
         "Max": get_max_edge_embedding,
         "L2Distance": get_l2_distance,
         "CosineSimilarity": get_cosine_similarity,
-        None: get_indices_edge_embedding,
     }
 
     def __init__(
         self,
         method: str = "Hadamard",
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
     ):
         """Create new EdgeTransformer object.
 
@@ -353,78 +340,53 @@ class EdgeTransformer:
             If None is used, we return instead the numeric tuples.
             Can either be 'Hadamard', 'Min', 'Max', 'Sum', 'Average',
             'L1', 'AbsoluteL1', 'SquaredL2', 'L2' or 'Concatenate'.
-        aligned_node_mapping: bool = False,
+        aligned_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
         """
-        if isinstance(method, str) and method.lower() not in [
-            None if method_name is None else method_name.lower()
-            for method_name in EdgeTransformer.methods
-        ]:
-            raise ValueError((
-                "Given method '{}' is not supported. "
-                "Supported methods are {}, or alternatively a lambda. "
-                "Maybe you meant {}?"
-            ).format(
-                method,
-                format_list(
-                    [method for method in EdgeTransformer.methods.keys() if method is not None]),
-                closest(method, [
-                    method_name
-                    for method_name in EdgeTransformer.methods
-                    if method_name is not None
-                ])
-            ))
+        method = must_be_in_set(
+            method,
+            self.methods,
+            "edge embedding method"
+        )
         self._transformer = NodeTransformer(
-            numeric_node_ids=method is None,
-            aligned_node_mapping=aligned_node_mapping,
+            aligned_mapping=aligned_mapping,
         )
         self._method_name = method
-        if self._method_name is None:
-            self._method = EdgeTransformer.methods[None]
-        else:
-            self._method = {
-                None if method_name is None else method_name.lower(): callback
-                for method_name, callback in EdgeTransformer.methods.items()
-            }[self._method_name.lower()]
-
-    @property
-    def numeric_node_ids(self) -> bool:
-        """Return whether the transformer returns numeric node IDs."""
-        return self._transformer.numeric_node_ids
+        self._method = self.methods[method]
 
     @property
     def method(self) -> str:
         """Return the used edge embedding method."""
         return self._method_name
 
-    def fit(self, node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]):
+    def fit(
+        self,
+        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+    ):
         """Fit the model.
 
         Parameters
         -------------------------
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
             Node feature to use to fit the transformer.
-
-        Raises
-        -------------------------
-        ValueError
-            If the given method is None there is no need to call the fit method.
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Node type feature to use to fit the transformer.
         """
-        if self._method is None:
-            raise ValueError(
-                "There is no need to call the fit when edge method is None, "
-                "as the transformer will exclusively return the numeric node "
-                "indices and not any node feature."
-            )
-        self._transformer.fit(node_feature)
+        self._transformer.fit(
+            node_feature,
+            node_type_feature=node_type_feature
+        )
 
     def transform(
         self,
         sources: Union[List[str], List[int]],
         destinations: Union[List[str], List[int]],
+        source_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        destination_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
@@ -435,6 +397,16 @@ class EdgeTransformer:
             List of source nodes whose embedding is to be returned.
         destinations:Union[List[str], List[int]]
             List of destination nodes whose embedding is to be returned.
+        source_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+            List of source node types whose embedding is to be returned.
+            This can be either a list of strings, or a graph, or if the
+            aligned_mapping is setted, then this methods also accepts
+            a list of ints.
+        destination_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+            List of destination node types whose embedding is to be returned.
+            This can be either a list of strings, or a graph, or if the
+            aligned_mapping is setted, then this methods also accepts
+            a list of ints.
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -470,13 +442,15 @@ class EdgeTransformer:
                     "numpy arrays of type uint32, but you have provided objects of type "
                     f"{sources.dtype} and {destinations.dtype}. "
                 )
-            if self._transformer._node_feature.dtype != np.float32:
-                self._transformer._node_feature = self._transformer._node_feature.astype(
-                    np.float32
-                )
             if not self._transformer._node_feature.data.c_contiguous:
                 self._transformer._node_feature = np.ascontiguousarray(
                     self._transformer._node_feature
+                )
+
+            if self._transformer._node_type_feature is not None:
+                raise NotImplementedError(
+                    "The node type features are not yet supported for the "
+                    "Cosine Similarity."
                 )
 
             edge_embeddings = self._method(
@@ -486,8 +460,8 @@ class EdgeTransformer:
             )
         else:
             edge_embeddings = self._method(
-                self._transformer.transform(sources),
-                self._transformer.transform(destinations)
+                self._transformer.transform(sources, node_types=source_node_types),
+                self._transformer.transform(destinations, node_types=destination_node_types)
             )
 
         if edge_features is not None:

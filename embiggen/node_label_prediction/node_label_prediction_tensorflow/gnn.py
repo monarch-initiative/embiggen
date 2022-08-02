@@ -12,7 +12,6 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         epochs: int = 1000,
         number_of_head_layers: int = 1,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.1,
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 30,
@@ -45,9 +44,6 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
             Number of graph convolution layer.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 128
             Number of units per hidden layer.
-        dropout_rate: float = 0.3
-            Float between 0 and 1.
-            Fraction of the input units to dropout.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -95,7 +91,6 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
             number_of_head_layers=number_of_head_layers,
             number_of_units_per_graph_convolution_layers=0,
             number_of_units_per_head_layer=number_of_units_per_head_layer,
-            dropout_rate=dropout_rate,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -138,13 +133,16 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         removed = [
             "number_of_units_per_graph_convolution_layers",
             "handling_multi_graph",
-            "number_of_units_per_head_layer"
+            "number_of_units_per_head_layer",
+            "combiner",
+            "apply_norm",
+            "dropout_rate"
         ]
         return dict(
             number_of_units_per_head_layer=self._number_of_units_per_head_layer,
             **{
                 key: value
-                for key, value in super().smoke_test_parameters().items()
+                for key, value in super().parameters().items()
                 if key not in removed
             }
         )

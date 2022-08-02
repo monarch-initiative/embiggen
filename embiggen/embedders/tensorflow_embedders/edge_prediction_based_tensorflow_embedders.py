@@ -31,6 +31,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         activation: str = "sigmoid",
         loss: str = "binary_crossentropy",
         optimizer: str = "nadam",
+        verbose: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -74,6 +75,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             while for the HOPE models this is an Mean squared error.
         optimizer: str = "nadam"
             The optimizer to be used during the training of the model.
+        verbose: bool = False
+            Whether to show the loading bar while training the model.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -93,19 +96,20 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
+            verbose=verbose,
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache,
             random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 negative_samples_rate=self._negative_samples_rate,
                 activation=self._activation
             )
-        }
+        )
 
     def _build_edge_prediction_based_model(
         self,
@@ -192,7 +196,6 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
     def _build_input(
         self,
         graph: Graph,
-        verbose: bool
     ) -> Tuple[np.ndarray]:
         """Returns values to be fed as input into the model.
 
@@ -200,20 +203,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         ------------------
         graph: Graph
             The graph to build the model for.
-        verbose: bool
-            Whether to show loading bars.
-            Not used in this context.
         """
-        try:
-            AUTOTUNE = tf.data.AUTOTUNE
-        except:
-            AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-        return (
-            self._build_sequence(graph)
-            .into_dataset()
-            .repeat()
-            .prefetch(AUTOTUNE), )
+        return (self._build_sequence(graph), )
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

@@ -16,7 +16,7 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
         min_samples_split: int = 2,
         min_samples_leaf: int = 1,
         min_weight_fraction_leaf: float = 0.,
-        max_features="auto",
+        max_features="sqrt",
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
         bootstrap=True,
@@ -24,14 +24,13 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
         n_jobs=-1,
         verbose=0,
         warm_start=False,
-        class_weight=None,
         ccp_alpha=0.0,
         max_samples=None,
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
-        use_zipfian_sampling: bool = True,
+        use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
@@ -51,7 +50,6 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
         self._random_state = random_state
         self._verbose = verbose
         self._warm_start = warm_start
-        self._class_weight = class_weight
         self._ccp_alpha = ccp_alpha
         self._max_samples = max_samples
 
@@ -72,14 +70,13 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state=random_state,
                 verbose=verbose,
                 warm_start=warm_start,
-                class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
                 max_samples=max_samples
             ),
             edge_embedding_method=edge_embedding_method,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
-            use_zipfian_sampling=use_zipfian_sampling,
+            use_scale_free_distribution=use_scale_free_distribution,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             prediction_batch_size=prediction_batch_size,
             random_state=random_state
@@ -113,7 +110,6 @@ class RandomForestEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state = self._random_state,
                 verbose = self._verbose,
                 warm_start = self._warm_start,
-                class_weight = self._class_weight,
                 ccp_alpha = self._ccp_alpha,
                 max_samples = self._max_samples,
             )

@@ -1,5 +1,4 @@
 """CBOW model for sequence embedding."""
-from typing import Dict, Union
 from tensorflow.keras.layers import (   # pylint: disable=import-error,no-name-in-module
     GlobalAveragePooling1D, Input, Embedding
 )
@@ -22,7 +21,7 @@ class CBOWTensorFlow(Node2Vec):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "CBOW"
+        return "Node2Vec CBOW"
 
     def _build_model(self, graph: Graph) -> Model:
         """Return CBOW model."""
@@ -53,7 +52,7 @@ class CBOWTensorFlow(Node2Vec):
         model = Model(
             inputs=[contextual_terms, central_terms],
             outputs=sampled_softmax,
-            name=self.model_name()
+            name=self.model_name().replace(" ", "")
         )
 
         model.compile(optimizer=self._optimizer)

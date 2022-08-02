@@ -44,7 +44,7 @@ class FirstOrderLINETensorFlow(EdgePredictionBasedTensorFlowEmbedders):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the current model."""
-        return "First Order LINE"
+        return "First-order LINE"
 
     def _extract_embeddings(
         self,

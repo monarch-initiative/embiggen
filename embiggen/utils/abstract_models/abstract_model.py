@@ -3,7 +3,7 @@ from typing import Callable
 from embiggen.utils.abstract_models.list_formatting import format_list
 from typing import Dict, Any, Type, List, Optional
 from dict_hash import Hashable, sha256
-from userinput.utils import closest
+from userinput.utils import must_be_in_set
 import inspect
 
 
@@ -14,6 +14,7 @@ def abstract_class(klass: Type["AbstractModel"]) -> Type["AbstractModel"]:
 def is_not_implemented(method: Callable) -> bool:
     """Returns whether this method contains a raise for not being implemented."""
     return "raise NotImplementedError" in inspect.getsource(method)
+
 
 def is_implemented(method: Callable) -> bool:
     """Returns whether this method is implemented."""
@@ -46,9 +47,14 @@ class AbstractModel(Hashable):
                 f"random state of `{random_state}` was provided."
             )
 
+        can_use_edge_weights = self.__getattribute__("can_use_edge_weights")
+        requires_positive_edge_weights = self.__getattribute__(
+            "requires_positive_edge_weights")
+
         if (
-            not self.__getattribute__("can_use_edge_weights")() and
-            is_implemented(self.__getattribute__("requires_positive_edge_weights"))
+            is_implemented(can_use_edge_weights) and
+            not can_use_edge_weights() and
+            is_implemented(requires_positive_edge_weights)
         ):
             raise ValueError(
                 "We have found an useless method in the "
@@ -128,6 +134,13 @@ class AbstractModel(Hashable):
             random_state=self._random_state
         )
 
+    def into_smoke_test(self) -> "Self":
+        """Creates new instance with smoke test parameters."""
+        return self.__class__(**{
+            **self.parameters(),
+            **self.smoke_test_parameters()
+        })
+
     @classmethod
     def requires_edge_weights(cls) -> bool:
         """Returns whether the model requires edge weights."""
@@ -153,7 +166,10 @@ class AbstractModel(Hashable):
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         try:
-            if cls.requires_edge_weights():
+            if (
+                is_implemented(cls.requires_edge_weights) and
+                cls.requires_edge_weights()
+            ):
                 return True
         except NotImplementedError:
             pass
@@ -332,9 +348,9 @@ class AbstractModel(Hashable):
         """Returns consistent hash describing the model."""
         return sha256(dict(
             **self.parameters(),
-            model_name= self.model_name(),
-            library_name= self.library_name(),
-            task_name= self.task_name(),
+            model_name=self.model_name(),
+            library_name=self.library_name(),
+            task_name=self.task_name(),
         ))
 
     @staticmethod
@@ -360,37 +376,15 @@ class AbstractModel(Hashable):
         self._random_state = random_state
 
     @staticmethod
-    def get_model_data(
-        model_name: str
-    ) -> Dict[str, Dict]:
-        """Returns data relative to the registered model data."""
-        # We check if the provided string is not an empty string.
-        if len(model_name) == 0:
-            raise ValueError(
-                "The provided model name is empty."
-            )
-
-        # We turn this to lowercase in order to allow
-        # for error in casing of the model, since one may
-        # write models like `GloVe` also as `Glove` or other
-        # typos, which are generally easy to make.
-        lowercase_model_mapping = AbstractModel.get_available_model_names_in_lowercase_mapping()
-        if model_name.lower() not in lowercase_model_mapping:
-            raise ValueError(
-                f"The provided model name `{model_name}` is not available. "
-                f"Did you mean {closest(model_name, lowercase_model_mapping.values())}?"
-            )
-        # We retrieve the model standard name.
-        model_name = lowercase_model_mapping[model_name.lower()]
-        return AbstractModel.MODELS_LIBRARY[model_name]
-
-    @staticmethod
     def get_task_data(
         model_name: str,
         task_name: str
     ) -> Dict[str, Dict]:
         """Returns data relative to the registered model and task data."""
-        model_data = AbstractModel.get_model_data(model_name)
+        if len(model_name) == 0:
+            raise ValueError(
+                "The provided model name is empty."
+            )
 
         # We check if the provided string is not an empty string.
         if len(task_name) == 0:
@@ -398,25 +392,20 @@ class AbstractModel(Hashable):
                 "The provided task name is empty."
             )
 
-        # We do a similar check as the one above for the tasks,
-        # as one may do typos while writig the task name and
-        # we should always provide the best possible help message.
-        lowercase_task_mapping = {
-            t.lower(): t
-            for t in model_data.keys()
-        }
-        if task_name.lower() not in lowercase_task_mapping:
-            raise ValueError(
-                f"The provided task name `{task_name}` is not available for "
-                f"the requested model {model_name}."
-                f"Did you mean {closest(task_name, lowercase_task_mapping.values())}?"
-            )
+        task_name = must_be_in_set(
+            task_name,
+            AbstractModel.MODELS_LIBRARY,
+            "task name"
+        )
 
-        # We retrieve the task standard name.
-        task_name = lowercase_task_mapping[task_name.lower()]
+        model_name = must_be_in_set(
+            model_name,
+            AbstractModel.MODELS_LIBRARY[task_name],
+            "model name"
+        )
 
         # We retrieve the task data.
-        return model_data[task_name]
+        return AbstractModel.MODELS_LIBRARY[task_name][model_name]
 
     @staticmethod
     def get_library_data(
@@ -433,25 +422,18 @@ class AbstractModel(Hashable):
                 "The provided library name is empty."
             )
 
-        lowercase_libraries_mapping = {
-            t.lower(): t
-            for t in task_data.keys()
-        }
-        if library_name.lower() not in lowercase_libraries_mapping:
-            raise ValueError(
-                f"The provided library name `{library_name}` is not available for "
-                f"the requested model {model_name}. "
-                f"Did you mean {closest(library_name, lowercase_libraries_mapping.values())}?"
-            )
-
-        # We retrieve the library standard name.
-        library_name = lowercase_libraries_mapping[library_name.lower()]
+        library_name = must_be_in_set(
+            library_name,
+            task_data.keys(),
+            "library name"
+        )
 
         # We retrieve the library data.
         return task_data[library_name]
 
-    @staticmethod
+    @classmethod
     def get_model_from_library(
+        cls,
         model_name: str,
         task_name: Optional[str] = None,
         library_name: Optional[str] = None,
@@ -474,18 +456,7 @@ class AbstractModel(Hashable):
             be raised.
         """
         if task_name is None:
-            task_names = list(AbstractModel.get_model_data(model_name).keys())
-            if len(task_names) == 1:
-                task_name = task_names[0]
-            else:
-                formatted_list = format_list(task_names)
-                raise ValueError(
-                    f"The requested model `{model_name}` is available for "
-                    "multiple tasks and no specific task was requested, "
-                    "so it is unclear which task you intend to execute. "
-                    f"Specifically, the available tasks are {formatted_list}."
-                    "Please do provide a task name to resolve this ambiguity."
-                )
+            task_name = cls.task_name()
 
         task_data = AbstractModel.get_task_data(model_name, task_name)
 
@@ -524,19 +495,6 @@ class AbstractModel(Hashable):
         return model_class
 
     @staticmethod
-    def get_available_model_names() -> List[str]:
-        """Returns list of available model names."""
-        return list(AbstractModel.MODELS_LIBRARY.keys())
-
-    @staticmethod
-    def get_available_model_names_in_lowercase_mapping() -> Dict[str, str]:
-        """Returns list of available model names in lowercase."""
-        return {
-            model_name.lower(): model_name
-            for model_name in AbstractModel.get_available_model_names()
-        }
-
-    @staticmethod
     def find_available_models(
         model_name: str,
         task_name: str
@@ -565,20 +523,20 @@ class AbstractModel(Hashable):
         model_class:  Type["AbstractModel"]
             The class to register.
         """
+        task_name = model_class.task_name()
         model_name = model_class.model_name()
         # If this is the first model of its kind to be registered.
-        if model_name not in AbstractModel.MODELS_LIBRARY:
-            AbstractModel.MODELS_LIBRARY[model_name] = {}
+        if task_name not in AbstractModel.MODELS_LIBRARY:
+            AbstractModel.MODELS_LIBRARY[task_name] = {}
 
         # We retrieve the data for the model to enrich it.
         # This is NOT a copy, but a reference to the same STATIC object.
-        model_data = AbstractModel.MODELS_LIBRARY[model_name]
+        model_data = AbstractModel.MODELS_LIBRARY[task_name]
 
-        task_name = model_class.task_name()
-        if task_name not in model_data:
-            model_data[task_name] = {}
+        if model_name not in model_data:
+            model_data[model_name] = {}
 
-        task_data = model_data[task_name]
+        task_data = model_data[model_name]
 
         class_name = model_class.__name__
 

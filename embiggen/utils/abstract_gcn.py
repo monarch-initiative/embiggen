@@ -1,5 +1,6 @@
 """Kipf GCN model for node-label prediction."""
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
+from matplotlib.pyplot import axis
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen import Graph
 import tensorflow as tf
-from tensorflow.keras.utils import Sequence
+from keras_mixed_sequence import Sequence
 from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding
@@ -96,7 +97,7 @@ def graph_to_sparse_tensor(
     return tf.SparseTensor(
         graph.get_directed_edge_node_ids(),
         (
-            graph.get_edge_weights()
+            graph.get_directed_edge_weights()
             if use_weights
             else tf.ones(graph.get_number_of_directed_edges())
         ),
@@ -115,6 +116,7 @@ class AbstractGCN(AbstractClassifierModel):
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         dropout_rate: float = 0.5,
         apply_norm: bool = False,
+        combiner: str = "mean",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -153,6 +155,13 @@ class AbstractGCN(AbstractClassifierModel):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        combiner: str = "mean"
+            A string specifying the reduction op.
+            Currently "mean", "sqrtn" and "sum" are supported. 
+            "sum" computes the weighted sum of the embedding results for each row.
+            "mean" is the weighted sum divided by the total weight.
+            "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
+            Defaults to mean.
         optimizer: str = "Adam"
             The optimizer to use while training the model.
         early_stopping_min_delta: float
@@ -219,6 +228,7 @@ class AbstractGCN(AbstractClassifierModel):
             can_be_empty=True
         )
 
+        self._combiner = combiner
         self._epochs = epochs
         self._use_class_weights = use_class_weights
         self._dropout_rate = dropout_rate
@@ -275,6 +285,7 @@ class AbstractGCN(AbstractClassifierModel):
             number_of_units_per_graph_convolution_layers=self._number_of_units_per_graph_convolution_layers,
             epochs=self._epochs,
             apply_norm=self._apply_norm,
+            combiner=self._combiner,
             use_class_weights=self._use_class_weights,
             dropout_rate=self._dropout_rate,
             optimizer=self._optimizer,
@@ -419,18 +430,21 @@ class AbstractGCN(AbstractClassifierModel):
         ):
             if features is not None:
                 if feature_names is None:
-                    feature_names = [None] * len(features)
+                    feature_names = [
+                        f"{number_to_ordinal(i+1)} {feature_category}"
+                        for i in range(len(features))
+                    ]
                 if len(feature_names) != len(features):
                     raise ValueError(
                         f"You have provided {len(feature_names)} "
                         f"{feature_category} names but you have provided {len(features)} "
-                        "{feature_category}s to the model."
+                        f"{feature_category}s to the model."
                     )
                 input_features.extend([
                     Input(
                         shape=node_feature.shape[1:],
                         batch_size=nodes_number,
-                        name=node_feature_name
+                        name=node_feature_name,
                     )
                     for node_feature, node_feature_name in zip(
                         features,
@@ -482,6 +496,7 @@ class AbstractGCN(AbstractClassifierModel):
         for i, units in enumerate(self._number_of_units_per_graph_convolution_layers):
             hidden = GraphConvolution(
                 units=units,
+                combiner=self._combiner,
                 dropout_rate=self._dropout_rate,
                 apply_norm=self._apply_norm,
                 name=f"{number_to_ordinal(i+1)}GraphConvolution"
@@ -492,12 +507,16 @@ class AbstractGCN(AbstractClassifierModel):
             inputs=[
                 input_layer
                 for input_layer in (
-                    adjacency_matrix, *input_features
+                    adjacency_matrix,
+                    *input_features
                 )
                 if input_layer is not None
             ],
             outputs=(
-                Concatenate(name="ConcatenatedNodeFeatures")(hidden)
+                Concatenate(
+                    name="ConcatenatedNodeFeatures",
+                    axis=-1
+                )(hidden)
                 if len(hidden) > 1
                 else hidden[0]
             )
@@ -561,16 +580,18 @@ class AbstractGCN(AbstractClassifierModel):
             edge_features=edge_features,
         )
 
+        model_input = self._get_model_training_input(
+            graph,
+            support=support,
+            edge_features=edge_features,
+            node_type_features=node_type_features,
+            node_features=node_features
+        )
+
         self.history = self._model.fit(
-            x=self._get_model_training_input(
-                graph,
-                support=support,
-                edge_features=edge_features,
-                node_type_features=node_type_features,
-                node_features=node_features
-            ),
+            x=model_input,
             y=self._get_model_training_output(graph),
-            sample_weight=self._get_model_training_output(graph),
+            sample_weight=self._get_model_training_sample_weights(graph),
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
             batch_size=graph.get_number_of_nodes(),
@@ -609,14 +630,17 @@ class AbstractGCN(AbstractClassifierModel):
         """Run predictions on the provided graph."""
         if support is None:
             support = graph
+
+        model_input = self._get_model_prediction_input(
+            graph,
+            support,
+            node_features,
+            node_type_features,
+            edge_features,
+        )
+
         return self._model.predict(
-            self._get_model_prediction_input(
-                graph,
-                support,
-                node_features,
-                node_type_features,
-                edge_features,
-            ),
+            model_input,
             batch_size=support.get_number_of_nodes(),
             verbose=False
         )

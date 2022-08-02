@@ -64,7 +64,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        gt = NodeTransformer(aligned_node_mapping=True)
+        gt = NodeTransformer(aligned_mapping=True)
         gt.fit(node_features)
         return gt.transform(graph,)
 
@@ -103,7 +103,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             If the two graphs do not share the same node vocabulary.
         """
         nlpt = NodeLabelPredictionTransformer(
-            aligned_node_mapping=True
+            aligned_mapping=True
         )
 
         nlpt.fit(node_features)
@@ -155,10 +155,18 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ))
 
         if self.is_multilabel_prediction_task():
-            return np.array([
-                class_predictions[:, 1]
-                for class_predictions in predictions_probabilities
-            ]).T
+            if isinstance(predictions_probabilities, np.ndarray):
+                return predictions_probabilities
+            if isinstance(predictions_probabilities, list):
+                return np.array([
+                    class_predictions[:, 1]
+                    for class_predictions in predictions_probabilities
+                ]).T
+            raise NotImplementedError(
+                f"The model {self.model_name()} from library {self.library_name()} "
+                f"returned an object of type {type(predictions_probabilities)} during "
+                "the execution of the predict proba method."
+            )
 
         return predictions_probabilities
 

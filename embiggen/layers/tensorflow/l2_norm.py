@@ -6,19 +6,18 @@ from tensorflow.keras.layers import Layer, Lambda  # pylint: disable=import-erro
 
 
 class L2Norm(Layer):
-    """Layer implementing simple wrapped embedding layer plus a flatten."""
+    """Layer implementing L2 Norm."""
 
     def __init__(
         self,
         **kwargs: Dict
     ):
-        """Create new GraphConvolution layer.
-        """
+        """Create new L2 Norm layer."""
         super().__init__(**kwargs)
         self._norm_layer = None
 
     def build(self, input_shape) -> None:
-        """Build the Graph Convolution layer.
+        """Build the L2 Norm layer.
 
         Parameters
         ------------------------------

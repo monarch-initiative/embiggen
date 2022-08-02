@@ -3,16 +3,18 @@ from typing import Dict, Any
 from ensmallen import Graph
 import pandas as pd
 from ensmallen import models
-from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
+from embiggen.utils import EmbeddingResult
 
 
-class WeightedSPINE(AbstractEmbeddingModel):
+class WeightedSPINE(EnsmallenEmbedder):
     """Abstract class for Node2Vec algorithms."""
 
     def __init__(
         self,
         embedding_size: int = 100,
         use_edge_weights_as_probabilities: bool = False,
+        verbose: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -23,10 +25,13 @@ class WeightedSPINE(AbstractEmbeddingModel):
             Dimension of the embedding.
         use_edge_weights_as_probabilities: bool = False
             Whether to treat the weights as probabilities.
+        verbose: bool = False
+            Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
+        self._verbose = verbose
         self._model = models.WeightedSPINE(
             embedding_size=embedding_size,
             use_edge_weights_as_probabilities=use_edge_weights_as_probabilities,
@@ -48,12 +53,11 @@ class WeightedSPINE(AbstractEmbeddingModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
             graph,
-            verbose=verbose,
+            verbose=self._verbose,
         ).T
         if return_dataframe:
             node_embedding = pd.DataFrame(
@@ -66,25 +70,9 @@ class WeightedSPINE(AbstractEmbeddingModel):
         )
 
     @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
-
-    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "WeightedSPINE"
-
-    @classmethod
-    def library_name(cls) -> str:
-        return "Ensmallen"
-
-    @classmethod
-    def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:
-        return False
-
-    @classmethod
-    def is_topological(cls) -> bool:
-        return True
 
     @classmethod
     def requires_edge_weights(cls) -> bool:

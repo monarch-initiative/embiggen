@@ -8,7 +8,7 @@ class NetMFKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         iteration: int = 10,
         order: int = 2,
         negative_samples: int = 1,
@@ -19,7 +19,7 @@ class NetMFKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         iteration: int = 10
             Number of SVD iterations. Default is 10.

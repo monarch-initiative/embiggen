@@ -11,15 +11,14 @@ class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         self,
         criterion="gini",
         splitter="best",
-        max_depth=None,
+        max_depth=10,
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.,
         max_features=None,
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
-        class_weight=None,
+        class_weight="balanced",
         ccp_alpha=0.0,
         random_state: int = 42
     ):
@@ -33,7 +32,6 @@ class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         self._max_features = max_features
         self._max_leaf_nodes = max_leaf_nodes
         self._min_impurity_decrease = min_impurity_decrease
-        self._min_impurity_split = min_impurity_split
         self._random_state = random_state
         self._class_weight = class_weight
         self._ccp_alpha = ccp_alpha
@@ -49,7 +47,6 @@ class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 max_features=max_features,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 random_state=random_state,
                 class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
@@ -71,7 +68,6 @@ class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
                 max_features=self._max_features,
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
-                min_impurity_split=self._min_impurity_split,
                 random_state=self._random_state,
                 class_weight=self._class_weight,
                 ccp_alpha=self._ccp_alpha,

@@ -19,7 +19,6 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         min_weight_fraction_leaf=0.,
         max_depth=3,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         init=None,
         max_features=None,
         verbose=0,
@@ -30,25 +29,25 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         tol=1e-4,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Label Prediction."""
         self._loss=loss
         self._learning_rate=learning_rate
-        self._n_estimators=n_estimators,
+        self._n_estimators=n_estimators
         self._criterion=criterion
-        self._min_samples_split=min_samples_split,
-        self._min_samples_leaf=min_samples_leaf,
-        self._min_weight_fraction_leaf=min_weight_fraction_leaf,
+        self._min_samples_split=min_samples_split
+        self._min_samples_leaf=min_samples_leaf
+        self._min_weight_fraction_leaf=min_weight_fraction_leaf
         self._max_depth=max_depth
         self._init=init
-        self._subsample=subsample,
-        self._max_features=max_features,
-        self._max_leaf_nodes=max_leaf_nodes,
-        self._min_impurity_decrease=min_impurity_decrease,
-        self._min_impurity_split=min_impurity_split,
+        self._subsample=subsample
+        self._max_features=max_features
+        self._max_leaf_nodes=max_leaf_nodes
+        self._min_impurity_decrease=min_impurity_decrease
         self._warm_start=warm_start
-        self._validation_fraction=validation_fraction,
+        self._validation_fraction=validation_fraction
         self._n_iter_no_change=n_iter_no_change
         self._tol=tol
         self._ccp_alpha=ccp_alpha
@@ -63,12 +62,12 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 random_state=random_state, verbose=verbose,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
     
     @classmethod
@@ -97,7 +96,6 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 max_features=self._max_features,
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
-                min_impurity_split=self._min_impurity_split,
                 warm_start=self._warm_start,
                 validation_fraction=self._validation_fraction,
                 n_iter_no_change=self._n_iter_no_change,

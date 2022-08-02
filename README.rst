@@ -1,8 +1,8 @@
-Embiggen
+🍇 Embiggen
 =========================================================================================
 |pip| |downloads| |tutorials| |documentation| |python_version| |DOI| |license| |telegram| |discord| |twitter|
 
-Embiggen is the graph machine learning submodule of the `GraPE <https://github.com/AnacletoLAB/grape>`_ library.
+Embiggen is the graph machine learning submodule of the `🍇 GraPE <https://github.com/AnacletoLAB/grape>`_ library.
 
 How to install Embiggen
 -------------------------

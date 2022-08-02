@@ -8,7 +8,7 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         iteration: int = 10,
         order: int = 5,
         random_state: int = 42,
@@ -18,7 +18,7 @@ class GraRepKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         iteration: int = 10
             Number of SVD iterations. Default is 10.

@@ -23,7 +23,7 @@ def edge_prediction_evaluation(
     versions: Optional[Union[str, List[str]]] = None,
     validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
     validation_unbalance_rates: Tuple[float] = (1.0, ),
-    use_zipfian_sampling: bool = True,
+    use_scale_free_distribution: bool = True,
     enable_cache: bool = False,
     precompute_constant_automatic_stocastic_features: bool = False,
     smoke_test: bool = False,
@@ -92,10 +92,10 @@ def edge_prediction_evaluation(
         This can be useful when executing a bipartite edge prediction task.
     validation_unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
-    use_zipfian_sampling: bool = True
-        Whether to use the zipfian sampling of the NEGATIVE edges for the EVALUATION
+    use_scale_free_distribution: bool = True
+        Whether to use the scale free sampling of the NEGATIVE edges for the EVALUATION
         of the edge prediction performance of the provided models.
-        Please DO BE ADVISED that not using a zipfian sampling for the negative
+        Please DO BE ADVISED that not using a scale free sampling for the negative
         edges is a poor choice and will cause a significant positive bias
         in the model performance.
     enable_cache: bool = False
@@ -138,5 +138,5 @@ def edge_prediction_evaluation(
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
         validation_unbalance_rates=validation_unbalance_rates,
-        use_zipfian_sampling=use_zipfian_sampling
+        use_scale_free_distribution=use_scale_free_distribution
     )

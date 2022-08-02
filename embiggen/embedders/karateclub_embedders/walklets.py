@@ -9,7 +9,7 @@ class WalkletsSkipGramKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         walk_number: int = 10,
         walk_length: int = 80,
         window_size: int = 5,
@@ -23,7 +23,7 @@ class WalkletsSkipGramKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         walk_number: int = 10
             Number of random walks. Default is 10.
@@ -52,16 +52,17 @@ class WalkletsSkipGramKarateClub(AbstractKarateClubEmbedder):
         self._learning_rate = learning_rate
         self._min_count = min_count
         super().__init__(
-            embedding_size=embedding_size,
+            embedding_size=embedding_size // self._window_size,
             enable_cache=enable_cache,
             random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns the parameters used in the model."""
+        parameters = super().parameters()
+        parameters["embedding_size"] = parameters["embedding_size"] * self._window_size
         return dict(
-            **super().parameters(),
-
+            **parameters,
             walk_number=self._walk_number,
             walk_length=self._walk_length,
             window_size=self._window_size,
@@ -77,7 +78,7 @@ class WalkletsSkipGramKarateClub(AbstractKarateClubEmbedder):
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
             walk_number=1,
             walk_length=8,
-            window_size=2,
+            window_size=1,
             epochs=1,
         )
 

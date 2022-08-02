@@ -1,11 +1,12 @@
-"""Module providing SkipGram model implementation."""
-from typing import Optional
+"""Module providing WalkletsEnsmallen model implementation."""
+from typing import Optional, Dict, Any
 from embiggen.embedders.ensmallen_embedders.node2vec import Node2VecEnsmallen
+from embiggen.utils.abstract_models.abstract_model import abstract_class
 
-
-class SkipGramEnsmallen(Node2VecEnsmallen):
-    """Class providing SkipGram implemeted in Rust from Ensmallen."""
-
+@abstract_class
+class WalkletsEnsmallen(Node2VecEnsmallen):
+    """Class providing WalkletsEnsmallen implemeted in Rust from Ensmallen."""
+    
     def __init__(
         self,
         embedding_size: int = 100,
@@ -14,18 +15,19 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
-        change_node_type_weight: float = 1.0,
-        change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        central_nodes_embedding_path: Optional[str] = None,
+        contextual_nodes_embedding_path: Optional[str] = None,
+        alpha: float = 0.75,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
         normalize_learning_rate_by_degree: Optional[bool] = False,
-        use_zipfian_sampling: Optional[bool] = True,
+        use_scale_free_distribution: Optional[bool] = True,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -35,11 +37,8 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 30
             Number of epochs to train the model for.
-        window_size: int = 10
-            Window size for the local context.
-            On the borders the window size is trimmed.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
             By default, `6.0`, where the loss is already close to zero.
@@ -50,7 +49,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 4
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 1.0
@@ -67,14 +66,6 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
-        change_node_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor node of a
-            different type than the previous node. This only applies to
-            colored graphs, otherwise it has no impact.
-        change_edge_type_weight: float = 1.0
-            Weight on the probability of visiting a neighbor edge of a
-            different type than the previous edge. This only applies to
-            multigraphs, otherwise it has no impact.
         max_neighbours: Optional[int] = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
@@ -83,6 +74,20 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        central_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            If provided, we expect the path to contain the substring `{window_size}` which
+            will be replaced with the i-th window size embedding that is being computed.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        alpha: float = 0.75
+            Alpha parameter for GloVe's loss.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -90,7 +95,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             Randomly skip samples with probability proportional to the degree of the central node. By default false.
         normalize_learning_rate_by_degree: Optional[bool] = False
             Divide the learning rate by the degree of the central node. By default false.
-        use_zipfian_sampling: Optional[bool] = True
+        use_scale_free_distribution: Optional[bool] = True
             Sample negatives proportionally to their degree. By default true.
         random_state: int = 42
             The random state to reproduce the training sequence.
@@ -99,8 +104,7 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             store the computed embedding.
         """
         super().__init__(
-            model_name="SkipGram",
-            embedding_size=embedding_size,
+            embedding_size=embedding_size // window_size,
             epochs=epochs,
             clipping_value=clipping_value,
             number_of_negative_samples=number_of_negative_samples,
@@ -109,24 +113,26 @@ class SkipGramEnsmallen(Node2VecEnsmallen):
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
-            change_edge_type_weight=change_edge_type_weight,
-            change_node_type_weight=change_node_type_weight,
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            central_nodes_embedding_path=central_nodes_embedding_path,
+            contextual_nodes_embedding_path=contextual_nodes_embedding_path,
+            alpha=alpha,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
-            use_zipfian_sampling=use_zipfian_sampling,
+            use_scale_free_distribution=use_scale_free_distribution,
             random_state=random_state,
-            enable_cache=enable_cache,
+            enable_cache=enable_cache
         )
-
-    @classmethod
-    def model_name(cls) -> str:
-        """Returns name of the model."""
-        return "SkipGram"
     
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters of the model."""
+        parameters = super().parameters()
+        parameters["embedding_size"] = parameters["embedding_size"] * parameters["window_size"]
+        return parameters
+
     @classmethod
     def requires_node_types(cls) -> bool:
         return False

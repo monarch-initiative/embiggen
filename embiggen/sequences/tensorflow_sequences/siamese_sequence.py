@@ -1,4 +1,4 @@
-"""Keras Sequence for running Neural Network on graph edge prediction."""
+"""Keras Sequence for running Siamese Neural Network based on currupted triples sampling."""
 from typing import List
 
 import numpy as np
@@ -15,9 +15,10 @@ class SiameseSequence(Sequence):
         self,
         graph: Graph,
         batch_size: int = 2**10,
+        return_edge_types: bool = False,
         random_state: int = 42
     ):
-        """Create new EdgePredictionSequence object.
+        """Create new SiameseSequence object.
 
         Parameters
         --------------------------------
@@ -25,10 +26,13 @@ class SiameseSequence(Sequence):
             The graph from which to sample the triples.
         batch_size: int = 2**10,
             The batch size to use.
+        return_edge_types: bool = False
+            Whether to return the edge types.
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
         self._graph = graph
+        self._return_edge_types = return_edge_types
         self._random_state = random_state
         self._current_index = 0
         super().__init__(
@@ -54,47 +58,15 @@ class SiameseSequence(Sequence):
         ----------------------------------
         Dataset to be used for the training of a model
         """
-
-        #################################################################
-        # Handling kernel creation when TensorFlow is a modern version. #
-        #################################################################
-
-        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
-            input_tensor_specs = []
-
-            # For both the real and fake nodes.
-            for _ in range(4):
-                # Shapes of the source and destination node IDs
-                input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size, ),
-                    dtype=tf.uint32
-                ))
-
-            # Shapes of the edge type IDs
-            input_tensor_specs.append(tf.TensorSpec(
-                shape=(self._batch_size,),
-                dtype=tf.uint32
-            ))
-
-            return tf.data.Dataset.from_generator(
-                self,
-                output_signature=(tuple(input_tensor_specs),)
-            )
-
-        input_tensor_types = []
-        input_tensor_shapes = []
-
-        for _ in range(4):
-            input_tensor_types.append(tf.uint32,)
-            input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
-
-        input_tensor_types.append(tf.uint32,)
-        input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
-
         return tf.data.Dataset.from_generator(
             self,
-            output_types=input_tensor_types,
-            output_shapes=input_tensor_shapes
+            output_signature=(tuple([
+                tf.TensorSpec(
+                    shape=(self._batch_size, ),
+                    dtype=tf.uint32
+                )
+                for _ in range(4 + int(self._return_edge_types))
+            ]),)
         )
 
     def __getitem__(self, idx: int) -> List[np.ndarray]:
@@ -106,8 +78,14 @@ class SiameseSequence(Sequence):
             Index corresponding to batch to be returned.
         """
         random_state = (self._random_state + idx) * (1 + self.elapsed_epochs)
-        return (self._graph.get_siamese_mini_batch(
-            random_state,
-            batch_size=self.batch_size,
-            use_zipfian_sampling=True
-        ),)
+        return (
+            self._graph.get_siamese_mini_batch_with_edge_types(
+                random_state,
+                batch_size=self.batch_size,
+            )
+            if self._return_edge_types
+            else self._graph.get_siamese_mini_batch(
+                random_state,
+                batch_size=self.batch_size,
+            ),
+        )

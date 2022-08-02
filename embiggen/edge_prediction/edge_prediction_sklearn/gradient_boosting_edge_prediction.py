@@ -19,7 +19,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         min_weight_fraction_leaf=0.,
         max_depth=3,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         init=None,
         max_features=None,
         verbose=0,
@@ -33,27 +32,26 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
-        use_zipfian_sampling: bool = True,
+        use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Prediction."""
         self._loss=loss
         self._learning_rate=learning_rate
-        self._n_estimators=n_estimators,
+        self._n_estimators=n_estimators
         self._criterion=criterion
-        self._min_samples_split=min_samples_split,
-        self._min_samples_leaf=min_samples_leaf,
-        self._min_weight_fraction_leaf=min_weight_fraction_leaf,
+        self._min_samples_split=min_samples_split
+        self._min_samples_leaf=min_samples_leaf
+        self._min_weight_fraction_leaf=min_weight_fraction_leaf
         self._max_depth=max_depth
         self._init=init
-        self._subsample=subsample,
-        self._max_features=max_features,
-        self._max_leaf_nodes=max_leaf_nodes,
-        self._min_impurity_decrease=min_impurity_decrease,
-        self._min_impurity_split=min_impurity_split,
+        self._subsample=subsample
+        self._max_features=max_features
+        self._max_leaf_nodes=max_leaf_nodes
+        self._min_impurity_decrease=min_impurity_decrease
         self._warm_start=warm_start
-        self._validation_fraction=validation_fraction,
+        self._validation_fraction=validation_fraction
         self._n_iter_no_change=n_iter_no_change
         self._tol=tol
         self._ccp_alpha=ccp_alpha
@@ -68,14 +66,13 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 random_state=random_state, verbose=verbose,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
             edge_embedding_method=edge_embedding_method,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
-            use_zipfian_sampling=use_zipfian_sampling,
+            use_scale_free_distribution=use_scale_free_distribution,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             prediction_batch_size=prediction_batch_size,
             random_state=random_state
@@ -99,7 +96,6 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
                 max_features=self._max_features,
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
-                min_impurity_split=self._min_impurity_split,
                 warm_start=self._warm_start,
                 validation_fraction=self._validation_fraction,
                 n_iter_no_change=self._n_iter_no_change,

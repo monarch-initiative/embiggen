@@ -16,7 +16,6 @@ __all__ = [
     "AbstractClassifierModel",
     "AbstractEmbeddingModel",
     "EmbeddingResult",
-    "get_standardized_model_map",
     "abstract_class",
     "AbstractModel",
     "get_models_dataframe",
@@ -25,5 +24,5 @@ __all__ = [
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_node_embedding",
     "build_init",
-    "format_list"
+    "format_list",
 ]

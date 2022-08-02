@@ -18,6 +18,7 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
         batch_size: int = 2**10,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
+        verbose: bool = False,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -54,6 +55,8 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        verbose: bool = False
+            Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
@@ -68,19 +71,20 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
             epochs=epochs,
             batch_size=batch_size,
             training_loop=training_loop,
+            verbose=verbose,
             random_state=random_state,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 tanh_map=self._tanh_map,
                 p=self._p,
                 power_norm=self._power_norm,
             )
-        }
+        )
 
     @classmethod
     def model_name(cls) -> str:
@@ -104,4 +108,5 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
             tanh_map=self._tanh_map,
             p=self._p,
             power_norm=self._power_norm,
+            random_seed=self._random_state
         )

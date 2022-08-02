@@ -33,6 +33,7 @@ class AbstractEdgeGCN(AbstractGCN):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
         apply_norm: bool = False,
+        combiner: str ="sum",
         edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -55,6 +56,7 @@ class AbstractEdgeGCN(AbstractGCN):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -85,6 +87,13 @@ class AbstractEdgeGCN(AbstractGCN):
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
+        combiner: str = "mean"
+            A string specifying the reduction op.
+            Currently "mean", "sqrtn" and "sum" are supported. 
+            "sum" computes the weighted sum of the embedding results for each row.
+            "mean" is the weighted sum divided by the total weight.
+            "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
+            Defaults to mean.
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
@@ -181,6 +190,9 @@ class AbstractEdgeGCN(AbstractGCN):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -191,6 +203,7 @@ class AbstractEdgeGCN(AbstractGCN):
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
+            combiner=combiner,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -225,6 +238,7 @@ class AbstractEdgeGCN(AbstractGCN):
 
         self._edge_embedding_method = edge_embedding_method
         self._use_edge_metrics = use_edge_metrics
+        self._edge_feature_names = edge_feature_names
         self._use_node_types = None
 
     @classmethod
@@ -263,6 +277,7 @@ class AbstractEdgeGCN(AbstractGCN):
             return_node_types=self.is_using_node_types(),
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
+            edge_features=edge_features
         )
 
     def _get_model_training_output(self, graph: Graph) -> Optional[np.ndarray]:
@@ -346,6 +361,31 @@ class AbstractEdgeGCN(AbstractGCN):
         else:
             edge_metrics = None
 
+        edge_feature_inputs = []
+        if edge_features is None:
+            edge_features = []
+        edge_feature_names = self._edge_feature_names
+        if edge_feature_names is None:
+            edge_feature_names = [
+                f"{number_to_ordinal(i+1)}EdgeFeature"
+                for i in range(len(edge_features))
+            ]
+        if len(edge_feature_names) != len(edge_features):
+            raise ValueError(
+                f"You have provided {len(edge_feature_names)} "
+                f"edge feature names but you have provided {len(edge_features)} "
+                "edge features to the model."
+            )
+        for edge_feature, feature_name in zip(edge_features, edge_feature_names):
+            feature_names.append(feature_name)
+            edge_feature_input = Input(
+                shape=edge_feature.shape[1:],
+                batch_size=nodes_number,
+                name=feature_name,
+            )
+            edge_feature_inputs.append(edge_feature_input)
+            source_and_destination_features.append(edge_feature_input)
+
         ffnn_outputs = []
 
         for hidden, feature_name in zip(source_and_destination_features, feature_names):
@@ -364,7 +404,8 @@ class AbstractEdgeGCN(AbstractGCN):
 
         if self._edge_embedding_method == "Concatenate":
             hidden = Concatenate(
-                name="NodeConcatenation"
+                name="NodeConcatenation",
+                axis=-1
             )(source_and_destination_features)
         elif self._edge_embedding_method == "Average":
             hidden = Average(
@@ -407,10 +448,11 @@ class AbstractEdgeGCN(AbstractGCN):
 
         if len(other_features) > 0:
             hidden = Concatenate(
-                name="EdgeFeatures"
+                name="EdgeFeatures",
+                axis=-1
             )([
                 hidden,
-                other_features
+                *other_features
             ])
 
         # Building the head of the model.
@@ -427,18 +469,21 @@ class AbstractEdgeGCN(AbstractGCN):
             name="Output"
         )(hidden)
 
+        inputs=[
+            input_layer
+            for input_layer in (
+                source_nodes,
+                destination_nodes,
+                edge_metrics,
+                *edge_feature_inputs,
+                *graph_convolution_model.inputs,
+            )
+            if input_layer is not None
+        ]
+
         # Building the the model.
         model = Model(
-            inputs=[
-                input_layer
-                for input_layer in (
-                    source_nodes,
-                    destination_nodes,
-                    edge_metrics,
-                    *graph_convolution_model.inputs,
-                )
-                if input_layer is not None
-            ],
+            inputs=inputs,
             outputs=output,
             name=self.model_name().replace(" ", "_")
         )

@@ -8,7 +8,7 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         iterations: int = 10,
         decay: float = 0.01,
         random_state: int = 42,
@@ -18,7 +18,7 @@ class NodeSketchKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         iterations: int = 10
             Number of SVD iterationss. Default is 10.

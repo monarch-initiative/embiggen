@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
 from ensmallen import Graph
-from embiggen.utils.abstract_models import AbstractClassifierModel, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel
 
 
 class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
@@ -20,7 +20,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         self._is_binary_prediction_task = None
         self._is_multilabel_prediction_task = None
         super().__init__(random_state=random_state)
-    
+
     @classmethod
     def requires_edge_types(cls) -> bool:
         """Returns whether this method requires node types."""
@@ -48,7 +48,9 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """Returns available evaluation schemas for this task."""
         return [
             "Stratified Monte Carlo",
-            "Stratified Kfold"
+            "Stratified Kfold",
+            "Kfold",
+            "Monte Carlo",
         ]
 
     @classmethod
@@ -78,23 +80,26 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         holdouts_kwargs: Dict[str, Any]
             The kwargs to be forwarded to the holdout method.
         """
-        if evaluation_schema == "Stratified Monte Carlo":
+        if evaluation_schema in ("Monte Carlo", "Stratified Monte Carlo"):
             return graph.get_edge_label_holdout_graphs(
                 **holdouts_kwargs,
-                use_stratification=True,
+                use_stratification="Stratified" in evaluation_schema,
                 random_state=random_state+holdout_number,
             )
-        if evaluation_schema == "Stratified Kfold":
+        if evaluation_schema in ("Kfold", "Stratified Kfold"):
             return graph.get_edge_label_kfold(
                 k=number_of_holdouts,
                 k_index=holdout_number,
-                use_stratification=True,
+                use_stratification="Stratified" in evaluation_schema,
                 random_state=random_state,
             )
-        raise ValueError(
-            f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available. The available evaluation schemas "
-            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        super().split_graph_following_evaluation_schema(
+            graph=graph,
+            evaluation_schema=evaluation_schema,
+            random_state=random_state,
+            holdout_number=holdout_number,
+            number_of_holdouts=number_of_holdouts,
+            **holdouts_kwargs,
         )
 
     @classmethod
@@ -127,6 +132,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         train_size = train.get_number_of_known_edge_types() / graph.get_number_of_known_edge_types()
+
         performance = []
         for evaluation_mode, evaluation_graph in (
             ("train", train),
@@ -139,9 +145,8 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 node_type_features=node_type_features,
                 edge_features=edge_features
             )[evaluation_graph.get_edge_ids_with_known_edge_types()]
-            
+
             if self.is_binary_prediction_task():
-                prediction_probabilities = prediction_probabilities[:, 1]
                 predictions = prediction_probabilities
                 labels = evaluation_graph.get_known_edge_type_ids() == 1
             elif self.is_multilabel_prediction_task():
@@ -158,7 +163,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             performance.append({
                 "evaluation_mode": evaluation_mode,
                 "train_size": train_size,
-                "known_edges_number": graph.get_number_of_known_node_types(),
+                "known_edges_number": graph.get_number_of_known_edge_types(),
                 **self.evaluate_predictions(
                     labels,
                     predictions,
@@ -197,14 +202,25 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the edge-label prediction models."
+        non_zero_edge_types = sum([
+            1
+            for count in graph.get_edge_type_names_counts_hashmap().values()
+            if count > 0
+        ])
+
+        if non_zero_edge_types < 2:
+            raise ValueError(
+                "The provided training graph has less than two non-zero edge types. "
+                "It is unclear how to proceeed."
             )
 
-        self._is_binary_prediction_task = graph.get_number_of_edge_types() == 2
+        self._is_binary_prediction_task = non_zero_edge_types == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
+
+        if self._is_multilabel_prediction_task:
+            raise ValueError(
+                "Currently we do not support multi-label edge prediction."
+            )
 
         super().fit(
             graph=graph,

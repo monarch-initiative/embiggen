@@ -8,7 +8,7 @@ class NMFADMMKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         iterations: int = 100,
         rho: float = 1.0,
         random_state: int = 42,
@@ -18,7 +18,7 @@ class NMFADMMKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         iterations: int = 100
             Number of SVD iterationss. Default is 10.

@@ -5,11 +5,11 @@ from multiprocessing import cpu_count
 from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
-class DeepWalkKarateClub(AbstractKarateClubEmbedder):
+class DeepWalkSkipGramKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
+        embedding_size: int = 100,
         walk_number: int = 10,
         walk_length: int = 80,
         window_size: int = 5,
@@ -23,7 +23,7 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
 
         Parameters
         ----------------------
-        embedding_size: int = 128
+        embedding_size: int = 100
             Size of the embedding to use.
         walk_number: int = 10
             Number of random walks. Default is 10.
@@ -97,7 +97,7 @@ class DeepWalkKarateClub(AbstractKarateClubEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model"""
-        return "DeepWalk"
+        return "DeepWalk SkipGram"
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

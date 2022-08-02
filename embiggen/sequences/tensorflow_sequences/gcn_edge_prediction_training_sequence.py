@@ -87,11 +87,13 @@ class GCNEdgePredictionTrainingSequence(Sequence):
 
         if node_features is None:
             node_features = []
+        
         self._node_features = node_features
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
+
         if return_node_ids:
             self._node_ids = graph.get_node_ids()
         else:
@@ -105,16 +107,12 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         
         self._node_types = node_types if return_node_types else None
 
-        if node_type_features is not None:
-            if graph.has_multilabel_node_types():
-                node_types = graph.get_one_hot_encoded_node_types()
-            else:
-                node_types = graph.get_single_label_node_type_ids()
+        if node_type_features is not None:            
             if self._graph.has_multilabel_node_types():
                 self._node_type_features = []
-                minus_node_types = node_type_feature[node_types - 1]
                 node_types_mask = node_types==0
-                for node_type_feature in self._node_type_features:
+                minus_node_types = node_types - 1
+                for node_type_feature in node_type_features:
                     self._node_type_features.append(np.ma.array(
                         node_type_feature[minus_node_types],
                         mask=np.repeat(
@@ -124,13 +122,14 @@ class GCNEdgePredictionTrainingSequence(Sequence):
                             *node_types.shape,
                             node_type_feature.shape[1]
                         ))
-                    ).mean(axis=-1).data)
+                    ).mean(axis=-2).data)
             else:
                 if self._graph.has_unknown_node_types():
                     self._node_type_features = []
-                    minus_node_types = node_type_feature[node_types - 1]
                     node_types_mask = node_types==0
-                    for node_type_feature in self._node_type_features:
+                    minus_node_types = node_types - 1
+                    minus_node_types[node_types_mask] = 0
+                    for node_type_feature in node_type_features:
                         ntf = node_type_feature[minus_node_types]
                         # Masking the unknown values to zero.
                         ntf[node_types_mask] = 0.0
@@ -150,78 +149,6 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             sample_number=graph.get_number_of_directed_edges(),
             batch_size=graph.get_number_of_nodes(),
         )
-
-    def __call__(self):
-        """Return next batch using an infinite generator model."""
-        self._current_index += 1
-        return (self[self._current_index],)
-
-    def into_dataset(self) -> tf.data.Dataset:
-        """Return dataset generated out of the current sequence instance.
-
-        Implementative details
-        ---------------------------------
-        This method handles the conversion of this Keras Sequence into
-        a TensorFlow dataset, also handling the proper dispatching according
-        to what version of TensorFlow is installed in this system.
-
-        Returns
-        ----------------------------------
-        Dataset to be used for the training of a model
-        """
-
-        input_tensor_specs = []
-
-        for _ in range(2):
-            # Shapes of the source and destination node IDs
-            input_tensor_specs.append(tf.TensorSpec(
-                shape=(None, ),
-                dtype=tf.int32
-            ))
-
-        if self._use_edge_metrics:
-            # Shapes of the edge type IDs
-            input_tensor_specs.append(tf.TensorSpec(
-                shape=(None, self._graph.get_number_of_available_edge_metrics()),
-                dtype=tf.float64
-            ))
-
-        # Shapes of the kernel
-        input_tensor_specs.append(tf.SparseTensorSpec(
-            shape=(None, None),
-            dtype=tf.float32
-        ))
-        
-        if self._node_features is not None:
-            input_tensor_specs.extend([
-                tf.TensorSpec(
-                    shape=(None, node_feature.shape[1]),
-                    dtype=tf.float32
-                )
-                for node_feature in self._node_features
-            ])
-            
-        input_tensor_specs.extend([
-            tf.TensorSpec(
-                shape=(None, node_type_feature.shape[1]),
-                dtype=tf.float32
-            )
-            for node_type_feature in self._node_type_features
-        ])
-
-        return tf.data.Dataset.from_generator(
-            self,
-            output_signature=(
-                (
-                    *input_tensor_specs,
-                ),
-                tf.TensorSpec(
-                    shape=(None,),
-                    dtype=tf.bool
-                )
-            )
-        )
-
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return batch corresponding to given index.

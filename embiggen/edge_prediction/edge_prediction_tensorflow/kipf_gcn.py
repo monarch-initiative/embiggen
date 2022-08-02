@@ -1,5 +1,5 @@
 """Kipf GCN model for edge prediction."""
-from typing import List, Union, Optional, Type
+from typing import List, Union, Optional, Type, Dict, Any
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.edge_prediction.edge_prediction_tensorflow.gcn import GCNEdgePrediction
 
@@ -174,6 +174,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            combiner="sum",
             apply_norm=apply_norm,
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
@@ -200,6 +201,19 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
+        )
+
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        removed = [
+            "combiner"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key not in removed
+            }
         )
 
     @classmethod

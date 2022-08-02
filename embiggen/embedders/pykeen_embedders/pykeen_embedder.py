@@ -1,5 +1,5 @@
 """Abstract Torch/PyKeen Model wrapper for embedding models."""
-from typing import Dict, List, Sequence, Union, Optional, Tuple, Any, Type
+from typing import Dict, Union, Tuple, Any, Type
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ import torch
 from pykeen.models import Model
 from pykeen.triples import CoreTriplesFactory
 from pykeen.training import SLCWATrainingLoop, LCWATrainingLoop, TrainingLoop
-from torch.optim import Optimizer
 
 
 @abstract_class
@@ -33,6 +32,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         device: str = "auto",
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
+        verbose: bool = False,
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -55,6 +55,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             Can either be:
             - Stochastic Local Closed World Assumption
             - Local Closed World Assumption
+        verbose: bool = False
+            Whether to show the loading bar.
         random_state: int = 42
             Random seed to use while training the model
         enable_cache: bool = False
@@ -83,6 +85,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         self._training_loop = training_loop
         self._epochs = epochs
+        self._verbose = verbose
         self._batch_size = batch_size
         self._device = validate_torch_device(device)
 
@@ -101,13 +104,13 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         )
 
     def parameters(self) -> Dict[str, Any]:
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 epochs=self._epochs,
                 batch_size=self._batch_size,
             )
-        }
+        )
 
     @classmethod
     def library_name(cls) -> str:
@@ -168,7 +171,6 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-        verbose: bool = True
     ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
         """Return node embedding"""
 
@@ -210,10 +212,12 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             triples_factory=triples_factory,
             num_epochs=self._epochs,
             batch_size=batch_size,
-            use_tqdm=True,
-            use_tqdm_batch=True,
+            use_tqdm=self._verbose,
+            use_tqdm_batch=self._verbose,
             tqdm_kwargs=dict(
-                disable=not verbose
+                disable=not self._verbose,
+                dynamic_ncols=True,
+                leave=False
             )
         )
 

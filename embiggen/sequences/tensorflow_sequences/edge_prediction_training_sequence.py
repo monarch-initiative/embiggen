@@ -56,10 +56,6 @@ class EdgePredictionTrainingSequence(Sequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
-        if not graph.has_edges():
-            raise ValueError(
-                f"An empty instance of graph {graph.get_name()} was provided!"
-            )
         self._graph = graph
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
@@ -72,101 +68,6 @@ class EdgePredictionTrainingSequence(Sequence):
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
             batch_size=batch_size,
-        )
-
-    def __call__(self):
-        """Return next batch using an infinite generator model."""
-        self._current_index += 1
-        return (self[self._current_index],)
-
-    def into_dataset(self) -> tf.data.Dataset:
-        """Return dataset generated out of the current sequence instance.
-
-        Implementative details
-        ---------------------------------
-        This method handles the conversion of this Keras Sequence into
-        a TensorFlow dataset, also handling the proper dispatching according
-        to what version of TensorFlow is installed in this system.
-
-        Returns
-        ----------------------------------
-        Dataset to be used for the training of a model
-        """
-
-        #################################################################
-        # Handling kernel creation when TensorFlow is a modern version. #
-        #################################################################
-
-        if tensorflow_version_is_higher_or_equal_than("2.5.0"):
-            input_tensor_specs = []
-
-            for _ in range(2):
-                # Shapes of the source and destination node IDs
-                input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size, ),
-                    dtype=tf.int32
-                ))
-
-                if self._use_node_types:
-                    # Shapes of the source and destination node type IDs
-                    input_tensor_specs.append(tf.TensorSpec(
-                        shape=(self._batch_size,
-                               self._graph.get_maximum_multilabel_count()),
-                        dtype=tf.int32
-                    ))
-
-            if self._use_edge_metrics:
-                # Shapes of the edge type IDs
-                input_tensor_specs.append(tf.TensorSpec(
-                    shape=(self._batch_size,
-                           self._graph.get_number_of_available_edge_metrics()),
-                    dtype=tf.float64
-                ))
-
-            return tf.data.Dataset.from_generator(
-                self,
-                output_signature=(
-                    (
-                        *input_tensor_specs,
-                    ),
-                    tf.TensorSpec(
-                        shape=(self._batch_size,),
-                        dtype=tf.bool
-                    )
-                )
-            )
-
-        input_tensor_types = []
-        input_tensor_shapes = []
-
-        for _ in range(2):
-            input_tensor_types.append(tf.int32,)
-            input_tensor_shapes.append(tf.TensorShape([self._batch_size, ]),)
-
-            if self._use_node_types:
-                input_tensor_types.append(tf.int32,)
-                input_tensor_shapes.append(
-                    tf.TensorShape([self._batch_size, self._graph.get_maximum_multilabel_count()]),)
-
-        if self._use_edge_metrics:
-            input_tensor_types.append(tf.float64,)
-            input_tensor_shapes.append(tf.TensorShape(
-                [self._batch_size, self._graph.get_number_of_available_edge_metrics()]),)
-
-        return tf.data.Dataset.from_generator(
-            self,
-            output_types=(
-                (
-                    *input_tensor_types,
-                ),
-                tf.bool
-            ),
-            output_shapes=(
-                (
-                    *input_tensor_shapes,
-                ),
-                tf.TensorShape([self._batch_size, ]),
-            )
         )
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:

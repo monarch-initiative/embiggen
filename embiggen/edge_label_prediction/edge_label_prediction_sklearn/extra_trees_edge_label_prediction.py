@@ -20,16 +20,16 @@ class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         max_features="auto",
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        min_impurity_split=None,
         bootstrap=True,
         oob_score=False,
         n_jobs=-1,
         verbose=0,
         warm_start=False,
-        class_weight=None,
+        class_weight="balanced",
         ccp_alpha=0.0,
         max_samples=None,
         edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
         random_state: int = 42
     ):
         """Create the Extra Trees for Edge Label Prediction."""
@@ -42,7 +42,6 @@ class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         self._max_features = max_features
         self._max_leaf_nodes = max_leaf_nodes
         self._min_impurity_decrease = min_impurity_decrease
-        self._min_impurity_split = min_impurity_split
         self._bootstrap = bootstrap
         self._oob_score = oob_score
         self._n_jobs = cpu_count() if n_jobs == -1 else n_jobs
@@ -64,7 +63,6 @@ class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 max_features=max_features,
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
                 bootstrap=bootstrap,
                 oob_score=oob_score,
                 n_jobs=n_jobs,
@@ -75,8 +73,9 @@ class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 ccp_alpha=ccp_alpha,
                 max_samples=max_samples
             ),
-            edge_embedding_method,
-            random_state
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
+            random_state=random_state
         )
 
     @classmethod
@@ -101,7 +100,6 @@ class ExtraTreesEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 max_features = self._max_features,
                 max_leaf_nodes = self._max_leaf_nodes,
                 min_impurity_decrease = self._min_impurity_decrease,
-                min_impurity_split = self._min_impurity_split,
                 bootstrap = self._bootstrap,
                 oob_score = self._oob_score,
                 n_jobs = self._n_jobs,

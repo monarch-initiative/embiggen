@@ -14,7 +14,6 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         number_of_head_layers: int = 1,
         number_of_units_per_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
-        dropout_rate: float = 0.3,
         edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -35,6 +34,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_embedding_size: int = 50,
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
+        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new GraphSAGE object.
@@ -55,9 +55,6 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Number of units per ffnn body layer.
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128
             Number of units per ffnn head layer.
-        dropout_rate: float = 0.3
-            Float between 0 and 1.
-            Fraction of the input units to dropout.
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
@@ -146,6 +143,9 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_feature_names: Optional[List[str]] = None
+            Names of the edge features.
+            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -157,7 +157,6 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_ffnn_head_layers=number_of_head_layers,
             number_of_units_per_ffnn_body_layer=number_of_units_per_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_head_layer,
-            dropout_rate=dropout_rate,
             edge_embedding_method=edge_embedding_method,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -178,6 +177,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             node_type_embedding_size=node_type_embedding_size,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_feature_names=edge_feature_names,
             verbose=verbose,
         )
 
@@ -206,14 +206,17 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             "number_of_units_per_graph_convolution_layers",
             "handling_multi_graph",
             "number_of_units_per_ffnn_body_layer",
-            "number_of_units_per_ffnn_head_layer"
+            "number_of_units_per_ffnn_head_layer",
+            "combiner",
+            "apply_norm",
+            "dropout_rate"
         ]
         return dict(
             number_of_units_per_body_layer=self._number_of_units_per_ffnn_body_layer,
             number_of_units_per_head_layer=self._number_of_units_per_ffnn_head_layer,
             **{
                 key: value
-                for key, value in super().smoke_test_parameters().items()
+                for key, value in super().parameters().items()
                 if key not in removed
             }
         )

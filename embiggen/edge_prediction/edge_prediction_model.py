@@ -6,7 +6,7 @@ import numpy as np
 import math
 from ensmallen import Graph
 from tqdm.auto import tqdm
-from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, abstract_class, format_list
+from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class, format_list
 
 
 @abstract_class
@@ -82,10 +82,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 random_state=random_state,
                 verbose=False
             )
-        raise ValueError(
-            f"The requested evaluation schema `{evaluation_schema}` "
-            "is not available. The available evaluation schemas "
-            f"are: {format_list(cls.get_available_evaluation_schemas())}."
+        super().split_graph_following_evaluation_schema(
+            graph=graph,
+            evaluation_schema=evaluation_schema,
+            random_state=random_state,
+            holdout_number=holdout_number,
+            number_of_holdouts=number_of_holdouts,
+            **holdouts_kwargs,
         )
 
     @staticmethod
@@ -99,7 +102,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         verbose: bool,
         validation_sample_only_edges_with_heterogeneous_node_types: bool,
         validation_unbalance_rates: Tuple[float],
-        use_zipfian_sampling: bool
+        use_scale_free_distribution: bool
     ) -> Iterator[Tuple[Graph]]:
         """Return iterator over the negative graphs for evaluation."""
         if subgraph_of_interest is None:
@@ -107,9 +110,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         else:
             sampler_graph = subgraph_of_interest
 
-        if not use_zipfian_sampling:
+        if not use_scale_free_distribution:
             warnings.warn(
-                "Please do be advised that you have DISABLED the use of zipfian sampling "
+                "Please do be advised that you have DISABLED the use of scale free sampling "
                 "for the negative edges for the EVALUATION (not the training) "
                 "of a model. This is a POOR CHOICE as it will introduce a positive bias "
                 "as edges sampled uniformely have a significantly different node degree "
@@ -130,7 +133,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 ),
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-                use_zipfian_sampling=use_zipfian_sampling,
+                use_scale_free_distribution=use_scale_free_distribution,
                 support=support,
                 graph_to_avoid=graph
             ).random_holdout(
@@ -160,7 +163,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         verbose: bool = True,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
         validation_unbalance_rates: Tuple[float] = (1.0, ),
-        use_zipfian_sampling: bool = True
+        use_scale_free_distribution: bool = True
     ) -> Dict[str, Any]:
         """Return additional custom parameters for the current holdout."""
         return dict(
@@ -174,7 +177,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 verbose=verbose,
                 validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 validation_unbalance_rates=validation_unbalance_rates,
-                use_zipfian_sampling=use_zipfian_sampling
+                use_scale_free_distribution=use_scale_free_distribution
             ))
         )
 
@@ -193,7 +196,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         negative_graphs: Optional[List[Tuple[Graph]]] = None,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
         validation_unbalance_rates: Tuple[float] = (1.0, ),
-        use_zipfian_sampling: bool = True,
+        use_scale_free_distribution: bool = True,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         performance = []
@@ -206,9 +209,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             edge_features=edge_features
         )
 
-        if len(train_predic_proba.shape) > 1 and train_predic_proba.shape[1] > 1:
-            train_predic_proba = train_predic_proba[:, 1]
-
         test_predict_proba = self.predict_proba(
             test,
             support=support,
@@ -216,9 +216,6 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_features=edge_features
         )
-
-        if len(test_predict_proba.shape) > 1 and test_predict_proba.shape[1] > 1:
-            test_predict_proba = test_predict_proba[:, 1]
 
         negative_graph_iterator = self.__iterate_negative_graphs(
             graph=graph,
@@ -230,7 +227,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             verbose=verbose,
             validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
             validation_unbalance_rates=validation_unbalance_rates,
-            use_zipfian_sampling=use_zipfian_sampling
+            use_scale_free_distribution=use_scale_free_distribution
         ) if negative_graphs is None else negative_graphs
 
         for unbalance_rate, (negative_train, negative_test) in tqdm(
@@ -269,6 +266,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 performance.append({
                     "evaluation_mode": evaluation_mode,
                     "validation_unbalance_rate": unbalance_rate,
+                    "use_scale_free_distribution": use_scale_free_distribution,
                     "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
                     **self.evaluate_predictions(
                         labels,
@@ -322,7 +320,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
-        )
+        ).flatten()
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
@@ -751,7 +749,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features
-        )
+        ).flatten()
+
+        if np.isnan(predictions).any():
+            raise ValueError(
+                "There are NaN values in the predicted probabilities!"
+            )
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(

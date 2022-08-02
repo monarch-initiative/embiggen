@@ -11,20 +11,19 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
         self,
         criterion="gini",
         splitter="best",
-        max_depth=None,
+        max_depth=10,
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.,
         max_features=None,
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
-        class_weight=None,
         ccp_alpha=0.0,
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
-        use_zipfian_sampling: bool = True,
+        use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
         random_state: int = 42
     ):
@@ -39,7 +38,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
         self._max_leaf_nodes = max_leaf_nodes
         self._min_impurity_decrease = min_impurity_decrease
         self._random_state = random_state
-        self._class_weight = class_weight
         self._ccp_alpha = ccp_alpha
 
         super().__init__(
@@ -54,13 +52,12 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
                 max_leaf_nodes=max_leaf_nodes,
                 min_impurity_decrease=min_impurity_decrease,
                 random_state=random_state,
-                class_weight=class_weight,
                 ccp_alpha=ccp_alpha,
             ),
             edge_embedding_method=edge_embedding_method,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
-            use_zipfian_sampling=use_zipfian_sampling,
+            use_scale_free_distribution=use_scale_free_distribution,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             prediction_batch_size=prediction_batch_size,
             random_state=random_state
@@ -81,7 +78,6 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
                 max_leaf_nodes=self._max_leaf_nodes,
                 min_impurity_decrease=self._min_impurity_decrease,
                 random_state=self._random_state,
-                class_weight=self._class_weight,
                 ccp_alpha=self._ccp_alpha,
             )
         }
