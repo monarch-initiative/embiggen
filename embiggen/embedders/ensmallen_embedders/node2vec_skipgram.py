@@ -9,17 +9,19 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 10,
+        epochs: int = 30,
         clipping_value: float = 6.0,
         number_of_negative_samples: int = 10,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
+        central_nodes_embedding_path: Optional[str] = None,
+        contextual_nodes_embedding_path: Optional[str] = None,
         normalize_by_degree: bool = False,
         stochastic_downsample_by_degree: Optional[bool] = False,
         normalize_learning_rate_by_degree: Optional[bool] = False,
@@ -33,7 +35,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 10
+        epochs: int = 30
             Number of epochs to train the model for.
         clipping_value: float = 6.0
             Value at which we clip the dot product, mostly for numerical stability issues.
@@ -45,7 +47,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         return_weight: float = 0.25
@@ -66,10 +68,20 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.05
+        learning_rate: float = 0.01
             The learning rate to use to train the Node2Vec model. By default 0.01.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
+        central_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
@@ -98,6 +110,8 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            central_nodes_embedding_path=central_nodes_embedding_path,
+            contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             normalize_by_degree=normalize_by_degree,
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,

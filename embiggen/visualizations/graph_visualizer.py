@@ -855,9 +855,6 @@ class GraphVisualizer:
 
     def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
-        # Rules to detect SPINE embedding
-        if node_embedding.dtype == "uint8" and node_embedding.min() == 0:
-            return "SPINE"
         # Rules to detect TFIDF/BERT embedding
         if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
             return "TFIDF-weighted BERT"
@@ -1367,19 +1364,6 @@ class GraphVisualizer:
 
     def _wrapped_plot_scatter(self, **kwargs):
         if self._rotate:
-            # These backups are needed for two reasons:
-            # 1) Processes in python necessarily copy the instance objects for each process
-            #    and this can cause a considerable memery peak to occour.
-            # 2) Some of the objects considered are not picklable, such as, at the time of writing
-            #    the lambdas used in the graph transformer or the graph object itself.
-            graph_backup = self._graph
-            node_embedding = self._node_decomposition
-            edge_embedding = self._positive_edge_decomposition
-            negative_edge_embedding = self._negative_edge_decomposition
-            self._node_decomposition = None
-            self._positive_edge_decomposition = None
-            self._negative_edge_decomposition = None
-            self._graph = None
             try:
                 kwargs["loc"] = "lower right"
                 path = "{}.{}".format(
@@ -1392,19 +1376,11 @@ class GraphVisualizer:
                     path=path,
                     duration=self._duration,
                     fps=self._fps,
-                    verbose=True,
+                    verbose=self._verbose,
                     **kwargs
                 )
             except (Exception, KeyboardInterrupt) as e:
-                self._node_decomposition = node_embedding
-                self._positive_edge_decomposition = edge_embedding
-                self._negative_edge_decomposition = negative_edge_embedding
-                self._graph = graph_backup
                 raise e
-            self._node_decomposition = node_embedding
-            self._positive_edge_decomposition = edge_embedding
-            self._negative_edge_decomposition = negative_edge_embedding
-            self._graph = graph_backup
             to_display = display_video_at_path(path)
             if to_display is None:
                 return ()

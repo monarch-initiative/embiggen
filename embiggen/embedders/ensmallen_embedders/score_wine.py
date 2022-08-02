@@ -1,88 +1,81 @@
-"""Module providing first-order LINE implementation."""
-from typing import Dict, Any, Optional
+"""Module providing Score-based WINE implementation."""
+from typing import Optional, Dict, Any
 from ensmallen import Graph
 import pandas as pd
+import numpy as np
 from ensmallen import models
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
 from embiggen.utils import EmbeddingResult
 
 
-class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
-    """Class implementing the first-order LINE algorithm."""
+class ScoreWINE(EnsmallenEmbedder):
+    """Class implementing the Score-based WINE algorithm."""
 
     def __init__(
         self,
+        scores: Optional[np.ndarray] = None,
         embedding_size: int = 100,
-        epochs: int = 100,
-        learning_rate: float = 0.05,
-        learning_rate_decay: float = 0.9,
-        avoid_false_negatives: bool = False,
-        node_embedding_path: Optional[str] = None,
-        random_state: int = 42,
+        dtype: Optional[str] = "u8",
+        walk_length: Optional[int] = None,
+        path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new abstract Node2Vec method.
+        """Create new Score-based WINE method.
 
         Parameters
         --------------------------
+        scores: Optional[np.ndarray] = None
+            Numpy array to be used to sort the anchor nodes.
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 100
-            The number of epochs to run the model for, by default 10.
-        learning_rate: float = 0.05
-            The learning rate to update the gradient, by default 0.01.
-        learning_rate_decay: float = 0.9
-            Factor to reduce the learning rate for at each epoch. By default 0.9.
-        avoid_false_negatives: bool = False
-            Whether to avoid sampling false negatives.
-            This may cause a slower training.
-        node_embedding_path: Optional[str] = None
-            Path where to mmap and store the nodes embedding.
-            This is necessary to embed large graphs whose embedding will not
-            fit into the available main memory.
-        random_state: int = 42
-            Random state to reproduce the embeddings.
+        dtype: Optional[str] = "u8"
+            Dtype to use for the embedding.
+        walk_length: int = 2
+            Length of the random walk.
+            By default 2, to capture exclusively the immediate context.
+        path: Optional[str] = None
+            Path where to store the mmap-ed embedding.
+            This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._kwargs = dict(
-            epochs=epochs,
-            learning_rate=learning_rate,
-            learning_rate_decay=learning_rate_decay,
-            avoid_false_negatives=avoid_false_negatives,
-            node_embedding_path=node_embedding_path,
-            verbose=verbose
-        )
-
-        self._model = models.FirstOrderLINE(
-            **self._kwargs,
+        self._dtype = dtype
+        self._verbose = verbose
+        self._walk_length = walk_length
+        self._path = path
+        self._scores = scores
+        self._model = models.ScoreWINE(
             embedding_size=embedding_size,
-            random_state=random_state
+            verbose=self._verbose,
+            walk_length=self._walk_length,
+            path=self._path
         )
 
         super().__init__(
             embedding_size=embedding_size,
-            enable_cache=enable_cache,
-            random_state=random_state
+            enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return dict(
+        return {
             **super().parameters(),
-            **self._kwargs,
-        )
+            **dict(
+                dtype=self._dtype,
+                walk_length=self._walk_length,
+                path=self._path,
+            )
+        }
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
             embedding_size=5,
-            epochs=1
         )
 
     def _fit_transform(
@@ -92,32 +85,34 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embedding = self._model.fit_transform(
-            graph
+            scores=(np.ones(graph.get_number_of_nodes())
+                    if self._scores is None else self._scores).astype(np.float32),
+            graph=graph,
+            dtype=self._dtype,
         )
         if return_dataframe:
             node_embedding = pd.DataFrame(
                 node_embedding,
                 index=graph.get_node_names()
             )
-
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
-            node_embeddings= node_embedding,
+            node_embeddings=node_embedding
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "First-order LINE"
-    
-    @classmethod
-    def can_use_edge_weights(cls) -> bool:
-        """Returns whether the model can optionally use edge weights."""
-        return False
+        return "Score-based WINE"
 
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
+        return False
+
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
+        """Returns whether the model can optionally use edge weights."""
         return False
 
     @classmethod
@@ -128,4 +123,4 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
     @classmethod
     def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
-        return True
+        return False

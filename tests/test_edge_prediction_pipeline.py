@@ -9,9 +9,9 @@ from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictio
 from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
 from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import PerceptronEdgePrediction
-from embiggen.embedders import SPINE
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 from embiggen.utils import AbstractEmbeddingModel
-from ensmallen.datasets.linqs import Cora, get_words_data
+from ensmallen.datasets.linqs import Cora
 from ensmallen.datasets.kgobo import CIO
 from ensmallen.datasets.networkrepository import Usair97
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
@@ -56,7 +56,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             evaluation_schema="Connected Monte Carlo",
             graphs=[self._graph, self._graph_without_node_types],
             number_of_holdouts=self._number_of_holdouts,
@@ -74,7 +74,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             evaluation_schema="Connected Monte Carlo",
             graphs=self._graph,
             number_of_holdouts=self._number_of_holdouts,
@@ -91,7 +91,7 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             node_type_features=np.random.uniform(
                 size=(self._graph.get_number_of_node_types(), 5)
             ),
@@ -110,13 +110,15 @@ class TestEvaluateEdgePrediction(TestCase):
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
         multi_label_graph = graph.set_all_node_types("hu") | graph
-        node_features = SPINE(embedding_size=10).fit_transform(graph)
+        node_features = DegreeSPINE(embedding_size=10).fit_transform(graph)
         bar = tqdm(
             df.model_name,
             total=df.shape[0],
             leave=False,
         )
         for g in (multi_label_graph, graph):
+            first_names = g.get_node_names()[:5]
+            second_names = g.get_node_names()[5:10]
             for model_name in bar:
                 bar.set_description(
                     f"Testing API of {model_name}"
@@ -183,6 +185,126 @@ class TestEvaluateEdgePrediction(TestCase):
                         node_type_features=node_type_features,
                         return_predictions_dataframe=return_predictions_dataframe
                     )
+                    model.predict_bipartite_graph_from_edge_node_ids(
+                        graph=g,
+                        source_node_ids=[0, 1, 2, 3],
+                        destination_node_ids=[4, 5, 6, 7],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_ids(
+                        graph=g,
+                        source_node_ids=[0, 1, 2, 3],
+                        destination_node_ids=[4, 5, 6, 7],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_bipartite_graph_from_edge_node_names(
+                        graph=g,
+                        source_node_names=first_names,
+                        destination_node_names=second_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_names(
+                        graph=g,
+                        source_node_names=first_names,
+                        destination_node_names=second_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_bipartite_graph_from_edge_node_prefixes(
+                        graph=g,
+                        source_node_prefixes=["OIO"],
+                        destination_node_prefixes=["IAO", "CIO"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_bipartite_graph_from_edge_node_prefixes(
+                        graph=g,
+                        source_node_prefixes=["OIO"],
+                        destination_node_prefixes=["IAO", "CIO"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_ids(
+                        graph=g,
+                        node_ids=[0, 1, 2],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_ids(
+                        graph=g,
+                        node_ids=[0, 1, 2],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_names(
+                        graph=g,
+                        node_names=first_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_names(
+                        graph=g,
+                        node_names=first_names,
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_prefixes(
+                        graph=g,
+                        node_prefixes=["OIO:"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_prefixes(
+                        graph=g,
+                        node_prefixes=["OIO:"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_clique_graph_from_node_types(
+                        graph=g,
+                        node_types=["biolink:NamedThing"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    model.predict_proba_clique_graph_from_node_types(
+                        graph=g,
+                        node_types=["biolink:NamedThing"],
+                        support=g,
+                        node_features=node_features,
+                        node_type_features=node_type_features,
+                        return_predictions_dataframe=return_predictions_dataframe
+                    )
+                    
+
 
     def test_tree_with_cosine(self):
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
@@ -199,7 +321,7 @@ class TestEvaluateEdgePrediction(TestCase):
                             **model.smoke_test_parameters(),
                         }
                     ),
-                    node_features=SPINE(embedding_size=10),
+                    node_features=DegreeSPINE(embedding_size=10),
                     evaluation_schema=evaluation_schema,
                     graphs=graph,
                     number_of_holdouts=self._number_of_holdouts,
@@ -220,6 +342,8 @@ class TestEvaluateEdgePrediction(TestCase):
             desc="Testing embedding methods"
         )
         for _, row in bar:
+            if row.requires_node_types:
+                continue
             if row.requires_edge_weights:
                 graph_name = Usair97
             else:
@@ -257,7 +381,7 @@ class TestEvaluateEdgePrediction(TestCase):
                 ),
                 evaluation_schema="Connected Monte Carlo",
                 graphs=self._graph,
-                node_features="SPINE",
+                node_features="Degree-based SPINE",
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False
             )

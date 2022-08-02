@@ -1,5 +1,5 @@
-"""Module providing SPINE implementation."""
-from typing import Optional,  Dict, Any
+"""Module providing Node-label-based WINE implementation."""
+from typing import Optional, Dict, Any
 from ensmallen import Graph
 import pandas as pd
 from ensmallen import models
@@ -7,24 +7,29 @@ from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenE
 from embiggen.utils import EmbeddingResult
 
 
-class SPINE(EnsmallenEmbedder):
-    """Class implementing the SPINE algorithm."""
+class NodeLabelWINE(EnsmallenEmbedder):
+    """Class implementing the Node-label-based WINE algorithm."""
 
     def __init__(
         self,
-        embedding_size: int = 100,
         dtype: Optional[str] = "u8",
+        walk_length: Optional[int] = None,
+        path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
     ):
-        """Create new SPINE method.
+        """Create new Node-label-based WINE method.
 
         Parameters
         --------------------------
-        embedding_size: int = 100
-            Dimension of the embedding.
         dtype: Optional[str] = "u8"
-            Dtype to use for the embedding. Note that an improper dtype may cause overflows.
+            Dtype to use for the embedding.
+        walk_length: int = 2
+            Length of the random walk.
+            By default 2, to capture exclusively the immediate context.
+        path: Optional[str] = None
+            Path where to store the mmap-ed embedding.
+            This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
         enable_cache: bool = False
@@ -33,27 +38,36 @@ class SPINE(EnsmallenEmbedder):
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._model = models.SPINE(embedding_size=embedding_size)
+        self._walk_length = walk_length
+        self._path = path
+        self._model = models.NodeLabelWINE(
+            verbose=self._verbose,
+            walk_length=self._walk_length,
+            path=self._path
+        )
 
         super().__init__(
-            embedding_size=embedding_size,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
-            **super().parameters(),
+        return dict(
+            **{
+                key: value
+                for key, value in super().parameters().items()
+                if key != "embedding_size"
+            },
             **dict(
-                dtype=self._dtype
+                dtype=self._dtype,
+                walk_length=self._walk_length,
+                path=self._path,
             )
-        }
+        )
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
-        return dict(
-            embedding_size=5,
-        )
+        return dict()
 
     def _fit_transform(
         self,
@@ -64,8 +78,7 @@ class SPINE(EnsmallenEmbedder):
         node_embedding = self._model.fit_transform(
             graph,
             dtype=self._dtype,
-            verbose=self._verbose,
-        ).T
+        )
         if return_dataframe:
             node_embedding = pd.DataFrame(
                 node_embedding,
@@ -79,12 +92,17 @@ class SPINE(EnsmallenEmbedder):
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
-        return "SPINE"
+        return "Node-label-based WINE"
 
     @classmethod
-    def can_use_node_types(cls) -> bool:
-        """Returns whether the model can optionally use node types."""
-        return False
+    def requires_node_types(cls) -> bool:
+        """Returns whether the model requires node types."""
+        return True
+
+    @classmethod
+    def get_minimum_required_number_of_node_types(cls) -> int:
+        """Requires minimum number of required node types."""
+        return 2
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:

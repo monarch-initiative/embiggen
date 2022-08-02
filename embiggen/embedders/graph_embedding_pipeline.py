@@ -102,5 +102,5 @@ def embed_graph(
             f"using the model called {embedding_model.model_name()} "
             f"from the library {library_name}, specifically "
             f"implemented in the class {embedding_model.__class__.__name__}. "
-            f"The body of the exception was: {str(e)}."
+            f"The body of the exception was: {str(e)}"
         ) from e

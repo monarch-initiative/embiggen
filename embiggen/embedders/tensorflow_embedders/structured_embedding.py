@@ -141,8 +141,3 @@ class StructuredEmbeddingTensorFlow(Siamese):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
-
-    @classmethod
-    def requires_edge_types(cls) -> bool:
-        """Returns whether the model requires edge types."""
-        return True

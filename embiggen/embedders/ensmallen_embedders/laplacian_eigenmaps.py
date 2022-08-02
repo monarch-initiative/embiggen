@@ -52,6 +52,7 @@ class LaplacianEigenmapsEnsmallen(EnsmallenEmbedder):
             coo,
             k=self._embedding_size,
             which="SM",
+            maxiter=graph.get_number_of_nodes()*100,
             return_eigenvectors=True
         )[1]
 

@@ -7,7 +7,7 @@ from embiggen import get_available_models_for_edge_label_prediction, get_availab
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.kgobo import PDUMDV, CIO
-from embiggen.embedders import SPINE
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 
 
 class TestEvaluateEdgeLabelPrediction(TestCase):
@@ -21,7 +21,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
         """Test graph visualization."""
         df = get_available_models_for_edge_label_prediction()
         graph = PDUMDV().remove_singleton_nodes()
-        feature = SPINE(embedding_size=5)
+        feature = DegreeSPINE(embedding_size=5)
         red = graph.set_all_edge_types("red")
         blue = CIO().remove_singleton_nodes().set_all_edge_types("blue")
         binary_graph = red | blue
@@ -57,7 +57,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             leave=False,
         )
         for g in (graph, binary_graph):
-            node_features = SPINE(embedding_size=10).fit_transform(g)
+            node_features = DegreeSPINE(embedding_size=10).fit_transform(g)
             edge_features=np.random.uniform(
                 size=(g.get_number_of_directed_edges(), 5)
             )
@@ -98,7 +98,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             holdouts_kwargs=dict(train_size=0.8),
             models=df.model_name,
             library_names=df.library_name,
-            node_features=SPINE(embedding_size=5),
+            node_features=DegreeSPINE(embedding_size=5),
             node_type_features=np.random.uniform(
                 size=(graph.get_number_of_node_types(), 5)
             ),
@@ -149,7 +149,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
         )
         graph = PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for _, row in bar:
-            if row.requires_edge_weights or row.requires_edge_types:
+            if row.requires_edge_weights or row.requires_edge_types or row.requires_node_types:
                 continue
 
             bar.set_description(

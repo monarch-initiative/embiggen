@@ -82,8 +82,10 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
     ) -> EmbeddingResult:
         """Return node embedding."""
         node_embeddings = self._model.fit_transform(graph)
-        if not isinstance(node_embeddings, list):
-            node_embeddings = [node_embeddings]
+
+        if "CBOW" in self.model_name():
+            node_embeddings = list(reversed(node_embeddings))
+
         if return_dataframe:
             node_names = graph.get_node_names()
             node_embeddings = [

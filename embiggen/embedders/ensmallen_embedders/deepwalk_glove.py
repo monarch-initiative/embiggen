@@ -9,14 +9,16 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 500,
+        epochs: int = 30,
         clipping_value: float = 6.0,
         walk_length: int = 128,
         iterations: int = 10,
-        window_size: int = 10,
+        window_size: int = 5,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.05,
+        learning_rate: float = 0.001,
         learning_rate_decay: float = 0.9,
+        central_nodes_embedding_path: Optional[str] = None,
+        contextual_nodes_embedding_path: Optional[str] = None,
         normalize_by_degree: bool = False,
         random_state: int = 42,
         enable_cache: bool = False
@@ -41,15 +43,23 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             Maximal length of the walks.
         iterations: int = 10
             Number of iterations of the single walks.
-        window_size: int = 10
+        window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
         max_neighbours: Optional[int] = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
             This is mainly useful for graphs containing nodes with high degrees.
-        learning_rate: float = 0.05
+        learning_rate: float = 0.001
             The learning rate to use to train the DeepWalk model. By default 0.01.
+        central_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
+        contextual_nodes_embedding_path: Optional[str] = None
+            Path where to mmap and store the central nodes embedding.
+            This is necessary to embed large graphs whose embedding will not
+            fit into the available main memory.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         normalize_by_degree: bool = False
@@ -72,6 +82,8 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
+            central_nodes_embedding_path=central_nodes_embedding_path,
+            contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             normalize_by_degree=normalize_by_degree,
             enable_cache=enable_cache,
             random_state=random_state
