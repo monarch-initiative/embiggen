@@ -1054,8 +1054,6 @@ class GraphVisualizer:
                 },
                 squeeze=False
             )
-            for ax in axes.flatten():
-                ax.axis('equal')
             if axes.size == 1:
                 axes = axes.flatten()[0]
         else:
@@ -1066,8 +1064,6 @@ class GraphVisualizer:
                 },
                 squeeze=False
             )
-            for ax in axes.flatten():
-                ax.axis('auto')
             if axes.size == 1:
                 axes = axes.flatten()[0]
         figure.patch.set_facecolor("white")
@@ -1196,6 +1192,11 @@ class GraphVisualizer:
             axes=axes,
             **kwargs
         )
+
+        if self._n_components == 2:
+            axes.axis('equal')
+        else:
+            axes.axis('auto')
 
         scatter_kwargs = {
             **GraphVisualizer.DEFAULT_SCATTER_KWARGS,
