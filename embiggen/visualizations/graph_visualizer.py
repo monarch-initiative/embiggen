@@ -2273,6 +2273,7 @@ class GraphVisualizer:
             log=True,
             label=["Non-existent", "Existent"]
         )
+        axes.set_xlim(edge_metrics.min() - sys.float_info.epsilon, edge_metrics.max() + sys.float_info.epsilon)
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(metric_name)
         axes.legend(loc='best', prop={'size': 8},)
