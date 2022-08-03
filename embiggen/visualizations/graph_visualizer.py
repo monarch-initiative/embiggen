@@ -2275,7 +2275,6 @@ class GraphVisualizer:
             label=["Non-existent", "Existent"]
         )
         axes.set_xlim(edge_metrics.min(), edge_metrics.max())
-        print(metric_name, edge_metrics.min(), edge_metrics.max())
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(metric_name)
         axes.legend(loc='best', prop={'size': 8},)
