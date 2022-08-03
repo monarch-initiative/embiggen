@@ -50,7 +50,7 @@ authors = {
 setup(
     name='embiggen',
     version=__version__,
-    description='Graph embedding, machine learning, and visualization library.',
+    description='🍇 Embiggen is the Python Graph Representation learning, Prediction and Evaluation module processing submodule of the GRAPE library.',
     long_description=readme(),
     url='https://github.com/monarch-initiative/embiggen',
     keywords='Graph Representation Learning,LINE,TransE,Node2Vec,DeeWalk',
