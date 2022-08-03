@@ -14,7 +14,7 @@ class TransHEnsmallen(SiameseEnsmallen):
         embedding_size: int = 100,
         relu_bias: float = 1.0,
         epochs: int = 100,
-        learning_rate: float = 0.1,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         node_embedding_path: Optional[str] = None,
         mult_edge_type_embedding_path: Optional[str] = None,
