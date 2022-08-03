@@ -3819,7 +3819,7 @@ class GraphVisualizer:
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
-        graph_transformer.fit(node_features.astype(np.float32))
+        graph_transformer.fit(node_features)
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
@@ -3868,7 +3868,7 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
 
-        graph_transformer.fit(node_features.astype(np.float32))
+        graph_transformer.fit(node_features)
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
@@ -4482,8 +4482,8 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            if self._n_components != 3:
-                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+            # if self._n_components != 3:
+            #     figure.tight_layout(rect=[0, 0.03, 1, 0.96])
         elif self._n_components != 3:
             figure.tight_layout()
 
