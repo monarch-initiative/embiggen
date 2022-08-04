@@ -279,3 +279,24 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     @classmethod
     def library_name(cls) -> str:
         return "Ensmallen"
+
+    @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        return models.EdgePredictionPerceptron.load(path)
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        self._model.dump(self, path)

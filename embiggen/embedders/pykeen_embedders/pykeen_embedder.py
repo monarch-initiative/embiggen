@@ -115,7 +115,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
     @classmethod
     def library_name(cls) -> str:
-        return "PyKeen"
+        return "PyKEEN"
 
     @classmethod
     def task_name(cls) -> str:
