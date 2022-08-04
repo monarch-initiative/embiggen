@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's CP model."""
+"""Submodule providing wrapper for PyKEEN's CP model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import CP
@@ -20,12 +20,12 @@ class CPPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen CP model.
+        """Create new PyKEEN CP model.
 
         Details
         -------------------------
         This is a wrapper of the CP implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters

@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's ERMLPE model."""
+"""Submodule providing wrapper for PyKEEN's ERMLPE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import ERMLPE
@@ -20,12 +20,12 @@ class ERMLPEPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen ERMLPE model.
+        """Create new PyKEEN ERMLPE model.
 
         Details
         -------------------------
         This is a wrapper of the ERMLPE implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters

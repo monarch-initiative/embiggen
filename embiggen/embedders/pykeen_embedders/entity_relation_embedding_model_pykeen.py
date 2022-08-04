@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's TransE model."""
+"""Submodule providing wrapper for PyKEEN's TransE model."""
 from typing import Union
 from ensmallen import Graph
 from pykeen.models import EntityRelationEmbeddingModel, ERModel
@@ -23,7 +23,7 @@ class EntityRelationEmbeddingModelPyKeen(PyKeenEmbedder):
         graph: Graph
             The graph that was embedded.
         model: Type[Model]
-            The Keras model used to embed the graph.
+            The PyKEEN model used to embed the graph.
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """

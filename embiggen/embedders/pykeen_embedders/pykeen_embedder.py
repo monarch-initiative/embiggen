@@ -1,4 +1,4 @@
-"""Abstract Torch/PyKeen Model wrapper for embedding models."""
+"""Abstract Torch/PyKEEN Model wrapper for embedding models."""
 from typing import Dict, Union, Tuple, Any, Type
 
 import numpy as np
@@ -37,8 +37,8 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen Abstract Embedder model.
-        
+        """Create new PyKEEN Abstract Embedder model.
+
         Parameters
         -------------------------
         embedding_size: int = 100
@@ -115,7 +115,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
     @classmethod
     def library_name(cls) -> str:
-        return "PyKeen"
+        return "PyKEEN"
 
     @classmethod
     def task_name(cls) -> str:
@@ -127,7 +127,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         Parameters
         ------------------
         triples_factory: CoreTriplesFactory
-            The PyKeen triples factory to use to create the model.
+            The PyKEEN triples factory to use to create the model.
         """
         raise NotImplementedError(
             f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
@@ -158,7 +158,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         graph: Graph
             The graph that was embedded.
         model: Type[Model]
-            The Keras model used to embed the graph.
+            The PyKEEN model used to embed the graph.
         return_dataframe: bool
             Whether to return a dataframe of a numpy array.
         """
@@ -207,7 +207,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
                 "The model created with the `_build_model` in the child "
                 f"class {self.__class__.__name__} for the model {self.model_name()} "
                 f"in the library {self.library_name()} did not return a "
-                f"PyKeen model but an object of type {type(model)}."
+                f"PyKEEN model but an object of type {type(model)}."
             )
 
         # Move the model to gpu if we need to

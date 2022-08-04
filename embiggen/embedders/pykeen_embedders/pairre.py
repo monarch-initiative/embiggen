@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's PairRE model."""
+"""Submodule providing wrapper for PyKEEN's PairRE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import PairRE
@@ -21,12 +21,12 @@ class PairREPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen PairRE model.
+        """Create new PyKEEN PairRE model.
 
         Details
         -------------------------
         This is a wrapper of the PairRE implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters

@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's RotatE model."""
+"""Submodule providing wrapper for PyKEEN's RotatE model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import RotatE

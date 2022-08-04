@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's DistMult model."""
+"""Submodule providing wrapper for PyKEEN's DistMult model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import DistMult

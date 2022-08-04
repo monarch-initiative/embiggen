@@ -1,4 +1,4 @@
-"""Submodule providing wrapper for PyKeen's BoxE model."""
+"""Submodule providing wrapper for PyKEEN's BoxE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import BoxE
@@ -22,12 +22,12 @@ class BoxEPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen BoxE model.
+        """Create new PyKEEN BoxE model.
 
         Details
         -------------------------
         This is a wrapper of the BoxE implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
