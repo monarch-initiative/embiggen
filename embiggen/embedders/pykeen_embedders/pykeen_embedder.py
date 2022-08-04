@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from ensmallen import Graph
 import inspect
+from inspect import getfullargspec
 
 from embiggen.utils.pytorch_utils import validate_torch_device
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, abstract_class, EmbeddingResult
@@ -176,14 +177,23 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         torch_device = torch.device(self._device)
 
-        triples_factory = CoreTriplesFactory(
-            torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
-            num_entities=graph.get_number_of_nodes(),
-            num_relations=graph.get_number_of_edge_types(),
-            entity_ids=graph.get_node_ids(),
-            relation_ids=graph.get_unique_edge_type_ids(),
-            create_inverse_triples=False,
-        )
+
+        if "entity_ids" in getfullargspec(CoreTriplesFactory).args:
+            triples_factory = CoreTriplesFactory(
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
+                num_entities=graph.get_number_of_nodes(),
+                num_relations=graph.get_number_of_edge_types(),
+                entity_ids=graph.get_node_ids(),
+                relation_ids=graph.get_unique_edge_type_ids(),
+                create_inverse_triples=False,
+            )
+        else:
+            triples_factory = CoreTriplesFactory(
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
+                num_entities=graph.get_number_of_nodes(),
+                num_relations=graph.get_number_of_edge_types(),
+                create_inverse_triples=False,
+            )
 
         batch_size = min(
             self._batch_size,

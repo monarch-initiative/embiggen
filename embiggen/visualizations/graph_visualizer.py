@@ -547,7 +547,8 @@ class GraphVisualizer:
     def get_decomposition_method(self) -> Callable:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
-        # in order to avoid false negatives.
+        # in order to avoid false negatives, that is bad TSNE decompositions
+        # while the embedding is actually good.
         if self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
             "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
         ):
