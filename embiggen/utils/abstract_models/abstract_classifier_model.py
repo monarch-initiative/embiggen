@@ -157,6 +157,35 @@ class AbstractClassifierModel(AbstractModel):
         ))
 
     @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        raise NotImplementedError((
+            f"The `load` was not implemented for the {cls.model_name()} "
+            f"for the {cls.task_name()} task as made available from the "
+            f"{cls.library_name()} library."
+        ))
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        raise NotImplementedError((
+            f"The `dump` was not implemented for the {self.model_name()} "
+            f"for the {self.task_name()} task as made available from the "
+            f"{self.library_name()} library."
+        ))
+
+    @classmethod
     def normalize_node_feature(
         cls,
         graph: Graph,

@@ -168,6 +168,11 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             "called `_extract_embeddings`. Please do implement it."
         )
 
+    @classmethod
+    def _create_inverse_triples(cls) -> bool:
+        """Returns whether the class is expected to create inverse triples."""
+        return False
+
     def _fit_transform(
         self,
         graph: Graph,
@@ -185,14 +190,14 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
                 num_relations=graph.get_number_of_edge_types(),
                 entity_ids=graph.get_node_ids(),
                 relation_ids=graph.get_unique_edge_type_ids(),
-                create_inverse_triples=False,
+                create_inverse_triples=self._create_inverse_triples(),
             )
         else:
             triples_factory = CoreTriplesFactory(
                 torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
                 num_entities=graph.get_number_of_nodes(),
                 num_relations=graph.get_number_of_edge_types(),
-                create_inverse_triples=False,
+                create_inverse_triples=self._create_inverse_triples(),
             )
 
         batch_size = min(
