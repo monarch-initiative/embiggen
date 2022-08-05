@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's HolE model."""
+"""Submodule providing wrapper for PyKEEN's HolE model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import HolE
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class HolEPyKeen(EntityRelationEmbeddingModelPyKeen):
+class HolEPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     @classmethod
     def model_name(cls) -> str:

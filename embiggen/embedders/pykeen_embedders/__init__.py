@@ -1,4 +1,4 @@
-"""Module with graph embedding models based on PyKeen."""
+"""Module with graph embedding models based on PyKEEN."""
 from embiggen.utils.abstract_models import build_init, AbstractEmbeddingModel
 
 build_init(

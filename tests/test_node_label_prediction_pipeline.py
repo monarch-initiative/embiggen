@@ -8,6 +8,7 @@ from ensmallen.datasets.kgobo import MIAPA
 from ensmallen.datasets.linqs import Cora, get_words_data
 import shutil
 import os
+from embiggen.utils import AbstractEmbeddingModel
 from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
 
 
@@ -62,6 +63,21 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                     model_name
                 )().into_smoke_test()
                 model.fit(g, node_features=node_features)
+                if model.library_name() != "TensorFlow":
+                    if model.library_name() == "scikit-learn":
+                        path = "model.pkl.gz"
+                    elif model.library_name() == "Ensmallen":
+                        path = "model.json"
+                    else:
+                        raise NotImplementedError(
+                            f"The model {model.model_name()} from library {model.library_name()} "
+                            "is not currently covered by the test suite!"
+                        )
+                    if os.path.exists(path):
+                        os.remove(path)
+                    model.dump(path)
+                    restored_model = model.load(path)
+                    assert restored_model.parameters() == model.parameters()
                 model.predict(g, node_features=node_features)
                 model.predict_proba(g, node_features=node_features)
 
@@ -106,7 +122,10 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             node_label_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
-                node_features=row.model_name,
+                node_features=AbstractEmbeddingModel.get_model_from_library(
+                    model_name=row.model_name,
+                    library_name=row.library_name
+                )(),
                 graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema="Monte Carlo",

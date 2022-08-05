@@ -17,6 +17,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         avoid_false_negatives: bool = False,
+        use_scale_free_distribution: bool = True,
         node_embedding_path: Optional[str] = None,
         random_state: int = 42,
         verbose: bool = False,
@@ -37,6 +38,8 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         avoid_false_negatives: bool = False
             Whether to avoid sampling false negatives.
             This may cause a slower training.
+        use_scale_free_distribution: bool = True
+            Whether to train model using a scale free distribution for the negatives.
         node_embedding_path: Optional[str] = None
             Path where to mmap and store the nodes embedding.
             This is necessary to embed large graphs whose embedding will not
@@ -54,6 +57,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
             avoid_false_negatives=avoid_false_negatives,
+            use_scale_free_distribution=use_scale_free_distribution,
             node_embedding_path=node_embedding_path,
             verbose=verbose
         )

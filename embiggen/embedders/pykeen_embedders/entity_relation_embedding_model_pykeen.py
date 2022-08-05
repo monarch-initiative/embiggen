@@ -1,14 +1,14 @@
-"""Submodule providing wrapper for PyKeen's TransE model."""
+"""Submodule providing wrapper for PyKEEN's TransE model."""
 from typing import Union
 from ensmallen import Graph
 from pykeen.models import EntityRelationEmbeddingModel, ERModel
-from embiggen.embedders.pykeen_embedders.pykeen_embedder import PyKeenEmbedder
+from embiggen.embedders.pykeen_embedders.pykeen_embedder import PyKEENEmbedder
 import pandas as pd
 from embiggen.utils.abstract_models import abstract_class, EmbeddingResult
 
 
 @abstract_class
-class EntityRelationEmbeddingModelPyKeen(PyKeenEmbedder):
+class EntityRelationEmbeddingModelPyKEEN(PyKEENEmbedder):
 
     def _extract_embeddings(
         self,

@@ -3,6 +3,7 @@ from tqdm.auto import tqdm
 from unittest import TestCase
 import pytest
 import numpy as np
+import os
 from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
@@ -151,6 +152,23 @@ class TestEvaluateEdgePrediction(TestCase):
                     node_features=node_features,
                     node_type_features=node_type_features
                 )
+
+                if model.library_name() != "TensorFlow":
+                    if model.library_name() == "scikit-learn":
+                        path = "model.pkl.gz"
+                    elif model.library_name() == "Ensmallen":
+                        path = "model.json"
+                    else:
+                        raise NotImplementedError(
+                            f"The model {model.model_name()} from library {model.library_name()} "
+                            "is not currently covered by the test suite!"
+                        )
+                    if os.path.exists(path):
+                        os.remove(path)
+                    model.dump(path)
+                    restored_model = model.load(path)
+                    assert restored_model.parameters() == model.parameters()
+                
                 with pytest.raises(NotImplementedError):
                     model.fit(
                         g,

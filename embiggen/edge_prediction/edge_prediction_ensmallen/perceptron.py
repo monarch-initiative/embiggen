@@ -3,6 +3,8 @@ from typing import Optional,  Dict, Any, List, Union
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
+import compress_json
+import json
 from embiggen.embedding_transformers import NodeTransformer
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
@@ -116,7 +118,10 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
-        return self._model_kwargs
+        return dict(
+            **super().parameters(),
+            **self._model_kwargs
+        )
 
     def clone(self) -> "PerceptronEdgePrediction":
         return PerceptronEdgePrediction(**self.parameters())
@@ -176,7 +181,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
 
-        
         self._model.fit(
             graph=graph,
             node_features=new_node_features,
@@ -283,20 +287,40 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
-        
+
         Parameters
         -------------------
         path: str
             Path from where to load the model.
         """
-        return models.EdgePredictionPerceptron.load(path)
+        data = compress_json.load(path)
+        model = PerceptronEdgePrediction(**data["parameters"])
+        model._model = models.EdgePredictionPerceptron.loads(
+            json.dumps(data["inner_model"])
+        )
+        for key, value in data["metadata"].items():
+            model.__setattr__(key, value)
+        return model
+
+    def dumps(self) -> Dict[str, Any]:
+        """Dumps the current model as dictionary."""
+        return dict(
+            parameters=self.parameters(),
+            inner_model=json.loads(self._model.dumps()),
+            metadata=dict(
+                _fitting_was_executed=self._fitting_was_executed
+            )
+        )
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
-        
+
         Parameters
         -------------------
         path: str
             Path from where to dump the model.
         """
-        self._model.dump(self, path)
+        compress_json.dump(
+            self.dumps(),
+            path
+        )
