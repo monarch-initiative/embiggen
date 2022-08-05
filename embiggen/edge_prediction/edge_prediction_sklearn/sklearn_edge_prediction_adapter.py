@@ -4,6 +4,7 @@ from sklearn.base import ClassifierMixin
 from typing import Type, List, Optional, Dict, Any, Union
 import numpy as np
 import math
+import compress_pickle
 import copy
 from ensmallen import Graph
 from embiggen.sequences.generic_sequences import EdgePredictionSequence
@@ -373,3 +374,23 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """Returns whether the model can optionally use edge types."""
         return False
 
+    @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        return compress_pickle.load(path)
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        compress_pickle.dump(self, path)

@@ -157,6 +157,35 @@ class AbstractClassifierModel(AbstractModel):
         ))
 
     @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        raise NotImplementedError((
+            f"The `load` was not implemented for the {cls.model_name()} "
+            f"for the {cls.task_name()} task as made available from the "
+            f"{cls.library_name()} library."
+        ))
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        raise NotImplementedError((
+            f"The `dump` was not implemented for the {self.model_name()} "
+            f"for the {self.task_name()} task as made available from the "
+            f"{self.library_name()} library."
+        ))
+
+    @classmethod
     def normalize_node_feature(
         cls,
         graph: Graph,
@@ -1241,6 +1270,7 @@ class AbstractClassifierModel(AbstractModel):
         test_of_interest: Graph,
         train: Graph,
         subgraph_of_interest: Graph,
+        use_subgraph_as_support: bool,
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_features: Optional[List[np.ndarray]],
@@ -1258,7 +1288,7 @@ class AbstractClassifierModel(AbstractModel):
         training_start = time.time()
         self.fit(
             graph=train_of_interest,
-            support=train,
+            support= train_of_interest if use_subgraph_as_support else train,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features
@@ -1271,7 +1301,7 @@ class AbstractClassifierModel(AbstractModel):
             # We add the newly computed performance.
             model_performance = pd.DataFrame(self._evaluate(
                 graph=graph,
-                support=train,
+                support=train_of_interest if use_subgraph_as_support else train,
                 train=train_of_interest,
                 test=test_of_interest,
                 node_features=node_features,
@@ -1302,6 +1332,7 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
+        model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
         for parameter_name, parameter_value in self.parameters().items():
             if ("Model", parameter_name) in model_performance.columns:
@@ -1348,6 +1379,7 @@ class AbstractClassifierModel(AbstractModel):
         library_names: Optional[Union[str, List[str]]],
         graph: Graph,
         subgraph_of_interest: Graph,
+        use_subgraph_as_support: bool,
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_features: Optional[List[np.ndarray]],
@@ -1532,6 +1564,7 @@ class AbstractClassifierModel(AbstractModel):
                 test_of_interest=test_of_interest,
                 train=train,
                 subgraph_of_interest=subgraph_of_interest,
+                use_subgraph_as_support=use_subgraph_as_support,
                 node_features=holdout_node_features,
                 node_type_features=holdout_node_type_features,
                 edge_features=holdout_edge_features,
@@ -1575,6 +1608,7 @@ class AbstractClassifierModel(AbstractModel):
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
+        use_subgraph_as_support: bool = False,
         number_of_holdouts: int = 10,
         random_state: int = 42,
         verbose: bool = True,
@@ -1606,6 +1640,11 @@ class AbstractClassifierModel(AbstractModel):
             The edge features to use.
         subgraph_of_interest: Optional[Graph] = None
             Optional subgraph where to focus the task.
+            This is applied to the train and test graph
+            after the desired holdout schema is applied.
+        use_subgraph_as_support: bool = False
+            Whether to use the provided subgraph as support or
+            to use the train graph (not filtered by the subgraph).
         skip_evaluation_biased_feature: bool = False
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
@@ -1667,6 +1706,13 @@ class AbstractClassifierModel(AbstractModel):
                 subgraph_of_interest
             )
         else:
+            if use_subgraph_as_support:
+                raise ValueError(
+                    "No subgraph of interest was provided but "
+                    "it has been requested to use the subgraph "
+                    "of interest as support. It is not clear "
+                    "how to proceed."
+                )
             subgraph_of_interest_has_compatible_nodes = None
 
         # Retrieve the set of provided automatic features parameters
@@ -1757,6 +1803,7 @@ class AbstractClassifierModel(AbstractModel):
                 library_names=library_names,
                 graph=graph,
                 subgraph_of_interest=subgraph_of_interest,
+                use_subgraph_as_support=use_subgraph_as_support,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features,

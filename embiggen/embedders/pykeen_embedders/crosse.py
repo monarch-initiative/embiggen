@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's CrossE model."""
+"""Submodule providing wrapper for PyKEEN's CrossE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import CrossE
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class CrossEPyKeen(EntityRelationEmbeddingModelPyKeen):
+class CrossEPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -20,12 +20,12 @@ class CrossEPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen CrossE model.
+        """Create new PyKEEN CrossE model.
 
         Details
         -------------------------
         This is a wrapper of the CrossE implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters

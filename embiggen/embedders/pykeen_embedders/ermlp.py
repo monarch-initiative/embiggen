@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's ERMLP model."""
+"""Submodule providing wrapper for PyKEEN's ERMLP model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import ERMLP
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
+class ERMLPPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -20,12 +20,12 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen ERMLP model.
+        """Create new PyKEEN ERMLP model.
 
         Details
         -------------------------
         This is a wrapper of the ERMLP implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
@@ -70,7 +70,7 @@ class ERMLPPyKeen(EntityRelationEmbeddingModelPyKeen):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
+            **EntityRelationEmbeddingModelPyKEEN.smoke_test_parameters(),
             hidden_dim=5
         )
 

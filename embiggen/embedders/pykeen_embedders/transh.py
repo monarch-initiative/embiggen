@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's TransH model."""
+"""Submodule providing wrapper for PyKEEN's TransH model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import TransH
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TransHPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -20,12 +20,12 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen TransH model.
+        """Create new PyKEEN TransH model.
         
         Details
         -------------------------
         This is a wrapper of the TransH implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
@@ -70,7 +70,7 @@ class TransHPyKeen(EntityRelationEmbeddingModelPyKeen):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
+            **EntityRelationEmbeddingModelPyKEEN.smoke_test_parameters(),
             scoring_fct_norm=1
         )
 

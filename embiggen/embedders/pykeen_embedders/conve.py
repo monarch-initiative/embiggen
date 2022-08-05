@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's ConvE model."""
+"""Submodule providing wrapper for PyKEEN's ConvE model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import ConvE
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
+class ConvEPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -29,12 +29,12 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
         random_state: int = 42,
         enable_cache: bool = False
     ):
-        """Create new PyKeen ConvE model.
+        """Create new PyKEEN ConvE model.
 
         Details
         -------------------------
         This is a wrapper of the ConvE implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
@@ -153,3 +153,8 @@ class ConvEPyKeen(EntityRelationEmbeddingModelPyKeen):
             apply_batch_normalization=self._apply_batch_normalization,
             random_seed=self._random_state
         )
+
+    @classmethod
+    def _create_inverse_triples(cls) -> bool:
+        """Returns whether the class is expected to create inverse triples."""
+        return True

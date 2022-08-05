@@ -116,6 +116,7 @@ def classification_evaluation_pipeline(
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
+    use_subgraph_as_support: bool = False,
     number_of_holdouts: int = 10,
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
@@ -151,7 +152,12 @@ def classification_evaluation_pipeline(
         For instance this may be used for filtering the uncertain edges
         in graphs such as STRING PPIs.
     subgraph_of_interest: Optional[Graph] = None
-        The subgraph of interest to focus the task on.
+        Optional subgraph where to focus the task.
+        This is applied to the train and test graph
+        after the desired holdout schema is applied.
+    use_subgraph_as_support: bool = False
+        Whether to use the provided subgraph as support or
+        to use the train graph (not filtered by the subgraph).
     number_of_holdouts: int = 10
         The number of holdouts to execute.
     random_state: int = 42
@@ -191,6 +197,7 @@ def classification_evaluation_pipeline(
             node_type_features=node_type_features,
             edge_features=edge_features,
             subgraph_of_interest=subgraph_of_interest,
+            use_subgraph_as_support=use_subgraph_as_support,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
             enable_cache=enable_cache and not smoke_test,
