@@ -27,7 +27,7 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from userinput.utils import must_be_in_set
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 import itertools
 from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
 
@@ -1568,7 +1568,12 @@ class GraphVisualizer:
 
         test_accuracies = []
 
-        for train_indices, test_indices in ShuffleSplit(
+        if min(Counter(types).values()) == 1:
+            SplitterClass = ShuffleSplit
+        else:
+            SplitterClass = StratifiedShuffleSplit
+
+        for train_indices, test_indices in SplitterClass(
             n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
@@ -2172,7 +2177,12 @@ class GraphVisualizer:
 
         test_accuracies = []
 
-        for train_indices, test_indices in ShuffleSplit(
+        if min(Counter(types).values()) == 1:
+            SplitterClass = ShuffleSplit
+        else:
+            SplitterClass = StratifiedShuffleSplit
+
+        for train_indices, test_indices in SplitterClass(
             n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
