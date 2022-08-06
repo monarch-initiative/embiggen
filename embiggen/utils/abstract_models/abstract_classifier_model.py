@@ -1343,17 +1343,17 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
-        model_parameters = pd.DataFrame(dict(), index=model_performance.index)
-        features_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
                 parameter_value = str(parameter_value)
-            model_parameters[parameter_name] = parameter_value
+            df_model_parameters[parameter_name] = parameter_value
 
-        model_parameters.columns = [
-            ["model_parameters"] * len(model_parameters.columns),
-            model_parameters.columns
+        df_model_parameters.columns = [
+            ["model_parameters"] * len(df_model_parameters.columns),
+            df_model_parameters.columns
         ]
 
         model_performance["features_names"] = format_list(
@@ -1361,7 +1361,7 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         for parameter, value in features_parameters.items():
-            if parameter in features_parameters.columns:
+            if parameter in df_features_parameters.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
                     "one of the embedding models and the parameter "
@@ -1369,18 +1369,18 @@ class AbstractClassifierModel(AbstractModel):
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
                 )
-            features_parameters[parameter] = str(value)
+            df_features_parameters[parameter] = str(value)
 
-        features_parameters.columns = [
-            ["features_parameters"] * len(features_parameters.columns),
-            features_parameters.columns
+        df_features_parameters.columns = [
+            ["features_parameters"] * len(df_features_parameters.columns),
+            df_features_parameters.columns
         ]
 
         model_performance = pd.concat(
             [
                 model_performance,
-                model_parameters,
-                features_parameters
+                df_model_parameters,
+                df_features_parameters
             ],
             axis=1
         )
