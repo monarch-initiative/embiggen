@@ -1263,7 +1263,7 @@ class AbstractClassifierModel(AbstractModel):
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
-    def __train_and_evaluate_model(
+    def _train_and_evaluate_model(
         self,
         graph: Graph,
         train_of_interest: Graph,
@@ -1351,7 +1351,7 @@ class AbstractClassifierModel(AbstractModel):
             automatic_features_names
         )
         
-        for parameter, value in enumerate(automatic_features_parameters.items()):
+        for parameter, value in automatic_features_parameters.items():
             if parameter in model_performance.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
@@ -1558,7 +1558,7 @@ class AbstractClassifierModel(AbstractModel):
         time_required_for_setting_up_holdout = time.time() - starting_setting_up_holdout
 
         holdout_performance = pd.concat([
-            classifier.__train_and_evaluate_model(
+            classifier._train_and_evaluate_model(
                 graph=graph,
                 train_of_interest=train_of_interest,
                 test_of_interest=test_of_interest,
@@ -1753,6 +1753,7 @@ class AbstractClassifierModel(AbstractModel):
             for feature in features
             if issubclass(feature.__class__, AbstractEmbeddingModel)
         }
+
 
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
