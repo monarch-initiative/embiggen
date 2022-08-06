@@ -22,7 +22,7 @@ def node_label_prediction_evaluation(
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     enable_cache: bool = False,
-    precompute_constant_automatic_stocastic_features: bool = False,
+    precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
@@ -67,7 +67,7 @@ def node_label_prediction_evaluation(
         Graph versions to retrieve.
     enable_cache: bool = False
         Whether to enable the cache.
-    precompute_constant_automatic_stocastic_features: bool = False
+    precompute_constant_stocastic_features: bool = False
         Whether to precompute once the constant automatic stocastic
         features before starting the embedding loop. This means that,
         when left set to false, while the features will be computed
@@ -100,7 +100,7 @@ def node_label_prediction_evaluation(
         repositories=repositories,
         versions=versions,
         enable_cache=enable_cache,
-        precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+        precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
         verbose=verbose
     )

@@ -122,7 +122,7 @@ def classification_evaluation_pipeline(
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     enable_cache: bool = False,
-    precompute_constant_automatic_stocastic_features: bool = False,
+    precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
     **evaluation_kwargs
 ) -> pd.DataFrame:
@@ -169,7 +169,7 @@ def classification_evaluation_pipeline(
         Graph versions to retrieve.
     enable_cache: bool = False
         Whether to enable the cache.
-    precompute_constant_automatic_stocastic_features: bool = False
+    precompute_constant_stocastic_features: bool = False
         Whether to precompute once the constant automatic stocastic
         features before starting the embedding loop. This means that,
         when left set to false, while the features will be computed
@@ -201,7 +201,7 @@ def classification_evaluation_pipeline(
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
             enable_cache=enable_cache and not smoke_test,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
             **evaluation_kwargs
         )

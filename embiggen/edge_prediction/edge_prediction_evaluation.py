@@ -26,7 +26,7 @@ def edge_prediction_evaluation(
     validation_unbalance_rates: Tuple[float] = (1.0, ),
     use_scale_free_distribution: bool = True,
     enable_cache: bool = False,
-    precompute_constant_automatic_stocastic_features: bool = False,
+    precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
@@ -106,7 +106,7 @@ def edge_prediction_evaluation(
         in the model performance.
     enable_cache: bool = False
         Whether to enable the cache.
-    precompute_constant_automatic_stocastic_features: bool = False
+    precompute_constant_stocastic_features: bool = False
         Whether to precompute once the constant automatic stocastic
         features before starting the embedding loop. This means that,
         when left set to false, while the features will be computed
@@ -140,7 +140,7 @@ def edge_prediction_evaluation(
         repositories=repositories,
         versions=versions,
         enable_cache=enable_cache,
-        precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+        precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,

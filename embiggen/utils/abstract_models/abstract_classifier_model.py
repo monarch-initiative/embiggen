@@ -194,7 +194,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -219,7 +219,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -259,7 +259,7 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and node_feature.can_use_edge_weights() and node_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and node_feature.is_stocastic()
+                not precompute_constant_stocastic_features and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
@@ -327,7 +327,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -352,7 +352,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -378,7 +378,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -391,7 +391,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -416,7 +416,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -456,7 +456,7 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and node_type_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_type_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and node_type_feature.is_stocastic()
+                not precompute_constant_stocastic_features and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
@@ -524,7 +524,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -549,7 +549,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -575,7 +575,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -588,7 +588,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -613,7 +613,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -653,7 +653,7 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and edge_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and edge_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and edge_feature.is_stocastic()
+                not precompute_constant_stocastic_features and edge_feature.is_stocastic()
             ):
                 yield edge_feature
                 return None
@@ -721,7 +721,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -746,7 +746,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -772,7 +772,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -1278,8 +1278,8 @@ class AbstractClassifierModel(AbstractModel):
         random_state: int,
         holdout_number: int,
         evaluation_schema: str,
-        automatic_features_names: List[str],
-        automatic_features_parameters: Dict[str, Any],
+        features_names: List[str],
+        features_parameters: Dict[str, Any],
         **validation_kwargs
     ) -> pd.DataFrame:
         """Run inner training and evaluation."""
@@ -1312,7 +1312,7 @@ class AbstractClassifierModel(AbstractModel):
                 random_state=random_state * holdout_number,
                 verbose=False,
                 **validation_kwargs
-            ))
+            )).reset_index(drop=True)
         except RuntimeError as e:
             raise e
         except Exception as e:
@@ -1323,7 +1323,7 @@ class AbstractClassifierModel(AbstractModel):
             ) from e
 
         time_required_for_evaluation = time.time() - start_evaluation
-
+    
         model_performance["time_required_for_training"] = time_required_for_training
         model_performance["time_required_for_evaluation"] = time_required_for_evaluation
         model_performance["task_name"] = self.task_name()
@@ -1335,25 +1335,25 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["evaluation_schema"] = evaluation_schema
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
+        model_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        features_parameters = pd.DataFrame(dict(), index=model_performance.index)
+
         for parameter_name, parameter_value in self.parameters().items():
-            if ("Model", parameter_name) in model_performance.columns:
-                raise ValueError(
-                    "There has been a collision between the column names used in "
-                    "the model performance report and the parameter names "
-                    f" of one of the classifiers {self.model_name()}."
-                    f"The parameter that has caused the collision is {parameter}. "
-                    "Please do change the name of the parameter in your model."
-                )
             if isinstance(parameter_value, (list, tuple)):
                 parameter_value = str(parameter_value)
-            model_performance[("Model", parameter_name)] = parameter_value
+            model_parameters[parameter_name] = parameter_value
 
-        model_performance["automatic_features_names"] = format_list(
-            automatic_features_names
+        model_parameters.columns = [
+            ["model_parameters"] * len(model_parameters.columns),
+            model_parameters.columns
+        ]
+
+        model_performance["features_names"] = format_list(
+            features_names
         )
 
-        for parameter, value in automatic_features_parameters.items():
-            if parameter in model_performance.columns:
+        for parameter, value in features_parameters.items():
+            if parameter in features_parameters.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
                     "one of the embedding models and the parameter "
@@ -1361,7 +1361,21 @@ class AbstractClassifierModel(AbstractModel):
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
                 )
-            model_performance[parameter] = str(value)
+            features_parameters[parameter] = str(value)
+
+        features_parameters.columns = [
+            ["features_parameters"] * len(features_parameters.columns),
+            features_parameters.columns
+        ]
+
+        model_performance = pd.concat(
+            [
+                model_performance,
+                model_parameters,
+                features_parameters
+            ],
+            axis=1
+        )
 
         return model_performance
 
@@ -1399,8 +1413,8 @@ class AbstractClassifierModel(AbstractModel):
         smoke_test: bool,
         holdouts_kwargs: Dict[str, Any],
         subgraph_of_interest_has_compatible_nodes: Optional[bool],
-        automatic_features_names: List[str],
-        automatic_features_parameters: Dict[str, Any],
+        features_names: List[str],
+        features_parameters: Dict[str, Any],
         verbose: bool,
         **validation_kwargs
     ) -> pd.DataFrame:
@@ -1434,7 +1448,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
         time_required_to_compute_node_features = time.time() - \
             starting_to_compute_node_features
@@ -1448,7 +1462,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
         time_required_to_compute_node_type_features = time.time(
         ) - starting_to_compute_node_type_features
@@ -1464,7 +1478,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
         time_required_to_compute_edge_features = time.time() - \
             starting_to_compute_edge_features
@@ -1568,8 +1582,8 @@ class AbstractClassifierModel(AbstractModel):
                 holdout_number=holdout_number,
                 evaluation_schema=evaluation_schema,
                 enable_cache=enable_cache,
-                automatic_features_names=automatic_features_names,
-                automatic_features_parameters=automatic_features_parameters,
+                features_names=features_names,
+                features_parameters=features_parameters,
                 **additional_validation_kwargs,
                 **validation_kwargs,
             )
@@ -1612,7 +1626,7 @@ class AbstractClassifierModel(AbstractModel):
         random_state: int = 42,
         verbose: bool = True,
         enable_cache: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False,
+        precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
@@ -1656,7 +1670,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether to show a loading bar while computing holdouts.
         enable_cache: bool = False
             Whether to enable the cache.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -1716,7 +1730,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features parameters
         # so we can put them in the report.
-        automatic_features_parameters = {
+        features_parameters = {
             parameter_name: value
             for features in (
                 node_features
@@ -1736,7 +1750,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features names
         # so we can put them in the report.
-        automatic_features_names = {
+        features_names = {
             feature.model_name()
             for features in (
                 node_features
@@ -1766,7 +1780,7 @@ class AbstractClassifierModel(AbstractModel):
             node_features=node_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
         time_required_to_compute_constant_node_features = time.time(
@@ -1782,7 +1796,7 @@ class AbstractClassifierModel(AbstractModel):
             node_type_features=node_type_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
         time_required_to_compute_constant_node_type_features = time.time(
@@ -1798,7 +1812,7 @@ class AbstractClassifierModel(AbstractModel):
             edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
         time_required_to_compute_constant_edge_features = time.time(
@@ -1824,8 +1838,8 @@ class AbstractClassifierModel(AbstractModel):
                 holdouts_kwargs=holdouts_kwargs,
                 subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
                 verbose=verbose,
-                automatic_features_names=automatic_features_names,
-                automatic_features_parameters=automatic_features_parameters,
+                features_names=features_names,
+                features_parameters=features_parameters,
                 **validation_kwargs
             )
             for holdout_number in trange(
