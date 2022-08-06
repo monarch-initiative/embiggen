@@ -4,6 +4,7 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import time
+import json
 from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
 from embiggen.utils.abstract_models.list_formatting import format_list
@@ -1259,8 +1260,13 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test",
-                        "train_of_interest", "test_of_interest", "train", ],
+        args_to_ignore=[
+            "verbose",
+            "smoke_test",
+            "train_of_interest",
+            "test_of_interest",
+            "train",
+        ],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
@@ -1278,6 +1284,7 @@ class AbstractClassifierModel(AbstractModel):
         random_state: int,
         holdout_number: int,
         evaluation_schema: str,
+        holdouts_kwargs: Dict[str, Any],
         features_names: List[str],
         features_parameters: Dict[str, Any],
         **validation_kwargs
@@ -1333,6 +1340,7 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
+        model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
         model_parameters = pd.DataFrame(dict(), index=model_performance.index)
@@ -1578,6 +1586,7 @@ class AbstractClassifierModel(AbstractModel):
                 random_state=random_state,
                 holdout_number=holdout_number,
                 evaluation_schema=evaluation_schema,
+                holdouts_kwargs=holdouts_kwargs,
                 enable_cache=enable_cache,
                 features_names=features_names,
                 features_parameters=features_parameters,
