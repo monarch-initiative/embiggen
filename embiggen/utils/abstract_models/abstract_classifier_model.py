@@ -159,7 +159,7 @@ class AbstractClassifierModel(AbstractModel):
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
-        
+
         Parameters
         -------------------
         path: str
@@ -173,7 +173,7 @@ class AbstractClassifierModel(AbstractModel):
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
-        
+
         Parameters
         -------------------
         path: str
@@ -460,7 +460,7 @@ class AbstractClassifierModel(AbstractModel):
             ):
                 yield node_type_feature
                 return None
-            
+
             if node_type_feature.is_stocastic():
                 node_type_feature.set_random_state(random_state)
 
@@ -896,7 +896,7 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
-        
+
         try:
             predictions = self._predict(
                 graph=graph,
@@ -926,7 +926,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
-            
+
         return predictions
 
     def predict_proba(
@@ -1011,7 +1011,7 @@ class AbstractClassifierModel(AbstractModel):
                 "returned a vector of prediction probabilities with "
                 f"shape {predictions.shape}."
             )
-            
+
         return predictions
 
     def evaluate_predictions(
@@ -1259,7 +1259,8 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test", "train_of_interest", "test_of_interest", "train",],
+        args_to_ignore=["verbose", "smoke_test",
+                        "train_of_interest", "test_of_interest", "train", ],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
@@ -1288,7 +1289,7 @@ class AbstractClassifierModel(AbstractModel):
         training_start = time.time()
         self.fit(
             graph=train_of_interest,
-            support= train_of_interest if use_subgraph_as_support else train,
+            support=train_of_interest if use_subgraph_as_support else train,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features
@@ -1346,11 +1347,11 @@ class AbstractClassifierModel(AbstractModel):
             if isinstance(parameter_value, (list, tuple)):
                 parameter_value = str(parameter_value)
             model_performance[("Model", parameter_name)] = parameter_value
-        
+
         model_performance["automatic_features_names"] = format_list(
             automatic_features_names
         )
-        
+
         for parameter, value in automatic_features_parameters.items():
             if parameter in model_performance.columns:
                 raise ValueError(
@@ -1369,7 +1370,14 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts"],
+        args_to_ignore=[
+            "verbose",
+            "smoke_test",
+            "number_of_holdouts",
+            "time_required_to_compute_constant_node_features",
+            "time_required_to_compute_constant_node_type_features",
+            "time_required_to_compute_constant_edge_features"
+        ],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
     )
@@ -1424,6 +1432,7 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         # We compute the remaining features
+        starting_to_compute_node_features = time.time()
         holdout_node_features = cls.normalize_node_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1433,8 +1442,11 @@ class AbstractClassifierModel(AbstractModel):
             smoke_test=smoke_test,
             precompute_constant_automatic_stocastic_features=True
         )
+        time_required_to_compute_node_features = time.time() - \
+            starting_to_compute_node_features
 
         # We compute the remaining features
+        starting_to_compute_node_type_features = time.time()
         holdout_node_type_features = cls.normalize_node_type_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1444,10 +1456,13 @@ class AbstractClassifierModel(AbstractModel):
             smoke_test=smoke_test,
             precompute_constant_automatic_stocastic_features=True
         )
+        time_required_to_compute_node_type_features = time.time(
+        ) - starting_to_compute_node_type_features
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
+        starting_to_compute_edge_features = time.time()
         holdout_edge_features = cls.normalize_edge_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1457,6 +1472,8 @@ class AbstractClassifierModel(AbstractModel):
             smoke_test=smoke_test,
             precompute_constant_automatic_stocastic_features=True
         )
+        time_required_to_compute_edge_features = time.time() - \
+            starting_to_compute_edge_features
 
         if subgraph_of_interest is not None:
             # First we align the train and test graph to have
@@ -1585,6 +1602,9 @@ class AbstractClassifierModel(AbstractModel):
         ])
 
         holdout_performance["time_required_for_setting_up_holdout"] = time_required_for_setting_up_holdout
+        holdout_performance["time_required_to_compute_node_features"] = time_required_to_compute_node_features
+        holdout_performance["time_required_to_compute_node_type_features"] = time_required_to_compute_node_type_features
+        holdout_performance["time_required_to_compute_edge_features"] = time_required_to_compute_edge_features
 
         return holdout_performance
 
@@ -1754,13 +1774,13 @@ class AbstractClassifierModel(AbstractModel):
             if issubclass(feature.__class__, AbstractEmbeddingModel)
         }
 
-
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
         # computed on the entire graph.
         # This way we compute only once the features that do not
         # cause biases for this task, while recomputing those
         # that cause biases at each holdout, avoiding said biases.
+        starting_to_compute_constant_node_features = time.time()
         node_features = cls.normalize_node_features(
             graph,
             random_state=random_state,
@@ -1770,10 +1790,13 @@ class AbstractClassifierModel(AbstractModel):
             precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_node_features = time.time(
+        ) - starting_to_compute_constant_node_features
 
         # We execute the same thing as described above,
         # but now for the node type features instead that for
         # the node features.
+        starting_to_compute_constant_node_type_features = time.time()
         node_type_features = cls.normalize_node_type_features(
             graph,
             random_state=random_state,
@@ -1783,10 +1806,13 @@ class AbstractClassifierModel(AbstractModel):
             precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_node_type_features = time.time(
+        ) - starting_to_compute_constant_node_type_features
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
+        starting_to_compute_constant_edge_features = time.time()
         edge_features = cls.normalize_edge_features(
             graph,
             random_state=random_state,
@@ -1796,6 +1822,8 @@ class AbstractClassifierModel(AbstractModel):
             precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_edge_features = time.time(
+        ) - starting_to_compute_constant_edge_features
 
         # We start to iterate on the holdouts.
         performance = pd.concat([
@@ -1840,6 +1868,9 @@ class AbstractClassifierModel(AbstractModel):
         # as often such information changes how the model
         # is trained.
         performance["number_of_holdouts"] = number_of_holdouts
+        performance["time_required_to_compute_constant_node_features"] = time_required_to_compute_constant_node_features
+        performance["time_required_to_compute_constant_node_type_features"] = time_required_to_compute_constant_node_type_features
+        performance["time_required_to_compute_constant_edge_features"] = time_required_to_compute_constant_edge_features
 
         # We save the constant values for this model
         # execution.
