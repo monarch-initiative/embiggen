@@ -1388,9 +1388,6 @@ class AbstractClassifierModel(AbstractModel):
             "verbose",
             "smoke_test",
             "number_of_holdouts",
-            "time_required_to_compute_constant_node_features",
-            "time_required_to_compute_constant_node_type_features",
-            "time_required_to_compute_constant_edge_features"
         ],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
@@ -1750,7 +1747,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features names
         # so we can put them in the report.
-        features_names = {
+        features_names = list({
             feature.model_name()
             for features in (
                 node_features
@@ -1765,7 +1762,7 @@ class AbstractClassifierModel(AbstractModel):
             )
             for feature in features
             if issubclass(feature.__class__, AbstractEmbeddingModel)
-        }
+        })
 
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
