@@ -1995,7 +1995,7 @@ class GraphVisualizer:
         returned_values = self._plot_types(
             points=points,
             title=self._get_complete_title(
-                "Existent & non-existent edges",
+                "Edge prediction",
                 show_edge_embedding=True
             ),
             types=types,
