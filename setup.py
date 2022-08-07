@@ -73,7 +73,7 @@ setup(
         "ensmallen>=0.8.11",
         "compress_pickle>=2.1.0",
         "validate_version_code",
-        "cache_decorator>=2.1.9",
+        "cache_decorator>=2.1.11",
         "packaging"
     ],
     tests_require=test_deps,
