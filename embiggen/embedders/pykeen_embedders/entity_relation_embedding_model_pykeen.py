@@ -1,11 +1,18 @@
 """Submodule providing wrapper for PyKEEN's TransE model."""
 from typing import Union
 from ensmallen import Graph
-from pykeen.models import EntityRelationEmbeddingModel, ERModel
+from pykeen.models import ERModel
 from embiggen.embedders.pykeen_embedders.pykeen_embedder import PyKEENEmbedder
 import pandas as pd
 from embiggen.utils.abstract_models import abstract_class, EmbeddingResult
 
+try:
+    from pykeen.models import EntityRelationEmbeddingModel
+except ImportError:
+    # The following is just to patch the removal of the
+    # class EntityRelationEmbeddingModel in PyKEEN.
+    class EntityRelationEmbeddingModel:
+        pass
 
 @abstract_class
 class EntityRelationEmbeddingModelPyKEEN(PyKEENEmbedder):
