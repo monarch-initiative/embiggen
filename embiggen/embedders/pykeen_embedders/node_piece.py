@@ -94,3 +94,8 @@ class NodePiecePyKEEN(EntityRelationEmbeddingModelPyKEEN):
             embedding_dim=self._embedding_size,
             random_seed=self._random_state
         )
+    
+    @classmethod
+    def _create_inverse_triples(cls) -> bool:
+        """Returns whether the class is expected to create inverse triples."""
+        return True
