@@ -190,7 +190,7 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
                 num_relations=graph.get_number_of_edge_types(),
                 entity_ids=graph.get_node_ids(),
                 relation_ids=graph.get_unique_edge_type_ids(),
-                #create_inverse_triples=self._create_inverse_triples(),
+                create_inverse_triples=self._create_inverse_triples(),
             )
         else:
             triples_factory = CoreTriplesFactory(

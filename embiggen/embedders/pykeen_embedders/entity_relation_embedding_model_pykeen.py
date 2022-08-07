@@ -1,7 +1,8 @@
 """Submodule providing wrapper for PyKEEN's TransE model."""
-from typing import Union
+from typing import Union, Type, List
 from ensmallen import Graph
 from pykeen.models import ERModel
+from pykeen.nn.representation import Representation
 from embiggen.embedders.pykeen_embedders.pykeen_embedder import PyKEENEmbedder
 import pandas as pd
 from embiggen.utils.abstract_models import abstract_class, EmbeddingResult
@@ -35,11 +36,11 @@ class EntityRelationEmbeddingModelPyKEEN(PyKEENEmbedder):
             Whether to return a dataframe of a numpy array.
         """
         if isinstance(model, EntityRelationEmbeddingModel):
-            node_embeddings = [model.entity_embeddings]
-            edge_type_embeddings = [model.relation_embeddings]
+            node_embeddings: List[Type[Representation]] = [model.entity_embeddings]
+            edge_type_embeddings: List[Type[Representation]] = [model.relation_embeddings]
         elif isinstance(model, ERModel):
-            node_embeddings = model.entity_representations
-            edge_type_embeddings = model.relation_representations
+            node_embeddings: List[Type[Representation]] = model.entity_representations
+            edge_type_embeddings: List[Type[Representation]] = model.relation_representations
         else:
             raise NotImplementedError(
                 f"The provided model has type {type(model)}, which "
@@ -48,12 +49,12 @@ class EntityRelationEmbeddingModelPyKEEN(PyKEENEmbedder):
             )
 
         node_embeddings = [
-            node_embedding._embeddings.weight.cpu().detach().numpy()
+            node_embedding().cpu().detach().numpy()
             for node_embedding in node_embeddings
         ]
 
         edge_type_embeddings = [
-            edge_type_embedding._embeddings.weight.cpu().detach().numpy()
+            edge_type_embedding().cpu().detach().numpy()
             for edge_type_embedding in edge_type_embeddings
         ]
 
