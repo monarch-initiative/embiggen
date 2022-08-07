@@ -4495,8 +4495,8 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            # if self._n_components != 3:
-            #     figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+            if self._n_components != 3:
+                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
         elif self._n_components != 3:
             figure.tight_layout()
 

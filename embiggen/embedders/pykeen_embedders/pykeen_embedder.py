@@ -182,7 +182,6 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
 
         torch_device = torch.device(self._device)
 
-
         if "entity_ids" in getfullargspec(CoreTriplesFactory).args:
             triples_factory = CoreTriplesFactory(
                 torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
