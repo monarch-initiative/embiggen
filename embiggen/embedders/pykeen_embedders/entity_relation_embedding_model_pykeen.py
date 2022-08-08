@@ -49,12 +49,18 @@ class EntityRelationEmbeddingModelPyKEEN(PyKEENEmbedder):
             )
 
         node_embeddings = [
-            node_embedding().cpu().detach().numpy()
+            node_embedding().cpu().detach().numpy().reshape((
+                graph.get_number_of_nodes(),
+                -1
+            ))
             for node_embedding in node_embeddings
         ]
 
         edge_type_embeddings = [
-            edge_type_embedding().cpu().detach().numpy()
+            edge_type_embedding().cpu().detach().numpy().reshape((
+                graph.get_number_of_edge_types(),
+                -1
+            ))
             for edge_type_embedding in edge_type_embeddings
         ]
 
