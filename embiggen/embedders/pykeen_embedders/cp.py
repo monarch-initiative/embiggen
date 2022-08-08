@@ -13,7 +13,7 @@ class CPPyKEEN(EntityRelationEmbeddingModelPyKEEN):
         embedding_size: int = 64,
         rank: int = 64,
         epochs: int = 100,
-        batch_size: int = 2**10,
+        batch_size: int = 2**5,
         training_loop: Union[str, Type[TrainingLoop]
                              ] = "Stochastic Local Closed World Assumption",
         verbose: bool = False,
@@ -69,9 +69,7 @@ class CPPyKEEN(EntityRelationEmbeddingModelPyKEEN):
     def parameters(self) -> Dict[str, Any]:
         return dict(
             **super().parameters(),
-            **dict(
-                rank=self._rank,
-            )
+            rank=self._rank,
         )
 
     @classmethod
