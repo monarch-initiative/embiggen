@@ -10,7 +10,7 @@ class CPPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
-        embedding_size: int = 256,
+        embedding_size: int = 64,
         rank: int = 64,
         epochs: int = 100,
         batch_size: int = 2**10,
