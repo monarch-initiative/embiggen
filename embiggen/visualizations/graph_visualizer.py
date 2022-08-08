@@ -796,6 +796,16 @@ class GraphVisualizer:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
+        # Some embedding method have complex values.
+        # Such values are, of course, not supported by UMAP, TSNE or PCA.
+        # For such cases, we need to convert the complex value into a real
+        # value. If the user desires to use some different approach, it can
+        # be applied to the embedding before providing it to this visualization tool.
+        if "complex" in str(X.dtype):
+            X = np.hstack([
+                np.real(X),
+                np.imag(X)
+            ])
         if self._decomposition_method == "TSNE" and X.shape[1] > 50 and self._graph.get_number_of_nodes() > 50:
             X = PCA(
                 n_components=50,
@@ -4495,8 +4505,8 @@ class GraphVisualizer:
                 ),
                 fontsize=20
             )
-            # if self._n_components != 3:
-            #     figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+            if self._n_components != 3:
+                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
         elif self._n_components != 3:
             figure.tight_layout()
 
