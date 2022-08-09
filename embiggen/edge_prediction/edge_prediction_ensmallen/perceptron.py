@@ -19,9 +19,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
         number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 256,
+        number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.01,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
         avoid_false_negatives: bool = False,
@@ -70,7 +70,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types. By default false.
-        learning_rate: float = 0.001
+        learning_rate: float = 0.01
             Learning rate to use while training the model. By default 0.001.
         first_order_decay_factor: float = 0.9
             First order decay factor for the first order momentum.
