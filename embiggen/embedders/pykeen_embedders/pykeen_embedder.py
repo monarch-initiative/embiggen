@@ -187,8 +187,8 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
                 torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int64)),
                 num_entities=graph.get_number_of_nodes(),
                 num_relations=graph.get_number_of_edge_types(),
-                entity_ids=graph.get_node_ids(),
-                relation_ids=graph.get_unique_edge_type_ids(),
+                entity_ids=graph.get_node_ids().astype(np.int64),
+                relation_ids=graph.get_unique_edge_type_ids().astype(np.int64),
                 create_inverse_triples=self._create_inverse_triples(),
             )
         else:
