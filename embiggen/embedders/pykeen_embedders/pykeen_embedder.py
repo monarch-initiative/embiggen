@@ -184,7 +184,7 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
 
         if "entity_ids" in getfullargspec(CoreTriplesFactory).args:
             triples_factory = CoreTriplesFactory(
-                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int64)),
                 num_entities=graph.get_number_of_nodes(),
                 num_relations=graph.get_number_of_edge_types(),
                 entity_ids=graph.get_node_ids(),
@@ -193,7 +193,7 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
             )
         else:
             triples_factory = CoreTriplesFactory(
-                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int64)),
                 num_entities=graph.get_number_of_nodes(),
                 num_relations=graph.get_number_of_edge_types(),
                 create_inverse_triples=self._create_inverse_triples(),
