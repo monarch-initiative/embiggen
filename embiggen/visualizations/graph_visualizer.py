@@ -515,7 +515,7 @@ class GraphVisualizer:
             " In the heatmap{plural}, {letters}"
             "low and high values appear in red and blue hues, respectively. "
             "Intermediate values appear in either a yellow or cyan hue. "
-            "The values are on a logarithmic scale."
+            "The values are on a logarithmic scale"
         ).format(
             plural=plural,
             letters="{}, ".format(
@@ -549,7 +549,7 @@ class GraphVisualizer:
         # embed nodes using a cosine similarity / distance approach
         # in order to avoid false negatives, that is bad TSNE decompositions
         # while the embedding is actually good.
-        if self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
+        if self._n_components < 3 and self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
             "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
         ):
             metric = self._decomposition_kwargs.get("metric")
