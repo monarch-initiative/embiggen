@@ -1877,7 +1877,7 @@ class AbstractClassifierModel(AbstractModel):
             )
             if (
                 not distribute_holdouts_on_slurm or
-                os.environ["SLURM_NODEID"] == holdout_number % os.environ["SLURM_NNODES"]
+                int(os.environ["SLURM_NODEID"]) == holdout_number % int(os.environ["SLURM_NNODES"])
             )
         ])
 
