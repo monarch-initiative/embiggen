@@ -123,13 +123,15 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             )
 
         train_size = (
-            train.get_number_of_edges() / (train.get_number_of_edges() + test.get_number_of_edges())
+            train.get_number_of_edges() / (train.get_number_of_edges() +
+                                           test.get_number_of_edges())
         )
 
         return (
             sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(sampler_graph.get_number_of_edges()*unbalance_rate)
+                    math.ceil(sampler_graph.get_number_of_edges()
+                              * unbalance_rate)
                 ),
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
@@ -201,6 +203,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """Return model evaluation on the provided graphs."""
         performance = []
 
+        train_size = (
+            train.get_number_of_directed_edges() / graph.get_number_of_directed_edges()
+        )
+
         train_predic_proba = self.predict_proba(
             train,
             support=support,
@@ -265,6 +271,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
                 performance.append({
                     "evaluation_mode": evaluation_mode,
+                    "train_size": train_size,
                     "validation_unbalance_rate": unbalance_rate,
                     "use_scale_free_distribution": use_scale_free_distribution,
                     "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,

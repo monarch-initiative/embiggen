@@ -26,6 +26,7 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         normalize_learning_rate_by_degree: Optional[bool] = False,
         use_scale_free_distribution: Optional[bool] = True,
         random_state: int = 42,
+        dtype: str = "f32",
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -88,6 +89,8 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             Divide the learning rate by the degree of the central node. By default false.
         use_scale_free_distribution: Optional[bool] = True
             Sample negatives proportionally to their degree. By default true.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
         enable_cache: bool = False
@@ -112,6 +115,7 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_scale_free_distribution=use_scale_free_distribution,
+            dtype=dtype,
             random_state=random_state,
             enable_cache=enable_cache
         )

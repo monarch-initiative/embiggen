@@ -1340,6 +1340,7 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
+        model_performance["holdout_number"] = holdout_number
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 

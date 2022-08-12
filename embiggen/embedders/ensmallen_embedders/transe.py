@@ -18,6 +18,7 @@ class TransEEnsmallen(SiameseEnsmallen):
         learning_rate_decay: float = 0.9,
         node_embedding_path: Optional[str] = None,
         edge_type_embedding_path: Optional[str] = None,
+        dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
         enable_cache: bool = False
@@ -47,6 +48,8 @@ class TransEEnsmallen(SiameseEnsmallen):
             Path where to mmap and store the edge type embedding.
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
@@ -63,6 +66,7 @@ class TransEEnsmallen(SiameseEnsmallen):
             learning_rate_decay=learning_rate_decay,
             node_embedding_path=node_embedding_path,
             edge_type_embedding_path=edge_type_embedding_path,
+            dtype=dtype,
             random_state=random_state,
             verbose=verbose,
             enable_cache=enable_cache,

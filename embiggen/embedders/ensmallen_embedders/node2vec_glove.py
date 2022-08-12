@@ -22,6 +22,7 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         central_nodes_embedding_path: Optional[str] = None,
         contextual_nodes_embedding_path: Optional[str] = None,
         normalize_by_degree: bool = False,
+        dtype: str = "f32",
         random_state: int = 42,
         enable_cache: bool = False
     ):
@@ -81,6 +82,8 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
         enable_cache: bool = False
@@ -103,6 +106,7 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             central_nodes_embedding_path=central_nodes_embedding_path,
             contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             normalize_by_degree=normalize_by_degree,
+            dtype=dtype,
             enable_cache=enable_cache,
             random_state=random_state
         )

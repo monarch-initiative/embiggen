@@ -19,6 +19,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         avoid_false_negatives: bool = False,
         use_scale_free_distribution: bool = True,
         node_embedding_path: Optional[str] = None,
+        dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
         enable_cache: bool = False
@@ -44,6 +45,8 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             Path where to mmap and store the nodes embedding.
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
@@ -59,6 +62,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             avoid_false_negatives=avoid_false_negatives,
             use_scale_free_distribution=use_scale_free_distribution,
             node_embedding_path=node_embedding_path,
+            dtype=dtype,
             verbose=verbose
         )
 
