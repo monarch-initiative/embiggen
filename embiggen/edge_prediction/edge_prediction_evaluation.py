@@ -28,6 +28,7 @@ def edge_prediction_evaluation(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
+    distribute_holdouts_on_slurm: bool = False,
     verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge prediction evaluation pipeline for all provided models and graphs.
@@ -120,6 +121,9 @@ def edge_prediction_evaluation(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
+    distribute_holdouts_on_slurm: bool = False
+        Whether to automatically distribute the task over a SLURM
+        cluster by distributing the execution of the holdouts.
     verbose: bool = True
         Whether to show loading bars
     """
@@ -142,6 +146,7 @@ def edge_prediction_evaluation(
         enable_cache=enable_cache,
         precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
+        distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
         validation_unbalance_rates=validation_unbalance_rates,

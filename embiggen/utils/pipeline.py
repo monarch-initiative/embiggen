@@ -124,6 +124,7 @@ def classification_evaluation_pipeline(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
+    distribute_holdouts_on_slurm: bool = False,
     **evaluation_kwargs
 ) -> pd.DataFrame:
     """Execute classification pipeline for all provided models and graphs.
@@ -183,6 +184,9 @@ def classification_evaluation_pipeline(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
+    distribute_holdouts_on_slurm: bool = False
+        Whether to automatically distribute the task over a SLURM
+        cluster by distributing the execution of the holdouts.
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
@@ -203,6 +207,7 @@ def classification_evaluation_pipeline(
             enable_cache=enable_cache and not smoke_test,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
+            distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
             **evaluation_kwargs
         )
         for graph in iterate_graphs(
