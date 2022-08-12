@@ -3,6 +3,7 @@ from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
 from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
+import os
 import time
 import json
 from userinput.utils import must_be_in_set
@@ -1330,7 +1331,7 @@ class AbstractClassifierModel(AbstractModel):
             ) from e
 
         time_required_for_evaluation = time.time() - start_evaluation
-    
+
         model_performance["time_required_for_training"] = time_required_for_training
         model_performance["time_required_for_evaluation"] = time_required_for_evaluation
         model_performance["task_name"] = self.task_name()
@@ -1344,8 +1345,10 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
-        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
-        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_model_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
@@ -1397,6 +1400,7 @@ class AbstractClassifierModel(AbstractModel):
             "verbose",
             "smoke_test",
             "number_of_holdouts",
+            "distribute_holdouts_on_slurm"
         ],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
@@ -1421,6 +1425,7 @@ class AbstractClassifierModel(AbstractModel):
         subgraph_of_interest_has_compatible_nodes: Optional[bool],
         features_names: List[str],
         features_parameters: Dict[str, Any],
+        distribute_holdouts_on_slurm: bool,
         verbose: bool,
         **validation_kwargs
     ) -> pd.DataFrame:
@@ -1601,6 +1606,7 @@ class AbstractClassifierModel(AbstractModel):
             )
         ])
 
+        holdout_performance["distribute_holdouts_on_slurm"] = distribute_holdouts_on_slurm
         holdout_performance["time_required_for_setting_up_holdout"] = time_required_for_setting_up_holdout
         holdout_performance["time_required_to_compute_node_features"] = time_required_to_compute_node_features
         holdout_performance["time_required_to_compute_node_type_features"] = time_required_to_compute_node_type_features
@@ -1635,6 +1641,7 @@ class AbstractClassifierModel(AbstractModel):
         enable_cache: bool = False,
         precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
+        distribute_holdouts_on_slurm: bool = False,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -1690,6 +1697,9 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        distribute_holdouts_on_slurm: bool = False
+            Whether to automatically distribute the task over a SLURM
+            cluster by distributing the execution of the holdouts.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -1734,6 +1744,14 @@ class AbstractClassifierModel(AbstractModel):
                     "how to proceed."
                 )
             subgraph_of_interest_has_compatible_nodes = None
+
+        if distribute_holdouts_on_slurm:
+            if "SLURM_NODEID" not in os.environ or "SLURM_NNODES" not in os.environ:
+                raise ValueError(
+                    "Distribution over a SLURM cluster was requested but "
+                    "neither the `SLURM_NODEID` nor `SLURM_NNODES` "
+                    "system variables were found."
+                )
 
         # Retrieve the set of provided automatic features parameters
         # so we can put them in the report.
@@ -1847,6 +1865,7 @@ class AbstractClassifierModel(AbstractModel):
                 verbose=verbose,
                 features_names=features_names,
                 features_parameters=features_parameters,
+                distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
                 **validation_kwargs
             )
             for holdout_number in trange(
@@ -1855,6 +1874,10 @@ class AbstractClassifierModel(AbstractModel):
                 leave=False,
                 dynamic_ncols=True,
                 desc=f"Evaluating on {graph.get_name()}"
+            )
+            if (
+                not distribute_holdouts_on_slurm or
+                os.environ["SLURM_NODEID"] == holdout_number % os.environ["SLURM_NNODES"]
             )
         ])
 
