@@ -61,14 +61,14 @@ class ScoreSPINE(EnsmallenEmbedder):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 dtype=self._dtype,
                 maximum_depth=self._maximum_depth,
                 path=self._path,
             )
-        }
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:

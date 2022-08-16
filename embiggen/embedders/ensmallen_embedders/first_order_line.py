@@ -33,7 +33,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
         learning_rate: float = 0.05
-            The learning rate to update the gradient, by default 0.01.
+            The learning rate to update the gradient, by default 0.05.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         avoid_false_negatives: bool = False

@@ -57,14 +57,15 @@ class DegreeWINE(EnsmallenEmbedder):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 dtype=self._dtype,
                 walk_length=self._walk_length,
                 path=self._path,
             )
-        }
+        )
+    
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
