@@ -3,10 +3,12 @@ from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
 from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
+import os
 import time
 import json
 from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
+from environments_utils import get_slurm_node_id, get_number_of_available_slurm_nodes, must_be_in_slurm_node
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
 
@@ -1266,6 +1268,7 @@ class AbstractClassifierModel(AbstractModel):
             "train_of_interest",
             "test_of_interest",
             "train",
+            "metadata"
         ],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
@@ -1287,6 +1290,7 @@ class AbstractClassifierModel(AbstractModel):
         holdouts_kwargs: Dict[str, Any],
         features_names: List[str],
         features_parameters: Dict[str, Any],
+        metadata: Dict[str, Any],
         **validation_kwargs
     ) -> pd.DataFrame:
         """Run inner training and evaluation."""
@@ -1330,7 +1334,7 @@ class AbstractClassifierModel(AbstractModel):
             ) from e
 
         time_required_for_evaluation = time.time() - start_evaluation
-    
+
         model_performance["time_required_for_training"] = time_required_for_training
         model_performance["time_required_for_evaluation"] = time_required_for_evaluation
         model_performance["task_name"] = self.task_name()
@@ -1344,8 +1348,13 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
 
-        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
-        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        for column_name, column_value in metadata.items():
+            model_performance[column_name] = column_value
+
+        df_model_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
@@ -1397,6 +1406,7 @@ class AbstractClassifierModel(AbstractModel):
             "verbose",
             "smoke_test",
             "number_of_holdouts",
+            "metadata"
         ],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
@@ -1421,6 +1431,7 @@ class AbstractClassifierModel(AbstractModel):
         subgraph_of_interest_has_compatible_nodes: Optional[bool],
         features_names: List[str],
         features_parameters: Dict[str, Any],
+        metadata: Dict[str, Any],
         verbose: bool,
         **validation_kwargs
     ) -> pd.DataFrame:
@@ -1573,6 +1584,14 @@ class AbstractClassifierModel(AbstractModel):
 
         time_required_for_setting_up_holdout = time.time() - starting_setting_up_holdout
 
+        metadata = dict(
+            **metadata,
+            time_required_for_setting_up_holdout=time_required_for_setting_up_holdout,
+            time_required_to_compute_node_features=time_required_to_compute_node_features,
+            time_required_to_compute_node_type_features=time_required_to_compute_node_type_features,
+            time_required_to_compute_edge_features=time_required_to_compute_edge_features
+        )
+
         holdout_performance = pd.concat([
             classifier._train_and_evaluate_model(
                 graph=graph,
@@ -1591,6 +1610,7 @@ class AbstractClassifierModel(AbstractModel):
                 enable_cache=enable_cache,
                 features_names=features_names,
                 features_parameters=features_parameters,
+                metadata=metadata.copy(),
                 **additional_validation_kwargs,
                 **validation_kwargs,
             )
@@ -1600,11 +1620,6 @@ class AbstractClassifierModel(AbstractModel):
                 smoke_test=smoke_test
             )
         ])
-
-        holdout_performance["time_required_for_setting_up_holdout"] = time_required_for_setting_up_holdout
-        holdout_performance["time_required_to_compute_node_features"] = time_required_to_compute_node_features
-        holdout_performance["time_required_to_compute_node_type_features"] = time_required_to_compute_node_type_features
-        holdout_performance["time_required_to_compute_edge_features"] = time_required_to_compute_edge_features
 
         return holdout_performance
 
@@ -1635,6 +1650,8 @@ class AbstractClassifierModel(AbstractModel):
         enable_cache: bool = False,
         precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
+        distribute_holdouts_on_slurm: bool = False,
+        number_of_slurm_nodes: Optional[int] = None,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -1690,6 +1707,23 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        distribute_holdouts_on_slurm: bool = False
+            Whether to automatically distribute the task over a SLURM
+            cluster by distributing the execution of the holdouts.
+            Do note that if a number of SLURM nodes higher than the
+            number of requested holdouts was provided, an exception
+            will be raised to warn users about wasting resources.
+        number_of_slurm_nodes: Optional[int] = None
+            Number of SLURM nodes to consider as available.
+            This variable is employed only when `distribute_holdouts_on_slurm` is 
+            set to True, and is used to parallelize the holdouts accordingly.
+            If `None`, the default behaviour is to use the system
+            variable `SLURM_NNODES`. The reason this parameter is made availble
+            is because a user may desire to parallelize the SLURM execution at
+            multiple levels, with a number of nodes considerably higher than
+            the number of holdouts executed, for instance when running a grid
+            search. In those cases, it is necessary to specify how many
+            nodes should be used for the holdouts parallelizaion.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -1734,6 +1768,47 @@ class AbstractClassifierModel(AbstractModel):
                     "how to proceed."
                 )
             subgraph_of_interest_has_compatible_nodes = None
+
+        if distribute_holdouts_on_slurm:
+            must_be_in_slurm_node()
+
+            if number_of_slurm_nodes is None:
+                number_of_slurm_nodes = get_number_of_available_slurm_nodes()
+            elif number_of_slurm_nodes > get_number_of_available_slurm_nodes():
+                raise ValueError(
+                    (
+                        "The number of SLURM nodes that are currently "
+                        "made available by your SLURM configuration are "
+                        "{number_of_available_slurm_nodes} but you have "
+                        "requested that we distribute the holdouts across "
+                        "{number_of_slurm_nodes} SLURM nodes. This, of course, "
+                        "is not possible. Please either reduce the number of "
+                        "requested nodes in the parameters of this function or "
+                        "increase the number of requested nodes in the SLURM script."
+                    ).format(
+                        number_of_slurm_nodes=number_of_slurm_nodes,
+                        number_of_available_slurm_nodes=get_number_of_available_slurm_nodes()
+                    )
+                ) 
+            
+            if number_of_holdouts <= number_of_slurm_nodes:
+                raise ValueError(
+                    (
+                        "Please be advised that you are currently running an excessive "
+                        "parametrization of the SLURM cluster. We currently can only parallelize "
+                        "the execution of different holdouts. "
+                        "The number of holdouts requested are {number_of_holdouts} but you are "
+                        "currently using {number_of_slurm_nodes} SLURM nodes! "
+                        "Possibly, you are currently running a task such as a grid search "
+                        "and therefore you intend us to parallelize only the sub-segment of SLURM "
+                        "nodes necessary to run the holdouts. If that is the case, do specify "
+                        "the `number_of_slurm_nodes` parameter to let us know how many nodes "
+                        "we should be parallelizing across."
+                    ).format(
+                        number_of_holdouts=number_of_holdouts,
+                        number_of_slurm_nodes=number_of_slurm_nodes
+                    )
+                )
 
         # Retrieve the set of provided automatic features parameters
         # so we can put them in the report.
@@ -1825,6 +1900,15 @@ class AbstractClassifierModel(AbstractModel):
         time_required_to_compute_constant_edge_features = time.time(
         ) - starting_to_compute_constant_edge_features
 
+        metadata = dict(
+            number_of_holdouts=number_of_holdouts,
+            distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
+            number_of_slurm_nodes=number_of_slurm_nodes,
+            time_required_to_compute_constant_node_features=time_required_to_compute_constant_node_features,
+            time_required_to_compute_constant_node_type_features=time_required_to_compute_constant_node_type_features,
+            time_required_to_compute_constant_edge_features=time_required_to_compute_constant_edge_features,
+        )
+
         # We start to iterate on the holdouts.
         performance = pd.concat([
             cls.__evaluate_on_single_holdout(
@@ -1847,6 +1931,7 @@ class AbstractClassifierModel(AbstractModel):
                 verbose=verbose,
                 features_names=features_names,
                 features_parameters=features_parameters,
+                metadata=metadata.copy(),
                 **validation_kwargs
             )
             for holdout_number in trange(
@@ -1856,21 +1941,21 @@ class AbstractClassifierModel(AbstractModel):
                 dynamic_ncols=True,
                 desc=f"Evaluating on {graph.get_name()}"
             )
+            if (
+                not distribute_holdouts_on_slurm or
+                (
+                    # We need to also mode the number of SLURM node IDs
+                    # because the user may be parallelizing across many
+                    # diffent nodes in contexts such as wide grid searches.
+                    get_slurm_node_id() % number_of_slurm_nodes
+                ) == (
+                    # We need to mode the holdout number as the number
+                    # of holdouts may exceed the number of available SLURM
+                    # nodes that the user has made available to this pipeline.
+                    holdout_number % number_of_slurm_nodes
+                )
+            )
         ])
-
-        # Adding to the report the informations relative to
-        # the whole validation run, which are NOT necessary
-        # to make unique the cache hash of the single holdouts
-        # or the single models.
-        # Be extremely weary of adding informations at this
-        # high level, as often the best place should be
-        # in the core loop, where the actual model is trained,
-        # as often such information changes how the model
-        # is trained.
-        performance["number_of_holdouts"] = number_of_holdouts
-        performance["time_required_to_compute_constant_node_features"] = time_required_to_compute_constant_node_features
-        performance["time_required_to_compute_constant_node_type_features"] = time_required_to_compute_constant_node_type_features
-        performance["time_required_to_compute_constant_edge_features"] = time_required_to_compute_constant_edge_features
 
         # We save the constant values for this model
         # execution.

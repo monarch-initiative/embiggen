@@ -737,6 +737,7 @@ class GraphVisualizer:
                         f"to have an index curresponding to the node name `{node_name}`, "
                         f"but we have found `{node_embedding.index[node_id]}`."
                     )
+            node_embedding = node_embedding.to_numpy()
 
         return node_embedding
 
