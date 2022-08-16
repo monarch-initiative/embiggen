@@ -70,7 +70,7 @@ setup(
         "ddd_subplots>=1.0.20",
         "sanitize_ml_labels>=1.0.38",
         "keras_mixed_sequence>=1.0.28",
-        "ensmallen>=0.8.16",
+        "ensmallen>=0.8.17",
         "environment_utils>=1.0.6",
         "compress_pickle>=2.1.0",
         "validate_version_code",
