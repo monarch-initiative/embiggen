@@ -1911,7 +1911,7 @@ class AbstractClassifierModel(AbstractModel):
 
         if distribute_holdouts_on_slurm:
             metadata["slurm_node_id"] = get_slurm_node_id()
-            metadata["number_of_slurm_node"] = number_of_slurm_node
+            metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
         # We start to iterate on the holdouts.
         performance = pd.concat([
