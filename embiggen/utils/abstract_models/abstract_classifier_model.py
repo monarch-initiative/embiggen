@@ -1709,15 +1709,7 @@ class AbstractClassifierModel(AbstractModel):
             the provided model names and feature names.
         number_of_slurm_nodes: Optional[int] = None
             Number of SLURM nodes to consider as available.
-            This variable is employed only when `distribute_holdouts_on_slurm` is 
-            set to True, and is used to parallelize the holdouts accordingly.
-            If `None`, the default behaviour is to use the system
-            variable `SLURM_NNODES`. The reason this parameter is made availble
-            is because a user may desire to parallelize the SLURM execution at
-            multiple levels, with a number of nodes considerably higher than
-            the number of holdouts executed, for instance when running a grid
-            search. In those cases, it is necessary to specify how many
-            nodes should be used for the holdouts parallelization.
+            This variable is used to parallelize the holdouts accordingly.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
