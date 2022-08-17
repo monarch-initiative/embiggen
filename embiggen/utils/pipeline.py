@@ -124,7 +124,6 @@ def classification_evaluation_pipeline(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
-    distribute_holdouts_on_slurm: bool = False,
     number_of_slurm_nodes: Optional[int] = None,
     **evaluation_kwargs
 ) -> pd.DataFrame:
@@ -185,12 +184,6 @@ def classification_evaluation_pipeline(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
-    distribute_holdouts_on_slurm: bool = False
-        Whether to automatically distribute the task over a SLURM
-        cluster by distributing the execution of the holdouts.
-        Do note that if a number of SLURM nodes higher than the
-        number of requested holdouts was provided, an exception
-        will be raised to warn users about wasting resources.
     number_of_slurm_nodes: Optional[int] = None
         Number of SLURM nodes to consider as available.
         This variable is employed only when `distribute_holdouts_on_slurm` is 
@@ -222,7 +215,6 @@ def classification_evaluation_pipeline(
             enable_cache=enable_cache and not smoke_test,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
-            distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
             number_of_slurm_nodes=number_of_slurm_nodes,
             **evaluation_kwargs
         )

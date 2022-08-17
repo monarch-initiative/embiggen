@@ -26,7 +26,6 @@ def edge_label_prediction_evaluation(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
-    distribute_holdouts_on_slurm: bool = False,
     number_of_slurm_nodes: Optional[int] = None,
     verbose: bool = True
 ) -> pd.DataFrame:
@@ -87,12 +86,6 @@ def edge_label_prediction_evaluation(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
-    distribute_holdouts_on_slurm: bool = False
-        Whether to automatically distribute the task over a SLURM
-        cluster by distributing the execution of the holdouts.
-        Do note that if a number of SLURM nodes higher than the
-        number of requested holdouts was provided, an exception
-        will be raised to warn users about wasting resources.
     number_of_slurm_nodes: Optional[int] = None
         Number of SLURM nodes to consider as available.
         This variable is employed only when `distribute_holdouts_on_slurm` is 
@@ -127,7 +120,6 @@ def edge_label_prediction_evaluation(
         enable_cache=enable_cache,
         precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
-        distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
         number_of_slurm_nodes=number_of_slurm_nodes,
         verbose=verbose
     )
