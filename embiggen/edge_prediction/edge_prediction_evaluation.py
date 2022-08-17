@@ -121,9 +121,6 @@ def edge_prediction_evaluation(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
-    distribute_holdouts_on_slurm: bool = False
-        Whether to automatically distribute the task over a SLURM
-        cluster by distributing the execution of the holdouts.
     number_of_slurm_nodes: Optional[int] = None
         Number of SLURM nodes to consider as available.
         This variable is used to parallelize the holdouts accordingly.
