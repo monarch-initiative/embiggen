@@ -125,6 +125,7 @@ def classification_evaluation_pipeline(
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
     distribute_holdouts_on_slurm: bool = False,
+    number_of_slurm_nodes: Optional[int] = None,
     **evaluation_kwargs
 ) -> pd.DataFrame:
     """Execute classification pipeline for all provided models and graphs.
@@ -187,6 +188,20 @@ def classification_evaluation_pipeline(
     distribute_holdouts_on_slurm: bool = False
         Whether to automatically distribute the task over a SLURM
         cluster by distributing the execution of the holdouts.
+        Do note that if a number of SLURM nodes higher than the
+        number of requested holdouts was provided, an exception
+        will be raised to warn users about wasting resources.
+    number_of_slurm_nodes: Optional[int] = None
+        Number of SLURM nodes to consider as available.
+        This variable is employed only when `distribute_holdouts_on_slurm` is 
+        set to True, and is used to parallelize the holdouts accordingly.
+        If `None`, the default behaviour is to use the system
+        variable `SLURM_NNODES`. The reason this parameter is made availble
+        is because a user may desire to parallelize the SLURM execution at
+        multiple levels, with a number of nodes considerably higher than
+        the number of holdouts executed, for instance when running a grid
+        search. In those cases, it is necessary to specify how many
+        nodes should be used for the holdouts parallelization.
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
@@ -208,6 +223,7 @@ def classification_evaluation_pipeline(
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
             distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
+            number_of_slurm_nodes=number_of_slurm_nodes,
             **evaluation_kwargs
         )
         for graph in iterate_graphs(

@@ -1723,7 +1723,7 @@ class AbstractClassifierModel(AbstractModel):
             multiple levels, with a number of nodes considerably higher than
             the number of holdouts executed, for instance when running a grid
             search. In those cases, it is necessary to specify how many
-            nodes should be used for the holdouts parallelizaion.
+            nodes should be used for the holdouts parallelization.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
