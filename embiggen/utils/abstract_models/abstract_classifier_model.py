@@ -1909,6 +1909,10 @@ class AbstractClassifierModel(AbstractModel):
             time_required_to_compute_constant_edge_features=time_required_to_compute_constant_edge_features,
         )
 
+        if distribute_holdouts_on_slurm:
+            metadata["slurm_node_id"] = get_slurm_node_id()
+            metadata["number_of_slurm_node"] = number_of_slurm_node
+
         # We start to iterate on the holdouts.
         performance = pd.concat([
             cls.__evaluate_on_single_holdout(
