@@ -1628,7 +1628,7 @@ class AbstractClassifierModel(AbstractModel):
     @Cache(
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
-        enable_cache_arg_name="enable_cache",
+        enable_cache_arg_name="enable_top_layer_cache",
         args_to_ignore=["verbose", "smoke_test"],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True

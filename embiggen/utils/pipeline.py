@@ -190,6 +190,7 @@ def classification_evaluation_pipeline(
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
+    enable_cache = enable_cache and not smoke_test
     return pd.concat([
         expected_parent_class.evaluate(
             models=models,
@@ -204,7 +205,15 @@ def classification_evaluation_pipeline(
             use_subgraph_as_support=use_subgraph_as_support,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
-            enable_cache=enable_cache and not smoke_test,
+            enable_cache=enable_cache,
+            # We need this second layer of cache handled separately as 
+            # the different SLURM nodes will try to write simultaneously 
+            # on the same cache files. We could add as additional cache seeds
+            # also the SLURM node ids and avoid this issue, but then the cache
+            # would only be valid for that specific cluster and it would
+            # not be possible to reuse it in other settings such as during
+            # a reproduction using cache on a notebook.
+            enable_top_layer_cache=enable_cache and number_of_slurm_nodes is None,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
             number_of_slurm_nodes=number_of_slurm_nodes,
