@@ -1880,7 +1880,7 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         if number_of_slurm_nodes is not None:
-            slurm_node_id = os.environ["GRAPE_ID"]
+            slurm_node_id = int(os.environ["GRAPE_ID"])
             metadata["slurm_node_id"] = slurm_node_id
             metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
