@@ -1630,7 +1630,7 @@ class AbstractClassifierModel(AbstractModel):
         cache_dir="experiments",
         enable_cache_arg_name="enable_top_layer_cache",
         args_to_ignore=["verbose", "smoke_test"],
-        capture_enable_cache_arg_name=False,
+        capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
     def evaluate(
