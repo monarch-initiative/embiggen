@@ -1880,7 +1880,8 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         if number_of_slurm_nodes is not None:
-            metadata["slurm_node_id"] = get_slurm_node_id()
+            slurm_node_id = os.environ["GRAPE_ID"]
+            metadata["slurm_node_id"] = slurm_node_id
             metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
         # We start to iterate on the holdouts.
@@ -1921,7 +1922,7 @@ class AbstractClassifierModel(AbstractModel):
                     # We need to also mode the number of SLURM node IDs
                     # because the user may be parallelizing across many
                     # diffent nodes in contexts such as wide grid searches.
-                    get_slurm_node_id() % number_of_slurm_nodes
+                    slurm_node_id % number_of_slurm_nodes
                 ) == (
                     # We need to mode the holdout number as the number
                     # of holdouts may exceed the number of available SLURM
