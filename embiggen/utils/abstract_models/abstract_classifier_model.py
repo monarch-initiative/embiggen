@@ -1412,7 +1412,7 @@ class AbstractClassifierModel(AbstractModel):
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
     )
-    def __evaluate_on_single_holdout(
+    def _evaluate_on_single_holdout(
         cls,
         models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
         library_names: Optional[Union[str, List[str]]],
@@ -1761,7 +1761,7 @@ class AbstractClassifierModel(AbstractModel):
                 raise ValueError(
                     "The number of SLURM nodes must be a positive integer value."
                 )
-            if number_of_holdouts <= number_of_slurm_nodes:
+            if number_of_holdouts > number_of_slurm_nodes:
                 raise ValueError(
                     (
                         "Please be advised that you are currently running an excessive "
@@ -1885,7 +1885,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # We start to iterate on the holdouts.
         performance = pd.concat([
-            cls.__evaluate_on_single_holdout(
+            cls._evaluate_on_single_holdout(
                 models=models,
                 library_names=library_names,
                 graph=graph,
