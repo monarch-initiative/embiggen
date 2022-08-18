@@ -1652,6 +1652,7 @@ class AbstractClassifierModel(AbstractModel):
         precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
         number_of_slurm_nodes: Optional[int] = None,
+        slurm_node_id_variable: str = "SLURM_GRAPE_ID",
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -1710,6 +1711,9 @@ class AbstractClassifierModel(AbstractModel):
         number_of_slurm_nodes: Optional[int] = None
             Number of SLURM nodes to consider as available.
             This variable is used to parallelize the holdouts accordingly.
+        slurm_node_id_variable: str = "SLURM_GRAPE_ID"
+            Name of the system variable to use as SLURM node id.
+            It must be set in the slurm bash script.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -1880,7 +1884,23 @@ class AbstractClassifierModel(AbstractModel):
         )
 
         if number_of_slurm_nodes is not None:
-            slurm_node_id = int(os.environ["GRAPE_ID"])
+            if slurm_node_id_variable not in os.environ:
+                raise ValueError(
+                    (
+                        "Please do be advised that you have not provided "
+                        "the {slurm_node_id_variable} variable but you have provided specified that "
+                        "we should parallelize the holdouts across {number_of_slurm_nodes} nodes. "
+                        "Please do make available this variable in the "
+                        "slurm bash script by using the `export` flag "
+                        "in a script similar to the following:\n"
+                        "`srun --export=ALL,{slurm_node_id_variable}=$node_id` python3 your_script.py\n"
+                        "You can learn more about this in the library tutorials."
+                    ).format(
+                        slurm_node_id_variable=slurm_node_id_variable,
+                        number_of_slurm_nodes=number_of_slurm_nodes
+                    )
+                )
+            slurm_node_id = int(os.environ[slurm_node_id_variable])
             metadata["slurm_node_id"] = slurm_node_id
             metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
@@ -1903,7 +1923,7 @@ class AbstractClassifierModel(AbstractModel):
                 smoke_test=smoke_test,
                 holdouts_kwargs=holdouts_kwargs,
                 subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
-                verbose=verbose,
+                verbose=verbose and (number_of_slurm_nodes is None or slurm_node_id==0),
                 features_names=features_names,
                 features_parameters=features_parameters,
                 metadata=metadata.copy(),
@@ -1911,7 +1931,7 @@ class AbstractClassifierModel(AbstractModel):
             )
             for holdout_number in trange(
                 number_of_holdouts,
-                disable=not verbose,
+                disable=not (verbose and (number_of_slurm_nodes is None or slurm_node_id==0)),
                 leave=False,
                 dynamic_ncols=True,
                 desc=f"Evaluating on {graph.get_name()}"
