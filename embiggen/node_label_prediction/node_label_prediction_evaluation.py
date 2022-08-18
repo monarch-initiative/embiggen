@@ -25,6 +25,7 @@ def node_label_prediction_evaluation(
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
     number_of_slurm_nodes: Optional[int] = None,
+    slurm_node_id_variable: str = "SLURM_GRAPE_ID",
     verbose: bool = True
 ) -> pd.DataFrame:
     """Execute node-label prediction evaluation pipeline for all provided models and graphs.
@@ -85,6 +86,9 @@ def node_label_prediction_evaluation(
     number_of_slurm_nodes: Optional[int] = None
         Number of SLURM nodes to consider as available.
         This variable is used to parallelize the holdouts accordingly.
+    slurm_node_id_variable: str = "SLURM_GRAPE_ID"
+        Name of the system variable to use as SLURM node id.
+        It must be set in the slurm bash script.
     verbose: bool = True
         Whether to show loading bars
     """
@@ -107,5 +111,6 @@ def node_label_prediction_evaluation(
         precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
         number_of_slurm_nodes=number_of_slurm_nodes,
+        slurm_node_id_variable=slurm_node_id_variable,
         verbose=verbose
     )
