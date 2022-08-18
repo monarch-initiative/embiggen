@@ -130,7 +130,8 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            number_of_epochs=1
+            number_of_epochs=1,
+            edge_features="Degree"
         )
 
     def _fit(

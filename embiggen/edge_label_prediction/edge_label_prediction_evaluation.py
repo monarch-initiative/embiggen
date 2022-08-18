@@ -26,6 +26,7 @@ def edge_label_prediction_evaluation(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
+    number_of_slurm_nodes: Optional[int] = None,
     verbose: bool = True
 ) -> pd.DataFrame:
     """Execute edge-label prediction evaluation pipeline for all provided models and graphs.
@@ -85,6 +86,9 @@ def edge_label_prediction_evaluation(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
+    number_of_slurm_nodes: Optional[int] = None
+        Number of SLURM nodes to consider as available.
+        This variable is used to parallelize the holdouts accordingly.
     verbose: bool = True
         Whether to show loading bars
     """
@@ -108,5 +112,6 @@ def edge_label_prediction_evaluation(
         enable_cache=enable_cache,
         precompute_constant_stocastic_features=precompute_constant_stocastic_features,
         smoke_test=smoke_test,
+        number_of_slurm_nodes=number_of_slurm_nodes,
         verbose=verbose
     )

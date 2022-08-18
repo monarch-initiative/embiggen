@@ -124,7 +124,7 @@ def classification_evaluation_pipeline(
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
-    distribute_holdouts_on_slurm: bool = False,
+    number_of_slurm_nodes: Optional[int] = None,
     **evaluation_kwargs
 ) -> pd.DataFrame:
     """Execute classification pipeline for all provided models and graphs.
@@ -184,12 +184,13 @@ def classification_evaluation_pipeline(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
-    distribute_holdouts_on_slurm: bool = False
-        Whether to automatically distribute the task over a SLURM
-        cluster by distributing the execution of the holdouts.
+    number_of_slurm_nodes: Optional[int] = None
+        Number of SLURM nodes to consider as available.
+        This variable is used to parallelize the holdouts accordingly.
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
+    enable_cache = enable_cache and not smoke_test
     return pd.concat([
         expected_parent_class.evaluate(
             models=models,
@@ -204,10 +205,18 @@ def classification_evaluation_pipeline(
             use_subgraph_as_support=use_subgraph_as_support,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
-            enable_cache=enable_cache and not smoke_test,
+            enable_cache=enable_cache,
+            # We need this second layer of cache handled separately as 
+            # the different SLURM nodes will try to write simultaneously 
+            # on the same cache files. We could add as additional cache seeds
+            # also the SLURM node ids and avoid this issue, but then the cache
+            # would only be valid for that specific cluster and it would
+            # not be possible to reuse it in other settings such as during
+            # a reproduction using cache on a notebook.
+            enable_top_layer_cache=enable_cache and number_of_slurm_nodes is None,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
-            distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
+            number_of_slurm_nodes=number_of_slurm_nodes,
             **evaluation_kwargs
         )
         for graph in iterate_graphs(

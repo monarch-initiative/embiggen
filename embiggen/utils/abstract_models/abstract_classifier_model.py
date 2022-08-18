@@ -4,11 +4,12 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import os
+import platform
 import time
 import json
 from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
-from environments_utils import get_slurm_node_id, get_number_of_available_slurm_nodes, must_be_in_slurm_node
+from environments_utils import get_slurm_node_id, must_be_in_slurm_node
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
 
@@ -1411,7 +1412,7 @@ class AbstractClassifierModel(AbstractModel):
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
     )
-    def __evaluate_on_single_holdout(
+    def _evaluate_on_single_holdout(
         cls,
         models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
         library_names: Optional[Union[str, List[str]]],
@@ -1627,9 +1628,9 @@ class AbstractClassifierModel(AbstractModel):
     @Cache(
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
-        enable_cache_arg_name="enable_cache",
+        enable_cache_arg_name="enable_top_layer_cache",
         args_to_ignore=["verbose", "smoke_test"],
-        capture_enable_cache_arg_name=False,
+        capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
     def evaluate(
@@ -1650,7 +1651,6 @@ class AbstractClassifierModel(AbstractModel):
         enable_cache: bool = False,
         precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
-        distribute_holdouts_on_slurm: bool = False,
         number_of_slurm_nodes: Optional[int] = None,
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
@@ -1707,23 +1707,9 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        distribute_holdouts_on_slurm: bool = False
-            Whether to automatically distribute the task over a SLURM
-            cluster by distributing the execution of the holdouts.
-            Do note that if a number of SLURM nodes higher than the
-            number of requested holdouts was provided, an exception
-            will be raised to warn users about wasting resources.
         number_of_slurm_nodes: Optional[int] = None
             Number of SLURM nodes to consider as available.
-            This variable is employed only when `distribute_holdouts_on_slurm` is 
-            set to True, and is used to parallelize the holdouts accordingly.
-            If `None`, the default behaviour is to use the system
-            variable `SLURM_NNODES`. The reason this parameter is made availble
-            is because a user may desire to parallelize the SLURM execution at
-            multiple levels, with a number of nodes considerably higher than
-            the number of holdouts executed, for instance when running a grid
-            search. In those cases, it is necessary to specify how many
-            nodes should be used for the holdouts parallelizaion.
+            This variable is used to parallelize the holdouts accordingly.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -1769,29 +1755,13 @@ class AbstractClassifierModel(AbstractModel):
                 )
             subgraph_of_interest_has_compatible_nodes = None
 
-        if distribute_holdouts_on_slurm:
+        if number_of_slurm_nodes is not None:
             must_be_in_slurm_node()
-
-            if number_of_slurm_nodes is None:
-                number_of_slurm_nodes = get_number_of_available_slurm_nodes()
-            elif number_of_slurm_nodes > get_number_of_available_slurm_nodes():
+            if not isinstance(number_of_slurm_nodes, int) or number_of_slurm_nodes <= 0:
                 raise ValueError(
-                    (
-                        "The number of SLURM nodes that are currently "
-                        "made available by your SLURM configuration are "
-                        "{number_of_available_slurm_nodes} but you have "
-                        "requested that we distribute the holdouts across "
-                        "{number_of_slurm_nodes} SLURM nodes. This, of course, "
-                        "is not possible. Please either reduce the number of "
-                        "requested nodes in the parameters of this function or "
-                        "increase the number of requested nodes in the SLURM script."
-                    ).format(
-                        number_of_slurm_nodes=number_of_slurm_nodes,
-                        number_of_available_slurm_nodes=get_number_of_available_slurm_nodes()
-                    )
-                ) 
-            
-            if number_of_holdouts <= number_of_slurm_nodes:
+                    "The number of SLURM nodes must be a positive integer value."
+                )
+            if number_of_holdouts > number_of_slurm_nodes:
                 raise ValueError(
                     (
                         "Please be advised that you are currently running an excessive "
@@ -1801,9 +1771,7 @@ class AbstractClassifierModel(AbstractModel):
                         "currently using {number_of_slurm_nodes} SLURM nodes! "
                         "Possibly, you are currently running a task such as a grid search "
                         "and therefore you intend us to parallelize only the sub-segment of SLURM "
-                        "nodes necessary to run the holdouts. If that is the case, do specify "
-                        "the `number_of_slurm_nodes` parameter to let us know how many nodes "
-                        "we should be parallelizing across."
+                        "nodes necessary to run the holdouts."
                     ).format(
                         number_of_holdouts=number_of_holdouts,
                         number_of_slurm_nodes=number_of_slurm_nodes
@@ -1901,17 +1869,23 @@ class AbstractClassifierModel(AbstractModel):
         ) - starting_to_compute_constant_edge_features
 
         metadata = dict(
+            number_of_threads=os.cpu_count(),
+            python_version=platform.python_version(),
+            platform=platform.platform(),
             number_of_holdouts=number_of_holdouts,
-            distribute_holdouts_on_slurm=distribute_holdouts_on_slurm,
             number_of_slurm_nodes=number_of_slurm_nodes,
             time_required_to_compute_constant_node_features=time_required_to_compute_constant_node_features,
             time_required_to_compute_constant_node_type_features=time_required_to_compute_constant_node_type_features,
             time_required_to_compute_constant_edge_features=time_required_to_compute_constant_edge_features,
         )
 
+        if number_of_slurm_nodes is not None:
+            metadata["slurm_node_id"] = get_slurm_node_id()
+            metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
+
         # We start to iterate on the holdouts.
         performance = pd.concat([
-            cls.__evaluate_on_single_holdout(
+            cls._evaluate_on_single_holdout(
                 models=models,
                 library_names=library_names,
                 graph=graph,
@@ -1942,7 +1916,7 @@ class AbstractClassifierModel(AbstractModel):
                 desc=f"Evaluating on {graph.get_name()}"
             )
             if (
-                not distribute_holdouts_on_slurm or
+                number_of_slurm_nodes is None or
                 (
                     # We need to also mode the number of SLURM node IDs
                     # because the user may be parallelizing across many
