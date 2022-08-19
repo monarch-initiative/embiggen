@@ -95,7 +95,7 @@ class GraphVisualizer:
         fps: int = 24,
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
-        minimum_node_degree: int = 1,
+        minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
         only_from_same_component: bool = True,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
@@ -202,7 +202,7 @@ class GraphVisualizer:
             Using this parameter will raise an exception when the provided
             graph wither does not have node types or has exclusively constant
             node types.
-        minimum_node_degree: Optional[int] = 1
+        minimum_node_degree: Optional[int] = 0
             The minimum node degree of either the source or
             destination node to be sampled.
         maximum_node_degree: Optional[int] = None
