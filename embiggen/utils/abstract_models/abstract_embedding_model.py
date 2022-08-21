@@ -227,6 +227,18 @@ class AbstractEmbeddingModel(AbstractModel):
                 repository=repository,
                 version=version
             )()
+        if return_dataframe and graph.get_number_of_nodes() > 100_000_000:
+            raise ValueError(
+                (
+                    "We cowardly refuse to execute this embedding with the "
+                    "added requirement to also return the dataframe version "
+                    "of this graph. This graph has {number_of_nodes}, and "
+                    "creating a Dataframe would most likely cause an OOM on "
+                    "your system."
+                ).format(
+                    number_of_nodes=graph.get_number_of_nodes()
+                )
+            )
         return self._cached_fit_transform(
             graph=graph,
             return_dataframe=return_dataframe,
