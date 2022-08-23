@@ -825,8 +825,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             predictions = pd.DataFrame(
                 {
                     "predictions": predictions,
-                    "sources": graph.get_directed_source_node_ids(),
-                    "destinations": graph.get_directed_destination_node_ids(),
+                    "sources": graph.get_directed_source_node_names() if return_node_names else graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_directed_source_node_names() if return_node_names else graph.get_directed_destination_node_ids(),
                 },
             )
 
