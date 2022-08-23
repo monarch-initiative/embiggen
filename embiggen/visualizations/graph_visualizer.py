@@ -30,6 +30,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 import itertools
 from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
+from ensmallen.datasets.graph_retrieval import normalize_node_name
 
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
@@ -844,7 +845,10 @@ class GraphVisualizer:
             labels=[
                 "{}...".format(label[:20])
                 if len(label) > 20 and number_of_columns == 2 else label
-                for label in sanitize_ml_labels(labels)
+                for label in sanitize_ml_labels([
+                    normalize_node_name(label)
+                    for label in labels
+                ])
             ],
             loc=loc,
             ncol=number_of_columns,
