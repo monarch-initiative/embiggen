@@ -1547,10 +1547,6 @@ class GraphVisualizer:
         if k < number_of_types:
             type_labels.append(other_label.format(number_of_types - k))
 
-        type_labels = sanitize_ml_labels(
-            type_labels[:k]
-        ) + sanitize_ml_labels(type_labels[k:])
-
         result = self._wrapped_plot_scatter(**{
             **dict(
                 return_caption=return_caption,
