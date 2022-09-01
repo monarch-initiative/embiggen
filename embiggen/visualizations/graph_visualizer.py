@@ -4307,19 +4307,9 @@ class GraphVisualizer:
             self._negative_edge_decomposition
         ]
 
-        print([
-            p.shape
-            for p in points
-        ])
-
         (self._node_decomposition,
         self._positive_edge_decomposition,
         self._negative_edge_decomposition) = points
-
-        print([
-            p.shape
-            for p in points
-        ])
 
         figure, axes = self._get_figure_and_axes(
             nrows=nrows,
@@ -4435,10 +4425,12 @@ class GraphVisualizer:
             figure.tight_layout()
 
         self._show_graph_name = show_name_backup
-        self._node_decomposition,
+        (self._node_decomposition,
         self._positive_edge_decomposition,
-        self._negative_edge_decomposition = decompositions_backup
+        self._negative_edge_decomposition) = decompositions_backup
 
+        if self._rotate:
+            return figure, axes
         return self._handle_notebook_display(
             figure,
             axes,
