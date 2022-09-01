@@ -841,7 +841,8 @@ class GraphVisualizer:
             len(label) > 20
             for label in labels
         ) else self._number_of_columns_in_legend
-        if labels[-1].lower().startswith("other"):
+        last_element = labels[-1]
+        if last_element.lower().startswith("other"):
             labels = [
                 "{}...".format(label[:20])
                 if len(label) > 20 and number_of_columns == 2 else label
@@ -849,7 +850,8 @@ class GraphVisualizer:
                     normalize_node_name(label)
                     for label in labels[:-1]
                 ])
-            ].append(labels[-1])
+            ]
+            labels.append(last_element)
         else:
             labels = [
                 "{}...".format(label[:20])
