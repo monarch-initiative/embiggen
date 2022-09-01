@@ -4571,7 +4571,6 @@ class GraphVisualizer:
                     ncols = ncols,
                     plotting_callbacks=plotting_callbacks,
                     show_letters=show_letters,
-                    show_title=False
                 )
             except (Exception, KeyboardInterrupt) as e:
                 raise e
