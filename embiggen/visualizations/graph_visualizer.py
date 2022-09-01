@@ -477,7 +477,7 @@ class GraphVisualizer:
                     )
                 ))
             plt.close()
-        elif caption is None:
+        elif caption is None or self._rotate:
             return (figure, axes, *args[2:])
         else:
             return (figure, axes, *args[2:], caption)
@@ -4286,6 +4286,135 @@ class GraphVisualizer:
 
         return self._handle_notebook_display(figure, axes, caption=caption)
 
+    def _fit_and_plot_all(
+        self,
+        nrows: int,
+        ncols: int,
+        plotting_callbacks: List[Callable],
+        show_letters: bool,
+    ) -> Tuple[Figure, Axes]:
+        """Fits and plots all available features of the graph.
+
+        Parameters
+        -------------------------
+            Kwargs to be forwarded to the node embedding algorithm.
+        """
+        figure, axes = self._get_figure_and_axes(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(5*ncols, 5*nrows),
+            dpi=96
+        )
+        figure.patch.set_facecolor("white")
+        number_of_total_plots = len(plotting_callbacks)
+
+        flat_axes = np.array(axes).flatten()
+
+        # Backing up ang off some of the visualizations
+        # so we avoid duplicating their content.
+        show_name_backup = self._show_graph_name
+        show_node_embedding_backup = self._show_node_embedding_method
+        show_edge_embedding_backup = self._show_edge_embedding_method
+        automatically_display_backup = self._automatically_display_on_notebooks
+        show_separability_backup = self._show_separability_considerations_explanation
+        show_heatmaps_backup = self._show_heatmaps_description
+        non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
+        self._show_graph_name = False
+        self._show_node_embedding_method = False
+        self._show_edge_embedding_method = False
+        self._automatically_display_on_notebooks = False
+        self._show_separability_considerations_explanation = False
+        self._show_heatmaps_description = False
+        self._show_non_existing_edges_sampling_description = False
+
+        complete_caption = (
+            f"<b>{self._decomposition_method} decomposition and properties distribution"
+            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._node_embedding_method_name)} node embedding:</b>"
+        )
+
+        heatmaps_letters = []
+        evaluation_letters = []
+
+        for ax, plot_callback, letter in zip(
+            flat_axes,
+            itertools.chain(plotting_callbacks),
+            "abcdefghjkilmnopqrstuvwxyz"
+        ):
+            inspect.signature(plot_callback).parameters
+            _, _, caption = plot_callback(
+                figure=figure,
+                axes=ax,
+                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
+                apply_tight_layout=False
+            )
+            if "heatmap" in caption.lower():
+                heatmaps_letters.append(letter)
+            if "accuracy" in caption.lower():
+                evaluation_letters.append(letter)
+            complete_caption += f" <b>({letter})</b> {caption}"
+
+            if show_letters:
+                if self._n_components == 3:
+                    additional_kwargs = dict(z=0.0)
+                else:
+                    additional_kwargs = dict()
+
+                ax.text(
+                    x=0.0,
+                    y=1.1,
+                    s=letter,
+                    size=18,
+                    color="black",
+                    weight="bold",
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    transform=ax.transAxes,
+                    **additional_kwargs
+                )
+
+        complete_caption += "<br>"
+
+        self._show_edge_embedding_method = show_edge_embedding_backup
+        self._show_node_embedding_method = show_node_embedding_backup
+        self._automatically_display_on_notebooks = automatically_display_backup
+        self._show_separability_considerations_explanation = show_separability_backup
+        self._show_heatmaps_description = show_heatmaps_backup
+        self._show_non_existing_edges_sampling_description = non_existing_edges_sampling
+
+        # If requested we automatically add the description of the heatmaps.
+        complete_caption += self.get_heatmaps_comments(heatmaps_letters)
+        # If requested we automatically add the description of these considerations.
+        complete_caption += self.get_separability_comments_description(
+            evaluation_letters
+        )
+        complete_caption += self.get_non_existing_edges_sampling_description()
+
+        for axis in flat_axes[number_of_total_plots:]:
+            for spine in axis.spines.values():
+                spine.set_visible(False)
+            axis.axis("off")
+
+        if show_name_backup:
+            figure.suptitle(
+                self._get_complete_title(
+                    self._graph_name,
+                    show_edge_embedding=True
+                ),
+                fontsize=20
+            )
+            if self._n_components != 3:
+                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+        elif self._n_components != 3:
+            figure.tight_layout()
+
+        self._show_graph_name = show_name_backup
+
+        return self._handle_notebook_display(
+            figure,
+            axes,
+            caption=complete_caption
+        )
+
     def fit_and_plot_all(
         self,
         node_embedding: Union[pd.DataFrame, np.ndarray, str, EmbeddingResult],
@@ -4390,131 +4519,49 @@ class GraphVisualizer:
                 self.plot_edge_weight_distribution
             )
 
-        if not include_distribution_plots:
+        if not include_distribution_plots or self._rotate:
             distribution_plot_methods_to_call = []
 
-        number_of_total_plots = len(node_scatter_plot_methods_to_call) + len(
-            edge_scatter_plot_methods_to_call
-        ) + len(distribution_plot_methods_to_call)
+        plotting_callbacks = [
+            callback
+            for callbacks in (
+                node_scatter_plot_methods_to_call,
+                edge_scatter_plot_methods_to_call,
+                distribution_plot_methods_to_call
+            )
+            for callback in callbacks
+        ]
+
+        number_of_total_plots = len(plotting_callbacks)
+
         nrows = max(
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
-        figure, axes = self._get_figure_and_axes(
-            nrows=nrows,
-            ncols=ncols,
-            figsize=(5*ncols, 5*nrows),
-            dpi=96
-        )
-        figure.patch.set_facecolor("white")
-
-        flat_axes = np.array(axes).flatten()
-
-        # Backing up ang off some of the visualizations
-        # so we avoid duplicating their content.
-        show_name_backup = self._show_graph_name
-        show_node_embedding_backup = self._show_node_embedding_method
-        show_edge_embedding_backup = self._show_edge_embedding_method
-        automatically_display_backup = self._automatically_display_on_notebooks
-        show_separability_backup = self._show_separability_considerations_explanation
-        show_heatmaps_backup = self._show_heatmaps_description
-        non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
-        self._show_graph_name = False
-        self._show_node_embedding_method = False
-        self._show_edge_embedding_method = False
-        self._automatically_display_on_notebooks = False
-        self._show_separability_considerations_explanation = False
-        self._show_heatmaps_description = False
-        self._show_non_existing_edges_sampling_description = False
-
-        complete_caption = (
-            f"<b>{self._decomposition_method} decomposition and properties distribution"
-            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._node_embedding_method_name)} node embedding:</b>"
-        )
-
-        heatmaps_letters = []
-        evaluation_letters = []
-
-        for ax, plot_callback, letter in zip(
-            flat_axes,
-            itertools.chain(
-                node_scatter_plot_methods_to_call,
-                edge_scatter_plot_methods_to_call,
-                distribution_plot_methods_to_call
-            ),
-            "abcdefghjkilmnopqrstuvwxyz"
-        ):
-            inspect.signature(plot_callback).parameters
-            _, _, caption = plot_callback(
-                figure=figure,
-                axes=ax,
-                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
-                apply_tight_layout=False
-            )
-            if "heatmap" in caption.lower():
-                heatmaps_letters.append(letter)
-            if "accuracy" in caption.lower():
-                evaluation_letters.append(letter)
-            complete_caption += f" <b>({letter})</b> {caption}"
-
-            if show_letters:
-                if self._n_components == 3:
-                    additional_kwargs = dict(z=0.0)
-                else:
-                    additional_kwargs = dict()
-
-                ax.text(
-                    x=0.0,
-                    y=1.1,
-                    s=letter,
-                    size=18,
-                    color="black",
-                    weight="bold",
-                    horizontalalignment="left",
-                    verticalalignment="center",
-                    transform=ax.transAxes,
-                    **additional_kwargs
+        if self._rotate:
+            path = "fit_and_plot_all"
+            try:
+                rotate(
+                    self._fit_and_plot_all,
+                    path=path,
+                    duration=self._duration,
+                    fps=self._fps,
+                    verbose=self._verbose,
+                    nrows = nrows,
+                    ncols = ncols,
+                    plotting_callbacks=plotting_callbacks,
+                    show_letters=show_letters,
+                    show_title=False
                 )
-
-        complete_caption += "<br>"
-
-        self._show_edge_embedding_method = show_edge_embedding_backup
-        self._show_node_embedding_method = show_node_embedding_backup
-        self._automatically_display_on_notebooks = automatically_display_backup
-        self._show_separability_considerations_explanation = show_separability_backup
-        self._show_heatmaps_description = show_heatmaps_backup
-        self._show_non_existing_edges_sampling_description = non_existing_edges_sampling
-
-        # If requested we automatically add the description of the heatmaps.
-        complete_caption += self.get_heatmaps_comments(heatmaps_letters)
-        # If requested we automatically add the description of these considerations.
-        complete_caption += self.get_separability_comments_description(
-            evaluation_letters
-        )
-        complete_caption += self.get_non_existing_edges_sampling_description()
-
-        for axis in flat_axes[number_of_total_plots:]:
-            for spine in axis.spines.values():
-                spine.set_visible(False)
-            axis.axis("off")
-
-        if show_name_backup:
-            figure.suptitle(
-                self._get_complete_title(
-                    self._graph_name,
-                    show_edge_embedding=True
-                ),
-                fontsize=20
-            )
-            if self._n_components != 3:
-                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
-        elif self._n_components != 3:
-            figure.tight_layout()
-
-        self._show_graph_name = show_name_backup
-
-        return self._handle_notebook_display(
-            figure,
-            axes,
-            caption=complete_caption
+            except (Exception, KeyboardInterrupt) as e:
+                raise e
+            to_display = display_video_at_path(path)
+            if to_display is None:
+                return ()
+            return to_display
+        return self._fit_and_plot_all(
+            nrows = nrows,
+            ncols = ncols,
+            plotting_callbacks=plotting_callbacks,
+            show_letters=show_letters
         )
