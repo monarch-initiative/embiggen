@@ -4385,7 +4385,7 @@ class GraphVisualizer:
 
             if show_letters:
                 if self._n_components >= 3:
-                    additional_kwargs = dict(z=-0.1, y=-0.1, x=-0.1)
+                    additional_kwargs = dict(z=0, y=0, x=0)
                 else:
                     additional_kwargs = dict(y=1.1, x=0)
 
