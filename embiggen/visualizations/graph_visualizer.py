@@ -4588,7 +4588,6 @@ class GraphVisualizer:
                 plotting_callbacks=plotting_callbacks,
                 show_letters=show_letters,
             )
-            self._rotate = rotate_backup
             to_display = display_video_at_path(
                 path,
                 width="100%",
@@ -4605,6 +4604,7 @@ class GraphVisualizer:
                 plotting_callbacks=plotting_callbacks,
                 show_letters=show_letters
             )
+            self._rotate = rotate_backup
             self._automatically_display_on_notebooks = display_backup
             return self._handle_notebook_display(
                 figure=None,
