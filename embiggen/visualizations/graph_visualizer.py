@@ -470,7 +470,8 @@ class GraphVisualizer:
         figure, axes = args[:2]
         if is_notebook() and self._automatically_display_on_notebooks:
             from IPython.display import display, HTML
-            display(figure)
+            if figure is not None:
+                display(figure)
             if caption is not None:
                 display(HTML(
                     '<p style="text-align: justify; word-break: break-all;">{}</p>'.format(
@@ -4366,28 +4367,24 @@ class GraphVisualizer:
             "abcdefghjkilmnopqrstuvwxyz"
         ):
             inspect.signature(plot_callback).parameters
-            rotate = self._rotate
-            self._rotate = False
-            values = plot_callback(
+            figure, axes, caption = plot_callback(
                 figure=figure,
                 axes=ax,
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
-            self._rotate = rotate
-            if not self._rotate:
-                caption = values[-1]
-                if "heatmap" in caption.lower():
-                    heatmaps_letters.append(letter)
-                if "accuracy" in caption.lower():
-                    evaluation_letters.append(letter)
-                complete_caption += f" <b>({letter})</b> {caption}"
+            
+            if "heatmap" in caption.lower():
+                heatmaps_letters.append(letter)
+            if "accuracy" in caption.lower():
+                evaluation_letters.append(letter)
+            complete_caption += f" <b>({letter})</b> {caption}"
 
             if show_letters:
                 if self._n_components >= 3:
                     additional_kwargs = dict(z=0, y=0, x=0)
                 else:
-                    additional_kwargs = dict(y=1.1, x=0)
+                    additional_kwargs = dict(y=1, x=0)
 
                 ax.text(
                     s=letter,
@@ -4440,8 +4437,6 @@ class GraphVisualizer:
         self._positive_edge_decomposition,
         self._negative_edge_decomposition) = decompositions_backup
 
-        if self._rotate:
-            return figure, axes
         return self._handle_notebook_display(
             figure,
             axes,
@@ -4573,33 +4568,49 @@ class GraphVisualizer:
 
         if self._rotate:
             path = "fit_and_plot_all.webm"
-            try:
-                rotate(
-                    self._fit_and_plot_all,
-                    path=path,
-                    points=[
-                        self._node_decomposition,
-                        self._positive_edge_decomposition,
-                        self._negative_edge_decomposition
-                    ],
-                    duration=self._duration,
-                    fps=self._fps,
-                    verbose=self._verbose,
-                    nrows = nrows,
-                    ncols = ncols,
-                    plotting_callbacks=plotting_callbacks,
-                    show_letters=show_letters,
-                )
-            except (Exception, KeyboardInterrupt) as e:
-                raise e
+            display_backup = self._automatically_display_on_notebooks
+            self._automatically_display_on_notebooks = False
+            rotate = self._rotate
+            self._rotate = False
+            rotate(
+                self._fit_and_plot_all,
+                path=path,
+                points=[
+                    self._node_decomposition,
+                    self._positive_edge_decomposition,
+                    self._negative_edge_decomposition
+                ],
+                duration=self._duration,
+                fps=self._fps,
+                verbose=self._verbose,
+                nrows = nrows,
+                ncols = ncols,
+                plotting_callbacks=plotting_callbacks,
+                show_letters=show_letters,
+            )
+            self._rotate = rotate
             to_display = display_video_at_path(
                 path,
                 width="100%",
                 height=None
             )
-            if to_display is None:
-                return ()
-            return to_display
+            figure, axes, complete_caption = self._fit_and_plot_all(
+                points=[
+                    self._node_decomposition,
+                    self._positive_edge_decomposition,
+                    self._negative_edge_decomposition
+                ],
+                nrows = nrows,
+                ncols = ncols,
+                plotting_callbacks=plotting_callbacks,
+                show_letters=show_letters
+            )
+            self._automatically_display_on_notebooks = display_backup
+            return self._handle_notebook_display(
+                figure=None,
+                axes=None,
+                caption=complete_caption
+            )
         return self._fit_and_plot_all(
             points=[
                 self._node_decomposition,
