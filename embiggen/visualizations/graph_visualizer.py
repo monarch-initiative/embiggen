@@ -4353,12 +4353,15 @@ class GraphVisualizer:
             "abcdefghjkilmnopqrstuvwxyz"
         ):
             inspect.signature(plot_callback).parameters
+            rotate = self._rotate
+            self._rotate = False
             values = plot_callback(
                 figure=figure,
                 axes=ax,
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
+            self._rotate = rotate
             if not self._rotate:
                 caption = values[-1]
                 if "heatmap" in caption.lower():
