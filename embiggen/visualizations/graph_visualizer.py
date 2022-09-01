@@ -4579,6 +4579,11 @@ class GraphVisualizer:
                 return ()
             return to_display
         return self._fit_and_plot_all(
+            path=[
+                self._node_decomposition,
+                self._positive_edge_decomposition,
+                self._negative_edge_decomposition
+            ],
             nrows = nrows,
             ncols = ncols,
             plotting_callbacks=plotting_callbacks,
