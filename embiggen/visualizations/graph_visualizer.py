@@ -4307,6 +4307,8 @@ class GraphVisualizer:
             self._negative_edge_decomposition
         ]
 
+        print(points)
+
         self._node_decomposition,
         self._positive_edge_decomposition,
         self._negative_edge_decomposition = points
