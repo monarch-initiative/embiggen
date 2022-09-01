@@ -4570,7 +4570,7 @@ class GraphVisualizer:
             path = "fit_and_plot_all.webm"
             display_backup = self._automatically_display_on_notebooks
             self._automatically_display_on_notebooks = False
-            rotate = self._rotate
+            rotate_backup = self._rotate
             self._rotate = False
             rotate(
                 self._fit_and_plot_all,
@@ -4588,7 +4588,7 @@ class GraphVisualizer:
                 plotting_callbacks=plotting_callbacks,
                 show_letters=show_letters,
             )
-            self._rotate = rotate
+            self._rotate = rotate_backup
             to_display = display_video_at_path(
                 path,
                 width="100%",
