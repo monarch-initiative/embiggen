@@ -4581,7 +4581,11 @@ class GraphVisualizer:
                 )
             except (Exception, KeyboardInterrupt) as e:
                 raise e
-            to_display = display_video_at_path(path)
+            to_display = display_video_at_path(
+                path,
+                width="100%",
+                height=None
+            )
             if to_display is None:
                 return ()
             return to_display
