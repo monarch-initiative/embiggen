@@ -4368,7 +4368,7 @@ class GraphVisualizer:
                 complete_caption += f" <b>({letter})</b> {caption}"
 
             if show_letters:
-                if self._n_components == 3:
+                if self._n_components >= 3:
                     additional_kwargs = dict(z=0.0)
                 else:
                     additional_kwargs = dict()
