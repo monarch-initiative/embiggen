@@ -1,6 +1,7 @@
 """Module with embedding visualization tools."""
 import functools
 from multiprocessing import cpu_count
+from turtle import back
 from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable, Type
 
 import matplotlib
@@ -4288,6 +4289,7 @@ class GraphVisualizer:
 
     def _fit_and_plot_all(
         self,
+        points: List[np.ndarray],
         nrows: int,
         ncols: int,
         plotting_callbacks: List[Callable],
@@ -4299,6 +4301,16 @@ class GraphVisualizer:
         -------------------------
             Kwargs to be forwarded to the node embedding algorithm.
         """
+        decompositions_backup = [
+            self._node_decomposition,
+            self._positive_edge_decomposition,
+            self._negative_edge_decomposition
+        ]
+
+        self._node_decomposition,
+        self._positive_edge_decomposition,
+        self._negative_edge_decomposition = points
+
         figure, axes = self._get_figure_and_axes(
             nrows=nrows,
             ncols=ncols,
@@ -4408,6 +4420,9 @@ class GraphVisualizer:
             figure.tight_layout()
 
         self._show_graph_name = show_name_backup
+        self._node_decomposition,
+        self._positive_edge_decomposition,
+        self._negative_edge_decomposition = decompositions_backup
 
         return self._handle_notebook_display(
             figure,
@@ -4543,7 +4558,11 @@ class GraphVisualizer:
             try:
                 rotate(
                     self._fit_and_plot_all,
-                    path=path,
+                    path=[
+                        self._node_decomposition,
+                        self._positive_edge_decomposition,
+                        self._negative_edge_decomposition
+                    ],
                     duration=self._duration,
                     fps=self._fps,
                     verbose=self._verbose,
