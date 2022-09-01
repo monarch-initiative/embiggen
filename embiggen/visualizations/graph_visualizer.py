@@ -4554,7 +4554,7 @@ class GraphVisualizer:
         ncols = min(number_of_columns, number_of_total_plots)
 
         if self._rotate:
-            path = "fit_and_plot_all"
+            path = "fit_and_plot_all.webm"
             try:
                 rotate(
                     self._fit_and_plot_all,
