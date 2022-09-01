@@ -4385,12 +4385,12 @@ class GraphVisualizer:
 
             if show_letters:
                 if self._n_components >= 3:
-                    additional_kwargs = dict(z=1.1)
+                    additional_kwargs = dict(z=-0.1)
                 else:
                     additional_kwargs = dict()
 
                 ax.text(
-                    x=0.0,
+                    x=-0.1,
                     y=1.1,
                     s=letter,
                     size=18,
@@ -4554,7 +4554,7 @@ class GraphVisualizer:
                 self.plot_edge_weight_distribution
             )
 
-        if not include_distribution_plots or self._rotate:
+        if not include_distribution_plots or self._rotate or self._n_components > 2:
             distribution_plot_methods_to_call = []
 
         plotting_callbacks = [
