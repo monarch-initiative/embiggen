@@ -4558,7 +4558,8 @@ class GraphVisualizer:
             try:
                 rotate(
                     self._fit_and_plot_all,
-                    path=[
+                    path=path,
+                    points=[
                         self._node_decomposition,
                         self._positive_edge_decomposition,
                         self._negative_edge_decomposition
@@ -4579,7 +4580,7 @@ class GraphVisualizer:
                 return ()
             return to_display
         return self._fit_and_plot_all(
-            path=[
+            points=[
                 self._node_decomposition,
                 self._positive_edge_decomposition,
                 self._negative_edge_decomposition
