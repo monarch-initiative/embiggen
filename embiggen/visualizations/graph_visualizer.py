@@ -4353,17 +4353,19 @@ class GraphVisualizer:
             "abcdefghjkilmnopqrstuvwxyz"
         ):
             inspect.signature(plot_callback).parameters
-            _, _, caption = plot_callback(
+            values = plot_callback(
                 figure=figure,
                 axes=ax,
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
-            if "heatmap" in caption.lower():
-                heatmaps_letters.append(letter)
-            if "accuracy" in caption.lower():
-                evaluation_letters.append(letter)
-            complete_caption += f" <b>({letter})</b> {caption}"
+            if not self._rotate:
+                caption = values[-1]
+                if "heatmap" in caption.lower():
+                    heatmaps_letters.append(letter)
+                if "accuracy" in caption.lower():
+                    evaluation_letters.append(letter)
+                complete_caption += f" <b>({letter})</b> {caption}"
 
             if show_letters:
                 if self._n_components == 3:
