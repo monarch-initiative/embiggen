@@ -4609,6 +4609,7 @@ class GraphVisualizer:
             self._rotate = rotate_backup
             self._automatically_display_on_notebooks = display_backup
             return self._handle_notebook_display(
+                to_display, None,
                 caption=complete_caption
             )
         return self._fit_and_plot_all(
