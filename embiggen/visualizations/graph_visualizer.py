@@ -466,8 +466,10 @@ class GraphVisualizer:
         """
         # This is a visualization run for rotation.
         if len(args) < 2:
-            return None
-        figure, axes = args[:2]
+            figure = None
+            axes = None
+        else:
+            figure, axes = args[:2]
         if is_notebook() and self._automatically_display_on_notebooks:
             from IPython.display import display, HTML
             if figure is not None:
@@ -4607,8 +4609,6 @@ class GraphVisualizer:
             self._rotate = rotate_backup
             self._automatically_display_on_notebooks = display_backup
             return self._handle_notebook_display(
-                figure=None,
-                axes=None,
                 caption=complete_caption
             )
         return self._fit_and_plot_all(
