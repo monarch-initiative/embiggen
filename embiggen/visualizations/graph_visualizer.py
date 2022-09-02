@@ -4441,7 +4441,7 @@ class GraphVisualizer:
 
         return self._handle_notebook_display(
             figure,
-            axes,
+            flat_axes,
             caption=complete_caption
         )
 
