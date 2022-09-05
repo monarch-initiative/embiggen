@@ -819,6 +819,28 @@ class GraphVisualizer:
             ).fit_transform(X)
         return self.get_decomposition_method()(X)
 
+    def _normalize_label(
+        self,
+        labels: List[str]
+    ) -> List[str]:
+        last_element = labels[-1]
+        if last_element.lower().startswith("other"):
+            labels = [
+                label
+                for label in sanitize_ml_labels([
+                    normalize_node_name(label)
+                    for label in labels[:-1]
+                ])
+            ]
+            labels.append(last_element)
+        return [
+            label
+            for label in sanitize_ml_labels([
+                normalize_node_name(label)
+                for label in labels
+            ])
+        ]
+
     def _set_legend(
         self,
         axes: Axes,
@@ -844,26 +866,12 @@ class GraphVisualizer:
             len(label) > 20
             for label in labels
         ) else self._number_of_columns_in_legend
-        last_element = labels[-1]
-        if last_element.lower().startswith("other"):
-            labels = [
-                "{}...".format(label[:20])
-                if len(label) > 20 and number_of_columns == 2 else label
-                for label in sanitize_ml_labels([
-                    normalize_node_name(label)
-                    for label in labels[:-1]
-                ])
-            ]
-            labels.append(last_element)
-        else:
-            labels = [
-                "{}...".format(label[:20])
-                if len(label) > 20 and number_of_columns == 2 else label
-                for label in sanitize_ml_labels([
-                    normalize_node_name(label)
-                    for label in labels
-                ])
-            ]
+        
+        labels = [
+            "{}...".format(label[:20])
+            if len(label) > 20 and number_of_columns == 2 else label
+            for label in self._normalize_label(labels)
+        ]
         legend = axes.legend(
             handles=handles,
             labels=labels,
@@ -1390,7 +1398,7 @@ class GraphVisualizer:
                     color_name=color_name,
                     quotations="\'" if "other" not in label.lower() else "",
                 )
-                for color_name, label in zip(color_names_to_be_used, labels)
+                for color_name, label in zip(color_names_to_be_used, self._normalize_label(labels))
             ])
 
             return_values = (*return_values, caption)
