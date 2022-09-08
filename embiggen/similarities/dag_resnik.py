@@ -7,6 +7,7 @@ from ensmallen import models, Graph
 class DAGResnik:
 
     def __init__(self, verbose: bool = True):
+        """Create new Resnik similarity model."""
         self._model = models.DAGResnik(verbose)
 
     def fit(
@@ -51,7 +52,8 @@ class DAGResnik:
     def get_similarity_from_node_ids(
         self,
         first_node_ids: List[int],
-        second_node_ids: List[int]
+        second_node_ids: List[int],
+        minimum_similarity: Optional[float] = 0.0,
     ) -> np.ndarray:
         """Return the similarity between the two provided nodes.
 
@@ -62,7 +64,7 @@ class DAGResnik:
         second_node_ids: List[int]
             The second node for which to compute the similarity.
         """
-        return self._model.get_similarity_from_node_ids(first_node_ids, second_node_ids)
+        return self._model.get_similarity_from_node_ids(first_node_ids, second_node_ids, minimum_similarity)
 
     def get_similarity_from_node_name(
         self,
@@ -83,7 +85,8 @@ class DAGResnik:
     def get_similarity_from_node_names(
         self,
         first_node_names: List[str],
-        second_node_names: List[str]
+        second_node_names: List[str],
+        minimum_similarity: Optional[float] = 0.0,
     ) -> np.ndarray:
         """Return the similarity between the two provided nodes.
 
@@ -94,7 +97,7 @@ class DAGResnik:
         second_node_names: List[str]
             The second node for which to compute the similarity.
         """
-        return self._model.get_similarity_from_node_names(first_node_names, second_node_names)
+        return self._model.get_similarity_from_node_names(first_node_names, second_node_names, minimum_similarity)
 
     def get_pairwise_similarities(
         self,
@@ -125,6 +128,7 @@ class DAGResnik:
     def get_similarities_from_graph(
         self,
         graph: Graph,
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities on the provided graph.
@@ -133,24 +137,32 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph to run similarities on.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
         """
-        similarities = self._model.get_similarities_from_graph(
+        (edge_node_ids, similarities) = self._model.get_similarities_from_graph(
             graph,
+            minimum_similarity
         )
 
         if return_similarities_dataframe:
-            similarities = pd.DataFrame(
-                {
-                    "similarities": similarities,
-                    "sources": graph.get_directed_source_node_ids(),
-                    "destinations": graph.get_directed_destination_node_ids(),
-                },
-            )
+            if not graph.has_edges():
+                similarities = pd.DataFrame({
+                    "similarities": [],
+                    "sources": [],
+                    "destinations": [],
+                })
+            else:
+                similarities = pd.DataFrame(
+                    {
+                        "similarities": similarities,
+                        "sources": edge_node_ids[:, 0],
+                        "destinations": edge_node_ids[:, 1],
+                    },
+                )
 
         return similarities
 
@@ -159,6 +171,7 @@ class DAGResnik:
         graph: Graph,
         source_node_ids: List[int],
         destination_node_ids: List[int],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -167,12 +180,12 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         source_node_ids: List[int]
             The source nodes of the bipartite graph.
         destination_node_ids: List[int]
             The destination nodes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -183,6 +196,7 @@ class DAGResnik:
                 destination_node_ids=destination_node_ids,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -191,6 +205,7 @@ class DAGResnik:
         graph: Graph,
         source_node_names: List[str],
         destination_node_names: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -199,12 +214,12 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         source_node_names: List[str]
             The source nodes of the bipartite graph.
         destination_node_names: List[str]
             The destination nodes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -215,6 +230,7 @@ class DAGResnik:
                 destination_node_names=destination_node_names,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -223,6 +239,7 @@ class DAGResnik:
         graph: Graph,
         source_node_prefixes: List[str],
         destination_node_prefixes: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -231,12 +248,12 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         source_node_prefixes: List[str]
             The source node prefixes of the bipartite graph.
         destination_node_prefixes: List[str]
             The destination node prefixes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -247,6 +264,7 @@ class DAGResnik:
                 destination_node_prefixes=destination_node_prefixes,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -255,6 +273,7 @@ class DAGResnik:
         graph: Graph,
         source_node_types: List[str],
         destination_node_types: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -263,12 +282,12 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         source_node_types: List[str]
             The source node prefixes of the bipartite graph.
         destination_node_types: List[str]
             The destination node prefixes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -279,6 +298,7 @@ class DAGResnik:
                 destination_node_types=destination_node_types,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -286,6 +306,7 @@ class DAGResnik:
         self,
         graph: Graph,
         node_ids: List[int],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -294,10 +315,10 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         node_ids: List[int]
             The nodes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -307,6 +328,7 @@ class DAGResnik:
                 node_ids=node_ids,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -314,6 +336,7 @@ class DAGResnik:
         self,
         graph: Graph,
         node_names: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -322,10 +345,10 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         node_names: List[str]
             The nodes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -335,6 +358,7 @@ class DAGResnik:
                 node_names=node_names,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -342,6 +366,7 @@ class DAGResnik:
         self,
         graph: Graph,
         node_prefixes: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -350,10 +375,10 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         node_prefixes: List[str]
             The node prefixes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -363,6 +388,7 @@ class DAGResnik:
                 node_prefixes=node_prefixes,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )
 
@@ -370,6 +396,7 @@ class DAGResnik:
         self,
         graph: Graph,
         node_types: List[str],
+        minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
     ) -> Union[pd.DataFrame, np.ndarray]:
         """Execute similarities probabilities on the provided graph bipartite portion.
@@ -378,10 +405,10 @@ class DAGResnik:
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_frequencies: Optional[np.ndarray]
-            Optional vector of node frequencies.
         node_types: List[str]
             The node prefixes of the bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
@@ -391,5 +418,6 @@ class DAGResnik:
                 node_types=node_types,
                 directed=True
             ),
+            minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
         )

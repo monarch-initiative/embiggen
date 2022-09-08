@@ -13,7 +13,7 @@ class NodeLabelWINE(EnsmallenEmbedder):
     def __init__(
         self,
         dtype: Optional[str] = "u8",
-        walk_length: Optional[int] = None,
+        window_size: int = 2,
         path: Optional[str] = None,
         verbose: bool = False,
         enable_cache: bool = False
@@ -24,8 +24,9 @@ class NodeLabelWINE(EnsmallenEmbedder):
         --------------------------
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-        walk_length: int = 2
-            Length of the random walk.
+        window_size: int = 2
+            Size of the co-occurrence window.
+            Do note that for `window_size = 2` we will use the Two-Hop WINE version, which is more efficient.
             By default 2, to capture exclusively the immediate context.
         path: Optional[str] = None
             Path where to store the mmap-ed embedding.
@@ -38,11 +39,11 @@ class NodeLabelWINE(EnsmallenEmbedder):
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._walk_length = walk_length
+        self._window_size = window_size
         self._path = path
         self._model = models.NodeLabelWINE(
             verbose=self._verbose,
-            walk_length=self._walk_length,
+            window_size=self._window_size,
             path=self._path
         )
 
@@ -60,7 +61,7 @@ class NodeLabelWINE(EnsmallenEmbedder):
             },
             **dict(
                 dtype=self._dtype,
-                walk_length=self._walk_length,
+                window_size=self._window_size,
                 path=self._path,
             )
         )

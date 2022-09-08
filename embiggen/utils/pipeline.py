@@ -95,7 +95,7 @@ def iterate_graphs(
     ):
         if isinstance(graph, str):
             graph = get_dataset(
-                name=graph,
+                graph_name=graph,
                 repository=repository,
                 version=version
             )()
