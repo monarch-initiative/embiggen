@@ -102,10 +102,10 @@ class TestDAGResnik(TestCase):
                 node_names=first_names,
             )
 
-    # def test_resnik_api7(self):
-    #     for return_similarities_dataframe in (True, False):
-    #         self._model.get_similarities_from_clique_graph_from_node_prefixes(
-    #             graph=self._graph,
-    #             return_similarities_dataframe=return_similarities_dataframe,
-    #             node_prefixes=["HP:"],
-    #         )
+    def test_resnik_api7(self):
+        for return_similarities_dataframe in (True, False):
+            self._model.get_similarities_from_clique_graph_from_node_prefixes(
+                return_similarities_dataframe=return_similarities_dataframe,
+                node_prefixes=["HP:000000"],
+                minimum_similarity=3
+            )

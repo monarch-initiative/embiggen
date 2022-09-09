@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Tuple
 import pandas as pd
 import numpy as np
 from ensmallen import models, Graph
@@ -151,16 +151,16 @@ class DAGResnik:
         if return_similarities_dataframe:
             if not graph.has_edges():
                 similarities = pd.DataFrame({
-                    "similarities": [],
-                    "sources": [],
-                    "destinations": [],
+                    "similarity": [],
+                    "source": [],
+                    "destination": [],
                 })
             else:
                 similarities = pd.DataFrame(
                     {
-                        "similarities": similarities,
-                        "sources": edge_node_ids[:, 0],
-                        "destinations": edge_node_ids[:, 1],
+                        "similarity": similarities,
+                        "source": edge_node_ids[:, 0],
+                        "destination": edge_node_ids[:, 1],
                     },
                 )
 
@@ -236,18 +236,15 @@ class DAGResnik:
 
     def get_similarities_from_bipartite_graph_from_edge_node_prefixes(
         self,
-        graph: Graph,
         source_node_prefixes: List[str],
         destination_node_prefixes: List[str],
         minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
+    ) -> Union[pd.DataFrame, Tuple[List[Tuple[str, str]], np.ndarray]]:
         """Execute similarities probabilities on the provided graph bipartite portion.
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
         source_node_prefixes: List[str]
             The source node prefixes of the bipartite graph.
         destination_node_prefixes: List[str]
@@ -258,15 +255,23 @@ class DAGResnik:
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
         """
-        return self.get_similarities_from_graph(
-            graph.build_bipartite_graph_from_edge_node_prefixes(
-                source_node_prefixes=source_node_prefixes,
-                destination_node_prefixes=destination_node_prefixes,
-                directed=True
-            ),
+        edge_node_names, similarities = self._model.get_similarity_from_node_prefixes(
+            first_node_prefixes=source_node_prefixes,
+            second_node_prefixes=destination_node_prefixes,
             minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
         )
+
+        if not return_similarities_dataframe:
+            return edge_node_names, similarities
+        
+        edge_node_names = pd.DataFrame(
+            edge_node_names,
+            columns=["source", "destination"],
+        )
+
+        edge_node_names["similarity"] = similarities
+        
+        return edge_node_names
 
     def get_similarities_from_bipartite_graph_from_edge_node_types(
         self,
@@ -364,17 +369,14 @@ class DAGResnik:
 
     def get_similarities_from_clique_graph_from_node_prefixes(
         self,
-        graph: Graph,
         node_prefixes: List[str],
         minimum_similarity: Optional[float] = 0.0,
         return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
+    ) -> Union[pd.DataFrame, Tuple[List[Tuple[str, str]], np.ndarray]]:
         """Execute similarities probabilities on the provided graph bipartite portion.
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
         node_prefixes: List[str]
             The node prefixes of the bipartite graph.
         minimum_similarity: Optional[float] = 0.0
@@ -383,14 +385,13 @@ class DAGResnik:
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the similarities is returned as it weights much less.
         """
-        return self.get_similarities_from_graph(
-            graph.build_clique_graph_from_node_prefixes(
-                node_prefixes=node_prefixes,
-                directed=True
-            ),
+        return self.get_similarities_from_bipartite_graph_from_edge_node_prefixes(
+            source_node_prefixes=node_prefixes,
+            destination_node_prefixes=node_prefixes,
             minimum_similarity=minimum_similarity,
             return_similarities_dataframe=return_similarities_dataframe
-        )
+        )        
+
 
     def get_similarities_from_clique_graph_from_node_types(
         self,
