@@ -66,7 +66,7 @@ setup(
         "tqdm",
         "matplotlib>=3.5.2",
         "scikit-learn",
-        "dict_hash>=1.1.28",
+        "dict_hash>=1.1.29",
         "userinput>=1.0.19",
         "ddd_subplots>=1.0.23",
         "sanitize_ml_labels>=1.0.45",
