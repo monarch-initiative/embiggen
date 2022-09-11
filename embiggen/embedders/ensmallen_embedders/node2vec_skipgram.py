@@ -28,6 +28,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
         use_scale_free_distribution: Optional[bool] = True,
         random_state: int = 42,
         dtype: str = "f32",
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -96,6 +97,8 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -121,6 +124,7 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             use_scale_free_distribution=use_scale_free_distribution,
             dtype=dtype,
             random_state=random_state,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

@@ -20,6 +20,7 @@ class NetMFEnsmallen(EnsmallenEmbedder):
         window_size: int = 10,
         max_neighbours: Optional[int] = 100,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new NetMF method.
@@ -41,6 +42,8 @@ class NetMFEnsmallen(EnsmallenEmbedder):
             This is mainly useful for graphs containing nodes with high degrees.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -55,6 +58,7 @@ class NetMFEnsmallen(EnsmallenEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

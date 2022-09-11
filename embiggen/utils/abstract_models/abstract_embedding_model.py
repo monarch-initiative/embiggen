@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional, Union
 from ensmallen import Graph
 from ensmallen.datasets import get_dataset
 import warnings
+from ringbell import RingBell
 from cache_decorator import Cache
 from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
@@ -16,6 +17,7 @@ class AbstractEmbeddingModel(AbstractModel):
         self,
         embedding_size: int,
         enable_cache: bool = False,
+        ring_bell: bool = False,
         random_state: Optional[int] = None
     ):
         """Create new embedding model.
@@ -27,6 +29,8 @@ class AbstractEmbeddingModel(AbstractModel):
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        ring_bell: bool = False
+            Whether to play a sound when embedding completes.
         random_state: Optional[int] = None
             The random state to use if the model is stocastic.
         """
@@ -38,6 +42,10 @@ class AbstractEmbeddingModel(AbstractModel):
             )
         self._embedding_size = embedding_size
         self._enable_cache = enable_cache
+        self._ring_bell = RingBell(
+            verbose=ring_bell,
+            sample="positive_notification"
+        )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the embedding model."""
@@ -188,6 +196,8 @@ class AbstractEmbeddingModel(AbstractModel):
                 f"called {self.__class__.__name__} does not return an Embeddingresult "
                 f"but returns an object of type {type(result)}."
             )
+
+        self._ring_bell.play()
 
         return result
 

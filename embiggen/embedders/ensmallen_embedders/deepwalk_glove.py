@@ -22,6 +22,7 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         normalize_by_degree: bool = False,
         dtype: str = "f32",
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract DeepWalk method.
@@ -70,6 +71,8 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -90,6 +93,7 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             normalize_by_degree=normalize_by_degree,
             enable_cache=enable_cache,
             dtype=dtype,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

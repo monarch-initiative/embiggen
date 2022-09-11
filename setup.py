@@ -75,6 +75,7 @@ setup(
         "environments_utils>=1.0.6",
         "compress_pickle>=2.1.0",
         "validate_version_code",
+        "ringbell>=1.0.2",
         "cache_decorator>=2.1.11",
         "packaging"
     ],

@@ -38,6 +38,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
         optimizer: str = "nadam",
         verbose: bool = False,
         use_mirrored_strategy: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec model.
@@ -109,6 +110,8 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -136,6 +139,7 @@ class Node2Vec(AbstractRandomWalkBasedEmbedderModel):
             optimizer=optimizer,
             verbose=verbose,
             use_mirrored_strategy=use_mirrored_strategy,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

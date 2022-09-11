@@ -16,6 +16,7 @@ class NodeLabelWINE(EnsmallenEmbedder):
         window_size: int = 2,
         path: Optional[str] = None,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Node-label-based WINE method.
@@ -33,6 +34,8 @@ class NodeLabelWINE(EnsmallenEmbedder):
             This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -48,6 +51,7 @@ class NodeLabelWINE(EnsmallenEmbedder):
         )
 
         super().__init__(
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

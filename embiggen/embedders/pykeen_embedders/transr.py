@@ -19,6 +19,7 @@ class TransRPyKEEN(EntityRelationEmbeddingModelPyKEEN):
                              ] = "Stochastic Local Closed World Assumption",
         verbose: bool = False,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new PyKEEN TransR model.
@@ -54,6 +55,8 @@ class TransRPyKEEN(EntityRelationEmbeddingModelPyKEEN):
             Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -67,6 +70,7 @@ class TransRPyKEEN(EntityRelationEmbeddingModelPyKEEN):
             training_loop=training_loop,
             verbose=verbose,
             random_state=random_state,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

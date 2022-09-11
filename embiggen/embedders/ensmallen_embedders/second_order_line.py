@@ -24,6 +24,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -57,6 +58,8 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Random state to reproduce the embeddings.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -82,6 +85,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

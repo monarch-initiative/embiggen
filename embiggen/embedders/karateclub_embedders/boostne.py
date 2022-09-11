@@ -13,6 +13,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
         order: int = 2,
         alpha: float = 0.01,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Return a new BoostNE embedding model.
@@ -30,6 +31,8 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -40,6 +43,7 @@ class BoostNEKarateClub(AbstractKarateClubEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 
