@@ -1,7 +1,6 @@
 """Module with embedding visualization tools."""
 import functools
 from multiprocessing import cpu_count
-from turtle import back
 from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable, Type
 
 import matplotlib
