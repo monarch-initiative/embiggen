@@ -55,9 +55,9 @@ class EmbeddingResult:
             if embedding_list is None:
                 continue
             for embedding in embedding_list:
-                if numpy_embedding.shape[0] > 1_000_000:
+                if embedding.shape[0] > 1_000_000:
                     continue
-                
+
                 if not isinstance(embedding, (np.ndarray, pd.DataFrame)):
                     raise ValueError(
                         f"One of the provided {embedding_list_name} "
