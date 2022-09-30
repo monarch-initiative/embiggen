@@ -49,9 +49,9 @@ class TestGraphVisualizer(TestCase):
                         source_edge_types_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
                         destination_edge_types_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
                         edge_type_names=graph.get_unique_edge_type_names() if graph.has_edge_types() else None,
-                        number_of_subsampled_nodes=20,
-                        number_of_subsampled_edges=20,
-                        number_of_subsampled_negative_edges=20
+                        number_of_subsampled_nodes=40,
+                        number_of_subsampled_edges=40,
+                        number_of_subsampled_negative_edges=40
                     )
                     for callback_method in (
                         "plot_connected_components",
@@ -69,7 +69,6 @@ class TestGraphVisualizer(TestCase):
                     ):
                         with pytest.raises(ValueError):
                             visualization.__getattribute__(callback_method)()
-                    print(graph.get_name(), graph.get_number_of_nodes())
                     visualization.fit_and_plot_all("Degree-based SPINE", embedding_size=5)
                     visualization.plot_dot()
                     visualization.plot_edges()
