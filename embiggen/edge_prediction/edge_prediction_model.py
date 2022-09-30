@@ -757,7 +757,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict(
-            graph.build_clique_graph_from_node_types(
+            graph.build_clique_graph_from_node_type_namess(
                 node_types=node_types,
                 directed=True
             ),
@@ -1244,7 +1244,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict_proba(
-            graph.build_clique_graph_from_node_types(
+            graph.build_clique_graph_from_node_type_namess(
                 node_types=node_types,
                 directed=True
             ),
