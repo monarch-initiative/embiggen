@@ -18,7 +18,7 @@ class TestGraphVisualizer(TestCase):
 
     def test_graph_visualization(self):
         """Test graph visualization."""
-        for gr in (CIO(), Usair97(), MIAPA()):
+        for gr in (CIO() | MIAPA(), Usair97(), MIAPA()):
             node_type_predictions = None
             if gr.has_node_types():
                 gr, _ = gr.get_node_label_holdout_graphs(
