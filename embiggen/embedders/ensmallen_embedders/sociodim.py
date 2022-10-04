@@ -15,6 +15,7 @@ class SocioDimEnsmallen(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         use_sparse_reduce: bool = True,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new SocioDim method.
@@ -29,6 +30,8 @@ class SocioDimEnsmallen(EnsmallenEmbedder):
             For both reduce mechanisms, we are using LAPACK implementations.
             For some currently unknown reason, their implementation using
             a sparse reduce, even on dense matrices, yields better results.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -36,6 +39,7 @@ class SocioDimEnsmallen(EnsmallenEmbedder):
         self._use_sparse_reduce = use_sparse_reduce
         super().__init__(
             embedding_size=embedding_size,
+            ring_bell=ring_bell,
             enable_cache=enable_cache,
         )
 

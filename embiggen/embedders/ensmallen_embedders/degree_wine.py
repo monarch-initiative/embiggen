@@ -14,9 +14,10 @@ class DegreeWINE(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         dtype: Optional[str] = "u8",
-        walk_length: int = 2,
+        window_size: int = 2,
         path: Optional[str] = None,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Degree-based WINE method.
@@ -27,44 +28,49 @@ class DegreeWINE(EnsmallenEmbedder):
             Dimension of the embedding.
         dtype: Optional[str] = "u8"
             Dtype to use for the embedding.
-        walk_length: int = 2
-            Length of the random walk.
+        window_size: int = 2
+            Size of the co-occurrence window.
+            Do note that for `window_size = 2` we will use the Two-Hop WINE version, which is more efficient.
             By default 2, to capture exclusively the immediate context.
         path: Optional[str] = None
             Path where to store the mmap-ed embedding.
             This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
         self._dtype = dtype
         self._verbose = verbose
-        self._walk_length = walk_length
+        self._window_size = window_size
         self._path = path
         self._model = models.DegreeWINE(
             embedding_size=embedding_size,
             verbose=self._verbose,
-            walk_length=self._walk_length,
+            window_size=self._window_size,
             path=self._path
         )
 
         super().__init__(
             embedding_size=embedding_size,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 dtype=self._dtype,
-                walk_length=self._walk_length,
+                window_size=self._window_size,
                 path=self._path,
             )
-        }
+        )
+    
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""

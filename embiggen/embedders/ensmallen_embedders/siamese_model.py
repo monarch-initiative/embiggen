@@ -12,7 +12,6 @@ class SiameseEnsmallen(EnsmallenEmbedder):
 
     models = {
         "TransE": models.TransE,
-        "TransH": models.TransH,
         "Unstructured": models.Unstructured,
         "Structured Embedding": models.StructuredEmbedding,
     }
@@ -25,8 +24,10 @@ class SiameseEnsmallen(EnsmallenEmbedder):
         learning_rate: float = 0.1,
         learning_rate_decay: float = 0.9,
         node_embedding_path: Optional[str] = None,
+        dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False,
         **paths: Dict[str, str]
     ):
@@ -49,10 +50,14 @@ class SiameseEnsmallen(EnsmallenEmbedder):
             Path where to mmap and store the nodes embedding.
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -64,6 +69,7 @@ class SiameseEnsmallen(EnsmallenEmbedder):
             learning_rate_decay=learning_rate_decay,
             node_embedding_path=node_embedding_path,
             verbose=verbose,
+            dtype=dtype,
             **paths
         )
 
@@ -82,6 +88,7 @@ class SiameseEnsmallen(EnsmallenEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

@@ -30,6 +30,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         optimizer: str = "nadam",
         verbose: bool = False,
         use_mirrored_strategy: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -61,6 +62,8 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Whether to show loading bars.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -85,6 +88,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state,
         )
 

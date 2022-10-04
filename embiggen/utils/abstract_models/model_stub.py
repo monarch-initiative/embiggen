@@ -91,7 +91,7 @@ def get_model_or_stub(
         # If effectively the error is that we cannot load the desired
         # library name, we catch this and re-raise it.
         if any(
-            f"No module named '{module_library_name}'" == str(e)
+            str(e).startswith(f"No module named '{module_library_name}")
             for module_library_name in module_library_names
         ):
             class StubClass(parent_class):

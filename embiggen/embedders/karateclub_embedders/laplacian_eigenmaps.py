@@ -10,6 +10,7 @@ class LaplacianEigenmapsKarateClub(AbstractKarateClubEmbedder):
         self,
         embedding_size: int = 100,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Return a new LaplacianEigenmaps embedding model.
@@ -21,6 +22,8 @@ class LaplacianEigenmapsKarateClub(AbstractKarateClubEmbedder):
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -28,6 +31,7 @@ class LaplacianEigenmapsKarateClub(AbstractKarateClubEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

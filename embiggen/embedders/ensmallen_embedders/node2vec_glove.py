@@ -9,20 +9,20 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         self,
         embedding_size: int = 100,
         alpha: float = 0.75,
-        epochs: int = 30,
-        clipping_value: float = 6.0,
-        walk_length: int = 128,
-        iterations: int = 10,
+        epochs: int = 100,
+        walk_length: int = 512,
         window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         central_nodes_embedding_path: Optional[str] = None,
         contextual_nodes_embedding_path: Optional[str] = None,
         normalize_by_degree: bool = False,
+        dtype: str = "f32",
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Node2Vec GloVe model.
@@ -38,13 +38,8 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         window_size: int = 10
             Window size for the local context.
             On the borders the window size is trimmed.
-        clipping_value: float = 6.0
-            Value at which we clip the dot product, mostly for numerical stability issues.
-            By default, `6.0`, where the loss is already close to zero.
-        walk_length: int = 128
+        walk_length: int = 512
             Maximal length of the walks.
-        iterations: int = 10
-            Number of iterations of the single walks.
         window_size: int = 5
             Window size for the local context.
             On the borders the window size is trimmed.
@@ -81,8 +76,12 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         normalize_by_degree: bool = False
             Whether to normalize the random walk by the node degree
             of the destination node degrees.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -91,9 +90,8 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             embedding_size=embedding_size,
             alpha=alpha,
             epochs=epochs,
-            clipping_value=clipping_value,
             walk_length=walk_length,
-            iterations=iterations,
+            iterations=1,
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
@@ -103,7 +101,9 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
             central_nodes_embedding_path=central_nodes_embedding_path,
             contextual_nodes_embedding_path=contextual_nodes_embedding_path,
             normalize_by_degree=normalize_by_degree,
+            dtype=dtype,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 
@@ -112,7 +112,8 @@ class Node2VecGloVeEnsmallen(Node2VecEnsmallen):
         removed = [
             "change_node_type_weight",
             "change_edge_type_weight",
-            "number_of_negative_samples"
+            "number_of_negative_samples",
+            "iterations"
         ]
         return dict(
             **{

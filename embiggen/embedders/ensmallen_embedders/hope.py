@@ -20,6 +20,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
         metric: str = "Neighbours Intersection size",
         root_node_name: Optional[str] = None,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new HOPE method.
@@ -47,6 +48,8 @@ class HOPEEnsmallen(EnsmallenEmbedder):
             the Jaccard index is selected.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -71,6 +74,7 @@ class HOPEEnsmallen(EnsmallenEmbedder):
 
         super().__init__(
             embedding_size=embedding_size,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

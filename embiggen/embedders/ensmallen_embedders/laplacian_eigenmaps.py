@@ -14,6 +14,7 @@ class LaplacianEigenmapsEnsmallen(EnsmallenEmbedder):
     def __init__(
         self,
         embedding_size: int = 100,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Laplacian Eigenmaps method.
@@ -22,12 +23,15 @@ class LaplacianEigenmapsEnsmallen(EnsmallenEmbedder):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
         super().__init__(
             embedding_size=embedding_size,
+            ring_bell=ring_bell,
             enable_cache=enable_cache,
         )
 

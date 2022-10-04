@@ -19,6 +19,7 @@ class ScoreSPINE(EnsmallenEmbedder):
         maximum_depth: Optional[int] = None,
         path: Optional[str] = None,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Score-based SPINE method.
@@ -38,6 +39,8 @@ class ScoreSPINE(EnsmallenEmbedder):
             This parameter is necessary to embed very large graphs.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -56,19 +59,20 @@ class ScoreSPINE(EnsmallenEmbedder):
 
         super().__init__(
             embedding_size=embedding_size,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return {
+        return dict(
             **super().parameters(),
             **dict(
                 dtype=self._dtype,
                 maximum_depth=self._maximum_depth,
                 path=self._path,
             )
-        }
+        )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:

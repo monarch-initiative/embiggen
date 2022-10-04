@@ -19,8 +19,10 @@ class StructuredEmbeddingEnsmallen(SiameseEnsmallen):
         node_embedding_path: Optional[str] = None,
         source_edge_type_embedding_path: Optional[str] = None,
         destination_edge_type_embedding_path: Optional[str] = None,
+        dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new Structured Embedding method.
@@ -52,10 +54,14 @@ class StructuredEmbeddingEnsmallen(SiameseEnsmallen):
             Path where to mmap and store the destination edge type embedding.
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -69,8 +75,10 @@ class StructuredEmbeddingEnsmallen(SiameseEnsmallen):
             node_embedding_path=node_embedding_path,
             source_edge_type_embedding_path=source_edge_type_embedding_path,
             destination_edge_type_embedding_path=destination_edge_type_embedding_path,
+            dtype=dtype,
             random_state=random_state,
             verbose=verbose,
+            ring_bell=ring_bell,
             enable_cache=enable_cache,
         )
 

@@ -20,6 +20,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         weisfeiler_lehman_hashing_iterations: int = 2,
         erase_base_features: bool = False,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Return a new Role2Vec embedding model.
@@ -49,6 +50,8 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -66,6 +69,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

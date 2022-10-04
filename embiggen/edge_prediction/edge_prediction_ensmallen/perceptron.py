@@ -3,6 +3,8 @@ from typing import Optional,  Dict, Any, List, Union
 from ensmallen import Graph
 import numpy as np
 from ensmallen import models
+import compress_json
+import json
 from embiggen.embedding_transformers import NodeTransformer
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
@@ -17,9 +19,9 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
         number_of_epochs: int = 100,
-        number_of_edges_per_mini_batch: int = 256,
+        number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.01,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
         avoid_false_negatives: bool = False,
@@ -68,7 +70,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types. By default false.
-        learning_rate: float = 0.001
+        learning_rate: float = 0.01
             Learning rate to use while training the model. By default 0.001.
         first_order_decay_factor: float = 0.9
             First order decay factor for the first order momentum.
@@ -116,7 +118,10 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
-        return self._model_kwargs
+        return dict(
+            **super().parameters(),
+            **self._model_kwargs
+        )
 
     def clone(self) -> "PerceptronEdgePrediction":
         return PerceptronEdgePrediction(**self.parameters())
@@ -125,7 +130,8 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            number_of_epochs=1
+            number_of_epochs=1,
+            edge_features="Degree"
         )
 
     def _fit(
@@ -176,7 +182,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
                     node_feature = np.ascontiguousarray(node_feature)
                 new_node_features.append(node_feature)
 
-        
         self._model.fit(
             graph=graph,
             node_features=new_node_features,
@@ -279,3 +284,44 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     @classmethod
     def library_name(cls) -> str:
         return "Ensmallen"
+
+    @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        data = compress_json.load(path)
+        model = PerceptronEdgePrediction(**data["parameters"])
+        model._model = models.EdgePredictionPerceptron.loads(
+            json.dumps(data["inner_model"])
+        )
+        for key, value in data["metadata"].items():
+            model.__setattr__(key, value)
+        return model
+
+    def dumps(self) -> Dict[str, Any]:
+        """Dumps the current model as dictionary."""
+        return dict(
+            parameters=self.parameters(),
+            inner_model=json.loads(self._model.dumps()),
+            metadata=dict(
+                _fitting_was_executed=self._fitting_was_executed
+            )
+        )
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        compress_json.dump(
+            self.dumps(),
+            path
+        )

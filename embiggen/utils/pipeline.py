@@ -95,7 +95,7 @@ def iterate_graphs(
     ):
         if isinstance(graph, str):
             graph = get_dataset(
-                name=graph,
+                graph_name=graph,
                 repository=repository,
                 version=version
             )()
@@ -116,13 +116,16 @@ def classification_evaluation_pipeline(
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
+    use_subgraph_as_support: bool = False,
     number_of_holdouts: int = 10,
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     enable_cache: bool = False,
-    precompute_constant_automatic_stocastic_features: bool = False,
+    precompute_constant_stocastic_features: bool = False,
     smoke_test: bool = False,
+    number_of_slurm_nodes: Optional[int] = None,
+    slurm_node_id_variable: str = "SLURM_GRAPE_ID",
     **evaluation_kwargs
 ) -> pd.DataFrame:
     """Execute classification pipeline for all provided models and graphs.
@@ -151,7 +154,12 @@ def classification_evaluation_pipeline(
         For instance this may be used for filtering the uncertain edges
         in graphs such as STRING PPIs.
     subgraph_of_interest: Optional[Graph] = None
-        The subgraph of interest to focus the task on.
+        Optional subgraph where to focus the task.
+        This is applied to the train and test graph
+        after the desired holdout schema is applied.
+    use_subgraph_as_support: bool = False
+        Whether to use the provided subgraph as support or
+        to use the train graph (not filtered by the subgraph).
     number_of_holdouts: int = 10
         The number of holdouts to execute.
     random_state: int = 42
@@ -163,7 +171,7 @@ def classification_evaluation_pipeline(
         Graph versions to retrieve.
     enable_cache: bool = False
         Whether to enable the cache.
-    precompute_constant_automatic_stocastic_features: bool = False
+    precompute_constant_stocastic_features: bool = False
         Whether to precompute once the constant automatic stocastic
         features before starting the embedding loop. This means that,
         when left set to false, while the features will be computed
@@ -177,9 +185,16 @@ def classification_evaluation_pipeline(
         and therefore use the smoke test configurations for
         the provided model names and feature names.
         This parameter will also turn off the cache.
+    number_of_slurm_nodes: Optional[int] = None
+        Number of SLURM nodes to consider as available.
+        This variable is used to parallelize the holdouts accordingly.
+    slurm_node_id_variable: str = "SLURM_GRAPE_ID"
+        Name of the system variable to use as SLURM node id.
+        It must be set in the slurm bash script.
     **evaluation_kwargs: Dict
         Keyword arguments to forward to evaluation.
     """
+    enable_cache = enable_cache and not smoke_test
     return pd.concat([
         expected_parent_class.evaluate(
             models=models,
@@ -191,11 +206,22 @@ def classification_evaluation_pipeline(
             node_type_features=node_type_features,
             edge_features=edge_features,
             subgraph_of_interest=subgraph_of_interest,
+            use_subgraph_as_support=use_subgraph_as_support,
             number_of_holdouts=number_of_holdouts,
             random_state=random_state,
-            enable_cache=enable_cache and not smoke_test,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            enable_cache=enable_cache,
+            # We need this second layer of cache handled separately as 
+            # the different SLURM nodes will try to write simultaneously 
+            # on the same cache files. We could add as additional cache seeds
+            # also the SLURM node ids and avoid this issue, but then the cache
+            # would only be valid for that specific cluster and it would
+            # not be possible to reuse it in other settings such as during
+            # a reproduction using cache on a notebook.
+            enable_top_layer_cache=enable_cache and number_of_slurm_nodes is None,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test,
+            number_of_slurm_nodes=number_of_slurm_nodes,
+            slurm_node_id_variable=slurm_node_id_variable,
             **evaluation_kwargs
         )
         for graph in iterate_graphs(

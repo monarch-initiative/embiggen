@@ -32,6 +32,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         loss: str = "binary_crossentropy",
         optimizer: str = "nadam",
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False,
         random_state: int = 42
     ):
@@ -77,6 +78,8 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             The optimizer to be used during the training of the model.
         verbose: bool = False
             Whether to show the loading bar while training the model.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -99,6 +102,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
             verbose=verbose,
             use_mirrored_strategy=use_mirrored_strategy,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

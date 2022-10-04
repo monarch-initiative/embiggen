@@ -3,6 +3,7 @@ from sklearn.base import ClassifierMixin
 from typing import Type, List, Dict, Optional, Any
 import numpy as np
 import copy
+import compress_pickle
 from ensmallen import Graph
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from embiggen.embedding_transformers import EdgeLabelPredictionTransformer, GraphTransformer
@@ -296,3 +297,24 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return False
+
+    @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        return compress_pickle.load(path)
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        compress_pickle.dump(self, path)

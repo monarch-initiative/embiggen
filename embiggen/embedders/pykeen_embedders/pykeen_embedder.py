@@ -1,10 +1,11 @@
-"""Abstract Torch/PyKeen Model wrapper for embedding models."""
+"""Abstract Torch/PyKEEN Model wrapper for embedding models."""
 from typing import Dict, Union, Tuple, Any, Type
 
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
 import inspect
+from inspect import getfullargspec
 
 from embiggen.utils.pytorch_utils import validate_torch_device
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, abstract_class, EmbeddingResult
@@ -16,8 +17,8 @@ from pykeen.training import SLCWATrainingLoop, LCWATrainingLoop, TrainingLoop
 
 
 @abstract_class
-class PyKeenEmbedder(AbstractEmbeddingModel):
-    """Abstract Torch/PyKeen Model wrapper for embedding models."""
+class PyKEENEmbedder(AbstractEmbeddingModel):
+    """Abstract Torch/PyKEEN Model wrapper for embedding models."""
 
     SUPPORTED_TRAINING_LOOPS = {
         "Stochastic Local Closed World Assumption": SLCWATrainingLoop,
@@ -34,9 +35,10 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
                              ] = "Stochastic Local Closed World Assumption",
         verbose: bool = False,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
-        """Create new PyKeen Abstract Embedder model.
+        """Create new PyKEEN Abstract Embedder model.
         
         Parameters
         -------------------------
@@ -59,18 +61,20 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             Whether to show the loading bar.
         random_state: int = 42
             Random seed to use while training the model
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
         """
         if isinstance(training_loop, str):
-            if training_loop in PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS:
-                training_loop = PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS[training_loop]
+            if training_loop in PyKEENEmbedder.SUPPORTED_TRAINING_LOOPS:
+                training_loop = PyKEENEmbedder.SUPPORTED_TRAINING_LOOPS[training_loop]
             else:
                 raise ValueError(
                     f"The provided training loop name {training_loop} is not "
                     "a supported training loop name. "
-                    f"The supported names are {format_list(PyKeenEmbedder.SUPPORTED_TRAINING_LOOPS)}."
+                    f"The supported names are {format_list(PyKEENEmbedder.SUPPORTED_TRAINING_LOOPS)}."
                 )
 
         if not inspect.isclass(training_loop):
@@ -92,6 +96,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 
@@ -114,7 +119,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
     @classmethod
     def library_name(cls) -> str:
-        return "PyKeen"
+        return "PyKEEN"
 
     @classmethod
     def task_name(cls) -> str:
@@ -126,7 +131,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
         Parameters
         ------------------
         triples_factory: CoreTriplesFactory
-            The PyKeen triples factory to use to create the model.
+            The PyKEEN triples factory to use to create the model.
         """
         raise NotImplementedError(
             f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
@@ -167,6 +172,11 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
             "called `_extract_embeddings`. Please do implement it."
         )
 
+    @classmethod
+    def _create_inverse_triples(cls) -> bool:
+        """Returns whether the class is expected to create inverse triples."""
+        return False
+
     def _fit_transform(
         self,
         graph: Graph,
@@ -176,14 +186,22 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
 
         torch_device = torch.device(self._device)
 
-        triples_factory = CoreTriplesFactory(
-            torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int32)),
-            num_entities=graph.get_number_of_nodes(),
-            num_relations=graph.get_number_of_edge_types(),
-            entity_ids=graph.get_node_ids(),
-            relation_ids=graph.get_unique_edge_type_ids(),
-            create_inverse_triples=False,
-        )
+        if "entity_ids" in getfullargspec(CoreTriplesFactory).args:
+            triples_factory = CoreTriplesFactory(
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int64)),
+                num_entities=graph.get_number_of_nodes(),
+                num_relations=graph.get_number_of_edge_types(),
+                entity_ids=graph.get_node_ids().astype(np.int64),
+                relation_ids=graph.get_unique_edge_type_ids().astype(np.int64),
+                create_inverse_triples=self._create_inverse_triples(),
+            )
+        else:
+            triples_factory = CoreTriplesFactory(
+                torch.IntTensor(graph.get_directed_edge_triples_ids().astype(np.int64)),
+                num_entities=graph.get_number_of_nodes(),
+                num_relations=graph.get_number_of_edge_types(),
+                create_inverse_triples=self._create_inverse_triples(),
+            )
 
         batch_size = min(
             self._batch_size,
@@ -197,7 +215,7 @@ class PyKeenEmbedder(AbstractEmbeddingModel):
                 "The model created with the `_build_model` in the child "
                 f"class {self.__class__.__name__} for the model {self.model_name()} "
                 f"in the library {self.library_name()} did not return a "
-                f"PyKeen model but an object of type {type(model)}."
+                f"PyKEEN model but an object of type {type(model)}."
             )
 
         # Move the model to gpu if we need to

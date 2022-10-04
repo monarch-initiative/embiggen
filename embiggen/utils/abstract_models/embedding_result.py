@@ -55,6 +55,7 @@ class EmbeddingResult:
             if embedding_list is None:
                 continue
             for embedding in embedding_list:
+
                 if not isinstance(embedding, (np.ndarray, pd.DataFrame)):
                     raise ValueError(
                         f"One of the provided {embedding_list_name} "
@@ -67,6 +68,8 @@ class EmbeddingResult:
                         f"computed with the {embedding_method_name} method "
                         "is empty."
                     )
+                if embedding.shape[0] > 1_000_000:
+                    continue
 
                 if isinstance(embedding, pd.DataFrame):
                     numpy_embedding = embedding.to_numpy()

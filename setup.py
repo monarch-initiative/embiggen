@@ -8,7 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.rst', encoding="utf8") as f:
         return f.read()
 
 
@@ -24,7 +24,7 @@ test_deps = [
 
 
 def read(*parts):
-    with copen(os.path.join(here, *parts), 'r') as fp:
+    with copen(os.path.join(here, *parts), 'r', encoding="utf8") as fp:
         return fp.read()
 
 
@@ -66,13 +66,17 @@ setup(
         "tqdm",
         "matplotlib>=3.5.2",
         "scikit-learn",
+        "dict_hash>=1.1.29",
         "userinput>=1.0.19",
-        "ddd_subplots>=1.0.20",
-        "sanitize_ml_labels>=1.0.38",
+        "ddd_subplots>=1.0.23",
+        "sanitize_ml_labels>=1.0.45",
         "keras_mixed_sequence>=1.0.28",
-        "ensmallen>=0.8.8",
+        "ensmallen>=0.8.24",
+        "environments_utils>=1.0.6",
+        "compress_pickle>=2.1.0",
         "validate_version_code",
-        "cache_decorator>=2.1.8",
+        "ringbell>=1.0.2",
+        "cache_decorator>=2.1.11",
         "packaging"
     ],
     tests_require=test_deps,

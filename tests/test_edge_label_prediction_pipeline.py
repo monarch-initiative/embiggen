@@ -1,6 +1,7 @@
 """Unit test class for Node-label prediction pipeline."""
 from tqdm.auto import tqdm
 from unittest import TestCase
+import os
 import numpy as np
 from embiggen.edge_label_prediction import edge_label_prediction_evaluation
 from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding
@@ -80,6 +81,23 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                         node_features=node_features,
                         edge_features=ef
                     )
+
+                    if model.library_name() != "TensorFlow":
+                        if model.library_name() == "scikit-learn":
+                            path = "model.pkl.gz"
+                        elif model.library_name() == "Ensmallen":
+                            path = "model.json"
+                        else:
+                            raise NotImplementedError(
+                                f"The model {model.model_name()} from library {model.library_name()} "
+                                "is not currently covered by the test suite!"
+                            )
+                        if os.path.exists(path):
+                            os.remove(path)
+                        model.dump(path)
+                        restored_model = model.load(path)
+                        assert restored_model.parameters() == model.parameters()
+
                     model.predict(
                         g,
                         node_features=node_features,

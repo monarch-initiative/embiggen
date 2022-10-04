@@ -15,13 +15,16 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         self,
         embedding_size: int = 100,
         epochs: int = 100,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         avoid_false_negatives: bool = False,
+        use_scale_free_distribution: bool = True,
         node_embedding_path: Optional[str] = None,
         contextual_node_embedding_path: Optional[str] = None,
+        dtype: str = "f32",
         random_state: int = 42,
         verbose: bool = False,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -32,13 +35,15 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Dimension of the embedding.
         epochs: int = 100
             The number of epochs to run the model for, by default 10.
-        learning_rate: float = 0.01
-            The learning rate to update the gradient, by default 0.01.
+        learning_rate: float = 0.05
+            The learning rate to update the gradient, by default 0.05.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         avoid_false_negatives: bool = False
             Whether to avoid sampling false negatives.
             This may cause a slower training.
+        use_scale_free_distribution: bool = True
+            Whether to train model using a scale free distribution for the negatives.
         node_embedding_path: Optional[str] = None
             Path where to mmap and store the nodes embedding.
             This is necessary to embed large graphs whose embedding will not
@@ -47,10 +52,14 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             Path where to mmap and store the contextual nodes embedding.
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             Random state to reproduce the embeddings.
         verbose: bool = False
             Whether to show loading bars.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -60,8 +69,10 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
             avoid_false_negatives=avoid_false_negatives,
+            use_scale_free_distribution=use_scale_free_distribution,
             node_embedding_path=node_embedding_path,
             contextual_node_embedding_path=contextual_node_embedding_path,
+            dtype=dtype,
             verbose=verbose
         )
 
@@ -74,6 +85,7 @@ class SecondOrderLINEEnsmallen(EnsmallenEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

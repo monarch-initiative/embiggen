@@ -9,14 +9,13 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
     def __init__(
         self,
         embedding_size: int = 100,
-        epochs: int = 30,
-        walk_length: int = 128,
-        iterations: int = 10,
+        epochs: int = 100,
+        walk_length: int = 512,
         window_size: int = 4,
         return_weight: float = 1.0,
         explore_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
-        learning_rate: float = 0.001,
+        learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
         central_nodes_embedding_path: Optional[str] = None,
         contextual_nodes_embedding_path: Optional[str] = None,
@@ -26,6 +25,8 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         normalize_learning_rate_by_degree: Optional[bool] = False,
         use_scale_free_distribution: Optional[bool] = True,
         random_state: int = 42,
+        dtype: str = "f32",
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Create new abstract Node2Vec method.
@@ -34,12 +35,10 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         --------------------------
         embedding_size: int = 100
             Dimension of the embedding.
-        epochs: int = 30
+        epochs: int = 100
             Number of epochs to train the model for.
         walk_length: int = 128
             Maximal length of the walks.
-        iterations: int = 10
-            Number of iterations of the single walks.
         window_size: int = 4
             Window size for the local context.
             On the borders the window size is trimmed.
@@ -88,8 +87,12 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             Divide the learning rate by the degree of the central node. By default false.
         use_scale_free_distribution: Optional[bool] = True
             Sample negatives proportionally to their degree. By default true.
+        dtype: str = "f32"
+            The data type to be employed, by default f32.
         random_state: int = 42
             The random state to reproduce the training sequence.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -99,7 +102,7 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             epochs=epochs,
             alpha=alpha,
             walk_length=walk_length,
-            iterations=iterations,
+            iterations=1,
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
@@ -112,7 +115,9 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
             stochastic_downsample_by_degree=stochastic_downsample_by_degree,
             normalize_learning_rate_by_degree=normalize_learning_rate_by_degree,
             use_scale_free_distribution=use_scale_free_distribution,
+            dtype=dtype,
             random_state=random_state,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 
@@ -125,7 +130,8 @@ class WalkletsGloVeEnsmallen(WalkletsEnsmallen):
         """Returns parameters for smoke test."""
         removed = [
             "number_of_negative_samples",
-            "clipping_value"
+            "clipping_value",
+            "iterations"
         ]
         return dict(
             **{

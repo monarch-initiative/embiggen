@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's AutoSF model."""
+"""Submodule providing wrapper for PyKEEN's AutoSF model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import AutoSF
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
+class AutoSFPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -18,14 +18,15 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
                              ] = "Stochastic Local Closed World Assumption",
         verbose: bool = False,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
-        """Create new PyKeen AutoSF model.
+        """Create new PyKEEN AutoSF model.
 
         Details
         -------------------------
         This is a wrapper of the AutoSF implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
@@ -51,6 +52,8 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
             Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -63,6 +66,7 @@ class AutoSFPyKeen(EntityRelationEmbeddingModelPyKeen):
             training_loop=training_loop,
             verbose=verbose,
             random_state=random_state,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 

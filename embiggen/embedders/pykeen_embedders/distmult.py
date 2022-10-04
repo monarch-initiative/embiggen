@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's DistMult model."""
+"""Submodule providing wrapper for PyKEEN's DistMult model."""
 from typing import Union, Type, Dict, Any, Optional
 from pykeen.training import TrainingLoop
 from pykeen.models import DistMult
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class DistMultPyKeen(EntityRelationEmbeddingModelPyKeen):
+class DistMultPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     @classmethod
     def model_name(cls) -> str:

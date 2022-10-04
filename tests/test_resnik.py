@@ -1,5 +1,6 @@
 """Unit test class for GraphTransformer objects."""
 from platform import node
+from typing import Callable
 from tqdm.auto import tqdm
 from unittest import TestCase
 import pytest
@@ -30,82 +31,68 @@ class TestDAGResnik(TestCase):
                 for node_name in self._graph.get_node_names()
             }
         )
-
-    def test_resnik_api1_a(self):
-        self._model.get_similarity_from_node_id(10, 20)
-
-    def test_resnik_api1_b(self):
-        self._model.get_similarity_from_node_ids([10], [20])
-
-    def test_resnik_api1_c(self):
-        self._model.get_similarity_from_node_name(
-            self._graph.get_node_name_from_node_id(0),
-            self._graph.get_node_name_from_node_id(1)
+    
+    def generic_test(self, callback):
+        for return_similarities_dataframe in (True, False):
+            for return_node_names in (False, True):
+                if return_node_names and not return_similarities_dataframe:
+                    with pytest.raises(NotImplementedError):
+                        callback(
+                        return_similarities_dataframe,
+                        return_node_names
+                    )
+                else:
+                    callback(
+                        return_similarities_dataframe,
+                        return_node_names
+                    )
+    
+    def test_resnik_node_ids(self):
+        self.generic_test(
+            lambda x, y: self._model.get_similarities_from_clique_graph_node_ids(
+                node_ids=[0, 1],
+                minimum_similarity=1,
+                return_similarities_dataframe=x,
+                return_node_names=y
+            )
         )
 
-    def test_resnik_api1_d(self):
-        self._model.get_similarity_from_node_names(
-            [self._graph.get_node_name_from_node_id(0)],
-            [self._graph.get_node_name_from_node_id(1)]
+    def test_resnik_node_names(self):
+        self.generic_test(
+            lambda x, y: self._model.get_similarities_from_clique_graph_node_names(
+                node_names=["HP:0000001", "HP:0000002"],
+                minimum_similarity=1,
+                return_similarities_dataframe=x,
+                return_node_names=y
+            )
         )
-
-    def test_resnik_api2(self):
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_graph(
-                self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
+    
+    def test_resnik_node_prefixes(self):
+        self.generic_test(
+            lambda x, y: self._model.get_similarities_from_clique_graph_node_prefixes(
+                node_prefixes=["HP:00000"],
+                minimum_similarity=1,
+                return_similarities_dataframe=x,
+                return_node_names=y
             )
-
-    def test_resnik_api3(self):
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_bipartite_graph_from_edge_node_ids(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                source_node_ids=[0, 1, 2, 3],
-                destination_node_ids=[4, 5, 6, 7],
+        )
+    
+    def test_resnik_node_type_ids(self):
+        self.generic_test(
+            lambda x, y: self._model.get_similarities_from_clique_graph_node_type_ids(
+                node_type_ids=[0],
+                minimum_similarity=1,
+                return_similarities_dataframe=x,
+                return_node_names=y
             )
-
-    def test_resnik_api4(self):
-        first_names = self._graph.get_node_names()[:5]
-        second_names = self._graph.get_node_names()[5:10]
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_bipartite_graph_from_edge_node_names(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                source_node_names=first_names,
-                destination_node_names=second_names,
+        )
+    
+    def test_resnik_node_type_names(self):
+        self.generic_test(
+            lambda x, y: self._model.get_similarities_from_clique_graph_node_type_names(
+                node_type_names=["biolink:NamedThing"],
+                minimum_similarity=1,
+                return_similarities_dataframe=x,
+                return_node_names=y
             )
-
-    def test_resnik_api5(self):
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_bipartite_graph_from_edge_node_prefixes(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                source_node_prefixes=["OIO"],
-                destination_node_prefixes=["IAO", "CIO"],
-            )
-
-    def test_resnik_api5(self):
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_clique_graph_from_node_ids(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                node_ids=[0, 1, 2],
-            )
-
-    def test_resnik_api6(self):
-        first_names = self._graph.get_node_names()[:5]
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_clique_graph_from_node_names(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                node_names=first_names,
-            )
-
-    def test_resnik_api7(self):
-        for return_similarities_dataframe in (True, False):
-            self._model.get_similarities_from_clique_graph_from_node_prefixes(
-                graph=self._graph,
-                return_similarities_dataframe=return_similarities_dataframe,
-                node_prefixes=["IAO:"],
-            )
+        )

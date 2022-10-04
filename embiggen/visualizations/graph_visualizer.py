@@ -27,9 +27,10 @@ from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
 from userinput.utils import must_be_in_set
 from sklearn.metrics import balanced_accuracy_score
-from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 import itertools
 from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
+from ensmallen.datasets.graph_retrieval import normalize_node_name
 
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
@@ -95,7 +96,7 @@ class GraphVisualizer:
         fps: int = 24,
         node_embedding_method_name: str = "auto",
         edge_embedding_method: str = "Concatenate",
-        minimum_node_degree: int = 1,
+        minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
         only_from_same_component: bool = True,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
@@ -202,7 +203,7 @@ class GraphVisualizer:
             Using this parameter will raise an exception when the provided
             graph wither does not have node types or has exclusively constant
             node types.
-        minimum_node_degree: Optional[int] = 1
+        minimum_node_degree: Optional[int] = 0
             The minimum node degree of either the source or
             destination node to be sampled.
         maximum_node_degree: Optional[int] = None
@@ -464,11 +465,14 @@ class GraphVisualizer:
         """
         # This is a visualization run for rotation.
         if len(args) < 2:
-            return None
-        figure, axes = args[:2]
+            figure = None
+            axes = None
+        else:
+            figure, axes = args[:2]
         if is_notebook() and self._automatically_display_on_notebooks:
             from IPython.display import display, HTML
-            display(figure)
+            if figure is not None:
+                display(figure)
             if caption is not None:
                 display(HTML(
                     '<p style="text-align: justify; word-break: break-all;">{}</p>'.format(
@@ -476,7 +480,7 @@ class GraphVisualizer:
                     )
                 ))
             plt.close()
-        elif caption is None:
+        elif caption is None or self._rotate:
             return (figure, axes, *args[2:])
         else:
             return (figure, axes, *args[2:], caption)
@@ -515,7 +519,7 @@ class GraphVisualizer:
             " In the heatmap{plural}, {letters}"
             "low and high values appear in red and blue hues, respectively. "
             "Intermediate values appear in either a yellow or cyan hue. "
-            "The values are on a logarithmic scale."
+            "The values are on a logarithmic scale"
         ).format(
             plural=plural,
             letters="{}, ".format(
@@ -547,8 +551,9 @@ class GraphVisualizer:
     def get_decomposition_method(self) -> Callable:
         # Adding a warning for when decomposing methods that
         # embed nodes using a cosine similarity / distance approach
-        # in order to avoid false negatives.
-        if self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
+        # in order to avoid false negatives, that is bad TSNE decompositions
+        # while the embedding is actually good.
+        if self._n_components < 3 and self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
             "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
         ):
             metric = self._decomposition_kwargs.get("metric")
@@ -736,6 +741,7 @@ class GraphVisualizer:
                         f"to have an index curresponding to the node name `{node_name}`, "
                         f"but we have found `{node_embedding.index[node_id]}`."
                     )
+            node_embedding = node_embedding.to_numpy()
 
         return node_embedding
 
@@ -795,12 +801,44 @@ class GraphVisualizer:
                 "The vector to decompose has less components than "
                 "the decomposition target."
             )
+        # Some embedding method have complex values.
+        # Such values are, of course, not supported by UMAP, TSNE or PCA.
+        # For such cases, we need to convert the complex value into a real
+        # value. If the user desires to use some different approach, it can
+        # be applied to the embedding before providing it to this visualization tool.
+        if "complex" in str(X.dtype):
+            X = np.hstack([
+                np.real(X),
+                np.imag(X)
+            ])
         if self._decomposition_method == "TSNE" and X.shape[1] > 50 and self._graph.get_number_of_nodes() > 50:
             X = PCA(
                 n_components=50,
                 random_state=self._random_state
             ).fit_transform(X)
         return self.get_decomposition_method()(X)
+
+    def _normalize_label(
+        self,
+        labels: List[str]
+    ) -> List[str]:
+        last_element = labels[-1]
+        if last_element.lower().startswith("other"):
+            labels = [
+                label
+                for label in sanitize_ml_labels([
+                    normalize_node_name(label)
+                    for label in labels[:-1]
+                ])
+            ]
+            labels.append(last_element)
+        return [
+            label
+            for label in sanitize_ml_labels([
+                normalize_node_name(label)
+                for label in labels
+            ])
+        ]
 
     def _set_legend(
         self,
@@ -827,13 +865,15 @@ class GraphVisualizer:
             len(label) > 20
             for label in labels
         ) else self._number_of_columns_in_legend
+        
+        labels = [
+            "{}...".format(label[:20])
+            if len(label) > 20 and number_of_columns == 2 else label
+            for label in self._normalize_label(labels)
+        ]
         legend = axes.legend(
             handles=handles,
-            labels=[
-                "{}...".format(label[:20])
-                if len(label) > 20 and number_of_columns == 2 else label
-                for label in sanitize_ml_labels(labels)
-            ],
+            labels=labels,
             loc=loc,
             ncol=number_of_columns,
             prop={'size': 8},
@@ -1054,8 +1094,6 @@ class GraphVisualizer:
                 },
                 squeeze=False
             )
-            for ax in axes.flatten():
-                ax.axis('equal')
             if axes.size == 1:
                 axes = axes.flatten()[0]
         else:
@@ -1066,8 +1104,6 @@ class GraphVisualizer:
                 },
                 squeeze=False
             )
-            for ax in axes.flatten():
-                ax.axis('auto')
             if axes.size == 1:
                 axes = axes.flatten()[0]
         figure.patch.set_facecolor("white")
@@ -1196,6 +1232,11 @@ class GraphVisualizer:
             axes=axes,
             **kwargs
         )
+
+        if self._n_components == 2:
+            axes.axis('equal')
+        else:
+            axes.axis('auto')
 
         scatter_kwargs = {
             **GraphVisualizer.DEFAULT_SCATTER_KWARGS,
@@ -1356,7 +1397,7 @@ class GraphVisualizer:
                     color_name=color_name,
                     quotations="\'" if "other" not in label.lower() else "",
                 )
-                for color_name, label in zip(color_names_to_be_used, labels)
+                for color_name, label in zip(color_names_to_be_used, self._normalize_label(labels))
             ])
 
             return_values = (*return_values, caption)
@@ -1530,10 +1571,6 @@ class GraphVisualizer:
         if k < number_of_types:
             type_labels.append(other_label.format(number_of_types - k))
 
-        type_labels = sanitize_ml_labels(
-            type_labels[:k]
-        ) + sanitize_ml_labels(type_labels[k:])
-
         result = self._wrapped_plot_scatter(**{
             **dict(
                 return_caption=return_caption,
@@ -1566,11 +1603,16 @@ class GraphVisualizer:
 
         test_accuracies = []
 
-        for train_indices, test_indices in ShuffleSplit(
+        if min(Counter(types).values()) == 1:
+            SplitterClass = ShuffleSplit
+        else:
+            SplitterClass = StratifiedShuffleSplit
+
+        for train_indices, test_indices in SplitterClass(
             n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
-        ).split(points):
+        ).split(points, types):
 
             model = DecisionTreeClassifier(max_depth=5)
 
@@ -1988,7 +2030,7 @@ class GraphVisualizer:
         returned_values = self._plot_types(
             points=points,
             title=self._get_complete_title(
-                "Existent & non-existent edges",
+                "Edge prediction",
                 show_edge_embedding=True
             ),
             types=types,
@@ -2170,11 +2212,16 @@ class GraphVisualizer:
 
         test_accuracies = []
 
-        for train_indices, test_indices in ShuffleSplit(
+        if min(Counter(types).values()) == 1:
+            SplitterClass = ShuffleSplit
+        else:
+            SplitterClass = StratifiedShuffleSplit
+
+        for train_indices, test_indices in SplitterClass(
             n_splits=self._number_of_holdouts_for_cluster_comments,
             test_size=0.3,
             random_state=self._random_state
-        ).split(edge_metrics):
+        ).split(edge_metrics, types):
 
             model = DecisionTreeClassifier(max_depth=5)
 
@@ -2262,7 +2309,7 @@ class GraphVisualizer:
             edge_metrics = np.concatenate((
                 edge_metric_callback(subgraph=self._negative_graph),
                 edge_metric_callback(subgraph=self._positive_graph),
-            )) + sys.float_info.epsilon
+            ))
 
         axes.hist(
             [
@@ -2273,6 +2320,7 @@ class GraphVisualizer:
             log=True,
             label=["Non-existent", "Existent"]
         )
+        axes.set_xlim(edge_metrics.min(), edge_metrics.max())
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel(metric_name)
         axes.legend(loc='best', prop={'size': 8},)
@@ -3819,7 +3867,7 @@ class GraphVisualizer:
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
-        graph_transformer.fit(node_features.astype(np.float32))
+        graph_transformer.fit(node_features)
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
@@ -3868,7 +3916,7 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
 
-        graph_transformer.fit(node_features.astype(np.float32))
+        graph_transformer.fit(node_features)
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
@@ -4262,6 +4310,148 @@ class GraphVisualizer:
 
         return self._handle_notebook_display(figure, axes, caption=caption)
 
+    def _fit_and_plot_all(
+        self,
+        points: List[np.ndarray],
+        nrows: int,
+        ncols: int,
+        plotting_callbacks: List[Callable],
+        show_letters: bool,
+    ) -> Tuple[Figure, Axes]:
+        """Fits and plots all available features of the graph.
+
+        Parameters
+        -------------------------
+            Kwargs to be forwarded to the node embedding algorithm.
+        """
+        decompositions_backup = [
+            self._node_decomposition,
+            self._positive_edge_decomposition,
+            self._negative_edge_decomposition
+        ]
+
+        (self._node_decomposition,
+        self._positive_edge_decomposition,
+        self._negative_edge_decomposition) = points
+
+        figure, axes = self._get_figure_and_axes(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(5*ncols, 5*nrows),
+            dpi=96
+        )
+        figure.patch.set_facecolor("white")
+        number_of_total_plots = len(plotting_callbacks)
+
+        flat_axes = np.array(axes).flatten()
+
+        # Backing up ang off some of the visualizations
+        # so we avoid duplicating their content.
+        show_name_backup = self._show_graph_name
+        show_node_embedding_backup = self._show_node_embedding_method
+        show_edge_embedding_backup = self._show_edge_embedding_method
+        automatically_display_backup = self._automatically_display_on_notebooks
+        show_separability_backup = self._show_separability_considerations_explanation
+        show_heatmaps_backup = self._show_heatmaps_description
+        non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
+        self._show_graph_name = False
+        self._show_node_embedding_method = False
+        self._show_edge_embedding_method = False
+        self._automatically_display_on_notebooks = False
+        self._show_separability_considerations_explanation = False
+        self._show_heatmaps_description = False
+        self._show_non_existing_edges_sampling_description = False
+
+        complete_caption = (
+            f"<b>{self._decomposition_method} decomposition and properties distribution"
+            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._node_embedding_method_name)} node embedding:</b>"
+        )
+
+        heatmaps_letters = []
+        evaluation_letters = []
+
+        for ax, plot_callback, letter in zip(
+            flat_axes,
+            itertools.chain(plotting_callbacks),
+            "abcdefghjkilmnopqrstuvwxyz"
+        ):
+            inspect.signature(plot_callback).parameters
+            figure, axes, caption = plot_callback(
+                figure=figure,
+                axes=ax,
+                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
+                apply_tight_layout=False
+            )
+            
+            if "heatmap" in caption.lower():
+                heatmaps_letters.append(letter)
+            if "accuracy" in caption.lower():
+                evaluation_letters.append(letter)
+            complete_caption += f" <b>({letter})</b> {caption}"
+
+            if show_letters:
+                if self._n_components >= 3:
+                    additional_kwargs = dict(z=0, y=0, x=0)
+                else:
+                    additional_kwargs = dict(y=1.1, x=0)
+
+                ax.text(
+                    s=letter,
+                    size=18,
+                    color="black",
+                    weight="bold",
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    transform=ax.transAxes,
+                    **additional_kwargs
+                )
+
+        complete_caption += "<br>"
+
+        self._show_edge_embedding_method = show_edge_embedding_backup
+        self._show_node_embedding_method = show_node_embedding_backup
+        self._automatically_display_on_notebooks = automatically_display_backup
+        self._show_separability_considerations_explanation = show_separability_backup
+        self._show_heatmaps_description = show_heatmaps_backup
+        self._show_non_existing_edges_sampling_description = non_existing_edges_sampling
+
+        # If requested we automatically add the description of the heatmaps.
+        complete_caption += self.get_heatmaps_comments(heatmaps_letters)
+        # If requested we automatically add the description of these considerations.
+        complete_caption += self.get_separability_comments_description(
+            evaluation_letters
+        )
+        complete_caption += self.get_non_existing_edges_sampling_description()
+
+        for axis in flat_axes[number_of_total_plots:]:
+            for spine in axis.spines.values():
+                spine.set_visible(False)
+            axis.axis("off")
+
+        if show_name_backup:
+            figure.suptitle(
+                self._get_complete_title(
+                    self._graph_name,
+                    show_edge_embedding=True
+                ),
+                fontsize=20
+            )
+            if self._n_components != 3:
+                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
+        elif self._n_components != 3:
+            figure.tight_layout()
+
+        self._show_graph_name = show_name_backup
+        (self._node_decomposition,
+        self._positive_edge_decomposition,
+        self._negative_edge_decomposition) = decompositions_backup
+
+        return self._handle_notebook_display(
+            figure,
+            flat_axes,
+            caption=complete_caption
+        )
+
     def fit_and_plot_all(
         self,
         node_embedding: Union[pd.DataFrame, np.ndarray, str, EmbeddingResult],
@@ -4366,131 +4556,77 @@ class GraphVisualizer:
                 self.plot_edge_weight_distribution
             )
 
-        if not include_distribution_plots:
+        if not include_distribution_plots or self._rotate or self._n_components > 2:
             distribution_plot_methods_to_call = []
 
-        number_of_total_plots = len(node_scatter_plot_methods_to_call) + len(
-            edge_scatter_plot_methods_to_call
-        ) + len(distribution_plot_methods_to_call)
+        plotting_callbacks = [
+            callback
+            for callbacks in (
+                node_scatter_plot_methods_to_call,
+                edge_scatter_plot_methods_to_call,
+                distribution_plot_methods_to_call
+            )
+            for callback in callbacks
+        ]
+
+        number_of_total_plots = len(plotting_callbacks)
+
         nrows = max(
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
-        figure, axes = self._get_figure_and_axes(
-            nrows=nrows,
-            ncols=ncols,
-            figsize=(5*ncols, 5*nrows),
-            dpi=96
-        )
-        figure.patch.set_facecolor("white")
-
-        flat_axes = np.array(axes).flatten()
-
-        # Backing up ang off some of the visualizations
-        # so we avoid duplicating their content.
-        show_name_backup = self._show_graph_name
-        show_node_embedding_backup = self._show_node_embedding_method
-        show_edge_embedding_backup = self._show_edge_embedding_method
-        automatically_display_backup = self._automatically_display_on_notebooks
-        show_separability_backup = self._show_separability_considerations_explanation
-        show_heatmaps_backup = self._show_heatmaps_description
-        non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
-        self._show_graph_name = False
-        self._show_node_embedding_method = False
-        self._show_edge_embedding_method = False
-        self._automatically_display_on_notebooks = False
-        self._show_separability_considerations_explanation = False
-        self._show_heatmaps_description = False
-        self._show_non_existing_edges_sampling_description = False
-
-        complete_caption = (
-            f"<b>{self._decomposition_method} decomposition and properties distribution"
-            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._node_embedding_method_name)} node embedding:</b>"
-        )
-
-        heatmaps_letters = []
-        evaluation_letters = []
-
-        for ax, plot_callback, letter in zip(
-            flat_axes,
-            itertools.chain(
-                node_scatter_plot_methods_to_call,
-                edge_scatter_plot_methods_to_call,
-                distribution_plot_methods_to_call
-            ),
-            "abcdefghjkilmnopqrstuvwxyz"
-        ):
-            inspect.signature(plot_callback).parameters
-            _, _, caption = plot_callback(
-                figure=figure,
-                axes=ax,
-                **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
-                apply_tight_layout=False
+        if self._rotate:
+            path = "fit_and_plot_all.webm"
+            display_backup = self._automatically_display_on_notebooks
+            self._automatically_display_on_notebooks = False
+            rotate_backup = self._rotate
+            self._rotate = False
+            rotate(
+                self._fit_and_plot_all,
+                path=path,
+                points=[
+                    self._node_decomposition,
+                    self._positive_edge_decomposition,
+                    self._negative_edge_decomposition
+                ],
+                duration=self._duration,
+                fps=self._fps,
+                verbose=self._verbose,
+                nrows = nrows,
+                ncols = ncols,
+                plotting_callbacks=plotting_callbacks,
+                show_letters=show_letters,
             )
-            if "heatmap" in caption.lower():
-                heatmaps_letters.append(letter)
-            if "accuracy" in caption.lower():
-                evaluation_letters.append(letter)
-            complete_caption += f" <b>({letter})</b> {caption}"
-
-            if show_letters:
-                if self._n_components == 3:
-                    additional_kwargs = dict(z=0.0)
-                else:
-                    additional_kwargs = dict()
-
-                ax.text(
-                    x=0.0,
-                    y=1.1,
-                    s=letter,
-                    size=18,
-                    color="black",
-                    weight="bold",
-                    horizontalalignment="left",
-                    verticalalignment="center",
-                    transform=ax.transAxes,
-                    **additional_kwargs
-                )
-
-        complete_caption += "<br>"
-
-        self._show_edge_embedding_method = show_edge_embedding_backup
-        self._show_node_embedding_method = show_node_embedding_backup
-        self._automatically_display_on_notebooks = automatically_display_backup
-        self._show_separability_considerations_explanation = show_separability_backup
-        self._show_heatmaps_description = show_heatmaps_backup
-        self._show_non_existing_edges_sampling_description = non_existing_edges_sampling
-
-        # If requested we automatically add the description of the heatmaps.
-        complete_caption += self.get_heatmaps_comments(heatmaps_letters)
-        # If requested we automatically add the description of these considerations.
-        complete_caption += self.get_separability_comments_description(
-            evaluation_letters
-        )
-        complete_caption += self.get_non_existing_edges_sampling_description()
-
-        for axis in flat_axes[number_of_total_plots:]:
-            for spine in axis.spines.values():
-                spine.set_visible(False)
-            axis.axis("off")
-
-        if show_name_backup:
-            figure.suptitle(
-                self._get_complete_title(
-                    self._graph_name,
-                    show_edge_embedding=True
-                ),
-                fontsize=20
+            to_display = display_video_at_path(
+                path,
+                width="100%",
+                height=None
             )
-            if self._n_components != 3:
-                figure.tight_layout(rect=[0, 0.03, 1, 0.96])
-        elif self._n_components != 3:
-            figure.tight_layout()
-
-        self._show_graph_name = show_name_backup
-
-        return self._handle_notebook_display(
-            figure,
-            axes,
-            caption=complete_caption
+            figure, axes, complete_caption = self._fit_and_plot_all(
+                points=[
+                    self._node_decomposition,
+                    self._positive_edge_decomposition,
+                    self._negative_edge_decomposition
+                ],
+                nrows = nrows,
+                ncols = ncols,
+                plotting_callbacks=plotting_callbacks,
+                show_letters=show_letters
+            )
+            self._rotate = rotate_backup
+            self._automatically_display_on_notebooks = display_backup
+            return self._handle_notebook_display(
+                to_display, None,
+                caption=complete_caption
+            )
+        return self._fit_and_plot_all(
+            points=[
+                self._node_decomposition,
+                self._positive_edge_decomposition,
+                self._negative_edge_decomposition
+            ],
+            nrows = nrows,
+            ncols = ncols,
+            plotting_callbacks=plotting_callbacks,
+            show_letters=show_letters
         )

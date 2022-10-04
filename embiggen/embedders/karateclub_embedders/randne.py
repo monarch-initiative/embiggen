@@ -11,6 +11,7 @@ class RandNEKarateClub(AbstractKarateClubEmbedder):
         embedding_size: int = 100,
         alphas: Union[List[float], Tuple[float]] = (0.5, 0.5),
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
         """Return a new RandNE embedding model.
@@ -24,6 +25,8 @@ class RandNEKarateClub(AbstractKarateClubEmbedder):
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -32,6 +35,7 @@ class RandNEKarateClub(AbstractKarateClubEmbedder):
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
+            ring_bell=ring_bell,
             random_state=random_state
         )
 

@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's TransR model."""
+"""Submodule providing wrapper for PyKEEN's TransR model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import TransR
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TransRPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     def __init__(
         self,
@@ -19,14 +19,15 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
                              ] = "Stochastic Local Closed World Assumption",
         verbose: bool = False,
         random_state: int = 42,
+        ring_bell: bool = False,
         enable_cache: bool = False
     ):
-        """Create new PyKeen TransR model.
+        """Create new PyKEEN TransR model.
         
         Details
         -------------------------
         This is a wrapper of the TransR implementation from the
-        PyKeen library. Please refer to the PyKeen library documentation
+        PyKEEN library. Please refer to the PyKEEN library documentation
         for details and posssible errors regarding this model.
 
         Parameters
@@ -54,6 +55,8 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
             Whether to show loading bars.
         random_state: int = 42
             Random seed to use while training the model
+        ring_bell: bool = False,
+            Whether to play a sound when embedding completes.
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
@@ -67,6 +70,7 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
             training_loop=training_loop,
             verbose=verbose,
             random_state=random_state,
+            ring_bell=ring_bell,
             enable_cache=enable_cache
         )
 
@@ -74,7 +78,7 @@ class TransRPyKeen(EntityRelationEmbeddingModelPyKeen):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **EntityRelationEmbeddingModelPyKeen.smoke_test_parameters(),
+            **EntityRelationEmbeddingModelPyKEEN.smoke_test_parameters(),
             scoring_fct_norm=1,
             relation_dim=5
         )

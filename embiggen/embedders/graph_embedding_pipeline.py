@@ -34,7 +34,8 @@ def embed_graph(
         Graph version to retrieve.
     library_name: Optional[str] = None
         The library from where to retrieve the embedding model.
-    enable_cache: bool = False
+    ring_bell: bool = False,
+        enable_cache: bool = False
         Whether to enable the cache.
     smoke_test: bool = False
         Whether this run should be considered a smoke test

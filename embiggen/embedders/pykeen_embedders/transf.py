@@ -1,12 +1,12 @@
-"""Submodule providing wrapper for PyKeen's TransF model."""
+"""Submodule providing wrapper for PyKEEN's TransF model."""
 from typing import Union, Type, Dict, Any
 from pykeen.training import TrainingLoop
 from pykeen.models import TransF
-from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKeen
+from embiggen.embedders.pykeen_embedders.entity_relation_embedding_model_pykeen import EntityRelationEmbeddingModelPyKEEN
 from pykeen.triples import CoreTriplesFactory
 
 
-class TransFPyKeen(EntityRelationEmbeddingModelPyKeen):
+class TransFPyKEEN(EntityRelationEmbeddingModelPyKEEN):
 
     @classmethod
     def model_name(cls) -> str:

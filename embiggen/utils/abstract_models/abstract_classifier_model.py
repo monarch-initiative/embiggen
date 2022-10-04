@@ -3,9 +3,13 @@ from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
 from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
+import os
+import platform
 import time
+import json
 from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
+from environments_utils import get_slurm_node_id, must_be_in_slurm_node
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
 
@@ -157,6 +161,35 @@ class AbstractClassifierModel(AbstractModel):
         ))
 
     @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        raise NotImplementedError((
+            f"The `load` was not implemented for the {cls.model_name()} "
+            f"for the {cls.task_name()} task as made available from the "
+            f"{cls.library_name()} library."
+        ))
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        raise NotImplementedError((
+            f"The `dump` was not implemented for the {self.model_name()} "
+            f"for the {self.task_name()} task as made available from the "
+            f"{self.library_name()} library."
+        ))
+
+    @classmethod
     def normalize_node_feature(
         cls,
         graph: Graph,
@@ -165,7 +198,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -190,7 +223,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -230,7 +263,7 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and node_feature.can_use_edge_weights() and node_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and node_feature.is_stocastic()
+                not precompute_constant_stocastic_features and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
@@ -298,7 +331,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -323,7 +356,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -349,7 +382,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -362,7 +395,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -387,7 +420,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -427,11 +460,11 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and node_type_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and node_type_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and node_type_feature.is_stocastic()
+                not precompute_constant_stocastic_features and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
-            
+
             if node_type_feature.is_stocastic():
                 node_type_feature.set_random_state(random_state)
 
@@ -495,7 +528,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -520,7 +553,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -546,7 +579,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -559,7 +592,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -584,7 +617,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -624,7 +657,7 @@ class AbstractClassifierModel(AbstractModel):
                     cls.task_involves_edge_weights() and edge_feature.is_using_edge_weights() or
                     cls.task_involves_topology() and edge_feature.is_topological()
                 ) or
-                not precompute_constant_automatic_stocastic_features and edge_feature.is_stocastic()
+                not precompute_constant_stocastic_features and edge_feature.is_stocastic()
             ):
                 yield edge_feature
                 return None
@@ -692,7 +725,7 @@ class AbstractClassifierModel(AbstractModel):
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -717,7 +750,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -743,7 +776,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features
             )
         ]
 
@@ -867,7 +900,7 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
-        
+
         try:
             predictions = self._predict(
                 graph=graph,
@@ -897,7 +930,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from e
-            
+
         return predictions
 
     def predict_proba(
@@ -982,7 +1015,7 @@ class AbstractClassifierModel(AbstractModel):
                 "returned a vector of prediction probabilities with "
                 f"shape {predictions.shape}."
             )
-            
+
         return predictions
 
     def evaluate_predictions(
@@ -1230,25 +1263,35 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{self.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{self.model_name()}/{self.library_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test", "train_of_interest", "test_of_interest", "train",],
+        args_to_ignore=[
+            "verbose",
+            "smoke_test",
+            "train_of_interest",
+            "test_of_interest",
+            "train",
+            "metadata"
+        ],
         capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
-    def __train_and_evaluate_model(
+    def _train_and_evaluate_model(
         self,
         graph: Graph,
         train_of_interest: Graph,
         test_of_interest: Graph,
         train: Graph,
         subgraph_of_interest: Graph,
+        use_subgraph_as_support: bool,
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_features: Optional[List[np.ndarray]],
         random_state: int,
         holdout_number: int,
         evaluation_schema: str,
-        automatic_features_names: List[str],
-        automatic_features_parameters: Dict[str, Any],
+        holdouts_kwargs: Dict[str, Any],
+        features_names: List[str],
+        features_parameters: Dict[str, Any],
+        metadata: Dict[str, Any],
         **validation_kwargs
     ) -> pd.DataFrame:
         """Run inner training and evaluation."""
@@ -1258,7 +1301,7 @@ class AbstractClassifierModel(AbstractModel):
         training_start = time.time()
         self.fit(
             graph=train_of_interest,
-            support=train,
+            support=train_of_interest if use_subgraph_as_support else train,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features
@@ -1271,7 +1314,7 @@ class AbstractClassifierModel(AbstractModel):
             # We add the newly computed performance.
             model_performance = pd.DataFrame(self._evaluate(
                 graph=graph,
-                support=train,
+                support=train_of_interest if use_subgraph_as_support else train,
                 train=train_of_interest,
                 test=test_of_interest,
                 node_features=node_features,
@@ -1281,7 +1324,7 @@ class AbstractClassifierModel(AbstractModel):
                 random_state=random_state * holdout_number,
                 verbose=False,
                 **validation_kwargs
-            ))
+            )).reset_index(drop=True)
         except RuntimeError as e:
             raise e
         except Exception as e:
@@ -1302,26 +1345,34 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["nodes_number"] = graph.get_number_of_nodes()
         model_performance["edges_number"] = graph.get_number_of_directed_edges()
         model_performance["evaluation_schema"] = evaluation_schema
+        model_performance["holdout_number"] = holdout_number
+        model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
+        model_performance["use_subgraph_as_support"] = use_subgraph_as_support
+
+        for column_name, column_value in metadata.items():
+            model_performance[column_name] = column_value
+
+        df_model_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
-            if ("Model", parameter_name) in model_performance.columns:
-                raise ValueError(
-                    "There has been a collision between the column names used in "
-                    "the model performance report and the parameter names "
-                    f" of one of the classifiers {self.model_name()}."
-                    f"The parameter that has caused the collision is {parameter}. "
-                    "Please do change the name of the parameter in your model."
-                )
             if isinstance(parameter_value, (list, tuple)):
                 parameter_value = str(parameter_value)
-            model_performance[("Model", parameter_name)] = parameter_value
-        
-        model_performance["automatic_features_names"] = format_list(
-            automatic_features_names
+            df_model_parameters[parameter_name] = parameter_value
+
+        df_model_parameters.columns = [
+            ["model_parameters"] * len(df_model_parameters.columns),
+            df_model_parameters.columns
+        ]
+
+        model_performance["features_names"] = format_list(
+            features_names
         )
-        
-        for parameter, value in enumerate(automatic_features_parameters.items()):
-            if parameter in model_performance.columns:
+
+        for parameter, value in features_parameters.items():
+            if parameter in df_features_parameters.columns:
                 raise ValueError(
                     "There has been a collision between the parameters used in "
                     "one of the embedding models and the parameter "
@@ -1329,7 +1380,21 @@ class AbstractClassifierModel(AbstractModel):
                     f"The parameter that has caused the collision is {parameter}. "
                     "Please do change the name of the parameter in your model."
                 )
-            model_performance[parameter] = str(value)
+            df_features_parameters[parameter] = str(value)
+
+        df_features_parameters.columns = [
+            ["features_parameters"] * len(df_features_parameters.columns),
+            df_features_parameters.columns
+        ]
+
+        model_performance = pd.concat(
+            [
+                model_performance,
+                df_model_parameters,
+                df_features_parameters
+            ],
+            axis=1
+        )
 
         return model_performance
 
@@ -1338,16 +1403,22 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts"],
+        args_to_ignore=[
+            "verbose",
+            "smoke_test",
+            "number_of_holdouts",
+            "metadata"
+        ],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True
     )
-    def __evaluate_on_single_holdout(
+    def _evaluate_on_single_holdout(
         cls,
         models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
         library_names: Optional[Union[str, List[str]]],
         graph: Graph,
         subgraph_of_interest: Graph,
+        use_subgraph_as_support: bool,
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_features: Optional[List[np.ndarray]],
@@ -1359,8 +1430,9 @@ class AbstractClassifierModel(AbstractModel):
         smoke_test: bool,
         holdouts_kwargs: Dict[str, Any],
         subgraph_of_interest_has_compatible_nodes: Optional[bool],
-        automatic_features_names: List[str],
-        automatic_features_parameters: Dict[str, Any],
+        features_names: List[str],
+        features_parameters: Dict[str, Any],
+        metadata: Dict[str, Any],
         verbose: bool,
         **validation_kwargs
     ) -> pd.DataFrame:
@@ -1384,14 +1456,9 @@ class AbstractClassifierModel(AbstractModel):
             vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
             vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
         )
-        test.enable(
-            vector_sources=graph.has_sources_tradeoff_enabled(),
-            vector_destinations=graph.has_destinations_tradeoff_enabled(),
-            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-        )
 
         # We compute the remaining features
+        starting_to_compute_node_features = time.time()
         holdout_node_features = cls.normalize_node_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1399,10 +1466,13 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
+        time_required_to_compute_node_features = time.time() - \
+            starting_to_compute_node_features
 
         # We compute the remaining features
+        starting_to_compute_node_type_features = time.time()
         holdout_node_type_features = cls.normalize_node_type_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1410,12 +1480,15 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
+        time_required_to_compute_node_type_features = time.time(
+        ) - starting_to_compute_node_type_features
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
+        starting_to_compute_edge_features = time.time()
         holdout_edge_features = cls.normalize_edge_features(
             train,
             random_state=random_state*(holdout_number+1),
@@ -1423,8 +1496,10 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_automatic_stocastic_features=True
+            precompute_constant_stocastic_features=True
         )
+        time_required_to_compute_edge_features = time.time() - \
+            starting_to_compute_edge_features
 
         if subgraph_of_interest is not None:
             # First we align the train and test graph to have
@@ -1437,22 +1512,6 @@ class AbstractClassifierModel(AbstractModel):
                 )
                 test = test.filter_from_names(
                     node_names_to_keep_from_graph=subgraph_of_interest
-                )
-
-                # We enable in the train and test graphs of interest the same
-                # speedups enabled in the provided graph.
-                train.enable(
-                    vector_sources=graph.has_sources_tradeoff_enabled(),
-                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-                )
-
-                test.enable(
-                    vector_sources=graph.has_sources_tradeoff_enabled(),
-                    vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                    vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                    vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
                 )
 
                 # We adjust the node features to only include the node features
@@ -1493,24 +1552,25 @@ class AbstractClassifierModel(AbstractModel):
                         "subgraph of interest, does not have any more edges which are "
                         f"essential when running a {cls.task_name()} task."
                     )
-            # We enable in the train and test graphs of interest the same
-            # speedups enabled in the provided graph.
-            train_of_interest.enable(
-                vector_sources=graph.has_sources_tradeoff_enabled(),
-                vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-            )
-
-            test_of_interest.enable(
-                vector_sources=graph.has_sources_tradeoff_enabled(),
-                vector_destinations=graph.has_destinations_tradeoff_enabled(),
-                vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-                vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-            )
         else:
             train_of_interest = train
             test_of_interest = test
+
+        # We enable in the train and test graphs of interest the same
+        # speedups enabled in the provided graph.
+        train_of_interest.enable(
+            vector_sources=graph.has_sources_tradeoff_enabled(),
+            vector_destinations=graph.has_destinations_tradeoff_enabled(),
+            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+        )
+
+        test_of_interest.enable(
+            vector_sources=graph.has_sources_tradeoff_enabled(),
+            vector_destinations=graph.has_destinations_tradeoff_enabled(),
+            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
+            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
+        )
 
         additional_validation_kwargs = cls._prepare_evaluation(
             graph=graph,
@@ -1525,22 +1585,33 @@ class AbstractClassifierModel(AbstractModel):
 
         time_required_for_setting_up_holdout = time.time() - starting_setting_up_holdout
 
+        metadata = dict(
+            **metadata,
+            time_required_for_setting_up_holdout=time_required_for_setting_up_holdout,
+            time_required_to_compute_node_features=time_required_to_compute_node_features,
+            time_required_to_compute_node_type_features=time_required_to_compute_node_type_features,
+            time_required_to_compute_edge_features=time_required_to_compute_edge_features
+        )
+
         holdout_performance = pd.concat([
-            classifier.__train_and_evaluate_model(
+            classifier._train_and_evaluate_model(
                 graph=graph,
                 train_of_interest=train_of_interest,
                 test_of_interest=test_of_interest,
                 train=train,
                 subgraph_of_interest=subgraph_of_interest,
+                use_subgraph_as_support=use_subgraph_as_support,
                 node_features=holdout_node_features,
                 node_type_features=holdout_node_type_features,
                 edge_features=holdout_edge_features,
                 random_state=random_state,
                 holdout_number=holdout_number,
                 evaluation_schema=evaluation_schema,
+                holdouts_kwargs=holdouts_kwargs,
                 enable_cache=enable_cache,
-                automatic_features_names=automatic_features_names,
-                automatic_features_parameters=automatic_features_parameters,
+                features_names=features_names,
+                features_parameters=features_parameters,
+                metadata=metadata.copy(),
                 **additional_validation_kwargs,
                 **validation_kwargs,
             )
@@ -1551,17 +1622,15 @@ class AbstractClassifierModel(AbstractModel):
             )
         ])
 
-        holdout_performance["time_required_for_setting_up_holdout"] = time_required_for_setting_up_holdout
-
         return holdout_performance
 
     @classmethod
     @Cache(
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/{_hash}.csv.gz",
         cache_dir="experiments",
-        enable_cache_arg_name="enable_cache",
+        enable_cache_arg_name="enable_top_layer_cache",
         args_to_ignore=["verbose", "smoke_test"],
-        capture_enable_cache_arg_name=False,
+        capture_enable_cache_arg_name=True,
         use_approximated_hash=True
     )
     def evaluate(
@@ -1575,12 +1644,15 @@ class AbstractClassifierModel(AbstractModel):
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
+        use_subgraph_as_support: bool = False,
         number_of_holdouts: int = 10,
         random_state: int = 42,
         verbose: bool = True,
         enable_cache: bool = False,
-        precompute_constant_automatic_stocastic_features: bool = False,
+        precompute_constant_stocastic_features: bool = False,
         smoke_test: bool = False,
+        number_of_slurm_nodes: Optional[int] = None,
+        slurm_node_id_variable: str = "SLURM_GRAPE_ID",
         **validation_kwargs: Dict
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
@@ -1606,6 +1678,11 @@ class AbstractClassifierModel(AbstractModel):
             The edge features to use.
         subgraph_of_interest: Optional[Graph] = None
             Optional subgraph where to focus the task.
+            This is applied to the train and test graph
+            after the desired holdout schema is applied.
+        use_subgraph_as_support: bool = False
+            Whether to use the provided subgraph as support or
+            to use the train graph (not filtered by the subgraph).
         skip_evaluation_biased_feature: bool = False
             Whether to skip feature names that are known to be biased
             when running an holdout. These features should be computed
@@ -1618,7 +1695,7 @@ class AbstractClassifierModel(AbstractModel):
             Whether to show a loading bar while computing holdouts.
         enable_cache: bool = False
             Whether to enable the cache.
-        precompute_constant_automatic_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False
             Whether to precompute once the constant automatic stocastic
             features before starting the embedding loop. This means that,
             when left set to false, while the features will be computed
@@ -1631,6 +1708,12 @@ class AbstractClassifierModel(AbstractModel):
             Whether this run should be considered a smoke test
             and therefore use the smoke test configurations for
             the provided model names and feature names.
+        number_of_slurm_nodes: Optional[int] = None
+            Number of SLURM nodes to consider as available.
+            This variable is used to parallelize the holdouts accordingly.
+        slurm_node_id_variable: str = "SLURM_GRAPE_ID"
+            Name of the system variable to use as SLURM node id.
+            It must be set in the slurm bash script.
         **validation_kwargs: Dict
             kwargs to be forwarded to the model `_evaluate` method.
         """
@@ -1667,11 +1750,41 @@ class AbstractClassifierModel(AbstractModel):
                 subgraph_of_interest
             )
         else:
+            if use_subgraph_as_support:
+                raise ValueError(
+                    "No subgraph of interest was provided but "
+                    "it has been requested to use the subgraph "
+                    "of interest as support. It is not clear "
+                    "how to proceed."
+                )
             subgraph_of_interest_has_compatible_nodes = None
+
+        if number_of_slurm_nodes is not None:
+            must_be_in_slurm_node()
+            if not isinstance(number_of_slurm_nodes, int) or number_of_slurm_nodes <= 0:
+                raise ValueError(
+                    "The number of SLURM nodes must be a positive integer value."
+                )
+            if number_of_holdouts > number_of_slurm_nodes:
+                raise ValueError(
+                    (
+                        "Please be advised that you are currently running an excessive "
+                        "parametrization of the SLURM cluster. We currently can only parallelize "
+                        "the execution of different holdouts. "
+                        "The number of holdouts requested are {number_of_holdouts} but you are "
+                        "currently using {number_of_slurm_nodes} SLURM nodes! "
+                        "Possibly, you are currently running a task such as a grid search "
+                        "and therefore you intend us to parallelize only the sub-segment of SLURM "
+                        "nodes necessary to run the holdouts."
+                    ).format(
+                        number_of_holdouts=number_of_holdouts,
+                        number_of_slurm_nodes=number_of_slurm_nodes
+                    )
+                )
 
         # Retrieve the set of provided automatic features parameters
         # so we can put them in the report.
-        automatic_features_parameters = {
+        features_parameters = {
             parameter_name: value
             for features in (
                 node_features
@@ -1691,7 +1804,7 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features names
         # so we can put them in the report.
-        automatic_features_names = {
+        features_names = list({
             feature.model_name()
             for features in (
                 node_features
@@ -1706,7 +1819,7 @@ class AbstractClassifierModel(AbstractModel):
             )
             for feature in features
             if issubclass(feature.__class__, AbstractEmbeddingModel)
-        }
+        })
 
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
@@ -1714,49 +1827,91 @@ class AbstractClassifierModel(AbstractModel):
         # This way we compute only once the features that do not
         # cause biases for this task, while recomputing those
         # that cause biases at each holdout, avoiding said biases.
+        starting_to_compute_constant_node_features = time.time()
         node_features = cls.normalize_node_features(
             graph,
             random_state=random_state,
             node_features=node_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_node_features = time.time(
+        ) - starting_to_compute_constant_node_features
 
         # We execute the same thing as described above,
         # but now for the node type features instead that for
         # the node features.
+        starting_to_compute_constant_node_type_features = time.time()
         node_type_features = cls.normalize_node_type_features(
             graph,
             random_state=random_state,
             node_type_features=node_type_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_node_type_features = time.time(
+        ) - starting_to_compute_constant_node_type_features
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
         # the node features.
+        starting_to_compute_constant_edge_features = time.time()
         edge_features = cls.normalize_edge_features(
             graph,
             random_state=random_state,
             edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
-            precompute_constant_automatic_stocastic_features=precompute_constant_automatic_stocastic_features,
+            precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             smoke_test=smoke_test
         )
+        time_required_to_compute_constant_edge_features = time.time(
+        ) - starting_to_compute_constant_edge_features
+
+        metadata = dict(
+            number_of_threads=os.cpu_count(),
+            python_version=platform.python_version(),
+            platform=platform.platform(),
+            number_of_holdouts=number_of_holdouts,
+            number_of_slurm_nodes=number_of_slurm_nodes,
+            time_required_to_compute_constant_node_features=time_required_to_compute_constant_node_features,
+            time_required_to_compute_constant_node_type_features=time_required_to_compute_constant_node_type_features,
+            time_required_to_compute_constant_edge_features=time_required_to_compute_constant_edge_features,
+        )
+
+        if number_of_slurm_nodes is not None:
+            if slurm_node_id_variable not in os.environ:
+                raise ValueError(
+                    (
+                        "Please do be advised that you have not provided "
+                        "the {slurm_node_id_variable} variable but you have provided specified that "
+                        "we should parallelize the holdouts across {number_of_slurm_nodes} nodes. "
+                        "Please do make available this variable in the "
+                        "slurm bash script by using the `export` flag "
+                        "in a script similar to the following:\n"
+                        "`srun --export=ALL,{slurm_node_id_variable}=$node_id` python3 your_script.py\n"
+                        "You can learn more about this in the library tutorials."
+                    ).format(
+                        slurm_node_id_variable=slurm_node_id_variable,
+                        number_of_slurm_nodes=number_of_slurm_nodes
+                    )
+                )
+            slurm_node_id = int(os.environ[slurm_node_id_variable])
+            metadata["slurm_node_id"] = slurm_node_id
+            metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
         # We start to iterate on the holdouts.
         performance = pd.concat([
-            cls.__evaluate_on_single_holdout(
+            cls._evaluate_on_single_holdout(
                 models=models,
                 library_names=library_names,
                 graph=graph,
                 subgraph_of_interest=subgraph_of_interest,
+                use_subgraph_as_support=use_subgraph_as_support,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features,
@@ -1768,30 +1923,34 @@ class AbstractClassifierModel(AbstractModel):
                 smoke_test=smoke_test,
                 holdouts_kwargs=holdouts_kwargs,
                 subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
-                verbose=verbose,
-                automatic_features_names=automatic_features_names,
-                automatic_features_parameters=automatic_features_parameters,
+                verbose=verbose and (number_of_slurm_nodes is None or slurm_node_id==0),
+                features_names=features_names,
+                features_parameters=features_parameters,
+                metadata=metadata.copy(),
                 **validation_kwargs
             )
             for holdout_number in trange(
                 number_of_holdouts,
-                disable=not verbose,
+                disable=not (verbose and (number_of_slurm_nodes is None or slurm_node_id==0)),
                 leave=False,
                 dynamic_ncols=True,
                 desc=f"Evaluating on {graph.get_name()}"
             )
+            if (
+                number_of_slurm_nodes is None or
+                (
+                    # We need to also mode the number of SLURM node IDs
+                    # because the user may be parallelizing across many
+                    # diffent nodes in contexts such as wide grid searches.
+                    slurm_node_id % number_of_slurm_nodes
+                ) == (
+                    # We need to mode the holdout number as the number
+                    # of holdouts may exceed the number of available SLURM
+                    # nodes that the user has made available to this pipeline.
+                    holdout_number % number_of_slurm_nodes
+                )
+            )
         ])
-
-        # Adding to the report the informations relative to
-        # the whole validation run, which are NOT necessary
-        # to make unique the cache hash of the single holdouts
-        # or the single models.
-        # Be extremely weary of adding informations at this
-        # high level, as often the best place should be
-        # in the core loop, where the actual model is trained,
-        # as often such information changes how the model
-        # is trained.
-        performance["number_of_holdouts"] = number_of_holdouts
 
         # We save the constant values for this model
         # execution.
