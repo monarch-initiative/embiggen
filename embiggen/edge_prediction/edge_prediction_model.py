@@ -718,10 +718,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             return_node_names=return_node_names
         )
 
-    def predict_clique_graph_from_node_types(
+    def predict_clique_graph_from_node_type_names(
         self,
         graph: Graph,
-        node_types: List[str],
+        node_type_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -735,7 +735,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_types: List[str]
+        node_type_names: List[str]
             The node prefixes of the bipartite graph.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
@@ -757,8 +757,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict(
-            graph.build_clique_graph_from_node_type_namess(
-                node_types=node_types,
+            graph.build_clique_graph_from_node_type_names(
+                node_type_names=node_type_names,
                 directed=True
             ),
             support=support,
@@ -1205,10 +1205,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             return_node_names=return_node_names
         )
 
-    def predict_proba_clique_graph_from_node_types(
+    def predict_proba_clique_graph_from_node_type_names(
         self,
         graph: Graph,
-        node_types: List[str],
+        node_type_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -1222,7 +1222,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph from which to extract the edges.
-        node_types: List[str]
+        node_type_names: List[str]
             The node prefixes of the bipartite graph.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
@@ -1244,8 +1244,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict_proba(
-            graph.build_clique_graph_from_node_type_namess(
-                node_types=node_types,
+            graph.build_clique_graph_from_node_type_names(
+                node_type_names=node_type_names,
                 directed=True
             ),
             support=support,

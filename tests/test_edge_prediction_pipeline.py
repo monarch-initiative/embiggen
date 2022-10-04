@@ -306,17 +306,17 @@ try:
                             node_type_features=node_type_features,
                             return_predictions_dataframe=return_predictions_dataframe
                         )
-                        model.predict_clique_graph_from_node_types(
+                        model.predict_clique_graph_from_node_type_names(
                             graph=g,
-                            node_types=["biolink:NamedThing"],
+                            node_type_names=["biolink:NamedThing"],
                             support=g,
                             node_features=node_features,
                             node_type_features=node_type_features,
                             return_predictions_dataframe=return_predictions_dataframe
                         )
-                        model.predict_proba_clique_graph_from_node_types(
+                        model.predict_proba_clique_graph_from_node_type_names(
                             graph=g,
-                            node_types=["biolink:NamedThing"],
+                            node_type_names=["biolink:NamedThing"],
                             support=g,
                             node_features=node_features,
                             node_type_features=node_type_features,
