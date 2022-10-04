@@ -8,7 +8,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.rst', encoding="utf8") as f:
         return f.read()
 
 
@@ -24,7 +24,7 @@ test_deps = [
 
 
 def read(*parts):
-    with copen(os.path.join(here, *parts), 'r') as fp:
+    with copen(os.path.join(here, *parts), 'r', encoding="utf8") as fp:
         return fp.read()
 
 

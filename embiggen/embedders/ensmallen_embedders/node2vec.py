@@ -68,7 +68,6 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
             epochs=1,
             window_size=1,
             walk_length=4,
-            iterations=1,
             max_neighbours=10,
         )
 

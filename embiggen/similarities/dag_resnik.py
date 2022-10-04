@@ -9,6 +9,7 @@ class DAGResnik:
     def __init__(self, verbose: bool = True):
         """Create new Resnik similarity model."""
         self._model = models.DAGResnik(verbose)
+        self._graph = None
 
     def fit(
         self,
@@ -27,398 +28,381 @@ class DAGResnik:
         node_frequencies: Optional[np.ndarray] = None
             Optional vector of node frequencies.
         """
+        self._graph = graph
         self._model.fit(
             graph,
             node_counts=node_counts,
             node_frequencies=node_frequencies
         )
 
-    def get_similarity_from_node_id(
+    def _normalize_output(
         self,
-        first_node_id: int,
-        second_node_id: int
-    ) -> float:
-        """Return the similarity between the two provided nodes.
-
-        Arguments
-        --------------------
-        first_node_id: int
-            The first node for which to compute the similarity.
-        second_node_id: int
-            The second node for which to compute the similarity.
-        """
-        return self._model.get_similarity_from_node_id(first_node_id, second_node_id)
-
-    def get_similarity_from_node_ids(
-        self,
-        first_node_ids: List[int],
-        second_node_ids: List[int],
-        minimum_similarity: Optional[float] = 0.0,
-    ) -> np.ndarray:
-        """Return the similarity between the two provided nodes.
-
-        Arguments
-        --------------------
-        first_node_ids: List[int]
-            The first node for which to compute the similarity.
-        second_node_ids: List[int]
-            The second node for which to compute the similarity.
-        """
-        return self._model.get_similarity_from_node_ids(first_node_ids, second_node_ids, minimum_similarity)
-
-    def get_similarity_from_node_name(
-        self,
-        first_node_name: str,
-        second_node_name: str
-    ) -> float:
-        """Return the similarity between the two provided nodes.
-
-        Arguments
-        --------------------
-        first_node_name: str
-            The first node for which to compute the similarity.
-        second_node_name: str
-            The second node for which to compute the similarity.
-        """
-        return self._model.get_similarity_from_node_name(first_node_name, second_node_name)
-
-    def get_similarity_from_node_names(
-        self,
-        first_node_names: List[str],
-        second_node_names: List[str],
-        minimum_similarity: Optional[float] = 0.0,
-    ) -> np.ndarray:
-        """Return the similarity between the two provided nodes.
-
-        Arguments
-        --------------------
-        first_node_names: List[str]
-            The first node for which to compute the similarity.
-        second_node_names: List[str]
-            The second node for which to compute the similarity.
-        """
-        return self._model.get_similarity_from_node_names(first_node_names, second_node_names, minimum_similarity)
-
-    def get_pairwise_similarities(
-        self,
-        graph: Optional[Graph] = None,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities on the provided graph.
-
+        edge_node_ids: np.ndarray,
+        similarities: np.ndarray,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Normalize output to provided standard.
+        
         Parameters
-        --------------------
-        graph: Optional[Graph] = None
-            The graph to run similarities on.
+        ---------------------
+        edge_node_ids: np.ndarray
+            The edge node IDs composing the edges.
+        similarities: np.ndarray
+            Resnik similarity scores.
         return_similarities_dataframe: bool = False
-            Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            Whether to return the data as a DataFrame.
+            Do note that this will require more RAM.
+        return_node_names: bool = False
+            Whether to return the node names.
+            Do note that this will require SIGNIFICANTLY more RAM.
         """
-        similarities = self._model.get_pairwise_similarities()
-
-        if return_similarities_dataframe and graph is not None:
-            similarities = pd.DataFrame(
-                similarities,
-                columns=graph.get_node_names(),
-                index=graph.get_node_names(),
+        if return_node_names and not return_similarities_dataframe:
+            raise NotImplementedError(
+                "It is not currently supported to return the node names "
+                "when it is not requested to return a pandas DataFrame. "
+                "This is not supported as the RAM requirements for common "
+                "use cases are large enough to be unfeaseable on most systems."
             )
 
-        return similarities
+        if not return_similarities_dataframe:
+            return (edge_node_ids, similarities)
 
-    def get_similarities_from_graph(
-        self,
-        graph: Graph,
-        minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities on the provided graph.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run similarities on.
-        minimum_similarity: Optional[float] = 0.0
-            Minimum similarity to be kept. Values below this amount are filtered.
-        return_similarities_dataframe: bool = False
-            Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
-        """
-        (edge_node_ids, similarities) = self._model.get_similarities_from_graph(
-            graph,
-            minimum_similarity
-        )
-
-        if return_similarities_dataframe:
-            if not graph.has_edges():
-                similarities = pd.DataFrame({
-                    "similarity": [],
-                    "source": [],
-                    "destination": [],
-                })
-            else:
-                similarities = pd.DataFrame(
-                    {
-                        "similarity": similarities,
-                        "source": edge_node_ids[:, 0],
-                        "destination": edge_node_ids[:, 1],
-                    },
-                )
-
-        return similarities
-
-    def get_similarities_from_bipartite_graph_from_edge_node_ids(
-        self,
-        graph: Graph,
-        source_node_ids: List[int],
-        destination_node_ids: List[int],
-        minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph from which to extract the edges.
-        source_node_ids: List[int]
-            The source nodes of the bipartite graph.
-        destination_node_ids: List[int]
-            The destination nodes of the bipartite graph.
-        minimum_similarity: Optional[float] = 0.0
-            Minimum similarity to be kept. Values below this amount are filtered.
-        return_similarities_dataframe: bool = False
-            Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
-        """
-        return self.get_similarities_from_graph(
-            graph.build_bipartite_graph_from_edge_node_ids(
-                source_node_ids=source_node_ids,
-                destination_node_ids=destination_node_ids,
-                directed=True
+        return pd.DataFrame({
+            "source": (
+                self._graph.get_node_names_from_node_ids(edge_node_ids[:, 0])
+                if return_node_names
+                else edge_node_ids[:, 0]
             ),
-            minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            "destination": (
+                self._graph.get_node_names_from_node_ids(edge_node_ids[:, 1])
+                if return_node_names
+                else edge_node_ids[:, 1]
+            ),
+            "resnik_score": similarities
+        })
+
+    def get_similarities_from_bipartite_graph_node_ids(
+        self,
+        source_node_ids: List[str],
+        destination_node_ids: List[str],
+        minimum_similarity: Optional[float] = 0.0,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the bipartite portion
+
+        Parameters
+        --------------------
+        source_node_ids: List[int]
+            The source node ids defining a bipartite graph.
+        destination_node_ids: List[int]
+            The destination node ids defining a bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
+        return_similarities_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
+        """
+        return self._normalize_output(
+            *self._model.get_node_ids_and_similarity_from_node_ids(
+                first_node_ids=source_node_ids,
+                second_node_ids=destination_node_ids,
+                minimum_similarity=minimum_similarity
+            ),
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
 
-    def get_similarities_from_bipartite_graph_from_edge_node_names(
+    def get_similarities_from_bipartite_graph_node_names(
         self,
-        graph: Graph,
         source_node_names: List[str],
         destination_node_names: List[str],
         minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the bipartite portion
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
         source_node_names: List[str]
-            The source nodes of the bipartite graph.
+            The source node names defining a bipartite graph.
         destination_node_names: List[str]
-            The destination nodes of the bipartite graph.
+            The destination node names defining a bipartite graph.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        return self.get_similarities_from_graph(
-            graph.build_bipartite_graph_from_edge_node_names(
-                source_node_names=source_node_names,
-                destination_node_names=destination_node_names,
-                directed=True
+        return self._normalize_output(
+            *self._model.get_node_ids_and_similarity_from_node_names(
+                first_node_names=source_node_names,
+                second_node_names=destination_node_names,
+                minimum_similarity=minimum_similarity
             ),
-            minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
 
-    def get_similarities_from_bipartite_graph_from_edge_node_prefixes(
+    def get_similarities_from_bipartite_graph_node_prefixes(
         self,
         source_node_prefixes: List[str],
         destination_node_prefixes: List[str],
         minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, Tuple[List[Tuple[str, str]], np.ndarray]]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the bipartite portion
 
         Parameters
         --------------------
         source_node_prefixes: List[str]
-            The source node prefixes of the bipartite graph.
+            The source node prefixes defining a bipartite graph.
         destination_node_prefixes: List[str]
-            The destination node prefixes of the bipartite graph.
+            The destination node prefixes defining a bipartite graph.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        edge_node_names, similarities = self._model.get_similarity_from_node_prefixes(
-            first_node_prefixes=source_node_prefixes,
-            second_node_prefixes=destination_node_prefixes,
-            minimum_similarity=minimum_similarity,
-        )
-
-        if not return_similarities_dataframe:
-            return edge_node_names, similarities
-        
-        edge_node_names = pd.DataFrame(
-            edge_node_names,
-            columns=["source", "destination"],
-        )
-
-        edge_node_names["similarity"] = similarities
-        
-        return edge_node_names
-
-    def get_similarities_from_bipartite_graph_from_edge_node_types(
-        self,
-        graph: Graph,
-        source_node_types: List[str],
-        destination_node_types: List[str],
-        minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph from which to extract the edges.
-        source_node_types: List[str]
-            The source node prefixes of the bipartite graph.
-        destination_node_types: List[str]
-            The destination node prefixes of the bipartite graph.
-        minimum_similarity: Optional[float] = 0.0
-            Minimum similarity to be kept. Values below this amount are filtered.
-        return_similarities_dataframe: bool = False
-            Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
-        """
-        return self.get_similarities_from_graph(
-            graph.build_bipartite_graph_from_edge_node_types(
-                source_node_types=source_node_types,
-                destination_node_types=destination_node_types,
-                directed=True
+        return self._normalize_output(
+            *self._model.get_node_ids_and_similarity_from_node_prefixes(
+                first_node_prefixes=source_node_prefixes,
+                second_node_prefixes=destination_node_prefixes,
+                minimum_similarity=minimum_similarity
             ),
-            minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
 
-    def get_similarities_from_clique_graph_from_node_ids(
+    def get_similarities_from_bipartite_graph_node_type_ids(
         self,
-        graph: Graph,
-        node_ids: List[int],
+        source_node_type_ids: List[int],
+        destination_node_type_ids: List[int],
         minimum_similarity: Optional[float] = 0.0,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the bipartite portion
+
+        Parameters
+        --------------------
+        source_node_type_ids: List[int]
+            The source node type ids defining a bipartite graph.
+        destination_node_type_ids: List[int]
+            The destination node type ids defining a bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
+        """
+        return self._normalize_output(
+            *self._model.get_node_ids_and_similarity_from_node_type_ids(
+                first_node_type_ids=source_node_type_ids,
+                second_node_type_ids=destination_node_type_ids,
+                minimum_similarity=minimum_similarity
+            ),
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
+        )
+
+    def get_similarities_from_bipartite_graph_node_type_names(
+        self,
+        source_node_type_names: List[str],
+        destination_node_type_names: List[str],
+        minimum_similarity: Optional[float] = 0.0,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
         """Execute similarities probabilities on the provided graph bipartite portion.
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
+        source_node_type_names: List[str]
+            The source node type names defining a bipartite graph.
+        destination_node_type_names: List[str]
+            The destination node type names defining a bipartite graph.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
+        return_similarities_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
+        """
+        return self._normalize_output(
+            *self._model.get_node_ids_and_similarity_from_node_type_names(
+                first_node_type_names=source_node_type_names,
+                second_node_type_names=destination_node_type_names,
+                minimum_similarity=minimum_similarity
+            ),
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
+        )
+
+    def get_similarities_from_clique_graph_node_ids(
+        self,
+        node_ids: List[str],
+        minimum_similarity: Optional[float] = 0.0,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the clique portion
+
+        Parameters
+        --------------------
         node_ids: List[int]
-            The nodes of the bipartite graph.
+            The node type ids defining a clique.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        return self.get_similarities_from_graph(
-            graph.build_clique_graph_from_node_ids(
-                node_ids=node_ids,
-                directed=True
-            ),
+        return self.get_similarities_from_bipartite_graph_node_ids(
+            source_node_ids=node_ids,
+            destination_node_ids=node_ids,
             minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
 
-    def get_similarities_from_clique_graph_from_node_names(
+    def get_similarities_from_clique_graph_node_names(
         self,
-        graph: Graph,
         node_names: List[str],
         minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the clique portion
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
         node_names: List[str]
-            The nodes of the bipartite graph.
+            The node type ids defining a clique.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        return self.get_similarities_from_graph(
-            graph.build_clique_graph_from_node_names(
-                node_names=node_names,
-                directed=True
-            ),
+        return self.get_similarities_from_bipartite_graph_node_names(
+            source_node_names=node_names,
+            destination_node_names=node_names,
             minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
 
-    def get_similarities_from_clique_graph_from_node_prefixes(
+    def get_similarities_from_clique_graph_node_prefixes(
         self,
         node_prefixes: List[str],
         minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, Tuple[List[Tuple[str, str]], np.ndarray]]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the clique portion
 
         Parameters
         --------------------
         node_prefixes: List[str]
-            The node prefixes of the bipartite graph.
+            The node type ids defining a clique.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        return self.get_similarities_from_bipartite_graph_from_edge_node_prefixes(
+        return self.get_similarities_from_bipartite_graph_node_prefixes(
             source_node_prefixes=node_prefixes,
             destination_node_prefixes=node_prefixes,
             minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
-        )        
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
+        )
 
-
-    def get_similarities_from_clique_graph_from_node_types(
+    def get_similarities_from_clique_graph_node_type_ids(
         self,
-        graph: Graph,
-        node_types: List[str],
+        node_type_ids: List[int],
         minimum_similarity: Optional[float] = 0.0,
-        return_similarities_dataframe: bool = False
-    ) -> Union[pd.DataFrame, np.ndarray]:
-        """Execute similarities probabilities on the provided graph bipartite portion.
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the clique portion
 
         Parameters
         --------------------
-        graph: Graph
-            The graph from which to extract the edges.
-        node_types: List[str]
-            The node prefixes of the bipartite graph.
+        node_type_ids: List[int]
+            The node type ids defining a clique.
         minimum_similarity: Optional[float] = 0.0
             Minimum similarity to be kept. Values below this amount are filtered.
         return_similarities_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
-            By default, a numpy array with the similarities is returned as it weights much less.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
         """
-        return self.get_similarities_from_graph(
-            graph.build_clique_graph_from_node_types(
-                node_types=node_types,
-                directed=True
-            ),
+        return self.get_similarities_from_bipartite_graph_node_type_ids(
+            source_node_type_ids=node_type_ids,
+            destination_node_type_ids=node_type_ids,
             minimum_similarity=minimum_similarity,
-            return_similarities_dataframe=return_similarities_dataframe
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
+        )
+
+    def get_similarities_from_clique_graph_node_type_names(
+        self,
+        node_type_names: List[str],
+        minimum_similarity: Optional[float] = 0.0,
+        return_similarities_dataframe: bool = False,
+        return_node_names: bool = False
+    ) -> Union[pd.DataFrame, Tuple[np.ndarray, np.ndarray]]:
+        """Execute similarities probabilities on the provided graph clique portion.
+
+        Parameters
+        --------------------
+        node_type_names: List[str]
+            The node type names defining a clique.
+        minimum_similarity: Optional[float] = 0.0
+            Minimum similarity to be kept. Values below this amount are filtered.
+        return_similarities_dataframe: bool = False
+            Whether to return a pandas DataFrame, which as indices has the node IDs.
+            By default, a numpy array with the similarities is returned as requires much less RAM.
+        return_node_names: bool = False
+            Whether to return the node names or node IDs associated to the scores.
+            By default we return the node ids, which require much less memory.
+        """
+        return self.get_similarities_from_bipartite_graph_node_type_names(
+            source_node_type_names=node_type_names,
+            destination_node_type_names=node_type_names,
+            minimum_similarity=minimum_similarity,
+            return_similarities_dataframe=return_similarities_dataframe,
+            return_node_names=return_node_names
         )
