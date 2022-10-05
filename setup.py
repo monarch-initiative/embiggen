@@ -71,11 +71,10 @@ setup(
         "ddd_subplots>=1.0.23",
         "sanitize_ml_labels>=1.0.45",
         "keras_mixed_sequence>=1.0.28",
-        "ensmallen>=0.8.24",
+        "ensmallen>=0.8.27",
         "environments_utils>=1.0.6",
         "compress_pickle>=2.1.0",
         "validate_version_code",
-        "ringbell>=1.0.2",
         "cache_decorator>=2.1.11",
         "packaging"
     ],
