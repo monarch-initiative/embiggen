@@ -1,2 +1,2 @@
-"""Current version of package embiggen"""
-__version__ = "0.11.38"
+"""Current version of package Embiggen."""
+__version__ = "0.11.39"
