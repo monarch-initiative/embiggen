@@ -197,7 +197,7 @@ class DistanceBasedPerceptronNodeLabelPrediction(AbstractNodeLabelPredictionMode
 
     @classmethod
     def model_name(cls) -> str:
-        return "Perceptron"
+        return "Distance-based Perceptron"
 
     @classmethod
     def library_name(cls) -> str:
@@ -213,8 +213,8 @@ class DistanceBasedPerceptronNodeLabelPrediction(AbstractNodeLabelPredictionMode
             Path from where to load the model.
         """
         data = compress_json.load(path)
-        model = PerceptronNodeLabelPrediction(**data["parameters"])
-        model._model = models.NodeLabelPredictionPerceptron.loads(
+        model = DistanceBasedPerceptronNodeLabelPrediction(**data["parameters"])
+        model._model = models.DistanceNodeLabelPredictionPerceptron.loads(
             json.dumps(data["inner_model"])
         )
         for key, value in data["metadata"].items():
