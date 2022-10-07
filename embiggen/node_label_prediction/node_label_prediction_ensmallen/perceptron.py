@@ -141,7 +141,7 @@ class PerceptronNodeLabelPrediction(AbstractNodeLabelPredictionModel):
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features
-        ).argmax(axis=0)
+        ).argmax(axis=1)
 
     def _predict_proba(
         self,
