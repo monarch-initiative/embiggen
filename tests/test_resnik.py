@@ -90,7 +90,7 @@ class TestDAGResnik(TestCase):
     def test_resnik_node_type_names(self):
         self.generic_test(
             lambda x, y: self._model.get_similarities_from_clique_graph_node_type_names(
-                node_type_names=["biolink:NamedThing"],
+                node_type_names=["biolink:PhenotypicFeature"],
                 minimum_similarity=1,
                 return_similarities_dataframe=x,
                 return_node_names=y

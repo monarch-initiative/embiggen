@@ -107,6 +107,12 @@ class DAGResnik:
             Whether to return the node names or node IDs associated to the scores.
             By default we return the node ids, which require much less memory.
         """
+        if isinstance(source_node_ids, int):
+            source_node_ids = [source_node_ids]
+
+        if isinstance(destination_node_ids, int):
+            destination_node_ids = [destination_node_ids]
+        
         return self._normalize_output(
             *self._model.get_node_ids_and_similarity_from_node_ids(
                 first_node_ids=source_node_ids,
@@ -142,6 +148,12 @@ class DAGResnik:
             Whether to return the node names or node IDs associated to the scores.
             By default we return the node ids, which require much less memory.
         """
+        if isinstance(source_node_names, str):
+            source_node_names = [source_node_names]
+
+        if isinstance(destination_node_names, str):
+            destination_node_names = [destination_node_names]
+        
         return self._normalize_output(
             *self._model.get_node_ids_and_similarity_from_node_names(
                 first_node_names=source_node_names,
@@ -177,6 +189,12 @@ class DAGResnik:
             Whether to return the node names or node IDs associated to the scores.
             By default we return the node ids, which require much less memory.
         """
+        if isinstance(source_node_prefixes, str):
+            source_node_prefixes = [source_node_prefixes]
+
+        if isinstance(destination_node_prefixes, str):
+            destination_node_prefixes = [destination_node_prefixes]
+        
         return self._normalize_output(
             *self._model.get_node_ids_and_similarity_from_node_prefixes(
                 first_node_prefixes=source_node_prefixes,
@@ -212,6 +230,12 @@ class DAGResnik:
             Whether to return the node names or node IDs associated to the scores.
             By default we return the node ids, which require much less memory.
         """
+        if isinstance(source_node_type_ids, int):
+            source_node_type_ids = [source_node_type_ids]
+
+        if isinstance(destination_node_type_ids, int):
+            destination_node_type_ids = [destination_node_type_ids]
+        
         return self._normalize_output(
             *self._model.get_node_ids_and_similarity_from_node_type_ids(
                 first_node_type_ids=source_node_type_ids,
@@ -247,6 +271,12 @@ class DAGResnik:
             Whether to return the node names or node IDs associated to the scores.
             By default we return the node ids, which require much less memory.
         """
+        if isinstance(source_node_type_names, str):
+            source_node_type_names = [source_node_type_names]
+
+        if isinstance(destination_node_type_names, str):
+            destination_node_type_names = [destination_node_type_names]
+
         return self._normalize_output(
             *self._model.get_node_ids_and_similarity_from_node_type_names(
                 first_node_type_names=source_node_type_names,

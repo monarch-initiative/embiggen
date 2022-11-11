@@ -23,6 +23,12 @@ def edge_prediction_evaluation(
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
     validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+    source_node_types_names: Optional[List[str]] = None,
+    destination_node_types_names: Optional[List[str]] = None,
+    source_edge_types_names: Optional[List[str]] = None,
+    destination_edge_types_names: Optional[List[str]] = None,
+    source_nodes_prefixes: Optional[List[str]] = None,
+    destination_nodes_prefixes: Optional[List[str]] = None,
     validation_unbalance_rates: Tuple[float] = (1.0, ),
     use_scale_free_distribution: bool = True,
     enable_cache: bool = False,
@@ -98,6 +104,24 @@ def edge_prediction_evaluation(
     validation_sample_only_edges_with_heterogeneous_node_types: bool = False
         Whether to sample negative edges exclusively between nodes with different node types.
         This can be useful when executing a bipartite edge prediction task.
+    source_node_types_names: Optional[List[str]]
+        Node type names of the nodes to be samples as sources.
+        If a node has any of the provided node types, it can be sampled as a source node.
+    destination_node_types_names: Optional[List[str]]
+        Node type names of the nodes to be samples as destinations.
+        If a node has any of the provided node types, it can be sampled as a destination node.
+    source_edge_types_names: Optional[List[str]]
+        Edge type names of the nodes to be samples as sources.
+        If a node has any of the provided edge types, it can be sampled as a source node.
+    destination_edge_types_names: Optional[List[str]]
+        Edge type names of the nodes to be samples as destinations.
+        If a node has any of the provided edge types, it can be sampled as a destination node.
+    source_nodes_prefixes: Optional[List[str]]
+        Prefixes of the nodes names to be samples as sources.
+        If a node starts with any of the provided prefixes, it can be sampled as a source node.
+    destination_nodes_prefixes: Optional[List[str]]
+        Prefixes of the nodes names to be samples as destinations.
+        If a node starts with any of the provided prefixes, it can be sampled as a destinations node.
     validation_unbalance_rates: Tuple[float] = (1.0, )
         Unbalance rate for the non-existent graphs generation.
     use_scale_free_distribution: bool = True
@@ -154,6 +178,12 @@ def edge_prediction_evaluation(
         slurm_node_id_variable=slurm_node_id_variable,
         verbose=verbose,
         validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+        source_node_types_names=source_node_types_names,
+        destination_node_types_names=destination_node_types_names,
+        source_edge_types_names=source_edge_types_names,
+        destination_edge_types_names=destination_edge_types_names,
+        source_nodes_prefixes=source_nodes_prefixes,
+        destination_nodes_prefixes=destination_nodes_prefixes,
         validation_unbalance_rates=validation_unbalance_rates,
         use_scale_free_distribution=use_scale_free_distribution
     )

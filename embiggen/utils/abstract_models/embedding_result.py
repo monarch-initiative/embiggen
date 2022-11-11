@@ -62,12 +62,15 @@ class EmbeddingResult:
                         f"computed with the {embedding_method_name} method is neither a "
                         f"numpy array or a pandas DataFrame, but a `{type(embedding)}` object."
                     )
+                
                 if embedding.shape[0] == 0:
                     raise ValueError(
                         "One of the provided {embedding_list_name} "
                         f"computed with the {embedding_method_name} method "
                         "is empty."
                     )
+                
+                # If the embedding size is too big, we skip the checking step.
                 if embedding.shape[0] > 1_000_000:
                     continue
 
