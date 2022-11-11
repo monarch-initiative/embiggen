@@ -101,6 +101,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         random_state: int,
         verbose: bool,
         validation_sample_only_edges_with_heterogeneous_node_types: bool,
+        source_node_types_names: Optional[List[str]],
+        destination_node_types_names: Optional[List[str]],
+        source_edge_types_names: Optional[List[str]],
+        destination_edge_types_names: Optional[List[str]],
+        source_nodes_prefixes: Optional[List[str]],
+        destination_nodes_prefixes: Optional[List[str]],
         validation_unbalance_rates: Tuple[float],
         use_scale_free_distribution: bool
     ) -> Iterator[Tuple[Graph]]:
@@ -136,6 +142,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 random_state=random_state*(i+1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 use_scale_free_distribution=use_scale_free_distribution,
+                source_node_types_names=source_node_types_names,
+                destination_node_types_names=destination_node_types_names,
+                source_edge_types_names=source_edge_types_names,
+                destination_edge_types_names=destination_edge_types_names,
+                source_nodes_prefixes=source_nodes_prefixes,
+                destination_nodes_prefixes=destination_nodes_prefixes,
                 support=support,
                 graph_to_avoid=graph
             ).random_holdout(
@@ -164,6 +176,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         random_state: int = 42,
         verbose: bool = True,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        source_node_types_names: Optional[List[str]] = None,
+        destination_node_types_names: Optional[List[str]] = None,
+        source_edge_types_names: Optional[List[str]] = None,
+        destination_edge_types_names: Optional[List[str]] = None,
+        source_nodes_prefixes: Optional[List[str]] = None,
+        destination_nodes_prefixes: Optional[List[str]] = None,
         validation_unbalance_rates: Tuple[float] = (1.0, ),
         use_scale_free_distribution: bool = True
     ) -> Dict[str, Any]:
@@ -178,6 +196,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 random_state=random_state,
                 verbose=verbose,
                 validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                source_node_types_names=source_node_types_names,
+                destination_node_types_names=destination_node_types_names,
+                source_edge_types_names=source_edge_types_names,
+                destination_edge_types_names=destination_edge_types_names,
+                source_nodes_prefixes=source_nodes_prefixes,
+                destination_nodes_prefixes=destination_nodes_prefixes,
                 validation_unbalance_rates=validation_unbalance_rates,
                 use_scale_free_distribution=use_scale_free_distribution
             ))
@@ -197,6 +221,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         verbose: bool = True,
         negative_graphs: Optional[List[Tuple[Graph]]] = None,
         validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        source_node_types_names: Optional[List[str]] = None,
+        destination_node_types_names: Optional[List[str]] = None,
+        source_edge_types_names: Optional[List[str]] = None,
+        destination_edge_types_names: Optional[List[str]] = None,
+        source_nodes_prefixes: Optional[List[str]] = None,
+        destination_nodes_prefixes: Optional[List[str]] = None,
         validation_unbalance_rates: Tuple[float] = (1.0, ),
         use_scale_free_distribution: bool = True,
     ) -> List[Dict[str, Any]]:
@@ -232,6 +262,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             random_state=random_state,
             verbose=verbose,
             validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+            source_node_types_names=source_node_types_names,
+            destination_node_types_names=destination_node_types_names,
+            source_edge_types_names=source_edge_types_names,
+            destination_edge_types_names=destination_edge_types_names,
+            source_nodes_prefixes=source_nodes_prefixes,
+            destination_nodes_prefixes=destination_nodes_prefixes,
             validation_unbalance_rates=validation_unbalance_rates,
             use_scale_free_distribution=use_scale_free_distribution
         ) if negative_graphs is None else negative_graphs

@@ -64,6 +64,7 @@ setup(
         'numpy',
         'pandas',
         "tqdm",
+        "humanize",
         "matplotlib>=3.5.2",
         "scikit-learn",
         "dict_hash>=1.1.29",

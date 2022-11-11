@@ -4237,9 +4237,9 @@ class GraphVisualizer:
         axes.set_ylabel("Counts (log scale)")
         axes.set_xlabel("Degrees")
         if self._show_graph_name:
-            title = "Degrees distribution of graph {}".format(self._graph_name)
+            title = "Degree distribution of graph {}".format(self._graph_name)
         else:
-            title = "Degrees distribution"
+            title = "Degree distribution"
         axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
@@ -4248,7 +4248,7 @@ class GraphVisualizer:
             return self._handle_notebook_display(figure, axes)
 
         caption = (
-            "<i>Node degrees distribution.</i> Node degrees are on the "
+            "<i>Node degree distribution.</i> Node degrees are on the "
             "horizontal axis and node counts are on the vertical axis on a logarithmic scale."
         )
 
