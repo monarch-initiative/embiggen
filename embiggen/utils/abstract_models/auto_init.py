@@ -7,6 +7,7 @@ from ast import ClassDef, ImportFrom, FunctionDef, Return
 from glob import glob
 from embiggen.utils.abstract_models.model_stub import get_model_or_stub
 import os
+import sys
 import inspect
 import traceback
 
@@ -195,8 +196,17 @@ def build_init(
     expected_parent_class: Type[AbstractModel]
         The class to check for.
     """
+    # The Python default is 1000. In some situation,
+    # users may want to modify this and set the global
+    # tracebacklimit to a value too low for us to execute
+    # the meta-programming task of initializing GRAPE's
+    # models. For these reasons, we set it explicitly
+    # to the default Python value, i.e. `1000` without 
+    # touching the sys variables that the user may have
+    # customized. 
+    stack_trace = traceback.extract_stack(limit=1000)
     path_pattern = os.path.join(os.path.dirname(os.path.abspath(
-        traceback.extract_stack()[-2].filename
+        stack_trace[-2].filename
     )), "*.py")
 
     # We retrieve the context of the caller.
@@ -219,6 +229,7 @@ def build_init(
                 klass.name == expected_parent_class.__name__
             ):
                 continue
+            
             # If this class has the expected parent.
             if expected_parent_class.__name__ in get_class_parent_names(
                 path,
