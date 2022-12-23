@@ -7,6 +7,7 @@ from karateclub.estimator import Estimator
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult, abstract_class
 from embiggen.utils.networkx_utils import convert_ensmallen_graph_to_networkx_graph
 
+
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
 
@@ -28,7 +29,7 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
     def _build_model(self) -> Type[Estimator]:
         """Returnd the built estimator."""
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_model`. Please do implement it."
         )
@@ -61,7 +62,8 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
                 "It is not clear what to do with this object."
             )
         
-        model.fit(convert_ensmallen_graph_to_networkx_graph(graph))
+        graph_nx = convert_ensmallen_graph_to_networkx_graph(graph)
+        model.fit(graph_nx)
 
         node_embeddings: np.ndarray = model.get_embedding()
 

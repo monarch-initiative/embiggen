@@ -4204,6 +4204,7 @@ class GraphVisualizer:
         figure: Optional[Figure] = None,
         axes: Optional[Figure] = None,
         apply_tight_layout: bool = True,
+        show_title: bool = True,
         return_caption: bool = True,
     ) -> Tuple[Figure, Axes]:
         """Plot the given graph node degree distribution.
@@ -4219,6 +4220,8 @@ class GraphVisualizer:
         apply_tight_layout: bool = True,
             Whether to apply the tight layout on the matplotlib
             Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
         return_caption: bool = True,
             Whether to return a caption for the plot.
         """
@@ -4234,13 +4237,14 @@ class GraphVisualizer:
             bins=number_of_buckets,
             log=True
         )
-        axes.set_ylabel("Counts (log scale)")
-        axes.set_xlabel("Degrees")
+        axes.set_ylabel("Count (log scale)")
+        axes.set_xlabel("Degree")
         if self._show_graph_name:
             title = "Degree distribution of graph {}".format(self._graph_name)
         else:
             title = "Degree distribution"
-        axes.set_title(title)
+        if show_title:
+            axes.set_title(title)
         if apply_tight_layout:
             figure.tight_layout()
 

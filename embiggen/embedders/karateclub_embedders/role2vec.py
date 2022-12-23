@@ -10,8 +10,8 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
     def __init__(
         self,
         embedding_size: int = 100,
-        walk_number: int = 10,
-        walk_length: int = 80,
+        iterations: int = 10,
+        walk_length: int = 128,
         window_size: int = 5,
         epochs: int = 10,
         learning_rate: float = 0.05,
@@ -29,9 +29,9 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         ----------------------
         embedding_size: int = 100
             Size of the embedding to use.
-        walk_number: int = 10
+        iterations: int = 10
             Number of random walks. Default is 10.
-        walk_length: int = 80
+        walk_length: int = 128
             Length of random walks. Default is 80.
         window_size: int = 5
             Matrix power order. Default is 5.
@@ -56,7 +56,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._walk_number = walk_number
+        self._iterations = iterations
         self._walk_length = walk_length
         self._workers = cpu_count()
         self._window_size = window_size
@@ -77,7 +77,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            walk_number=self._walk_number,
+            walk_number=self._iterations,
             walk_length=self._walk_length,
             window_size=self._window_size,
             epochs=self._epochs,
@@ -93,7 +93,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         """Returns parameters for smoke test."""
         return dict(
             **AbstractKarateClubEmbedder.smoke_test_parameters(),
-            walk_number=1,
+            iterations=1,
             weisfeiler_lehman_hashing_iterations=1,
             walk_length=8,
             window_size=2,
@@ -103,7 +103,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
     def _build_model(self) -> Role2Vec:
         """Return new instance of the Role2Vec model."""
         return Role2Vec(
-            walk_number=self._walk_number,
+            iterations=self._iterations,
             walk_length=self._walk_length,
             dimensions=self._embedding_size,
             workers=self._workers,

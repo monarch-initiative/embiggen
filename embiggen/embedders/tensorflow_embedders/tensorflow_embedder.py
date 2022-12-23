@@ -129,7 +129,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             The graph to build the model for.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_model`. Please do implement it."
         )
@@ -145,7 +145,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Whether to show loading bars while building input.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_input`. Please do implement it."
         )

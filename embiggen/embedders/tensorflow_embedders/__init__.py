@@ -1,4 +1,4 @@
-"""Module with graph embedding models based on TensorFlow."""
+"""Module with node embedding models based on TensorFlow."""
 from embiggen.utils.abstract_models import build_init, AbstractEmbeddingModel
 
 build_init(
