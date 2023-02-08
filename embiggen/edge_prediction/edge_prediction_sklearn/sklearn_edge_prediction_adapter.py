@@ -275,6 +275,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
+        if not graph.has_edges():
+            return np.array([])
+
         sequence = EdgePredictionSequence(
             graph=graph,
             graph_used_in_training=graph,
@@ -283,6 +286,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
+
         return np.concatenate([
             self._model_instance.predict(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],
@@ -326,6 +330,9 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
+        if not graph.has_edges():
+            return np.array([])
+        
         sequence = EdgePredictionSequence(
             graph=graph,
             graph_used_in_training=graph,
@@ -334,6 +341,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
+        
         prediction_probabilities = np.concatenate([
             self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],

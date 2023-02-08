@@ -157,7 +157,21 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             )
 
             if self.is_binary_prediction_task():
-                predictions = prediction_probabilities
+                if prediction_probabilities.shape[1] == 1:
+                    predictions = prediction_probabilities
+                elif prediction_probabilities.shape[1] == 2:
+                    predictions = prediction_probabilities[:, 1]
+                    prediction_probabilities = prediction_probabilities[:, 1]
+                else:
+                    raise NotImplementedError(
+                        f"The model {self.model_name()} as implemented in "
+                        f"the library {self.library_name()} for the task "
+                        f"{self.task_name()} has produced a binary prediction "
+                        f"result with shape {prediction_probabilities.shape}, "
+                        "which is unclear how to handle for evaluation. "
+                        "Please open an issue and pull request to clarify what "
+                        "you expect to happen here."
+                    )
             elif self.is_multilabel_prediction_task():
                 predictions = prediction_probabilities > 0.5
             else:

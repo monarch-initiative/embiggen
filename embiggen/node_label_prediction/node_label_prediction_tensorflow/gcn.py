@@ -177,7 +177,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         for units in self._number_of_units_per_head_layer:
             hidden = Dense(
                 units=units,
-                activation="ReLU"
+                activation="relu"
             )(hidden)
 
         output = Dense(

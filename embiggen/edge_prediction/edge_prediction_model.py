@@ -362,13 +362,16 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             raise NotImplementedError(
                 "Currently edge features are not supported in edge prediction models."
             )
-
-        predictions = super().predict(
-            graph,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features
-        ).flatten()
+        
+        if graph.has_edges():
+            predictions = super().predict(
+                graph,
+                support=support,
+                node_features=node_features,
+                node_type_features=node_type_features
+            ).flatten()
+        else:
+            predictions = np.array([])
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(

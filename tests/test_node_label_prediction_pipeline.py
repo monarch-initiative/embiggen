@@ -5,6 +5,7 @@ from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import get_available_models_for_node_label_prediction, get_available_models_for_node_embedding
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 from ensmallen.datasets.kgobo import MIAPA
+from ensmallen import Graph
 from ensmallen.datasets.linqs import Cora, get_words_data
 import shutil
 import os
@@ -63,21 +64,20 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                     model_name
                 )().into_smoke_test()
                 model.fit(g, node_features=node_features)
-                if model.library_name() != "TensorFlow":
-                    if model.library_name() == "scikit-learn":
-                        path = "model.pkl.gz"
-                    elif model.library_name() == "Ensmallen":
-                        path = "model.json"
-                    else:
-                        raise NotImplementedError(
-                            f"The model {model.model_name()} from library {model.library_name()} "
-                            "is not currently covered by the test suite!"
-                        )
-                    if os.path.exists(path):
-                        os.remove(path)
-                    model.dump(path)
-                    restored_model = model.load(path)
-                    assert restored_model.parameters() == model.parameters()
+                if model.library_name() in ("TensorFlow", "scikit-learn"):
+                    path = "model.pkl.gz"
+                elif model.library_name() == "Ensmallen":
+                    path = "model.json"
+                else:
+                    raise NotImplementedError(
+                        f"The model {model.model_name()} from library {model.library_name()} "
+                        "is not currently covered by the test suite!"
+                    )
+                if os.path.exists(path):
+                    os.remove(path)
+                model.dump(path)
+                restored_model = model.load(path)
+                assert restored_model.parameters() == model.parameters()
                 model.predict(g, node_features=node_features)
                 model.predict_proba(g, node_features=node_features)
 
@@ -111,7 +111,19 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             leave=False,
             desc="Testing embedding methods"
         )
-        graph = MIAPA().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
+        graph = Graph.generate_random_connected_graph(
+            random_state=100,
+            nodes_number=100,
+            node_type="red",
+        ) | Graph.generate_random_connected_graph(
+            minimum_node_id=100,
+            random_state=1670,
+            nodes_number=100,
+            node_type="blue",
+        )
+
+        graph = graph.sort_by_decreasing_outbound_node_degree()
+
         for _, row in bar:
             if row.requires_edge_weights:
                 continue

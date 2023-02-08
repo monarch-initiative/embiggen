@@ -32,7 +32,7 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 5,
         norm: str = "L2",
         use_mirrored_strategy: bool = False,
-        optimizer: str = "nadam",
+        optimizer: str = "adam",
         verbose: bool = False,
         ring_bell: bool = False,
         enable_cache: bool = False,

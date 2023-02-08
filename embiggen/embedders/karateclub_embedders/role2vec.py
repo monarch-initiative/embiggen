@@ -77,7 +77,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            walk_number=self._iterations,
+            iterations=self._iterations,
             walk_length=self._walk_length,
             window_size=self._window_size,
             epochs=self._epochs,
@@ -103,7 +103,7 @@ class Role2VecKarateClub(AbstractKarateClubEmbedder):
     def _build_model(self) -> Role2Vec:
         """Return new instance of the Role2Vec model."""
         return Role2Vec(
-            iterations=self._iterations,
+            walk_number=self._iterations,
             walk_length=self._walk_length,
             dimensions=self._embedding_size,
             workers=self._workers,

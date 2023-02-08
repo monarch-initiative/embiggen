@@ -86,6 +86,14 @@ class EmbeddingResult:
                         "contains NaN values."
                     )
 
+                if np.isinf(numpy_embedding).any():
+                    number = np.sum(np.isinf(numpy_embedding))
+                    raise ValueError(
+                        f"One of the provided {embedding_list_name} "
+                        f"computed with the {embedding_method_name} method "
+                        f"contains {number} infinite values."
+                    )
+
                 if np.isclose(numpy_embedding, 0.0).all():
                     raise ValueError(
                         f"One of the provided {embedding_list_name} "

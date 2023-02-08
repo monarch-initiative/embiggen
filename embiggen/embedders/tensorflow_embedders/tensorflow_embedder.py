@@ -27,7 +27,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         learning_rate_plateau_patience: int = 1,
         epochs: int = 10,
         batch_size: int = 2**10,
-        optimizer: str = "nadam",
+        optimizer: str = "adam",
         verbose: bool = False,
         use_mirrored_strategy: bool = False,
         ring_bell: bool = False,

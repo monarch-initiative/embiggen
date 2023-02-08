@@ -78,7 +78,6 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
         """Returns parameters for smoke test."""
         return dict(
             **super().smoke_test_parameters(),
-            number_of_negative_samples=1,
             window_size=1,
             walk_length=2,
             iterations=1

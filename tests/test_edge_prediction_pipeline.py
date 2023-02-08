@@ -15,7 +15,7 @@ try:
     from embiggen.utils import AbstractEmbeddingModel
     from ensmallen.datasets.linqs import Cora
     from ensmallen.datasets.kgobo import CIO
-    from ensmallen.datasets.networkrepository import Usair97
+    from ensmallen import Graph
     from embiggen.edge_prediction import DecisionTreeEdgePrediction
 
 
@@ -55,7 +55,7 @@ try:
         def test_evaluate_edge_prediction(self):
             df = get_available_models_for_edge_prediction()
             holdouts = edge_prediction_evaluation(
-                holdouts_kwargs=dict(train_size=0.8),
+                holdouts_kwargs=dict(train_size=0.9),
                 models=df.model_name,
                 library_names=df.library_name,
                 node_features=DegreeSPINE(embedding_size=5),
@@ -73,7 +73,7 @@ try:
         def test_evaluate_edge_prediction_with_subgraphs(self):
             df = get_available_models_for_edge_prediction()
             holdouts = edge_prediction_evaluation(
-                holdouts_kwargs=dict(train_size=0.8),
+                holdouts_kwargs=dict(train_size=0.9),
                 models=df.model_name,
                 library_names=df.library_name,
                 node_features=DegreeSPINE(embedding_size=5),
@@ -90,7 +90,7 @@ try:
         def test_evaluate_edge_prediction_with_node_types_features(self):
             df = get_available_models_for_edge_prediction()
             holdouts = edge_prediction_evaluation(
-                holdouts_kwargs=dict(train_size=0.8),
+                holdouts_kwargs=dict(train_size=0.9),
                 models=df.model_name,
                 library_names=df.library_name,
                 node_features=DegreeSPINE(embedding_size=5),
@@ -154,21 +154,20 @@ try:
                         node_type_features=node_type_features
                     )
 
-                    if model.library_name() != "TensorFlow":
-                        if model.library_name() == "scikit-learn":
-                            path = "model.pkl.gz"
-                        elif model.library_name() == "Ensmallen":
-                            path = "model.json"
-                        else:
-                            raise NotImplementedError(
-                                f"The model {model.model_name()} from library {model.library_name()} "
-                                "is not currently covered by the test suite!"
-                            )
-                        if os.path.exists(path):
-                            os.remove(path)
-                        model.dump(path)
-                        restored_model = model.load(path)
-                        assert restored_model.parameters() == model.parameters()
+                    if model.library_name() in ("TensorFlow", "scikit-learn"):
+                        path = "model.pkl.gz"
+                    elif model.library_name() == "Ensmallen":
+                        path = "model.json"
+                    else:
+                        raise NotImplementedError(
+                            f"The model {model.model_name()} from library {model.library_name()} "
+                            "is not currently covered by the test suite!"
+                        )
+                    if os.path.exists(path):
+                        os.remove(path)
+                    model.dump(path)
+                    restored_model = model.load(path)
+                    assert restored_model.parameters() == model.parameters()
                     
                     with pytest.raises(NotImplementedError):
                         model.fit(
@@ -333,7 +332,7 @@ try:
                         edge_embedding_method=edge_embedding
                     )
                     holdouts = edge_prediction_evaluation(
-                        holdouts_kwargs=dict(train_size=0.8),
+                        holdouts_kwargs=dict(train_size=0.9),
                         models=DecisionTreeEdgePrediction(
                             **{
                                 **model.parameters(),
@@ -364,9 +363,19 @@ try:
                 if row.requires_node_types:
                     continue
                 if row.requires_edge_weights:
-                    graph_name = Usair97
+                    graph = Graph.generate_random_connected_graph(
+                        random_state=100,
+                        nodes_number=100,
+                        weight=56.0,
+                        edge_type="red"
+                    ) | Graph.generate_random_connected_graph(
+                        random_state=1670,
+                        nodes_number=100,
+                        weight=526.0,
+                        edge_type="red"
+                    )
                 else:
-                    graph_name = CIO
+                    graph = CIO()
 
                 bar.set_description(
                     f"Testing {row.model_name} from library {row.library_name}")
@@ -380,11 +389,11 @@ try:
                     continue
 
                 edge_prediction_evaluation(
-                    holdouts_kwargs=dict(train_size=0.8),
+                    holdouts_kwargs=dict(train_size=0.9),
                     models=PerceptronEdgePrediction(edge_embeddings="CosineSimilarity"),
                     node_features=embedding_model,
                     evaluation_schema="Connected Monte Carlo",
-                    graphs=graph_name().remove_singleton_nodes(),
+                    graphs=graph.remove_singleton_nodes(),
                     number_of_holdouts=self._number_of_holdouts,
                     verbose=False,
                     smoke_test=True,
@@ -393,7 +402,7 @@ try:
         def test_all_edge_embedding_methods(self):
             for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
                 edge_prediction_evaluation(
-                    holdouts_kwargs=dict(train_size=0.8),
+                    holdouts_kwargs=dict(train_size=0.9),
                     models=GraphSAGEEdgePrediction(
                         edge_embedding_method=edge_embedding_method,
                         epochs=1
