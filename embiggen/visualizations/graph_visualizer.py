@@ -2206,8 +2206,8 @@ class GraphVisualizer:
 
         types = np.concatenate([
             np.zeros(
-                self._negative_edge_decomposition.shape[0], dtype=np.bool),
-            np.ones(self._positive_edge_decomposition.shape[0], dtype=np.bool),
+                self._negative_edge_decomposition.shape[0], dtype=bool),
+            np.ones(self._positive_edge_decomposition.shape[0], dtype=bool),
         ])
 
         test_accuracies = []
