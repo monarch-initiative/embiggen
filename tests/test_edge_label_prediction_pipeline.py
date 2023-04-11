@@ -82,21 +82,21 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                         edge_features=ef
                     )
 
-                    if model.library_name() != "TensorFlow":
-                        if model.library_name() == "scikit-learn":
-                            path = "model.pkl.gz"
-                        elif model.library_name() == "Ensmallen":
-                            path = "model.json"
-                        else:
-                            raise NotImplementedError(
-                                f"The model {model.model_name()} from library {model.library_name()} "
-                                "is not currently covered by the test suite!"
-                            )
-                        if os.path.exists(path):
-                            os.remove(path)
-                        model.dump(path)
-                        restored_model = model.load(path)
-                        assert restored_model.parameters() == model.parameters()
+                    if model.library_name() in ("TensorFlow", "scikit-learn"):
+                        path = "model.pkl.gz"
+                    elif model.library_name() == "Ensmallen":
+                        path = "model.json"
+                    else:
+                        raise NotImplementedError(
+                            f"The model {model.model_name()} from library {model.library_name()} "
+                            "is not currently covered by the test suite!"
+                        )
+                    if os.path.exists(path):
+                        os.remove(path)
+                    
+                    model.dump(path)
+                    restored_model = model.load(path)
+                    assert restored_model.parameters() == model.parameters()
 
                     model.predict(
                         g,
@@ -165,7 +165,8 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             leave=False,
             desc="Testing embedding methods"
         )
-        graph = PDUMDV().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
+        graph = PDUMDV().remove_components(top_k_components=1).sort_by_decreasing_outbound_node_degree()
+
         for _, row in bar:
             if row.requires_edge_weights or row.requires_edge_types or row.requires_node_types:
                 continue

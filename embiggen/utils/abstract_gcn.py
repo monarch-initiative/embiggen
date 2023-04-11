@@ -1,7 +1,7 @@
 """Kipf GCN model for node-label prediction."""
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
-from matplotlib.pyplot import axis
 
+import compress_pickle
 import numpy as np
 import pandas as pd
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau  # pylint: disable=import-error,no-name-in-module
@@ -14,7 +14,7 @@ import tensorflow as tf
 from keras_mixed_sequence import Sequence
 from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
 from embiggen.utils.number_to_ordinal import number_to_ordinal
-from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding
+from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding, EmbeddingLookup, L2Norm
 from tensorflow.keras.layers import Input, Concatenate
 import warnings
 from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
@@ -628,6 +628,9 @@ class AbstractGCN(AbstractClassifierModel):
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
+        if not graph.has_edges():
+            return np.array([])
+        
         if support is None:
             support = graph
 
@@ -742,4 +745,29 @@ class AbstractGCN(AbstractClassifierModel):
         """Returns whether the model is parametrized to use edge weights."""
         return not self._use_simmetric_normalized_laplacian
 
-    
+    @classmethod
+    def load(cls, path: str) -> "Self":
+        """Load a saved version of the model from the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to load the model.
+        """
+        with tf.keras.utils.custom_object_scope({
+            "GraphConvolution": GraphConvolution,
+            "EmbeddingLookup": EmbeddingLookup,
+            "FlatEmbedding": FlatEmbedding,
+            "L2Norm": L2Norm
+        }):
+            return compress_pickle.load(path)
+
+    def dump(self, path: str):
+        """Dump the current model at the provided path.
+        
+        Parameters
+        -------------------
+        path: str
+            Path from where to dump the model.
+        """
+        compress_pickle.dump(self, path)

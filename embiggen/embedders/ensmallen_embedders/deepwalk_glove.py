@@ -21,7 +21,8 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         dtype: str = "f32",
         random_state: int = 42,
         ring_bell: bool = False,
-        enable_cache: bool = False
+        enable_cache: bool = False,
+        verbose: bool = True
     ):
         """Create new abstract DeepWalk method.
 
@@ -69,6 +70,13 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
         enable_cache: bool = False
             Whether to enable the cache, that is to
             store the computed embedding.
+        verbose: bool = True
+            Whether to display the loading bar.
+            This will only display the loading bar when
+            running the script in a bash-like environment.
+            It will not work in Jupyter Notebooks, there
+            it will appear in the notebook kernel in some
+            systems but not necessarily.
         """
         super().__init__(
             embedding_size=embedding_size,
@@ -86,7 +94,8 @@ class DeepWalkGloVeEnsmallen(Node2VecEnsmallen):
             enable_cache=enable_cache,
             dtype=dtype,
             ring_bell=ring_bell,
-            random_state=random_state
+            random_state=random_state,
+            verbose=verbose,
         )
 
     def parameters(self) -> Dict[str, Any]:

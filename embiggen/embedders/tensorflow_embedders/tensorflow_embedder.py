@@ -27,7 +27,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         learning_rate_plateau_patience: int = 1,
         epochs: int = 10,
         batch_size: int = 2**10,
-        optimizer: str = "nadam",
+        optimizer: str = "adam",
         verbose: bool = False,
         use_mirrored_strategy: bool = False,
         ring_bell: bool = False,
@@ -129,7 +129,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             The graph to build the model for.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_model`. Please do implement it."
         )
@@ -145,7 +145,7 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
             Whether to show loading bars while building input.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_input`. Please do implement it."
         )

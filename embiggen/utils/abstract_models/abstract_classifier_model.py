@@ -1448,15 +1448,6 @@ class AbstractClassifierModel(AbstractModel):
             **holdouts_kwargs
         )
 
-        # We enable in the train and test graphs the same
-        # speedups enabled in the provided graph.
-        train.enable(
-            vector_sources=graph.has_sources_tradeoff_enabled(),
-            vector_destinations=graph.has_destinations_tradeoff_enabled(),
-            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-        )
-
         # We compute the remaining features
         starting_to_compute_node_features = time.time()
         holdout_node_features = cls.normalize_node_features(
@@ -1555,22 +1546,6 @@ class AbstractClassifierModel(AbstractModel):
         else:
             train_of_interest = train
             test_of_interest = test
-
-        # We enable in the train and test graphs of interest the same
-        # speedups enabled in the provided graph.
-        train_of_interest.enable(
-            vector_sources=graph.has_sources_tradeoff_enabled(),
-            vector_destinations=graph.has_destinations_tradeoff_enabled(),
-            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-        )
-
-        test_of_interest.enable(
-            vector_sources=graph.has_sources_tradeoff_enabled(),
-            vector_destinations=graph.has_destinations_tradeoff_enabled(),
-            vector_cumulative_node_degrees=graph.has_cumulative_node_degrees_tradeoff_enabled(),
-            vector_reciprocal_sqrt_degrees=graph.has_reciprocal_sqrt_degrees_tradeoff_enabled()
-        )
 
         additional_validation_kwargs = cls._prepare_evaluation(
             graph=graph,

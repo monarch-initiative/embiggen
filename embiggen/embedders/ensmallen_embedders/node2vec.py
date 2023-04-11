@@ -51,7 +51,11 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
         """
         model_name = must_be_in_set(self.model_name(), self.MODELS.keys(), "model name")
         self._model_kwargs = model_kwargs
-        self._model = Node2VecEnsmallen.MODELS[model_name](**model_kwargs)
+        self._model = Node2VecEnsmallen.MODELS[model_name](
+            embedding_size=embedding_size,
+            random_state=random_state,
+            **model_kwargs
+        )
 
         super().__init__(
             embedding_size=embedding_size,

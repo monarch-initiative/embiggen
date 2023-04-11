@@ -30,7 +30,7 @@ class EdgePredictionBasedTensorFlowEmbedders(TensorFlowEmbedder):
         use_mirrored_strategy: bool = False,
         activation: str = "sigmoid",
         loss: str = "binary_crossentropy",
-        optimizer: str = "nadam",
+        optimizer: str = "adam",
         verbose: bool = False,
         ring_bell: bool = False,
         enable_cache: bool = False,

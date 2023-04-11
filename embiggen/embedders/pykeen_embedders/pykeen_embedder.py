@@ -134,7 +134,7 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
             The PyKEEN triples factory to use to create the model.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_build_model`. Please do implement it."
         )
@@ -167,7 +167,7 @@ class PyKEENEmbedder(AbstractEmbeddingModel):
             Whether to return a dataframe of a numpy array.
         """
         raise NotImplementedError(
-            f"In the child class {self.__class__.__name__} of {super().__name__.__name__} "
+            f"In the child class {self.__class__.__name__} of {super().__class__.__name__} "
             f"implementing the model {self.model_name()} we could not find the method "
             "called `_extract_embeddings`. Please do implement it."
         )

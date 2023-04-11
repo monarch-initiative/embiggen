@@ -109,6 +109,17 @@ class GraphConvolution(Layer):
 
         super().build(input_shape)
 
+    def get_config(self):
+        config = super(GraphConvolution, self).get_config()
+        config.update({
+            "units": self._units,
+            "activation": self._activation,
+            "combiner": self._combiner,
+            "dropout_rate": self._dropout_rate,
+            "apply_norm": self._apply_norm,
+        })
+        return config
+
     def call(
         self,
         inputs: Tuple[Union[tf.Tensor, List[tf.Tensor], tf.SparseTensor]],
