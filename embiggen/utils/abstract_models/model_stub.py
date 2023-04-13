@@ -1,5 +1,5 @@
 """Submodule providing auto model stub for non-mandatory modules."""
-from typing import Type, List, Union
+from typing import Type, List, Union, Dict, Any
 from embiggen.utils.abstract_models.abstract_model import AbstractModel
 from embiggen.utils.abstract_models.list_formatting import format_list
 
@@ -134,6 +134,11 @@ def get_model_or_stub(
                             f"to proceed with the installation. {other_candidates_message}"
                         )
                     )
+
+                @classmethod
+                def smoke_test_parameters(cls) -> Dict[str, Any]:
+                    """Returns parameters for smoke test."""
+                    return dict()
 
                 @staticmethod
                 def library_name() -> str:

@@ -35,6 +35,7 @@ build
 graphs
 embeddings
 *.webm
+dataset
 
 model.json
 model.pkl.gz
