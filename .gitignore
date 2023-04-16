@@ -43,3 +43,4 @@ okapi_tfidf_weighted_textual_embedding
 precomputed_word_embedding
 embedding
 *.ipynb
+ogb*.csv
