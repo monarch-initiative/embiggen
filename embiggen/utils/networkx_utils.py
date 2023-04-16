@@ -1,13 +1,13 @@
 """Submodule with utilities relative to NetworkX."""
 from ensmallen import Graph
 import networkx as nx
-import numpy as np
+
 
 def convert_ensmallen_graph_to_networkx_graph(
     graph: Graph
 ) -> nx.Graph:
     """Return networkX graph derived from the provided Ensmallen Graph.
-    
+
     Parameters
     -----------
     graph: Graph

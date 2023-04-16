@@ -36,6 +36,14 @@ class AbstractModel(Hashable):
             The random state to use if the model is stocastic.
         """
         super().__init__()
+
+        self._random_state = random_state
+
+        # If the current class is a Stub, we
+        # avoid executing the checks down the line.
+        if self.__class__.__name__ == "StubClass":
+            return
+
         if self.is_stocastic() and random_state is None:
             raise ValueError(
                 "The provided model is stocastic, but no "
@@ -116,7 +124,7 @@ class AbstractModel(Hashable):
                             "in the root abstract model class."
                         )
 
-        self._random_state = random_state
+        
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:

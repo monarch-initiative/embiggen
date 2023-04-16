@@ -15,20 +15,21 @@ class FFGCN(AbstractEdgePredictionModel):
     def __init__(
         self,
         units: List[int] = [10, 10],
-        learning_rate: float = 0.001,
+        adam_learning_rate: float = 0.001,
+        sgd_learning_rate: float = 0.05,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
         number_of_steps_per_layer: int = 1000,
+        maximal_number_of_steps_without_improvement: int = 100,
         number_of_edges_per_mini_batch: int = 256,
         number_of_oversampling_neighbourhoods_per_node: int = 10,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         rate_of_neighbours_to_sample: float = 0.5,
         maximum_number_of_neighbours: int = 1000,
-        include_node_type_embedding: bool = False,
-        include_node_embedding: bool = False,
         avoid_false_negatives: bool = True,
         pre_train: bool = False,
         threshold: float = 3.0,
+        skip_threshold: float = 5.0,
         prediction_reduce: str = "Mean",
         random_state: int = 42,
         verbose: bool = True
@@ -39,14 +40,18 @@ class FFGCN(AbstractEdgePredictionModel):
         ------------------------
         units: List[int]
             List of units per layer.
-        learning_rate: float = 0.001
-            The learning rate to use to train the model. By default `0.001`.
+        adam_learning_rate: float = 0.001
+            The learning rate to use to train the model weights and biases. By default `0.001`.
+        sgd_learning_rate: float = 0.05
+            The learning rate to use to train the model node and node type embedding. By default `0.05`.
         first_order_decay_factor: float = 0.9
             The first order decay to use to train the model. By default `0.9`.
         second_order_decay_factor: float = 0.999
             The second order decay to use to train the model. By default `0.999`.
         number_of_steps_per_layer: int = 1000
             The number of epochs to train the model for. By default, `1000`.
+        maximal_number_of_steps_without_improvement: int = 100
+            Number of steps without improvement before early stopping. By default, `100`.
         number_of_edges_per_mini_batch: int = 256
             The number of samples to include for each mini-batch. By default `256`.
         number_of_oversampling_neighbourhoods_per_node: int = 10
@@ -57,16 +62,14 @@ class FFGCN(AbstractEdgePredictionModel):
             The rate of neighbours to consider when sub-sampling node-neighbours. This is an important regularization parameter to avoid overfitting. By default `0.5`.
         maximum_number_of_neighbours: int = 1000
             The maximum number of neighbours to consider when sub-sampling node-neighbours. This is an important regularization parameter and avoids excessively computationally complex nodes. By default `1000`.
-        include_node_type_embedding: bool = False
-            Whether to include a node type embedding layer as part of the first layer.
-        include_node_embedding: bool = False
-            Whether to include a node embedding layer as part of the first layer.
         avoid_false_negatives: bool = True
             Whether to allow a (generally small) amount of false negatives but with a faster sampling mechanism.
         pre_train: bool = False
             Whether to pre-train the layer without the convolution step. By default `False`.
         threshold: float = 3.0
             Threshold for goodness of the layer. By default, `3.0`.
+        skip_threshold: float = 5.0,
+            Goodness amount where we should prefer skipping the sample rather than compute gradient.
         prediction_reduce: str = "Mean"
             The reduce method to merge the predictions of the various layers.
             Possible options are:
@@ -83,28 +86,26 @@ class FFGCN(AbstractEdgePredictionModel):
 
         self._model_kwargs = dict(
             units=units,
-            learning_rate=learning_rate,
+            adam_learning_rate=adam_learning_rate,
+            sgd_learning_rate=sgd_learning_rate,
             first_order_decay_factor=first_order_decay_factor,
             second_order_decay_factor=second_order_decay_factor,
             number_of_steps_per_layer=number_of_steps_per_layer,
+            maximal_number_of_steps_without_improvement=maximal_number_of_steps_without_improvement,
             number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
             number_of_oversampling_neighbourhoods_per_node=number_of_oversampling_neighbourhoods_per_node,
             sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             rate_of_neighbours_to_sample=rate_of_neighbours_to_sample,
             maximum_number_of_neighbours=maximum_number_of_neighbours,
-            include_node_type_embedding=include_node_type_embedding,
-            include_node_embedding=include_node_embedding,
             avoid_false_negatives=avoid_false_negatives,
             pre_train=pre_train,
-            threshold=threshold
+            threshold=threshold,
+            skip_threshold=skip_threshold
         )
 
         self._prediction_reduce = prediction_reduce
         self._verbose = verbose
-        self._model = models.EdgePredictionFFGCN(
-            **self._model_kwargs,
-            random_state=random_state
-        )
+        self._model = models.EdgePredictionFFGCN()
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
@@ -179,6 +180,7 @@ class FFGCN(AbstractEdgePredictionModel):
     def _fit(
         self,
         graph: Graph,
+        validation: Optional[Graph] = None,
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
@@ -190,11 +192,15 @@ class FFGCN(AbstractEdgePredictionModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        validation: Optional[Graph] = None
+            Graph to use for early stopping procedures.
+            If not provided, `graph` is used.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
             includes also the above graph. This parameter
             is mostly useful for topological classifiers
             such as Graph Convolutional Networks.
+            If not provided, `graph` is used.
         node_features: Optional[List[np.ndarray]] = None
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
@@ -209,8 +215,10 @@ class FFGCN(AbstractEdgePredictionModel):
                 node_features=node_features,
                 node_type_features=node_type_features
             ),
+            validation=validation,
+            support=support,
+            **self._model_kwargs,
             verbose=self._verbose,
-            support=support
         )
 
     def _predict(
@@ -285,6 +293,20 @@ class FFGCN(AbstractEdgePredictionModel):
             verbose=self._verbose
         )
 
+    @staticmethod
+    def available_prediction_reduce() -> List[str]:
+        """Returns the list of available prediction reduce."""
+        return ["Max", "Mean", "Median", "Last"]
+
+    def set_prediction_reduce(self, prediction_reduce: str):
+        """Set the model prediction reduce to the provided one."""
+        if prediction_reduce not in FFGCN.available_prediction_reduce():
+            raise ValueError(
+                f"The provided prediction reduce {prediction_reduce} "
+                f"is not supported. The supported prediction reduce are: {FFGCN.available_prediction_reduce()}."
+            )
+        self._prediction_reduce = prediction_reduce
+
     @classmethod
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
@@ -293,7 +315,14 @@ class FFGCN(AbstractEdgePredictionModel):
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
+        return True
+
+    @classmethod
+    def requires_node_types(cls) -> bool:
         return False
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
 
     @classmethod
     def can_use_edge_types(cls) -> bool:
