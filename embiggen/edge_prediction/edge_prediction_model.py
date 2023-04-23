@@ -1298,7 +1298,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     def fit(
         self,
         graph: Graph,
+        validation: Optional[Graph] = None,
         support: Optional[Graph] = None,
+        graph_to_avoid: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -1309,11 +1311,18 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        validation: Optional[Graph] = None
+            The validation graph to employ when early stopping is used.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
             includes also the above graph. This parameter
             is mostly useful for topological classifiers
             such as Graph Convolutional Networks.
+        graph_to_avoid: Optional[Graph] = None
+            The graph describiding the topological structure that
+            SHOUD BE EXCLUDED from the sampling. This parameter
+            is mostly useful for models involving sampling
+            of negative edges.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -1328,7 +1337,9 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
         super().fit(
             graph=graph,
+            validation=validation,
             support=support,
+            graph_to_avoid=graph_to_avoid,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=None,

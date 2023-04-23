@@ -16,7 +16,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
         epochs: int = 100,
         learning_rate: float = 0.05,
         learning_rate_decay: float = 0.9,
-        avoid_false_negatives: bool = False,
+        avoid_support_collisions: bool = False,
         use_scale_free_distribution: bool = True,
         node_embedding_path: Optional[str] = None,
         dtype: str = "f32",
@@ -37,7 +37,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             The learning rate to update the gradient, by default 0.05.
         learning_rate_decay: float = 0.9
             Factor to reduce the learning rate for at each epoch. By default 0.9.
-        avoid_false_negatives: bool = False
+        avoid_support_collisions: bool = False
             Whether to avoid sampling false negatives.
             This may cause a slower training.
         use_scale_free_distribution: bool = True
@@ -62,7 +62,7 @@ class FirstOrderLINEEnsmallen(EnsmallenEmbedder):
             epochs=epochs,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
-            avoid_false_negatives=avoid_false_negatives,
+            avoid_support_collisions=avoid_support_collisions,
             use_scale_free_distribution=use_scale_free_distribution,
             node_embedding_path=node_embedding_path,
             dtype=dtype,

@@ -4,6 +4,7 @@ from ensmallen import Graph, express_measures
 import numpy as np
 import pandas as pd
 import os
+import warnings
 import platform
 import time
 import json
@@ -44,11 +45,14 @@ class AbstractClassifierModel(AbstractModel):
         """
         super().__init__(random_state=random_state)
         self._fitting_was_executed = False
+        self._support_density = None
 
     def _fit(
         self,
         graph: Graph,
+        validation: Optional[Graph] = None,
         support: Optional[Graph] = None,
+        graph_to_avoid: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
@@ -59,11 +63,18 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        validation: Optional[Graph] = None
+            The validation graph to employ when early stopping is used.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
             includes also the above graph. This parameter
             is mostly useful for topological classifiers
             such as Graph Convolutional Networks.
+        graph_to_avoid: Optional[Graph] = None
+            The graph describiding the topological structure that
+            SHOUD BE EXCLUDED from the sampling. This parameter
+            is mostly useful for models involving sampling
+            of negative edges.
         node_features: Optional[List[np.ndarray]] = None
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
@@ -783,7 +794,9 @@ class AbstractClassifierModel(AbstractModel):
     def fit(
         self,
         graph: Graph,
+        validation: Optional[Graph] = None,
         support: Optional[Graph] = None,
+        graph_to_avoid: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
@@ -794,11 +807,18 @@ class AbstractClassifierModel(AbstractModel):
         --------------------
         graph: Graph
             The graph to run predictions on.
+        validation: Optional[Graph] = None
+            The validation graph to employ when early stopping is used.
         support: Optional[Graph] = None
             The graph describiding the topological structure that
             includes also the above graph. This parameter
             is mostly useful for topological classifiers
             such as Graph Convolutional Networks.
+        graph_to_avoid: Optional[Graph] = None
+            The graph describiding the topological structure that
+            SHOUD BE EXCLUDED from the sampling. This parameter
+            is mostly useful for models involving sampling
+            of negative edges.
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
@@ -831,10 +851,14 @@ class AbstractClassifierModel(AbstractModel):
         if support is None:
             support = graph
 
+        self._support_density = support.get_density()
+
         try:
             self._fit(
                 graph=graph,
+                validation=validation,
                 support=support,
+                graph_to_avoid=graph_to_avoid,
                 node_features=self.normalize_node_features(
                     graph=graph,
                     random_state=self._random_state,
@@ -862,6 +886,33 @@ class AbstractClassifierModel(AbstractModel):
             ) from e
 
         self._fitting_was_executed = True
+
+    def _density_consistency_check(self, support: Graph):
+        """Executes a check for density consistency."""
+        if (
+            self.is_topological() and
+            (
+                support.get_density() < self._support_density / 10.0 or
+                support.get_density() > self._support_density * 10.0
+            )
+        ):
+            warnings.warn(
+                (
+                    "Do be advised that the current model is topological in nature, "
+                    "that is it makes use of the graph topology as part of its "
+                    "input features. The support graph you have provided for the "
+                    "prediction procedure has a density of {}, which is over 10 times "
+                    "{} than the support graph used during training, which has "
+                    "a density equal to {}. "
+                    "Note that if you have not provided any support graph for "
+                    "the training of this model, then the training graph has been "
+                    "used for the training procedure."
+                ).format(
+                    support.get_density(),
+                    "bigger" if support.get_density() > self._support_density else "smaller",
+                    self._support_density
+                )
+            )
 
     def predict(
         self,
@@ -900,6 +951,8 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
+
+        self._density_consistency_check(support)
 
         try:
             predictions = self._predict(
@@ -970,6 +1023,8 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
+
+        self._density_consistency_check(support)
 
         try:
             predictions = self._predict_proba(

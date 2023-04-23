@@ -39,7 +39,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         reduce_lr_monitor: str = "loss",
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
-        avoid_false_negatives: bool = True,
+        avoid_support_collisions: bool = True,
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -124,7 +124,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
-        avoid_false_negatives: bool = True
+        avoid_support_collisions: bool = True
             Whether to avoid sampling false negatives.
             This check makes the sampling a bit slower, and generally
             the rate of collision is extremely low.
@@ -220,7 +220,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
-        self._avoid_false_negatives = avoid_false_negatives
+        self._avoid_support_collisions = avoid_support_collisions
         self._training_unbalance_rate = training_unbalance_rate
         self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
         
@@ -257,7 +257,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             return_node_types=self.is_using_node_types(),
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
-            avoid_false_negatives=self._avoid_false_negatives,
+            avoid_support_collisions=self._avoid_support_collisions,
             negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             random_state=self._random_state

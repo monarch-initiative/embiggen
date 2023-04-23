@@ -18,7 +18,7 @@ class EdgePredictionTrainingSequence(Sequence):
         use_edge_metrics: bool = False,
         batch_size: int = 2**10,
         negative_samples_rate: float = 0.5,
-        avoid_false_negatives: bool = False,
+        avoid_support_collisions: bool = False,
         graph_to_avoid: Graph = None,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
@@ -39,7 +39,7 @@ class EdgePredictionTrainingSequence(Sequence):
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples_rate equal
             to 0.5, there will be 64 positives and 64 negatives.
-        avoid_false_negatives: bool = False,
+        avoid_support_collisions: bool = False,
             Whether to filter out false negatives.
             By default False.
             Enabling this will slow down the batch generation while (likely) not
@@ -58,7 +58,7 @@ class EdgePredictionTrainingSequence(Sequence):
         """
         self._graph = graph
         self._negative_samples_rate = negative_samples_rate
-        self._avoid_false_negatives = avoid_false_negatives
+        self._avoid_support_collisions = avoid_support_collisions
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
         self._use_node_types = use_node_types
@@ -88,7 +88,7 @@ class EdgePredictionTrainingSequence(Sequence):
             return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
-            avoid_false_negatives=self._avoid_false_negatives,
+            avoid_support_collisions=self._avoid_support_collisions,
             sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
             graph_to_avoid=self._graph_to_avoid,
         )

@@ -21,7 +21,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         return_node_types: bool = False,
         use_edge_metrics: bool = False,
         negative_samples_rate: float = 0.5,
-        avoid_false_negatives: bool = False,
+        avoid_support_collisions: bool = False,
         graph_to_avoid: Graph = None,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         random_state: int = 42
@@ -56,7 +56,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             Factor of negatives to use in every batch.
             For example, with a batch size of 128 and negative_samples_rate equal
             to 0.5, there will be 64 positives and 64 negatives.
-        avoid_false_negatives: bool = False,
+        avoid_support_collisions: bool = False,
             Whether to filter out false negatives.
             By default False.
             Enabling this will slow down the batch generation while (likely) not
@@ -90,7 +90,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         
         self._node_features = node_features
         self._negative_samples_rate = negative_samples_rate
-        self._avoid_false_negatives = avoid_false_negatives
+        self._avoid_support_collisions = avoid_support_collisions
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
 
@@ -168,7 +168,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
-            avoid_false_negatives=self._avoid_false_negatives,
+            avoid_support_collisions=self._avoid_support_collisions,
             sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
             support=self._support,
             graph_to_avoid=self._graph_to_avoid,

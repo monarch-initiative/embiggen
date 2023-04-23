@@ -44,3 +44,4 @@ precomputed_word_embedding
 embedding
 *.ipynb
 ogb*.csv
+*.pkl

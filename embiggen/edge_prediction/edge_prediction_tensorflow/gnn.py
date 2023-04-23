@@ -25,7 +25,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         reduce_lr_monitor: str = "loss",
         reduce_lr_mode: str = "min",
         reduce_lr_factor: float = 0.9,
-        avoid_false_negatives: bool = True,
+        avoid_support_collisions: bool = True,
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -87,7 +87,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             Direction of the variation of the monitored metric for learning rate.
         reduce_lr_factor: float = 0.9,
             Factor for reduction of learning rate.
-        avoid_false_negatives: bool = True
+        avoid_support_collisions: bool = True
             Whether to avoid sampling false negatives.
             This check makes the sampling a bit slower, and generally
             the rate of collision is extremely low.
@@ -157,7 +157,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             reduce_lr_monitor=reduce_lr_monitor,
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
-            avoid_false_negatives=avoid_false_negatives,
+            avoid_support_collisions=avoid_support_collisions,
             training_unbalance_rate=training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,

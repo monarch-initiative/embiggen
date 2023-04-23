@@ -125,11 +125,12 @@ def get_model_or_stub(
                         )
                     raise ModuleNotFoundError(
                         (
-                            f"The module {module_library_names} is not available "
+                            f"The module {module_library_name} is not available "
                             "on your system "
                             "and therefore we cannot make available the requested "
                             f"model {self.model_name()}, as it is based on the "
                             f"{self.library_name()} library. "
+                            f"The original exception was {str(e)}."
                             "Please do refer to the requested library documentation "
                             f"to proceed with the installation. {other_candidates_message}"
                         )

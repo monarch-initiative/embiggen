@@ -525,7 +525,9 @@ class AbstractGCN(AbstractClassifierModel):
     def _fit(
         self,
         graph: Graph,
+        validation: Optional[Graph] = None,
         support: Optional[Graph] = None,
+        graph_to_avoid: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
