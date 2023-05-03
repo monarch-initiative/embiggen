@@ -1,36 +1,93 @@
 """Submodule with utilities relative to NetworkX."""
-from ensmallen import Graph
+from tqdm.auto import tqdm, trange
+from ensmallen import Graph, GraphBuilder
 import networkx as nx
-import numpy as np
+
 
 def convert_ensmallen_graph_to_networkx_graph(
     graph: Graph
 ) -> nx.Graph:
-    """Return networkX graph derived from the provided Ensmallen Graph.
-    
+    """Return NetworkX graph derived from the provided Ensmallen Graph.
+
     Parameters
     -----------
     graph: Graph
-        The graph to be converted.
+        The graph to be converted from ensmallen to NetworkX.
     """
     if graph.is_directed():
-        result_graph = nx.DiGraph()
+        result_graph = nx.DiGraph(name=graph.get_name())
     else:
-        result_graph = nx.Graph()
+        result_graph = nx.Graph(name=graph.get_name())
 
-    result_graph.add_nodes_from(graph.get_node_ids())
+    for node_id in trange(
+        graph.get_number_of_nodes(),
+        leave=False,
+        dynamic_ncols=True,
+        desc="Parsing nodes"
+    ):
+        result_graph.add_node(
+            graph.get_node_name_from_node_id(node_id),
+            node_types=graph.get_unchecked_node_type_names_from_node_id(
+                node_id),
+        )
 
-    if graph.has_edge_weights():
-        result_graph.add_weighted_edges_from([
-            (src_name, dst_name, edge_weight)
-            for (src_name, dst_name), edge_weight in zip(
-                graph.get_directed_edge_node_ids(),
-                graph.get_directed_edge_weights()
-            )
-        ])
-    else:
-        result_graph.add_edges_from(
-            graph.get_edge_node_ids(directed=graph.is_directed())
+    for edge_id in trange(
+        graph.get_number_of_directed_edges(),
+        leave=False,
+        dynamic_ncols=True,
+        desc="Parsing edges"
+    ):
+        result_graph.add_edge(
+            *graph.get_node_names_from_edge_id(edge_id),
+            weight=graph.get_unchecked_edge_weight_from_edge_id(edge_id),
+            edge_type=graph.get_unchecked_edge_type_name_from_edge_id(edge_id)
         )
 
     return result_graph
+
+
+def convert_networkx_graph_to_ensmallen_graph(
+    graph: nx.Graph
+) -> Graph:
+    """Return Ensmallen Graph derived from the provided NetworkX Graph.
+
+    Parameters
+    -----------
+    graph: nx.Graph
+        The graph to be converted from NetworkX to Ensmallen.
+    """
+    builder = GraphBuilder()
+    builder.set_directed(graph.is_directed())
+    builder.set_name(graph.name or "NetworkX graph")
+
+    for node_name in tqdm(
+        graph.nodes(),
+        total=graph.number_of_nodes(),
+        leave=False,
+        dynamic_ncols=True,
+        desc="Parsing nodes"
+    ):
+        node_types = graph.nodes[node_name].get("node_types", None)
+        if (
+            node_types is not None and
+            not isinstance(node_types, list)
+        ):
+            node_types = [node_types]
+        builder.add_node(node_name, node_type=node_types)
+
+    for source, destination in tqdm(
+        graph.edges(),
+        total=graph.number_of_edges(),
+        leave=False,
+        dynamic_ncols=True,
+        desc="Parsing edges"
+    ):
+        edge_data = graph.get_edge_data(source, destination)
+        builder.add_edge(
+            source,
+            destination,
+            edge_type=edge_data.get("edge_data", None),
+            weight=edge_data.get("weight", None)
+        )
+
+    return builder.build()
