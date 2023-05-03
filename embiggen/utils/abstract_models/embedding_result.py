@@ -1,7 +1,10 @@
 """Subclass providing EmbeddingResult object."""
+import types
 from typing import List, Union, Optional, Dict
 import pandas as pd
 import numpy as np
+import inspect
+
 
 
 class EmbeddingResult:
@@ -106,6 +109,53 @@ class EmbeddingResult:
         self._edge_embeddings = edge_embeddings
         self._node_type_embeddings = node_type_embeddings
         self._edge_type_embeddings = edge_type_embeddings
+
+        if self.is_single_embedding():
+            embedding = self.get_single_embedding()
+            for method_name, method in inspect.getmembers(
+                embedding, lambda o: isinstance(o, types.MethodType)
+            ):             
+                def metawrap(method_name: str):
+                    def wrapper(*args, **kwargs):
+                        return getattr(embedding, method_name)(
+                            *args,
+                            **kwargs
+                        )
+                    wrapper.__doc__ = method.__doc__
+                    wrapper.__name__ = method.__name__
+                    return wrapper
+
+                setattr(self, method_name, metawrap(method_name))
+
+
+    def get_single_embedding(self) -> Union[np.ndarray, pd.DataFrame]:
+        """Returns the single non-None embedding."""
+        assert self.is_single_embedding()
+        for embeddings in (
+            self._node_embeddings,
+            self._edge_embeddings,
+            self._node_type_embeddings,
+            self._edge_type_embeddings
+        ):
+            if embeddings is not None:
+                return embeddings[0]
+
+    def is_single_embedding(self) -> bool:
+        """Returns whether the wrapper contains a single embedding."""
+        return self.number_of_embeddings() == 1
+
+    def number_of_embeddings(self) -> int:
+        """Returns the number of embedding included in the wrapper."""
+        total = 0
+        for embeddings in (
+            self._node_embeddings,
+            self._edge_embeddings,
+            self._node_type_embeddings,
+            self._edge_type_embeddings
+        ):
+            if embeddings is not None:
+                total += len(embeddings)
+        return total
 
     def get_all_node_embedding(self) -> List[Union[pd.DataFrame, np.ndarray]]:
         """Return a list with all the computed node embedding."""
