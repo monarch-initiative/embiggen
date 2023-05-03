@@ -44,3 +44,4 @@ embedding
 *.ipynb
 *.csv
 dataset
+model.pkl
