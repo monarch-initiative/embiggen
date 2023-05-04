@@ -5,7 +5,8 @@ import networkx as nx
 
 
 def convert_ensmallen_graph_to_networkx_graph(
-    graph: Graph
+    graph: Graph,
+    numeric_node_ids: bool = False
 ) -> nx.Graph:
     """Return NetworkX graph derived from the provided Ensmallen Graph.
 
@@ -13,6 +14,10 @@ def convert_ensmallen_graph_to_networkx_graph(
     -----------
     graph: Graph
         The graph to be converted from ensmallen to NetworkX.
+    numeric_node_ids: bool = False
+        Whether to use numeric node IDs or string node IDs.
+        By default, we use the string node IDs as they are more
+        interpretable.
     """
     if graph.is_directed():
         result_graph = nx.DiGraph(name=graph.get_name())
@@ -26,9 +31,10 @@ def convert_ensmallen_graph_to_networkx_graph(
         desc="Parsing nodes"
     ):
         result_graph.add_node(
-            graph.get_node_name_from_node_id(node_id),
+            node_id if numeric_node_ids else graph.get_node_name_from_node_id(node_id),
             node_types=graph.get_unchecked_node_type_names_from_node_id(
-                node_id),
+                node_id
+            ),
         )
 
     for edge_id in trange(
@@ -38,9 +44,23 @@ def convert_ensmallen_graph_to_networkx_graph(
         desc="Parsing edges"
     ):
         result_graph.add_edge(
-            *graph.get_node_names_from_edge_id(edge_id),
-            weight=graph.get_unchecked_edge_weight_from_edge_id(edge_id),
-            edge_type=graph.get_unchecked_edge_type_name_from_edge_id(edge_id)
+            *(
+                graph.get_node_ids_from_edge_id(edge_id)
+                if numeric_node_ids else
+                graph.get_node_names_from_edge_id(edge_id)
+            ),
+            **(
+                dict(
+                    weight=graph.get_unchecked_edge_weight_from_edge_id(edge_id),
+                )
+                if graph.has_edge_weights() else dict()
+            ),
+            **(
+                dict(
+                    edge_type=graph.get_unchecked_edge_type_name_from_edge_id(edge_id),
+                )
+                if graph.has_edge_types() else dict()
+            ),
         )
 
     return result_graph

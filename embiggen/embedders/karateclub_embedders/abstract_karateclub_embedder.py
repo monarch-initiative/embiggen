@@ -62,7 +62,10 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
                 "It is not clear what to do with this object."
             )
         
-        graph_nx = convert_ensmallen_graph_to_networkx_graph(graph)
+        graph_nx = convert_ensmallen_graph_to_networkx_graph(
+            graph,
+            numeric_node_ids=True
+        )
         model.fit(graph_nx)
 
         node_embeddings: np.ndarray = model.get_embedding()
