@@ -30,7 +30,7 @@ class Siamese(TensorFlowEmbedder):
         early_stopping_patience: int = 10,
         learning_rate_plateau_min_delta: float = 0.0001,
         learning_rate_plateau_patience: int = 5,
-        norm: str = "L2",
+        use_euclidean_norm: bool = True,
         use_mirrored_strategy: bool = False,
         optimizer: str = "adam",
         verbose: bool = False,
@@ -64,9 +64,8 @@ class Siamese(TensorFlowEmbedder):
         learning_rate_plateau_patience: int = 1
             The amount of epochs to wait for better training
             performance without decreasing the learning rate.
-        norm: str = "L2"
-            Normalization to use.
-            Can either be `L1` or `L2`.
+        use_euclidean_norm: bool = True
+            If true, we use the L2 norm, otherwise L1.
         use_mirrored_strategy: bool = False
             Whether to use mirrored strategy.
         optimizer: str = "nadam"
@@ -82,7 +81,7 @@ class Siamese(TensorFlowEmbedder):
             The random state to use if the model is stocastic.
         """
         self._relu_bias = relu_bias
-        self._norm = norm
+        self._use_euclidean_norm = use_euclidean_norm
         super().__init__(
             embedding_size=embedding_size,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -104,7 +103,7 @@ class Siamese(TensorFlowEmbedder):
             **super().parameters(),
             **dict(
                 relu_bias=self._relu_bias,
-                norm=self._norm
+                use_euclidean_norm=self._use_euclidean_norm
             )
         )
 
@@ -147,19 +146,19 @@ class Siamese(TensorFlowEmbedder):
             graph
         )
 
-        if self._norm == "L2":
-            norm_layer = ElementWiseL2
+        if self._use_euclidean_norm:
+            use_euclidean_norm_layer = ElementWiseL2
         else:
-            norm_layer = ElementWiseL1
+            use_euclidean_norm_layer = ElementWiseL1
 
         if dsts_embedding is not None:
-            srcs_embedding = norm_layer()([
+            srcs_embedding = use_euclidean_norm_layer()([
                 srcs_embedding,
                 dsts_embedding
             ])
 
         if not_dsts_embedding is not None:
-            not_srcs_embedding = norm_layer()([
+            not_srcs_embedding = use_euclidean_norm_layer()([
                 not_srcs_embedding,
                 not_dsts_embedding
             ])

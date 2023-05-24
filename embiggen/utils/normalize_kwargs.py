@@ -1,0 +1,112 @@
+"""This module contains the normalize_kwargs method."""
+from typing import Any, Dict, Union, List, Type, Tuple
+import compress_json
+
+
+def get_data_type_from_data_type_name(data_type_name: Union[str, List[str]]) -> List[Type]:
+    """Returns the data type from the data type name.
+    
+    Parameters
+    ----------
+    data_type_name : str
+        The name of the data type.
+    """
+    if isinstance(data_type_name, str):
+        data_type_name = [data_type_name]
+    
+    data_types = []
+    for dtn in data_type_name:
+        if dtn == "bool":
+            data_types.append(bool)
+        if dtn == "str":
+            data_types.append(str)
+        if dtn == "None":
+            data_types.append(type(None))
+        if dtn == "int":
+            data_types.append(int)
+        if dtn == "float":
+            data_types.append(float)
+    
+    if len(data_types) == 0:
+        raise NotImplementedError(
+            f"The provided data type name {data_type_name} is not supported. "
+            "Please open an issue on the Embigggen repository "
+            "detailing the problem."
+        )
+    return data_types
+
+
+def normalize_object_from_data_type_name(data_type_name: str, value: Any) -> Any:
+    """Returns the normalized object from the data type name.
+    
+    Parameters
+    ----------
+    data_type_name : str
+        The name of the data type.
+    value : Any
+        The value to normalize.
+    """
+    if data_type_name == "bool":
+        return bool(value)
+    if data_type_name == "int":
+        return int(value)
+    if data_type_name == "float":
+        return float(value)
+    if data_type_name == "str":
+        return str(value)
+    
+    raise NotImplementedError(
+        f"The provided data type name {data_type_name} is not supported. "
+        "Please open an issue on the Embigggen repository "
+        "detailing the problem."
+    )
+
+
+def normalize_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Returns normalized kwargs.
+
+    Implementation details
+    ----------------------
+    This method is necessary to handle corner cases such as exotic
+    data types that can happen when loading for instance a JSON file
+    or a Pandas DataFrame. For instance:
+
+    * A bool when loaded in pandas may assume the datatype 'bool_'.
+    * An integer value when loaded in pandas may assume the datatype 'float32' or 'float64'.
+
+    """
+    normalization_schemas = compress_json.local_load("normalization_schemas.json", use_cache=True)
+
+    unsupported_parameters = []
+
+    for key, value in kwargs.items():
+        if key not in normalization_schemas:
+            unsupported_parameters.append(key)
+            continue
+
+        # We retrieve the expected type for the given parameter.
+        expected_type = normalization_schemas[key]
+
+        # If this is a special case where we can skip the normalization,
+        # we do so.
+        if expected_type == "pass":
+            continue
+
+        # We retrieve the type of the value and we check if it is the same
+        # as the expected type.
+        valid_types: Tuple[Type] = tuple(get_data_type_from_data_type_name(expected_type))
+        if isinstance(value, valid_types):
+            # The type is already correct, we can skip the normalization.
+            continue
+
+        # If the type is not correct, we try to convert it.
+        kwargs[key] = normalize_object_from_data_type_name(expected_type, value)
+
+    if len(unsupported_parameters) > 0:
+        raise NotImplementedError(
+            f"The following parameters are not supported: {unsupported_parameters}. "
+            "Please open an issue on the Embigggen repository "
+            "detailing the problem."
+        )
+
+    return kwargs

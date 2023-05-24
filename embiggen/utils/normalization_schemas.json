@@ -1,0 +1,91 @@
+{
+    "epochs": "int",
+    "clipping_value": "float",
+    "number_of_negative_samples": "int",
+    "walk_length": "int",
+    "iterations": "int",
+    "window_size": "int",
+    "return_weight": "float",
+    "explore_weight": "float",
+    "verbose": "bool",
+    "max_neighbours": "int",
+    "learning_rate": "float",
+    "learning_rate_decay": "float",
+    "central_nodes_embedding_path": [
+        "str",
+        "None"
+    ],
+    "contextual_nodes_embedding_path": [
+        "str",
+        "None"
+    ],
+    "alpha": "float",
+    "normalize_by_degree": "bool",
+    "stochastic_downsample_by_degree": "bool",
+    "normalize_learning_rate_by_degree": "bool",
+    "use_scale_free_distribution": "bool",
+    "dtype": "str",
+    "random_state": "int",
+    "embedding_size": "int",
+    "min_count": "int",
+    "maximum_depth": [
+        "int",
+        "None"
+    ],
+    "path": [
+        "str",
+        "None"
+    ],
+    "relu_bias": "float",
+    "node_embedding_path": [
+        "str",
+        "None"
+    ],
+    "source_edge_type_embedding_path": [
+        "str",
+        "None"
+    ],
+    "destination_edge_type_embedding_path": [
+        "str",
+        "None"
+    ],
+    "use_mirrored_strategy": "bool",
+    "batch_size": "int",
+    "optimizer": "pass",
+    "early_stopping_min_delta": "float",
+    "early_stopping_patience": "int",
+    "learning_rate_plateau_min_delta": "float",
+    "learning_rate_plateau_patience": "int",
+    "use_euclidean_norm": "bool",
+    "avoid_false_negatives": "bool",
+    "negative_samples_rate": "float",
+    "activation": "str",
+    "contextual_node_embedding_path": [
+        "str",
+        "None"
+    ],
+    "edge_type_embedding_path": [
+        "str",
+        "None"
+    ],
+    "metric": "str",
+    "root_node_name": [
+        "str",
+        "None"
+    ],
+    "iteration": "int",
+    "order": "int",
+    "number_of_convolutions": "int",
+    "change_edge_type_weight": "float",
+    "change_node_type_weight": "float",
+    "use_sparse_reduce": "bool",
+    "p": "float",
+    "q": "float",
+    "rho": "float",
+    "negative_samples": "int",
+    "down_sampling": "float",
+    "weisfeiler_lehman_hashing_iterations": "int",
+    "erase_base_features": "bool",
+    "decay": "float",
+    "alphas": "pass"
+}

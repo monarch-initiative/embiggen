@@ -6,7 +6,7 @@ from userinput.utils import must_be_in_set
 from ensmallen import models
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
-from embiggen.utils import EmbeddingResult
+from embiggen.utils import EmbeddingResult, normalize_kwargs
 
 
 @abstract_class
@@ -50,7 +50,8 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
             Further parameters to forward to the model.
         """
         model_name = must_be_in_set(self.model_name(), self.MODELS.keys(), "model name")
-        self._model_kwargs = model_kwargs
+        self._model_kwargs = normalize_kwargs(model_kwargs)
+        
         self._model = Node2VecEnsmallen.MODELS[model_name](
             embedding_size=embedding_size,
             random_state=random_state,

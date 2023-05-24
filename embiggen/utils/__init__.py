@@ -14,6 +14,7 @@ from embiggen.utils.abstract_models import (
 )
 from embiggen.utils.pipeline import classification_evaluation_pipeline
 from embiggen.utils.number_to_ordinal import number_to_ordinal
+from embiggen.utils.normalize_kwargs import normalize_kwargs
 
 __all__ = [
     "AbstractClassifierModel",
@@ -29,4 +30,5 @@ __all__ = [
     "get_available_models_for_node_embedding",
     "abstract_class",
     "number_to_ordinal",
+    "normalize_kwargs"
 ]
