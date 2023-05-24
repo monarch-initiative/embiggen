@@ -46,17 +46,25 @@ def normalize_object_from_data_type_name(data_type_name: str, value: Any) -> Any
     value : Any
         The value to normalize.
     """
-    if data_type_name == "bool":
-        return bool(value)
-    if data_type_name == "int":
-        return int(value)
-    if data_type_name == "float":
-        return float(value)
-    if data_type_name == "str":
-        return str(value)
+    if isinstance(data_type_name, str):
+        data_type_name = [data_type_name]
+    
+    for dtn in data_type_name:
+        if dtn == "bool":
+            return bool(value)
+        if dtn == "int":
+            try:
+                return int(value)
+            except ValueError:
+                pass
+        if dtn == "float":
+            return float(value)
+        if dtn == "str":
+            return str(value)
     
     raise NotImplementedError(
-        f"The provided data type name {data_type_name} is not supported. "
+        f"The provided data type name {data_type_name} is not supported "
+        f"for the value {value}. "
         "Please open an issue on the Embigggen repository "
         "detailing the problem."
     )
@@ -98,9 +106,16 @@ def normalize_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(value, valid_types):
             # The type is already correct, we can skip the normalization.
             continue
-
-        # If the type is not correct, we try to convert it.
-        kwargs[key] = normalize_object_from_data_type_name(expected_type, value)
+        
+        try:
+            # If the type is not correct, we try to convert it.
+            kwargs[key] = normalize_object_from_data_type_name(expected_type, value)
+        except (TypeError, ValueError) as e:
+            # If the type cannot be converted, we raise an error.
+            raise TypeError(
+                f"The parameter {key} has the value \"{value}\" with type {type(value)} "
+                f"but the expected type is {expected_type}."
+            ) from e
 
     if len(unsupported_parameters) > 0:
         raise NotImplementedError(
