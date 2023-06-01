@@ -77,7 +77,8 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **super().smoke_test_parameters(),
+            embedding_size=5,
+            epochs=1,
             window_size=1,
             walk_length=2,
             iterations=1
@@ -95,6 +96,17 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
                 return_weight=self._return_weight,
                 explore_weight=self._explore_weight,
             )
+        )
+
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            embedding_size=5,
+            epochs=1,
+            window_size=1,
+            walk_length=2,
+            iterations=1
         )
 
     @classmethod

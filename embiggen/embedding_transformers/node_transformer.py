@@ -46,11 +46,6 @@ class NodeTransformer:
         if node_type_feature is not None and not isinstance(node_type_feature, list):
             node_type_feature = [node_type_feature]
 
-        if (node_feature is None or len(node_feature) == 0) and (node_type_feature is None or len(node_type_feature) == 0):
-            raise ValueError(
-                "The provided list of features is empty!"
-            )
-
         # We check if any of the provided node features
         # is neither a numpy array nor a pandas dataframe.
         for features, feature_name in (
@@ -111,6 +106,10 @@ class NodeTransformer:
             if node_type_feature is not None:
                 self._node_type_feature = pd.concat(node_type_feature, axis=1)
 
+    def is_fit(self) -> bool:
+        """Return whether the transformer is fitted."""
+        return self._node_feature is not None or self._node_type_feature is not None
+
     def transform(
         self,
         nodes: Optional[Union[Graph, List[str], List[int]]] = None,
@@ -140,7 +139,7 @@ class NodeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if self._node_feature is None and self._node_type_feature is None:
+        if not self.is_fit():
             raise ValueError(
                 "Transformer was not fitted yet."
             )
@@ -179,7 +178,7 @@ class NodeTransformer:
             if nodes is not None and self._node_feature is not None:
                 if isinstance(nodes, Graph):
                     nodes = nodes.get_node_names()
-                
+
                 node_features = self._node_feature.loc[nodes].to_numpy()
 
             if node_types is not None and self._node_type_feature is not None:
@@ -195,13 +194,12 @@ class NodeTransformer:
                     for node_type_names in node_types
                 ])
 
-
         if node_features is None:
             node_features = node_type_features
-        elif node_type_features is not None :
+        elif node_type_features is not None:
             node_features = np.hstack([
                 node_features,
                 node_type_features
-            ])  
-        
+            ])
+
         return node_features

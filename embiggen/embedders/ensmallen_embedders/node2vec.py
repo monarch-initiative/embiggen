@@ -69,8 +69,8 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **EnsmallenEmbedder.smoke_test_parameters(),
             epochs=1,
+            embedding_size=5,
             window_size=1,
             walk_length=4,
             max_neighbours=10,

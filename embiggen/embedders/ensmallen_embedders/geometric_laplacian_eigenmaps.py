@@ -72,6 +72,12 @@ class GLEEEnsmallen(EnsmallenEmbedder):
         )
 
     @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        return dict(
+            embedding_size=5,
+        )
+
+    @classmethod
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "GLEE"

@@ -190,6 +190,12 @@ class HOPEEnsmallen(EnsmallenEmbedder):
             embedding_method_name=self.model_name(),
             node_embeddings=[left_embedding, right_embedding]
         )
+    
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        return dict(
+            embedding_size=5,
+        )
 
     @classmethod
     def model_name(cls) -> str:

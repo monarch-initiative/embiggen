@@ -160,6 +160,11 @@ class TensorFlowEmbedder(AbstractEmbeddingModel):
         """
         return None
 
+
+    @classmethod
+    def task_name(cls) -> str:
+        return "Node Embedding"
+
     def _extract_embeddings(
         self,
         graph: Graph,

@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
+from embiggen.utils import AbstractEdgeFeature
 
 
 class GCNEdgePredictionTrainingSequence(Sequence):
@@ -17,6 +18,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[List[AbstractEdgeFeature]] = None,
         return_node_ids: bool = False,
         return_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -44,6 +46,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             description of the node types.
             When the graph has multilabel node types,
             we will average the features.
+        edge_features: Optional[List[AbstractEdgeFeature]] = None,
+            The edge features to be used.
         return_node_ids: bool = False
             Whether to return the node IDs.
             These are needed when a node embedding layer is used.
@@ -87,6 +91,24 @@ class GCNEdgePredictionTrainingSequence(Sequence):
 
         if node_features is None:
             node_features = []
+
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+        
+        for edge_feature in edge_features:
+            if not isinstance(edge_feature, AbstractEdgeFeature):
+                raise NotImplementedError(
+                    f"Provided edge feature {edge_feature} is not an instance of AbstractEdgeFeature. "
+                    "At this time only AbstractEdgeFeature are supported."
+                )
+            
+            if not edge_feature.fit():
+                edge_feature.fit(support if support is not None else graph)
+
+        self._edge_features = edge_features 
         
         self._node_features = node_features
         self._negative_samples_rate = negative_samples_rate
@@ -174,6 +196,16 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             graph_to_avoid=self._graph_to_avoid,
         )
 
+        edge_features = [
+            feature
+            for edge_feature in self._edge_features
+            for feature in edge_feature.get_edge_feature_from_edge_node_ids(
+                self._support,
+                sources,
+                destinations
+            ).values()
+        ]
+
         return (tuple([
             value
             for value in (
@@ -184,7 +216,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
                 *self._node_features,
                 *self._node_type_features,
                 self._node_ids,
-                self._node_types
+                self._node_types,
+                *edge_features
             )
             if value is not None
         ]), labels)

@@ -1,11 +1,12 @@
 """Keras Sequence for Open-world assumption GCN."""
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union, Type
 
 import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence, VectorSequence
 from embiggen.sequences.generic_sequences import EdgePredictionSequence
+from embiggen.utils import AbstractEdgeFeature
 
 
 class GCNEdgePredictionSequence(Sequence):
@@ -21,7 +22,7 @@ class GCNEdgePredictionSequence(Sequence):
         return_node_ids: bool = False,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], np.ndarray, List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
         use_edge_metrics: bool = False,
     ):
         """Create new Open-world assumption GCN training sequence for edge prediction.
@@ -49,7 +50,7 @@ class GCNEdgePredictionSequence(Sequence):
             description of the node types.
             When the graph has multilabel node types,
             we will average the features.
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], np.ndarray, List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
             The edge features to be used.
         use_edge_metrics: bool = False
             Whether to return the edge metrics.
@@ -63,8 +64,24 @@ class GCNEdgePredictionSequence(Sequence):
                 "contains unknown node types but node types "
                 "have been requested for the sequence."
             )
-        
+
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+
+        # We verify that the provided edge features are valid
+        for edge_feature in edge_features:
+            if not isinstance(edge_feature, np.ndarray) and not issubclass(edge_feature, AbstractEdgeFeature):
+                raise NotImplementedError(
+                    f"The provided edge feature of type {type(edge_feature)} "
+                    "is not supported. Please provide a numpy array or "
+                    "a subclass of AbstractEdgeFeature."
+                )
+
         self._graph = graph
+        self._support = support
         self._kernel = kernel
         if node_features is None:
             node_features = []
@@ -111,20 +128,19 @@ class GCNEdgePredictionSequence(Sequence):
 
         self._sequence = EdgePredictionSequence(
             graph=graph,
-            graph_used_in_training=support,
+            support=support,
             return_node_types=False,
             return_edge_types=return_edge_types,
             use_edge_metrics=use_edge_metrics,
             batch_size=support.get_number_of_nodes()
         )
 
-        self._edge_features = edge_features
-        self._edge_features_sequences = None if edge_features is None else [
+        self._edge_features = None if edge_features is None else [
             VectorSequence(
                 edge_feature,
                 batch_size=graph.get_number_of_nodes(),
                 shuffle=False
-            )
+            ) if isinstance(edge_feature, np.ndarray) else edge_feature
             for edge_feature in edge_features
         ]
 
@@ -148,9 +164,18 @@ class GCNEdgePredictionSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         values = self._sequence[idx][0]
-        edge_features = None if self._edge_features_sequences is None else [
-            edge_features_sequence[idx]
-            for edge_features_sequence in self._edge_features_sequences
+        sources = values[0]
+        destinations = values[1]
+        edge_features = None if self._edge_features is None else [
+            feature
+            for edge_feature in self._edge_features
+            for feature in (
+                [edge_feature[idx]] if isinstance(edge_feature, VectorSequence)
+                else edge_feature.get_edge_feature_from_edge_node_ids(
+                    self._support,
+                    sources,
+                    destinations
+                ).values())
         ]
         # If necessary, we add the padding as the last batch may be
         # smaller than the required size (number of nodes).

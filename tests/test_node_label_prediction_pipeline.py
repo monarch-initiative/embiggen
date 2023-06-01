@@ -102,7 +102,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                     f"implemented in library {row.library_name}."
                 ) from e
 
-    def test_all_embedding_models_as_feature(self):
+    def test_all_node_embedding_models_as_feature(self):
         """Test graph visualization."""
         df = get_available_models_for_node_embedding()
         bar = tqdm(
@@ -113,12 +113,12 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         )
         graph = Graph.generate_random_connected_graph(
             random_state=100,
-            nodes_number=100,
+            number_of_nodes=100,
             node_type="red",
         ) | Graph.generate_random_connected_graph(
             minimum_node_id=100,
             random_state=1670,
-            nodes_number=100,
+            number_of_nodes=100,
             node_type="blue",
         )
 
@@ -136,7 +136,8 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                 models="Decision Tree Classifier",
                 node_features=AbstractEmbeddingModel.get_model_from_library(
                     model_name=row.model_name,
-                    library_name=row.library_name
+                    library_name=row.library_name,
+                    task_name="Node Embedding"
                 )(),
                 graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,

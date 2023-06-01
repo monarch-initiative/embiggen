@@ -12,6 +12,7 @@ from tensorflow.keras.optimizers import \
 from ensmallen import Graph
 import tensorflow as tf
 from keras_mixed_sequence import Sequence
+from embiggen.utils import AbstractEdgeFeature
 from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 from embiggen.layers.tensorflow import GraphConvolution, FlatEmbedding, EmbeddingLookup, L2Norm
@@ -332,7 +333,7 @@ class AbstractGCN(AbstractClassifierModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None,
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
         raise NotImplementedError(
@@ -369,7 +370,7 @@ class AbstractGCN(AbstractClassifierModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns dictionary with class weights."""
         raise NotImplementedError(
@@ -382,7 +383,7 @@ class AbstractGCN(AbstractClassifierModel):
         self,
         graph: Graph,
         graph_convolution_model: Model,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns GCN model."""
         raise NotImplementedError(
@@ -528,7 +529,7 @@ class AbstractGCN(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
     ) -> pd.DataFrame:
         """Return pandas dataframe with training history.
 
@@ -544,7 +545,7 @@ class AbstractGCN(AbstractClassifierModel):
             The node features to be used in the training of the model.
         node_type_features: Optional[List[np.ndarray]]
             The node type features to be used in the training of the model.
-        edge_features: Optional[List[np.ndarray]] = None
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None
             The edge features to be used in the training of the model.
 
         Returns
@@ -625,7 +626,7 @@ class AbstractGCN(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
         if not graph.has_edges():
@@ -654,7 +655,7 @@ class AbstractGCN(AbstractClassifierModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
         predictions = self._predict_proba(

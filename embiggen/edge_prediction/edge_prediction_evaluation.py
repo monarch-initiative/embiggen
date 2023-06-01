@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
+from embiggen.utils import AbstractEdgeFeature
 
 
 def edge_prediction_evaluation(
@@ -13,6 +14,7 @@ def edge_prediction_evaluation(
     models: Union[Type[AbstractEdgePredictionModel], List[Type[AbstractEdgePredictionModel]]],
     evaluation_schema: str = "Connected Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+    edge_features: Optional[Union[str, Type[AbstractEdgeFeature], List[Union[str, Type[AbstractEdgeFeature]]]]] = None,
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
@@ -76,6 +78,8 @@ def edge_prediction_evaluation(
             help the model learn that two different components are connected.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
+    edge_features: Optional[Union[str, Type[AbstractEdgeFeature], List[Union[str, Type[AbstractEdgeFeature]]]]] = None
+        The edge features to use.
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node type features to use.
     library_names: Optional[Union[str, List[str]]] = None
@@ -162,6 +166,7 @@ def edge_prediction_evaluation(
         models=models,
         expected_parent_class=AbstractEdgePredictionModel,
         node_features=node_features,
+        edge_features=edge_features,
         node_type_features=node_type_features,
         library_names=library_names,
         graph_callback=graph_callback,

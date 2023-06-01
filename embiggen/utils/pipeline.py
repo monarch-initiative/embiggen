@@ -5,6 +5,7 @@ from ensmallen.datasets import get_dataset
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel
 
 
@@ -112,7 +113,7 @@ def classification_evaluation_pipeline(
     expected_parent_class: Type[AbstractClassifierModel],
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+    edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
@@ -144,7 +145,7 @@ def classification_evaluation_pipeline(
         The expected parent class of the models, necessary to validate that the models are what we expect.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
+    edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.

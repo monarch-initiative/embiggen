@@ -6,6 +6,7 @@ from embiggen.utils.abstract_models.get_models_dataframe import (
     get_models_dataframe,
     get_available_models_for_edge_label_prediction,
     get_available_models_for_edge_prediction,
+    get_available_models_for_edge_embedding,
     get_available_models_for_node_label_prediction,
     get_available_models_for_node_embedding
 )
@@ -21,6 +22,7 @@ __all__ = [
     "get_models_dataframe",
     "get_available_models_for_edge_label_prediction",
     "get_available_models_for_edge_prediction",
+    "get_available_models_for_edge_embedding",
     "get_available_models_for_node_label_prediction",
     "get_available_models_for_node_embedding",
     "build_init",

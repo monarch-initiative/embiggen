@@ -44,6 +44,12 @@ def get_available_models_for_node_embedding() -> pd.DataFrame:
     return df[(df.task_name == "Node Embedding") & df.available]
 
 
+def get_available_models_for_edge_embedding() -> pd.DataFrame:
+    """Returns dataframe with informations about available models for edge embedding."""
+    df = get_models_dataframe()
+    return df[(df.task_name == "Edge Embedding") & df.available]
+
+
 def get_available_models_for_edge_prediction() -> pd.DataFrame:
     """Returns dataframe with informations about available models for edge prediction."""
     df = get_models_dataframe()

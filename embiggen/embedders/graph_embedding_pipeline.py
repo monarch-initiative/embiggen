@@ -13,6 +13,7 @@ def embed_graph(
     repository: Optional[str] = None,
     version: Optional[str] = None,
     library_name: Optional[str] = None,
+    task_name: str ="Node Embedding",
     smoke_test: bool = False,
     return_dataframe: bool = True,
     **kwargs: Dict
@@ -34,6 +35,9 @@ def embed_graph(
         Graph version to retrieve.
     library_name: Optional[str] = None
         The library from where to retrieve the embedding model.
+    task_name: str = "Node Embedding"
+        The name of the task to be performed.
+        Can either be "Node Embedding" or "Edge Embedding".
     ring_bell: bool = False,
         enable_cache: bool = False
         Whether to enable the cache.
@@ -59,7 +63,8 @@ def embed_graph(
     if isinstance(embedding_model, str):
         embedding_model: Type[AbstractEmbeddingModel] = AbstractEmbeddingModel.get_model_from_library(
             model_name=embedding_model,
-            library_name=library_name
+            library_name=library_name,
+            task_name=task_name
         )(**kwargs)
     elif kwargs:
         raise ValueError(

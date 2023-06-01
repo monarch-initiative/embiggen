@@ -75,7 +75,8 @@ class Node2VecFastNode2Vec(AbstractEmbeddingModel):
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            **super().smoke_test_parameters(),
+            embedding_size=5,
+            epochs=1,
             window_size=1,
             walk_length=2,
             iterations=1

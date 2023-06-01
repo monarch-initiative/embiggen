@@ -14,19 +14,19 @@ def test_normalize_kwargs_for_node_embedding_models():
     for _, row in df.iterrows():
         model = AbstractEmbeddingModel.get_model_from_library(
             model_name=row.model_name,
-            task_name=AbstractEmbeddingModel.task_name(),
-            library_name=row.library_name
+            task_name="Node Embedding",
+            library_name=row.library_name,
         )()
 
         AbstractEmbeddingModel.get_model_from_library(
             model_name=row.model_name,
-            task_name=AbstractEmbeddingModel.task_name(),
+            task_name="Node Embedding",
             library_name=row.library_name
         )(**normalize_kwargs(model.parameters()))
 
         AbstractEmbeddingModel.get_model_from_library(
             model_name=row.model_name,
-            task_name=AbstractEmbeddingModel.task_name(),
+            task_name="Node Embedding",
             library_name=row.library_name
         )(**normalize_kwargs(model.smoke_test_parameters()))
 

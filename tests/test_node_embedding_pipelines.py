@@ -88,15 +88,15 @@ class TestNodeEmbeddingPipeline(TestCase):
         for _, row in df.iterrows():
             model = AbstractEmbeddingModel.get_model_from_library(
                 model_name=row.model_name,
-                task_name=AbstractEmbeddingModel.task_name(),
+                task_name="Node Embedding",
                 library_name=row.library_name
             )()
             parameters = model.parameters()
             try:
                 second_model = AbstractEmbeddingModel.get_model_from_library(
                     model_name=row.model_name,
-                    task_name=AbstractEmbeddingModel.task_name(),
-                    library_name=row.library_name
+                    task_name="Node Embedding",
+                    library_name=row.library_name,
                 )(**parameters)
                 for key, value in second_model.parameters().items():
                     self.assertEqual(parameters[key], value)

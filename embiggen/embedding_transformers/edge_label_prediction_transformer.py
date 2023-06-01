@@ -59,7 +59,7 @@ class EdgeLabelPredictionTransformer:
         """
         self._transformer.fit(
             node_feature,
-            node_type_feature=node_type_feature
+            node_type_feature=node_type_feature,
         )
 
     def transform(

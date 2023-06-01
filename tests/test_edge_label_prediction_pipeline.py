@@ -4,7 +4,7 @@ from unittest import TestCase
 import os
 import numpy as np
 from embiggen.edge_label_prediction import edge_label_prediction_evaluation
-from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding
+from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.kgobo import PDUMDV, CIO
@@ -156,14 +156,14 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     f"implemented in library {row.library_name}."
                 ) from e
 
-    def test_all_embedding_models_as_feature(self):
+    def test_all_node_embedding_models_as_feature(self):
         """Test graph visualization."""
         df = get_available_models_for_node_embedding()
         bar = tqdm(
             df.iterrows(),
             total=df.shape[0],
             leave=False,
-            desc="Testing embedding methods"
+            desc="Testing node embedding methods"
         )
         graph = PDUMDV().remove_components(top_k_components=1).sort_by_decreasing_outbound_node_degree()
 
@@ -179,7 +179,41 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                 models="Decision Tree Classifier",
                 node_features=AbstractEmbeddingModel.get_model_from_library(
                     model_name=row.model_name,
-                    library_name=row.library_name
+                    library_name=row.library_name,
+                    task_name="Node Embedding"
+                )(),
+                evaluation_schema="Stratified Monte Carlo",
+                graphs=graph,
+                number_of_holdouts=self._number_of_holdouts,
+                verbose=False,
+                smoke_test=True,
+            )
+
+    def test_all_edge_embedding_models_as_feature(self):
+        """Test graph visualization."""
+        df = get_available_models_for_edge_embedding()
+        bar = tqdm(
+            df.iterrows(),
+            total=df.shape[0],
+            leave=False,
+            desc="Testing edge embedding methods"
+        )
+        graph = PDUMDV().remove_components(top_k_components=1).sort_by_decreasing_outbound_node_degree()
+
+        for _, row in bar:
+            if row.requires_edge_weights or row.requires_edge_types or row.requires_node_types:
+                continue
+
+            bar.set_description(
+                f"Testing {row.model_name} from library {row.library_name}")
+
+            edge_label_prediction_evaluation(
+                holdouts_kwargs=dict(train_size=0.8),
+                models="Decision Tree Classifier",
+                edge_features=AbstractEmbeddingModel.get_model_from_library(
+                    model_name=row.model_name,
+                    library_name=row.library_name,
+                    task_name="Edge Embedding"
                 )(),
                 evaluation_schema="Stratified Monte Carlo",
                 graphs=graph,

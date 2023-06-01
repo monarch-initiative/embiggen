@@ -5,5 +5,6 @@ from embiggen.utils.abstract_models import build_init
 build_init(
     module_library_names="sklearn",
     formatted_library_name="scikit-learn",
+    task_name="Node Label Prediction",
     expected_parent_class=SklearnNodeLabelPredictionAdapter
 )

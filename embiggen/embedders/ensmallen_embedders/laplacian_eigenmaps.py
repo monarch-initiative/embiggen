@@ -1,4 +1,5 @@
 """Module providing Laplacian Eigenmaps implementation."""
+from typing import Any, Dict
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
@@ -69,6 +70,12 @@ class LaplacianEigenmapsEnsmallen(EnsmallenEmbedder):
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
             node_embeddings=embedding
+        )
+
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        return dict(
+            embedding_size=5,
         )
 
     @classmethod

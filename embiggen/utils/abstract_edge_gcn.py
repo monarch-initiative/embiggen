@@ -2,7 +2,7 @@
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
 
 import numpy as np
-from tensorflow.keras.layers import Input, Concatenate, Dense, Average, Multiply, Maximum, Minimum, Add, Subtract, Dot  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Input, Concatenate, Dense, Average, Multiply, Maximum, Minimum, Add, Subtract, Dot, Flatten  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
@@ -13,6 +13,7 @@ from embiggen.utils.normalize_model_structural_parameters import normalize_model
 from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionSequence
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.utils.abstract_gcn import AbstractGCN
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 from embiggen.layers.tensorflow import EmbeddingLookup, ElementWiseL1, ElementWiseL2
 import tensorflow as tf
@@ -33,7 +34,7 @@ class AbstractEdgeGCN(AbstractGCN):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
         apply_norm: bool = False,
-        combiner: str ="sum",
+        combiner: str = "sum",
         edge_embedding_method: str = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -265,8 +266,8 @@ class AbstractEdgeGCN(AbstractGCN):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+    ) -> GCNEdgePredictionSequence:
         """Returns dictionary with class weights."""
         return GCNEdgePredictionSequence(
             graph,
@@ -308,9 +309,17 @@ class AbstractEdgeGCN(AbstractGCN):
         self,
         graph: Graph,
         graph_convolution_model: Model,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ):
         """Create new GCN model."""
+
+        if self._edge_feature_names is not None and edge_features is None:
+            raise RuntimeError(
+                "You have provided edge feature names, but you have not provided "
+                "any edge features to the model. Specifically, the edge features "
+                f"names you have provided are {self._edge_feature_names}."
+            )
+
         # If we make the node embedding, we are making a closed world assumption,
         # while without we do not have them we can keep an open world assumption.
         # Basically, without node embedding we can have different vocabularies,
@@ -364,27 +373,71 @@ class AbstractEdgeGCN(AbstractGCN):
         edge_feature_inputs = []
         if edge_features is None:
             edge_features = []
+
+        number_of_edge_features = sum([
+            len(edge_feature.get_feature_dictionary_shapes())
+            if isinstance(edge_feature, AbstractEdgeFeature) else 1
+            for edge_feature in edge_features
+        ])
+
+        if self._edge_feature_names is not None and number_of_edge_features == len(self._edge_feature_names):
+            raise ValueError(
+                f"You have provided {len(self._edge_feature_names)}, but you have provided "
+                f"{number_of_edge_features} edge features to the model."
+            )
+
         edge_feature_names = self._edge_feature_names
         if edge_feature_names is None:
-            edge_feature_names = [
-                f"{number_to_ordinal(i+1)}EdgeFeature"
-                for i in range(len(edge_features))
-            ]
-        if len(edge_feature_names) != len(edge_features):
-            raise ValueError(
-                f"You have provided {len(edge_feature_names)} "
-                f"edge feature names but you have provided {len(edge_features)} "
-                "edge features to the model."
-            )
-        for edge_feature, feature_name in zip(edge_features, edge_feature_names):
-            feature_names.append(feature_name)
-            edge_feature_input = Input(
-                shape=edge_feature.shape[1:],
-                batch_size=nodes_number,
-                name=feature_name,
-            )
-            edge_feature_inputs.append(edge_feature_input)
-            source_and_destination_features.append(edge_feature_input)
+            edge_feature_names = []
+            i = 0
+            for edge_feature in edge_features:
+                if isinstance(edge_feature, AbstractEdgeFeature):
+                    for feature_name in edge_feature.get_feature_dictionary_keys():
+                        edge_feature_names.append(
+                            f"{edge_feature.get_feature_name()}{feature_name}"
+                        )
+                else:
+                    edge_feature_names.append(
+                        f"{number_to_ordinal(i+1)}EdgeFeature"
+                    )
+                    i += 1
+
+        i = 0
+        for edge_feature in edge_features:
+            if isinstance(edge_feature, AbstractEdgeFeature):
+                for feature_name, feature_shape in edge_feature.get_feature_dictionary_shapes().items():
+                    edge_feature_input = Input(
+                        shape=tuple(feature_shape),
+                        batch_size=nodes_number,
+                        name=edge_feature_names[i],
+                    )
+                    hidden = edge_feature_input
+
+                    # If we are dealing with a feature that is not flat:
+                    if len(feature_shape) > 1:
+                        # We flatten it.
+                        hidden = Flatten(
+                            name=f"{edge_feature_names[i]}Flatten"
+                        )(hidden)
+
+                    edge_feature_inputs.append(edge_feature_input)
+                    source_and_destination_features.append(hidden)
+                    i += 1
+            elif isinstance(edge_feature, np.ndarray):
+                feature_names.append(edge_feature_names[i])
+                edge_feature_input = Input(
+                    shape=edge_feature.shape[1:],
+                    batch_size=nodes_number,
+                    name=edge_feature_names[i],
+                )
+                edge_feature_inputs.append(edge_feature_input)
+                source_and_destination_features.append(edge_feature_input)
+                i += 1
+            else:
+                raise NotImplementedError(
+                    f"Edge feature of type {type(edge_feature)} is not supported."
+                    "Please provide an instance of AbstractEdgeFeature or a numpy array."
+                )
 
         ffnn_outputs = []
 
@@ -469,7 +522,7 @@ class AbstractEdgeGCN(AbstractGCN):
             name="Output"
         )(hidden)
 
-        inputs=[
+        inputs = [
             input_layer
             for input_layer in (
                 source_nodes,
@@ -502,7 +555,7 @@ class AbstractEdgeGCN(AbstractGCN):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Run predictions on the provided graph."""
         predictions = super()._predict_proba(

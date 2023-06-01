@@ -308,6 +308,7 @@ def get_max_edge_embedding(
         axis=0
     )
 
+
 class EdgeTransformer:
     """EdgeTransformer class to convert edges to edge embeddings."""
 
@@ -378,7 +379,7 @@ class EdgeTransformer:
         """
         self._transformer.fit(
             node_feature,
-            node_type_feature=node_type_feature
+            node_type_feature=node_type_feature,
         )
 
     def transform(
@@ -423,45 +424,54 @@ class EdgeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if self.method == "CosineSimilarity":
-            if (
-                not isinstance(sources, np.ndarray) or
-                not isinstance(destinations, np.ndarray)
-            ):
-                raise NotImplementedError(
-                    "The Cosine Similarity is currently implemented exclusively for "
-                    "numpy arrays of type uint32, but you have provided objects of type "
-                    f"{type(sources)} and {type(destinations)}. "
-                )
-            if (
-                sources.dtype != np.uint32 or
-                destinations.dtype != np.uint32
-            ):
-                raise NotImplementedError(
-                    "The Cosine Similarity is currently implemented exclusively for "
-                    "numpy arrays of type uint32, but you have provided objects of type "
-                    f"{sources.dtype} and {destinations.dtype}. "
-                )
-            if not self._transformer._node_feature.data.c_contiguous:
-                self._transformer._node_feature = np.ascontiguousarray(
-                    self._transformer._node_feature
-                )
+        if self._transformer.is_fit():
+            if self.method == "CosineSimilarity":
+                if (
+                    not isinstance(sources, np.ndarray) or
+                    not isinstance(destinations, np.ndarray)
+                ):
+                    raise NotImplementedError(
+                        "The Cosine Similarity is currently implemented exclusively for "
+                        "numpy arrays of type uint32, but you have provided objects of type "
+                        f"{type(sources)} and {type(destinations)}. "
+                    )
+                if (
+                    sources.dtype != np.uint32 or
+                    destinations.dtype != np.uint32
+                ):
+                    raise NotImplementedError(
+                        "The Cosine Similarity is currently implemented exclusively for "
+                        "numpy arrays of type uint32, but you have provided objects of type "
+                        f"{sources.dtype} and {destinations.dtype}. "
+                    )
+                if not self._transformer._node_feature.data.c_contiguous:
+                    self._transformer._node_feature = np.ascontiguousarray(
+                        self._transformer._node_feature
+                    )
 
-            if self._transformer._node_type_feature is not None:
-                raise NotImplementedError(
-                    "The node type features are not yet supported for the "
-                    "Cosine Similarity."
-                )
+                if self._transformer._node_type_feature is not None:
+                    raise NotImplementedError(
+                        "The node type features are not yet supported for the "
+                        "Cosine Similarity."
+                    )
 
-            edge_embeddings = self._method(
-                embedding=self._transformer._node_feature,
-                source_node_ids=sources,
-                destination_node_ids=destinations,
-            )
+                edge_embeddings = self._method(
+                    embedding=self._transformer._node_feature,
+                    source_node_ids=sources,
+                    destination_node_ids=destinations,
+                )
+            else:
+                edge_embeddings = self._method(
+                    self._transformer.transform(
+                        sources, node_types=source_node_types),
+                    self._transformer.transform(
+                        destinations, node_types=destination_node_types)
+                )
+        elif edge_features is not None:
+            edge_embeddings = None
         else:
-            edge_embeddings = self._method(
-                self._transformer.transform(sources, node_types=source_node_types),
-                self._transformer.transform(destinations, node_types=destination_node_types)
+            raise ValueError(
+                "The transformer is not fitted yet!"
             )
 
         if edge_features is not None:
@@ -469,14 +479,7 @@ class EdgeTransformer:
                 edge_features = [edge_features]
 
             for edge_feature in edge_features:
-                if len(edge_feature.shape) != 2:
-                    raise ValueError(
-                        (
-                            "The provided edge features should have a bidimensional shape, "
-                            "but the provided one has shape {}."
-                        ).format(edge_feature.shape)
-                    )
-                if edge_feature.shape[0] != edge_embeddings.shape[0]:
+                if edge_embeddings is not None and edge_feature.shape[0] != edge_embeddings.shape[0]:
                     raise ValueError(
                         (
                             "The provided edge features should have a sample for each of the edges "
@@ -486,9 +489,18 @@ class EdgeTransformer:
                             edge_feature.shape[0]
                         )
                     )
-            edge_embeddings = np.hstack([
-                edge_embeddings,
-                *edge_features
-            ])
+            if edge_embeddings is not None:
+                edge_embeddings = np.hstack([
+                    edge_embeddings,
+                    *[
+                        edge_feature.reshape((edge_feature.shape[0], -1))
+                        for edge_feature in edge_features
+                    ]
+                ])
+            else:
+                edge_embeddings = np.hstack([
+                    edge_feature.reshape((edge_feature.shape[0], -1))
+                    for edge_feature in edge_features
+                ])
 
         return edge_embeddings

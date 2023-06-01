@@ -183,6 +183,7 @@ def find_method_name(klass: ClassDef) -> str:
 def build_init(
     module_library_names: Union[str, List[str]],
     formatted_library_name: str,
+    task_name: str,
     expected_parent_class: Type[AbstractModel]
 ):
     """Create the init for this submodule.
@@ -193,6 +194,8 @@ def build_init(
         Name of the library dependency to be check for availability.
     formatted_library_name: str
         The formatted name of the library for visualization pourposes.
+    task_name: str
+        The task name of the models to be loaded.
     expected_parent_class: Type[AbstractModel]
         The class to check for.
     """
@@ -245,6 +248,7 @@ def build_init(
                     formatted_library_name=formatted_library_name,
                     submodule_name=submodule_name,
                     model_class_name=klass.name,
+                    task_name=task_name,
                     formatted_model_name=find_method_name(klass),
                     parent_class=expected_parent_class
                 )

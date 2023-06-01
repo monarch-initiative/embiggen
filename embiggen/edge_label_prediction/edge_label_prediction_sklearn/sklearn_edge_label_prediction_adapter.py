@@ -5,6 +5,7 @@ import numpy as np
 import copy
 import compress_pickle
 from ensmallen import Graph
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from embiggen.embedding_transformers import EdgeLabelPredictionTransformer, GraphTransformer
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
@@ -108,23 +109,34 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             node_type_feature=node_type_features
         )
 
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+
+        rasterized_edge_features = []
+
+        for edge_feature in edge_features:
+            if issubclass(type(edge_feature), AbstractEdgeFeature):
+                for feature in edge_feature.get_edge_feature_from_graph(
+                    graph=graph,
+                    support=support,
+                ).values():
+                    rasterized_edge_features.append(feature)
+            elif isinstance(edge_feature, np.ndarray):
+                rasterized_edge_features.append(edge_feature)
+
         if self._use_edge_metrics:
-            edge_metrics = support.get_all_edge_metrics(
+            rasterized_edge_features.append(support.get_all_edge_metrics(
                 normalize=True,
                 subgraph=graph,
-            )
-            if edge_features is not None:
-                edge_features = np.hstack([
-                    *edge_features,
-                    edge_metrics
-                ])
-            else:
-                edge_features = edge_metrics
+            ))
 
         return gt.transform(
             graph=graph,
             node_types=graph,
-            edge_features=edge_features
+            edge_features=rasterized_edge_features
         )
 
     def _fit(
@@ -168,25 +180,36 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
 
         lpt.fit(
             node_features,
-            node_type_feature=node_type_features
+            node_type_feature=node_type_features,
         )
 
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+
+        rasterized_edge_features = []
+
+        for edge_feature in edge_features:
+            if issubclass(type(edge_feature), AbstractEdgeFeature):
+                for feature in edge_feature.get_edge_feature_from_graph(
+                    graph=graph,
+                    support=support,
+                ).values():
+                    rasterized_edge_features.append(feature)
+            elif isinstance(edge_feature, np.ndarray):
+                rasterized_edge_features.append(edge_feature)
+
         if self._use_edge_metrics:
-            edge_metrics = support.get_all_edge_metrics(
+            rasterized_edge_features.append(support.get_all_edge_metrics(
                 normalize=True,
                 subgraph=graph,
-            )
-            if edge_features is not None:
-                edge_features = np.hstack([
-                    *edge_features,
-                    edge_metrics
-                ])
-            else:
-                edge_features = edge_metrics
+            ))
 
         self._model_instance.fit(*lpt.transform(
             graph=graph,
-            edge_features=edge_features,
+            edge_features=rasterized_edge_features,
             behaviour_for_unknown_edge_labels="drop",
         ))
 

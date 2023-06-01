@@ -14,7 +14,7 @@ class AbstractEmbeddingModel(AbstractModel):
 
     def __init__(
         self,
-        embedding_size: int,
+        embedding_size: Optional[int] = None,
         enable_cache: bool = False,
         ring_bell: bool = False,
         random_state: Optional[int] = None
@@ -23,7 +23,7 @@ class AbstractEmbeddingModel(AbstractModel):
 
         Parameters
         ---------------------
-        embedding_size: int
+        embedding_size: Optional[int] = None
             The dimensionality of the embedding.
         enable_cache: bool = False
             Whether to enable the cache, that is to
@@ -34,9 +34,9 @@ class AbstractEmbeddingModel(AbstractModel):
             The random state to use if the model is stocastic.
         """
         super().__init__(random_state=random_state)
-        if not isinstance(embedding_size, int) or embedding_size == 0:
+        if embedding_size is not None and not isinstance(embedding_size, int) or embedding_size == 0:
             raise ValueError(
-                "The embedding size should be a strictly positive integer "
+                "The embedding size, if provided, should be a strictly positive integer "
                 f"but {embedding_size} was provided."
             )
         self._embedding_size = embedding_size
@@ -55,17 +55,8 @@ class AbstractEmbeddingModel(AbstractModel):
         """Returns parameters of the embedding model."""
         return dict(
             **super().parameters(),
-            embedding_size=self._embedding_size
+            **(dict(embedding_size=self._embedding_size) if self._embedding_size is not None else dict())
         )
-
-    @classmethod
-    def smoke_test_parameters(cls) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(embedding_size=5)
-
-    @classmethod
-    def task_name(cls) -> str:
-        return "Node Embedding"
 
     @classmethod
     def requires_nodes_sorted_by_decreasing_node_degree(cls) -> bool:

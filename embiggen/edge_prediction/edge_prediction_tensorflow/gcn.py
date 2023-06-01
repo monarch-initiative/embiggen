@@ -10,6 +10,7 @@ from tensorflow.keras.utils import Sequence
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
 from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
+from embiggen.utils import AbstractEdgeFeature
 
 
 @abstract_class
@@ -245,14 +246,15 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+    ) -> GCNEdgePredictionTrainingSequence:
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
             graph,
             kernel=self.convert_graph_to_kernel(support),
             support=support,
             node_features=node_features,
+            edge_features=edge_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),
             node_type_features=node_type_features,

@@ -5,5 +5,6 @@ from embiggen.utils.abstract_models import build_init
 build_init(
     module_library_names="ensmallen",
     formatted_library_name="Ensmallen",
+    task_name="Node Label Prediction",
     expected_parent_class=AbstractNodeLabelPredictionModel
 )

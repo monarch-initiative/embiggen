@@ -9,7 +9,8 @@ import time
 import json
 from userinput.utils import must_be_in_set
 from tqdm.auto import trange, tqdm
-from environments_utils import get_slurm_node_id, must_be_in_slurm_node
+from environments_utils import must_be_in_slurm_node
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.abstract_models.list_formatting import format_list
 from cache_decorator import Cache
 
@@ -51,7 +52,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None,
     ):
         """Run fitting on the provided graph.
 
@@ -68,7 +69,7 @@ class AbstractClassifierModel(AbstractModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
-        edge_features: Optional[List[np.ndarray]] = None
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
         raise NotImplementedError((
@@ -82,7 +83,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -99,7 +100,7 @@ class AbstractClassifierModel(AbstractModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
-        edge_features: Optional[List[np.ndarray]] = None
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
         raise NotImplementedError((
@@ -113,7 +114,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -130,7 +131,7 @@ class AbstractClassifierModel(AbstractModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
-        edge_features: Optional[List[np.ndarray]] = None
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
         raise NotImplementedError((
@@ -249,7 +250,8 @@ class AbstractClassifierModel(AbstractModel):
                 )
 
             node_feature = AbstractEmbeddingModel.get_model_from_library(
-                model_name=node_feature
+                model_name=node_feature,
+                task_name="Node Embedding"
             )()
 
         # If this object is an implementation of an abstract
@@ -310,7 +312,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_number_of_nodes()
+                        number_of_nodes=graph.get_number_of_nodes()
                     )
                 )
 
@@ -507,7 +509,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name="" if graph.get_name().lower(
                         ) == "graph" else " {}".format(graph.get_name()),
-                        nodes_number=graph.get_number_of_node_types()
+                        number_of_nodes=graph.get_number_of_node_types()
                     )
                 )
 
@@ -645,7 +647,7 @@ class AbstractClassifierModel(AbstractModel):
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
                 model_name=edge_feature
             )()
-
+        
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(edge_feature.__class__, AbstractEmbeddingModel):
@@ -668,10 +670,15 @@ class AbstractClassifierModel(AbstractModel):
             if smoke_test:
                 edge_feature = edge_feature.into_smoke_test()
 
-            edge_feature = edge_feature.fit_transform(
-                graph=graph,
-                return_dataframe=False,
-            )
+            if issubclass(edge_feature.__class__, AbstractEdgeFeature):
+                edge_feature.fit(
+                    graph=graph,
+                )
+            else:
+                edge_feature = edge_feature.fit_transform(
+                    graph=graph,
+                    return_dataframe=False,
+                )
 
         if isinstance(edge_feature, EmbeddingResult):
             edge_feature = edge_feature.get_all_edge_embedding()
@@ -680,6 +687,9 @@ class AbstractClassifierModel(AbstractModel):
             edge_feature = [edge_feature]
 
         for ef in edge_feature:
+            if issubclass(ef.__class__, AbstractEdgeFeature):
+                yield ef
+                continue
             if not isinstance(ef, (np.ndarray, pd.DataFrame)):
                 raise ValueError(
                     (
@@ -786,7 +796,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Execute predictions on the provided graph.
 
@@ -869,7 +879,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -939,7 +949,7 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -1131,7 +1141,7 @@ class AbstractClassifierModel(AbstractModel):
         must_be_in_set(
             evaluation_schema,
             cls.get_available_evaluation_schemas(),
-            f"evaluation schema for {cls.task_name()} and model {cls.model_name()}"
+            f"evaluation schema for {cls.task_name()}"
         )
 
     def _evaluate(
@@ -1617,7 +1627,7 @@ class AbstractClassifierModel(AbstractModel):
         library_names: Optional[Union[str, List[str]]] = None,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         use_subgraph_as_support: bool = False,
         number_of_holdouts: int = 10,

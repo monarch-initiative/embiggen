@@ -6,7 +6,7 @@ try:
     import numpy as np
     import os
     from embiggen.edge_prediction import edge_prediction_evaluation
-    from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding
+    from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
     from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
     from embiggen.edge_prediction.edge_prediction_tensorflow.graph_sage import GraphSAGEEdgePrediction
     from embiggen.embedding_transformers import EdgeTransformer
@@ -17,7 +17,6 @@ try:
     from ensmallen.datasets.kgobo import CIO
     from ensmallen import Graph
     from embiggen.edge_prediction import DecisionTreeEdgePrediction
-
 
     class TestEvaluateEdgePrediction(TestCase):
         """Unit test class for GraphTransformer objects."""
@@ -168,7 +167,7 @@ try:
                     model.dump(path)
                     restored_model = model.load(path)
                     assert restored_model.parameters() == model.parameters()
-                    
+
                     with pytest.raises(NotImplementedError):
                         model.fit(
                             g,
@@ -321,8 +320,6 @@ try:
                             node_type_features=node_type_features,
                             return_predictions_dataframe=return_predictions_dataframe
                         )
-                        
-
 
         def test_tree_with_cosine(self):
             graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
@@ -351,7 +348,7 @@ try:
                     self.assertTrue(set(holdouts.validation_unbalance_rate)
                                     == set((1.0, 2.0)))
 
-        def test_all_embedding_models_as_feature(self):
+        def test_all_node_embedding_models_as_feature(self):
             df = get_available_models_for_node_embedding()
             bar = tqdm(
                 df.iterrows(),
@@ -365,12 +362,12 @@ try:
                 if row.requires_edge_weights:
                     graph = Graph.generate_random_connected_graph(
                         random_state=100,
-                        nodes_number=100,
+                        number_of_nodes=100,
                         weight=56.0,
                         edge_type="red"
                     ) | Graph.generate_random_connected_graph(
                         random_state=1670,
-                        nodes_number=100,
+                        number_of_nodes=100,
                         weight=526.0,
                         edge_type="red"
                     )
@@ -382,7 +379,8 @@ try:
 
                 embedding_model = AbstractEmbeddingModel.get_model_from_library(
                     model_name=row.model_name,
-                    library_name=row.library_name
+                    library_name=row.library_name,
+                    task_name="Node Embedding"
                 )()
 
                 if embedding_model.requires_nodes_sorted_by_decreasing_node_degree():
@@ -390,7 +388,8 @@ try:
 
                 edge_prediction_evaluation(
                     holdouts_kwargs=dict(train_size=0.9),
-                    models=PerceptronEdgePrediction(edge_embeddings="CosineSimilarity"),
+                    models=PerceptronEdgePrediction(
+                        edge_embeddings="CosineSimilarity"),
                     node_features=embedding_model,
                     evaluation_schema="Connected Monte Carlo",
                     graphs=graph.remove_singleton_nodes(),
@@ -413,5 +412,51 @@ try:
                     number_of_holdouts=self._number_of_holdouts,
                     verbose=False
                 )
+
+        def test_all_edge_embedding_models_as_feature(self):
+            """Test graph visualization."""
+            df = get_available_models_for_edge_embedding()
+            bar = tqdm(
+                df.iterrows(),
+                total=df.shape[0],
+                leave=False,
+                desc="Testing edge embedding methods"
+            )
+            for _, row in bar:
+                if row.requires_node_types:
+                    continue
+                if row.requires_edge_weights:
+                    graph = Graph.generate_random_connected_graph(
+                        random_state=100,
+                        number_of_nodes=100,
+                        weight=56.0,
+                        edge_type="red"
+                    ) | Graph.generate_random_connected_graph(
+                        random_state=1670,
+                        number_of_nodes=100,
+                        weight=526.0,
+                        edge_type="red"
+                    )
+                else:
+                    graph = CIO()
+
+                bar.set_description(
+                    f"Testing {row.model_name} from library {row.library_name}")
+
+                edge_prediction_evaluation(
+                    holdouts_kwargs=dict(train_size=0.8),
+                    models="Decision Tree Classifier",
+                    edge_features=AbstractEmbeddingModel.get_model_from_library(
+                        model_name=row.model_name,
+                        library_name=row.library_name,
+                        task_name="Edge Embedding"
+                    )(),
+                    evaluation_schema="Monte Carlo",
+                    graphs=graph,
+                    number_of_holdouts=self._number_of_holdouts,
+                    verbose=False,
+                    smoke_test=True,
+                )
+
 except ModuleNotFoundError:
     pass

@@ -12,7 +12,7 @@ class EnsmallenEmbedder(AbstractEmbeddingModel):
     def __init__(
         self,
         random_state: Optional[int] = None,
-        embedding_size: int = 100,
+        embedding_size: Optional[int] = None,
         ring_bell: bool = False,
         enable_cache: bool = False
     ):
@@ -23,7 +23,7 @@ class EnsmallenEmbedder(AbstractEmbeddingModel):
         --------------------------
         random_state: Optional[int] = None
             Random state to reproduce the embeddings.
-        embedding_size: int = 100
+        embedding_size: Optional[int] = None
             Dimension of the embedding.
         ring_bell: bool = False,
             Whether to play a sound when embedding completes.

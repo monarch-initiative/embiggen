@@ -11,6 +11,7 @@ def get_model_or_stub(
     submodule_name: str,
     model_class_name: str,
     formatted_model_name: str,
+    task_name: str,
     parent_class: Type[AbstractModel]
 ):
     """Returns either the class or a stub with helpful error messages.
@@ -29,6 +30,8 @@ def get_model_or_stub(
         Name of the model class to load or stub.
     formatted_model_name: str
         Formatted model name to load.
+    task_name: str
+        Name of the task of the model.
     parent_class: Type[AbstractModel]
         Expected parent class of the model.
     """
@@ -193,7 +196,7 @@ def get_model_or_stub(
                 @classmethod
                 def task_name(cls) -> str:
                     """Returns name of the task"""
-                    return parent_class.task_name()
+                    return task_name
 
                 @classmethod
                 def is_available(cls) -> bool:

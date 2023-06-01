@@ -30,6 +30,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 import itertools
 from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from ensmallen.datasets.graph_retrieval import normalize_node_name
 
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
@@ -109,7 +110,7 @@ class GraphVisualizer:
         edge_type_names: Optional[List[Optional[str]]] = None,
         show_graph_name: Union[str, bool] = "auto",
         number_of_columns_in_legend: int = 2,
-        show_node_embedding_method: bool = True,
+        show_embedding_method: bool = True,
         show_edge_embedding_method: bool = True,
         show_separability_considerations_explanation: bool = True,
         show_heatmaps_description: bool = True,
@@ -242,7 +243,7 @@ class GraphVisualizer:
             name such as `Graph`.
         number_of_columns_in_legend: int = 2
             The number of columns to be used with the legend.
-        show_node_embedding_method: bool = True
+        show_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
         show_edge_embedding_method: bool = True
@@ -402,7 +403,7 @@ class GraphVisualizer:
             show_graph_name = self._graph_name.lower() != "graph"
 
         self._show_graph_name = show_graph_name
-        self._show_node_embedding_method = show_node_embedding_method
+        self._show_embedding_method = show_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
         self._edge_embedding_method = edge_embedding_method
         self._verbose = verbose
@@ -414,13 +415,13 @@ class GraphVisualizer:
 
         self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
 
-        self._node_embedding_method_name = node_embedding_method_name
+        self._embedding_method_name = node_embedding_method_name
 
         self._node_decomposition = None
         self._positive_edge_decomposition = None
         self._negative_edge_decomposition = None
 
-        self._has_autodetermined_node_embedding_name = False
+        self._has_autodetermined_embedding_name = False
 
         self._random_state = random_state
         self._video_format = video_format
@@ -553,7 +554,7 @@ class GraphVisualizer:
         # embed nodes using a cosine similarity / distance approach
         # in order to avoid false negatives, that is bad TSNE decompositions
         # while the embedding is actually good.
-        if self._n_components < 3 and self._decomposition_method in ("UMAP", "TSNE") and self._node_embedding_method_name in (
+        if self._n_components < 3 and self._decomposition_method in ("UMAP", "TSNE") and self._embedding_method_name in (
             "Node2Vec GloVe", "DeepWalk GloVe", "First-order LINE"
         ):
             metric = self._decomposition_kwargs.get("metric")
@@ -667,24 +668,24 @@ class GraphVisualizer:
                 **self._decomposition_kwargs
             }).fit_transform
 
-    def _get_node_embedding(
+    def _get_embedding(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
-        **node_embedding_kwargs: Dict
+        embedding: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, str, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
+        **embedding_kwargs: Dict
     ) -> np.ndarray:
         """Computes the node embedding if it was not otherwise provided.
 
         Parameters
         -------------------------
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
-            Embedding of the graph nodes.
+        embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
+            Embedding of the graph.
             If a string is provided, we will run the node embedding
             from one of the available methods.
-        **node_embedding_kwargs: Dict
+        **embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        if node_embedding is None:
-            if self._node_embedding_method_name == "auto":
+        if embedding is None:
+            if self._embedding_method_name == "auto":
                 raise ValueError(
                     "The node embedding provided to the fit method was left "
                     "to None, and the `node_embedding_method_name` parameter "
@@ -696,54 +697,58 @@ class GraphVisualizer:
                     "or a pre-computed embedding."
                 )
             else:
-                node_embedding = self._node_embedding_method_name
+                embedding = self._embedding_method_name
+        if issubclass(type(embedding), AbstractEdgeFeature):
+            if not embedding.is_fit():
+                embedding.fit(self._support)
+            return embedding
         if (
-            isinstance(node_embedding, str) or
-            issubclass(node_embedding.__class__, AbstractEmbeddingModel)
+            isinstance(embedding, str) or
+            issubclass(embedding.__class__, AbstractEmbeddingModel)
         ):
-            node_embedding = embed_graph(
-                graph=self._graph,
-                embedding_model=node_embedding,
+            embedding = embed_graph(
+                graph=self._support,
+                embedding_model=embedding,
                 return_dataframe=False,
-                **node_embedding_kwargs
+                **embedding_kwargs
             )
-        if isinstance(node_embedding, EmbeddingResult):
-            if self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
-                self._has_autodetermined_node_embedding_name = True
-                self._node_embedding_method_name = node_embedding.embedding_method_name
-            node_embedding = np.hstack(node_embedding.get_all_node_embedding())
-        elif self._node_embedding_method_name == "auto" or self._has_autodetermined_node_embedding_name:
-            self._has_autodetermined_node_embedding_name = True
-            self._node_embedding_method_name = self.automatically_detect_node_embedding_method(
-                node_embedding.values
-                if isinstance(node_embedding, pd.DataFrame)
-                else node_embedding
+        if isinstance(embedding, EmbeddingResult):
+            if self._embedding_method_name == "auto" or self._has_autodetermined_embedding_name:
+                self._has_autodetermined_embedding_name = True
+                self._embedding_method_name = embedding.embedding_method_name
+            embedding = np.hstack(embedding.get_all_node_embedding())
+        elif self._embedding_method_name == "auto" or self._has_autodetermined_embedding_name:
+            self._has_autodetermined_embedding_name = True
+            self._embedding_method_name = self.automatically_detect_embedding_method(
+                embedding.values
+                if isinstance(embedding, pd.DataFrame)
+                else embedding
             )
 
-        if node_embedding.shape[0] != self._graph.get_number_of_nodes():
+        if embedding.shape[0] != self._graph.get_number_of_nodes():
             raise ValueError(
                 ("The number of rows provided with the given node embedding {} "
                  "does not match the number of nodes in the graph {}.").format(
-                    node_embedding.shape[0],
+                    embedding.shape[0],
                     self._graph.get_number_of_nodes()
                 )
             )
 
-        # Making sure that if the node embedding is a dataframe, it is surely aligned.
-        if isinstance(node_embedding, pd.DataFrame):
+        # Making sure that if the embedding is a dataframe, it is surely aligned.
+        if isinstance(embedding, pd.DataFrame):
             for node_id in self.iterate_subsampled_node_ids():
                 node_name = self._graph.get_node_name_from_node_id(node_id)
-                if node_embedding.index[node_id] != node_name:
+                if embedding.index[node_id] != node_name:
                     raise ValueError(
                         "The provided pandas DataFrame with the node embedding "
                         "does not seem to be aligned with the provided graph. "
                         f"Specifically, the value at the row `{node_id}` was expected "
                         f"to have an index curresponding to the node name `{node_name}`, "
-                        f"but we have found `{node_embedding.index[node_id]}`."
+                        f"but we have found `{embedding.index[node_id]}`."
                     )
-            node_embedding = node_embedding.to_numpy()
+            embedding = embedding.to_numpy()
 
-        return node_embedding
+        return embedding
 
     def _shuffle(
         self,
@@ -893,12 +898,12 @@ class GraphVisualizer:
             except AttributeError:
                 pass
 
-    def automatically_detect_node_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
+    def automatically_detect_embedding_method(self, node_embedding: np.ndarray) -> Optional[str]:
         """Detect node embedding method using heuristics, where possible."""
         # Rules to detect TFIDF/BERT embedding
         if node_embedding.dtype == "float16" and node_embedding.shape[1] == 768:
             return "TFIDF-weighted BERT"
-        return self._node_embedding_method_name
+        return self._embedding_method_name
 
     def fit_nodes(
         self,
@@ -916,7 +921,13 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        node_embedding = self._get_node_embedding(
+        if issubclass(type(node_embedding), AbstractEdgeFeature):
+            raise ValueError(
+                "You cannot use an edge feature object as "
+                "node embedding for this visualization."
+            )
+
+        node_embedding = self._get_embedding(
             node_embedding,
             **node_embedding_kwargs
         )
@@ -953,22 +964,33 @@ class GraphVisualizer:
 
     def _get_positive_edges_embedding(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        embedding: Union[pd.DataFrame, np.ndarray, Type[AbstractEdgeFeature]]
     ) -> np.ndarray:
         """Executes fitting for plotting edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray]
-            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        embedding: Union[pd.DataFrame, np.ndarray]
+            Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
-        graph_transformer.fit(node_embedding)
-        return graph_transformer.transform(self._positive_graph)
+        if issubclass(type(embedding), AbstractEdgeFeature):
+            edge_features = list(embedding.get_edge_feature_from_graph(
+                graph=self._positive_graph,
+                support=self._support
+            ).values())
+        else:
+            edge_features = None
+            graph_transformer.fit(embedding)
+        
+        return graph_transformer.transform(
+            self._positive_graph,
+            edge_features=edge_features
+        )
 
     def fit_edges(
         self,
@@ -988,57 +1010,65 @@ class GraphVisualizer:
         """
         self._positive_edge_decomposition = self.decompose(
             self._get_positive_edges_embedding(
-                self._get_node_embedding(
+                self._get_embedding(
                     node_embedding, **node_embedding_kwargs)
             )
         )
 
     def _get_negative_edge_embedding(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray]
+        embedding: Union[pd.DataFrame, np.ndarray]
     ) -> np.ndarray:
         """Executes aggregation of negative edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray]
-            Node embedding obtained from SkipGram, CBOW or GloVe or others.
+        embedding: Union[pd.DataFrame, np.ndarray]
+            Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
             method=self._edge_embedding_method,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
-        graph_transformer.fit(node_embedding)
+        if issubclass(type(embedding), AbstractEdgeFeature):
+            edge_features = list(embedding.get_edge_feature_from_graph(
+                graph=self._positive_graph,
+                support=self._support
+            ).values())
+        else:
+            edge_features = None
+            graph_transformer.fit(embedding)
         return graph_transformer.transform(
-            self._negative_graph
+            self._negative_graph,
+            edge_features=edge_features
         )
 
     def fit_negative_and_positive_edges(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
-        **node_embedding_kwargs: Dict
+        embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
+        **embedding_kwargs: Dict
     ):
         """Executes fitting for plotting negative edge embeddings.
 
         Parameters
         -------------------------
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
+        embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
             Embedding of the graph nodes.
             If a string is provided, we will run the node embedding
             from one of the available methods.
-        **node_embedding_kwargs: Dict
+        **embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        node_embedding = self._get_node_embedding(
-            node_embedding,
-            **node_embedding_kwargs
+        embedding = self._get_embedding(
+            embedding,
+            **embedding_kwargs
         )
         positive_edge_embedding = self._get_positive_edges_embedding(
-            node_embedding
+            embedding
         )
         negative_edge_embedding = self._get_negative_edge_embedding(
-            node_embedding
+            embedding
         )
         raw_edge_embedding = np.vstack([
             positive_edge_embedding,
@@ -1129,10 +1159,10 @@ class GraphVisualizer:
                 self._graph_name,
             )
 
-        if self._show_node_embedding_method and self._node_embedding_method_name is not None and self._node_embedding_method_name != "auto":
+        if self._show_embedding_method and self._embedding_method_name is not None and self._embedding_method_name != "auto":
             title = "{} - {}".format(
                 title,
-                self._node_embedding_method_name,
+                self._embedding_method_name,
             )
 
         if show_edge_embedding and self._show_edge_embedding_method:
@@ -4352,14 +4382,14 @@ class GraphVisualizer:
         # Backing up ang off some of the visualizations
         # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
-        show_node_embedding_backup = self._show_node_embedding_method
+        show_node_embedding_backup = self._show_embedding_method
         show_edge_embedding_backup = self._show_edge_embedding_method
         automatically_display_backup = self._automatically_display_on_notebooks
         show_separability_backup = self._show_separability_considerations_explanation
         show_heatmaps_backup = self._show_heatmaps_description
         non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
         self._show_graph_name = False
-        self._show_node_embedding_method = False
+        self._show_embedding_method = False
         self._show_edge_embedding_method = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
@@ -4368,7 +4398,7 @@ class GraphVisualizer:
 
         complete_caption = (
             f"<b>{self._decomposition_method} decomposition and properties distribution"
-            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._node_embedding_method_name)} node embedding:</b>"
+            f" of the {self._graph_name} graph using the {sanitize_ml_labels(self._embedding_method_name)} node embedding:</b>"
         )
 
         heatmaps_letters = []
@@ -4413,7 +4443,7 @@ class GraphVisualizer:
         complete_caption += "<br>"
 
         self._show_edge_embedding_method = show_edge_embedding_backup
-        self._show_node_embedding_method = show_node_embedding_backup
+        self._show_embedding_method = show_node_embedding_backup
         self._automatically_display_on_notebooks = automatically_display_backup
         self._show_separability_considerations_explanation = show_separability_backup
         self._show_heatmaps_description = show_heatmaps_backup
@@ -4482,7 +4512,7 @@ class GraphVisualizer:
         **node_embedding_kwargs: Dict
             Kwargs to be forwarded to the node embedding algorithm.
         """
-        node_embedding = self._get_node_embedding(
+        node_embedding = self._get_embedding(
             node_embedding,
             **node_embedding_kwargs
         )

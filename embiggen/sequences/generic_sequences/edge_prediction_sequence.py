@@ -1,8 +1,7 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
-from typing import Tuple
-
 import numpy as np
 from ensmallen import Graph  # pylint: disable=no-name-in-module
+from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
 
 
 class EdgePredictionSequence:
@@ -11,7 +10,7 @@ class EdgePredictionSequence:
     def __init__(
         self,
         graph: Graph,
-        graph_used_in_training: Graph,
+        support: Graph,
         return_node_types: bool,
         return_edge_types: bool,
         use_edge_metrics: bool,
@@ -23,7 +22,7 @@ class EdgePredictionSequence:
         --------------------------------
         graph: Graph
             The graph whose edges are to be predicted.
-        graph_used_in_training: Graph
+        support: Graph
             The graph that was used while training the current
             edge prediction model.
         return_node_types: bool
@@ -35,13 +34,13 @@ class EdgePredictionSequence:
         batch_size: int = 2**10,
             The batch size to use.
         """
-        if not graph.has_compatible_node_vocabularies(graph_used_in_training):
+        if not graph.has_compatible_node_vocabularies(support):
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have a node vocabulary "
                 "that is compatible with the provided graph used in training."
             )
         self._graph = graph
-        self._graph_used_in_training = graph_used_in_training
+        self._support = support
         self._return_node_types = return_node_types
         self._return_edge_types = return_edge_types
         self._use_edge_metrics = use_edge_metrics
@@ -61,11 +60,10 @@ class EdgePredictionSequence:
 
         Returns
         ---------------
-        Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         return (tuple([
             value
-            for value in self._graph_used_in_training.get_edge_prediction_chunk_mini_batch(
+            for value in self._support.get_edge_prediction_chunk_mini_batch(
                 idx,
                 graph=self._graph,
                 batch_size=self._batch_size,
