@@ -979,9 +979,11 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            edge_features = list(embedding.get_edge_feature_from_graph(
-                graph=self._positive_graph,
-                support=self._support
+            sources, destinations = self._positive_graph.get_edge_node_ids(directed=self._positive_graph.is_directed())
+            edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
+                support=self._support,
+                sources=sources,
+                destinations=destinations
             ).values())
         else:
             edge_features = None
@@ -1032,9 +1034,11 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            edge_features = list(embedding.get_edge_feature_from_graph(
-                graph=self._positive_graph,
-                support=self._support
+            sources, destinations = self._negative_graph.get_edge_node_ids(directed=self._negative_graph.is_directed())
+            edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
+                support=self._support,
+                sources=sources,
+                destinations=destinations
             ).values())
         else:
             edge_features = None
