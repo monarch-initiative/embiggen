@@ -1,4 +1,8 @@
 """Module with embedding visualization tools."""
+from embiggen.utils.pipeline import iterate_graphs
+from embiggen.utils.abstract_models import format_list
+from embiggen.embedders import embed_graph
+from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
 import functools
 from multiprocessing import cpu_count
 from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable, Type
@@ -38,18 +42,20 @@ from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 from mpl_toolkits.mplot3d.proj3d import proj_transform
 from matplotlib.text import Annotation
 
+
 class Annotation3D(Annotation):
     '''Annotate the point xyz with text s'''
 
     def __init__(self, s, xyz, *args, **kwargs):
-        Annotation.__init__(self,s, xy=(0,0), *args, **kwargs)
-        self._verts3d = xyz        
+        Annotation.__init__(self, s, xy=(0, 0), *args, **kwargs)
+        self._verts3d = xyz
 
     def draw(self, renderer):
         xs3d, ys3d, zs3d = self._verts3d
         xs, ys, zs = proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.xy=(xs,ys)
+        self.xy = (xs, ys)
         Annotation.draw(self, renderer)
+
 
 try:
     from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
@@ -59,12 +65,6 @@ except ImportError:
         "you will not be able to execute 3D animations with the visualization "
         "pipeline."
     )
-
-
-from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
-from embiggen.embedders import embed_graph
-from embiggen.utils.abstract_models import format_list
-from embiggen.utils.pipeline import iterate_graphs
 
 
 class GraphVisualizer:
@@ -670,7 +670,8 @@ class GraphVisualizer:
 
     def _get_embedding(
         self,
-        embedding: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, str, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
+        embedding: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame,
+                                  np.ndarray, str, EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
         **embedding_kwargs: Dict
     ) -> np.ndarray:
         """Computes the node embedding if it was not otherwise provided.
@@ -699,6 +700,10 @@ class GraphVisualizer:
             else:
                 embedding = self._embedding_method_name
         if issubclass(type(embedding), AbstractEdgeFeature):
+            self._currently_plotting_edge_embedding = True
+            if self._embedding_method_name == "auto" or self._has_autodetermined_embedding_name:
+                self._has_autodetermined_embedding_name = True
+                self._embedding_method_name = embedding.get_feature_name()
             if not embedding.is_fit():
                 embedding.fit(self._support)
             return embedding
@@ -747,6 +752,8 @@ class GraphVisualizer:
                         f"but we have found `{embedding.index[node_id]}`."
                     )
             embedding = embedding.to_numpy()
+
+        self._currently_plotting_edge_embedding = False
 
         return embedding
 
@@ -870,7 +877,7 @@ class GraphVisualizer:
             len(label) > 20
             for label in labels
         ) else self._number_of_columns_in_legend
-        
+
         labels = [
             "{}...".format(label[:20])
             if len(label) > 20 and number_of_columns == 2 else label
@@ -907,7 +914,8 @@ class GraphVisualizer:
 
     def fit_nodes(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
+        node_embedding: Optional[Union[pd.DataFrame,
+                                       np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting node embeddings.
@@ -979,7 +987,10 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            sources, destinations = self._positive_graph.get_edge_node_ids(directed=self._positive_graph.is_directed())
+            sources = self._positive_graph.get_source_node_ids(
+                self._positive_graph.is_directed())
+            destinations = self._positive_graph.get_destination_node_ids(
+                self._positive_graph.is_directed())
             edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
                 support=self._support,
                 sources=sources,
@@ -988,7 +999,7 @@ class GraphVisualizer:
         else:
             edge_features = None
             graph_transformer.fit(embedding)
-        
+
         return graph_transformer.transform(
             self._positive_graph,
             edge_features=edge_features
@@ -996,7 +1007,8 @@ class GraphVisualizer:
 
     def fit_edges(
         self,
-        node_embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
+        node_embedding: Optional[Union[pd.DataFrame,
+                                       np.ndarray, str, EmbeddingResult]] = None,
         **node_embedding_kwargs: Dict
     ):
         """Executes fitting for plotting edge embeddings.
@@ -1034,7 +1046,10 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            sources, destinations = self._negative_graph.get_edge_node_ids(directed=self._negative_graph.is_directed())
+            sources = self._negative_graph.get_source_node_ids(
+                self._negative_graph.is_directed())
+            destinations = self._negative_graph.get_destination_node_ids(
+                self._negative_graph.is_directed())
             edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
                 support=self._support,
                 sources=sources,
@@ -1050,7 +1065,8 @@ class GraphVisualizer:
 
     def fit_negative_and_positive_edges(
         self,
-        embedding: Optional[Union[pd.DataFrame, np.ndarray, str, EmbeddingResult]] = None,
+        embedding: Optional[Union[pd.DataFrame,
+                                  np.ndarray, str, EmbeddingResult]] = None,
         **embedding_kwargs: Dict
     ):
         """Executes fitting for plotting negative edge embeddings.
@@ -1169,7 +1185,7 @@ class GraphVisualizer:
                 self._embedding_method_name,
             )
 
-        if show_edge_embedding and self._show_edge_embedding_method:
+        if show_edge_embedding and self._show_edge_embedding_method and not self._currently_plotting_edge_embedding:
             title = "{} - {}".format(
                 title,
                 self._edge_embedding_method,
@@ -3001,7 +3017,7 @@ class GraphVisualizer:
         if self._subsampled_node_ids is not None:
             if node_type_predictions is not None:
                 node_type_predictions = node_type_predictions[self._subsampled_node_ids]
-            
+
             if train_indices is not None:
                 train_indices = np.fromiter(
                     (
@@ -3740,7 +3756,7 @@ class GraphVisualizer:
         fig, axes, types_caption = returned_values
 
         caption = (
-            f"<i>Edge types</i>: {types_caption}."
+            f"<i>Edge types</i>: {types_caption}"
         )
 
         return self._handle_notebook_display(fig, axes, caption=caption)
@@ -4369,8 +4385,8 @@ class GraphVisualizer:
         ]
 
         (self._node_decomposition,
-        self._positive_edge_decomposition,
-        self._negative_edge_decomposition) = points
+         self._positive_edge_decomposition,
+         self._negative_edge_decomposition) = points
 
         figure, axes = self._get_figure_and_axes(
             nrows=nrows,
@@ -4395,6 +4411,7 @@ class GraphVisualizer:
         self._show_graph_name = False
         self._show_embedding_method = False
         self._show_edge_embedding_method = False
+        self._currently_plotting_edge_embedding = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False
@@ -4420,7 +4437,7 @@ class GraphVisualizer:
                 **(dict(loc="lower center") if "loc" in inspect.signature(plot_callback).parameters else dict()),
                 apply_tight_layout=False
             )
-            
+
             if "heatmap" in caption.lower():
                 heatmaps_letters.append(letter)
             if "accuracy" in caption.lower():
@@ -4481,8 +4498,8 @@ class GraphVisualizer:
 
         self._show_graph_name = show_name_backup
         (self._node_decomposition,
-        self._positive_edge_decomposition,
-        self._negative_edge_decomposition) = decompositions_backup
+         self._positive_edge_decomposition,
+         self._negative_edge_decomposition) = decompositions_backup
 
         return self._handle_notebook_display(
             figure,
@@ -4520,19 +4537,21 @@ class GraphVisualizer:
             node_embedding,
             **node_embedding_kwargs
         )
-        self.fit_nodes(node_embedding, **node_embedding_kwargs)
+        if not self._currently_plotting_edge_embedding:
+            self.fit_nodes(node_embedding, **node_embedding_kwargs)
         self.fit_negative_and_positive_edges(
             node_embedding, **node_embedding_kwargs)
 
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
 
-        node_scatter_plot_methods_to_call.append(
-            self.plot_node_degrees,
-        )
-        distribution_plot_methods_to_call.append(
-            self.plot_node_degree_distribution,
-        )
+        if not self._currently_plotting_edge_embedding:
+            node_scatter_plot_methods_to_call.append(
+                self.plot_node_degrees,
+            )
+            distribution_plot_methods_to_call.append(
+                self.plot_node_degree_distribution,
+            )
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)
@@ -4566,17 +4585,17 @@ class GraphVisualizer:
             self.plot_positive_and_negative_resource_allocation_index_histogram
         ]
 
-        if self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
+        if not self._currently_plotting_edge_embedding and self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
             node_scatter_plot_methods_to_call.append(
                 self.plot_node_types
             )
 
-        if self._graph.has_node_ontologies() and not self._graph.has_homogeneous_node_ontologies():
+        if not self._currently_plotting_edge_embedding and self._graph.has_node_ontologies() and not self._graph.has_homogeneous_node_ontologies():
             node_scatter_plot_methods_to_call.append(
                 self.plot_node_ontologies
             )
 
-        if not self._support.is_connected() and not self._support.is_directed():
+        if not self._currently_plotting_edge_embedding and not self._support.is_connected() and not self._support.is_directed():
             node_scatter_plot_methods_to_call.append(
                 self.plot_connected_components
             )
@@ -4630,8 +4649,8 @@ class GraphVisualizer:
                 duration=self._duration,
                 fps=self._fps,
                 verbose=self._verbose,
-                nrows = nrows,
-                ncols = ncols,
+                nrows=nrows,
+                ncols=ncols,
                 plotting_callbacks=plotting_callbacks,
                 show_letters=show_letters,
             )
@@ -4646,8 +4665,8 @@ class GraphVisualizer:
                     self._positive_edge_decomposition,
                     self._negative_edge_decomposition
                 ],
-                nrows = nrows,
-                ncols = ncols,
+                nrows=nrows,
+                ncols=ncols,
                 plotting_callbacks=plotting_callbacks,
                 show_letters=show_letters
             )
@@ -4663,8 +4682,8 @@ class GraphVisualizer:
                 self._positive_edge_decomposition,
                 self._negative_edge_decomposition
             ],
-            nrows = nrows,
-            ncols = ncols,
+            nrows=nrows,
+            ncols=ncols,
             plotting_callbacks=plotting_callbacks,
             show_letters=show_letters
         )
