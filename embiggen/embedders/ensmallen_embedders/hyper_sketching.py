@@ -23,7 +23,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         include_edge_types: bool = False,
         include_edge_ids: bool = False,
         include_node_ids: bool = True,
-        include_selfloops: bool = False,
+        include_selfloops: bool = True,
         include_typed_graphlets: bool = False,
         normalize_by_symmetric_laplacian: bool = True,
         concatenate_features: bool = False,
@@ -54,7 +54,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             Whether to include edge ids in the sketches.
         include_node_ids: bool = True,
             Whether to include node ids in the sketches.
-        include_selfloops: bool = False,
+        include_selfloops: bool = True,
             Whether to include selfloops in the sketches.
         include_typed_graphlets: bool = False,
             Whether to include typed graphlets in the sketches.

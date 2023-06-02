@@ -103,6 +103,22 @@ def get_l1_edge_embedding(
         destination_node_embedding
     )
 
+def get_l1_norm_edge_embedding(
+    edge_embedding: np.ndarray
+) -> np.ndarray:
+    """Return L1 norm for each edge embedding row.
+
+    Parameters
+    --------------------------
+    edge_embedding: np.ndarray
+        Numpy array with the edge embeddings.
+
+    Returns
+    --------------------------
+    Numpy array with the L1 norm scalar scores.
+    """
+    assert edge_embedding.ndim == 2
+    return np.abs(edge_embedding).sum(axis=1, keepdims=True)
 
 def get_absolute_l1_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -154,6 +170,22 @@ def get_squared_l2_edge_embedding(
         2.0
     )
 
+def get_l2_norm_edge_embedding(
+    edge_embedding: np.ndarray
+) -> np.ndarray:
+    """Return L2 norm for each edge embedding row.
+
+    Parameters
+    --------------------------
+    edge_embedding: np.ndarray
+        Numpy array with the edge embeddings.
+
+    Returns
+    --------------------------
+    Numpy array with the L2 norm scalar scores.
+    """
+    assert edge_embedding.ndim == 2
+    return np.sqrt(np.power(edge_embedding, 2.0).sum(axis=1, keepdims=True))
 
 def get_l2_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -317,9 +349,11 @@ class EdgeTransformer:
         "Sum": get_sum_edge_embedding,
         "Average": get_average_edge_embedding,
         "L1": get_l1_edge_embedding,
+        "L1Norm": get_l1_norm_edge_embedding,
         "AbsoluteL1": get_absolute_l1_edge_embedding,
         "SquaredL2": get_squared_l2_edge_embedding,
         "L2": get_l2_edge_embedding,
+        "L2Norm": get_l2_norm_edge_embedding,
         "Concatenate": get_concatenate_edge_embedding,
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
@@ -502,5 +536,8 @@ class EdgeTransformer:
                     edge_feature.reshape((edge_feature.shape[0], -1))
                     for edge_feature in edge_features
                 ])
+
+        if self.method in ("L1Norm", "L2Norm"):
+            edge_embeddings = self._method(edge_embeddings)
 
         return edge_embeddings

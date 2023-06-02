@@ -1179,16 +1179,16 @@ class GraphVisualizer:
                 self._graph_name,
             )
 
-        if self._show_embedding_method and self._embedding_method_name is not None and self._embedding_method_name != "auto":
+        if (
+            show_edge_embedding and
+            self._show_embedding_method and
+            self._embedding_method_name is not None and
+            self._embedding_method_name != "auto" and
+            not self._currently_plotting_edge_embedding
+        ):
             title = "{} - {}".format(
                 title,
                 self._embedding_method_name,
-            )
-
-        if show_edge_embedding and self._show_edge_embedding_method and not self._currently_plotting_edge_embedding:
-            title = "{} - {}".format(
-                title,
-                self._edge_embedding_method,
             )
 
         return sanitize_ml_labels(title)
@@ -4564,26 +4564,34 @@ class GraphVisualizer:
 
         edge_scatter_plot_methods_to_call = [
             self.plot_positive_and_negative_edges,
-            plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_euclidean_distance),
-            plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_cosine_similarity),
             self.plot_positive_and_negative_edges_adamic_adar,
             self.plot_positive_and_negative_edges_jaccard_coefficient,
             self.plot_positive_and_negative_edges_preferential_attachment,
             self.plot_positive_and_negative_edges_resource_allocation_index
         ]
 
+        if not self._currently_plotting_edge_embedding:
+            edge_scatter_plot_methods_to_call.extend([
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_euclidean_distance),
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_cosine_similarity),
+            ])
+
         distribution_plot_methods_to_call = [
-            plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_euclidean_distance_histogram),
-            plot_distance_wrapper(
-                self.plot_positive_and_negative_edges_cosine_similarity_histogram),
             self.plot_positive_and_negative_adamic_adar_histogram,
             self.plot_positive_and_negative_jaccard_coefficient_histogram,
             self.plot_positive_and_negative_preferential_attachment_histogram,
             self.plot_positive_and_negative_resource_allocation_index_histogram
         ]
+
+        if not self._currently_plotting_edge_embedding:
+            distribution_plot_methods_to_call.extend([
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_euclidean_distance_histogram),
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_cosine_similarity_histogram),
+            ])
 
         if not self._currently_plotting_edge_embedding and self._graph.has_node_types() and not self._graph.has_homogeneous_node_types():
             node_scatter_plot_methods_to_call.append(
