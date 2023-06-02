@@ -158,7 +158,23 @@ class EmbeddingResult:
         return total
 
     def get_all_node_embedding(self) -> List[Union[pd.DataFrame, np.ndarray]]:
-        """Return a list with all the computed node embedding."""
+        """Return a list with all the computed node embedding.
+        
+        Implementation details
+        ----------------------
+        Different embedding methods compute a different number of node embeddings.
+        For example, the LINE method computes a single embedding for each node,
+        while an embedding based on SkipGram, such as Node2Vec SkipGram,
+        computes two embeddings for each node: one for the node context and one for the node itself.
+
+        For this reason, to standardize the access to the node embeddings,
+        this method returns a list of node embeddings.
+
+        Raises
+        ----------------
+        ValueError
+            If the node embeddings were not computed by the embedding method.
+        """
         if self._node_embeddings is None:
             raise ValueError(
                 "The node embedding were requested but they "
@@ -167,7 +183,24 @@ class EmbeddingResult:
         return self._node_embeddings
 
     def get_all_edge_embedding(self) -> List[Union[pd.DataFrame, np.ndarray]]:
-        """Return a list with all the computed edge embedding."""
+        """Return a list with all the computed edge embedding.
+        
+        Implementation details
+        ----------------------
+        Different embedding methods compute a different number of edge embeddings.
+        For example, a method such as HyperSketching produces three different edge
+        embeddings for each edge: one for the exclusive overlaps matrix, one for the
+        exclusive left difference and one for the exclusive right difference.
+
+        For this reason, to standardize the access to the edge embeddings,
+        this method returns a list of edge embeddings.
+
+        Raises
+        ----------------
+        ValueError
+            If the edge embeddings were not computed by the embedding method.
+
+        """
         if self._edge_embeddings is None:
             raise ValueError(
                 "The edge embedding were requested but they "

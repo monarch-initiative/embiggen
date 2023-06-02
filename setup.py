@@ -69,7 +69,7 @@ setup(
         "scikit-learn",
         "dict_hash>=1.1.29",
         "userinput>=1.0.19",
-        "ddd_subplots>=1.0.23",
+        "ddd_subplots>=1.0.26",
         "sanitize_ml_labels>=1.0.50",
         "keras_mixed_sequence>=1.0.28",
         "ensmallen>=0.8.54",

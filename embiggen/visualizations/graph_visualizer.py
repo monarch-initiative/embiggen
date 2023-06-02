@@ -412,6 +412,7 @@ class GraphVisualizer:
         self._show_heatmaps_description = show_heatmaps_description
         self._show_non_existing_edges_sampling_description = show_non_existing_edges_sampling_description
         self._automatically_display_on_notebooks = automatically_display_on_notebooks
+        self._currently_plotting_edge_embedding = False
 
         self._number_of_holdouts_for_cluster_comments = number_of_holdouts_for_cluster_comments
 
@@ -1335,6 +1336,24 @@ class GraphVisualizer:
             cmap = None
 
         if train_indices is None and test_indices is None:
+            assert isinstance(points, np.ndarray), "Points must be a numpy array."
+            if self._n_components == 2:
+                assert points.shape[1] == 2, "Points must be 2-dimensional, but they are {}-dimensional.".format(
+                    points.shape[1]
+                )
+            elif self._n_components == 3:
+                assert points.shape[1] == 3, "Points must be 3-dimensional, but they are {}-dimensional.".format(
+                    points.shape[1]
+                )
+            elif self._n_components == 4:
+                points = points[:, :3]
+            else:
+                raise RuntimeError(
+                    "The number of components must be either 2 or 3, but it is {}.".format(
+                        self._n_components
+                    )
+                )
+
             scatter = axes.scatter(
                 *points.T,
                 **dict(
@@ -4384,9 +4403,15 @@ class GraphVisualizer:
             self._negative_edge_decomposition
         ]
 
-        (self._node_decomposition,
-         self._positive_edge_decomposition,
-         self._negative_edge_decomposition) = points
+        if self._currently_plotting_edge_embedding:
+            (
+                self._positive_edge_decomposition,
+                self._negative_edge_decomposition
+            ) = points
+        else:
+            (self._node_decomposition,
+             self._positive_edge_decomposition,
+             self._negative_edge_decomposition) = points
 
         figure, axes = self._get_figure_and_axes(
             nrows=nrows,
@@ -4411,7 +4436,6 @@ class GraphVisualizer:
         self._show_graph_name = False
         self._show_embedding_method = False
         self._show_edge_embedding_method = False
-        self._currently_plotting_edge_embedding = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False
@@ -4509,17 +4533,17 @@ class GraphVisualizer:
 
     def fit_and_plot_all(
         self,
-        node_embedding: Union[pd.DataFrame, np.ndarray, str, EmbeddingResult],
+        embedding: Union[pd.DataFrame, np.ndarray, str, EmbeddingResult],
         number_of_columns: int = 4,
         show_letters: bool = True,
         include_distribution_plots: bool = True,
-        **node_embedding_kwargs: Dict
+        **embedding_kwargs: Dict
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
 
         Parameters
         -------------------------
-        node_embedding: Union[pd.DataFrame, np.ndarray, str]
+        embedding: Union[pd.DataFrame, np.ndarray, str]
             Embedding of the graph nodes.
             If a string is provided, we will run the node embedding
             from one of the available methods.
@@ -4530,17 +4554,19 @@ class GraphVisualizer:
         include_distribution_plots: bool = True
             Whether to include the distribution plots for the degrees
             and the edge weights, if they are present.
-        **node_embedding_kwargs: Dict
-            Kwargs to be forwarded to the node embedding algorithm.
+        **embedding_kwargs: Dict
+            Kwargs to be forwarded to the embedding algorithm.
         """
-        node_embedding = self._get_embedding(
-            node_embedding,
-            **node_embedding_kwargs
+        embedding = self._get_embedding(
+            embedding,
+            **embedding_kwargs
         )
         if not self._currently_plotting_edge_embedding:
-            self.fit_nodes(node_embedding, **node_embedding_kwargs)
+            self.fit_nodes(embedding, **embedding_kwargs)
         self.fit_negative_and_positive_edges(
-            node_embedding, **node_embedding_kwargs)
+            embedding,
+            **embedding_kwargs
+        )
 
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
@@ -4557,7 +4583,7 @@ class GraphVisualizer:
             @functools.wraps(plot_distance)
             def wrapped_plot_distance(**kwargs):
                 return plot_distance(
-                    node_features=node_embedding,
+                    node_features=embedding,
                     **kwargs
                 )
             return wrapped_plot_distance
@@ -4640,6 +4666,16 @@ class GraphVisualizer:
             int(math.ceil(number_of_total_plots / number_of_columns)), 1)
         ncols = min(number_of_columns, number_of_total_plots)
 
+        points = []
+
+        if not self._currently_plotting_edge_embedding:
+            points.append(self._node_decomposition)
+
+        points.extend([
+            self._positive_edge_decomposition,
+            self._negative_edge_decomposition
+        ])
+
         if self._rotate:
             path = "fit_and_plot_all.webm"
             display_backup = self._automatically_display_on_notebooks
@@ -4649,11 +4685,7 @@ class GraphVisualizer:
             rotate(
                 self._fit_and_plot_all,
                 path=path,
-                points=[
-                    self._node_decomposition,
-                    self._positive_edge_decomposition,
-                    self._negative_edge_decomposition
-                ],
+                points=points,
                 duration=self._duration,
                 fps=self._fps,
                 verbose=self._verbose,
@@ -4668,11 +4700,7 @@ class GraphVisualizer:
                 height=None
             )
             figure, axes, complete_caption = self._fit_and_plot_all(
-                points=[
-                    self._node_decomposition,
-                    self._positive_edge_decomposition,
-                    self._negative_edge_decomposition
-                ],
+                points=points,
                 nrows=nrows,
                 ncols=ncols,
                 plotting_callbacks=plotting_callbacks,
@@ -4685,11 +4713,7 @@ class GraphVisualizer:
                 caption=complete_caption
             )
         return self._fit_and_plot_all(
-            points=[
-                self._node_decomposition,
-                self._positive_edge_decomposition,
-                self._negative_edge_decomposition
-            ],
+            points=points,
             nrows=nrows,
             ncols=ncols,
             plotting_callbacks=plotting_callbacks,
