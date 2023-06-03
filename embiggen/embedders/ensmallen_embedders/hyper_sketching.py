@@ -16,9 +16,9 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
 
     def __init__(
         self,
-        number_of_hops: int = 2,
+        number_of_hops: int = 3,
         precision: int = 6,
-        bits: int = 5,
+        bits: int = 4,
         include_node_types: bool = False,
         include_edge_types: bool = False,
         include_edge_ids: bool = False,
@@ -251,6 +251,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             self.fit(graph)
         (overlaps, left_difference, right_difference) = self._model.get_sketching_for_all_edges(
             graph,
+            support=graph,
             overlap_path=self._overlap_path,
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,

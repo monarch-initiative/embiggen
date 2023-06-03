@@ -988,14 +988,9 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            sources = self._positive_graph.get_source_node_ids(
-                self._positive_graph.is_directed())
-            destinations = self._positive_graph.get_destination_node_ids(
-                self._positive_graph.is_directed())
-            edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
+            edge_features = list(embedding.get_edge_feature_from_graph(
+                graph=self._positive_graph,
                 support=self._support,
-                sources=sources,
-                destinations=destinations
             ).values())
         else:
             edge_features = None
@@ -1047,14 +1042,9 @@ class GraphVisualizer:
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            sources = self._negative_graph.get_source_node_ids(
-                self._negative_graph.is_directed())
-            destinations = self._negative_graph.get_destination_node_ids(
-                self._negative_graph.is_directed())
             edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
+                graph=self._negative_graph,
                 support=self._support,
-                sources=sources,
-                destinations=destinations
             ).values())
         else:
             edge_features = None
@@ -1682,7 +1672,6 @@ class GraphVisualizer:
             test_size=0.3,
             random_state=self._random_state
         ).split(points, types):
-
             model = DecisionTreeClassifier(max_depth=5)
 
             train_x, test_x = points[train_indices], points[test_indices]
@@ -3235,6 +3224,7 @@ class GraphVisualizer:
             k=7,
             figure=figure,
             axes=axes,
+            return_caption=return_caption,
             scatter_kwargs=scatter_kwargs,
             other_label=other_label,
             train_indices=train_indices,
@@ -3753,6 +3743,7 @@ class GraphVisualizer:
             k=k,
             figure=figure,
             axes=axes,
+            return_caption=return_caption,
             scatter_kwargs=scatter_kwargs,
             other_label=other_label,
             train_indices=train_indices,
