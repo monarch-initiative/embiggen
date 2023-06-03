@@ -99,7 +99,7 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
         minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
-        only_from_same_component: bool = True,
+        only_from_same_component: Union[bool, str] = "auto",
         sample_only_edges_with_heterogeneous_node_types: bool = False,
         source_node_types_names: Optional[Union[str, List[str]]] = None,
         destination_node_types_names: Optional[Union[str, List[str]]] = None,
@@ -192,12 +192,15 @@ class GraphVisualizer:
         edge_embedding_method: str = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
-        only_from_same_component: bool = True
+        only_from_same_component: Union[bool, str] = "auto"
             Whether to sample negative edges only from the same connected component.
             This should generally be set to `True`, but in some corner cases when
             the graph to visualize has extremely dense (or very small, like tuples)
             components it will raise an exception as it is not possible to sample
             negative edges from such densely connected components.
+            By default, it is set to `auto`, which will set it to `True` if the
+            graph is smaller than 50M nodes, as computing and masking the connected
+            components can get expensive on very large graphs, such as WikiData.
         sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types.
@@ -368,6 +371,9 @@ class GraphVisualizer:
             **edge_prediction_graph_kwargs,
         )
 
+        if only_from_same_component == "auto":
+            only_from_same_component = graph.get_number_of_nodes() < 50_000_000
+
         # We sample the negative edges using the subgraph of interest as base graph
         # to follow its scale free distribution, which may be different from the
         # main graph scale free distribution when particular filters are applied to it.
@@ -405,7 +411,7 @@ class GraphVisualizer:
         self._show_graph_name = show_graph_name
         self._show_embedding_method = show_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
-        self._edge_embedding_method = edge_embedding_method
+        self._currently_plotting_edge_embedding = edge_embedding_method
         self._verbose = verbose
 
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
@@ -983,7 +989,7 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._edge_embedding_method,
+            method=self._currently_plotting_edge_embedding,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -1037,7 +1043,7 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._edge_embedding_method,
+            method=self._currently_plotting_edge_embedding,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -1174,12 +1180,17 @@ class GraphVisualizer:
             show_edge_embedding and
             self._show_embedding_method and
             self._embedding_method_name is not None and
-            self._embedding_method_name != "auto" and
-            not self._currently_plotting_edge_embedding
+            self._embedding_method_name != "auto"
         ):
             title = "{} - {}".format(
                 title,
                 self._embedding_method_name,
+            )
+
+        if not self._currently_plotting_edge_embedding and self._currently_plotting_edge_embedding is not None:
+            title = "{} - {}".format(
+                title,
+                self._currently_plotting_edge_embedding,
             )
 
         return sanitize_ml_labels(title)
@@ -1326,7 +1337,8 @@ class GraphVisualizer:
             cmap = None
 
         if train_indices is None and test_indices is None:
-            assert isinstance(points, np.ndarray), "Points must be a numpy array."
+            assert isinstance(
+                points, np.ndarray), "Points must be a numpy array."
             if self._n_components == 2:
                 assert points.shape[1] == 2, "Points must be 2-dimensional, but they are {}-dimensional.".format(
                     points.shape[1]
@@ -4419,14 +4431,14 @@ class GraphVisualizer:
         # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
         show_node_embedding_backup = self._show_embedding_method
-        show_edge_embedding_backup = self._show_edge_embedding_method
+        show_edge_embedding_backup = self._show_currently_plotting_edge_embedding
         automatically_display_backup = self._automatically_display_on_notebooks
         show_separability_backup = self._show_separability_considerations_explanation
         show_heatmaps_backup = self._show_heatmaps_description
         non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
         self._show_graph_name = False
         self._show_embedding_method = False
-        self._show_edge_embedding_method = False
+        self._show_currently_plotting_edge_embedding = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False
