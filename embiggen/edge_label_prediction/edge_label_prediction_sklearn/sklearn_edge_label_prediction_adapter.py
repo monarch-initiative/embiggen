@@ -101,7 +101,8 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         gt = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
 
         gt.fit(
@@ -175,7 +176,8 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         lpt = EdgeLabelPredictionTransformer(
             method=self._edge_embedding_method,
-            aligned_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
 
         lpt.fit(
@@ -207,11 +209,57 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
                 subgraph=graph,
             ))
 
-        self._model_instance.fit(*lpt.transform(
+        x, y = lpt.transform(
             graph=graph,
             edge_features=rasterized_edge_features,
             behaviour_for_unknown_edge_labels="drop",
-        ))
+        )
+
+        edge_type_counts = graph.get_edge_type_names_counts_hashmap()
+
+        # If the graph is undirected, then there cannot be edge types
+        # with non-zero count equal to one. The very least, should be two.
+        if not graph.is_directed():
+            for count in edge_type_counts.values():
+                if count == 1:
+                    raise ValueError(
+                        "The provided graph is undirected, but there exists an edge type with only one directed edge."
+                    )
+
+        number_of_non_zero_edge_types = sum([
+            1
+            for count in edge_type_counts.values()
+            if count > 0
+        ])
+
+        if self.is_binary_prediction_task():
+            assert number_of_non_zero_edge_types == 2
+        if not self.is_binary_prediction_task():
+            assert number_of_non_zero_edge_types > 2
+        assert isinstance(y[0], (bool, np.bool_)) == self.is_binary_prediction_task(), (
+            f"Thi task boolean status is {self.is_binary_prediction_task()}, but the provided labels are of type {type(y[0])}."
+        )
+        if not self.is_binary_prediction_task():
+            assert y.max() > 1, (
+                "Since the current task does not seem to be a binary classification task, "
+                "and the edge type counts from the graph is {}, we expected for the maximal "
+                "label to be greater than 1, but it is {}. The graph is {}. The graph name is {}. "
+                "{}"
+            ).format(
+                edge_type_counts,
+                y.max(),
+                "directed" if graph.is_directed() else "undirected",
+                graph.get_name(),
+                [
+                    (graph.get_node_ids_from_edge_id(edge_id), graph.get_edge_type_name_from_edge_id(edge_id))
+                    for edge_id in range(graph.get_number_of_directed_edges())
+                ]
+            )
+
+        self._model_instance.fit(
+            x,
+            y
+        )
 
     def _predict_proba(
         self,
@@ -258,11 +306,10 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         )
         # In the majority but not totality of sklearn models,
         # the predictions of binary models are returned as
-        # a couple of vectors for the positive and negative class. 
+        # a couple of vectors for the positive and negative class.
         if self.is_binary_prediction_task() and prediction_probabilities.shape[1] == 2:
             prediction_probabilities = prediction_probabilities[:, 1]
         return prediction_probabilities
-
 
     def _predict(
         self,
@@ -324,7 +371,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
-        
+
         Parameters
         -------------------
         path: str
@@ -334,7 +381,7 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
-        
+
         Parameters
         -------------------
         path: str

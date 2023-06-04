@@ -670,7 +670,7 @@ class AbstractClassifierModel(AbstractModel):
             if smoke_test:
                 edge_feature = edge_feature.into_smoke_test()
 
-            if issubclass(edge_feature.__class__, AbstractEdgeFeature):
+            if issubclass(type(edge_feature), AbstractEdgeFeature):
                 edge_feature.fit(
                     graph=graph,
                 )
@@ -687,7 +687,7 @@ class AbstractClassifierModel(AbstractModel):
             edge_feature = [edge_feature]
 
         for ef in edge_feature:
-            if issubclass(ef.__class__, AbstractEdgeFeature):
+            if issubclass(type(ef), AbstractEdgeFeature):
                 yield ef
                 continue
             if not isinstance(ef, (np.ndarray, pd.DataFrame)):
@@ -702,7 +702,7 @@ class AbstractClassifierModel(AbstractModel):
                     )
                 )
 
-            if graph.get_number_of_directed_edges() != ef.shape[0]:
+            if graph.get_number_of_edges() != ef.shape[0]:
                 raise ValueError(
                     (
                         "The provided edge features have {rows_number} rows "
@@ -1023,7 +1023,7 @@ class AbstractClassifierModel(AbstractModel):
                 "This task is not a binary prediction, "
                 f"yet the {self.model_name()} model predict proba method has "
                 "returned a vector of prediction probabilities with "
-                f"shape {predictions.shape}."
+                f"shape {predictions.shape}. "
             )
 
         return predictions

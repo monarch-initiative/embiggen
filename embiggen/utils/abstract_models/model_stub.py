@@ -90,11 +90,12 @@ def get_model_or_stub(
                 "likely an implementation error, and should be "
                 "reported to the Embiggen repository as an issue."
             )
-    except ModuleNotFoundError as e:
+    except (ModuleNotFoundError, OSError) as e:
         # If effectively the error is that we cannot load the desired
         # library name, we catch this and re-raise it.
         if any(
             str(e).startswith(f"No module named '{module_library_name}")
+            or module_library_name in str(e)
             for module_library_name in module_library_names
         ):
             class StubClass(parent_class):

@@ -14,6 +14,7 @@ class EdgePredictionTransformer:
         self,
         method: str = "Hadamard",
         aligned_mapping: bool = False,
+        include_both_undirected_edges: bool = True
     ):
         """Create new EdgePredictionTransformer object.
 
@@ -27,16 +28,20 @@ class EdgePredictionTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
+        include_both_undirected_edges: bool = True
+            Whether to include both directed and undirected edges.
         """
         self._transformer = GraphTransformer(
             method=method,
             aligned_mapping=aligned_mapping,
+            include_both_undirected_edges=include_both_undirected_edges
         )
 
     def fit(
         self,
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray,
+                                          List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Fit the model.
 
@@ -103,25 +108,44 @@ class EdgePredictionTransformer:
                     "two graphs."
                 )
 
-        if edge_features is not None:
-            if not isinstance(edge_features, list):
-                edge_features = [edge_features]
-            
-            if isinstance(positive_graph, Graph):
-                number_of_positive_edges = positive_graph.get_number_of_directed_edges()
-            else:
-                number_of_positive_edges = len(positive_graph)
-            
-            positive_edge_features = [
-                edge_feature[:number_of_positive_edges]
-                for edge_feature in edge_features
-            ]
-            negative_edge_features  = [
-                edge_feature[number_of_positive_edges:]
-                for edge_feature in edge_features
-            ]
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+
+        if isinstance(positive_graph, Graph):
+            number_of_positive_edges = positive_graph.get_number_of_edges()
         else:
-            positive_edge_features = negative_edge_features = None
+            number_of_positive_edges = len(positive_graph)
+
+        if isinstance(negative_graph, Graph):
+            number_of_negative_edges = negative_graph.get_number_of_edges()
+        else:
+            number_of_negative_edges = len(negative_graph)
+
+        for edge_feature in edge_features:
+            if not isinstance(edge_feature, np.ndarray):
+                raise ValueError(
+                    "The provided edge features must be a numpy array. "
+                    f"Your provided edge features are of type {type(edge_feature)}."
+                )
+
+            if edge_feature.shape[0] != number_of_positive_edges + number_of_negative_edges:
+                raise ValueError(
+                    "The provided edge features must have the same number of edges as the provided graphs. "
+                    f"The provided edge features have {edge_feature.shape[0]} edges, while the provided graphs have "
+                    f"{number_of_positive_edges} and {number_of_negative_edges} edges."
+                )
+
+        positive_edge_features = [
+            edge_feature[:number_of_positive_edges]
+            for edge_feature in edge_features
+        ]
+        negative_edge_features = [
+            edge_feature[number_of_positive_edges:]
+            for edge_feature in edge_features
+        ]
 
         positive_edge_embedding = self._transformer.transform(
             positive_graph,

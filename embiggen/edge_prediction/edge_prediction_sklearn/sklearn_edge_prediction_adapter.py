@@ -151,7 +151,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         gt = GraphTransformer(
             method=self._edge_embedding_method,
-            aligned_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
 
         if edge_features is None:
@@ -171,16 +172,32 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         for edge_feature in edge_features:
             if isinstance(graph, Graph):
-                rasterized_edge_features.extend(edge_feature.get_edge_feature_from_graph(
+                for rasterized_edge_feature in edge_feature.get_edge_feature_from_graph(
                     graph=graph,
                     support=support,
-                ).values())
+                ).values():
+                    if not isinstance(rasterized_edge_feature, np.ndarray):
+                        raise ValueError(
+                            f"The provided edge feature {edge_feature} returned a "
+                            f"feature of type {type(rasterized_edge_feature)} "
+                            f"when running on a graph of type {type(graph)}."
+                            "We currently only support numpy arrays."
+                        )
+                    rasterized_edge_features.append(rasterized_edge_feature)
             elif isinstance(graph, tuple):
-                rasterized_edge_features.extend(edge_feature.get_edge_feature_from_edge_node_ids(
+                for rasterized_edge_feature in edge_feature.get_edge_feature_from_edge_node_ids(
                     support=support,
                     sources=graph[0],
                     destinations=graph[1],
-                ).values())
+                ).values():
+                    if not isinstance(rasterized_edge_feature, np.ndarray):
+                        raise ValueError(
+                            f"The provided edge feature {edge_feature} returned a "
+                            f"feature of type {type(rasterized_edge_feature)} "
+                            f"when running on a graph of type {type(graph)}."
+                            "We currently only support numpy arrays."
+                        )
+                    rasterized_edge_features.append(rasterized_edge_feature)
             else:
                 raise NotImplementedError(
                     f"A graph of type {type(graph)} was provided."
@@ -188,15 +205,32 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         if self._use_edge_metrics:
             if isinstance(graph, Graph):
-                rasterized_edge_features.append(support.get_all_edge_metrics(
+                edge_metrics = support.get_all_edge_metrics(
                     normalize=True,
                     subgraph=graph,
-                ))
+                )
+                if not isinstance(edge_metrics, np.ndarray):
+                    raise ValueError(
+                        f"The provided graph returned a "
+                        f"feature of type {type(edge_metrics)} "
+                        f"when running on a graph of type {type(graph)}. "
+                        "We currently only support numpy arrays."
+                    )
+                rasterized_edge_features.append(edge_metrics)
             elif isinstance(graph, tuple):
-                rasterized_edge_features.append(support.get_all_edge_metrics_from_node_ids(
-                    *graph,
+                edge_metrics = support.get_all_edge_metrics_from_node_ids(
+                    source_node_ids=graph[0],
+                    destination_node_ids=graph[1],
                     normalize=True,
-                ))
+                )
+                if not isinstance(edge_metrics, np.ndarray):
+                    raise ValueError(
+                        f"The provided graph returned a "
+                        f"feature of type {type(edge_metrics)} "
+                        f"when running on a graph of type {type(graph)}. "
+                        "We currently only support numpy arrays."
+                    )
+                rasterized_edge_features.append(edge_metrics)
             else:
                 raise NotImplementedError(
                     f"A graph of type {type(graph)} was provided."
@@ -241,7 +275,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         """
         lpt = EdgePredictionTransformer(
             method=self._edge_embedding_method,
-            aligned_mapping=True
+            aligned_mapping=True,
+            include_both_undirected_edges=False
         )
 
         lpt.fit(

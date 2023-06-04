@@ -19,6 +19,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         """
         self._is_binary_prediction_task = None
         self._is_multilabel_prediction_task = None
+        self._number_of_output_labels = None
         super().__init__(random_state=random_state)
 
     @classmethod
@@ -138,17 +139,27 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             ("train", train),
             ("test", test),
         ):
+            if evaluation_graph.is_directed():
+                mask = evaluation_graph.get_directed_edges_with_known_edge_types_mask()
+            else:
+                mask = evaluation_graph.get_upper_triangular_known_edge_types_mask()
+
             prediction_probabilities = self.predict_proba(
                 evaluation_graph,
                 support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features
-            )[evaluation_graph.get_edge_ids_with_known_edge_types()]
+            )[mask]
 
+            if evaluation_graph.is_directed():
+                labels = evaluation_graph.get_directed_known_edge_type_ids()
+            else:
+                labels = evaluation_graph.get_upper_triangular_known_edge_type_ids()
+            
             if self.is_binary_prediction_task():
                 predictions = prediction_probabilities
-                labels = evaluation_graph.get_known_edge_type_ids() == 1
+                labels = labels == 1
             elif self.is_multilabel_prediction_task():
                 # TODO! support multilabel prediction!
                 raise NotImplementedError(
@@ -158,7 +169,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 )
             else:
                 predictions = prediction_probabilities.argmax(axis=-1)
-                labels = evaluation_graph.get_known_edge_type_ids()
 
             performance.append({
                 "evaluation_mode": evaluation_mode,
@@ -216,6 +226,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
 
         self._is_binary_prediction_task = non_zero_edge_types == 2
         self._is_multilabel_prediction_task = graph.is_multigraph()
+        self._number_of_output_labels = graph.get_number_of_edge_types()
 
         if self._is_multilabel_prediction_task:
             raise ValueError(

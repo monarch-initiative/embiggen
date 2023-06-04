@@ -411,7 +411,7 @@ class GraphVisualizer:
         self._show_graph_name = show_graph_name
         self._show_embedding_method = show_embedding_method
         self._show_edge_embedding_method = show_edge_embedding_method
-        self._currently_plotting_edge_embedding = edge_embedding_method
+        self._edge_embedding_method = edge_embedding_method
         self._verbose = verbose
 
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
@@ -989,7 +989,7 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._currently_plotting_edge_embedding,
+            method=self._edge_embedding_method,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -1043,12 +1043,12 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._currently_plotting_edge_embedding,
+            method=self._edge_embedding_method,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
         if issubclass(type(embedding), AbstractEdgeFeature):
-            edge_features = list(embedding.get_edge_feature_from_edge_node_ids(
+            edge_features = list(embedding.get_edge_feature_from_graph(
                 graph=self._negative_graph,
                 support=self._support,
             ).values())
@@ -1187,10 +1187,10 @@ class GraphVisualizer:
                 self._embedding_method_name,
             )
 
-        if not self._currently_plotting_edge_embedding and self._currently_plotting_edge_embedding is not None:
+        if not self._currently_plotting_edge_embedding and self._edge_embedding_method is not None:
             title = "{} - {}".format(
                 title,
-                self._currently_plotting_edge_embedding,
+                self._edge_embedding_method,
             )
 
         return sanitize_ml_labels(title)
@@ -4431,14 +4431,14 @@ class GraphVisualizer:
         # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
         show_node_embedding_backup = self._show_embedding_method
-        show_edge_embedding_backup = self._show_currently_plotting_edge_embedding
+        show_edge_embedding_backup = self._show_edge_embedding_method
         automatically_display_backup = self._automatically_display_on_notebooks
         show_separability_backup = self._show_separability_considerations_explanation
         show_heatmaps_backup = self._show_heatmaps_description
         non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
         self._show_graph_name = False
         self._show_embedding_method = False
-        self._show_currently_plotting_edge_embedding = False
+        self._show_edge_embedding_method = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False

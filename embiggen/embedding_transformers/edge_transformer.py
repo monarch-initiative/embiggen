@@ -349,16 +349,19 @@ class EdgeTransformer:
         "Sum": get_sum_edge_embedding,
         "Average": get_average_edge_embedding,
         "L1": get_l1_edge_embedding,
-        "L1Norm": get_l1_norm_edge_embedding,
         "AbsoluteL1": get_absolute_l1_edge_embedding,
         "SquaredL2": get_squared_l2_edge_embedding,
         "L2": get_l2_edge_embedding,
-        "L2Norm": get_l2_norm_edge_embedding,
         "Concatenate": get_concatenate_edge_embedding,
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
         "L2Distance": get_l2_distance,
         "CosineSimilarity": get_cosine_similarity,
+    }
+
+    norms = {
+        "L1Norm": get_l1_norm_edge_embedding,
+        "L2Norm": get_l2_norm_edge_embedding,
     }
 
     def __init__(
@@ -383,14 +386,14 @@ class EdgeTransformer:
         """
         method = must_be_in_set(
             method,
-            self.methods,
+            set(self.methods.keys()) | set(self.norms.keys()),
             "edge embedding method"
         )
         self._transformer = NodeTransformer(
             aligned_mapping=aligned_mapping,
         )
         self._method_name = method
-        self._method = self.methods[method]
+        self._method = self.methods.get(method, self.norms.get(method, None))
 
     @property
     def method(self) -> str:
@@ -507,37 +510,55 @@ class EdgeTransformer:
             raise ValueError(
                 "The transformer is not fitted yet!"
             )
+        
+        if edge_embeddings is not None and not isinstance(edge_embeddings, np.ndarray):
+            raise RuntimeError(
+                "We expected the edge embeddings to be a numpy array, but we got "
+                f"{type(edge_embeddings)} instead. This is a bug, please report it "
+                "to the Embiggen repository."
+            )
+        
+        if edge_features is None:
+            edge_features = []
 
-        if edge_features is not None:
-            if not isinstance(edge_features, list):
-                edge_features = [edge_features]
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
 
-            for edge_feature in edge_features:
-                if edge_embeddings is not None and edge_feature.shape[0] != edge_embeddings.shape[0]:
-                    raise ValueError(
-                        (
-                            "The provided edge features should have a sample for each of the edges "
-                            "in the graph, which are {}, but were {}."
-                        ).format(
-                            edge_embeddings.shape[0],
-                            edge_feature.shape[0]
-                        )
+        for edge_feature in edge_features:
+            if not isinstance(edge_feature, np.ndarray):
+                raise ValueError(
+                    "The provided edge features should be numpy arrays, but we got "
+                    f"{type(edge_feature)} instead."
+                )
+
+            if edge_embeddings is not None and edge_feature.shape[0] != edge_embeddings.shape[0]:
+                raise ValueError(
+                    (
+                        "The provided edge features should have a sample for each of the edges "
+                        "in the graph, which are {}, with embedding shape {}, but has shape {}."
+                    ).format(
+                        sources.shape[0],
+                        edge_embeddings.shape,
+                        edge_feature.shape
                     )
-            if edge_embeddings is not None:
+                )
+        
+        if len(edge_features) > 0:
+            if edge_embeddings is None:
+                edge_embeddings = np.hstack([
+                    edge_feature.reshape((edge_feature.shape[0], -1))
+                    for edge_feature in edge_features
+                ])
+            else:
                 edge_embeddings = np.hstack([
                     edge_embeddings,
                     *[
                         edge_feature.reshape((edge_feature.shape[0], -1))
                         for edge_feature in edge_features
                     ]
-                ])
-            else:
-                edge_embeddings = np.hstack([
-                    edge_feature.reshape((edge_feature.shape[0], -1))
-                    for edge_feature in edge_features
-                ])
+                ])                
 
-        if self.method in ("L1Norm", "L2Norm"):
+        if self.method in self.norms:
             edge_embeddings = self._method(edge_embeddings)
 
         return edge_embeddings

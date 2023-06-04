@@ -419,6 +419,11 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,
         )
+
+        # A small debug assert to ensure the APIs are not broken.
+        for feature in (overlap, left_difference, right_difference):
+            assert feature.shape[0] == graph.get_number_of_edges()
+
         return dict(
             overlap=overlap,
             left_difference=left_difference,

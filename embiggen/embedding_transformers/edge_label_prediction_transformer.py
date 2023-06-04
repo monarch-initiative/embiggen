@@ -15,7 +15,7 @@ class EdgeLabelPredictionTransformer:
         self,
         method: str = "Hadamard",
         aligned_mapping: bool = False,
-        one_hot_encode_labels: bool = False
+        include_both_undirected_edges: bool = True
     ):
         """Create new EdgeLabelPredictionTransformer object.
 
@@ -29,19 +29,20 @@ class EdgeLabelPredictionTransformer:
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
-        one_hot_encode_labels: bool = False
-            Whether to one-hot encode the edge labels.
+        include_both_undirected_edges: bool = True
+            Whether to include both directed and undirected edges.
         """
         self._transformer = GraphTransformer(
             method=method,
             aligned_mapping=aligned_mapping,
+            include_both_undirected_edges=include_both_undirected_edges
         )
-        self._one_hot_encode_labels = one_hot_encode_labels
 
     def fit(
-        self, 
+        self,
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray,
+                                          List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Fit the model.
 
@@ -110,7 +111,7 @@ class EdgeLabelPredictionTransformer:
                 "The provided graph for the edge-label prediction does "
                 "not contain edge-types."
             )
-        
+
         if not graph.has_known_edge_types():
             raise ValueError(
                 "The provided graph for the edge-label prediction does "
@@ -118,18 +119,18 @@ class EdgeLabelPredictionTransformer:
                 "an edge type vocabulary but no edge has an edge type "
                 "assigned to it."
             )
-        
+
         if graph.has_homogeneous_edge_types():
             raise ValueError(
                 "The provided graph for the edge-label prediction contains "
                 "edges of a single type, making predictions pointless."
             )
-        
+
         if graph.is_multigraph():
             raise NotImplementedError(
                 "Multi-graphs are not currently supported by this class."
             )
-        
+
         if graph.has_singleton_edge_types():
             warnings.warn(
                 "Please do be advised that this graph contains edges with "
@@ -137,7 +138,7 @@ class EdgeLabelPredictionTransformer:
                 "only once in the graph. Predictions on such rare edge types "
                 "will be unlikely to generalize well."
             )
-        
+
         edge_type_counts = graph.get_edge_type_names_counts_hashmap()
         most_common_edge_type_name, most_common_count = max(
             edge_type_counts.items(),
@@ -147,7 +148,12 @@ class EdgeLabelPredictionTransformer:
             edge_type_counts.items(),
             key=lambda x: x[1]
         )
-        
+        number_of_non_zero_edge_types = sum([
+            1
+            for count in edge_type_counts.values()
+            if count > 0
+        ])
+
         if most_common_count > least_common_count * 20:
             warnings.warn(
                 (
@@ -178,16 +184,25 @@ class EdgeLabelPredictionTransformer:
             edge_features=edge_features
         )
 
-        if self._one_hot_encode_labels:
-            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
-                edge_labels = graph.get_one_hot_encoded_edge_types()
-            else:
-                edge_labels = graph.get_one_hot_encoded_known_edge_types()
+        if graph.is_directed():
+            edge_labels = graph.get_directed_known_edge_type_ids()
         else:
-            if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
-                edge_labels = graph.get_known_edge_type_ids()
-                edge_embeddings = edge_embeddings[graph.get_edges_with_known_edge_types_mask()]
+            edge_labels = graph.get_upper_triangular_known_edge_type_ids()
+
+        if number_of_non_zero_edge_types == 2:
+            edge_labels = edge_labels == 1
+            
+        if graph.has_unknown_edge_types() and behaviour_for_unknown_edge_labels == "drop":
+            if graph.is_directed():
+                edge_embeddings = edge_embeddings[graph.get_directed_edges_with_known_edge_types_mask(
+                )]
             else:
-                edge_labels = graph.get_directed_edge_type_ids()
+                edge_embeddings = edge_embeddings[graph.get_upper_triangular_known_edge_types_mask(
+                )]
+        
+        if graph.is_directed():
+            assert edge_labels.size == graph.get_number_of_known_edge_types()
+
+        assert edge_labels.size == edge_embeddings.shape[0]
 
         return edge_embeddings, edge_labels
