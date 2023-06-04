@@ -4,6 +4,7 @@ from embiggen.utils.abstract_models import (
     AbstractEmbeddingModel,
     EmbeddingResult,
     AbstractModel,
+    AbstractFeaturePreprocessor,
     get_models_dataframe,
     get_available_models_for_node_label_prediction,
     get_available_models_for_edge_prediction,
@@ -22,6 +23,7 @@ from embiggen.utils.abstract_feature import AbstractFeature
 __all__ = [
     "AbstractClassifierModel",
     "AbstractEmbeddingModel",
+    "AbstractFeaturePreprocessor",
     "EmbeddingResult",
     "AbstractModel",
     "classification_evaluation_pipeline",

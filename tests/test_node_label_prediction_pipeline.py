@@ -11,7 +11,7 @@ import shutil
 import os
 from embiggen.utils import AbstractEmbeddingModel
 from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
-
+from embiggen.feature_preprocessors import GraphConvolution
 
 class TestEvaluateNodeLabelPrediction(TestCase):
     """Unit test class for Node-label prediction pipeline."""
@@ -139,6 +139,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                     library_name=row.library_name,
                     task_name="Node Embedding"
                 )(),
+                node_features_preprocessing_steps=GraphConvolution(),
                 graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,
                 evaluation_schema="Monte Carlo",

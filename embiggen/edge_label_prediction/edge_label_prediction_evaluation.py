@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
+from embiggen.utils.abstract_models import AbstractFeaturePreprocessor
 
 
 def edge_label_prediction_evaluation(
@@ -15,6 +16,7 @@ def edge_label_prediction_evaluation(
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
@@ -48,6 +50,8 @@ def edge_label_prediction_evaluation(
         The node type features to use.
     edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None
+        The preprocessing steps to apply to the node features.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
     graph_callback: Optional[Callable[[Graph], Graph]] = None
@@ -105,6 +109,7 @@ def edge_label_prediction_evaluation(
         node_features=node_features,
         node_type_features=node_type_features,
         edge_features=edge_features,
+        node_features_preprocessing_steps=node_features_preprocessing_steps,
         library_names=library_names,
         graph_callback=graph_callback,
         subgraph_of_interest=subgraph_of_interest,

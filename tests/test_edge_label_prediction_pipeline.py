@@ -10,6 +10,7 @@ from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractE
 from embiggen.utils import AbstractEmbeddingModel
 from ensmallen.datasets.kgobo import HP, CIO
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
+from embiggen.feature_preprocessors import GraphConvolution
 
 
 class TestEvaluateEdgeLabelPrediction(TestCase):
@@ -203,6 +204,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     library_name=row.library_name,
                     task_name="Node Embedding"
                 )(),
+                node_features_preprocessing_steps=GraphConvolution(),
                 evaluation_schema="Stratified Monte Carlo",
                 graphs=graph,
                 number_of_holdouts=self._number_of_holdouts,

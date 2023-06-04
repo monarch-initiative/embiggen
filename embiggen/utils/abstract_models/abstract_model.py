@@ -365,7 +365,8 @@ class AbstractModel(Hashable):
         """Returns whether the model is stocastic and has therefore a random state."""
         raise NotImplementedError((
             "The `is_stocastic` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     def set_random_state(self, random_state: int):

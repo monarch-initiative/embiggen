@@ -2926,7 +2926,7 @@ class GraphVisualizer:
                     self._positive_graph.get_directed_edge_type_ids()
                     if self._positive_graph.is_directed()
                     else
-                    self._positive_graph.get_undirected_edge_type_ids()
+                    self._positive_graph.get_upper_triangular_edge_type_ids()
                 )
             ),
             dtype=np.uint32

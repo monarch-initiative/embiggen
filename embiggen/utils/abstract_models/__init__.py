@@ -12,11 +12,13 @@ from embiggen.utils.abstract_models.get_models_dataframe import (
 )
 from embiggen.utils.abstract_models.auto_init import build_init
 from embiggen.utils.abstract_models.list_formatting import format_list
+from embiggen.utils.abstract_models.abstract_feature_preprocessor import AbstractFeaturePreprocessor
 
 __all__ = [
     "AbstractClassifierModel",
     "AbstractEmbeddingModel",
     "EmbeddingResult",
+    "AbstractFeaturePreprocessor",
     "abstract_class",
     "AbstractModel",
     "get_models_dataframe",

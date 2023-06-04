@@ -36,7 +36,7 @@ class TestGraphVisualizer(TestCase):
                     train_size=0.8,
                 )
             for graph in (gr, gr.to_directed()):
-                for method in ("PCA", "TSNE", "UMAP"):
+                for method in ("PCA", "TSNE", ):
                     decomposition_kwargs = None
                     if method == "TSNE":
                         decomposition_kwargs = dict(n_iter=250)

@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
-from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel
+from embiggen.utils.abstract_models import AbstractClassifierModel, AbstractEmbeddingModel, AbstractFeaturePreprocessor
 
 
 def iterate_graphs(
@@ -114,6 +114,7 @@ def classification_evaluation_pipeline(
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None,
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
@@ -147,6 +148,8 @@ def classification_evaluation_pipeline(
         The node features to use.
     edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None
+        The preprocessing steps to use for the node features.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
     graph_callback: Optional[Callable[[Graph], Graph]] = None
@@ -206,6 +209,7 @@ def classification_evaluation_pipeline(
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
+            node_features_preprocessing_steps=node_features_preprocessing_steps,
             subgraph_of_interest=subgraph_of_interest,
             use_subgraph_as_support=use_subgraph_as_support,
             number_of_holdouts=number_of_holdouts,

@@ -1,6 +1,5 @@
 """Submodule with utilities on TensorFlow versions."""
 from typing import List
-import tensorflow as tf
 from packaging import version
 from validate_version_code import validate_version_code
 from ensmallen import Graph
@@ -25,6 +24,7 @@ def tensorflow_version_is_higher_or_equal_than(tensorflow_version: str) -> bool:
     ----------------------
     Boolean representing if installed TensorFlow version is higher than given one.
     """
+    import tensorflow as tf
     if not validate_version_code(tensorflow_version):
         raise ValueError(
             (
@@ -52,6 +52,7 @@ def tensorflow_version_is_less_or_equal_than(tensorflow_version: str) -> bool:
     ----------------------
     Boolean representing if installed TensorFlow version is less or equal than given one.
     """
+    import tensorflow as tf
     if not validate_version_code(tensorflow_version):
         raise ValueError(
             (
@@ -83,6 +84,7 @@ def must_have_tensorflow_version_higher_or_equal_than(
     ValueError,
         If the installed TensorFlow version is lower than requested one.
     """
+    import tensorflow as tf
     if not tensorflow_version_is_higher_or_equal_than(tensorflow_version):
         feature_message = ""
         if feature_name is not None:

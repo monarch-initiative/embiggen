@@ -16,6 +16,8 @@ from ensmallen.datasets.linqs import Cora
 from ensmallen.datasets.kgobo import CIO
 from ensmallen import Graph
 from embiggen.edge_prediction import DecisionTreeEdgePrediction
+from embiggen.feature_preprocessors import GraphConvolution
+
 
 class TestEvaluateEdgePrediction(TestCase):
     """Unit test class for GraphTransformer objects."""
@@ -336,6 +338,7 @@ class TestEvaluateEdgePrediction(TestCase):
                         }
                     ),
                     node_features=DegreeSPINE(embedding_size=10),
+                    node_features_preprocessing_steps=GraphConvolution(),
                     evaluation_schema=evaluation_schema,
                     graphs=graph,
                     number_of_holdouts=self._number_of_holdouts,
@@ -391,6 +394,7 @@ class TestEvaluateEdgePrediction(TestCase):
                     edge_embeddings="CosineSimilarity"),
                 node_features=embedding_model,
                 evaluation_schema="Connected Monte Carlo",
+                node_features_preprocessing_steps=GraphConvolution(),
                 graphs=graph.remove_singleton_nodes(),
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
@@ -409,6 +413,7 @@ class TestEvaluateEdgePrediction(TestCase):
                     evaluation_schema="Connected Monte Carlo",
                     graphs=self._graph,
                     node_features="Degree-based SPINE",
+                    node_features_preprocessing_steps=GraphConvolution(),
                     number_of_holdouts=self._number_of_holdouts,
                     verbose=False
                 )

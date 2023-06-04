@@ -59,5 +59,5 @@ try:
                 must_have_tensorflow_version_higher_or_equal_than("9999.99.9")
 
             has_single_gpu()
-except ModuleNotFoundError:
+except (ModuleNotFoundError):
     pass

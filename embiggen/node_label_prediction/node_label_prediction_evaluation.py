@@ -3,7 +3,7 @@ from typing import Dict, Any, Union, List, Type, Optional, Callable
 from ensmallen import Graph
 import pandas as pd
 import numpy as np
-from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel
+from embiggen.utils import classification_evaluation_pipeline, AbstractEmbeddingModel, AbstractFeaturePreprocessor
 from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
 
 
@@ -13,6 +13,7 @@ def node_label_prediction_evaluation(
     models: Union[Type[AbstractNodeLabelPredictionModel], List[Type[AbstractNodeLabelPredictionModel]]],
     evaluation_schema: str = "Stratified Monte Carlo",
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
     graph_callback: Optional[Callable[[Graph], Graph]] = None,
     subgraph_of_interest: Optional[Graph] = None,
@@ -42,8 +43,8 @@ def node_label_prediction_evaluation(
         The evaluation schema to follow.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
-    edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
-        The edge features to use.
+    node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None
+        The preprocessing steps to apply to the node features.
     library_names: Optional[Union[str, List[str]]] = None
         Library names from where to retrieve the provided model names.
     graph_callback: Optional[Callable[[Graph], Graph]] = None
@@ -99,6 +100,7 @@ def node_label_prediction_evaluation(
         models=models,
         expected_parent_class=AbstractNodeLabelPredictionModel,
         node_features=node_features,
+        node_features_preprocessing_steps=node_features_preprocessing_steps,
         library_names=library_names,
         graph_callback=graph_callback,
         subgraph_of_interest=subgraph_of_interest,
