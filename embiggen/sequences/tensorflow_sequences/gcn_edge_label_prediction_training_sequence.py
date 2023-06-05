@@ -71,7 +71,7 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
         )
 
         if graph.is_directed():
-            edge_types = graph.get_impputed_directed_edge_type_ids(
+            edge_types = graph.get_imputed_directed_edge_type_ids(
                 imputation_edge_type_id=0
             )
             mask = graph.get_directed_edges_with_known_edge_types_mask()
