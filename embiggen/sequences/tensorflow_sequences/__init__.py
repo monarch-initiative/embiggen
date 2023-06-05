@@ -4,6 +4,7 @@ from embiggen.sequences.tensorflow_sequences.edge_prediction_training_sequence i
 from embiggen.sequences.tensorflow_sequences.gcn_edge_prediction_training_sequence import GCNEdgePredictionTrainingSequence
 from embiggen.sequences.tensorflow_sequences.gcn_edge_prediction_sequence import GCNEdgePredictionSequence
 from embiggen.sequences.tensorflow_sequences.gcn_edge_label_prediction_training_sequence import GCNEdgeLabelPredictionTrainingSequence
+from embiggen.sequences.tensorflow_sequences.gcn_edge_label_prediction_sequence import GCNEdgeLabelPredictionSequence
 from embiggen.sequences.tensorflow_sequences.siamese_sequence import SiameseSequence
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "GCNEdgePredictionTrainingSequence",
     "GCNEdgePredictionSequence",
     "GCNEdgeLabelPredictionTrainingSequence",
+    "GCNEdgeLabelPredictionSequence",
     "SiameseSequence",
 ]

@@ -20,6 +20,7 @@ class TestGraphVisualizer(TestCase):
         """Test graph visualization."""
         for gr in (CIO() | MIAPA(), Usair97(), MIAPA()):
             node_type_predictions = None
+            gr = gr.remove_parallel_edges()
             if gr.has_node_types():
                 gr, _ = gr.get_node_label_holdout_graphs(
                     train_size=0.8,

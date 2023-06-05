@@ -299,10 +299,10 @@ class AbstractGCN(AbstractClassifierModel):
             reduce_lr_monitor=self._reduce_lr_monitor,
             reduce_lr_mode=self._reduce_lr_mode,
             reduce_lr_factor=self._reduce_lr_factor,
-            use_node_embedding = self._use_node_embedding,
-            node_embedding_size = self._node_embedding_size,
-            use_node_type_embedding = self._use_node_type_embedding,
-            node_type_embedding_size = self._node_type_embedding_size
+            use_node_embedding=self._use_node_embedding,
+            node_embedding_size=self._node_embedding_size,
+            use_node_type_embedding=self._use_node_type_embedding,
+            node_type_embedding_size=self._node_type_embedding_size
         )
 
     def plot(
@@ -318,7 +318,7 @@ class AbstractGCN(AbstractClassifierModel):
             show_shapes=show_shapes,
             **kwargs
         )
-    
+
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
         """Returns dictionary with class weights."""
         raise NotImplementedError(
@@ -384,7 +384,7 @@ class AbstractGCN(AbstractClassifierModel):
         graph: Graph,
         graph_convolution_model: Model,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None,
-    ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
+    ) -> Type[Model]:
         """Returns GCN model."""
         raise NotImplementedError(
             "The method `_build_model` should be implemented "
@@ -418,7 +418,8 @@ class AbstractGCN(AbstractClassifierModel):
                 shape=(nodes_number,),
                 batch_size=nodes_number,
                 sparse=True,
-                name=("Laplacian Matrix" if self._use_simmetric_normalized_laplacian else "Adjacency Matrix")
+                name=(
+                    "Laplacian Matrix" if self._use_simmetric_normalized_laplacian else "Adjacency Matrix")
             )
         else:
             adjacency_matrix = None
@@ -454,7 +455,7 @@ class AbstractGCN(AbstractClassifierModel):
                 ])
 
         hidden = [*input_features]
-        
+
         if self._use_node_embedding:
             node_ids = Input(
                 shape=(1,),
@@ -502,7 +503,7 @@ class AbstractGCN(AbstractClassifierModel):
                 apply_norm=self._apply_norm,
                 name=f"{number_to_ordinal(i+1)}GraphConvolution"
             )((adjacency_matrix, *hidden))
-        
+
         # Returning the convolutional portion of the model.
         return Model(
             inputs=[
@@ -564,14 +565,15 @@ class AbstractGCN(AbstractClassifierModel):
                 "embedding was enabled through the `use_node_embedding` "
                 "parameter. If you do not provide node features or use an embedding layer "
                 "it does not make sense to use a GCN model."
-            )      
+            )
 
         if support is None:
             support = graph
 
-        class_weight = self._get_class_weights(graph) if self._use_class_weights else None
+        class_weight = self._get_class_weights(
+            graph) if self._use_class_weights else None
 
-        self._model = self._build_model(
+        self._model: Type[Model] = self._build_model(
             support,
             graph_convolution_model=self._build_graph_convolution_model(
                 graph,
@@ -581,6 +583,21 @@ class AbstractGCN(AbstractClassifierModel):
             edge_features=edge_features,
         )
 
+        # In a GCN model, the batch size is the number of nodes.
+        batch_size = graph.get_number_of_nodes()
+
+        # Within the expected input shapes, we do not have the batch size itself.
+        # The batch size is left implicit as a None value, but we need to add it
+        # to the expected input shapes to check that the input shapes are correct.
+
+        expected_input_shapes = {
+            input_layer.name: tuple([
+                batch_size if dimension is None else dimension
+                for dimension in tuple(input_layer.shape)
+            ])
+            for input_layer in self._model.inputs
+        }
+
         model_input = self._get_model_training_input(
             graph,
             support=support,
@@ -589,13 +606,67 @@ class AbstractGCN(AbstractClassifierModel):
             node_features=node_features
         )
 
+        if not isinstance(model_input, tuple) and not issubclass(type(model_input), Sequence):
+            raise RuntimeError(
+                "The model input should be a subclass of `Sequence` or a tuple "
+                f"but it is `{type(model_input)}`. "
+                "This is an internal error, please open an issue at "
+                "GRAPE's GitHub page."
+            )
+
+        if issubclass(type(model_input), Sequence):
+            sequence_input_shapes = [
+                tuple(feature.shape)
+                for feature in model_input[0][0]
+            ]
+        elif isinstance(model_input, tuple):
+            sequence_input_shapes = [
+                tuple(feature.shape)
+                for feature in model_input
+            ]
+        else:
+            raise RuntimeError(
+                "The model input should be a subclass of `Sequence` or a tuple "
+                f"but it is `{type(model_input)}`. "
+                "This is an internal error, please open an issue at "
+                "GRAPE's GitHub page."
+            )
+
+        if len(expected_input_shapes) != len(sequence_input_shapes):
+            raise RuntimeError(
+                f"We expected {len(expected_input_shapes)} inputs "
+                f"and we received {len(sequence_input_shapes)} inputs. "
+                "Specifically, the input shapes we expected were "
+                f"{expected_input_shapes}, but the training sequence "
+                f"provided the input shapes {sequence_input_shapes}. "
+                "This is an internal error, please open an issue at "
+                "GRAPE's GitHub page."
+            )
+
+        for (layer_name, layer_input_shape), input_shape in zip(
+            expected_input_shapes.items(),
+            sequence_input_shapes
+        ):
+            if layer_input_shape != input_shape:
+                raise RuntimeError(
+                    f"We expected {len(expected_input_shapes)} inputs "
+                    f"and we received {len(sequence_input_shapes)} inputs. "
+                    f"The input shape of the layer `{layer_name}` "
+                    f"should be `{layer_input_shape}` but it is `{input_shape}`. "
+                    "Specifically, the input shapes we expected were "
+                    f"{expected_input_shapes}, but the training sequence "
+                    f"provided the input shapes {sequence_input_shapes}. "
+                    "This is an internal error, please open an issue at "
+                    "GRAPE's GitHub page."
+                )
+
         self.history = self._model.fit(
             x=model_input,
             y=self._get_model_training_output(graph),
             sample_weight=self._get_model_training_sample_weights(graph),
             epochs=self._epochs,
             verbose=traditional_verbose and self._verbose > 0,
-            batch_size=graph.get_number_of_nodes(),
+            batch_size=batch_size,
             shuffle=False,
             class_weight=class_weight,
             callbacks=[
@@ -631,7 +702,7 @@ class AbstractGCN(AbstractClassifierModel):
         """Run predictions on the provided graph."""
         if not graph.has_edges():
             return np.array([])
-        
+
         if support is None:
             support = graph
 
@@ -665,13 +736,13 @@ class AbstractGCN(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_features=edge_features
         )
-        
+
         if (
             self.is_binary_prediction_task() or
             self.is_multilabel_prediction_task()
         ):
             return predictions > 0.5
-        
+
         return predictions.argmax(axis=-1)
 
     def get_output_activation_name(self) -> str:
@@ -694,7 +765,7 @@ class AbstractGCN(AbstractClassifierModel):
             return "binary_crossentropy"
         return "sparse_categorical_crossentropy"
 
-    def get_output_classes(self, graph:Graph) ->int:
+    def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
         raise NotImplementedError(
             "The method `get_output_classes` should be implemented "
@@ -708,7 +779,7 @@ class AbstractGCN(AbstractClassifierModel):
 
     def convert_graph_to_kernel(self, graph: Graph) -> Optional[tf.SparseTensor]:
         """Returns provided graph converted to a sparse Tensor.
-        
+
         Implementation details
         ---------------------------
         Do note that when the model does not have convolutional layers
@@ -749,7 +820,7 @@ class AbstractGCN(AbstractClassifierModel):
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
-        
+
         Parameters
         -------------------
         path: str
@@ -765,7 +836,7 @@ class AbstractGCN(AbstractClassifierModel):
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
-        
+
         Parameters
         -------------------
         path: str

@@ -40,7 +40,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -165,9 +164,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        edge_feature_names: Optional[List[str]] = None
-            Names of the edge features.
-            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -204,7 +200,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
-            edge_feature_names=edge_feature_names,
             verbose=verbose,
         )
     

@@ -9,7 +9,7 @@ from ensmallen import Graph
 from tensorflow.keras.utils import Sequence
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
-from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence
+from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence, GCNEdgePredictionSequence
 from embiggen.utils import AbstractEdgeFeature
 
 
@@ -240,6 +240,27 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
         )
 
+    def _get_model_prediction_input(
+        self,
+        graph: Graph,
+        support: Graph,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+    ) -> GCNEdgePredictionSequence:
+        """Returns dictionary with class weights."""
+        return GCNEdgePredictionSequence(
+            graph,
+            support=support,
+            kernel=self.convert_graph_to_kernel(support),
+            node_features=node_features,
+            return_node_ids=self._use_node_embedding,
+            return_node_types=self.is_using_node_types(),
+            node_type_features=node_type_features,
+            use_edge_metrics=self._use_edge_metrics,
+            edge_features=edge_features
+        )
+
     def _get_model_training_input(
         self,
         graph: Graph,
@@ -273,3 +294,24 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
         return False
+
+    def _predict_proba(
+        self,
+        graph: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Run predictions on the provided graph."""
+        predictions = super()._predict_proba(
+            graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+        # The model will padd the predictions with a few zeros
+        # in order to run the GCN portion of the model, which
+        # always requires a batch size equal to the nodes number.
+        return predictions[:graph.get_number_of_directed_edges()]

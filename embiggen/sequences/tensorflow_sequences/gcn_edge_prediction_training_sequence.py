@@ -6,6 +6,7 @@ import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
 from embiggen.utils import AbstractEdgeFeature
+from embiggen.sequences.tensorflow_sequences.gcn_edge_prediction_sequence import GCNEdgePredictionSequence
 
 
 class GCNEdgePredictionTrainingSequence(Sequence):
@@ -77,101 +78,51 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
-        if not graph.has_edges():
-            raise ValueError(
-                f"An empty instance of graph {graph.get_name()} was provided!"
-            )
 
-        if support is None:
-            support = graph
-
-        self._graph = graph
-        self._support = support
-        self._kernel = kernel
-
-        if node_features is None:
-            node_features = []
-
-        if edge_features is None:
-            edge_features = []
-
-        if not isinstance(edge_features, list):
-            edge_features = [edge_features]
-        
-        for edge_feature in edge_features:
-            if not isinstance(edge_feature, AbstractEdgeFeature):
-                raise NotImplementedError(
-                    f"Provided edge feature {edge_feature} is not an instance of AbstractEdgeFeature. "
-                    "At this time only AbstractEdgeFeature are supported."
-                )
-            
-            if not edge_feature.fit():
-                edge_feature.fit(support if support is not None else graph)
-
-        self._edge_features = edge_features 
-        
-        self._node_features = node_features
         self._negative_samples_rate = negative_samples_rate
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
-
-        if return_node_ids:
-            self._node_ids = graph.get_node_ids()
-        else:
-            self._node_ids = None
-        
-        if return_node_types or node_type_features is not None:
-            if graph.has_multilabel_node_types():
-                node_types = graph.get_one_hot_encoded_node_types()
-            else:
-                node_types = graph.get_single_label_node_type_ids()
-        
-        self._node_types = node_types if return_node_types else None
-
-        if node_type_features is not None:            
-            if self._graph.has_multilabel_node_types():
-                self._node_type_features = []
-                node_types_mask = node_types==0
-                minus_node_types = node_types - 1
-                for node_type_feature in node_type_features:
-                    self._node_type_features.append(np.ma.array(
-                        node_type_feature[minus_node_types],
-                        mask=np.repeat(
-                            node_types_mask,
-                            node_type_feature.shape[1]
-                        ).reshape((
-                            *node_types.shape,
-                            node_type_feature.shape[1]
-                        ))
-                    ).mean(axis=-2).data)
-            else:
-                if self._graph.has_unknown_node_types():
-                    self._node_type_features = []
-                    node_types_mask = node_types==0
-                    minus_node_types = node_types - 1
-                    minus_node_types[node_types_mask] = 0
-                    for node_type_feature in node_type_features:
-                        ntf = node_type_feature[minus_node_types]
-                        # Masking the unknown values to zero.
-                        ntf[node_types_mask] = 0.0
-                        self._node_type_features.append(ntf)
-                else:
-                    self._node_type_features = [
-                        node_type_feature[node_types]
-                        for node_type_feature in node_type_features
-                    ]
-        else:
-            self._node_type_features = []
-
-        self._use_edge_metrics = use_edge_metrics
         self._sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types
         self._current_index = 0
+
+        self._prediction_sequence = GCNEdgePredictionSequence(
+            graph=graph,
+            support=support,
+            kernel=kernel,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+            return_node_ids=return_node_ids,
+            return_node_types=return_node_types,
+            use_edge_metrics=use_edge_metrics,
+        )
+
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
             batch_size=graph.get_number_of_nodes(),
         )
 
+    def get_node_features(self) -> Tuple[np.ndarray]:
+        """Return node features."""
+        return self._prediction_sequence.get_node_features()
+
+    def use_edge_metrics(self) -> bool:
+        """Return whether to use edge metrics."""
+        return self._prediction_sequence.use_edge_metrics()
+    
+    def get_graph(self) -> Graph:
+        """Return graph."""
+        return self._prediction_sequence.get_graph()
+    
+    def get_support(self) -> Graph:
+        """Return support."""
+        return self._prediction_sequence.get_support()
+    
+    def get_kernel(self) -> tf.SparseTensor:
+        """Return kernel."""
+        return self._prediction_sequence.get_kernel()
+    
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return batch corresponding to given index.
 
@@ -184,27 +135,25 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         ---------------
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
-        sources, _, destinations, _, edge_metrics, labels = self._graph.get_edge_prediction_mini_batch(
+        sources, _, destinations, _, edge_metrics, labels = self.get_graph().get_edge_prediction_mini_batch(
             (self._random_state + idx) * (1 + self.elapsed_epochs),
             return_node_types=False,
-            return_edge_metrics=self._use_edge_metrics,
+            return_edge_metrics=self.use_edge_metrics(),
             batch_size=self.batch_size,
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
             sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
-            support=self._support,
+            support=self.get_support(),
             graph_to_avoid=self._graph_to_avoid,
         )
 
-        edge_features = [
-            feature
-            for edge_feature in self._edge_features
-            for feature in edge_feature.get_edge_feature_from_edge_node_ids(
-                self._support,
-                sources,
-                destinations
-            ).values()
-        ]
+        edge_features: Tuple[np.ndarray] = self._prediction_sequence.get_edge_features_from_edge_node_ids(
+            sources, destinations)
+
+        # We need to reshape the sources and destinations to be
+        # column vectors, as expected by the model input shapes.
+        sources = sources.reshape((-1, 1))
+        destinations = destinations.reshape((-1, 1))
 
         return (tuple([
             value
@@ -212,12 +161,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
                 sources,
                 destinations,
                 edge_metrics,
-                self._kernel,
-                *self._node_features,
-                *self._node_type_features,
-                self._node_ids,
-                self._node_types,
-                *edge_features
+                *edge_features,
+                *self.get_node_features()
             )
             if value is not None
         ]), labels)

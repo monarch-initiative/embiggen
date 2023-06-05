@@ -5,9 +5,9 @@ import numpy as np
 from ensmallen import Graph
 import tensorflow as tf
 from tensorflow.keras.optimizers import Optimizer
-from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
+from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class, AbstractEdgeFeature
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
-from embiggen.sequences.tensorflow_sequences import GCNEdgeLabelPredictionTrainingSequence
+from embiggen.sequences.tensorflow_sequences import GCNEdgeLabelPredictionTrainingSequence, GCNEdgeLabelPredictionSequence
 
 
 @abstract_class
@@ -48,7 +48,6 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -182,9 +181,6 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        edge_feature_names: Optional[List[str]] = None
-            Names of the edge features.
-            This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -222,10 +218,30 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
-            edge_feature_names=edge_feature_names,
             verbose=verbose,
         )
         AbstractEdgeLabelPredictionModel.__init__(self, random_state=random_state)
+
+    def _get_model_prediction_input(
+        self,
+        graph: Graph,
+        support: Graph,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+    ) -> GCNEdgeLabelPredictionSequence:
+        """Returns dictionary with class weights."""
+        return GCNEdgeLabelPredictionSequence(
+            graph,
+            support=support,
+            kernel=self.convert_graph_to_kernel(support),
+            node_features=node_features,
+            return_node_ids=self._use_node_embedding,
+            return_node_types=self.is_using_node_types(),
+            node_type_features=node_type_features,
+            use_edge_metrics=self._use_edge_metrics,
+            edge_features=edge_features
+        )
 
     def _get_model_training_input(
         self,
@@ -233,7 +249,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> GCNEdgeLabelPredictionTrainingSequence:
         """Returns training input tuple."""
         return GCNEdgeLabelPredictionTrainingSequence(
@@ -262,3 +278,24 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         if self.is_binary_prediction_task():
             return 1
         return graph.get_number_of_edge_types()
+
+    def _predict_proba(
+        self,
+        graph: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+    ) -> np.ndarray:
+        """Run predictions on the provided graph."""
+        predictions = super()._predict_proba(
+            graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features
+        )
+        # The model will padd the predictions with a few zeros
+        # in order to run the GCN portion of the model, which
+        # always requires a batch size equal to the nodes number.
+        return predictions[:graph.get_number_of_edges()]

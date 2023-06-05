@@ -39,6 +39,10 @@ class EdgePredictionSequence:
                 f"The provided graph {graph.get_name()} does not have a node vocabulary "
                 "that is compatible with the provided graph used in training."
             )
+        
+        if support is None:
+            support = graph
+
         self._graph = graph
         self._support = support
         self._return_node_types = return_node_types
@@ -49,6 +53,27 @@ class EdgePredictionSequence:
     def __len__(self) -> int:
         """Returns length of sequence."""
         return int(np.ceil(self._graph.get_number_of_directed_edges() / self._batch_size))
+    
+    def use_edge_metrics(self) -> bool:
+        """Return whether to use edge metrics."""
+        return self._use_edge_metrics
+    
+    def return_node_types(self) -> bool:
+        """Return whether to return node types."""
+        return self._return_node_types
+    
+    def return_edge_types(self) -> bool:
+        """Return whether to return edge types."""
+        return self._return_edge_types
+    
+    def get_graph(self) -> Graph:
+        """Return graph."""
+        return self._graph
+    
+    def get_support(self) -> Graph:
+        """Return support graph."""
+        return self._support
+    
 
     def __getitem__(self, idx: int):
         """Return batch corresponding to given index.
@@ -69,7 +94,7 @@ class EdgePredictionSequence:
                 batch_size=self._batch_size,
                 return_node_types=self._return_node_types,
                 return_edge_types=self._return_edge_types,
-                return_edge_metrics=self._use_edge_metrics,
+                return_edge_metrics=self.use_edge_metrics(),
             )
             if value is not None
         ]),)

@@ -1,19 +1,19 @@
 """GCN model for edge prediction."""
-from typing import List, Union, Optional, Dict, Any, Type, Tuple
+from typing import List, Union, Optional, Dict, Any, Type
 
 import numpy as np
-from tensorflow.keras.layers import Input, Concatenate, Dense, Average, Multiply, Maximum, Minimum, Add, Subtract, Dot, Flatten  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Input, Concatenate, Dense, Average, Multiply, Maximum, Minimum, Add, Subtract, Dot, Flatten, Activation  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
-from tensorflow.keras.utils import Sequence
 from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
 from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionSequence
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.utils.abstract_gcn import AbstractGCN
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
+import math
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 from embiggen.layers.tensorflow import EmbeddingLookup, ElementWiseL1, ElementWiseL2
 import tensorflow as tf
@@ -57,7 +57,6 @@ class AbstractEdgeGCN(AbstractGCN):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        edge_feature_names: Optional[List[str]] = None,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -191,9 +190,6 @@ class AbstractEdgeGCN(AbstractGCN):
         node_type_feature_names: Optional[List[str]] = None
             Names of the node type features.
             This is used as the layer names.
-        edge_feature_names: Optional[List[str]] = None
-            Names of the edge features.
-            This is used as the layer names.
         verbose: bool = True
             Whether to show loading bars.
         """
@@ -225,6 +221,7 @@ class AbstractEdgeGCN(AbstractGCN):
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
+            random_state=random_state
         )
         self._number_of_units_per_ffnn_body_layer = normalize_model_list_parameter(
             number_of_units_per_ffnn_body_layer,
@@ -239,7 +236,6 @@ class AbstractEdgeGCN(AbstractGCN):
 
         self._edge_embedding_method = edge_embedding_method
         self._use_edge_metrics = use_edge_metrics
-        self._edge_feature_names = edge_feature_names
         self._use_node_types = None
 
     @classmethod
@@ -260,26 +256,7 @@ class AbstractEdgeGCN(AbstractGCN):
             use_edge_metrics=self._use_edge_metrics,
         )
 
-    def _get_model_prediction_input(
-        self,
-        graph: Graph,
-        support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
-    ) -> GCNEdgePredictionSequence:
-        """Returns dictionary with class weights."""
-        return GCNEdgePredictionSequence(
-            graph,
-            support=support,
-            kernel=self.convert_graph_to_kernel(support),
-            node_features=node_features,
-            return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
-            node_type_features=node_type_features,
-            use_edge_metrics=self._use_edge_metrics,
-            edge_features=edge_features
-        )
+    
 
     def _get_model_training_output(self, graph: Graph) -> Optional[np.ndarray]:
         """Returns training output tuple."""
@@ -310,15 +287,8 @@ class AbstractEdgeGCN(AbstractGCN):
         graph: Graph,
         graph_convolution_model: Model,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
-    ):
+    ) -> Type[Model]:
         """Create new GCN model."""
-
-        if self._edge_feature_names is not None and edge_features is None:
-            raise RuntimeError(
-                "You have provided edge feature names, but you have not provided "
-                "any edge features to the model. Specifically, the edge features "
-                f"names you have provided are {self._edge_feature_names}."
-            )
 
         # If we make the node embedding, we are making a closed world assumption,
         # while without we do not have them we can keep an open world assumption.
@@ -358,6 +328,8 @@ class AbstractEdgeGCN(AbstractGCN):
             ), feature_names)
         ]
 
+        edge_feature_inputs = []
+
         if self._use_edge_metrics:
             edge_metrics = Input(
                 (graph.get_number_of_available_edge_metrics(),),
@@ -365,49 +337,39 @@ class AbstractEdgeGCN(AbstractGCN):
                 name="Edge Metrics",
                 dtype=tf.float32
             )
+            edge_feature_inputs.append(edge_metrics)
             feature_names.append("EdgeMetrics")
             source_and_destination_features.append(edge_metrics)
         else:
             edge_metrics = None
 
-        edge_feature_inputs = []
         if edge_features is None:
             edge_features = []
 
-        number_of_edge_features = sum([
-            len(edge_feature.get_feature_dictionary_shapes())
-            if isinstance(edge_feature, AbstractEdgeFeature) else 1
-            for edge_feature in edge_features
-        ])
+        edge_feature_names = []
 
-        if self._edge_feature_names is not None and number_of_edge_features == len(self._edge_feature_names):
-            raise ValueError(
-                f"You have provided {len(self._edge_feature_names)}, but you have provided "
-                f"{number_of_edge_features} edge features to the model."
-            )
-
-        edge_feature_names = self._edge_feature_names
-        if edge_feature_names is None:
-            edge_feature_names = []
-            i = 0
-            for edge_feature in edge_features:
-                if isinstance(edge_feature, AbstractEdgeFeature):
-                    for feature_name in edge_feature.get_feature_dictionary_keys():
-                        edge_feature_names.append(
-                            f"{edge_feature.get_feature_name()}{feature_name}"
-                        )
-                else:
+        i = 0
+        for edge_feature in edge_features:
+            if isinstance(edge_feature, AbstractEdgeFeature):
+                for feature_name in edge_feature.get_feature_dictionary_keys():
                     edge_feature_names.append(
-                        f"{number_to_ordinal(i+1)}EdgeFeature"
+                        f"{edge_feature.get_feature_name()}{feature_name}"
                     )
-                    i += 1
+            else:
+                edge_feature_names.append(
+                    f"{number_to_ordinal(i+1)}EdgeFeature"
+                )
+                i += 1
 
         i = 0
         for edge_feature in edge_features:
             if isinstance(edge_feature, AbstractEdgeFeature):
                 for feature_name, feature_shape in edge_feature.get_feature_dictionary_shapes().items():
+                    dimension = feature_shape[0]
+                    for additional_dimension in feature_shape[1:]:
+                        dimension *= additional_dimension
                     edge_feature_input = Input(
-                        shape=tuple(feature_shape),
+                        shape=(dimension,),
                         batch_size=nodes_number,
                         name=edge_feature_names[i],
                     )
@@ -424,7 +386,6 @@ class AbstractEdgeGCN(AbstractGCN):
                     source_and_destination_features.append(hidden)
                     i += 1
             elif isinstance(edge_feature, np.ndarray):
-                feature_names.append(edge_feature_names[i])
                 edge_feature_input = Input(
                     shape=edge_feature.shape[1:],
                     batch_size=nodes_number,
@@ -438,6 +399,8 @@ class AbstractEdgeGCN(AbstractGCN):
                     f"Edge feature of type {type(edge_feature)} is not supported."
                     "Please provide an instance of AbstractEdgeFeature or a numpy array."
                 )
+            
+        feature_names.extend(edge_feature_names)
 
         ffnn_outputs = []
 
@@ -516,9 +479,17 @@ class AbstractEdgeGCN(AbstractGCN):
                 name=f"{number_to_ordinal(i+1)}HeadDense"
             )(hidden)
 
+        output_activation = self.get_output_activation_name()
+
+        if not isinstance(output_activation, str) or issubclass(type(output_activation), Activation):
+            raise ValueError(
+                f"The provided output activation {output_activation} "
+                "is not a valid activation function name."
+            )
+
         output = Dense(
             units=self.get_output_classes(graph),
-            activation=self.get_output_activation_name(),
+            activation=output_activation,
             name="Output"
         )(hidden)
 
@@ -527,7 +498,6 @@ class AbstractEdgeGCN(AbstractGCN):
             for input_layer in (
                 source_nodes,
                 destination_nodes,
-                edge_metrics,
                 *edge_feature_inputs,
                 *graph_convolution_model.inputs,
             )
@@ -548,27 +518,6 @@ class AbstractEdgeGCN(AbstractGCN):
         )
 
         return model
-
-    def _predict_proba(
-        self,
-        graph: Graph,
-        support: Optional[Graph] = None,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
-    ) -> np.ndarray:
-        """Run predictions on the provided graph."""
-        predictions = super()._predict_proba(
-            graph,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features
-        )
-        # The model will padd the predictions with a few zeros
-        # in order to run the GCN portion of the model, which
-        # always requires a batch size equal to the nodes number.
-        return predictions[:graph.get_number_of_directed_edges()]
 
     @classmethod
     def requires_node_types(cls) -> bool:

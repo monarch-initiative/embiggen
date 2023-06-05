@@ -150,7 +150,17 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_features=edge_features
-            )[mask]
+            )
+
+            if prediction_probabilities.shape[0] != mask.shape[0]:
+                raise RuntimeError(
+                    "The number of predictions and the number of edges "
+                    "in the graph do not match. "
+                    f"Found {prediction_probabilities.shape[0]} predictions "
+                    f"and {mask.shape[0]} edges."
+                )
+
+            prediction_probabilities = prediction_probabilities[mask]
 
             if evaluation_graph.is_directed():
                 labels = evaluation_graph.get_directed_known_edge_type_ids()
