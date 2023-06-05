@@ -338,7 +338,9 @@ class TestEvaluateEdgePrediction(TestCase):
                         }
                     ),
                     node_features=DegreeSPINE(embedding_size=10),
-                    node_features_preprocessing_steps=GraphConvolution(),
+                    node_features_preprocessing_steps=GraphConvolution(
+                        concatenate_features=True
+                    ),
                     evaluation_schema=evaluation_schema,
                     graphs=graph,
                     number_of_holdouts=self._number_of_holdouts,

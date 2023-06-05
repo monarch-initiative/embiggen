@@ -12,7 +12,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
     def __init__(
         self,
         number_of_convolutions: int = 2,
-        concatenate_features: bool = True,
+        concatenate_features: bool = False,
         dtype: str = "f32",
         path: Union[str, List[str]] = None,
     ):
