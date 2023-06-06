@@ -4,7 +4,7 @@ from typing import List, Union, Optional, Dict
 import pandas as pd
 import numpy as np
 import inspect
-
+import warnings
 
 
 class EmbeddingResult:
@@ -98,7 +98,7 @@ class EmbeddingResult:
                     )
 
                 if np.isclose(numpy_embedding, 0.0).all():
-                    raise ValueError(
+                    warnings.warn(
                         f"One of the provided {embedding_list_name} "
                         f"computed with the {embedding_method_name} method "
                         "contains exclusively zeros."
