@@ -116,7 +116,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         train: Graph,
         test: Graph,
-        support: Optional[Graph],
+        support: Graph,
         subgraph_of_interest: Optional[Graph],
         random_state: int,
         verbose: bool,
@@ -232,7 +232,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         train: Graph,
         test: Graph,
-        support: Optional[Graph] = None,
+        support: Graph,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
@@ -257,7 +257,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             train.get_number_of_directed_edges() / graph.get_number_of_directed_edges()
         )
 
-        train_predic_proba = self.predict_proba(
+        train_predict_proba = self.predict_proba(
             train,
             support=support,
             node_features=node_features,
@@ -301,7 +301,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             desc=f"Evaluating on unbalances"
         ):
             for evaluation_mode, (existent_predict_proba, non_existent_graph) in (
-                ("train", (train_predic_proba, negative_train)),
+                ("train", (train_predict_proba, negative_train)),
                 ("test", (test_predict_proba, negative_test)),
             ):
                 non_existent_predict_proba = self.predict_proba(

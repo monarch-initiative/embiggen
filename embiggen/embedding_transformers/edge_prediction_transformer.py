@@ -137,11 +137,12 @@ class EdgePredictionTransformer:
                     f"The provided edge features have {edge_feature.shape[0]} edges, while the provided graphs have "
                     f"{number_of_positive_edges} and {number_of_negative_edges} edges."
                 )
-
+            
         positive_edge_features = [
             edge_feature[:number_of_positive_edges]
             for edge_feature in edge_features
         ]
+
         negative_edge_features = [
             edge_feature[number_of_positive_edges:]
             for edge_feature in edge_features

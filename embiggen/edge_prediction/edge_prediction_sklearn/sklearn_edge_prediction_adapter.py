@@ -167,7 +167,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                     f"Edge features of type {type(edge_feature)} are not supported."
                     "We currently only support edge features of type AbstractEdgeFeature."
                 )
-            
+
         rasterized_edge_features: List[np.ndarray] = []
 
         for edge_feature in edge_features:
@@ -286,7 +286,7 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         if support is None:
             support = graph
-        
+
         if edge_features is None:
             edge_features: List[Type[AbstractEdgeFeature]] = []
 
@@ -302,10 +302,13 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 math.ceil(graph.get_number_of_edges() *
                           self._training_unbalance_rate)
             ),
+            only_from_same_component=True,
             random_state=self._random_state,
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            use_scale_free_distribution=self._use_scale_free_distribution
+            use_scale_free_distribution=self._use_scale_free_distribution,
         )
+
+        assert negative_graph.has_edges()
 
         rasterized_edge_features = []
 
@@ -326,7 +329,6 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 )))
 
         if self._use_edge_metrics:
-            support = support
             rasterized_edge_features.append(np.vstack((
                 support.get_all_edge_metrics(
                     normalize=True,
@@ -372,35 +374,13 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
         """
-        if not graph.has_edges():
-            return np.array([])
-
-        sequence = EdgePredictionSequence(
+        return self.predict_proba(
             graph=graph,
             support=support,
-            return_node_types=False,
-            return_edge_types=False,
-            use_edge_metrics=False,
-            batch_size=self._prediction_batch_size
-        )
-
-        return np.concatenate([
-            self._model_instance.predict(self._trasform_graph_into_edge_embedding(
-                graph=edges[0],
-                support=support,
-                node_features=node_features,
-                edge_features=edge_features,
-                node_types=graph,
-                node_type_features=node_type_features,
-            ))
-            for edges in tqdm(
-                (sequence[i] for i in range(len(sequence))),
-                total=len(sequence),
-                dynamic_ncols=True,
-                desc="Running edge predictions",
-                leave=False
-            )
-        ])
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+        ) > 0.5
 
     def _predict_proba(
         self,
@@ -457,6 +437,8 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
                 leave=False
             )
         ])
+
+        assert len(prediction_probabilities.shape) in (1, 2)
 
         # In the majority but not totality of sklearn models,
         # the predictions of binary models are returned as
