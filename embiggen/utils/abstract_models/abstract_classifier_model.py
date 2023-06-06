@@ -725,6 +725,7 @@ class AbstractClassifierModel(AbstractModel):
 
             if issubclass(type(edge_feature), AbstractEdgeFeature):
                 if not edge_feature.is_fit():
+                    edge_feature = edge_feature.clone()
                     edge_feature.fit(
                         graph=support,
                     )
