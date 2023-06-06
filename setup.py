@@ -57,12 +57,13 @@ setup(
     author=", ".join(list(authors.keys())),
     author_email=", ".join(list(authors.values())),
     license='BSD3',
-    python_requires='>=3.7.0',
+    python_requires='>=3.8.0',
     packages=find_packages(
         exclude=['contrib', 'docs', 'tests*', 'notebooks*']),
     install_requires=[
         'numpy',
         'pandas',
+        "Jinja2",
         "tqdm",
         "humanize",
         "matplotlib>=3.5.2",
