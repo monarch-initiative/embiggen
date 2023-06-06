@@ -72,11 +72,12 @@ setup(
         "ddd_subplots>=1.0.26",
         "sanitize_ml_labels>=1.0.50",
         "keras_mixed_sequence>=1.0.28",
-        "ensmallen>=0.8.59",
+        "ensmallen>=0.8.60",
         "environments_utils>=1.0.6",
         "compress_pickle>=2.1.0",
         "validate_version_code",
         "cache_decorator>=2.1.11",
+        "threadpoolctl>=3.1.0",
         "packaging"
     ],
     tests_require=test_deps,
