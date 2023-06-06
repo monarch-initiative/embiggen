@@ -198,6 +198,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_feature(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
@@ -212,6 +213,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
@@ -284,7 +289,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_feature = node_feature.into_smoke_test()
 
             node_feature = node_feature.fit_transform(
-                graph=graph,
+                graph=support,
                 return_dataframe=False
             )
 
@@ -302,7 +307,7 @@ class AbstractClassifierModel(AbstractModel):
         
         for preprocessing_step in node_features_preprocessing_steps:
             node_feature = preprocessing_step.transform(
-                support=graph,
+                support=support,
                 node_features=node_feature
             )
 
@@ -347,6 +352,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_features(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
                                       List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
@@ -362,6 +368,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         node_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
@@ -402,6 +412,7 @@ class AbstractClassifierModel(AbstractModel):
             for node_feature in node_features
             for normalized_node_feature in cls.normalize_node_feature(
                 graph=graph,
+                support=support,
                 random_state=random_state,
                 node_feature=node_feature,
                 node_features_preprocessing_steps=node_features_preprocessing_steps,
@@ -416,6 +427,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_type_feature(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
         allow_automatic_feature: bool = True,
@@ -429,6 +441,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
@@ -498,7 +514,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_type_feature = node_type_feature.into_smoke_test()
 
             node_type_feature = node_type_feature.fit_transform(
-                graph=graph,
+                graph=support,
                 return_dataframe=False,
             )
 
@@ -549,6 +565,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_node_type_features(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
                                            List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
@@ -563,6 +580,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
@@ -601,6 +622,7 @@ class AbstractClassifierModel(AbstractModel):
             for node_type_feature in node_type_features
             for normalized_node_type_feature in cls.normalize_node_type_feature(
                 graph=graph,
+                support=support,
                 random_state=random_state,
                 node_type_feature=node_type_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -614,6 +636,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_feature(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray,
                                      EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
@@ -628,6 +651,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray]] = None
@@ -697,12 +724,13 @@ class AbstractClassifierModel(AbstractModel):
                 edge_feature = edge_feature.into_smoke_test()
 
             if issubclass(type(edge_feature), AbstractEdgeFeature):
-                edge_feature.fit(
-                    graph=graph,
-                )
+                if not edge_feature.is_fit():
+                    edge_feature.fit(
+                        graph=support,
+                    )
             else:
                 edge_feature = edge_feature.fit_transform(
-                    graph=graph,
+                    graph=support,
                     return_dataframe=False,
                 )
 
@@ -756,6 +784,7 @@ class AbstractClassifierModel(AbstractModel):
     def normalize_edge_features(
         cls,
         graph: Graph,
+        support: Graph,
         random_state: int,
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
                                       List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
@@ -770,6 +799,10 @@ class AbstractClassifierModel(AbstractModel):
         ------------------
         graph: Graph
             The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
         random_state: int
             The random state to use for the stochastic automatic features.
         edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None
@@ -808,6 +841,7 @@ class AbstractClassifierModel(AbstractModel):
             for edge_feature in edge_features
             for normalized_edge_feature in cls.normalize_edge_feature(
                 graph=graph,
+                support=support,
                 random_state=random_state,
                 edge_feature=edge_feature,
                 allow_automatic_feature=allow_automatic_feature,
@@ -877,18 +911,21 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=True,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=True,
@@ -950,18 +987,21 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=False,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=False,
@@ -1023,18 +1063,21 @@ class AbstractClassifierModel(AbstractModel):
                 support=support,
                 node_features=self.normalize_node_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_features=node_features,
                     allow_automatic_feature=False,
                 ),
                 node_type_features=self.normalize_node_type_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     node_type_features=node_type_features,
                     allow_automatic_feature=True,
                 ),
                 edge_features=self.normalize_edge_features(
                     graph=graph,
+                    support=support,
                     random_state=self._random_state,
                     edge_features=edge_features,
                     allow_automatic_feature=False,
