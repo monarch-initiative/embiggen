@@ -1544,7 +1544,8 @@ class AbstractClassifierModel(AbstractModel):
         # We compute the remaining features
         starting_to_compute_node_features = time.time()
         holdout_node_features = cls.normalize_node_features(
-            train,
+            graph=train,
+            support=train,
             random_state=random_state*(holdout_number+1),
             node_features=node_features,
             node_features_preprocessing_steps=node_features_preprocessing_steps,
@@ -1559,7 +1560,8 @@ class AbstractClassifierModel(AbstractModel):
         # We compute the remaining features
         starting_to_compute_node_type_features = time.time()
         holdout_node_type_features = cls.normalize_node_type_features(
-            train,
+            graph=train,
+            support=train,
             random_state=random_state*(holdout_number+1),
             node_type_features=node_type_features,
             allow_automatic_feature=True,
@@ -1575,7 +1577,8 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         starting_to_compute_edge_features = time.time()
         holdout_edge_features = cls.normalize_edge_features(
-            train,
+            graph=train,
+            support=train,
             random_state=random_state*(holdout_number+1),
             edge_features=edge_features,
             allow_automatic_feature=True,
@@ -1902,7 +1905,8 @@ class AbstractClassifierModel(AbstractModel):
         # that cause biases at each holdout, avoiding said biases.
         starting_to_compute_constant_node_features = time.time()
         node_features = cls.normalize_node_features(
-            graph,
+            graph=graph,
+            support=graph,
             random_state=random_state,
             node_features=node_features,
             allow_automatic_feature=True,
@@ -1918,7 +1922,8 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         starting_to_compute_constant_node_type_features = time.time()
         node_type_features = cls.normalize_node_type_features(
-            graph,
+            graph=graph,
+            support=graph,
             random_state=random_state,
             node_type_features=node_type_features,
             allow_automatic_feature=True,
@@ -1934,7 +1939,8 @@ class AbstractClassifierModel(AbstractModel):
         # the node features.
         starting_to_compute_constant_edge_features = time.time()
         edge_features = cls.normalize_edge_features(
-            graph,
+            graph=graph,
+            support=graph,
             random_state=random_state,
             edge_features=edge_features,
             allow_automatic_feature=True,
