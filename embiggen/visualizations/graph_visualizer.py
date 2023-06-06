@@ -4608,12 +4608,12 @@ class GraphVisualizer:
                     self.plot_positive_and_negative_edges_cosine_similarity),
             ])
 
-        distribution_plot_methods_to_call = [
+        distribution_plot_methods_to_call.extend([
             self.plot_positive_and_negative_adamic_adar_histogram,
             self.plot_positive_and_negative_jaccard_coefficient_histogram,
             self.plot_positive_and_negative_preferential_attachment_histogram,
             self.plot_positive_and_negative_resource_allocation_index_histogram
-        ]
+        ])
 
         if not self._currently_plotting_edge_embedding:
             distribution_plot_methods_to_call.extend([
