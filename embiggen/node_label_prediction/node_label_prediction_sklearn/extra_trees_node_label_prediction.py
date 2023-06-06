@@ -16,7 +16,7 @@ class ExtraTreesNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         min_samples_split: int = 2,
         min_samples_leaf: int = 1,
         min_weight_fraction_leaf: float = 0.,
-        max_features="auto",
+        max_features="sqrt",
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
         bootstrap=True,

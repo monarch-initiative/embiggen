@@ -10,7 +10,7 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
 
     def __init__(
         self,
-        loss='deviance',
+        loss='log_loss',
         learning_rate=0.1,
         n_estimators=100,
         subsample=1.0,
