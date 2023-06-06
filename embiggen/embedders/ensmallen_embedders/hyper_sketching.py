@@ -482,6 +482,10 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         """Returns whether the model is stocastic and has therefore a random state."""
         return False
     
+    def clone(self) -> "Self":
+        """Return a fresh clone of the model."""
+        return HyperSketching(**self.parameters())
+    
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
