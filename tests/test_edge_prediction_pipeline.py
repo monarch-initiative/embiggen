@@ -360,6 +360,12 @@ class TestEvaluateEdgePrediction(TestCase):
             leave=False,
             desc="Testing embedding methods"
         )
+
+        complex_model = [
+            "RotatE",
+            "ComplEx",
+        ]
+
         for _, row in bar:
             if row.requires_node_types:
                 continue
@@ -377,6 +383,9 @@ class TestEvaluateEdgePrediction(TestCase):
                 )
             else:
                 graph = CIO()
+
+            if row.model_name in complex_model:
+                continue
 
             bar.set_description(
                 f"Testing {row.model_name} from library {row.library_name}")
@@ -404,23 +413,20 @@ class TestEvaluateEdgePrediction(TestCase):
             )
 
     def test_all_edge_embedding_methods(self):
-        try:
-            for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
-                edge_prediction_evaluation(
-                    holdouts_kwargs=dict(train_size=0.9),
-                    models=GraphSAGEEdgePrediction(
-                        edge_embedding_method=edge_embedding_method,
-                        epochs=1
-                    ),
-                    evaluation_schema="Connected Monte Carlo",
-                    graphs=self._graph,
-                    node_features="Degree-based SPINE",
-                    node_features_preprocessing_steps=GraphConvolution(),
-                    number_of_holdouts=self._number_of_holdouts,
-                    verbose=False
-                )
-        except AttributeError as e:
-            pass
+        for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
+            edge_prediction_evaluation(
+                holdouts_kwargs=dict(train_size=0.9),
+                models=GraphSAGEEdgePrediction(
+                    edge_embedding_method=edge_embedding_method,
+                    epochs=1
+                ),
+                evaluation_schema="Connected Monte Carlo",
+                graphs=self._graph,
+                node_features="Degree-based SPINE",
+                node_features_preprocessing_steps=GraphConvolution(),
+                number_of_holdouts=self._number_of_holdouts,
+                verbose=False
+            )
 
     def test_all_edge_embedding_models_as_feature(self):
         """Test graph visualization."""

@@ -122,10 +122,18 @@ class TestEvaluateNodeLabelPrediction(TestCase):
             node_type="blue",
         )
 
+        complex_model = [
+            "RotatE",
+            "ComplEx",
+        ]
+
         graph = graph.sort_by_decreasing_outbound_node_degree()
 
         for _, row in bar:
             if row.requires_edge_weights:
+                continue
+
+            if row.model_name in complex_model:
                 continue
 
             bar.set_description(

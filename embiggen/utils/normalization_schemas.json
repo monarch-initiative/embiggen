@@ -123,6 +123,14 @@
     "loss": "str",
     "n_estimators": "int",
     "init": "pass",
+    "scoring_fct_norm": "int",
+    "num_components": "int",
+    "hidden_dim": [
+        "int",
+        "None"
+    ],
+    "power_norm": "bool",
+    "num_tokens": "pass",
     "subsample": "float",
     "warm_start": "bool",
     "validation_fraction": "float",
@@ -178,5 +186,33 @@
     "number_of_edges_per_mini_batch": "int",
     "sample_only_edges_with_heterogeneous_node_types": "bool",
     "first_order_decay_factor": "float",
-    "second_order_decay_factor": "float"
+    "second_order_decay_factor": "float",
+    "input_channels": [
+        "int",
+        "None"
+    ],
+    "output_channels": "int",
+    "embedding_height": [
+        "int",
+        "None"
+    ],
+    "embedding_width": [
+        "int",
+        "None"
+    ],
+    "kernel_height": "int",
+    "kernel_width": "int",
+    "input_dropout": "float",
+    "output_dropout": "float",
+    "feature_map_dropout": "float",
+    "apply_batch_normalization": "bool",
+    "relation_dim": [
+        "int",
+        "None"
+    ],
+    "combination_dropout": "float",
+    "dropout_0": "float",
+    "dropout_1": "float",
+    "dropout_2": "float",
+    "tanh_map": "bool"
 }

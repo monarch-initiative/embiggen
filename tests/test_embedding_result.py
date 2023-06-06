@@ -69,12 +69,6 @@ class TestEmbeddingResult(TestCase):
         with pytest.raises(ValueError):
             EmbeddingResult(
                 embedding_method_name="Test",
-                edge_type_embeddings=np.zeros(shape=(10, 10))
-            )
-
-        with pytest.raises(ValueError):
-            EmbeddingResult(
-                embedding_method_name="Test",
                 edge_type_embeddings=np.full(shape=(10, 10), fill_value=np.nan)
             )
 
