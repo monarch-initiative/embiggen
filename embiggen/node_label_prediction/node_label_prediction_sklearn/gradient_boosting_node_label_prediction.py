@@ -20,7 +20,7 @@ class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         max_depth=3,
         min_impurity_decrease=0.,
         init=None,
-        max_features=None,
+        max_features="sqrt",
         verbose=0,
         max_leaf_nodes=None,
         warm_start=False,
