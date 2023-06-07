@@ -698,12 +698,12 @@ class AbstractClassifierModel(AbstractModel):
                 )
 
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
-                model_name=edge_feature
+                model_name=edge_feature,
             )()
 
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
-        if issubclass(edge_feature.__class__, AbstractEmbeddingModel):
+        if issubclass(type(edge_feature), AbstractEmbeddingModel):
             if (
                 skip_evaluation_biased_feature and
                 (
@@ -725,6 +725,7 @@ class AbstractClassifierModel(AbstractModel):
 
             if issubclass(type(edge_feature), AbstractEdgeFeature):
                 if not edge_feature.is_fit():
+                    print("Fitting edge feature {} on graph {}".format(edge_feature, graph.get_name()))
                     edge_feature = edge_feature.clone()
                     edge_feature.fit(
                         graph=support,

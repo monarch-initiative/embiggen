@@ -15,7 +15,7 @@ class DecisionTreeEdgePrediction(SklearnEdgePredictionAdapter):
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.,
-        max_features=None,
+        max_features="sqrt",
         max_leaf_nodes=None,
         min_impurity_decrease=0.,
         ccp_alpha=0.0,
