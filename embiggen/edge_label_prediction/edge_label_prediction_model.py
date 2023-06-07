@@ -270,3 +270,14 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False
+
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction.
+        
+        Implementation details
+        ----------------------
+        At this time, no model supports multilabel prediction for the
+        edge label prediction task.
+        """
+        return False

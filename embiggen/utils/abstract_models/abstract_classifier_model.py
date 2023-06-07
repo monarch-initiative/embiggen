@@ -76,7 +76,9 @@ class AbstractClassifierModel(AbstractModel):
         """
         raise NotImplementedError((
             "The `_fit` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {self.model_name()} from library {self.library_name()} "
+            f"needs to implement this method."
         ))
 
     def _predict(
@@ -108,7 +110,9 @@ class AbstractClassifierModel(AbstractModel):
         """
         raise NotImplementedError((
             "The `_predict` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {self.model_name()} from library {self.library_name()} "
+            f"needs to implement this method."
         ))
 
     def _predict_proba(
@@ -140,21 +144,37 @@ class AbstractClassifierModel(AbstractModel):
         """
         raise NotImplementedError((
             "The `_predict_proba` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {self.model_name()} from library {self.library_name()} "
+            f"needs to implement this method."
         ))
 
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""
         raise NotImplementedError((
             "The `is_binary_prediction_task` method should be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {self.model_name()} from library {self.library_name()} "
+            f"needs to implement this method."
         ))
 
     def is_multilabel_prediction_task(self) -> bool:
         """Returns whether the model was fit on a multilabel prediction task."""
         raise NotImplementedError((
             "The `is_multilabel_prediction_task` method should be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {self.model_name()} from library {self.library_name()} "
+            f"needs to implement this method."
+        ))
+
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        raise NotImplementedError((
+            "The `supports_multilabel_prediction` method should be implemented "
+            "in the child classes of abstract model. "
+            f"The {cls.model_name()} from library {cls.library_name()} "
+            f"needs to implement this method."
         ))
 
     @classmethod
@@ -162,7 +182,9 @@ class AbstractClassifierModel(AbstractModel):
         """Returns available evaluation schemas for this task."""
         raise NotImplementedError((
             "The `get_available_evaluation_schemas` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"The {cls.model_name()} from library {cls.library_name()} "
+            f"needs to implement this method."
         ))
 
     @classmethod
@@ -901,6 +923,13 @@ class AbstractClassifierModel(AbstractModel):
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."
+            )
+        
+        if self.is_multilabel_prediction_task() and not self.supports_multilabel_prediction():
+            raise ValueError(
+                f"The provided model {self.model_name()} does not support multilabel prediction, "
+                f"but the task {self.task_name()} requires it. There are other models available "
+                "that support multilabel prediction, please do check them out."
             )
 
         if support is None:

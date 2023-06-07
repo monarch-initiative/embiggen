@@ -1360,3 +1360,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return True
+
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction.
+        
+        Implementation details
+        ----------------------
+        The edge prediction task is, by definition, a binary prediction
+        task. Therefore, this method always returns False.
+        """
+        return False
