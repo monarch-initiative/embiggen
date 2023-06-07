@@ -214,5 +214,12 @@
     "dropout_0": "float",
     "dropout_1": "float",
     "dropout_2": "float",
-    "tanh_map": "bool"
+    "tanh_map": "bool",
+    "l2_regularization": "float",
+    "max_bins": "int",
+    "categorical_features": "pass",
+    "monotonic_cst": "pass",
+    "interaction_cst": "pass",
+    "scoring": "str",
+    "class_weight": "pass"
 }

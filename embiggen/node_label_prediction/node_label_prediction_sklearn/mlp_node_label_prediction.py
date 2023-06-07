@@ -124,3 +124,8 @@ class MLPNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     @classmethod
     def model_name(cls) -> str:
         return "MLP Regression"
+    
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        return True

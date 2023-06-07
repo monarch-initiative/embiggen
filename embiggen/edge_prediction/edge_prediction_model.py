@@ -7,7 +7,11 @@ import math
 from ensmallen import Graph
 from tqdm.auto import tqdm
 from embiggen.utils import AbstractEdgeFeature
-from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class, format_list
+from embiggen.utils.abstract_models import (
+    AbstractClassifierModel,
+    abstract_class,
+    format_list,
+)
 
 
 @abstract_class
@@ -31,14 +35,15 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     @classmethod
     def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
-        return [
-            "Connected Monte Carlo",
-            "Monte Carlo",
-            "Kfold"
-        ]
+        return ["Connected Monte Carlo", "Monte Carlo", "Kfold"]
 
     @classmethod
-    def edge_features_check(cls, edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]]) -> Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]]:
+    def edge_features_check(
+        cls,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ],
+    ) -> Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]]:
         """Check the provided edge features."""
         if edge_features is None:
             edge_features = []
@@ -86,21 +91,21 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if evaluation_schema == "Connected Monte Carlo":
             return graph.connected_holdout(
                 **holdouts_kwargs,
-                random_state=random_state+holdout_number,
-                verbose=False
+                random_state=random_state + holdout_number,
+                verbose=False,
             )
         if evaluation_schema == "Monte Carlo":
             return graph.random_holdout(
                 **holdouts_kwargs,
-                random_state=random_state+holdout_number,
-                verbose=False
+                random_state=random_state + holdout_number,
+                verbose=False,
             )
         if evaluation_schema == "Kfold":
             return graph.get_edge_prediction_kfold(
                 k=number_of_holdouts,
                 k_index=holdout_number,
                 random_state=random_state,
-                verbose=False
+                verbose=False,
             )
         super().split_graph_following_evaluation_schema(
             graph=graph,
@@ -128,7 +133,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_nodes_prefixes: Optional[List[str]],
         destination_nodes_prefixes: Optional[List[str]],
         validation_unbalance_rates: Tuple[float],
-        use_scale_free_distribution: bool
+        use_scale_free_distribution: bool,
     ) -> Iterator[Tuple[Graph]]:
         """Return iterator over the negative graphs for evaluation."""
         if subgraph_of_interest is None:
@@ -148,18 +153,16 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 "DO NOT USE THIS CONFIGURATION IN ANY OTHER USE CASE."
             )
 
-        train_size = (
-            train.get_number_of_edges() / (train.get_number_of_edges() +
-                                           test.get_number_of_edges())
+        train_size = train.get_number_of_edges() / (
+            train.get_number_of_edges() + test.get_number_of_edges()
         )
 
         return (
             sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(sampler_graph.get_number_of_edges()
-                              * unbalance_rate)
+                    math.ceil(sampler_graph.get_number_of_edges() * unbalance_rate)
                 ),
-                random_state=random_state*(i+1),
+                random_state=random_state * (i + 1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
                 use_scale_free_distribution=use_scale_free_distribution,
                 source_node_types_names=source_node_types_names,
@@ -169,7 +172,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 source_nodes_prefixes=source_nodes_prefixes,
                 destination_nodes_prefixes=destination_nodes_prefixes,
                 support=support,
-                graph_to_avoid=graph
+                graph_to_avoid=graph,
             ).random_holdout(
                 train_size=train_size,
                 random_state=random_state,
@@ -181,7 +184,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 total=len(validation_unbalance_rates),
                 leave=False,
                 dynamic_ncols=True,
-                desc="Building negative graphs for evaluation"
+                desc="Building negative graphs for evaluation",
             )
         )
 
@@ -202,12 +205,87 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_edge_types_names: Optional[List[str]] = None,
         source_nodes_prefixes: Optional[List[str]] = None,
         destination_nodes_prefixes: Optional[List[str]] = None,
-        validation_unbalance_rates: Tuple[float] = (1.0, ),
-        use_scale_free_distribution: bool = True
+        validation_unbalance_rates: Tuple[float] = (1.0,),
+        use_scale_free_distribution: bool = True,
     ) -> Dict[str, Any]:
         """Return additional custom parameters for the current holdout."""
         return dict(
-            negative_graphs=list(cls.__iterate_negative_graphs(
+            negative_graphs=list(
+                cls.__iterate_negative_graphs(
+                    graph=graph,
+                    train=train,
+                    test=test,
+                    support=support,
+                    subgraph_of_interest=subgraph_of_interest,
+                    random_state=random_state,
+                    verbose=verbose,
+                    validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
+                    source_node_types_names=source_node_types_names,
+                    destination_node_types_names=destination_node_types_names,
+                    source_edge_types_names=source_edge_types_names,
+                    destination_edge_types_names=destination_edge_types_names,
+                    source_nodes_prefixes=source_nodes_prefixes,
+                    destination_nodes_prefixes=destination_nodes_prefixes,
+                    validation_unbalance_rates=validation_unbalance_rates,
+                    use_scale_free_distribution=use_scale_free_distribution,
+                )
+            )
+        )
+
+    def _evaluate(
+        self,
+        graph: Graph,
+        train: Graph,
+        test: Graph,
+        support: Graph,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        subgraph_of_interest: Optional[Graph] = None,
+        random_state: int = 42,
+        verbose: bool = True,
+        negative_graphs: Optional[List[Tuple[Graph]]] = None,
+        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        source_node_types_names: Optional[List[str]] = None,
+        destination_node_types_names: Optional[List[str]] = None,
+        source_edge_types_names: Optional[List[str]] = None,
+        destination_edge_types_names: Optional[List[str]] = None,
+        source_nodes_prefixes: Optional[List[str]] = None,
+        destination_nodes_prefixes: Optional[List[str]] = None,
+        validation_unbalance_rates: Tuple[float] = (1.0,),
+        use_scale_free_distribution: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """Return model evaluation on the provided graphs."""
+        performance = []
+
+        train_size = (
+            train.get_number_of_directed_edges() / graph.get_number_of_directed_edges()
+        )
+
+        train_predict_proba = self.predict_proba(
+            train,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+        )
+
+        test_predict_proba = self.predict_proba(
+            test,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
+        )
+
+        negative_graph_iterator = (
+            self.__iterate_negative_graphs(
                 graph=graph,
                 train=train,
                 test=test,
@@ -223,74 +301,11 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 source_nodes_prefixes=source_nodes_prefixes,
                 destination_nodes_prefixes=destination_nodes_prefixes,
                 validation_unbalance_rates=validation_unbalance_rates,
-                use_scale_free_distribution=use_scale_free_distribution
-            ))
+                use_scale_free_distribution=use_scale_free_distribution,
+            )
+            if negative_graphs is None
+            else negative_graphs
         )
-
-    def _evaluate(
-        self,
-        graph: Graph,
-        train: Graph,
-        test: Graph,
-        support: Graph,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        subgraph_of_interest: Optional[Graph] = None,
-        random_state: int = 42,
-        verbose: bool = True,
-        negative_graphs: Optional[List[Tuple[Graph]]] = None,
-        validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
-        source_node_types_names: Optional[List[str]] = None,
-        destination_node_types_names: Optional[List[str]] = None,
-        source_edge_types_names: Optional[List[str]] = None,
-        destination_edge_types_names: Optional[List[str]] = None,
-        source_nodes_prefixes: Optional[List[str]] = None,
-        destination_nodes_prefixes: Optional[List[str]] = None,
-        validation_unbalance_rates: Tuple[float] = (1.0, ),
-        use_scale_free_distribution: bool = True,
-    ) -> List[Dict[str, Any]]:
-        """Return model evaluation on the provided graphs."""
-        performance = []
-
-        train_size = (
-            train.get_number_of_directed_edges() / graph.get_number_of_directed_edges()
-        )
-
-        train_predict_proba = self.predict_proba(
-            train,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features
-        )
-
-        test_predict_proba = self.predict_proba(
-            test,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=edge_features
-        )
-
-        negative_graph_iterator = self.__iterate_negative_graphs(
-            graph=graph,
-            train=train,
-            test=test,
-            support=support,
-            subgraph_of_interest=subgraph_of_interest,
-            random_state=random_state,
-            verbose=verbose,
-            validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
-            source_node_types_names=source_node_types_names,
-            destination_node_types_names=destination_node_types_names,
-            source_edge_types_names=source_edge_types_names,
-            destination_edge_types_names=destination_edge_types_names,
-            source_nodes_prefixes=source_nodes_prefixes,
-            destination_nodes_prefixes=destination_nodes_prefixes,
-            validation_unbalance_rates=validation_unbalance_rates,
-            use_scale_free_distribution=use_scale_free_distribution
-        ) if negative_graphs is None else negative_graphs
 
         for unbalance_rate, (negative_train, negative_test) in tqdm(
             zip(validation_unbalance_rates, negative_graph_iterator),
@@ -298,7 +313,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             total=len(validation_unbalance_rates),
             leave=False,
             dynamic_ncols=True,
-            desc=f"Evaluating on unbalances"
+            desc=f"Evaluating on unbalances",
         ):
             for evaluation_mode, (existent_predict_proba, non_existent_graph) in (
                 ("train", (train_predict_proba, negative_train)),
@@ -309,37 +324,43 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     support=support,
                     node_features=node_features,
                     node_type_features=node_type_features,
-                    edge_features=edge_features
+                    edge_features=edge_features,
                 )
 
-                if len(non_existent_predict_proba.shape) > 1 and non_existent_predict_proba.shape[1] > 1:
+                if (
+                    len(non_existent_predict_proba.shape) > 1
+                    and non_existent_predict_proba.shape[1] > 1
+                ):
                     non_existent_predict_proba = non_existent_predict_proba[:, 1]
 
-                predict_proba = np.concatenate((
-                    existent_predict_proba,
-                    non_existent_predict_proba
-                ))
+                predict_proba = np.concatenate(
+                    (existent_predict_proba, non_existent_predict_proba)
+                )
 
-                labels = np.concatenate((
-                    np.ones_like(existent_predict_proba, dtype=bool),
-                    np.zeros_like(non_existent_predict_proba, dtype=bool),
-                ))
+                labels = np.concatenate(
+                    (
+                        np.ones_like(existent_predict_proba, dtype=bool),
+                        np.zeros_like(non_existent_predict_proba, dtype=bool),
+                    )
+                )
 
-                performance.append({
-                    "evaluation_mode": evaluation_mode,
-                    "train_size": train_size,
-                    "validation_unbalance_rate": unbalance_rate,
-                    "use_scale_free_distribution": use_scale_free_distribution,
-                    "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
-                    **self.evaluate_predictions(
-                        labels,
-                        predict_proba,
-                    ),
-                    **self.evaluate_prediction_probabilities(
-                        labels,
-                        predict_proba,
-                    ),
-                })
+                performance.append(
+                    {
+                        "evaluation_mode": evaluation_mode,
+                        "train_size": train_size,
+                        "validation_unbalance_rate": unbalance_rate,
+                        "use_scale_free_distribution": use_scale_free_distribution,
+                        "validation_sample_only_edges_with_heterogeneous_node_types": validation_sample_only_edges_with_heterogeneous_node_types,
+                        **self.evaluate_predictions(
+                            labels,
+                            predict_proba,
+                        ),
+                        **self.evaluate_prediction_probabilities(
+                            labels,
+                            predict_proba,
+                        ),
+                    }
+                )
 
         return performance
 
@@ -347,11 +368,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph.
 
@@ -379,13 +406,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         if graph.has_edges():
-            predictions = super().predict(
-                graph,
-                support=support,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_features=self.edge_features_check(edge_features),
-            ).flatten()
+            predictions = (
+                super()
+                .predict(
+                    graph,
+                    support=support,
+                    node_features=node_features,
+                    node_type_features=node_type_features,
+                    edge_features=self.edge_features_check(edge_features),
+                )
+                .flatten()
+            )
         else:
             predictions = np.array([])
 
@@ -393,8 +424,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             predictions = pd.DataFrame(
                 {
                     "predictions": predictions,
-                    "sources": graph.get_source_names(directed=True) if return_node_names else graph.get_directed_source_node_ids(),
-                    "destinations": graph.get_destination_names(directed=True) if return_node_names else graph.get_directed_destination_node_ids(),
+                    "sources": graph.get_source_names(directed=True)
+                    if return_node_names
+                    else graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_destination_names(directed=True)
+                    if return_node_names
+                    else graph.get_directed_destination_node_ids(),
                 },
             )
 
@@ -406,11 +441,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_ids: List[int],
         destination_node_ids: List[int],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -445,14 +486,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_ids(
                 source_node_ids=source_node_ids,
                 destination_node_ids=destination_node_ids,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_bipartite_graph_from_edge_node_names(
@@ -461,11 +502,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_names: List[str],
         destination_node_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -500,14 +547,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_names(
                 source_node_names=source_node_names,
                 destination_node_names=destination_node_names,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_bipartite_graph_from_edge_node_prefixes(
@@ -516,11 +563,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_prefixes: List[str],
         destination_node_prefixes: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -555,14 +608,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_prefixes(
                 source_node_prefixes=source_node_prefixes,
                 destination_node_prefixes=destination_node_prefixes,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_bipartite_graph_from_edge_node_types(
@@ -571,11 +624,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_types: List[str],
         destination_node_types: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -610,14 +669,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_types(
                 source_node_types=source_node_types,
                 destination_node_types=destination_node_types,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_clique_graph_from_node_ids(
@@ -625,11 +684,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_ids: List[int],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -659,16 +724,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict(
-            graph.build_clique_graph_from_node_ids(
-                node_ids=node_ids,
-                directed=True
-            ),
+            graph.build_clique_graph_from_node_ids(node_ids=node_ids, directed=True),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_clique_graph_from_node_names(
@@ -676,11 +738,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -711,15 +779,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict(
             graph.build_clique_graph_from_node_names(
-                node_names=node_names,
-                directed=True
+                node_names=node_names, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_clique_graph_from_node_prefixes(
@@ -727,11 +794,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_prefixes: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -762,15 +835,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict(
             graph.build_clique_graph_from_node_prefixes(
-                node_prefixes=node_prefixes,
-                directed=True
+                node_prefixes=node_prefixes, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_clique_graph_from_node_type_names(
@@ -778,11 +850,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_type_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph bipartite portion.
 
@@ -813,26 +891,31 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict(
             graph.build_clique_graph_from_node_type_names(
-                node_type_names=node_type_names,
-                directed=True
+                node_type_names=node_type_names, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba(
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions on the provided graph.
 
@@ -859,25 +942,31 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             This value is ignored when the values to be returned the user has not
             requested for a prediction dataframe to be returned.
         """
-        predictions = super().predict_proba(
-            graph,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_features=self.edge_features_check(edge_features),
-        ).flatten()
+        predictions = (
+            super()
+            .predict_proba(
+                graph,
+                support=support,
+                node_features=node_features,
+                node_type_features=node_type_features,
+                edge_features=self.edge_features_check(edge_features),
+            )
+            .flatten()
+        )
 
         if np.isnan(predictions).any():
-            raise ValueError(
-                "There are NaN values in the predicted probabilities!"
-            )
+            raise ValueError("There are NaN values in the predicted probabilities!")
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
                 {
                     "predictions": predictions,
-                    "sources": graph.get_source_names(directed=True) if return_node_names else graph.get_directed_source_node_ids(),
-                    "destinations": graph.get_destination_names(directed=True) if return_node_names else graph.get_directed_destination_node_ids(),
+                    "sources": graph.get_source_names(directed=True)
+                    if return_node_names
+                    else graph.get_directed_source_node_ids(),
+                    "destinations": graph.get_destination_names(directed=True)
+                    if return_node_names
+                    else graph.get_directed_destination_node_ids(),
                 },
             )
 
@@ -889,11 +978,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_ids: List[int],
         destination_node_ids: List[int],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -928,14 +1023,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_ids(
                 source_node_ids=source_node_ids,
                 destination_node_ids=destination_node_ids,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_bipartite_graph_from_edge_node_names(
@@ -944,11 +1039,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_names: List[str],
         destination_node_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -983,14 +1084,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_names(
                 source_node_names=source_node_names,
                 destination_node_names=destination_node_names,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_bipartite_graph_from_edge_node_prefixes(
@@ -999,11 +1100,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_prefixes: List[str],
         destination_node_prefixes: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1038,14 +1145,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_prefixes(
                 source_node_prefixes=source_node_prefixes,
                 destination_node_prefixes=destination_node_prefixes,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_bipartite_graph_from_edge_node_types(
@@ -1054,11 +1161,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         source_node_types: List[str],
         destination_node_types: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1093,14 +1206,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             graph.build_bipartite_graph_from_edge_node_types(
                 source_node_types=source_node_types,
                 destination_node_types=destination_node_types,
-                directed=True
+                directed=True,
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_clique_graph_from_node_ids(
@@ -1108,11 +1221,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_ids: List[int],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1142,16 +1261,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict_proba(
-            graph.build_clique_graph_from_node_ids(
-                node_ids=node_ids,
-                directed=True
-            ),
+            graph.build_clique_graph_from_node_ids(node_ids=node_ids, directed=True),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_clique_graph_from_node_names(
@@ -1159,11 +1275,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1194,15 +1316,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_names(
-                node_names=node_names,
-                directed=True
+                node_names=node_names, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_clique_graph_from_node_prefixes(
@@ -1210,11 +1331,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_prefixes: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1245,15 +1372,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_prefixes(
-                node_prefixes=node_prefixes,
-                directed=True
+                node_prefixes=node_prefixes, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def predict_proba_clique_graph_from_node_type_names(
@@ -1261,11 +1387,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         node_type_names: List[str],
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
         return_predictions_dataframe: bool = False,
-        return_node_names: bool = True
+        return_node_names: bool = True,
     ) -> Union[np.ndarray, pd.DataFrame]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
@@ -1296,24 +1428,29 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         """
         return self.predict_proba(
             graph.build_clique_graph_from_node_type_names(
-                node_type_names=node_type_names,
-                directed=True
+                node_type_names=node_type_names, directed=True
             ),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,
             return_predictions_dataframe=return_predictions_dataframe,
-            return_node_names=return_node_names
+            return_node_names=return_node_names,
         )
 
     def fit(
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
     ):
         """Execute fitting on the provided graph.
 
@@ -1364,7 +1501,17 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     @classmethod
     def supports_multilabel_prediction(cls) -> bool:
         """Returns whether the model supports multilabel prediction.
-        
+
+        Implementation details
+        ----------------------
+        The edge prediction task is, by definition, a binary prediction
+        task. Therefore, this method always returns False.
+        """
+        return False
+
+    def is_multilabel_prediction_task(self) -> bool:
+        """Returns whether the model is a multilabel prediction task.
+
         Implementation details
         ----------------------
         The edge prediction task is, by definition, a binary prediction

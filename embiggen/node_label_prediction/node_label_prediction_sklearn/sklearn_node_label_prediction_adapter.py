@@ -245,3 +245,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             Path from where to dump the model.
         """
         compress_pickle.dump(self, path)
+
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        return True

@@ -1,6 +1,7 @@
 """Unit test class for Node-label prediction pipeline."""
 from tqdm.auto import tqdm
 from unittest import TestCase
+import pytest
 from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import get_available_models_for_node_label_prediction, get_available_models_for_node_embedding
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
@@ -58,11 +59,15 @@ class TestEvaluateNodeLabelPrediction(TestCase):
         for g in (graph, multilabel_graph, binary_graph):
             node_features = DegreeSPINE(embedding_size=10).fit_transform(g)
             for model_name in tqdm(df.model_name, desc="Testing model APIs"):
-                if g.has_multilabel_node_types() and model_name in ("Gradient Boosting Classifier", ):
-                    continue
                 model = AbstractNodeLabelPredictionModel.get_model_from_library(
                     model_name
                 )().into_smoke_test()
+
+                if g.has_multilabel_node_types() and not model.supports_multilabel_prediction():
+                    with pytest.raises(ValueError):
+                        model.fit(g, node_features=node_features)
+                    
+                    continue
                 model.fit(g, node_features=node_features)
                 if model.library_name() in ("TensorFlow", "scikit-learn"):
                     path = "model.pkl.gz"

@@ -1,6 +1,5 @@
 """Submodule providing models for edge-label prediction."""
 from embiggen.node_label_prediction.node_label_prediction_sklearn import *
-from embiggen.node_label_prediction.node_label_prediction_ensmallen import *
 from embiggen.node_label_prediction.node_label_prediction_tensorflow import *
 from embiggen.node_label_prediction.node_label_prediction_evaluation import node_label_prediction_evaluation
 

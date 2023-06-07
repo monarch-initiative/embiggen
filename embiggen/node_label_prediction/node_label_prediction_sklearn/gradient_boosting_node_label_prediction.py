@@ -101,3 +101,8 @@ class GradientBoostingNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     @classmethod
     def model_name(cls) -> str:
         return "Gradient Boosting Classifier"
+    
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        return False

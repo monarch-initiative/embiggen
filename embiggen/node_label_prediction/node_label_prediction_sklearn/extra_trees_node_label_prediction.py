@@ -109,3 +109,9 @@ class ExtraTreesNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     @classmethod
     def model_name(cls) -> str:
         return "Extra Trees Classifier"
+    
+
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        return True

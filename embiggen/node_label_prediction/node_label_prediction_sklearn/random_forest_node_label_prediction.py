@@ -109,3 +109,8 @@ class RandomForestNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     @classmethod
     def model_name(cls) -> str:
         return "Random Forest Classifier"
+    
+    @classmethod
+    def supports_multilabel_prediction(cls) -> bool:
+        """Returns whether the model supports multilabel prediction."""
+        return True

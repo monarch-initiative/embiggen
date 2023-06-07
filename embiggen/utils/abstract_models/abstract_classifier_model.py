@@ -78,7 +78,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `_fit` method must be implemented "
             "in the child classes of abstract model. "
             f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {self.task_name()}."
         ))
 
     def _predict(
@@ -112,7 +112,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `_predict` method must be implemented "
             "in the child classes of abstract model. "
             f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {self.task_name()}."
         ))
 
     def _predict_proba(
@@ -146,7 +146,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `_predict_proba` method must be implemented "
             "in the child classes of abstract model. "
             f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {self.task_name()}."
         ))
 
     def is_binary_prediction_task(self) -> bool:
@@ -155,7 +155,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `is_binary_prediction_task` method should be implemented "
             "in the child classes of abstract model. "
             f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {self.task_name()}."
         ))
 
     def is_multilabel_prediction_task(self) -> bool:
@@ -164,7 +164,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `is_multilabel_prediction_task` method should be implemented "
             "in the child classes of abstract model. "
             f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {self.task_name()}."
         ))
 
     @classmethod
@@ -174,7 +174,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `supports_multilabel_prediction` method should be implemented "
             "in the child classes of abstract model. "
             f"The {cls.model_name()} from library {cls.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {cls.task_name()}."
         ))
 
     @classmethod
@@ -184,7 +184,7 @@ class AbstractClassifierModel(AbstractModel):
             "The `get_available_evaluation_schemas` method must be implemented "
             "in the child classes of abstract model. "
             f"The {cls.model_name()} from library {cls.library_name()} "
-            f"needs to implement this method."
+            f"needs to implement this method for the task {cls.task_name()}."
         ))
 
     @classmethod
@@ -350,7 +350,7 @@ class AbstractClassifierModel(AbstractModel):
                 raise ValueError(
                     (
                         "The provided node features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {nodes_number} nodes. "
+                        "but the provided graph{graph_name} has {number_of_nodes} nodes. "
                         "Maybe these features refer to another "
                         "version of the graph or another graph "
                         "entirely?"

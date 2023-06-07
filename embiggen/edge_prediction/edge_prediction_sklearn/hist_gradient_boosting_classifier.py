@@ -12,23 +12,23 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         self,
         loss='log_loss',
         learning_rate=0.1,
-        n_estimators=100,
-        subsample=1.0,
-        criterion='friedman_mse',
-        min_samples_split=2,
-        min_samples_leaf=1,
-        min_weight_fraction_leaf=0.,
-        max_depth=3,
-        min_impurity_decrease=0.,
-        init=None,
-        max_features="sqrt",
-        verbose=0,
-        max_leaf_nodes=None,
+        max_iter: int = 100,
+        max_leaf_nodes: int = 31,
+        max_depth: int = 3,
+        min_samples_leaf: int = 20,
+        l2_regularization: float = 0.,
+        max_bins: int = 255,
+        categorical_features=None,
+        monotonic_cst=None,
+        interaction_cst=None,
         warm_start=False,
+        early_stopping="auto",
+        scoring="loss",
         validation_fraction=0.1,
-        n_iter_no_change=None,
-        tol=1e-4,
-        ccp_alpha=0.0,
+        n_iter_no_change=10,
+        tol=1e-7,
+        verbose=0,
+        class_weight=None,
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
@@ -38,30 +38,32 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         random_state: int = 42
     ):
         """Create the Hist Gradient Boosting for Edge Prediction."""
-        self._tree_kwargs = normalize_kwargs(dict(
+        self._kwargs = normalize_kwargs(dict(
             loss=loss,
             learning_rate=learning_rate,
-            n_estimators=n_estimators,
-            criterion=criterion,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_depth=max_depth,
-            init=init,
-            subsample=subsample,
-            max_features=max_features,
+            max_iter=max_iter,
             max_leaf_nodes=max_leaf_nodes,
-            min_impurity_decrease=min_impurity_decrease,
+            max_depth=max_depth,
+            min_samples_leaf=min_samples_leaf,
+            l2_regularization=l2_regularization,
+            max_bins=max_bins,
+            categorical_features=categorical_features,
+            monotonic_cst=monotonic_cst,
+            interaction_cst=interaction_cst,
             warm_start=warm_start,
+            early_stopping=early_stopping,
+            scoring=scoring,
             validation_fraction=validation_fraction,
             n_iter_no_change=n_iter_no_change,
             tol=tol,
-            ccp_alpha=ccp_alpha,
+            verbose=verbose,
+            class_weight=class_weight,
         ))
 
         super().__init__(
             HistGradientBoostingClassifier(
-                **self._tree_kwargs
+                **self._kwargs,
+                random_state=random_state
             ),
             edge_embedding_method=edge_embedding_method,
             training_unbalance_rate=training_unbalance_rate,
@@ -76,7 +78,7 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         """Returns parameters used for this model."""
         return {
             **super().parameters(),
-            **self._tree_kwargs
+            **self._kwargs
         }
 
     @classmethod
@@ -84,7 +86,7 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         """Returns parameters for smoke test."""
         return dict(
             max_depth=1,
-            n_estimators=1
+            max_iter=2
         )
 
     @classmethod
