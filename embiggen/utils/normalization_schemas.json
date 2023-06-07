@@ -221,5 +221,12 @@
     "monotonic_cst": "pass",
     "interaction_cst": "pass",
     "scoring": "str",
-    "class_weight": "pass"
+    "class_weight": "pass",
+    "radius": "float",
+    "weights": "pass",
+    "algorithm": "str",
+    "leaf_size": "int",
+    "outlier_label": ["str", "None"],
+    "metric_params": "pass",
+    "n_neighbors": "int"
 }

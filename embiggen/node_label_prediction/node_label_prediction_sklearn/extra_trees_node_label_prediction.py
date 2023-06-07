@@ -1,7 +1,7 @@
 """Submodule wrapping Extra Trees for node label prediction."""
 from typing import Dict, Any
 from sklearn.ensemble import ExtraTreesClassifier
-from embiggen.node_label_prediction.node_label_prediction_sklearn.decision_tree_for_node_prediction import DecisionTreeNodeLabelPrediction
+from embiggen.node_label_prediction.node_label_prediction_sklearn.decision_tree_node_label_prediction import DecisionTreeNodeLabelPrediction
 from embiggen.node_label_prediction.node_label_prediction_sklearn.sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 

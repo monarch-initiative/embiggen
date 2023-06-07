@@ -18,7 +18,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def __init__(
         self,
         model_instance: Type[ClassifierMixin],
-        random_state: int = 42
+        random_state: Optional[int] = None
     ):
         """Create the adapter for Sklearn object.
 
@@ -26,7 +26,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ----------------
         model_instance: Type[ClassifierMixin]
             The class instance to be adapted into node-label prediction.
-        random_state: int = 42
+        random_state: Optional[int] = None
             The random state to use to reproduce the training.
 
         Raises

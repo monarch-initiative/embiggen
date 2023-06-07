@@ -1,11 +1,11 @@
-"""Submodule wrapping Decision Tree for edge prediction."""
+"""Submodule wrapping Decision Tree for Node-label prediction."""
 from typing import Dict, Any
 from sklearn.tree import DecisionTreeClassifier
 from embiggen.node_label_prediction.node_label_prediction_sklearn.sklearn_node_label_prediction_adapter import SklearnNodeLabelPredictionAdapter
 
 
 class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
-    """Create wrapper over Sklearn Random Forest classifier for edge prediction."""
+    """Create wrapper over Sklearn Random Forest classifier for Node-label prediction."""
 
     def __init__(
         self,
@@ -22,7 +22,7 @@ class DecisionTreeNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         ccp_alpha=0.0,
         random_state: int = 42
     ):
-        """Create the Decision Tree for Edge Prediction."""
+        """Create the Decision Tree for Node-label prediction."""
         self._criterion = criterion
         self._splitter = splitter
         self._max_depth = max_depth

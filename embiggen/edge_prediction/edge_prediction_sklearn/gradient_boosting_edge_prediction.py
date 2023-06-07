@@ -47,6 +47,7 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
             min_samples_leaf=min_samples_leaf,
             min_weight_fraction_leaf=min_weight_fraction_leaf,
             max_depth=max_depth,
+            verbose=verbose,
             init=init,
             subsample=subsample,
             max_features=max_features,
