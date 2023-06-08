@@ -1,4 +1,4 @@
-"""Submodule providing node-label prediction models based on LightGBM Models."""
+"""Submodule providing node-label prediction models based on CatBoost Models."""
 from embiggen.node_label_prediction.sklearn_like_node_label_prediction_adapter import (
     SklearnLikeNodeLabelPredictionAdapter,
 )

@@ -1,13 +1,13 @@
-"""Node-label prediction model based on CatBoost."""
+"""Edge-label prediction model based on CatBoost."""
 from typing import Dict, Any
 from catboost import CatBoostClassifier
-from embiggen.node_label_prediction.sklearn_like_node_label_prediction_adapter import (
-    SklearnLikeNodeLabelPredictionAdapter,
+from embiggen.edge_label_prediction.sklearn_like_edge_label_prediction_adapter import (
+    SklearnLikeEdgeLabelPredictionAdapter,
 )
 
 
-class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
-    """Node-label prediction model based on CatBoost."""
+class CatBoostEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
+    """Edge-label prediction model based on CatBoost."""
 
     def __init__(
         self,
@@ -89,7 +89,6 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
         num_boost_round=None,
         num_trees=None,
         colsample_bylevel=None,
-        random_state: int = 42,
         reg_lambda=None,
         objective=None,
         eta=None,
@@ -127,8 +126,11 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
         embedding_features=None,
         callback=None,
         eval_fraction=None,
+        edge_embedding_method: str = "Concatenate",
+        use_edge_metrics: bool = False,
+        random_state: int = 42,
     ):
-        """Build a CatBoost node-label prediction model."""
+        """Build a CatBoost Edge-label prediction model."""
         self._kwargs = dict(
             iterations=iterations,
             learning_rate=learning_rate,
@@ -252,6 +254,8 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
                 **self._kwargs,
                 random_state=random_state,
             ),
+            edge_embedding_method=edge_embedding_method,
+            use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )
 
@@ -277,8 +281,3 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
     def library_name(cls) -> str:
         """Return name of the model."""
         return "CatBoost"
-
-    @classmethod
-    def supports_multilabel_prediction(cls) -> bool:
-        """Returns whether the model supports multilabel prediction."""
-        return False

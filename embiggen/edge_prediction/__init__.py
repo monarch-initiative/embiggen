@@ -2,6 +2,7 @@
 from embiggen.edge_prediction.edge_prediction_sklearn import *
 from embiggen.edge_prediction.edge_prediction_tensorflow import *
 from embiggen.edge_prediction.edge_prediction_ensmallen import *
+from embiggen.edge_prediction.edge_prediction_catboost import *
 from embiggen.edge_prediction.edge_prediction_evaluation import edge_prediction_evaluation
 
 # Export all non-internals.

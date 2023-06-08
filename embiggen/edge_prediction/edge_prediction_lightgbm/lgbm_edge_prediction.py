@@ -30,7 +30,11 @@ class LightGBMEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
         n_jobs: int = -1,
         importance_type: str = "split",
         edge_embedding_method: str = "Concatenate",
+        training_unbalance_rate: float = 1.0,
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
+        use_scale_free_distribution: bool = True,
+        prediction_batch_size: int = 2**12,
         random_state: int = 42,
         **kwargs: Dict,
     ):
@@ -115,9 +119,12 @@ class LightGBMEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
 
         super().__init__(
             model_instance=model_instance,
-            random_state=random_state,
             edge_embedding_method=edge_embedding_method,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,
+            use_scale_free_distribution=use_scale_free_distribution,
+            prediction_batch_size=prediction_batch_size,
         )
 
     def parameters(self) -> Dict[str, Any]:

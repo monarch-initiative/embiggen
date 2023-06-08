@@ -1,13 +1,13 @@
-"""Node-label prediction model based on CatBoost."""
+"""Edge prediction model based on CatBoost."""
 from typing import Dict, Any
 from catboost import CatBoostClassifier
-from embiggen.node_label_prediction.sklearn_like_node_label_prediction_adapter import (
-    SklearnLikeNodeLabelPredictionAdapter,
+from embiggen.edge_prediction.sklearn_like_edge_prediction_adapter import (
+    SklearnLikeEdgePredictionAdapter,
 )
 
 
-class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
-    """Node-label prediction model based on CatBoost."""
+class CatBoostEdgePrediction(SklearnLikeEdgePredictionAdapter):
+    """Edge prediction model based on CatBoost."""
 
     def __init__(
         self,
@@ -89,7 +89,6 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
         num_boost_round=None,
         num_trees=None,
         colsample_bylevel=None,
-        random_state: int = 42,
         reg_lambda=None,
         objective=None,
         eta=None,
@@ -127,8 +126,15 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
         embedding_features=None,
         callback=None,
         eval_fraction=None,
+        edge_embedding_method: str = "Concatenate",
+        training_unbalance_rate: float = 1.0,
+        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
+        use_edge_metrics: bool = False,
+        use_scale_free_distribution: bool = True,
+        prediction_batch_size: int = 2**12,
+        random_state: int = 42,
     ):
-        """Build a CatBoost node-label prediction model."""
+        """Build a CatBoost Edge prediction model."""
         self._kwargs = dict(
             iterations=iterations,
             learning_rate=learning_rate,
@@ -252,7 +258,12 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
                 **self._kwargs,
                 random_state=random_state,
             ),
-            random_state=random_state,
+            edge_embedding_method=edge_embedding_method,
+            training_unbalance_rate=training_unbalance_rate,
+            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            use_edge_metrics=use_edge_metrics,
+            use_scale_free_distribution=use_scale_free_distribution,
+            prediction_batch_size=prediction_batch_size,
         )
 
     @classmethod
@@ -277,8 +288,3 @@ class CatBoostNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
     def library_name(cls) -> str:
         """Return name of the model."""
         return "CatBoost"
-
-    @classmethod
-    def supports_multilabel_prediction(cls) -> bool:
-        """Returns whether the model supports multilabel prediction."""
-        return False
