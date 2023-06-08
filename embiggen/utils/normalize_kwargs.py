@@ -110,12 +110,13 @@ def normalize_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         try:
             # If the type is not correct, we try to convert it.
             kwargs[key] = normalize_object_from_data_type_name(expected_type, value)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError) as exception:
             # If the type cannot be converted, we raise an error.
             raise TypeError(
+                "While we were normalizing the parameters, we found an error. "
                 f"The parameter {key} has the value \"{value}\" with type {type(value)} "
                 f"but the expected type is {expected_type}."
-            ) from e
+            ) from exception
 
     if len(unsupported_parameters) > 0:
         raise NotImplementedError(

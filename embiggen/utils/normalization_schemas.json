@@ -149,7 +149,7 @@
     "solver": "str",
     "learning_rate_init": "float",
     "power_t": "float",
-    "max_iter": "int",
+    "max_iter": ["int", "None"],
     "shuffle": "bool",
     "momentum": "float",
     "nesterovs_momentum": "bool",
@@ -247,5 +247,7 @@
     "probability": "bool",
     "cache_size": "int",
     "decision_function_shape": "str",
-    "break_ties": "bool"
+    "break_ties": "bool",
+    "copy_X": "bool",
+    "positive": "bool"
 }

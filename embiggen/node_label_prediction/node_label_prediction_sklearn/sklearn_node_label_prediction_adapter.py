@@ -1,6 +1,6 @@
 """Module providing adapter class making node-label prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type, List, Dict, Optional, Any
+from typing import Type, List, Dict, Optional
 import numpy as np
 import compress_pickle
 import copy
@@ -162,6 +162,8 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
 
         if hasattr(self._model_instance, "predict_proba"):
             predictions_probabilities = self._model_instance.predict_proba(features)
+        elif self.is_multilabel_prediction_task():
+            predictions_probabilities = self._model_instance.predict(features)
         else:
             predictions = self._model_instance.predict(features).astype(np.int32)
             predictions_probabilities = np.zeros(
