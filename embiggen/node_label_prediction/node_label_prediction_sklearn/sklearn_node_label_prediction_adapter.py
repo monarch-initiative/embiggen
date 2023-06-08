@@ -5,9 +5,14 @@ import numpy as np
 import compress_pickle
 import copy
 from ensmallen import Graph
-from embiggen.embedding_transformers import NodeLabelPredictionTransformer, NodeTransformer
+from embiggen.embedding_transformers import (
+    NodeLabelPredictionTransformer,
+    NodeTransformer,
+)
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
-from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
+from embiggen.node_label_prediction.node_label_prediction_model import (
+    AbstractNodeLabelPredictionModel,
+)
 from embiggen.utils.abstract_models import abstract_class
 
 
@@ -16,9 +21,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     """Class wrapping Sklearn models for running node-label predictions."""
 
     def __init__(
-        self,
-        model_instance: Type[ClassifierMixin],
-        random_state: Optional[int] = None
+        self, model_instance: Type[ClassifierMixin], random_state: Optional[int] = None
     ):
         """Create the adapter for Sklearn object.
 
@@ -67,7 +70,9 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         """
         gt = NodeTransformer(aligned_mapping=True)
         gt.fit(node_features)
-        return gt.transform(graph,)
+        return gt.transform(
+            graph,
+        )
 
     def _fit(
         self,
@@ -103,18 +108,18 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        nlpt = NodeLabelPredictionTransformer(
-            aligned_mapping=True
-        )
+        nlpt = NodeLabelPredictionTransformer(aligned_mapping=True)
 
         nlpt.fit(node_features)
 
-        self._model_instance.fit(*nlpt.transform(
-            graph=graph,
-            behaviour_for_unknown_node_labels="drop",
-            shuffle=True,
-            random_state=self._random_state
-        ))
+        self._model_instance.fit(
+            *nlpt.transform(
+                graph=graph,
+                behaviour_for_unknown_node_labels="drop",
+                shuffle=True,
+                random_state=self._random_state,
+            )
+        )
 
     def _predict_proba(
         self,
@@ -150,19 +155,31 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        predictions_probabilities = self._model_instance.predict_proba(self._trasform_graph_into_node_embedding(
+        features = self._trasform_graph_into_node_embedding(
             graph=graph,
             node_features=node_features,
-        ))
+        )
+
+        if hasattr(self._model_instance, "predict_proba"):
+            predictions_probabilities = self._model_instance.predict_proba(features)
+        else:
+            predictions = self._model_instance.predict(features).astype(np.int32)
+            predictions_probabilities = np.zeros(
+                (predictions.shape[0], len(self._model_instance.classes_)),
+                dtype=np.float32,
+            )
+            predictions_probabilities[np.arange(predictions.size), predictions] = 1
 
         if self.is_multilabel_prediction_task():
             if isinstance(predictions_probabilities, np.ndarray):
                 return predictions_probabilities
             if isinstance(predictions_probabilities, list):
-                return np.array([
-                    class_predictions[:, 1]
-                    for class_predictions in predictions_probabilities
-                ]).T
+                return np.array(
+                    [
+                        class_predictions[:, 1]
+                        for class_predictions in predictions_probabilities
+                    ]
+                ).T
             raise NotImplementedError(
                 f"The model {self.model_name()} from library {self.library_name()} "
                 f"returned an object of type {type(predictions_probabilities)} during "
@@ -205,10 +222,12 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        return self._model_instance.predict(self._trasform_graph_into_node_embedding(
-            graph=graph,
-            node_features=node_features,
-        ))
+        return self._model_instance.predict(
+            self._trasform_graph_into_node_embedding(
+                graph=graph,
+                node_features=node_features,
+            )
+        )
 
     @classmethod
     def library_name(cls) -> str:
@@ -219,7 +238,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
         return False
-    
+
     @classmethod
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
@@ -228,7 +247,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
-        
+
         Parameters
         -------------------
         path: str
@@ -238,7 +257,7 @@ class SklearnNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
-        
+
         Parameters
         -------------------
         path: str

@@ -295,15 +295,24 @@ class SklearnEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
-        prediction_probabilities = self._model_instance.predict_proba(
-            self._trasform_graph_into_edge_embedding(
-                graph=graph,
-                support=support,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_features=edge_features,
-            )
+        features = self._trasform_graph_into_edge_embedding(
+            graph=graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_features=edge_features,
         )
+
+        if hasattr(self._model_instance, "predict_proba"):
+            prediction_probabilities = self._model_instance.predict_proba(features)
+        else:
+            predictions = self._model_instance.predict(features).astype(np.int32)
+            prediction_probabilities = np.zeros(
+                (predictions.shape[0], len(self._model_instance.classes_)),
+                dtype=np.float32,
+            )
+            prediction_probabilities[np.arange(predictions.size), predictions] = 1
+
         # In the majority but not totality of sklearn models,
         # the predictions of binary models are returned as
         # a couple of vectors for the positive and negative class.

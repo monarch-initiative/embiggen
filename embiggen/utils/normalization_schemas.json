@@ -226,7 +226,26 @@
     "weights": "pass",
     "algorithm": "str",
     "leaf_size": "int",
-    "outlier_label": ["str", "None"],
+    "outlier_label": [
+        "str",
+        "None"
+    ],
     "metric_params": "pass",
-    "n_neighbors": "int"
+    "n_neighbors": "int",
+    "penalty": "str",
+    "dual": "bool",
+    "C": "float",
+    "multi_class": "str",
+    "fit_intercept": "bool",
+    "intercept_scaling": "float",
+    "nu": "float",
+    "kernel": "str",
+    "degree": "int",
+    "gamma": "str",
+    "coef0": "float",
+    "shrinking": "bool",
+    "probability": "bool",
+    "cache_size": "int",
+    "decision_function_shape": "str",
+    "break_ties": "bool"
 }

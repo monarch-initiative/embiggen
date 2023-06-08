@@ -420,8 +420,20 @@ class SklearnEdgePredictionAdapter(AbstractEdgePredictionModel):
             batch_size=self._prediction_batch_size
         )
 
+        def predict(features):
+            if hasattr(self._model_instance, "predict_proba"):
+                return self._model_instance.predict_proba(features)
+
+            predictions = self._model_instance.predict(features).astype(np.int32)
+            prediction_probabilities = np.zeros(
+                (predictions.shape[0], len(self._model_instance.classes_)),
+                dtype=np.float32,
+            )
+            prediction_probabilities[np.arange(predictions.size), predictions] = 1
+            return prediction_probabilities
+
         prediction_probabilities = np.concatenate([
-            self._model_instance.predict_proba(self._trasform_graph_into_edge_embedding(
+            predict(self._trasform_graph_into_edge_embedding(
                 graph=edges[0],
                 support=support,
                 node_features=node_features,

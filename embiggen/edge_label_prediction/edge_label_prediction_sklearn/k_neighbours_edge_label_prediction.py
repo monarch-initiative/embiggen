@@ -1,13 +1,13 @@
 """Submodule wrapping K-Neighbour for Edge-label prediction."""
 from typing import Dict, Any
 from sklearn.neighbors import KNeighborsClassifier
-from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import (
-    SklearnEdgePredictionAdapter,
+from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import (
+    SklearnEdgeLabelPredictionAdapter,
 )
 from embiggen.utils import normalize_kwargs
 
 
-class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgePredictionAdapter):
+class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
     """Create wrapper over Sklearn K-Neighbour classifier for Edge-label prediction."""
 
     def __init__(
@@ -21,11 +21,7 @@ class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgePredictionAdapter):
         metric_params: Dict[str, Any] = None,
         n_jobs: int = -1,
         edge_embedding_method: str = "Concatenate",
-        training_unbalance_rate: float = 1.0,
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
-        use_scale_free_distribution: bool = True,
-        prediction_batch_size: int = 2**12,
         random_state: int = 42,
     ):
         """Create the Decision Tree for Edge-label prediction."""
@@ -45,12 +41,8 @@ class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgePredictionAdapter):
         super().__init__(
             KNeighborsClassifier(**self._kwargs),
             edge_embedding_method=edge_embedding_method,
-            training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
-            use_scale_free_distribution=use_scale_free_distribution,
-            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
-            prediction_batch_size=prediction_batch_size,
-            random_state=random_state,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
