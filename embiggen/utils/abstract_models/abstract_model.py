@@ -40,13 +40,19 @@ class AbstractModel(Hashable):
         super().__init__()
         if self.is_stocastic() and random_state is None:
             raise ValueError(
-                "The provided model is stocastic, but no "
-                "random state was provided."
+                f"The provided model is stocastic, yet no "
+                f"random state was provided. Please do provide "
+                f"a random state to the model {self.model_name()} "
+                f"from library {self.library_name()} and task "
+                f"{self.task_name()}."
             )
         if not self.is_stocastic() and random_state is not None:
             raise ValueError(
                 "The provided model is not stocastic, yet a "
-                f"random state of `{random_state}` was provided."
+                f"random state of `{random_state}` was provided. "
+                f"Please do not provide a random state to the model "
+                f"{self.model_name()} from library {self.library_name()} "
+                f"and task {self.task_name()}."
             )
 
         can_use_edge_weights = self.__getattribute__("can_use_edge_weights")
