@@ -7,7 +7,7 @@ from embiggen.node_label_prediction.sklearn_like_node_label_prediction_adapter i
 from embiggen.utils.normalize_kwargs import normalize_kwargs
 
 
-class LightGBMNodeLabelPredictionModel(SklearnLikeNodeLabelPredictionAdapter):
+class LightGBMNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
     """Node-label prediction model based on LightGBM."""
 
     def __init__(

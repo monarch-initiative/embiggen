@@ -131,7 +131,8 @@ class AbstractModel(Hashable):
         """Return parameters to create a model with minimal configuration to test execution."""
         raise NotImplementedError((
             "The `smoke_test_parameters` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     def parameters(self) -> Dict[str, Any]:

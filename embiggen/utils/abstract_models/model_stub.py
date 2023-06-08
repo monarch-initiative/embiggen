@@ -1,5 +1,5 @@
 """Submodule providing auto model stub for non-mandatory modules."""
-from typing import Type, List, Union
+from typing import Type, List, Union, Dict, Any
 from embiggen.utils.abstract_models.abstract_model import AbstractModel
 from embiggen.utils.abstract_models.list_formatting import format_list
 
@@ -102,7 +102,7 @@ def get_model_or_stub(
 
                 def __init__(self, *args, **kwargs) :
                     """Raises a useful error message about this class."""
-                    super().__init__(**parent_class.smoke_test_parameters())
+                    super().__init__(*args, **kwargs)
                     self.__class__.__name__ = model_class_name
                     other_candidates = self.find_available_models(
                         self.model_name(),
@@ -198,6 +198,11 @@ def get_model_or_stub(
                 def task_name(cls) -> str:
                     """Returns name of the task"""
                     return task_name
+
+                @classmethod
+                def smoke_test_parameters(cls) -> Dict[str, Any]:
+                    """Returns parameters for the smoke test."""
+                    return dict()
 
                 @classmethod
                 def is_available(cls) -> bool:
