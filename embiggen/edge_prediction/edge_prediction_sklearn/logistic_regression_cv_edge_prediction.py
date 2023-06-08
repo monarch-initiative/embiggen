@@ -1,52 +1,72 @@
-"""Submodule wrapping Ridge Classifier Cross Validator for Edge prediction."""
-from typing import Dict, Any, Tuple, Union, Optional
-from sklearn.linear_model import RidgeClassifierCV
+"""Submodule wrapping Logistic Regression Cross Validator for Edge prediction."""
+from typing import Dict, Any, Optional
+from sklearn.linear_model import LogisticRegressionCV
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import (
     SklearnEdgePredictionAdapter,
 )
 from embiggen.utils import normalize_kwargs
 
 
-class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
-    """Create wrapper over Sklearn Ridge Classifier Cross Validator for Edge prediction."""
+class LogisticRegressionCVEdgePrediction(SklearnEdgePredictionAdapter):
+    """Create wrapper over Sklearn Logistic Regression Cross Validator for Edge prediction."""
 
     def __init__(
         self,
-        alphas: Tuple[float] = (0.1, 1.0, 10.0),
+        Cs: int = 10,
         fit_intercept: bool = True,
-        scoring: Optional[str] = "f1_macro",
-        cv: int=10,
-        class_weight: Union[Dict, str] = "balanced",
-        store_cv_values: bool = False,
+        cv: int = 10,
+        dual: bool = False,
+        penalty: str = "l2",
+        scoring: str = "f1_macro",
+        solver: str = "lbfgs",
+        tol: float = 1e-4,
+        max_iter: int = 100,
+        class_weight: Optional[str] = "balanced",
+        n_jobs: int = -1,
+        verbose: int = 0,
+        refit: bool = True,
+        intercept_scaling: float = 1.0,
+        multi_class: str = "auto",
+        l1_ratios=None,
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
-        random_state: int = 42,
+        random_state: int = 42
     ):
-        """Create the Ridge Classifier Cross Validator for Edge prediction."""
+        """Create the Logistic Regression Cross Validator for Edge prediction."""
         self._kwargs = normalize_kwargs(
             dict(
-                alphas=alphas,
+                Cs=Cs,
                 fit_intercept=fit_intercept,
-                scoring=scoring,
                 cv=cv,
+                dual=dual,
+                penalty=penalty,
+                scoring=scoring,
+                solver=solver,
+                tol=tol,
+                max_iter=max_iter,
                 class_weight=class_weight,
-                store_cv_values=store_cv_values,
+                n_jobs=n_jobs,
+                verbose=verbose,
+                refit=refit,
+                intercept_scaling=intercept_scaling,
+                multi_class=multi_class,
+                l1_ratios=l1_ratios,
             )
         )
 
         super().__init__(
-            RidgeClassifierCV(**self._kwargs),
+            LogisticRegressionCV(**self._kwargs, random_state=random_state),
             edge_embedding_method=edge_embedding_method,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             prediction_batch_size=prediction_batch_size,
-            random_state=random_state,
+            random_state=random_state
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -60,4 +80,4 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
 
     @classmethod
     def model_name(cls) -> str:
-        return "Ridge Classifier Cross Validator"
+        return "Logistic Regression Cross Validator"

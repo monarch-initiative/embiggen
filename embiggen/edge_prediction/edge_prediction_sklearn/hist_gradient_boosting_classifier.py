@@ -28,7 +28,7 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         n_iter_no_change=10,
         tol=1e-7,
         verbose=0,
-        class_weight=None,
+        class_weight="balanced",
         edge_embedding_method: str = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,

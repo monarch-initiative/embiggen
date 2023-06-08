@@ -15,7 +15,7 @@ class RidgeClassifierCVNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         alphas: Tuple[float] = (0.1, 1.0, 10.0),
         fit_intercept: bool = True,
         scoring: Optional[str] = "f1_macro",
-        cv=None,
+        cv: int=10,
         class_weight: Union[Dict, str] = "balanced",
         store_cv_values: bool = False,
     ):
@@ -42,7 +42,7 @@ class RidgeClassifierCVNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
-        return dict()
+        return dict(cv=2)
 
     @classmethod
     def model_name(cls) -> str:
