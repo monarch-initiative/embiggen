@@ -257,5 +257,16 @@
     "store_cv_values": "bool",
     "Cs": "int",
     "refit": "bool",
-    "l1_ratios": "pass"
+    "l1_ratios": "pass",
+    "boosting_type": "str",
+    "num_leaves": "int",
+    "subsample_for_bin": "int",
+    "min_split_gain": "float",
+    "min_child_weight": "float",
+    "min_child_samples": "int",
+    "subsample_freq": "int",
+    "colsample_bytree": "float",
+    "reg_alpha": "float",
+    "reg_lambda": "float",
+    "importance_type": "str"
 }

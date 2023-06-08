@@ -24,7 +24,9 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        self._graph = Cora().remove_singleton_nodes()
+        self._graph = Cora().filter_from_names(
+            max_node_degree=50,
+        ).remove_singleton_nodes()
         self._graph_without_node_types = self._graph.remove_node_types()
         self._subgraph_of_interest = self._graph.filter_from_names(
             edge_type_names_to_keep=["Paper2Paper"]
@@ -154,7 +156,7 @@ class TestEvaluateEdgePrediction(TestCase):
                     node_type_features=node_type_features
                 )
 
-                if model.library_name() in ("TensorFlow", "scikit-learn"):
+                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
                     path = "model.pkl.gz"
                 elif model.library_name() == "Ensmallen":
                     path = "model.json"

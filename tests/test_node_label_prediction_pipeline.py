@@ -81,14 +81,16 @@ class TestEvaluateNodeLabelPrediction(TestCase):
 
                     continue
                 model.fit(g, node_features=node_features)
-                if model.library_name() in ("TensorFlow", "scikit-learn"):
+                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
                     path = "model.pkl.gz"
                 elif model.library_name() == "Ensmallen":
                     path = "model.json"
                 else:
                     raise NotImplementedError(
                         f"The model {model.model_name()} from library {model.library_name()} "
-                        "is not currently covered by the test suite!"
+                        f"for the task {model.task_name()} "
+                        "is not currently covered by the test suite! "
+                        "Please add the model to the test suite."
                     )
                 if os.path.exists(path):
                     os.remove(path)

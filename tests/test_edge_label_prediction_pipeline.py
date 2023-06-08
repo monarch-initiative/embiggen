@@ -84,7 +84,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                         edge_features=ef
                     )
 
-                    if model.library_name() in ("TensorFlow", "scikit-learn"):
+                    if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
                         path = "model.pkl.gz"
                     elif model.library_name() == "Ensmallen":
                         path = "model.json"

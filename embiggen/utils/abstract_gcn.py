@@ -573,15 +573,16 @@ class AbstractGCN(AbstractClassifierModel):
         class_weight = self._get_class_weights(
             graph) if self._use_class_weights else None
 
-        self._model: Type[Model] = self._build_model(
-            support,
-            graph_convolution_model=self._build_graph_convolution_model(
-                graph,
-                node_features=node_features,
-                node_type_features=node_type_features
-            ),
-            edge_features=edge_features,
-        )
+        if self._model is None:
+            self._model: Type[Model] = self._build_model(
+                support,
+                graph_convolution_model=self._build_graph_convolution_model(
+                    graph,
+                    node_features=node_features,
+                    node_type_features=node_type_features
+                ),
+                edge_features=edge_features,
+            )
 
         # In a GCN model, the batch size is the number of nodes.
         batch_size = graph.get_number_of_nodes()

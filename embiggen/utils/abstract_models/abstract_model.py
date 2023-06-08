@@ -335,7 +335,8 @@ class AbstractModel(Hashable):
         """Returns library name of the model."""
         raise NotImplementedError((
             "The `library_name` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
