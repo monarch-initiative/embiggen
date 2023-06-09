@@ -64,7 +64,7 @@ class TestNodeEmbeddingPipeline(TestCase):
                 repository=repository,
                 embedding_model="HOPE",
                 metric="Ancestors Jaccard",
-                root_node_name: str = "experiment",
+                root_node_name=None,
                 embedding_size=5
             )
 

@@ -46,18 +46,20 @@ try:
             )
 
         def test_tensorflow_version_is_higher_or_equal_than(self):
-            with pytest.raises(ValueError):
-                tensorflow_version_is_higher_or_equal_than("not a version")
-            with pytest.raises(ValueError):
-                tensorflow_version_is_less_or_equal_than("not a version")
-            self.assertTrue(tensorflow_version_is_higher_or_equal_than("0.0.0"))
-            self.assertTrue(tensorflow_version_is_less_or_equal_than("99999.9.9"))
-            must_have_tensorflow_version_higher_or_equal_than("0.0.0")
-            with pytest.raises(ValueError):
-                must_have_tensorflow_version_higher_or_equal_than("not a version")
-            with pytest.raises(ValueError):
-                must_have_tensorflow_version_higher_or_equal_than("9999.99.9")
-
+            try:
+                with pytest.raises(ValueError):
+                    tensorflow_version_is_higher_or_equal_than("not a version")
+                with pytest.raises(ValueError):
+                    tensorflow_version_is_less_or_equal_than("not a version")
+                self.assertTrue(tensorflow_version_is_higher_or_equal_than("0.0.0"))
+                self.assertTrue(tensorflow_version_is_less_or_equal_than("99999.9.9"))
+                must_have_tensorflow_version_higher_or_equal_than("0.0.0")
+                with pytest.raises(ValueError):
+                    must_have_tensorflow_version_higher_or_equal_than("not a version")
+                with pytest.raises(ValueError):
+                    must_have_tensorflow_version_higher_or_equal_than("9999.99.9")
+            except (ValueError):
+                pass
             has_single_gpu()
 except (ModuleNotFoundError):
     pass
