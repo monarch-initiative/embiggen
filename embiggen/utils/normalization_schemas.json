@@ -101,10 +101,6 @@
     "use_edge_metrics": "bool",
     "criterion": "str",
     "splitter": "str",
-    "max_depth": [
-        "int",
-        "None"
-    ],
     "min_samples_split": "int",
     "min_samples_leaf": "int",
     "min_weight_fraction_leaf": "float",
@@ -259,7 +255,10 @@
     "refit": "bool",
     "l1_ratios": "pass",
     "boosting_type": "str",
-    "num_leaves": "int",
+    "num_leaves": [
+        "int",
+        "None"
+    ],
     "subsample_for_bin": "int",
     "min_split_gain": "float",
     "min_child_weight": "float",
@@ -268,5 +267,191 @@
     "colsample_bytree": "float",
     "reg_alpha": "float",
     "reg_lambda": "float",
-    "importance_type": "str"
+    "importance_type": "str",
+    "max_depth": "int",
+    "l2_leaf_reg": "float",
+    "model_size_reg": "float",
+    "rsm": "float",
+    "loss_function": "str",
+    "border_count": "int",
+    "feature_border_type": "str",
+    "per_float_feature_quantization": "str",
+    "input_borders": [
+        "str",
+        "None"
+    ],
+    "output_borders": [
+        "str",
+        "None"
+    ],
+    "fold_permutation_block": "int",
+    "od_pval": [
+        "float",
+        "None"
+    ],
+    "od_wait": [
+        "int",
+        "None"
+    ],
+    "od_type": [
+        "str",
+        "None"
+    ],
+    "nan_mode": "str",
+    "counter_calc_method": "str",
+    "leaf_estimation_iterations": "int",
+    "leaf_estimation_method": "str",
+    "thread_count": "int",
+    "use_best_model": [
+        "bool",
+        "None"
+    ],
+    "best_model_min_trees": "int",
+    "logging_level": "str",
+    "metric_period": "int",
+    "ctr_leaf_count_limit": "int",
+    "store_all_simple_ctr": "bool",
+    "max_ctr_complexity": "int",
+    "has_time": "bool",
+    "allow_const_label": "bool",
+    "target_border": [
+        "float",
+        "None"
+    ],
+    "classes_count": [
+        "int",
+        "None"
+    ],
+    "class_weights": "pass",
+    "auto_class_weights": "str",
+    "class_names": "pass",
+    "one_hot_max_size": [
+        "int",
+        "None"
+    ],
+    "random_strength": "float",
+    "name": "str",
+    "ignored_features": "pass",
+    "train_dir": [
+        "str",
+        "None"
+    ],
+    "custom_metric": [
+        "str",
+        "pass"
+    ],
+    "eval_metric": [
+        "str",
+        "pass"
+    ],
+    "bagging_temperature": "float",
+    "save_snapshot": "bool",
+    "snapshot_file": [
+        "str",
+        "None"
+    ],
+    "snapshot_interval": "int",
+    "fold_len_multiplier": [
+        "float",
+        "None"
+    ],
+    "used_ram_limit": [
+        "float",
+        "int",
+        "str",
+        "None"
+    ],
+    "gpu_ram_part": "float",
+    "pinned_memory_size": [
+        "int",
+        "None"
+    ],
+    "allow_writing_files": "bool",
+    "final_ctr_computation_mode": "str",
+    "approx_on_full_history": "bool",
+    "simple_ctr": "pass",
+    "combinations_ctr": "pass",
+    "per_feature_ctr": "pass",
+    "ctr_target_border_count": [
+        "int",
+        "None"
+    ],
+    "task_type": [
+        "str",
+        "None"
+    ],
+    "devices": "pass",
+    "bootstrap_type": "str",
+    "mvs_reg": [
+        "float",
+        "None"
+    ],
+    "sampling_unit": "str",
+    "sampling_frequency": "str",
+    "dev_score_calc_obj_block_size": "int",
+    "dev_efb_max_buckets": "int",
+    "sparse_features_conflict_fraction": "float",
+    "early_stopping_rounds": [
+        "int",
+        "None"
+    ],
+    "cat_features": "pass",
+    "grow_policy": "str",
+    "min_data_in_leaf": "int",
+    "max_leaves": "int",
+    "score_function": "str",
+    "leaf_estimation_backtracking": "str",
+    "monotone_constraints": "pass",
+    "feature_weights": "pass",
+    "penalties_coefficient": "float",
+    "first_feature_use_penalties": "pass",
+    "per_object_feature_penalties": "pass",
+    "model_shrink_rate": "float",
+    "model_shrink_mode": "str",
+    "langevin": "bool",
+    "diffusion_temperature": "float",
+    "posterior_sampling": "bool",
+    "boost_from_average": "bool",
+    "text_features": "pass",
+    "tokenizers": "pass",
+    "dictionaries": "pass",
+    "feature_calcers": "pass",
+    "text_processing": "pass",
+    "embedding_features": "pass",
+    "callback": "pass",
+    "eval_fraction": [
+        "float",
+        "None"
+    ],
+    "max_bin": "int",
+    "verbosity": "int",
+    "objective": "pass",
+    "booster": "pass",
+    "tree_method": "str",
+    "max_delta_step": "float",
+    "sampling_method": "str",
+    "colsample_bylevel": "float",
+    "colsample_bynode": "float",
+    "base_score": [
+        "float",
+        "None"
+    ],
+    "missing": "float",
+    "interaction_constraints": "pass",
+    "gpu_id": [
+        "int",
+        "None"
+    ],
+    "validate_parameters": "bool",
+    "predictor": "str",
+    "enable_categorical": "bool",
+    "max_cat_to_onehot": [
+        "int",
+        "None"
+    ],
+    "max_cat_threshold": [
+        "int",
+        "None"
+    ],
+    "num_parallel_tree": "int"
 }

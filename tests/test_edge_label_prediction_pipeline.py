@@ -4,6 +4,7 @@ from unittest import TestCase
 import pytest
 import os
 import numpy as np
+import pandas as pd
 from embiggen.edge_label_prediction import edge_label_prediction_evaluation
 from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
@@ -84,7 +85,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                         edge_features=ef
                     )
 
-                    if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
+                    if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM", "CatBoost", "XGBoost"):
                         path = "model.pkl.gz"
                     elif model.library_name() == "Ensmallen":
                         path = "model.json"
@@ -98,7 +99,24 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     
                     model.dump(path)
                     restored_model = model.load(path)
-                    assert restored_model.parameters() == model.parameters()
+
+                    # We get the restored model parameters and the
+                    # original ones and check that they are the same.
+                    # We must be careful to remove the np.Nan values
+                    # from both parameters, as they are not equal to
+                    # themselves.
+
+                    restored_model_parameters = {
+                        k: v for k, v in restored_model.parameters().items()
+                        if pd.notna(v)
+                    }
+
+                    model_parameters = {
+                        k: v for k, v in model.parameters().items()
+                        if pd.notna(v)
+                    }
+
+                    assert restored_model_parameters == model_parameters
 
                     model.predict(
                         g,

@@ -24,6 +24,7 @@ class RidgeClassifierCVEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
     ):
         """Create the Ridge Classifier Cross Validator for Edge-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 alphas=alphas,
                 fit_intercept=fit_intercept,

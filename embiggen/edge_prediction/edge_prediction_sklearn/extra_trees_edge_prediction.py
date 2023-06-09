@@ -5,6 +5,7 @@ from embiggen.edge_prediction.edge_prediction_sklearn.decision_tree_edge_predict
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 from embiggen.utils.normalize_kwargs import normalize_kwargs
 
+
 class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
     """Create wrapper over Sklearn Extra Trees classifier for edge prediction."""
 
@@ -35,25 +36,28 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         random_state: int = 42
     ):
         """Create the Extra Trees for Edge  Prediction."""
-        self._tree_kwargs = normalize_kwargs(dict(
-            n_estimators = n_estimators,
-            criterion = criterion,
-            max_depth = max_depth,
-            min_samples_split = min_samples_split,
-            min_samples_leaf = min_samples_leaf,
-            min_weight_fraction_leaf = min_weight_fraction_leaf,
-            max_features = max_features,
-            max_leaf_nodes = max_leaf_nodes,
-            min_impurity_decrease = min_impurity_decrease,
-            bootstrap = bootstrap,
-            oob_score = oob_score,
-            n_jobs = n_jobs,
-            random_state = random_state,
-            verbose = verbose,
-            warm_start = warm_start,
-            ccp_alpha = ccp_alpha,
-            max_samples = max_samples,
-        ))
+        self._tree_kwargs = normalize_kwargs(
+            self,
+            dict(
+                n_estimators=n_estimators,
+                criterion=criterion,
+                max_depth=max_depth,
+                min_samples_split=min_samples_split,
+                min_samples_leaf=min_samples_leaf,
+                min_weight_fraction_leaf=min_weight_fraction_leaf,
+                max_features=max_features,
+                max_leaf_nodes=max_leaf_nodes,
+                min_impurity_decrease=min_impurity_decrease,
+                bootstrap=bootstrap,
+                oob_score=oob_score,
+                n_jobs=n_jobs,
+                random_state=random_state,
+                verbose=verbose,
+                warm_start=warm_start,
+                ccp_alpha=ccp_alpha,
+                max_samples=max_samples,
+            )
+        )
 
         super().__init__(
             ExtraTreesClassifier(
@@ -82,7 +86,7 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
             **super().parameters(),
             **self._tree_kwargs
         }
-    
+
     @classmethod
     def model_name(cls) -> str:
         return "Extra Trees Classifier"

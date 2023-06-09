@@ -38,27 +38,30 @@ class GradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         random_state: int = 42
     ):
         """Create the Gradient Boosting for Edge Prediction."""
-        self._tree_kwargs = normalize_kwargs(dict(
-            loss=loss,
-            learning_rate=learning_rate,
-            n_estimators=n_estimators,
-            criterion=criterion,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_depth=max_depth,
-            verbose=verbose,
-            init=init,
-            subsample=subsample,
-            max_features=max_features,
-            max_leaf_nodes=max_leaf_nodes,
-            min_impurity_decrease=min_impurity_decrease,
-            warm_start=warm_start,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            tol=tol,
-            ccp_alpha=ccp_alpha,
-        ))
+        self._tree_kwargs = normalize_kwargs(
+            self,
+            dict(
+                loss=loss,
+                learning_rate=learning_rate,
+                n_estimators=n_estimators,
+                criterion=criterion,
+                min_samples_split=min_samples_split,
+                min_samples_leaf=min_samples_leaf,
+                min_weight_fraction_leaf=min_weight_fraction_leaf,
+                max_depth=max_depth,
+                verbose=verbose,
+                init=init,
+                subsample=subsample,
+                max_features=max_features,
+                max_leaf_nodes=max_leaf_nodes,
+                min_impurity_decrease=min_impurity_decrease,
+                warm_start=warm_start,
+                validation_fraction=validation_fraction,
+                n_iter_no_change=n_iter_no_change,
+                tol=tol,
+                ccp_alpha=ccp_alpha,
+            )
+        )
 
         super().__init__(
             GradientBoostingClassifier(

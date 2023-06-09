@@ -32,6 +32,7 @@ class LogisticRegressionCVNodeLabelPrediction(SklearnNodeLabelPredictionAdapter)
     ):
         """Create the Logistic Regression Cross Validator for Node-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 Cs=Cs,
                 fit_intercept=fit_intercept,

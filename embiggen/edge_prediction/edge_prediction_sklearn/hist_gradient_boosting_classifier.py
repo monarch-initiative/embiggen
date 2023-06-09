@@ -38,27 +38,30 @@ class HistGradientBoostingEdgePrediction(SklearnEdgePredictionAdapter):
         random_state: int = 42
     ):
         """Create the Hist Gradient Boosting for Edge Prediction."""
-        self._kwargs = normalize_kwargs(dict(
-            loss=loss,
-            learning_rate=learning_rate,
-            max_iter=max_iter,
-            max_leaf_nodes=max_leaf_nodes,
-            max_depth=max_depth,
-            min_samples_leaf=min_samples_leaf,
-            l2_regularization=l2_regularization,
-            max_bins=max_bins,
-            categorical_features=categorical_features,
-            monotonic_cst=monotonic_cst,
-            interaction_cst=interaction_cst,
-            warm_start=warm_start,
-            early_stopping=early_stopping,
-            scoring=scoring,
-            validation_fraction=validation_fraction,
-            n_iter_no_change=n_iter_no_change,
-            tol=tol,
-            verbose=verbose,
-            class_weight=class_weight,
-        ))
+        self._kwargs = normalize_kwargs(
+            self,
+            dict(
+                loss=loss,
+                learning_rate=learning_rate,
+                max_iter=max_iter,
+                max_leaf_nodes=max_leaf_nodes,
+                max_depth=max_depth,
+                min_samples_leaf=min_samples_leaf,
+                l2_regularization=l2_regularization,
+                max_bins=max_bins,
+                categorical_features=categorical_features,
+                monotonic_cst=monotonic_cst,
+                interaction_cst=interaction_cst,
+                warm_start=warm_start,
+                early_stopping=early_stopping,
+                scoring=scoring,
+                validation_fraction=validation_fraction,
+                n_iter_no_change=n_iter_no_change,
+                tol=tol,
+                verbose=verbose,
+                class_weight=class_weight,
+            )
+        )
 
         super().__init__(
             HistGradientBoostingClassifier(

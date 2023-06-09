@@ -12,44 +12,41 @@ class XGBNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
 
     def __init__(
         self,
-        max_depth: Optional[int] = None,
-        max_leaves: Optional[int] = None,
-        max_bin: Optional[int] = None,
+        max_depth: int = 6,
+        max_leaves: int = 0,
+        max_bin: int = 256,
         grow_policy: Optional[str] = None,
-        learning_rate: Optional[float] = None,
+        learning_rate: float = 0.3,
         n_estimators: int = 100,
-        verbosity: Optional[int] = None,
+        verbosity: int = 1,
         objective = None,
         booster: Optional[str] = None,
-        tree_method: Optional[str] = None,
-        n_jobs: Optional[int] = None,
+        tree_method: str = "auto",
+        n_jobs: int = -1,
         gamma: Optional[float] = None,
-        min_child_weight: Optional[float] = None,
-        max_delta_step: Optional[float] = None,
-        subsample: Optional[float] = None,
-        sampling_method: Optional[str] = None,
-        colsample_bytree: Optional[float] = None,
-        colsample_bylevel: Optional[float] = None,
-        colsample_bynode: Optional[float] = None,
-        reg_alpha: Optional[float] = None,
-        reg_lambda: Optional[float] = None,
-        scale_pos_weight: Optional[float] = None,
+        min_child_weight: float = 1.0,
+        max_delta_step: float = 0.0,
+        subsample: float = 1.0,
+        sampling_method: str = "uniform",
+        colsample_bytree: float = 1.0,
+        colsample_bylevel: float = 1.0,
+        colsample_bynode: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
         base_score: Optional[float] = None,
         missing: float = np.nan,
-        num_parallel_tree: Optional[int] = None,
+        num_parallel_tree: int = 1,
         monotone_constraints: Optional[Union[Dict[str, int], str]] = None,
-        interaction_constraints: Optional[str] = None,
+        interaction_constraints: Optional[List[List[int]]] = None,
         importance_type: Optional[str] = None,
         gpu_id: Optional[int] = None,
-        validate_parameters: Optional[bool] = None,
-        predictor: Optional[str] = None,
+        validate_parameters: bool = False,
+        predictor: str = "auto",
         enable_categorical: bool = False,
-        feature_types = None,
         max_cat_to_onehot: Optional[int] = None,
         max_cat_threshold: Optional[int] = None,
         eval_metric: Optional[Union[str, List[str]]] = None,
         early_stopping_rounds: Optional[int] = None,
-        callbacks = None,
         random_state: int = 42
     ):
         """Build a XGB node-label prediction model."""
@@ -75,7 +72,6 @@ class XGBNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
             colsample_bynode=colsample_bynode,
             reg_alpha=reg_alpha,
             reg_lambda=reg_lambda,
-            scale_pos_weight=scale_pos_weight,
             base_score=base_score,
             missing=missing,
             num_parallel_tree=num_parallel_tree,
@@ -86,12 +82,10 @@ class XGBNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
             validate_parameters=validate_parameters,
             predictor=predictor,
             enable_categorical=enable_categorical,
-            feature_types=feature_types,
             max_cat_to_onehot=max_cat_to_onehot,
             max_cat_threshold=max_cat_threshold,
             eval_metric=eval_metric,
             early_stopping_rounds=early_stopping_rounds,
-            callbacks=callbacks,
         )
 
         super().__init__(
@@ -118,12 +112,12 @@ class XGBNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
     @classmethod
     def model_name(cls) -> str:
         """Return the name of the model."""
-        return "XGB"
+        return "XGBoost"
 
     @classmethod
     def library_name(cls) -> str:
         """Return name of the model."""
-        return "XGB"
+        return "XGBoost"
 
     @classmethod
     def supports_multilabel_prediction(cls) -> bool:

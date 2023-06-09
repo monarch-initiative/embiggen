@@ -29,6 +29,7 @@ class RadiusNeighborsClassifierEdgeLabelPrediction(SklearnEdgePredictionAdapter)
     ):
         """Create the Decision Tree for Edge Prediction prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 radius=radius,
                 weights=weights,

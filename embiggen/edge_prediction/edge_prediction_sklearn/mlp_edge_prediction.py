@@ -42,7 +42,9 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
     ):
         """Create the MLP for Edge Prediction."""
 
-        self._mlp_kwargs = normalize_kwargs({
+        self._mlp_kwargs = normalize_kwargs(
+            self,
+            {
             "activation": activation,
             "solver": solver,
             "alpha": alpha,
