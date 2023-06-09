@@ -45,3 +45,4 @@ embedding
 *.csv
 dataset
 model.pkl
+catboost_info

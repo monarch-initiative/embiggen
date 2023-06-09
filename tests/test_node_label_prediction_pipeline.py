@@ -2,6 +2,7 @@
 from tqdm.auto import tqdm
 from unittest import TestCase
 import pytest
+import pandas as pd
 from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import (
     get_available_models_for_node_label_prediction,
@@ -81,7 +82,7 @@ class TestEvaluateNodeLabelPrediction(TestCase):
 
                     continue
                 model.fit(g, node_features=node_features)
-                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
+                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM", "CatBoost", "XGBoost"):
                     path = "model.pkl.gz"
                 elif model.library_name() == "Ensmallen":
                     path = "model.json"
@@ -96,7 +97,24 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                     os.remove(path)
                 model.dump(path)
                 restored_model = model.load(path)
-                assert restored_model.parameters() == model.parameters()
+                
+                restored_model_parameters = {
+                    key: value
+                    for key, value in restored_model.parameters().items()
+                    if pd.notna(value)
+                }
+
+                model_parameters = {
+                    key: value
+                    for key, value in model.parameters().items()
+                    if pd.notna(value)
+                }
+
+                self.assertEqual(
+                    restored_model_parameters,
+                    model_parameters
+                )
+
                 model.predict(g, node_features=node_features)
                 model.predict_proba(g, node_features=node_features)
 

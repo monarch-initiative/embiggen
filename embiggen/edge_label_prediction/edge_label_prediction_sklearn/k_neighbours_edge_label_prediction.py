@@ -26,6 +26,7 @@ class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
     ):
         """Create the Decision Tree for Edge-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 n_neighbors=n_neighbors,
                 weights=weights,

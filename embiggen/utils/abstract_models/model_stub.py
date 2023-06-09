@@ -102,7 +102,6 @@ def get_model_or_stub(
 
                 def __init__(self, *args, **kwargs) :
                     """Raises a useful error message about this class."""
-                    super().__init__(*args, **kwargs)
                     self.__class__.__name__ = model_class_name
                     other_candidates = self.find_available_models(
                         self.model_name(),

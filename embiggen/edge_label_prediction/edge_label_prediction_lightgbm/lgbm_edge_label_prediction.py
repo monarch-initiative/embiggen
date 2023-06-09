@@ -7,7 +7,7 @@ from embiggen.edge_label_prediction.sklearn_like_edge_label_prediction_adapter i
 from embiggen.utils.normalize_kwargs import normalize_kwargs
 
 
-class LightGBMEdgeLabelPredictionModel(SklearnLikeEdgeLabelPredictionAdapter):
+class LightGBMEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
     """Edge-label prediction model based on LightGBM."""
 
     def __init__(
@@ -87,6 +87,7 @@ class LightGBMEdgeLabelPredictionModel(SklearnLikeEdgeLabelPredictionAdapter):
             Additional keyword arguments to pass to the model.
         """
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 boosting_type=boosting_type,
                 num_leaves=num_leaves,

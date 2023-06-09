@@ -34,6 +34,7 @@ class NuSVCEdgeLabelPrediction(SklearnEdgePredictionAdapter):
     ):
         """Create the Nu SVC for Edge-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 nu=nu,
                 kernel=kernel,

@@ -50,7 +50,7 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
             Further parameters to forward to the model.
         """
         model_name = must_be_in_set(self.model_name(), self.MODELS.keys(), "model name")
-        self._model_kwargs = normalize_kwargs(model_kwargs)
+        self._model_kwargs = normalize_kwargs(self, model_kwargs)
         
         self._model = Node2VecEnsmallen.MODELS[model_name](
             embedding_size=embedding_size,

@@ -76,6 +76,7 @@ class LightGBMNodeLabelPrediction(SklearnLikeNodeLabelPredictionAdapter):
             Additional keyword arguments to pass to the model.
         """
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 boosting_type=boosting_type,
                 num_leaves=num_leaves,

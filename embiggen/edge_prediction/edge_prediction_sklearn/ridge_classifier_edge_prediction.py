@@ -30,6 +30,7 @@ class RidgeClassifierEdgePrediction(SklearnEdgePredictionAdapter):
     ):
         """Create the Ridge Classifier for Edge prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 alpha=alpha,
                 fit_intercept=fit_intercept,

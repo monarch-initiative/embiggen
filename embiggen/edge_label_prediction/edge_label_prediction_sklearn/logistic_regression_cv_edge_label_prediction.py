@@ -34,6 +34,7 @@ class LogisticRegressionCVEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
     ):
         """Create the Logistic Regression Cross Validator for Edge-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 Cs=Cs,
                 fit_intercept=fit_intercept,

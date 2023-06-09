@@ -35,7 +35,7 @@ class HistGradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
     ):
         """Create the Hist Gradient Boosting for Edge Label Prediction."""
 
-        self._kwargs = normalize_kwargs(dict(
+        self._kwargs = normalize_kwargs(self, dict(
             loss=loss,
             learning_rate=learning_rate,
             max_iter=max_iter,

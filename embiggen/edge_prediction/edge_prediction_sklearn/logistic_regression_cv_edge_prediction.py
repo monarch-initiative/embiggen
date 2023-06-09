@@ -38,6 +38,7 @@ class LogisticRegressionCVEdgePrediction(SklearnEdgePredictionAdapter):
     ):
         """Create the Logistic Regression Cross Validator for Edge prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 Cs=Cs,
                 fit_intercept=fit_intercept,

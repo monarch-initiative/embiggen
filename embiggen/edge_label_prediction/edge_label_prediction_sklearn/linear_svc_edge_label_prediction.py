@@ -29,6 +29,7 @@ class LinearSVCEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
     ):
         """Create the Linear Support Vector Machine for Node-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 penalty=penalty,
                 loss=loss,

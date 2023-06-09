@@ -30,6 +30,7 @@ class NuSVCNodeLabelPrediction(SklearnNodeLabelPredictionAdapter):
     ):
         """Create the Nu SVC for Node-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 nu=nu,
                 kernel=kernel,

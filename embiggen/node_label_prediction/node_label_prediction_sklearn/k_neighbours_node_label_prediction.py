@@ -23,6 +23,7 @@ class KNeighborsClassifierNodeLabelPrediction(SklearnNodeLabelPredictionAdapter)
     ):
         """Create the Decision Tree for Node-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 n_neighbors=n_neighbors,
                 weights=weights,

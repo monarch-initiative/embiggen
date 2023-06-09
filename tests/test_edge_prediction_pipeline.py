@@ -3,6 +3,7 @@ from tqdm.auto import tqdm
 from unittest import TestCase
 import pytest
 import numpy as np
+import pandas as pd
 import os
 from embiggen.edge_prediction import edge_prediction_evaluation
 from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
@@ -156,7 +157,7 @@ class TestEvaluateEdgePrediction(TestCase):
                     node_type_features=node_type_features
                 )
 
-                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM"):
+                if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM", "CatBoost", "XGBoost"):
                     path = "model.pkl.gz"
                 elif model.library_name() == "Ensmallen":
                     path = "model.json"
@@ -169,7 +170,28 @@ class TestEvaluateEdgePrediction(TestCase):
                     os.remove(path)
                 model.dump(path)
                 restored_model = model.load(path)
-                assert restored_model.parameters() == model.parameters()
+
+                # Check that the restored model is the same as the original one
+                # and that the parameters are the same.
+                # We must remove the NaN values from the restored model
+                # because they are by definition not equal to themselves.
+
+                restored_model_parameters = {
+                    key: value
+                    for key, value in restored_model.parameters().items()
+                    if pd.notna(value)
+                }
+
+                model_parameters = {
+                    key: value
+                    for key, value in model.parameters().items()
+                    if pd.notna(value)
+                }
+
+                self.assertEqual(
+                    restored_model_parameters,
+                    model_parameters
+                )
 
                 with pytest.raises(NotImplementedError):
                     model.fit(
@@ -415,6 +437,8 @@ class TestEvaluateEdgePrediction(TestCase):
             )
 
     def test_all_edge_embedding_methods(self):
+        if not GraphSAGEEdgePrediction.is_available():
+            return
         for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
             edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.9),

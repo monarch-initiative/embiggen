@@ -1,12 +1,12 @@
 """Module to test the Ridge Classifier models for node-label, edge-label and edge prediction."""
 from embiggen.node_label_prediction.node_label_prediction_lightgbm.lgbm_node_label_prediction import (
-    LightGBMNodeLabelPredictionModel,
+    LightGBMNodeLabelPrediction,
 )
 from embiggen.edge_prediction.edge_prediction_lightgbm.lgbm_edge_prediction import (
     LightGBMEdgePredictionModel,
 )
 from embiggen.edge_label_prediction.edge_label_prediction_lightgbm.lgbm_edge_label_prediction import (
-    LightGBMEdgeLabelPredictionModel,
+    LightGBMEdgeLabelPrediction,
 )
 from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
 from ensmallen.datasets.kgobo import MIAPA
@@ -41,7 +41,7 @@ def test_lgbm_node_label_prediction_smoke_test():
     ):
         if data is None:
             data = DegreeSPINE().into_smoke_test().fit_transform(g)
-        model = LightGBMNodeLabelPredictionModel().into_smoke_test()
+        model = LightGBMNodeLabelPrediction().into_smoke_test()
         model.fit(g, node_features=data)
         model.predict(g, node_features=data)
         model.predict_proba(g, node_features=data)
@@ -93,7 +93,7 @@ def test_lgbm_edge_label_prediction_smoke_test():
     for g, data in ((binary, None),):
         if data is None:
             data = DegreeSPINE().into_smoke_test().fit_transform(g)
-        model = LightGBMEdgeLabelPredictionModel().into_smoke_test()
+        model = LightGBMEdgeLabelPrediction().into_smoke_test()
         model.fit(g, node_features=data, edge_features=HyperSketching())
         model.predict(g, node_features=data, edge_features=HyperSketching())
         model.predict_proba(g, node_features=data, edge_features=HyperSketching())

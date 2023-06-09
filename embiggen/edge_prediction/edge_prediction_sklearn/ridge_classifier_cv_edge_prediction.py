@@ -28,6 +28,7 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
     ):
         """Create the Ridge Classifier Cross Validator for Edge prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 alphas=alphas,
                 fit_intercept=fit_intercept,

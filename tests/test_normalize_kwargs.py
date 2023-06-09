@@ -22,13 +22,13 @@ def test_normalize_kwargs_for_node_embedding_models():
             model_name=row.model_name,
             task_name="Node Embedding",
             library_name=row.library_name
-        )(**normalize_kwargs(model.parameters()))
+        )(**normalize_kwargs(model, model.parameters()))
 
         AbstractEmbeddingModel.get_model_from_library(
             model_name=row.model_name,
             task_name="Node Embedding",
             library_name=row.library_name
-        )(**normalize_kwargs(model.smoke_test_parameters()))
+        )(**normalize_kwargs(model, model.smoke_test_parameters()))
 
 
 def test_normalize_kwargs_for_link_prediction_models():
@@ -46,11 +46,11 @@ def test_normalize_kwargs_for_link_prediction_models():
             model_name=row.model_name,
             task_name=AbstractEdgePredictionModel.task_name(),
             library_name=row.library_name
-        )(**normalize_kwargs(model.parameters()))
+        )(**normalize_kwargs(model, model.parameters()))
 
         AbstractEdgePredictionModel.get_model_from_library(
             model_name=row.model_name,
             task_name=AbstractEdgePredictionModel.task_name(),
             library_name=row.library_name
-        )(**normalize_kwargs(model.smoke_test_parameters()))
+        )(**normalize_kwargs(model, model.smoke_test_parameters()))
         

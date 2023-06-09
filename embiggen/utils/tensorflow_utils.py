@@ -24,15 +24,22 @@ def tensorflow_version_is_higher_or_equal_than(tensorflow_version: str) -> bool:
     ----------------------
     Boolean representing if installed TensorFlow version is higher than given one.
     """
-    import tensorflow as tf
-    if not validate_version_code(tensorflow_version):
+    try:
+        import tensorflow as tf
+        if not validate_version_code(tensorflow_version):
+            raise ValueError(
+                (
+                    "The provided TensorFlow version code `{}` "
+                    "is not a valid version code."
+                ).format(tensorflow_version)
+            )
+        return version.parse(tf.__version__) >= version.parse(tensorflow_version)
+    except AttributeError as exception:
         raise ValueError(
-            (
-                "The provided TensorFlow version code `{}` "
-                "is not a valid version code."
-            ).format(tensorflow_version)
-        )
-    return version.parse(tf.__version__) >= version.parse(tensorflow_version)
+            "Your current TensorFlow installation does not have a __version__ attribute. "
+            "This is likely due to a mis-configuration of your TensorFlow installation. "
+            "Please, make sure you have a proper TensorFlow installation and try again."
+        ) from exception
 
 
 def tensorflow_version_is_less_or_equal_than(tensorflow_version: str) -> bool:
@@ -52,15 +59,22 @@ def tensorflow_version_is_less_or_equal_than(tensorflow_version: str) -> bool:
     ----------------------
     Boolean representing if installed TensorFlow version is less or equal than given one.
     """
-    import tensorflow as tf
-    if not validate_version_code(tensorflow_version):
+    try:
+        import tensorflow as tf
+        if not validate_version_code(tensorflow_version):
+            raise ValueError(
+                (
+                    "The provided TensorFlow version code `{}` "
+                    "is not a valid version code."
+                ).format(tensorflow_version)
+            )
+        return version.parse(tf.__version__) <= version.parse(tensorflow_version)
+    except AttributeError as exception:
         raise ValueError(
-            (
-                "The provided TensorFlow version code `{}` "
-                "is not a valid version code."
-            ).format(tensorflow_version)
-        )
-    return version.parse(tf.__version__) <= version.parse(tensorflow_version)
+            "Your current TensorFlow installation does not have a __version__ attribute. "
+            "This is likely due to a mis-configuration of your TensorFlow installation. "
+            "Please, make sure you have a proper TensorFlow installation and try again."
+        ) from exception
 
 
 def must_have_tensorflow_version_higher_or_equal_than(
@@ -107,7 +121,7 @@ def get_available_gpus() -> List[str]:
     try:
         import tensorflow as tf
         return tf.config.experimental.list_physical_devices('GPU')
-    except ModuleNotFoundError:
+    except (ModuleNotFoundError, AttributeError):
         return []
 
 

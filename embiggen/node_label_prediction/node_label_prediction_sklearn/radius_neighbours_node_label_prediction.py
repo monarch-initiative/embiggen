@@ -24,6 +24,7 @@ class RadiusNeighborsClassifierNodeLabelPrediction(SklearnNodeLabelPredictionAda
     ):
         """Create the Decision Tree for Node-label prediction."""
         self._kwargs = normalize_kwargs(
+            self,
             dict(
                 radius=radius,
                 weights=weights,

@@ -1,6 +1,7 @@
 """This module contains the normalize_kwargs method."""
 from typing import Any, Dict, Union, List, Type, Tuple
 import compress_json
+from embiggen.utils.abstract_models import AbstractModel
 
 
 def get_data_type_from_data_type_name(data_type_name: Union[str, List[str]]) -> List[Type]:
@@ -70,7 +71,10 @@ def normalize_object_from_data_type_name(data_type_name: str, value: Any) -> Any
     )
 
 
-def normalize_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+def normalize_kwargs(
+    model: Type[AbstractModel],
+    kwargs: Dict[str, Any]
+) -> Dict[str, Any]:
     """Returns normalized kwargs.
 
     Implementation details
@@ -115,14 +119,18 @@ def normalize_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             raise TypeError(
                 "While we were normalizing the parameters, we found an error. "
                 f"The parameter {key} has the value \"{value}\" with type {type(value)} "
-                f"but the expected type is {expected_type}."
+                f"but the expected type is {expected_type}. "
+                f"The model is {model.model_name()} from library {model.library_name()} "
+                f"for the task {model.task_name()}."
             ) from exception
 
     if len(unsupported_parameters) > 0:
         raise NotImplementedError(
             f"The following parameters are not supported: {unsupported_parameters}. "
             "Please open an issue on the Embigggen repository "
-            "detailing the problem."
+            "detailing the problem. "
+            f"The model is {model.model_name()} from library {model.library_name()} "
+            f"for the task {model.task_name()}."
         )
 
     return kwargs
