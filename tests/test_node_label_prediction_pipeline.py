@@ -2,6 +2,7 @@
 from tqdm.auto import tqdm
 from unittest import TestCase
 import pytest
+import numpy as np
 import pandas as pd
 from embiggen.node_label_prediction import node_label_prediction_evaluation
 from embiggen import (
@@ -101,13 +102,13 @@ class TestEvaluateNodeLabelPrediction(TestCase):
                 restored_model_parameters = {
                     key: value
                     for key, value in restored_model.parameters().items()
-                    if pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or pd.notna(value)
                 }
 
                 model_parameters = {
                     key: value
                     for key, value in model.parameters().items()
-                    if pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or pd.notna(value)
                 }
 
                 self.assertEqual(

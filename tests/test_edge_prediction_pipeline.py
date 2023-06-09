@@ -179,13 +179,13 @@ class TestEvaluateEdgePrediction(TestCase):
                 restored_model_parameters = {
                     key: value
                     for key, value in restored_model.parameters().items()
-                    if pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or  pd.notna(value)
                 }
 
                 model_parameters = {
                     key: value
                     for key, value in model.parameters().items()
-                    if pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or  pd.notna(value)
                 }
 
                 self.assertEqual(

@@ -108,12 +108,12 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
 
                     restored_model_parameters = {
                         k: v for k, v in restored_model.parameters().items()
-                        if pd.notna(v)
+                        if isinstance(v, (list, tuple, np.ndarray)) or pd.notna(v)
                     }
 
                     model_parameters = {
                         k: v for k, v in model.parameters().items()
-                        if pd.notna(v)
+                        if isinstance(v, (list, tuple, np.ndarray)) or pd.notna(v)
                     }
 
                     assert restored_model_parameters == model_parameters

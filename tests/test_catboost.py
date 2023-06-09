@@ -17,6 +17,8 @@ from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 
 def test_catboost_node_label_prediction_smoke_test():
     """Smoke test for the Ridge Classifier node-label prediction model."""
+    if not CatBoostNodeLabelPrediction.is_available():
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -49,6 +51,8 @@ def test_catboost_node_label_prediction_smoke_test():
 
 def test_catboost_edge_prediction_smoke_test():
     """Smoke test for the Ridge Classifier edge-label prediction model."""
+    if not CatBoostEdgePrediction.is_available():
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -86,6 +90,8 @@ def test_catboost_edge_prediction_smoke_test():
 
 def test_catboost_edge_label_prediction_smoke_test():
     """Smoke test for the Ridge Classifier edge-label prediction model."""
+    if not CatBoostEdgeLabelPrediction.is_available():
+        return
     graph, data = get_words_data(Cora())
     red = graph.set_all_edge_types("red")
     blue = MIAPA().remove_singleton_nodes().set_all_edge_types("blue")
