@@ -90,12 +90,12 @@ def get_model_or_stub(
                 "likely an implementation error, and should be "
                 "reported to the Embiggen repository as an issue."
             )
-    except (ModuleNotFoundError, OSError) as e:
+    except (ModuleNotFoundError, OSError) as exception:
         # If effectively the error is that we cannot load the desired
         # library name, we catch this and re-raise it.
         if any(
-            str(e).startswith(f"No module named '{module_library_name}")
-            or module_library_name in str(e)
+            str(exception).startswith(f"No module named '{module_library_name}")
+            or module_library_name in str(exception)
             for module_library_name in module_library_names
         ):
             class StubClass(parent_class):
@@ -212,7 +212,7 @@ def get_model_or_stub(
             model_class = StubClass
         else:
             # We re-raise the exception.
-            raise e
+            raise exception
 
     # We assign the local class as exposed in the
     # caller frame.
