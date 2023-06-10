@@ -96,7 +96,7 @@ class GraphVisualizer:
         duration: int = 10,
         fps: int = 24,
         node_embedding_method_name: str = "auto",
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
         only_from_same_component: Union[bool, str] = "auto",
@@ -111,7 +111,7 @@ class GraphVisualizer:
         show_graph_name: Union[str, bool] = "auto",
         number_of_columns_in_legend: int = 2,
         show_embedding_method: bool = True,
-        show_edge_embedding_method: bool = True,
+        show_edge_embedding_methods: bool = True,
         show_separability_considerations_explanation: bool = True,
         show_heatmaps_description: bool = True,
         show_non_existing_edges_sampling_description: bool = True,
@@ -189,7 +189,7 @@ class GraphVisualizer:
             If "auto" is used, then we try to infer the type of
             node embedding algorithm used, which in some cases is
             recognizable automatically.            
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
             Edge embedding method.
             Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
         only_from_same_component: Union[bool, str] = "auto"
@@ -249,7 +249,7 @@ class GraphVisualizer:
         show_embedding_method: bool = True
             Whether to show the node embedding method.
             By default, we show it if we can detect it.
-        show_edge_embedding_method: bool = True
+        show_edge_embedding_methods: bool = True
             Whether to show the edge embedding method.
             By default, we show it if we can detect it.
         show_separability_considerations_explanation: bool = True
@@ -410,8 +410,8 @@ class GraphVisualizer:
 
         self._show_graph_name = show_graph_name
         self._show_embedding_method = show_embedding_method
-        self._show_edge_embedding_method = show_edge_embedding_method
-        self._edge_embedding_method = edge_embedding_method
+        self._show_edge_embedding_methods = show_edge_embedding_methods
+        self._edge_embedding_methods = edge_embedding_methods
         self._verbose = verbose
 
         self._show_separability_considerations_explanation = show_separability_considerations_explanation
@@ -603,69 +603,31 @@ class GraphVisualizer:
                 **self._decomposition_kwargs
             }).fit_transform
         elif self._decomposition_method == "TSNE":
-            try:
-                try:
-                    metric = self._decomposition_kwargs.get(
-                        "metric", "euclidean")
-                    if metric != "euclidean":
-                        raise NotImplementedError(
-                            "Non-euclidean metrics are not supported in MulticoreTSNE "
-                            f"but the metric `{metric}` was provided."
-                        )
-
-                    from MulticoreTSNE import \
-                        MulticoreTSNE  # pylint: disable=import-outside-toplevel
-                    return MulticoreTSNE(**{
-                        **dict(
-                            n_components=self._n_components,
-                            n_jobs=cpu_count(),
-                            n_iter=400,
-                            random_state=self._random_state,
-                            verbose=self._verbose,
-                        ),
-                        **self._decomposition_kwargs
-                    }).fit_transform
-                except OSError as e:
-                    warnings.warn(
-                        ("The MulticoreTSNE module is installed, but we could not find "
-                            "some of the necessary libraries to make it run properly. "
-                            "Specifically, the error encountered was: {}").format(e)
-                    )
-            except (ModuleNotFoundError, RuntimeError, TypeError, NotImplementedError):
-                try:
-                    from sklearn.manifold import \
-                        TSNE  # pylint: disable=import-outside-toplevel
-                    return TSNE(**{
-                        **dict(
-                            n_components=self._n_components,
-                            n_jobs=cpu_count(),
-                            random_state=self._random_state,
-                            verbose=self._verbose,
-                            learning_rate=200,
-                            n_iter=400,
-                            init="random",
-                            method="exact" if self._n_components == 4 else "barnes_hut",
-                        ),
-                        # The following handles the case when the `square distances` parameter
-                        # still existed in old versions in Sklearn and used to cause a warning
-                        # when not provided. More recent versions of Sklearn have entirely dropped
-                        # this parameter, and therefore will raise an exception if this parameter
-                        # is provided, making this check necessary.
-                        **(
-                            dict(square_distances=True)
-                            if "square_distances" in inspect.signature(TSNE.__init__).parameters
-                            else dict()
-                        ),
-                        **self._decomposition_kwargs
-                    }).fit_transform
-                except:
-                    raise ModuleNotFoundError(
-                        "You do not have installed a supported TSNE "
-                        "decomposition algorithm. Depending on your use case, "
-                        "we suggest you install MulticoreTSNE or, "
-                        "alternatively, we suggest (and support) Sklearn's TSNE "
-                        "but it will be slower than the former."
-                    )
+            from sklearn.manifold import \
+                TSNE  # pylint: disable=import-outside-toplevel
+            return TSNE(**{
+                **dict(
+                    n_components=self._n_components,
+                    n_jobs=cpu_count(),
+                    random_state=self._random_state,
+                    verbose=self._verbose,
+                    learning_rate=200,
+                    n_iter=400,
+                    init="random",
+                    method="exact" if self._n_components == 4 else "barnes_hut",
+                ),
+                # The following handles the case when the `square distances` parameter
+                # still existed in old versions in Sklearn and used to cause a warning
+                # when not provided. More recent versions of Sklearn have entirely dropped
+                # this parameter, and therefore will raise an exception if this parameter
+                # is provided, making this check necessary.
+                **(
+                    dict(square_distances=True)
+                    if "square_distances" in inspect.signature(TSNE.__init__).parameters
+                    else dict()
+                ),
+                **self._decomposition_kwargs
+            }).fit_transform
         elif self._decomposition_method == "PCA":
             return PCA(**{
                 **dict(
@@ -989,7 +951,7 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._edge_embedding_method,
+            methods=self._edge_embedding_methods,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -1043,7 +1005,7 @@ class GraphVisualizer:
             Embedding obtained from SkipGram, CBOW or GloVe or others.
         """
         graph_transformer = GraphTransformer(
-            method=self._edge_embedding_method,
+            methods=self._edge_embedding_methods,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -1187,10 +1149,10 @@ class GraphVisualizer:
                 self._embedding_method_name,
             )
 
-        if not self._currently_plotting_edge_embedding and self._edge_embedding_method is not None:
+        if not self._currently_plotting_edge_embedding and self._edge_embedding_methods is not None:
             title = "{} - {}".format(
                 title,
-                self._edge_embedding_method,
+                self._edge_embedding_methods,
             )
 
         return sanitize_ml_labels(title)
@@ -3935,7 +3897,7 @@ class GraphVisualizer:
             Whether to return a caption for the plot.
         """
         graph_transformer = GraphTransformer(
-            method=distance_callback,
+            methods=distance_callback,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -3983,7 +3945,7 @@ class GraphVisualizer:
         Figure and Axis of the plot.
         """
         graph_transformer = GraphTransformer(
-            method=distance_callback,
+            methods=distance_callback,
             aligned_mapping=True,
             include_both_undirected_edges=False
         )
@@ -4431,14 +4393,14 @@ class GraphVisualizer:
         # so we avoid duplicating their content.
         show_name_backup = self._show_graph_name
         show_node_embedding_backup = self._show_embedding_method
-        show_edge_embedding_backup = self._show_edge_embedding_method
+        show_edge_embedding_backup = self._show_edge_embedding_methods
         automatically_display_backup = self._automatically_display_on_notebooks
         show_separability_backup = self._show_separability_considerations_explanation
         show_heatmaps_backup = self._show_heatmaps_description
         non_existing_edges_sampling = self._show_non_existing_edges_sampling_description
         self._show_graph_name = False
         self._show_embedding_method = False
-        self._show_edge_embedding_method = False
+        self._show_edge_embedding_methods = False
         self._automatically_display_on_notebooks = False
         self._show_separability_considerations_explanation = False
         self._show_heatmaps_description = False
@@ -4490,7 +4452,7 @@ class GraphVisualizer:
 
         complete_caption += "<br>"
 
-        self._show_edge_embedding_method = show_edge_embedding_backup
+        self._show_edge_embedding_methods = show_edge_embedding_backup
         self._show_embedding_method = show_node_embedding_backup
         self._automatically_display_on_notebooks = automatically_display_backup
         self._show_separability_considerations_explanation = show_separability_backup
@@ -4578,7 +4540,7 @@ class GraphVisualizer:
             node_scatter_plot_methods_to_call.append(
                 self.plot_node_degrees,
             )
-        
+
         distribution_plot_methods_to_call.append(
             self.plot_node_degree_distribution,
         )

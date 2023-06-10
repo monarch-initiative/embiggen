@@ -113,6 +113,7 @@ def classification_evaluation_pipeline(
     expected_parent_class: Type[AbstractClassifierModel],
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
     node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+    edge_type_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None,
     edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None,
     node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
     library_names: Optional[Union[str, List[str]]] = None,
@@ -146,6 +147,10 @@ def classification_evaluation_pipeline(
         The expected parent class of the models, necessary to validate that the models are what we expect.
     node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
         The node features to use.
+    node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel], List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
+        The node type features to use.
+    edge_type_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None
+        The edge type features to use.
     edge_features: Optional[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray, List[Union[str, Type[AbstractEdgeFeature], pd.DataFrame, np.ndarray]]]] = None
         The edge features to use.
     node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None
@@ -208,6 +213,7 @@ def classification_evaluation_pipeline(
             holdouts_kwargs=holdouts_kwargs,
             node_features=node_features,
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             edge_features=edge_features,
             node_features_preprocessing_steps=node_features_preprocessing_steps,
             subgraph_of_interest=subgraph_of_interest,

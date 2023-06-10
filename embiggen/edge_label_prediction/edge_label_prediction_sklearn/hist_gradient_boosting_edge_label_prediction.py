@@ -1,5 +1,5 @@
 """Submodule wrapping Hist Gradient Boosting for edge label prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.ensemble import HistGradientBoostingClassifier
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 from embiggen.utils.normalize_kwargs import normalize_kwargs
@@ -29,7 +29,7 @@ class HistGradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
         tol=1e-7,
         verbose=0,
         class_weight=None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42
     ):
@@ -62,7 +62,7 @@ class HistGradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
                 **self._kwargs,
                 random_state=random_state
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state
         )

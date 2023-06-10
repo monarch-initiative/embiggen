@@ -126,6 +126,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
@@ -202,6 +203,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Execute predictions on the provided graph.
@@ -219,9 +221,18 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node type features to use.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Currently we do not support edge type features "
+                f"in the {self.model_name()} from the {self.library_name()} "
+                f"for the task {self.task_name()}."
+            )
+
         non_zero_edge_types = sum([
             1
             for count in graph.get_edge_type_names_counts_hashmap().values()
@@ -248,6 +259,7 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             edge_features=edge_features,
         )
 
@@ -270,6 +282,10 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False
+    
+    def is_using_node_types(self) -> bool:
+        """Whether the current model is using node types."""
+        return self._is_using_node_type_features or self.requires_node_types()
 
     @classmethod
     def supports_multilabel_prediction(cls) -> bool:

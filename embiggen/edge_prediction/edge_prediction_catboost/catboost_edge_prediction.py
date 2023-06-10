@@ -1,5 +1,5 @@
 """Edge prediction model based on CatBoost."""
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from catboost import CatBoostClassifier
 from embiggen.edge_prediction.sklearn_like_edge_prediction_adapter import (
     SklearnLikeEdgePredictionAdapter,
@@ -105,7 +105,7 @@ class CatBoostEdgePrediction(SklearnLikeEdgePredictionAdapter):
         embedding_features=None,
         callback=None,
         eval_fraction=None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -216,7 +216,7 @@ class CatBoostEdgePrediction(SklearnLikeEdgePredictionAdapter):
                 **self._kwargs,
                 random_state=random_state,
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,

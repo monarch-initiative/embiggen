@@ -12,7 +12,7 @@ class GraphTransformer:
 
     def __init__(
         self,
-        method: str = "Hadamard",
+        methods: Union[List[str], str] = "Hadamard",
         aligned_mapping: bool = False,
         include_both_undirected_edges: bool = True
     ):
@@ -20,9 +20,23 @@ class GraphTransformer:
 
         Parameters
         ------------------------
-        method: str = "hadamard"
-            Method to use for the embedding.
-            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+        methods: Union[List[str], str] = "Hadamard"
+            Method to use for the edge embedding.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         aligned_mapping: bool = False
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
@@ -37,21 +51,18 @@ class GraphTransformer:
             where they create redoundancy.
         """
         self._transformer = EdgeTransformer(
-            method=method,
+            methods=methods,
             aligned_mapping=aligned_mapping,
         )
         self._include_both_undirected_edges = include_both_undirected_edges
         self._aligned_mapping = aligned_mapping
 
-    @property
-    def method(self) -> str:
-        """Return the used edge embedding method."""
-        return self._transformer.method
-
     def fit(
         self,
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
+                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Fit the model.
 
@@ -61,6 +72,9 @@ class GraphTransformer:
             Node feature to use to fit the transformer.
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             Node type feature to use to fit the transformer.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
+                                             List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Edge type feature to use to fit the transformer.
 
         Raises
         -------------------------
@@ -70,12 +84,22 @@ class GraphTransformer:
         self._transformer.fit(
             node_feature,
             node_type_feature=node_type_feature,
+            edge_type_features=edge_type_features
         )
+
+    def has_node_type_features(self) -> bool:
+        """Return whether the transformer has a node type feature."""
+        return self._transformer.has_node_type_features()
+    
+    def has_edge_type_features(self) -> bool:
+        """Return whether the transformer has a edge type feature."""
+        return self._transformer.has_edge_type_features()
 
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
         node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return edge embedding for given graph using provided method.
@@ -185,5 +209,6 @@ class GraphTransformer:
             destinations,
             source_node_types=source_node_types,
             destination_node_types=destination_node_types,
+            edge_types=edge_types,
             edge_features=edge_features
         )

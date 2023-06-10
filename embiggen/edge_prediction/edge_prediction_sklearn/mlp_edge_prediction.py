@@ -1,5 +1,5 @@
 """Submodule wrapping MLP for edge prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.neural_network import MLPClassifier
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
 from embiggen.utils.normalize_kwargs import normalize_kwargs
@@ -32,7 +32,7 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
         epsilon=1e-8,
         n_iter_no_change=10,
         max_fun=15000,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -73,7 +73,7 @@ class MLPEdgePrediction(SklearnEdgePredictionAdapter):
             MLPClassifier(
                 **self._mlp_kwargs
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,

@@ -23,6 +23,18 @@ class ClassForTestAbstractClassifierModelNonStocastic(AbstractClassifierModel):
     @classmethod
     def requires_edge_types(cls) -> bool:
         return True
+    
+    @classmethod
+    def model_name(cls) -> str:
+        return "test_method_name"
+    
+    @classmethod
+    def library_name(cls) -> str:
+        return "Embiggen"
+    
+    @classmethod
+    def task_name(cls) -> str:
+        return "test_task_name"
 
 
 class TestAbstractClassifierModel(TestCase):
@@ -31,7 +43,7 @@ class TestAbstractClassifierModel(TestCase):
         pass
 
     def test_not_implemented_methods(self):
-
+        
         non_stocastic = ClassForTestAbstractClassifierModelNonStocastic()
 
         for method_name, params in (

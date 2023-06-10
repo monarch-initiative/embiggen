@@ -4,8 +4,7 @@ from typing import List, Union, Optional
 import numpy as np
 import pandas as pd
 from userinput.utils import must_be_in_set
-from ensmallen import express_measures
-from embiggen.utils.abstract_models import format_list
+from ensmallen import express_measures, Graph
 from embiggen.embedding_transformers.node_transformer import NodeTransformer
 
 
@@ -103,6 +102,7 @@ def get_l1_edge_embedding(
         destination_node_embedding
     )
 
+
 def get_l1_norm_edge_embedding(
     edge_embedding: np.ndarray
 ) -> np.ndarray:
@@ -119,6 +119,7 @@ def get_l1_norm_edge_embedding(
     """
     assert edge_embedding.ndim == 2
     return np.abs(edge_embedding).sum(axis=1, keepdims=True)
+
 
 def get_absolute_l1_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -170,6 +171,7 @@ def get_squared_l2_edge_embedding(
         2.0
     )
 
+
 def get_l2_norm_edge_embedding(
     edge_embedding: np.ndarray
 ) -> np.ndarray:
@@ -186,6 +188,7 @@ def get_l2_norm_edge_embedding(
     """
     assert edge_embedding.ndim == 2
     return np.sqrt(np.power(edge_embedding, 2.0).sum(axis=1, keepdims=True))
+
 
 def get_l2_edge_embedding(
     source_node_embedding: np.ndarray,
@@ -359,51 +362,74 @@ class EdgeTransformer:
         "CosineSimilarity": get_cosine_similarity,
     }
 
-    norms = {
-        "L1Norm": get_l1_norm_edge_embedding,
-        "L2Norm": get_l2_norm_edge_embedding,
-    }
-
     def __init__(
         self,
-        method: str = "Hadamard",
+        methods: Union[List[str], str] = "Hadamard",
         aligned_mapping: bool = False,
     ):
         """Create new EdgeTransformer object.
 
         Parameters
         ------------------------
-        method: str = "Hadamard",
+        method: Union[List[str], str] = "Hadamard",
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
-            Can either be 'Hadamard', 'Min', 'Max', 'Sum', 'Average',
-            'L1', 'AbsoluteL1', 'SquaredL2', 'L2' or 'Concatenate'.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         aligned_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
         """
-        method = must_be_in_set(
-            method,
-            set(self.methods.keys()) | set(self.norms.keys()),
-            "edge embedding method"
-        )
         self._transformer = NodeTransformer(
             aligned_mapping=aligned_mapping,
         )
-        self._method_name = method
-        self._method = self.methods.get(method, self.norms.get(method, None))
 
-    @property
-    def method(self) -> str:
-        """Return the used edge embedding method."""
-        return self._method_name
+        if not isinstance(methods, list):
+            methods = [methods]
+
+        normalized_methods = []
+
+        for method_name in methods:
+            if not isinstance(method_name, str):
+                raise ValueError(
+                    "The provided method name should be a string, but we got "
+                    f"{type(method_name)} instead."
+                )
+            normalized_methods.append(must_be_in_set(
+                method_name,
+                set(self.methods.keys()),
+                "edge embedding method"
+            ))
+
+        self._methods = [
+            self.methods[method_name]
+            for method_name in normalized_methods
+        ]
+        self._method_names = normalized_methods
+        self._edge_type_feature = None
 
     def fit(
         self,
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray,
+                                          List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
+                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Fit the model.
 
@@ -413,18 +439,90 @@ class EdgeTransformer:
             Node feature to use to fit the transformer.
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             Node type feature to use to fit the transformer.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Edge type feature to use to fit the transformer.
         """
+        if edge_type_features is None:
+            edge_type_features = []
+
+        if not isinstance(edge_type_features, list):
+            edge_type_features = [edge_type_features]
+
+        # It also a good idea to check whether the edge type features provided
+        # have all the same shape, and whether they contain any NaN value, so
+        # to catch them early rather than later.
+
+        # We expect that the edge type features can either be NumPy arrays of
+        # Pandas Dataframes. If they are pandas dataframes, we will be able
+        # to use their index as a way to map eventual edge types ids provided
+        # with the string name.
+        for edge_type_feature in edge_type_features:
+            if not isinstance(edge_type_feature, (pd.DataFrame, np.ndarray)):
+                raise ValueError(
+                    "The provided edge type features should be either Pandas Dataframes or "
+                    f"Numpy arrays, but we got {type(edge_type_feature)} instead."
+                )
+
+            if isinstance(edge_type_feature, pd.DataFrame):
+                if edge_type_feature.index.hasnans:
+                    raise ValueError(
+                        "The provided edge type features should "
+                        "not have NaN values in their index."
+                    )
+
+                if edge_type_feature.index.has_duplicates:
+                    raise ValueError(
+                        "The provided edge type features should "
+                        "not have duplicated values in their index."
+                    )
+
+                if pd.isna(edge_type_feature).any():
+                    raise ValueError(
+                        "The provided edge type features should "
+                        "not have NaN values in their values."
+                    )
+
+            if isinstance(edge_type_feature, np.ndarray):
+                if np.isnan(edge_type_feature).any():
+                    raise ValueError(
+                        "The provided edge type features should "
+                        "not have NaN values in their values."
+                    )
+
+        self._edge_type_features = edge_type_features
         self._transformer.fit(
             node_feature,
             node_type_feature=node_type_feature,
         )
 
+    def has_edge_type_features(self) -> bool:
+        """Return whether the transformer has edge type features."""
+        return len(self._edge_type_features) > 0
+    
+    def has_node_type_features(self) -> bool:
+        """Return whether the transformer has node type features."""
+        return self._transformer.has_node_type_features()
+    
+    def is_aligned_mapping(self) -> bool:
+        """Return whether the transformer has aligned mapping."""
+        return self._transformer.is_aligned_mapping()
+
+    def has_numpy_edge_type_features(self) -> bool:
+        """Returns whether any of the edge type features provided is a numpy array."""
+        return any([
+            isinstance(edge_type_feature, np.ndarray)
+            for edge_type_feature in self._edge_type_features
+        ])
+
     def transform(
         self,
         sources: Union[List[str], List[int]],
         destinations: Union[List[str], List[int]],
-        source_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
-        destination_node_types: Optional[Union[List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        source_node_types: Optional[Union[List[Optional[List[str]]],
+                                          List[Optional[List[int]]]]] = None,
+        destination_node_types: Optional[Union[List[Optional[List[str]]],
+                                               List[Optional[List[int]]]]] = None,
+        edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
@@ -445,6 +543,8 @@ class EdgeTransformer:
             This can be either a list of strings, or a graph, or if the
             aligned_mapping is setted, then this methods also accepts
             a list of ints.
+        edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None
+            List of edge types whose embedding is to be returned.
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -461,63 +561,109 @@ class EdgeTransformer:
         --------------------------
         Numpy array of embeddings.
         """
-        if self._transformer.is_fit():
-            if self.method == "CosineSimilarity":
-                if (
-                    not isinstance(sources, np.ndarray) or
-                    not isinstance(destinations, np.ndarray)
-                ):
-                    raise NotImplementedError(
-                        "The Cosine Similarity is currently implemented exclusively for "
-                        "numpy arrays of type uint32, but you have provided objects of type "
-                        f"{type(sources)} and {type(destinations)}. "
-                    )
-                if (
-                    sources.dtype != np.uint32 or
-                    destinations.dtype != np.uint32
-                ):
-                    raise NotImplementedError(
-                        "The Cosine Similarity is currently implemented exclusively for "
-                        "numpy arrays of type uint32, but you have provided objects of type "
-                        f"{sources.dtype} and {destinations.dtype}. "
-                    )
-                if not self._transformer._node_feature.data.c_contiguous:
-                    self._transformer._node_feature = np.ascontiguousarray(
-                        self._transformer._node_feature
-                    )
-
-                if self._transformer._node_type_feature is not None:
-                    raise NotImplementedError(
-                        "The node type features are not yet supported for the "
-                        "Cosine Similarity."
-                    )
-
-                edge_embeddings = self._method(
-                    embedding=self._transformer._node_feature,
-                    source_node_ids=sources,
-                    destination_node_ids=destinations,
-                )
-            else:
-                edge_embeddings = self._method(
-                    self._transformer.transform(
-                        sources, node_types=source_node_types),
-                    self._transformer.transform(
-                        destinations, node_types=destination_node_types)
-                )
-        elif edge_features is not None:
-            edge_embeddings = None
-        else:
+        if self.has_edge_type_features() and edge_types is None:
             raise ValueError(
-                "The transformer is not fitted yet!"
+                "The edge type features are provided, but no edge types are provided."
             )
         
-        if edge_embeddings is not None and not isinstance(edge_embeddings, np.ndarray):
-            raise RuntimeError(
-                "We expected the edge embeddings to be a numpy array, but we got "
-                f"{type(edge_embeddings)} instead. This is a bug, please report it "
-                "to the Embiggen repository."
-            )
-        
+        if isinstance(edge_types, Graph):
+            edge_types.must_not_contain_unknown_edge_types()
+            edge_types.must_not_be_multigraph()
+            if self.is_aligned_mapping():
+                if edge_types.is_directed():
+                    edge_types = edge_types.get_imputed_directed_edge_type_ids(
+                        imputation_edge_type_id=0
+                    )
+                else:
+                    edge_types = edge_types.get_imputed_upper_triangular_edge_type_ids(
+                        imputation_edge_type_id=0
+                    )
+            else:
+                if edge_types.is_directed():
+                    edge_types = edge_types.get_directed_edge_type_names()
+                else:
+                    edge_types = edge_types.get_upper_triangular_edge_type_names()
+
+        edge_type_features: List[np.ndarray] = []
+
+        for edge_type_feature in self._edge_type_features:
+            if isinstance(edge_type_feature, pd.DataFrame):
+                if isinstance(edge_types[0], str):
+                    edge_type_features.append(
+                        edge_type_feature.loc[edge_types].values
+                    )
+                elif isinstance(edge_types[0], (int, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64)):
+                    edge_type_features.append(
+                        edge_type_feature.iloc[edge_types].values
+                    )
+                else:
+                    raise ValueError(
+                        "The provided edge types should be either strings or integers, but we got "
+                        f"{type(edge_types[0])} instead."
+                    )
+            elif isinstance(edge_type_feature, np.ndarray):
+                if isinstance(edge_types[0], str):
+                    raise ValueError(
+                        "Since the edge type features are provided as numpy arrays, "
+                        "the edge types should be provided as integers. "
+                        f"We got instead {type(edge_types[0])}."
+                    )
+                elif isinstance(edge_types[0], (int, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64)):
+                    edge_type_features.append(
+                        edge_type_feature[edge_types]
+                    )
+                else:
+                    raise ValueError(
+                        "The provided edge types should be either strings or integers, but we got "
+                        f"{type(edge_types[0])} instead."
+                    )
+
+        edge_embeddings: List[np.ndarray] = []
+        if self._transformer.is_fit():
+            for (method, method_name) in zip(self._methods, self._method_names):
+                if method_name == "CosineSimilarity":
+                    if (
+                        not isinstance(sources, np.ndarray) or
+                        not isinstance(destinations, np.ndarray)
+                    ):
+                        raise NotImplementedError(
+                            "The Cosine Similarity is currently implemented exclusively for "
+                            "numpy arrays of type uint32, but you have provided objects of type "
+                            f"{type(sources)} and {type(destinations)}. "
+                        )
+                    if (
+                        sources.dtype != np.uint32 or
+                        destinations.dtype != np.uint32
+                    ):
+                        raise NotImplementedError(
+                            "The Cosine Similarity is currently implemented exclusively for "
+                            "numpy arrays of type uint32, but you have provided objects of type "
+                            f"{sources.dtype} and {destinations.dtype}. "
+                        )
+                    if not self._transformer._node_feature.data.c_contiguous:
+                        self._transformer._node_feature = np.ascontiguousarray(
+                            self._transformer._node_feature
+                        )
+
+                    if self._transformer._node_type_feature is not None:
+                        raise NotImplementedError(
+                            "The node type features are not yet supported for the "
+                            "Cosine Similarity."
+                        )
+
+                    edge_embeddings.append(method(
+                        embedding=self._transformer._node_feature,
+                        source_node_ids=sources,
+                        destination_node_ids=destinations,
+                    ))
+                else:
+                    edge_embeddings.append(method(
+                        self._transformer.transform(
+                            sources, node_types=source_node_types),
+                        self._transformer.transform(
+                            destinations, node_types=destination_node_types)
+                    ))
+
         if edge_features is None:
             edge_features = []
 
@@ -531,34 +677,56 @@ class EdgeTransformer:
                     f"{type(edge_feature)} instead."
                 )
 
-            if edge_embeddings is not None and edge_feature.shape[0] != edge_embeddings.shape[0]:
+            if len(edge_embeddings) > 0 and edge_feature.shape[0] != edge_embeddings[0].shape[0]:
                 raise ValueError(
                     (
                         "The provided edge features should have a sample for each of the edges "
                         "in the graph, which are {}, with embedding shape {}, but has shape {}."
                     ).format(
                         sources.shape[0],
-                        edge_embeddings.shape,
+                        edge_embeddings[0].shape,
                         edge_feature.shape
                     )
                 )
-        
-        if len(edge_features) > 0:
-            if edge_embeddings is None:
-                edge_embeddings = np.hstack([
-                    edge_feature.reshape((edge_feature.shape[0], -1))
-                    for edge_feature in edge_features
-                ])
-            else:
-                edge_embeddings = np.hstack([
-                    edge_embeddings,
-                    *[
-                        edge_feature.reshape((edge_feature.shape[0], -1))
-                        for edge_feature in edge_features
-                    ]
-                ])                
 
-        if self.method in self.norms:
-            edge_embeddings = self._method(edge_embeddings)
+        if all([
+            len(features) == 0
+            for features in (
+                edge_features,
+                edge_type_features,
+                edge_embeddings
+            )
+        ]):
+            raise ValueError(
+                "At least one of the provided edge features, edge type features or edge embeddings "
+                "should be provided."
+            )
 
-        return edge_embeddings
+        expected_shape = 0
+        for features in (
+            edge_features,
+            edge_type_features,
+            edge_embeddings
+        ):
+            if len(features) > 0:
+                expected_shape = features[0].shape[0]
+                break
+
+        result = np.hstack([
+            *[
+                edge_embedding.reshape((expected_shape, -1))
+                for edge_embedding in edge_embeddings
+            ],
+            * [
+                edge_feature.reshape((expected_shape, -1))
+                for edge_feature in edge_features
+            ],
+            * [
+                edge_type_feature.reshape((expected_shape, -1))
+                for edge_type_feature in edge_type_features
+            ]
+        ])
+
+        assert not np.isnan(result).any()
+
+        return result

@@ -1,5 +1,5 @@
 """Module providing adapter class making edge-label prediction possible in sklearn models."""
-from typing import Type, List, Dict, Optional, Any
+from typing import Type, List, Dict, Optional, Any, Union
 import numpy as np
 import copy
 import compress_pickle
@@ -19,8 +19,8 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
 
     def __init__(
         self,
-        model_instance: "Model",
-        edge_embedding_method: str = "Concatenate",
+        model_instance,
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -30,8 +30,23 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         ----------------
         model_instance: Model
             The class instance to be adapted into edge-label prediction.
-        edge_embedding_method: str = "Concatenate"
-            The method to use to compute the edges.
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
+            The method(s) to use to compute the edges.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
@@ -49,18 +64,18 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         """
         super().__init__(random_state=random_state)
         self._model_instance = model_instance
-        self._edge_embedding_method = edge_embedding_method
+        self._edge_embedding_methods = edge_embedding_methods
         self._use_edge_metrics = use_edge_metrics
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
         return {
-            "edge_embedding_method": self._edge_embedding_method,
+            "edge_embedding_methods": self._edge_embedding_methods,
             "use_edge_metrics": self._use_edge_metrics,
             **super().parameters(),
         }
 
-    def clone(self) -> Type["Self"]:
+    def clone(self):
         """Return copy of self."""
         return copy.deepcopy(self)
 
@@ -70,6 +85,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
@@ -86,7 +102,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used in the training of the model.
-        node_type_features: np.ndarray
+        node_type_features: Optional[List[np.ndarray]] = None
             The node type features to be used.
         edge_features: Optional[np.ndarray] = None
             Optional edge features to be used as input concatenated
@@ -99,12 +115,16 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             If the two graphs do not share the same node vocabulary.
         """
         gt = GraphTransformer(
-            method=self._edge_embedding_method,
+            methods=self._edge_embedding_methods,
             aligned_mapping=True,
             include_both_undirected_edges=False,
         )
 
-        gt.fit(node_features, node_type_feature=node_type_features)
+        gt.fit(
+            node_features, 
+            node_type_feature=node_type_features,
+            edge_type_features=edge_type_features
+        )
 
         if edge_features is None:
             edge_features = []
@@ -142,6 +162,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Execute fitting of the model.
@@ -158,8 +179,10 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used in the training of the model.
-        node_type_features: np.ndarray
+        node_type_features: Optional[List[np.ndarray]] = None
             The node type features to be used.
+        edge_type_features: Optional[np.ndarray] = None
+            Optional edge type features to be used as input concatenated
         edge_features: Optional[np.ndarray] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -171,7 +194,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             If the two graphs do not share the same node vocabulary.
         """
         lpt = EdgeLabelPredictionTransformer(
-            method=self._edge_embedding_method,
+            methods=self._edge_embedding_methods,
             aligned_mapping=True,
             include_both_undirected_edges=False,
         )
@@ -179,6 +202,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         lpt.fit(
             node_features,
             node_type_feature=node_type_features,
+            edge_type_features=edge_type_features,
         )
 
         if edge_features is None:
@@ -233,7 +257,8 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         if not self.is_binary_prediction_task():
             assert number_of_non_zero_edge_types > 2
         assert (
-            isinstance(y[0], (bool, np.bool_)) == self.is_binary_prediction_task()
+            isinstance(y[0], (bool, np.bool_)
+                       ) == self.is_binary_prediction_task()
         ), f"Thi task boolean status is {self.is_binary_prediction_task()}, but the provided labels are of type {type(y[0])}."
         if not self.is_binary_prediction_task():
             assert y.max() > 1, (
@@ -263,6 +288,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -279,8 +305,10 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used.
-        node_type_features: np.ndarray
+        node_type_features: Optional[List[np.ndarray]] = None
             The node type features to be used.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to be used.
         edge_features: Optional[np.ndarray] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -296,18 +324,22 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             edge_features=edge_features,
         )
 
         if hasattr(self._model_instance, "predict_proba"):
-            prediction_probabilities = self._model_instance.predict_proba(features)
+            prediction_probabilities = self._model_instance.predict_proba(
+                features)
         else:
-            predictions = self._model_instance.predict(features).astype(np.int32)
+            predictions = self._model_instance.predict(
+                features).astype(np.int32)
             prediction_probabilities = np.zeros(
                 (predictions.shape[0], len(self._model_instance.classes_)),
                 dtype=np.float32,
             )
-            prediction_probabilities[np.arange(predictions.size), predictions] = 1
+            prediction_probabilities[np.arange(
+                predictions.size), predictions] = 1
 
         # In the majority but not totality of sklearn models,
         # the predictions of binary models are returned as
@@ -322,6 +354,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -338,8 +371,10 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
             such as Graph Convolutional Networks.
         node_features: np.ndarray
             The node features to be used in the evaluation of the model.
-        node_type_features: np.ndarray
+        node_type_features: Optional[List[np.ndarray]] = None
             The node type features to be used.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to be used.
         edge_features: Optional[np.ndarray] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -356,6 +391,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
                 support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
+                edge_type_features=edge_type_features,
                 edge_features=edge_features,
             )
         )
@@ -368,10 +404,15 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
+        return True
+
+    @classmethod
+    def requires_node_types(cls) -> bool:
+        """Returns whether the model requires node types."""
         return False
 
     @classmethod
-    def load(cls, path: str) -> "Self":
+    def load(cls, path: str):
         """Load a saved version of the model from the provided path.
 
         Parameters

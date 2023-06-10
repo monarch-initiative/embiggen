@@ -1,5 +1,5 @@
 """Edge-label prediction model based on LightGBM.""" ""
-from typing import Dict, Union, Any
+from typing import Dict, Union, Any, List
 from lightgbm import LGBMClassifier
 from embiggen.edge_label_prediction.sklearn_like_edge_label_prediction_adapter import (
     SklearnLikeEdgeLabelPredictionAdapter,
@@ -29,7 +29,7 @@ class LightGBMEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
         reg_lambda: float = 0.0,
         n_jobs: int = -1,
         importance_type: str = "split",
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
         **kwargs: Dict,
@@ -72,8 +72,23 @@ class LightGBMEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
             The number of jobs to use.
         importance_type: str = "split",
             The importance type to use.
-        edge_embedding_method: str = "Concatenate"
-            The method to use to compute the edges.
+        edge_embedding_method: Union[List[str], str] = "Concatenate",
+            The method(s) to use to compute the edges.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
@@ -117,7 +132,7 @@ class LightGBMEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
         super().__init__(
             model_instance=model_instance,
             random_state=random_state,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
         )
 

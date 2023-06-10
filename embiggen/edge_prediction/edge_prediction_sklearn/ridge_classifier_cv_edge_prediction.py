@@ -1,5 +1,5 @@
 """Submodule wrapping Ridge Classifier Cross Validator for Edge prediction."""
-from typing import Dict, Any, Tuple, Union, Optional
+from typing import Dict, Any, Tuple, Union, Optional, Union, List
 from sklearn.linear_model import RidgeClassifierCV
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import (
     SklearnEdgePredictionAdapter,
@@ -18,7 +18,7 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
         cv: int=10,
         class_weight: Union[Dict, str] = "balanced",
         store_cv_values: bool = False,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -41,7 +41,7 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
 
         super().__init__(
             RidgeClassifierCV(**self._kwargs),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,

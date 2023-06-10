@@ -1,5 +1,5 @@
 """Submodule wrapping Gradient Boosting for edge label prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.ensemble import GradientBoostingClassifier
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
@@ -28,7 +28,7 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         n_iter_no_change=None,
         tol=1e-4,
         ccp_alpha=0.0,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42
     ):
@@ -65,7 +65,7 @@ class GradientBoostingEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 warm_start=warm_start, validation_fraction=validation_fraction,
                 n_iter_no_change=n_iter_no_change, tol=tol, ccp_alpha=ccp_alpha
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state
         )

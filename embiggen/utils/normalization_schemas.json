@@ -95,7 +95,7 @@
     "decay": "float",
     "alphas": "pass",
     "training_sample_only_edges_with_heterogeneous_node_types": "bool",
-    "edge_embedding_method": "str",
+    "edge_embedding_methods": "pass",
     "training_unbalance_rate": "float",
     "prediction_batch_size": "int",
     "use_edge_metrics": "bool",

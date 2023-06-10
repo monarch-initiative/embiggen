@@ -1,5 +1,5 @@
 """Submodule wrapping Logistic Regression Cross Validator for Edge-label prediction."""
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union, List
 from sklearn.linear_model import LogisticRegressionCV
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import (
     SklearnEdgeLabelPredictionAdapter,
@@ -28,7 +28,7 @@ class LogisticRegressionCVEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
         intercept_scaling: float = 1.0,
         multi_class: str = "auto",
         l1_ratios=None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -57,7 +57,7 @@ class LogisticRegressionCVEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
 
         super().__init__(
             LogisticRegressionCV(**self._kwargs, random_state=random_state),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )

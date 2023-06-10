@@ -14,7 +14,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         number_of_head_layers: int = 1,
         number_of_units_per_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -34,6 +34,8 @@ class GNNEdgePrediction(GCNEdgePrediction):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        use_edge_type_embedding: bool = False,
+        edge_type_embedding_size: int = 50,
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
         verbose: bool = False
@@ -129,6 +131,13 @@ class GNNEdgePrediction(GCNEdgePrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        use_edge_type_embedding: bool = False
+            Whether to use a edge type embedding layer that is automatically learned
+            by the model while it trains. Please do be advised that by using
+            a edge type embedding layer you are making a closed-world assumption,
+            and this model will not work on graphs with a different edge vocabulary.
+        edge_type_embedding_size: int = 50
+            Dimension of the edge type embedding.
         node_feature_names: Optional[List[str]] = None
             Names of the node features.
             This is used as the layer names.
@@ -146,7 +155,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             number_of_ffnn_head_layers=number_of_head_layers,
             number_of_units_per_ffnn_body_layer=number_of_units_per_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_head_layer,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -166,6 +175,8 @@ class GNNEdgePrediction(GCNEdgePrediction):
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
+            use_edge_type_embedding=use_edge_type_embedding,
+            edge_type_embedding_size=edge_type_embedding_size,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,

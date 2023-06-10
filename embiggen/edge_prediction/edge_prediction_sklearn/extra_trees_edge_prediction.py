@@ -1,5 +1,5 @@
 """Submodule wrapping Extra Trees for edge prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.ensemble import ExtraTreesClassifier
 from embiggen.edge_prediction.edge_prediction_sklearn.decision_tree_edge_prediction import DecisionTreeEdgePrediction
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import SklearnEdgePredictionAdapter
@@ -27,7 +27,7 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
         warm_start=False,
         ccp_alpha=0.0,
         max_samples=None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -63,7 +63,7 @@ class ExtraTreesEdgePrediction(SklearnEdgePredictionAdapter):
             ExtraTreesClassifier(
                 **self._tree_kwargs
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,

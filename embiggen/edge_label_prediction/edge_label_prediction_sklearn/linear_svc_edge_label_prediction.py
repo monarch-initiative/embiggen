@@ -1,5 +1,5 @@
 """Submodule wrapping Linear Support Vector Machine for Edge prediction."""
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from sklearn.svm import LinearSVC
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import (
     SklearnEdgeLabelPredictionAdapter,
@@ -23,7 +23,7 @@ class LinearSVCEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         class_weight: Union[Dict, str] = "balanced",
         verbose: int = 0,
         max_iter: int = 1000,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -47,7 +47,7 @@ class LinearSVCEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
 
         super().__init__(
             LinearSVC(**self._kwargs, random_state=random_state),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )

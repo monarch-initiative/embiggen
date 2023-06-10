@@ -106,6 +106,14 @@ class NodeTransformer:
             if node_type_feature is not None:
                 self._node_type_feature = pd.concat(node_type_feature, axis=1)
 
+    def has_node_type_features(self) -> bool:
+        """Return whether the transformer has node type feature."""
+        return self._node_type_feature is not None
+
+    def is_aligned_mapping(self) -> bool:
+        """Return whether the transformer can assume aligned mapping."""
+        return self._aligned_mapping
+
     def is_fit(self) -> bool:
         """Return whether the transformer is fitted."""
         return self._node_feature is not None or self._node_type_feature is not None

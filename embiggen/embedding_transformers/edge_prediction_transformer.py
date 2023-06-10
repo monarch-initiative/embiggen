@@ -12,7 +12,7 @@ class EdgePredictionTransformer:
 
     def __init__(
         self,
-        method: str = "Hadamard",
+        methods: Union[List[str], str] = "Hadamard",
         aligned_mapping: bool = False,
         include_both_undirected_edges: bool = True
     ):
@@ -20,9 +20,24 @@ class EdgePredictionTransformer:
 
         Parameters
         ------------------------
-        method: str = "hadamard",
+        methods: Union[List[str], str] = "Hadamard",
             Method to use for the embedding.
-            Can either be 'Hadamard', 'Sum', 'Average', 'L1', 'AbsoluteL1', 'L2' or 'Concatenate'.
+            If None is used, we return instead the numeric tuples.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         aligned_mapping: bool = False,
             This parameter specifies whether the mapping of the embeddings nodes
             matches the internal node mapping of the given graph.
@@ -32,7 +47,7 @@ class EdgePredictionTransformer:
             Whether to include both directed and undirected edges.
         """
         self._transformer = GraphTransformer(
-            method=method,
+            methods=methods,
             aligned_mapping=aligned_mapping,
             include_both_undirected_edges=include_both_undirected_edges
         )
@@ -42,6 +57,8 @@ class EdgePredictionTransformer:
         node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray,
                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
+                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Fit the model.
 
@@ -51,6 +68,8 @@ class EdgePredictionTransformer:
             Node feature to use to fit the transformer.
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             Node type feature to use to fit the transformer.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            Edge type feature to use to fit the transformer.
 
         Raises
         -------------------------
@@ -59,7 +78,8 @@ class EdgePredictionTransformer:
         """
         self._transformer.fit(
             node_feature,
-            node_type_feature=node_type_feature
+            node_type_feature=node_type_feature,
+            edge_type_features=edge_type_features
         )
 
     def transform(
@@ -150,12 +170,14 @@ class EdgePredictionTransformer:
 
         positive_edge_embedding = self._transformer.transform(
             positive_graph,
-            node_types=positive_graph,
+            node_types=positive_graph if self._transformer.has_node_type_features() else None,
+            edge_types=positive_graph if self._transformer.has_edge_type_features() else None,
             edge_features=positive_edge_features
         )
         negative_edge_embedding = self._transformer.transform(
             negative_graph,
-            node_types=negative_graph,
+            node_types=negative_graph if self._transformer.has_node_type_features() else None,
+            edge_types=negative_graph if self._transformer.has_edge_type_features() else None,
             edge_features=negative_edge_features
         )
 

@@ -1,5 +1,5 @@
 """Submodule wrapping K-Neighbour for Edge-label prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.neighbors import KNeighborsClassifier
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import (
     SklearnEdgeLabelPredictionAdapter,
@@ -20,7 +20,7 @@ class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
         metric: str = "minkowski",
         metric_params: Dict[str, Any] = None,
         n_jobs: int = -1,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -41,7 +41,7 @@ class KNeighborsClassifierEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter)
 
         super().__init__(
             KNeighborsClassifier(**self._kwargs),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state
         )

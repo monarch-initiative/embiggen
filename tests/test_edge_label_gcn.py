@@ -27,6 +27,7 @@ class TestEdgeLabelGCN(TestCase):
         model: KipfGCNEdgeLabelPrediction = KipfGCNEdgeLabelPrediction(
             epochs=1,
             use_edge_metrics=True,
+            edge_embedding_methods=["Concatenate", "Hadamard", "Average"],
             verbose=True
         )
         model.fit(

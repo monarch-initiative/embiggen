@@ -483,7 +483,7 @@ class AbstractGCN(AbstractClassifierModel):
             input_features.append(node_type_ids)
 
             node_type_embedding = FlatEmbedding(
-                vocabulary_size=graph.get_number_of_nodes(),
+                vocabulary_size=graph.get_number_of_node_types(),
                 dimension=self._node_embedding_size,
                 input_length=graph.get_maximum_multilabel_count(),
                 mask_zero=(
@@ -817,6 +817,10 @@ class AbstractGCN(AbstractClassifierModel):
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
         return not self._use_simmetric_normalized_laplacian
+
+    def is_using_node_types(self) -> bool:
+        """Returns whether the model is parametrized to use node types."""
+        return self._use_node_type_embedding or super().is_using_node_types()
 
     @classmethod
     def load(cls, path: str) -> "Self":

@@ -1,5 +1,5 @@
 """Submodule wrapping MLP for edge label prediction."""
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from sklearn.neural_network import MLPClassifier
 from embiggen.edge_label_prediction.edge_label_prediction_sklearn.sklearn_edge_label_prediction_adapter import SklearnEdgeLabelPredictionAdapter
 
@@ -31,7 +31,7 @@ class MLPEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
         epsilon=1e-8,
         n_iter_no_change=10,
         max_fun=15000,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42
     ):
@@ -83,7 +83,7 @@ class MLPEdgeLabelPrediction(SklearnEdgeLabelPredictionAdapter):
                 n_iter_no_change=n_iter_no_change,
                 max_fun=max_fun
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state
         )

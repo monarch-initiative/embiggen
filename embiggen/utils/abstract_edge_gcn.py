@@ -9,13 +9,11 @@ from tensorflow.keras.optimizers import \
 
 from ensmallen import Graph
 from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
-from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionSequence
 from embiggen.utils.abstract_models import abstract_class
 from embiggen.utils.abstract_gcn import AbstractGCN
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
-import math
 from embiggen.utils.number_to_ordinal import number_to_ordinal
-from embiggen.layers.tensorflow import EmbeddingLookup, ElementWiseL1, ElementWiseL2
+from embiggen.layers.tensorflow import EmbeddingLookup, ElementWiseL1, ElementWiseL2, FlatEmbedding
 import tensorflow as tf
 
 
@@ -27,7 +25,8 @@ class AbstractEdgeGCN(AbstractGCN):
         self,
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
-        number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
+        number_of_units_per_graph_convolution_layers: Union[int,
+                                                            List[int]] = 128,
         number_of_ffnn_body_layers: int = 2,
         number_of_ffnn_head_layers: int = 1,
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
@@ -35,7 +34,7 @@ class AbstractEdgeGCN(AbstractGCN):
         dropout_rate: float = 0.3,
         apply_norm: bool = False,
         combiner: str = "sum",
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -54,6 +53,8 @@ class AbstractEdgeGCN(AbstractGCN):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        use_edge_type_embedding: bool = False,
+        edge_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
@@ -178,6 +179,13 @@ class AbstractEdgeGCN(AbstractGCN):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        use_edge_type_embedding: bool = False
+            Whether to use a edge type embedding layer that is automatically learned
+            by the model while it trains. Please do be advised that by using
+            a edge type embedding layer you are making a closed-world assumption,
+            and this model will not work on graphs with a different edge vocabulary.
+        edge_type_embedding_size: int = 50
+            Dimension of the edge type embedding.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -234,8 +242,13 @@ class AbstractEdgeGCN(AbstractGCN):
             object_type=int
         )
 
-        self._edge_embedding_method = edge_embedding_method
+        if not isinstance(edge_embedding_methods, list):
+            edge_embedding_methods = [edge_embedding_methods]
+
+        self._edge_embedding_methods: List[str] = edge_embedding_methods
         self._use_edge_metrics = use_edge_metrics
+        self._use_edge_type_embedding = use_edge_type_embedding
+        self._edge_type_embedding_size = edge_type_embedding_size
         self._use_node_types = None
 
     @classmethod
@@ -256,8 +269,6 @@ class AbstractEdgeGCN(AbstractGCN):
             use_edge_metrics=self._use_edge_metrics,
         )
 
-    
-
     def _get_model_training_output(self, graph: Graph) -> Optional[np.ndarray]:
         """Returns training output tuple."""
         return None
@@ -267,7 +278,7 @@ class AbstractEdgeGCN(AbstractGCN):
         return None
 
     @classmethod
-    def get_available_edge_embedding_methods(cls) -> List[str]:
+    def get_available_edge_embedding_methodss(cls) -> List[str]:
         """Returns a list of the available edge embedding methods."""
         return [
             "Concatenation",
@@ -286,7 +297,9 @@ class AbstractEdgeGCN(AbstractGCN):
         self,
         graph: Graph,
         graph_convolution_model: Model,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[Union[Type[AbstractEdgeFeature],
+                                      List[Union[Type[AbstractEdgeFeature], np.ndarray]]]],
     ) -> Type[Model]:
         """Create new GCN model."""
 
@@ -309,12 +322,24 @@ class AbstractEdgeGCN(AbstractGCN):
             dtype=tf.int32
         )
 
+        if self.is_using_edge_types() and not self.task_involves_edge_types():
+            edge_types = Input(
+                (1,),
+                batch_size=nodes_number,
+                name="EdgeTypes",
+                dtype=tf.int16
+            )
+        else:
+            edge_types = None
+
         feature_names = [
             node_input_layer.name
             for node_input_layer in (
                 source_nodes,
-                destination_nodes
+                destination_nodes,
+                edge_types
             )
+            if node_input_layer is not None
         ]
 
         source_and_destination_features = [
@@ -327,6 +352,16 @@ class AbstractEdgeGCN(AbstractGCN):
                 destination_nodes
             ), feature_names)
         ]
+
+        if self._use_edge_type_embedding:
+            edge_type_embedding = FlatEmbedding(
+                vocabulary_size=graph.get_number_of_edge_types(),
+                dimension=self._edge_embedding_size,
+                input_length=1,
+                name="edgeTypesEmbedding"
+            )(edge_types)
+            feature_names.append("Edge Type Embedding")
+            source_and_destination_features.append(edge_type_embedding)
 
         edge_feature_inputs = []
 
@@ -400,6 +435,21 @@ class AbstractEdgeGCN(AbstractGCN):
                     "Please provide an instance of AbstractEdgeFeature or a numpy array."
                 )
             
+        for i, edge_type_feature in enumerate(edge_type_features):
+            if isinstance(edge_type_feature, np.ndarray):
+                edge_type_feature_input = Input(
+                    shape=edge_type_feature.shape[1:],
+                    batch_size=nodes_number,
+                    name=f"{number_to_ordinal(i+1)}EdgeTypeFeature",
+                )
+                edge_feature_inputs.append(edge_type_feature_input)
+                source_and_destination_features.append(edge_type_feature_input)
+            else:
+                raise NotImplementedError(
+                    f"Edge type feature of type {type(edge_type_feature)} is not supported."
+                    "Please provide an instance of numpy array."
+                )
+
         feature_names.extend(edge_feature_names)
 
         ffnn_outputs = []
@@ -418,49 +468,64 @@ class AbstractEdgeGCN(AbstractGCN):
         source_and_destination_features = ffnn_outputs[:2]
         other_features = ffnn_outputs[2:]
 
-        if self._edge_embedding_method == "Concatenate":
+        edge_embedding_layers = []
+
+        for edge_embedding_method in self._edge_embedding_methods:
+            if edge_embedding_method == "Concatenate":
+                edge_embedding_layers.append(Concatenate(
+                    name="NodeConcatenation",
+                    axis=-1
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Average":
+                edge_embedding_layers.append(Average(
+                    name="NodeAverage"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Hadamard":
+                edge_embedding_layers.append(Multiply(
+                    name="NodeHadamard"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Maximum":
+                edge_embedding_layers.append(Maximum(
+                    name="NodeMaximum"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Minimum":
+                edge_embedding_layers.append(Minimum(
+                    name="NodeMinimum"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Add":
+                edge_embedding_layers.append(Add(
+                    name="NodeAdd"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Subtract":
+                edge_embedding_layers.append(Subtract(
+                    name="NodeSubtract"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "L1":
+                edge_embedding_layers.append(ElementWiseL1(
+                    name="NodeL1"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "L2":
+                edge_embedding_layers.append(ElementWiseL2(
+                    name="NodeL2"
+                )(source_and_destination_features))
+            elif edge_embedding_method == "Dot":
+                edge_embedding_layers.append(Dot(
+                    name="NodeDot",
+                    normalize=True,
+                    axes=-1
+                )(source_and_destination_features))
+
+        if len(edge_embedding_layers) > 1:
             hidden = Concatenate(
-                name="NodeConcatenation",
+                name="EdgeEmbeddings",
                 axis=-1
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Average":
-            hidden = Average(
-                name="NodeAverage"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Hadamard":
-            hidden = Multiply(
-                name="NodeHadamard"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Maximum":
-            hidden = Maximum(
-                name="NodeMaximum"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Minimum":
-            hidden = Minimum(
-                name="NodeMinimum"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Add":
-            hidden = Add(
-                name="NodeAdd"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Subtract":
-            hidden = Subtract(
-                name="NodeSubtract"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "L1":
-            hidden = ElementWiseL1(
-                name="NodeL1"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "L2":
-            hidden = ElementWiseL2(
-                name="NodeL2"
-            )(source_and_destination_features)
-        elif self._edge_embedding_method == "Dot":
-            hidden = Dot(
-                name="NodeDot",
-                normalize=True,
-                axes=-1
-            )(source_and_destination_features)
+            )(edge_embedding_layers)
+        elif len(edge_embedding_layers) == 1:
+            hidden = edge_embedding_layers[0]
+        else:
+            raise ValueError(
+                "The provided edge embedding methods are empty."
+            )
 
         if len(other_features) > 0:
             hidden = Concatenate(
@@ -528,6 +593,6 @@ class AbstractEdgeGCN(AbstractGCN):
         """Returns whether the model can optionally use node types."""
         return True
 
-    def is_using_node_types(self) -> bool:
-        """Returns whether the model is parametrized to use node types."""
-        return self._use_node_type_embedding
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        return self._use_edge_type_embedding or super().is_using_edge_types()

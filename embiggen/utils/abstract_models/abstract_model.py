@@ -143,7 +143,7 @@ class AbstractModel(Hashable):
             random_state=self._random_state
         )
 
-    def into_smoke_test(self) -> "Self":
+    def into_smoke_test(self):
         """Creates new instance with smoke test parameters."""
         return self.__class__(**{
             **self.parameters(),
@@ -156,11 +156,12 @@ class AbstractModel(Hashable):
         try:
             if not cls.can_use_edge_weights():
                 return False
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `requires_edge_weights` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -168,7 +169,8 @@ class AbstractModel(Hashable):
         """Returns whether the model task involves edge weights."""
         raise NotImplementedError((
             "The `task_involves_edge_weights` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -180,11 +182,12 @@ class AbstractModel(Hashable):
                 cls.requires_edge_weights()
             ):
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `can_use_edge_weights` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     def is_using_edge_weights(self) -> bool:
@@ -192,11 +195,12 @@ class AbstractModel(Hashable):
         try:
             if self.requires_edge_weights():
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `is_using_edge_weights` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -205,11 +209,12 @@ class AbstractModel(Hashable):
         try:
             if not cls.requires_edge_weights():
                 return False
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `requires_positive_edge_weights` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -217,7 +222,8 @@ class AbstractModel(Hashable):
         """Returns whether the model task involves topology."""
         raise NotImplementedError((
             "The `task_involves_topology` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -225,7 +231,8 @@ class AbstractModel(Hashable):
         """Returns whether this embedding is based on graph topology."""
         raise NotImplementedError((
             "The `is_topological` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -234,11 +241,12 @@ class AbstractModel(Hashable):
         try:
             if not cls.can_use_node_types():
                 return False
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `requires_node_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -246,7 +254,8 @@ class AbstractModel(Hashable):
         """Returns whether the model task involves node types."""
         raise NotImplementedError((
             "The `task_involves_node_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -255,11 +264,12 @@ class AbstractModel(Hashable):
         try:
             if cls.requires_node_types():
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `can_use_node_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     def is_using_node_types(self) -> bool:
@@ -267,7 +277,7 @@ class AbstractModel(Hashable):
         try:
             if self.requires_node_types():
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `is_using_node_types` method must be implemented "
@@ -282,11 +292,12 @@ class AbstractModel(Hashable):
         try:
             if not cls.can_use_edge_types():
                 return False
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `requires_edge_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -294,7 +305,8 @@ class AbstractModel(Hashable):
         """Returns whether the model task involves edge types."""
         raise NotImplementedError((
             "The `task_involves_edge_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod
@@ -303,11 +315,12 @@ class AbstractModel(Hashable):
         try:
             if cls.requires_edge_types():
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `can_use_edge_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     def is_using_edge_types(self) -> bool:
@@ -315,11 +328,12 @@ class AbstractModel(Hashable):
         try:
             if self.requires_edge_types():
                 return True
-        except NotImplementedError:
+        except (NotImplementedError, RecursionError):
             pass
         raise NotImplementedError((
             "The `is_using_edge_types` method must be implemented "
-            "in the child classes of abstract model."
+            "in the child classes of abstract model. "
+            f"It was not implemented in the class {cls.__name__}."
         ))
 
     @classmethod

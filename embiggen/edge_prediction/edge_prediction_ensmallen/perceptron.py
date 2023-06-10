@@ -140,6 +140,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Run fitting on the provided graph.
@@ -157,9 +158,27 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
+        if edge_type_features is not None and len(edge_type_features) > 0:
+            raise NotImplementedError(
+                "Edge type features are not yet supported by "
+                f"the model {self.model_name()} from {self.library_name()} library "
+                f"for the task of {self.task_name()}. "
+                f"Received object of type {type(edge_type_features)}."
+            )
+        
+        if edge_features is not None and len(edge_features) > 0:
+            raise NotImplementedError(
+                "Edge features are not yet supported by "
+                f"the model {self.model_name()} from {self.library_name()} library "
+                f"for the task of {self.task_name()}. "
+                f"Received object of type {type(edge_features)}."
+            )
+
         new_node_features = []
         if node_features is not None:
             for node_feature in node_features:
@@ -195,6 +214,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
@@ -212,6 +232,8 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
@@ -229,6 +251,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
@@ -246,6 +269,8 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to use.
         edge_features: Optional[List[np.ndarray]] = None
             The edge features to use.
         """
@@ -263,18 +288,28 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         )
 
     @classmethod
-    def can_use_edge_weights(cls) -> bool:
-        """Returns whether the model can optionally use edge weights."""
+    def requires_node_types(cls) -> bool:
+        """Returns whether the model requires node types."""
         return False
 
     @classmethod
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
+        return True
+    
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        """Returns whether the model requires edge types."""
         return False
-
+    
     @classmethod
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
+        return True
+    
+    @classmethod
+    def can_use_edge_weights(cls) -> bool:
+        """Returns whether the model can optionally use edge weights."""
         return False
 
     @classmethod
@@ -286,7 +321,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         return "Ensmallen"
 
     @classmethod
-    def load(cls, path: str) -> "Self":
+    def load(cls, path: str):
         """Load a saved version of the model from the provided path.
 
         Parameters

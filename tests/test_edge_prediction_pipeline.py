@@ -138,6 +138,10 @@ class TestEvaluateEdgePrediction(TestCase):
                     parameters["use_node_embedding"] = True
                 if "use_node_type_embedding" in model.parameters():
                     parameters["use_node_type_embedding"] = True
+
+                if "edge_embedding_methods" in model.parameters():
+                    parameters["edge_embedding_methods"] = [
+                        "Concatenate", "Hadamard", "Average"]
                 model_class = AbstractEdgePredictionModel.get_model_from_library(
                     model_name
                 )
@@ -179,13 +183,13 @@ class TestEvaluateEdgePrediction(TestCase):
                 restored_model_parameters = {
                     key: value
                     for key, value in restored_model.parameters().items()
-                    if isinstance(value, (list, tuple, np.ndarray)) or  pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or pd.notna(value)
                 }
 
                 model_parameters = {
                     key: value
                     for key, value in model.parameters().items()
-                    if isinstance(value, (list, tuple, np.ndarray)) or  pd.notna(value)
+                    if isinstance(value, (list, tuple, np.ndarray)) or pd.notna(value)
                 }
 
                 self.assertEqual(
@@ -351,7 +355,7 @@ class TestEvaluateEdgePrediction(TestCase):
         for edge_embedding in EdgeTransformer.methods:
             for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
                 model = DecisionTreeEdgePrediction(
-                    edge_embedding_method=edge_embedding
+                    edge_embedding_methods=edge_embedding
                 )
                 holdouts = edge_prediction_evaluation(
                     holdouts_kwargs=dict(train_size=0.9),
@@ -443,7 +447,7 @@ class TestEvaluateEdgePrediction(TestCase):
             edge_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.9),
                 models=GraphSAGEEdgePrediction(
-                    edge_embedding_method=edge_embedding_method,
+                    edge_embedding_methods=edge_embedding_method,
                     epochs=1
                 ),
                 evaluation_schema="Connected Monte Carlo",

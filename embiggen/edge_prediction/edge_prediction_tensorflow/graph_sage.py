@@ -17,7 +17,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -37,6 +37,8 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        use_edge_type_embedding: bool = False,
+        edge_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
@@ -146,6 +148,13 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        use_edge_type_embedding: bool = False
+            Whether to use a edge type embedding layer that is automatically learned
+            by the model while it trains. Please do be advised that by using
+            a edge type embedding layer you are making a closed-world assumption,
+            and this model will not work on graphs with a different edge vocabulary.
+        edge_type_embedding_size: int = 50
+            Dimension of the edge type embedding.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -172,7 +181,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             dropout_rate=dropout_rate,
             combiner="mean",
             apply_norm=True,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -193,6 +202,8 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
+            use_edge_type_embedding=use_edge_type_embedding,
+            edge_type_embedding_size=edge_type_embedding_size,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,

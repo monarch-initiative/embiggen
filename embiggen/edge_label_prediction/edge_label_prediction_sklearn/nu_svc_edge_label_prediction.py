@@ -1,5 +1,5 @@
 """Submodule wrapping Nu Support Vector Machine for Edge-label prediction."""
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, List
 from sklearn.svm import NuSVC
 from embiggen.node_label_prediction.node_label_prediction_sklearn.sklearn_node_label_prediction_adapter import (
     SklearnNodeLabelPredictionAdapter,
@@ -26,7 +26,7 @@ class NuSVCEdgeLabelPrediction(SklearnNodeLabelPredictionAdapter):
         max_iter: int = -1,
         decision_function_shape: str = "ovr",
         break_ties: bool = False,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -53,7 +53,7 @@ class NuSVCEdgeLabelPrediction(SklearnNodeLabelPredictionAdapter):
 
         super().__init__(
             NuSVC(**self._kwargs, random_state=random_state),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )

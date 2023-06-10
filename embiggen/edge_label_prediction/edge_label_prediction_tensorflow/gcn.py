@@ -3,7 +3,6 @@ from typing import List, Union, Optional, Dict, Type
 
 import numpy as np
 from ensmallen import Graph
-import tensorflow as tf
 from tensorflow.keras.optimizers import Optimizer
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class, AbstractEdgeFeature
 from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
@@ -26,7 +25,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         dropout_rate: float = 0.3,
         apply_norm: bool = False,
         combiner: str = "mean",
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -196,7 +195,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
             combiner=combiner,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -228,9 +227,16 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> GCNEdgeLabelPredictionSequence:
-        """Returns dictionary with class weights."""
+        """Returns prediction sequence."""
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Edge type features are not yet supported for training "
+                f"the {self.__class__.__name__} model for the "
+                "edge label prediction task."
+            )
         return GCNEdgeLabelPredictionSequence(
             graph,
             support=support,
@@ -249,9 +255,17 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> GCNEdgeLabelPredictionTrainingSequence:
         """Returns training input tuple."""
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Edge type features are not yet supported for training "
+                f"the {self.__class__.__name__} model for the "
+                "edge label prediction task."
+            )
+
         return GCNEdgeLabelPredictionTrainingSequence(
             graph=graph,
             support=support,
@@ -285,6 +299,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Run predictions on the provided graph."""
@@ -293,6 +308,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             edge_features=edge_features
         )
         # The model will padd the predictions with a few zeros

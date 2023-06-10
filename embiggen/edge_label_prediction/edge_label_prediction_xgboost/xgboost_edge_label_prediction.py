@@ -47,7 +47,7 @@ class XGBEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
         max_cat_threshold: Optional[int] = None,
         eval_metric: Optional[Union[str, List[str]]] = None,
         early_stopping_rounds: Optional[int] = None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -95,7 +95,7 @@ class XGBEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
                 **self._kwargs,
                 random_state=random_state,
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )

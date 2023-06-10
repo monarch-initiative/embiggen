@@ -22,6 +22,7 @@ class GCNEdgePredictionSequence(Sequence):
         return_node_ids: bool = False,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
         use_edge_metrics: bool = False,
     ):
@@ -50,6 +51,12 @@ class GCNEdgePredictionSequence(Sequence):
             description of the node types.
             When the graph has multilabel node types,
             we will average the features.
+        edge_type_features: Optional[List[np.ndarray]]
+            The edge type features to be used.
+            For instance, these could be BERT embeddings of the
+            description of the edge types.
+            When the graph has multilabel edge types,
+            we will average the features.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
             The edge features to be used.
         use_edge_metrics: bool = False
@@ -69,12 +76,28 @@ class GCNEdgePredictionSequence(Sequence):
                 "contains unknown node types but node types "
                 "have been requested for the sequence."
             )
+        
+        if (
+            return_edge_types or
+            edge_type_features is not None
+        ) and graph.has_unknown_edge_types():
+            raise ValueError(
+                f"The provided graph {graph.get_name()} "
+                "contains unknown edge types but edge types "
+                "have been requested for the sequence."
+            )
 
         if edge_features is None:
             edge_features = []
 
         if not isinstance(edge_features, list):
             edge_features = [edge_features]
+
+        if edge_type_features is None:
+            edge_type_features = []
+        
+        if not isinstance(edge_type_features, list):
+            edge_type_features = [edge_type_features]
 
         if support is None:
             support = graph
@@ -154,6 +177,7 @@ class GCNEdgePredictionSequence(Sequence):
         self._node_types = node_types if return_node_types else None
 
         self._edge_features = [] if edge_features is None else edge_features
+        self._edge_type_features = [] if edge_type_features is None else edge_type_features
 
         self._current_index = 0
         super().__init__(
@@ -258,6 +282,11 @@ class GCNEdgePredictionSequence(Sequence):
 
         edge_features: Tuple[np.ndarray] = self.get_edge_features_from_edge_node_ids(sources, destinations)
 
+        edge_type_features = []
+
+        for edge_type_feature in self._edge_type_features:
+            edge_type_features.append(edge_type_feature[values[2]])
+
         # We reshape both sources and destinations to be of shape
         # (batch_size, 1) so that they can be used as inputs for
         # the embedding layer.
@@ -284,6 +313,7 @@ class GCNEdgePredictionSequence(Sequence):
             for value in (
                 *values,
                 *edge_features,
+                *edge_type_features,
                 *self.get_node_features(),
             )
             if value is not None

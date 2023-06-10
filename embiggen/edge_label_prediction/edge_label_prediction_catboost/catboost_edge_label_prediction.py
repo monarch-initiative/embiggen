@@ -1,5 +1,5 @@
 """Edge-label prediction model based on CatBoost."""
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from catboost import CatBoostClassifier
 from embiggen.edge_label_prediction.sklearn_like_edge_label_prediction_adapter import (
     SklearnLikeEdgeLabelPredictionAdapter,
@@ -105,7 +105,7 @@ class CatBoostEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
         embedding_features=None,
         callback=None,
         eval_fraction=None,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         use_edge_metrics: bool = False,
         random_state: int = 42,
     ):
@@ -212,7 +212,7 @@ class CatBoostEdgeLabelPrediction(SklearnLikeEdgeLabelPredictionAdapter):
                 **self._kwargs,
                 random_state=random_state,
             ),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
         )

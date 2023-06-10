@@ -19,7 +19,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
     """Class wrapping Sklearn models for running node-label predictions."""
 
     def __init__(
-        self, model_instance: "Model", random_state: Optional[int] = None
+        self, model_instance, random_state: Optional[int] = None
     ):
         """Create the adapter for Sklearn object.
 
@@ -38,7 +38,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         super().__init__(random_state=random_state)
         self._model_instance = model_instance
 
-    def clone(self) -> Type["Self"]:
+    def clone(self):
         """Return copy of self."""
         return copy.deepcopy(self)
 
@@ -74,6 +74,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Execute fitting of the model.
@@ -92,6 +93,8 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             The node features to be used in the training of the model.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to be used in the training of the model.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to be used in the training of the model.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -121,6 +124,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -138,7 +142,9 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         node_features: Optional[List[np.ndarray]] = None
             The node features to be used in the evaluation of the model.
         node_type_features: Optional[List[np.ndarray]] = None
-            The node features to be used in prediction.
+            The node type features to be used in prediction.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -190,6 +196,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ) -> Dict[str, float]:
         """Return evaluations of the model on the edge-label prediction task on the provided data.
@@ -208,6 +215,8 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
             The node features to be used in prediction.
         node_type_features: List[np.ndarray]
             The node features to be used in prediction.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
             Optional edge features to be used as input concatenated
             to the obtained edge embedding. The shape must be equal
@@ -236,7 +245,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         return False
 
     @classmethod
-    def load(cls, path: str) -> "Self":
+    def load(cls, path: str):
         """Load a saved version of the model from the provided path.
 
         Parameters

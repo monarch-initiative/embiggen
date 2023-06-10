@@ -1,5 +1,5 @@
 """Submodule wrapping Ridge Classifier for Edge prediction."""
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, Union, Optional, List
 from sklearn.linear_model import RidgeClassifier
 from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_adapter import (
     SklearnEdgePredictionAdapter,
@@ -20,7 +20,7 @@ class RidgeClassifierEdgePrediction(SklearnEdgePredictionAdapter):
         class_weight: Union[Dict, str] = "balanced",
         solver: str = "auto",
         positive: bool = False,
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
@@ -45,7 +45,7 @@ class RidgeClassifierEdgePrediction(SklearnEdgePredictionAdapter):
 
         super().__init__(
             RidgeClassifier(**self._kwargs, random_state=random_state),
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,

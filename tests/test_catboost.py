@@ -81,7 +81,9 @@ def test_catboost_edge_prediction_smoke_test():
     ):
         if data is None:
             data = DegreeSPINE().into_smoke_test().fit_transform(g)
-        model = CatBoostEdgePrediction().into_smoke_test()
+        model = CatBoostEdgePrediction(
+            edge_embedding_methods=["Concatenate", "Hadamard"],
+        ).into_smoke_test()
         model.fit(g, node_features=data, edge_features=HyperSketching())
         model.predict(g, node_features=data, edge_features=HyperSketching())
         model.predict_proba(g, node_features=data,
@@ -100,7 +102,9 @@ def test_catboost_edge_label_prediction_smoke_test():
     for g, data in ((binary, None),):
         if data is None:
             data = DegreeSPINE().into_smoke_test().fit_transform(g)
-        model = CatBoostEdgeLabelPrediction().into_smoke_test()
+        model = CatBoostEdgeLabelPrediction(
+            edge_embedding_methods=["Concatenate", "Hadamard"],
+        ).into_smoke_test()
         model.fit(g, node_features=data, edge_features=HyperSketching())
         model.predict(g, node_features=data, edge_features=HyperSketching())
         model.predict_proba(g, node_features=data,

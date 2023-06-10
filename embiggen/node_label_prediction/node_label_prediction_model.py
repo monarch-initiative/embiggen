@@ -127,6 +127,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
@@ -153,6 +154,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
                 support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
+                edge_type_features=edge_type_features,
                 edge_features=edge_features
             )
 
@@ -204,6 +206,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -221,9 +224,16 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node type features to use.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Currently edge type features are not supported in node-label prediction models."
+            )
+        
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in node-label prediction models."
@@ -243,6 +253,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
@@ -260,9 +271,22 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The node features to use.
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The node type features to use.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+
+        Raises
+        --------------------
+        NotImplementedError
+            If edge features are provided.
+            If node type features are provided.
+            If edge type features are provided.
         """
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Currently edge type features are not supported in node-label prediction models."
+            )
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in node-label prediction models."
@@ -282,6 +306,7 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
         support: Optional[Graph] = None,
         node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
     ):
         """Execute predictions on the provided graph.
@@ -299,12 +324,28 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             The node features to use.
         node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel, List[Union[str, pd.DataFrame, np.ndarray, AbstractEmbeddingModel]]]] = None
             The node type features to use.
+        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+            The edge type features to use.
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
+            
+        Raises
+        --------------------
+        ValueError
+            If the graph has less than two node types.
+        NotImplementedError
+            If edge features are provided.
+            If node type features are provided.
+            If edge type features are provided.
         """
         if edge_features is not None:
             raise NotImplementedError(
                 "Currently edge features are not supported in node-label prediction models."
+            )
+        
+        if edge_type_features is not None:
+            raise NotImplementedError(
+                "Currently edge type features are not supported in node-label prediction models."
             )
 
         if node_type_features is not None:

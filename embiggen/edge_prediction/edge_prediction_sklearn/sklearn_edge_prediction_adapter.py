@@ -1,6 +1,6 @@
 """Module providing adapter class making edge prediction possible in sklearn models."""
 from sklearn.base import ClassifierMixin
-from typing import Type
+from typing import Type, Union, List
 from embiggen.utils.sklearn_utils import must_be_an_sklearn_classifier_model
 from embiggen.edge_prediction.sklearn_like_edge_prediction_adapter import (
     SklearnLikeEdgePredictionAdapter,
@@ -15,7 +15,7 @@ class SklearnEdgePredictionAdapter(SklearnLikeEdgePredictionAdapter):
     def __init__(
         self,
         model_instance: Type[ClassifierMixin],
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_scale_free_distribution: bool = True,
@@ -29,8 +29,23 @@ class SklearnEdgePredictionAdapter(SklearnLikeEdgePredictionAdapter):
         ----------------
         model_instance: Type[ClassifierMixin]
             The class instance to be adapted into edge prediction.
-        edge_embedding_method: str = "Concatenate"
-            The method to use to compute the edges.
+        edge_embedding_method: Union[List[str], str] = "Concatenate",
+            The method(s) to use to compute the edges.
+            If multiple edge embedding are provided, they
+            will be concatenated and fed to the model.
+            The supported edge embedding methods are:
+             * Hadamard: element-wise product
+             * Sum: element-wise sum
+             * Average: element-wise mean
+             * L1: element-wise subtraction
+             * AbsoluteL1: element-wise subtraction in absolute value
+             * SquaredL2: element-wise subtraction in squared value
+             * L2: element-wise squared root of squared subtraction
+             * Concatenate: concatenation of source and destination node features
+             * Min: element-wise minimum
+             * Max: element-wise maximum
+             * L2Distance: vector-wise L2 distance - this yields a scalar
+             * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         training_unbalance_rate: float = 1.0
             Unbalance rate for the training non-existing edges.
         training_sample_only_edges_with_heterogeneous_node_types: bool = False
@@ -70,7 +85,7 @@ class SklearnEdgePredictionAdapter(SklearnLikeEdgePredictionAdapter):
 
         super().__init__(
             model_instance=model_instance,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_scale_free_distribution=use_scale_free_distribution,

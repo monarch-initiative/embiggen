@@ -29,7 +29,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         dropout_rate: float = 0.2,
         apply_norm: bool = False,
         combiner: str = "mean",
-        edge_embedding_method: str = "Concatenate",
+        edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -50,6 +50,8 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        use_edge_type_embedding: bool = False,
+        edge_type_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
@@ -169,6 +171,13 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        use_edge_type_embedding: bool = False
+            Whether to use a edge type embedding layer that is automatically learned
+            by the model while it trains. Please do be advised that by using
+            a edge type embedding layer you are making a closed-world assumption,
+            and this model will not work on graphs with a different edge vocabulary.
+        edge_type_embedding_size: int = 50
+            Dimension of the edge type embedding.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -197,7 +206,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             dropout_rate=dropout_rate,
             combiner=combiner,
             apply_norm=apply_norm,
-            edge_embedding_method=edge_embedding_method,
+            edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -216,6 +225,8 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
+            use_edge_type_embedding=use_edge_type_embedding,
+            edge_type_embedding_size=edge_type_embedding_size,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
@@ -246,6 +257,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
     ) -> GCNEdgePredictionSequence:
         """Returns dictionary with class weights."""
@@ -256,7 +268,9 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),
+            return_edge_types=self.is_using_edge_types(),
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
             edge_features=edge_features
         )
@@ -267,6 +281,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         support: Graph,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
     ) -> GCNEdgePredictionTrainingSequence:
         """Returns training input tuple."""
@@ -278,7 +293,9 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             edge_features=edge_features,
             return_node_ids=self._use_node_embedding,
             return_node_types=self.is_using_node_types(),
+            return_edge_types=self.is_using_edge_types(),
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
             avoid_false_negatives=self._avoid_false_negatives,
             negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
@@ -301,6 +318,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
     ) -> np.ndarray:
         """Run predictions on the provided graph."""
@@ -309,6 +327,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
             edge_features=edge_features
         )
         # The model will padd the predictions with a few zeros
