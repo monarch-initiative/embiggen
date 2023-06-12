@@ -24,7 +24,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
             The number of convolutions to execute.
             By default, `2`.
         concatenate_features: bool = False
-            Whether to concatenate the features at each convolution.
+            Whether to Concatenate the features at each convolution.
             By default, `false`.
         dtype: str = "f32"
             The data type to use for the convolved features.
@@ -140,4 +140,12 @@ class GraphConvolution(AbstractFeaturePreprocessor):
     @classmethod
     def is_stocastic(cls) -> bool:
         """Return whether the model is stocastic."""
+        return False
+
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
         return False

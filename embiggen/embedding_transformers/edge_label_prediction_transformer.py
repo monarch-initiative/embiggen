@@ -25,7 +25,7 @@ class EdgeLabelPredictionTransformer:
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
             If multiple edge embedding are provided, they
-            will be concatenated and fed to the model.
+            will be Concatenated and fed to the model.
             The supported edge embedding methods are:
              * Hadamard: element-wise product
              * Sum: element-wise sum
@@ -34,7 +34,7 @@ class EdgeLabelPredictionTransformer:
              * AbsoluteL1: element-wise subtraction in absolute value
              * SquaredL2: element-wise subtraction in squared value
              * L2: element-wise squared root of squared subtraction
-             * Concatenate: concatenation of source and destination node features
+             * Concatenate: Concatenate of source and destination node features
              * Min: element-wise minimum
              * Max: element-wise maximum
              * L2Distance: vector-wise L2 distance - this yields a scalar
@@ -97,7 +97,7 @@ class EdgeLabelPredictionTransformer:
             The graph whose edges are to be embedded and edge types extracted.
             It can either be an Graph or a list of lists of edges.
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
         behaviour_for_unknown_edge_labels: Optional[str] = None

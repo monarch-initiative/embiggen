@@ -2,13 +2,12 @@
 from typing import List, Union, Optional, Dict, Type, Tuple, Any
 
 import numpy as np
-from tensorflow.keras.layers import Dense  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.layers import Dense, Concatenate  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.models import Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
-import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 from embiggen.utils.abstract_gcn import AbstractGCN, abstract_class
 from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
@@ -27,6 +26,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.1,
+        batch_size: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "mean",
         optimizer: Union[str, Optimizer] = "adam",
@@ -55,8 +55,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         -------------------------------
         epochs: int = 1000
             Epochs to train the model for.
-        batch_size: int = 2**10
-            Batch size to train the model.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 128
             Number of units per hidden layer.
         number_of_hidden_layers: int = 3
@@ -66,6 +64,11 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        batch_size: Optional[int] = None
+            Batch size to use while training the model.
+            If None, the batch size will be the number of nodes.
+            In all model parametrization that involve a number of graph
+            convolution layers, the batch size will be the number of nodes.
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
@@ -133,6 +136,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
             dropout_rate=dropout_rate,
+            batch_size=batch_size,
             apply_norm=apply_norm,
             combiner=combiner,
             optimizer=optimizer,
@@ -168,10 +172,17 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         self,
         graph: Graph,
         graph_convolution_model: Model,
+        edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[np.ndarray]] = None,
     ):
         """Create new GCN model."""
         hidden = graph_convolution_model.output
+
+        if isinstance(hidden, list):
+            hidden = Concatenate(
+                name="ConcatenatedNodeFeatures",
+                axis=-1
+            )(hidden)
 
         # Building the head of the model.
         for units in self._number_of_units_per_head_layer:
@@ -220,11 +231,27 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]],
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
+        if node_type_features is not None and len(node_type_features) > 0:
+            raise NotImplementedError(
+                "Node type features are not supported by this model."
+            )
+        
+        if edge_type_features is not None and len(edge_type_features) > 0:
+            raise NotImplementedError(
+                "Edge type features are not supported by this model."
+            )
+        
+        if edge_features is not None and len(edge_features) > 0:
+            raise NotImplementedError(
+                "Edge features are not supported by this model."
+            )
+
         kernel = self.convert_graph_to_kernel(support)
         return (
             *(
@@ -266,9 +293,10 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[List[np.ndarray]] = None,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[List[np.ndarray]],
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns dictionary with class weights."""
         return self._get_model_training_input(
@@ -276,6 +304,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             support,
             node_features,
             node_type_features,
+            edge_type_features,
             edge_features
         )
 
@@ -302,3 +331,4 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
     def supports_multilabel_prediction(cls) -> bool:
         """Returns whether the model supports multilabel prediction."""
         return True
+    

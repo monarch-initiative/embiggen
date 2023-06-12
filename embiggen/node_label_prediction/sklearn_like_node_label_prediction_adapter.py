@@ -96,7 +96,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         edge_type_features: Optional[List[np.ndarray]] = None
             The edge type features to be used in the training of the model.
         edge_features: Optional[List[np.ndarray]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the graph.
 
@@ -146,7 +146,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         edge_type_features: Optional[List[np.ndarray]] = None
             The edge type features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
 
@@ -218,7 +218,7 @@ class SklearnLikeNodeLabelPredictionAdapter(AbstractNodeLabelPredictionModel):
         edge_type_features: Optional[List[np.ndarray]] = None
             The edge type features to be used in prediction.
         edge_features: Optional[List[np.ndarray]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
 

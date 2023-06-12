@@ -360,3 +360,11 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             self.dumps(),
             path
         )
+
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False

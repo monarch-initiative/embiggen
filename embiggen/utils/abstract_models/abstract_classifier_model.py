@@ -1,42 +1,37 @@
 """Module providing abstract classes for classification models."""
-from typing import Union, Optional, List, Dict, Any, Tuple, Type, Iterator
-from ensmallen import Graph, express_measures
-import numpy as np
-import pandas as pd
+import functools
+import json
 import os
 import platform
 import time
-import json
-from userinput.utils import must_be_in_set
-from tqdm.auto import trange, tqdm
-from environments_utils import must_be_in_slurm_node
-from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
-from embiggen.utils.abstract_models.list_formatting import format_list
-from cache_decorator import Cache
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
-from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
-from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel, EmbeddingResult
-from embiggen.utils.abstract_models.abstract_feature_preprocessor import AbstractFeaturePreprocessor
-import functools
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    f1_score,
-    hamming_loss,
-    precision_score,
-    recall_score,
-    roc_auc_score
-)
+import numpy as np
+import pandas as pd
+from cache_decorator import Cache
+from ensmallen import Graph, express_measures
+from environments_utils import must_be_in_slurm_node
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
+                             hamming_loss, precision_score, recall_score,
+                             roc_auc_score)
+from tqdm.auto import tqdm, trange
+from userinput.utils import must_be_in_set
+
+from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
+from embiggen.utils.abstract_models.abstract_embedding_model import (
+    AbstractEmbeddingModel, EmbeddingResult)
+from embiggen.utils.abstract_models.abstract_feature_preprocessor import \
+    AbstractFeaturePreprocessor
+from embiggen.utils.abstract_models.abstract_model import (AbstractModel,
+                                                           abstract_class)
+from embiggen.utils.abstract_models.list_formatting import format_list
 
 
 @abstract_class
 class AbstractClassifierModel(AbstractModel):
     """Class defining properties of an abstract classifier model."""
 
-    def __init__(
-        self,
-        random_state: Optional[int] = None
-    ):
+    def __init__(self, random_state: Optional[int] = None):
         """Create new instance of model.
 
         Parameters
@@ -48,6 +43,107 @@ class AbstractClassifierModel(AbstractModel):
         self._fitting_was_executed = False
         self._is_using_node_type_features = False
         self._is_using_edge_type_features = False
+        
+        # The following three lists will imprint on the provided features and
+        # will help in the case of potential mis-alignments between the provided
+        # training features and those later provided for the predictions. The
+        # idea is that, while commonly the models concretely implementing this class
+        # will most commonly test that the dimensionality of the provided features
+        # is a given amount, it cannot execute a per-feature check, as the features
+        # will be concatenated at that point and it is no longer possible to verify
+        # whether two features have been swapped.
+
+        # Furthermore, some features are rasterized at different points in time.
+        # When a feature has not yet been turned into a numpy array, we will put
+        # 'None' as its shape, and skip that particular feature when checking
+        # for the feature shapes. We will still check, of course, that the 
+        # number of features is the same.
+        self._node_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
+        self._node_type_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
+        self._edge_type_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
+
+    def _check_feature_shapes(
+        self,
+        expected_feature_shapes: Optional[List[Optional[Tuple[int]]]],
+        provided_features: Optional[List[Union[np.ndarray, Any]]],
+        feature_name: str
+    ) -> List[Optional[Tuple[int]]]:
+        """Check that the provided features have the expected shapes."""
+        if provided_features is None and expected_feature_shapes is None:
+            return None
+        
+        if provided_features is None and expected_feature_shapes is not None:
+            raise ValueError(
+                f"The provided {feature_name} features are None, "
+                f"while the expected features are {format_list(expected_feature_shapes)}. "
+                "Maybe these features refer to another "
+                "version of the graph or another graph "
+                "entirely?"
+            )
+
+        # If the expected feature shapes was not yet learned, we imprint
+        # it on the provided features.
+        if expected_feature_shapes is None:
+            return [
+                provided_feature.shape if isinstance(provided_feature, np.ndarray) else None
+                for provided_feature in provided_features
+            ]
+        if len(expected_feature_shapes) != len(provided_features):
+            raise ValueError(
+                f"The provided {feature_name} features have {len(provided_features)} features, "
+                f"while the expected features have {len(expected_feature_shapes)} features. "
+                "Maybe these features refer to another "
+                "version of the graph or another graph "
+                "entirely?"
+            )
+        for i, provided_feature in enumerate(provided_features):
+            if expected_feature_shapes[i] is None:
+                expected_feature_shapes[i] = (
+                    provided_feature.shape
+                    if isinstance(provided_feature, np.ndarray)
+                    else None
+                )
+            if expected_feature_shapes[i] is not None:
+                if not isinstance(provided_feature, np.ndarray):
+                    raise ValueError(
+                        f"The provided {feature_name} features are of type `{type(provided_feature)}`, "
+                        "while we only currently support numpy arrays. "
+                        "What behaviour were you expecting with this feature? "
+                        "Please do open an issue on Embiggen and let us know!"
+                    )
+                if provided_feature.shape != expected_feature_shapes[i]:
+                    raise ValueError(
+                        f"The provided {feature_name} features have shape {provided_feature.shape}, "
+                        f"while the expected features have shape {expected_feature_shapes[i]}. "
+                        "Maybe these features refer to another "
+                        "version of the graph or another graph "
+                        "entirely?"
+                    )
+        return expected_feature_shapes        
+
+    def _check_node_features_shapes(self, provided_node_features: Optional[List[Union[np.ndarray, Any]]],):
+        """Check that the provided node features have the expected shapes."""
+        self._node_feature_shapes = self._check_feature_shapes(
+            expected_feature_shapes=self._node_feature_shapes,
+            provided_features=provided_node_features,
+            feature_name="node"
+        )
+
+    def _check_node_type_features_shapes(self, provided_node_type_features: Optional[List[Union[np.ndarray, Any]]],):
+        """Check that the provided node type features have the expected shapes."""
+        self._node_type_feature_shapes = self._check_feature_shapes(
+            expected_feature_shapes=self._node_type_feature_shapes,
+            provided_features=provided_node_type_features,
+            feature_name="node type"
+        )
+
+    def _check_edge_type_features_shapes(self, provided_edge_type_features: Optional[List[Union[np.ndarray, Any]]],):
+        """Check that the provided edge type features have the expected shapes."""
+        self._edge_type_feature_shapes = self._check_feature_shapes(
+            expected_feature_shapes=self._edge_type_feature_shapes,
+            provided_features=provided_edge_type_features,
+            feature_name="edge type"
+        )
 
     def _fit(
         self,
@@ -56,8 +152,9 @@ class AbstractClassifierModel(AbstractModel):
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature],
-                                      List[np.ndarray]]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[np.ndarray]]
+        ] = None,
     ):
         """Run fitting on the provided graph.
 
@@ -79,12 +176,14 @@ class AbstractClassifierModel(AbstractModel):
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
-        raise NotImplementedError((
-            "The `_fit` method must be implemented "
-            "in the child classes of abstract model. "
-            f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method for the task {self.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `_fit` method must be implemented "
+                "in the child classes of abstract model. "
+                f"The {self.model_name()} from library {self.library_name()} "
+                f"needs to implement this method for the task {self.task_name()}."
+            )
+        )
 
     def _predict(
         self,
@@ -92,8 +191,10 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature],
-                                      List[np.ndarray]]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[np.ndarray]]
+        ] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -110,15 +211,19 @@ class AbstractClassifierModel(AbstractModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
-        raise NotImplementedError((
-            "The `_predict` method must be implemented "
-            "in the child classes of abstract model. "
-            f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method for the task {self.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `_predict` method must be implemented "
+                "in the child classes of abstract model. "
+                f"The {self.model_name()} from library {self.library_name()} "
+                f"needs to implement this method for the task {self.task_name()}."
+            )
+        )
 
     def _predict_proba(
         self,
@@ -126,8 +231,10 @@ class AbstractClassifierModel(AbstractModel):
         support: Optional[Graph] = None,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature],
-                                      List[np.ndarray]]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[np.ndarray]]
+        ] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -144,53 +251,65 @@ class AbstractClassifierModel(AbstractModel):
             The node features to use.
         node_type_features: Optional[List[np.ndarray]] = None
             The node type features to use.
+        edge_type_features: Optional[List[np.ndarray]] = None
+            The edge type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]] = None
             The edge features to use.
         """
-        raise NotImplementedError((
-            "The `_predict_proba` method must be implemented "
-            "in the child classes of abstract model. "
-            f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method for the task {self.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `_predict_proba` method must be implemented "
+                "in the child classes of abstract model. "
+                f"The {self.model_name()} from library {self.library_name()} "
+                f"needs to implement this method for the task {self.task_name()}."
+            )
+        )
 
     def is_binary_prediction_task(self) -> bool:
         """Returns whether the model was fit on a binary prediction task."""
-        raise NotImplementedError((
-            "The `is_binary_prediction_task` method should be implemented "
-            "in the child classes of abstract model. "
-            f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method for the task {self.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `is_binary_prediction_task` method should be implemented "
+                "in the child classes of abstract model. "
+                f"The {self.model_name()} from library {self.library_name()} "
+                f"needs to implement this method for the task {self.task_name()}."
+            )
+        )
 
     def is_multilabel_prediction_task(self) -> bool:
         """Returns whether the model was fit on a multilabel prediction task."""
-        raise NotImplementedError((
-            "The `is_multilabel_prediction_task` method should be implemented "
-            "in the child classes of abstract model. "
-            f"The {self.model_name()} from library {self.library_name()} "
-            f"needs to implement this method for the task {self.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `is_multilabel_prediction_task` method should be implemented "
+                "in the child classes of abstract model. "
+                f"The {self.model_name()} from library {self.library_name()} "
+                f"needs to implement this method for the task {self.task_name()}."
+            )
+        )
 
     @classmethod
     def supports_multilabel_prediction(cls) -> bool:
         """Returns whether the model supports multilabel prediction."""
-        raise NotImplementedError((
-            "The `supports_multilabel_prediction` method should be implemented "
-            "in the child classes of abstract model. "
-            f"The {cls.model_name()} from library {cls.library_name()} "
-            f"needs to implement this method for the task {cls.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `supports_multilabel_prediction` method should be implemented "
+                "in the child classes of abstract model. "
+                f"The {cls.model_name()} from library {cls.library_name()} "
+                f"needs to implement this method for the task {cls.task_name()}."
+            )
+        )
 
     @classmethod
     def get_available_evaluation_schemas(cls) -> List[str]:
         """Returns available evaluation schemas for this task."""
-        raise NotImplementedError((
-            "The `get_available_evaluation_schemas` method must be implemented "
-            "in the child classes of abstract model. "
-            f"The {cls.model_name()} from library {cls.library_name()} "
-            f"needs to implement this method for the task {cls.task_name()}."
-        ))
+        raise NotImplementedError(
+            (
+                "The `get_available_evaluation_schemas` method must be implemented "
+                "in the child classes of abstract model. "
+                f"The {cls.model_name()} from library {cls.library_name()} "
+                f"needs to implement this method for the task {cls.task_name()}."
+            )
+        )
 
     @classmethod
     def load(cls, path: str):
@@ -201,11 +320,13 @@ class AbstractClassifierModel(AbstractModel):
         path: str
             Path from where to load the model.
         """
-        raise NotImplementedError((
-            f"The `load` was not implemented for the {cls.model_name()} "
-            f"for the {cls.task_name()} task as made available from the "
-            f"{cls.library_name()} library."
-        ))
+        raise NotImplementedError(
+            (
+                f"The `load` was not implemented for the {cls.model_name()} "
+                f"for the {cls.task_name()} task as made available from the "
+                f"{cls.library_name()} library."
+            )
+        )
 
     def dump(self, path: str):
         """Dump the current model at the provided path.
@@ -215,11 +336,13 @@ class AbstractClassifierModel(AbstractModel):
         path: str
             Path from where to dump the model.
         """
-        raise NotImplementedError((
-            f"The `dump` was not implemented for the {self.model_name()} "
-            f"for the {self.task_name()} task as made available from the "
-            f"{self.library_name()} library."
-        ))
+        raise NotImplementedError(
+            (
+                f"The `dump` was not implemented for the {self.model_name()} "
+                f"for the {self.task_name()} task as made available from the "
+                f"{self.library_name()} library."
+            )
+        )
 
     @classmethod
     def normalize_node_feature(
@@ -227,12 +350,19 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        node_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
-        node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
+        node_feature: Union[
+            str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]
+        ],
+        node_features_preprocessing_steps: Optional[
+            Union[
+                Type[AbstractFeaturePreprocessor],
+                List[Type[AbstractFeaturePreprocessor]],
+            ]
+        ] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -276,35 +406,40 @@ class AbstractClassifierModel(AbstractModel):
         if isinstance(node_feature, str):
             if not allow_automatic_feature:
                 raise ValueError(
-                    (
-                        "The node feature `{}` was requested, but "
-                        "the `allow_automatic_feature` has been set to False. "
-                        "This may be because this is an evaluation execution or "
-                        "a prediction, and the string feature should be obtained "
-                        "from either the training graph, the test graph or the "
-                        "complete graph and it is not clear which one was provided. "
-                        "Consider calling the `normalize_node_features` method "
-                        "yourselves to completely define your intentions."
-                    ).format(node_feature)
+                    f"The node feature `{node_feature}` was requested, but "
+                    "the `allow_automatic_feature` has been set to False. "
+                    "This may be because this is an evaluation execution or "
+                    "a prediction, and the string feature should be obtained "
+                    "from either the training graph, the test graph or the "
+                    "complete graph and it is not clear which one was provided. "
+                    "Consider calling the `normalize_node_features` method "
+                    "yourselves to completely define your intentions."
                 )
 
             node_feature = AbstractEmbeddingModel.get_model_from_library(
-                model_name=node_feature,
-                task_name="Node Embedding"
+                model_name=node_feature, task_name="Node Embedding"
             )()
 
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(type(node_feature), AbstractEmbeddingModel):
             if (
-                skip_evaluation_biased_feature and
-                (
-                    cls.task_involves_edge_types() and node_feature.can_use_edge_types() and node_feature.is_using_edge_types() or
-                    cls.task_involves_node_types() and node_feature.can_use_node_types() and node_feature.is_using_node_types() or
-                    cls.task_involves_edge_weights() and node_feature.can_use_edge_weights() and node_feature.is_using_edge_weights() or
-                    cls.task_involves_topology() and node_feature.is_topological()
-                ) or
-                not precompute_constant_stocastic_features and node_feature.is_stocastic()
+                skip_evaluation_biased_feature
+                and (
+                    cls.task_involves_edge_types()
+                    and node_feature.can_use_edge_types()
+                    and node_feature.is_using_edge_types()
+                    or cls.task_involves_node_types()
+                    and node_feature.can_use_node_types()
+                    and node_feature.is_using_node_types()
+                    or cls.task_involves_edge_weights()
+                    and node_feature.can_use_edge_weights()
+                    and node_feature.is_using_edge_weights()
+                    or cls.task_involves_topology()
+                    and node_feature.is_topological()
+                )
+                or not precompute_constant_stocastic_features
+                and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
@@ -316,8 +451,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_feature = node_feature.into_smoke_test()
 
             node_feature = node_feature.fit_transform(
-                graph=support,
-                return_dataframe=False
+                graph=support, return_dataframe=False
             )
 
         if isinstance(node_feature, EmbeddingResult):
@@ -328,27 +462,22 @@ class AbstractClassifierModel(AbstractModel):
 
         if node_features_preprocessing_steps is None:
             node_features_preprocessing_steps = []
-        
+
         if not isinstance(node_features_preprocessing_steps, list):
             node_features_preprocessing_steps = [node_features_preprocessing_steps]
-        
+
         for preprocessing_step in node_features_preprocessing_steps:
             node_feature = preprocessing_step.transform(
-                support=support,
-                node_features=node_feature
+                support=support, node_features=node_feature
             )
 
         for nf in node_feature:
             if not isinstance(nf, (np.ndarray, pd.DataFrame)):
                 raise ValueError(
-                    (
-                        "The provided node features are of type `{node_features_type}`, "
-                        "while we only currently support numpy arrays and pandas DataFrames. "
-                        "What behaviour were you expecting with this feature? "
-                        "Please do open an issue on Embiggen and let us know!"
-                    ).format(
-                        node_features_type=type(nf)
-                    )
+                    f"The provided node features are of type `{type(nf)}`, "
+                    "while we only currently support numpy arrays and pandas DataFrames. "
+                    "What behaviour were you expecting with this feature? "
+                    "Please do open an issue on Embiggen and let us know!"
                 )
 
             if graph.get_number_of_nodes() != nf.shape[0]:
@@ -361,9 +490,10 @@ class AbstractClassifierModel(AbstractModel):
                         "entirely?"
                     ).format(
                         rows_number=nf.shape[0],
-                        graph_name="" if graph.get_name().lower(
-                        ) == "graph" else " {}".format(graph.get_name()),
-                        number_of_nodes=graph.get_number_of_nodes()
+                        graph_name=""
+                        if graph.get_name().lower() == "graph"
+                        else " {}".format(graph.get_name()),
+                        number_of_nodes=graph.get_number_of_nodes(),
                     )
                 )
 
@@ -381,13 +511,27 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
-                                      List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
-        node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
+        node_features: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                Type[AbstractEmbeddingModel],
+                List[
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                ],
+            ]
+        ] = None,
+        node_features_preprocessing_steps: Optional[
+            Union[
+                Type[AbstractFeaturePreprocessor],
+                List[Type[AbstractFeaturePreprocessor]],
+            ]
+        ] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided node features and validates them.
 
@@ -446,7 +590,7 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_stocastic_features=precompute_constant_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             )
         ]
 
@@ -456,11 +600,13 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        node_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
+        node_type_feature: Union[
+            str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]
+        ],
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -502,16 +648,14 @@ class AbstractClassifierModel(AbstractModel):
         if isinstance(node_type_feature, str):
             if not allow_automatic_feature:
                 raise ValueError(
-                    (
-                        "The node type feature `{}` was requested, but "
-                        "the `allow_automatic_feature` has been set to False. "
-                        "This may be because this is an evaluation execution or "
-                        "a prediction, and the string feature should be obtained "
-                        "from either the training graph, the test graph or the "
-                        "complete graph and it is not clear which one was provided. "
-                        "Consider calling the `normalize_node_type_features` method "
-                        "yourselves to completely define your intentions."
-                    ).format(node_type_feature)
+                    f"The node type feature `{node_type_feature}` was requested, but "
+                    "the `allow_automatic_feature` has been set to False. "
+                    "This may be because this is an evaluation execution or "
+                    "a prediction, and the string feature should be obtained "
+                    "from either the training graph, the test graph or the "
+                    "complete graph and it is not clear which one was provided. "
+                    "Consider calling the `normalize_node_type_features` method "
+                    "yourselves to completely define your intentions."
                 )
 
             node_type_feature = AbstractEmbeddingModel.get_model_from_library(
@@ -522,14 +666,19 @@ class AbstractClassifierModel(AbstractModel):
         # embedding model, we compute the embedding.
         if issubclass(node_type_feature.__class__, AbstractEmbeddingModel):
             if (
-                skip_evaluation_biased_feature and
-                (
-                    cls.task_involves_edge_types() and node_type_feature.is_using_edge_types() or
-                    cls.task_involves_node_types() and node_type_feature.is_using_node_types() or
-                    cls.task_involves_edge_weights() and node_type_feature.is_using_edge_weights() or
-                    cls.task_involves_topology() and node_type_feature.is_topological()
-                ) or
-                not precompute_constant_stocastic_features and node_type_feature.is_stocastic()
+                skip_evaluation_biased_feature
+                and (
+                    cls.task_involves_edge_types()
+                    and node_type_feature.is_using_edge_types()
+                    or cls.task_involves_node_types()
+                    and node_type_feature.is_using_node_types()
+                    or cls.task_involves_edge_weights()
+                    and node_type_feature.is_using_edge_weights()
+                    or cls.task_involves_topology()
+                    and node_type_feature.is_topological()
+                )
+                or not precompute_constant_stocastic_features
+                and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
@@ -554,29 +703,26 @@ class AbstractClassifierModel(AbstractModel):
         for nf in node_type_feature:
             if not isinstance(nf, (np.ndarray, pd.DataFrame)):
                 raise ValueError(
-                    (
-                        "The provided node type features are of type `{node_type_features_type}`, "
-                        "while we only currently support numpy arrays and pandas DataFrames. "
-                        "What behaviour were you expecting with this feature? "
-                        "Please do open an issue on Embiggen and let us know!"
-                    ).format(
-                        node_type_features_type=type(nf)
-                    )
+                    f"The provided node type features are of type `{type(nf)}`, "
+                    "while we only currently support numpy arrays and pandas DataFrames. "
+                    "What behaviour were you expecting with this feature? "
+                    "Please do open an issue on Embiggen and let us know!"
                 )
 
             if graph.get_number_of_node_types() != nf.shape[0]:
                 raise ValueError(
                     (
                         "The provided node type features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {nodes_number} nodes. "
+                        "but the provided graph{graph_name} has {number_of_node_types} nodes. "
                         "Maybe these features refer to another "
                         "version of the graph or another graph "
                         "entirely?"
                     ).format(
                         rows_number=nf.shape[0],
-                        graph_name="" if graph.get_name().lower(
-                        ) == "graph" else " {}".format(graph.get_name()),
-                        number_of_nodes=graph.get_number_of_node_types()
+                        graph_name=""
+                        if graph.get_name().lower() == "graph"
+                        else " {}".format(graph.get_name()),
+                        number_of_node_types=graph.get_number_of_node_types(),
                     )
                 )
 
@@ -594,12 +740,21 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        node_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
-                                           List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+        node_type_features: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                Type[AbstractEmbeddingModel],
+                List[
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                ],
+            ]
+        ] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided node type features and validates them.
 
@@ -655,7 +810,229 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_stocastic_features=precompute_constant_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features,
+            )
+        ]
+
+    @classmethod
+    def normalize_edge_type_feature(
+        cls,
+        graph: Graph,
+        support: Graph,
+        random_state: int,
+        edge_type_feature: Union[
+            str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]
+        ],
+        allow_automatic_feature: bool = True,
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False,
+        precompute_constant_stocastic_features: bool = False,
+    ) -> List[np.ndarray]:
+        """Normalizes the provided edge type features and validates them.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
+        random_state: int
+            The random state to use for the stochastic automatic features.
+        edge_type_feature: Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]],
+            The edge type feature to normalize.
+        allow_automatic_feature: bool = True
+            Whether to allow feature names creation based on the
+            provided feature name, using the default settings,
+            or based on a provided abstract embedding model that
+            will be called on the provided graph.
+        skip_evaluation_biased_feature: bool = False
+            Whether to skip feature names that are known to be biased
+            when running an holdout. These features should be computed
+            exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
+        precompute_constant_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
+        """
+        if isinstance(edge_type_feature, str):
+            if not allow_automatic_feature:
+                raise ValueError(
+                    f"The edge type feature `{edge_type_feature}` was requested, but "
+                    "the `allow_automatic_feature` has been set to False. "
+                    "This may be because this is an evaluation execution or "
+                    "a prediction, and the string feature should be obtained "
+                    "from either the training graph, the test graph or the "
+                    "complete graph and it is not clear which one was provided. "
+                    "Consider calling the `normalize_edge_type_features` method "
+                    "yourselves to completely define your intentions."
+                )
+
+            edge_type_feature = AbstractEmbeddingModel.get_model_from_library(
+                model_name=edge_type_feature
+            )()
+
+        # If this object is an implementation of an abstract
+        # embedding model, we compute the embedding.
+        if issubclass(edge_type_feature.__class__, AbstractEmbeddingModel):
+            if (
+                skip_evaluation_biased_feature
+                and (
+                    cls.task_involves_edge_types()
+                    and edge_type_feature.is_using_edge_types()
+                    or cls.task_involves_edge_types()
+                    and edge_type_feature.is_using_edge_types()
+                    or cls.task_involves_edge_weights()
+                    and edge_type_feature.is_using_edge_weights()
+                    or cls.task_involves_topology()
+                    and edge_type_feature.is_topological()
+                )
+                or not precompute_constant_stocastic_features
+                and edge_type_feature.is_stocastic()
+            ):
+                yield edge_type_feature
+                return None
+
+            if edge_type_feature.is_stocastic():
+                edge_type_feature.set_random_state(random_state)
+
+            if smoke_test:
+                edge_type_feature = edge_type_feature.into_smoke_test()
+
+            edge_type_feature = edge_type_feature.fit_transform(
+                graph=support,
+                return_dataframe=False,
+            )
+
+        if isinstance(edge_type_feature, EmbeddingResult):
+            edge_type_feature = edge_type_feature.get_all_edge_type_embeddings()
+
+        if not isinstance(edge_type_feature, list):
+            edge_type_feature = [edge_type_feature]
+
+        for edge_type_feature in edge_type_feature:
+            if not isinstance(edge_type_feature, (np.ndarray, pd.DataFrame)):
+                raise ValueError(
+                    f"The provided edge type features are of type `{type(edge_type_feature)}`, "
+                    "while we only currently support numpy arrays and pandas DataFrames. "
+                    "What behaviour were you expecting with this feature? "
+                    "Please do open an issue on Embiggen and let us know!"
+                )
+
+            if graph.get_number_of_edge_types() != edge_type_feature.shape[0]:
+                raise ValueError(
+                    (
+                        "The provided edge type features have {rows_number} rows "
+                        "but the provided graph{graph_name} has {number_of_edge_types} edge types. "
+                        "Maybe these features refer to another "
+                        "version of the graph or another graph "
+                        "entirely?"
+                    ).format(
+                        rows_number=edge_type_feature.shape[0],
+                        graph_name=""
+                        if graph.get_name().lower() == "graph"
+                        else " {}".format(graph.get_name()),
+                        number_of_edge_types=graph.get_number_of_edge_types(),
+                    )
+                )
+
+            # If it is a dataframe we align it
+            if isinstance(edge_type_feature, pd.DataFrame):
+                yield edge_type_feature.loc[
+                    graph.get_unique_edge_type_names()
+                ].to_numpy()
+            else:
+                # And if it is a numpy array we must believe that the user knows what
+                # they are doing, as we cannot ensure alignment.
+                yield edge_type_feature
+
+    @classmethod
+    def normalize_edge_type_features(
+        cls,
+        graph: Graph,
+        support: Graph,
+        random_state: int,
+        edge_type_features: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                Type[AbstractEmbeddingModel],
+                List[
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                ],
+            ]
+        ] = None,
+        allow_automatic_feature: bool = True,
+        skip_evaluation_biased_feature: bool = False,
+        smoke_test: bool = False,
+        precompute_constant_stocastic_features: bool = False,
+    ) -> List[np.ndarray]:
+        """Normalizes the provided edge type features and validates them.
+
+        Parameters
+        ------------------
+        graph: Graph
+            The graph to check for.
+        support: Graph
+            The graph describing the topological structure that
+            includes also the above graph. This parameter
+            is mostly useful for topological features.
+        random_state: int
+            The random state to use for the stochastic automatic features.
+        edge_type_features: Optional[Union[str, pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None
+            The edge features to normalize.
+        allow_automatic_feature: bool = True
+            Whether to allow feature names creation based on the
+            provided feature name, using the default settings,
+            or based on a provided abstract embedding model that
+            will be called on the provided graph.
+        skip_evaluation_biased_feature: bool = False
+            Whether to skip feature names that are known to be biased
+            when running an holdout. These features should be computed
+            exclusively on the training graph and not the entire graph.
+        smoke_test: bool = False
+            Whether this run should be considered a smoke test
+            and therefore use the smoke test configurations for
+            the provided model names and feature names.
+        precompute_constant_stocastic_features: bool = False
+            Whether to precompute once the constant automatic stocastic
+            features before starting the embedding loop. This means that,
+            when left set to false, while the features will be computed
+            using the same input data, the random state between runs will
+            be different and therefore the experiment performance will
+            capture more of the variance derived from the stocastic aspect
+            of the considered method. When set to true, they are only computed
+            once and therefore the experiment will be overall faster.
+        """
+        if edge_type_features is None:
+            return None
+
+        if not isinstance(edge_type_features, (list, tuple)):
+            edge_type_features = [edge_type_features]
+
+        return [
+            normalized_edge_type_feature
+            for edge_type_feature in edge_type_features
+            for normalized_edge_type_feature in cls.normalize_edge_type_feature(
+                graph=graph,
+                support=support,
+                random_state=random_state,
+                edge_type_feature=edge_type_feature,
+                allow_automatic_feature=allow_automatic_feature,
+                skip_evaluation_biased_feature=skip_evaluation_biased_feature,
+                smoke_test=smoke_test,
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             )
         ]
 
@@ -665,12 +1042,19 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        edge_feature: Optional[Union[str, pd.DataFrame, np.ndarray,
-                                     EmbeddingResult, Type[AbstractEmbeddingModel]]] = None,
+        edge_feature: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                EmbeddingResult,
+                Type[AbstractEmbeddingModel],
+            ]
+        ] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -732,14 +1116,19 @@ class AbstractClassifierModel(AbstractModel):
         # embedding model, we compute the embedding.
         if issubclass(type(edge_feature), AbstractEmbeddingModel):
             if (
-                skip_evaluation_biased_feature and
-                (
-                    cls.task_involves_edge_types() and edge_feature.is_using_edge_types() or
-                    cls.task_involves_node_types() and edge_feature.is_using_node_types() or
-                    cls.task_involves_edge_weights() and edge_feature.is_using_edge_weights() or
-                    cls.task_involves_topology() and edge_feature.is_topological()
-                ) or
-                not precompute_constant_stocastic_features and edge_feature.is_stocastic()
+                skip_evaluation_biased_feature
+                and (
+                    cls.task_involves_edge_types()
+                    and edge_feature.is_using_edge_types()
+                    or cls.task_involves_node_types()
+                    and edge_feature.is_using_node_types()
+                    or cls.task_involves_edge_weights()
+                    and edge_feature.is_using_edge_weights()
+                    or cls.task_involves_topology()
+                    and edge_feature.is_topological()
+                )
+                or not precompute_constant_stocastic_features
+                and edge_feature.is_stocastic()
             ):
                 yield edge_feature
                 return None
@@ -779,9 +1168,7 @@ class AbstractClassifierModel(AbstractModel):
                         "while we only currently support numpy arrays and pandas DataFrames. "
                         "What behaviour were you expecting with this feature? "
                         "Please do open an issue on Embiggen and let us know!"
-                    ).format(
-                        edge_features_type=type(ef)
-                    )
+                    ).format(edge_features_type=type(ef))
                 )
 
             if graph.get_number_of_edges() != ef.shape[0]:
@@ -794,9 +1181,10 @@ class AbstractClassifierModel(AbstractModel):
                         "entirely?"
                     ).format(
                         rows_number=ef.shape[0],
-                        graph_name="" if graph.get_name().lower(
-                        ) == "graph" else " {}".format(graph.get_name()),
-                        edges_number=graph.get_number_of_edges()
+                        graph_name=""
+                        if graph.get_name().lower() == "graph"
+                        else " {}".format(graph.get_name()),
+                        edges_number=graph.get_number_of_edges(),
                     )
                 )
 
@@ -814,12 +1202,21 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Graph,
         random_state: int,
-        edge_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
-                                      List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
+        edge_features: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                Type[AbstractEmbeddingModel],
+                List[
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                ],
+            ]
+        ] = None,
         allow_automatic_feature: bool = True,
         skip_evaluation_biased_feature: bool = False,
         smoke_test: bool = False,
-        precompute_constant_stocastic_features: bool = False
+        precompute_constant_stocastic_features: bool = False,
     ) -> List[np.ndarray]:
         """Normalizes the provided edge features and validates them.
 
@@ -875,22 +1272,31 @@ class AbstractClassifierModel(AbstractModel):
                 allow_automatic_feature=allow_automatic_feature,
                 skip_evaluation_biased_feature=skip_evaluation_biased_feature,
                 smoke_test=smoke_test,
-                precompute_constant_stocastic_features=precompute_constant_stocastic_features
+                precompute_constant_stocastic_features=precompute_constant_stocastic_features,
             )
         ]
-    
+
     def fit(
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                      List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                             List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame,
-                                      np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                pd.DataFrame,
+                np.ndarray,
+                List[Union[pd.DataFrame, np.ndarray]],
+            ]
+        ] = None,
     ):
         """Execute predictions on the provided graph.
 
@@ -921,30 +1327,41 @@ class AbstractClassifierModel(AbstractModel):
                 f"instance of graph {graph.get_name()} does not have node types. "
                 "It is unclear how to proceed with this data."
             )
-        
+
         if edge_type_features is not None and not graph.has_edge_types():
             raise ValueError(
                 "The edge type features have been provided but the current "
                 f"instance of graph {graph.get_name()} does not have edge types. "
                 "It is unclear how to proceed with this data."
             )
-        
+
         self._is_using_node_type_features = node_type_features is not None
         self._is_using_edge_type_features = edge_type_features is not None
 
-        if (self.requires_node_types() or self.can_use_node_types() and self.is_using_node_types()) and not graph.has_node_types():
+        if (
+            self.requires_node_types()
+            or self.can_use_node_types()
+            and self.is_using_node_types()
+        ) and not graph.has_node_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have node types, but "
                 f"the {self.model_name()} requires or is parametrized to use node types."
             )
 
-        if (self.requires_edge_types() or self.can_use_edge_types() and self.is_using_edge_types()) and not graph.has_edge_types():
+        if (
+            self.requires_edge_types()
+            or self.can_use_edge_types()
+            and self.is_using_edge_types()
+        ) and not graph.has_edge_types():
             raise ValueError(
                 f"The provided graph {graph.get_name()} does not have edge types, but "
                 f"the {self.model_name()} requires edge types."
             )
-        
-        if self.is_multilabel_prediction_task() and not self.supports_multilabel_prediction():
+
+        if (
+            self.is_multilabel_prediction_task()
+            and not self.supports_multilabel_prediction()
+        ):
             raise ValueError(
                 f"The provided model {self.model_name()} does not support multilabel prediction, "
                 f"but the task {self.task_name()} requires it. There are other models available "
@@ -954,25 +1371,37 @@ class AbstractClassifierModel(AbstractModel):
         if support is None:
             support = graph
 
+        node_features=self.normalize_node_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_features=node_features,
+            allow_automatic_feature=True,
+        )
+        self._check_node_features_shapes(node_features)
+        node_type_features=self.normalize_node_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_type_features=node_type_features,
+            allow_automatic_feature=True,
+        )
+        self._check_node_type_features_shapes(node_type_features)
+        edge_type_features=self.normalize_edge_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_type_features=edge_type_features,
+            allow_automatic_feature=True,
+        )
+        self._check_edge_type_features_shapes(edge_type_features)
+
         try:
             self._fit(
                 graph=graph,
                 support=support,
-                node_features=self.normalize_node_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_features=node_features,
-                    allow_automatic_feature=True,
-                ),
-                node_type_features=self.normalize_node_type_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_type_features=node_type_features,
-                    allow_automatic_feature=True,
-                ),
-                # TODO! WRITE NORMALIZATION!
+                node_features=node_features,
+                node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
                 edge_features=self.normalize_edge_features(
                     graph=graph,
@@ -995,14 +1424,23 @@ class AbstractClassifierModel(AbstractModel):
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                      List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                                List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame,
-                                      np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                pd.DataFrame,
+                np.ndarray,
+                List[Union[pd.DataFrame, np.ndarray]],
+            ]
+        ] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -1028,35 +1466,49 @@ class AbstractClassifierModel(AbstractModel):
             raise ValueError("The provided graph is empty.")
 
         if not self._fitting_was_executed:
-            raise ValueError((
-                "The prediction cannot be executed without "
-                "having first executed the fitting of the model. "
-                "Do call the `.fit` method before the `.predict` "
-                "method."
-            ))
+            raise ValueError(
+                (
+                    "The prediction cannot be executed without "
+                    "having first executed the fitting of the model. "
+                    "Do call the `.fit` method before the `.predict` "
+                    "method."
+                )
+            )
 
         if support is None:
             support = graph
+
+        node_features=self.normalize_node_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_features=node_features,
+            allow_automatic_feature=False,
+        )
+        self._check_node_features_shapes(node_features)
+        node_type_features=self.normalize_node_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_type_features=node_type_features,
+            allow_automatic_feature=False,
+        )
+        self._check_node_type_features_shapes(node_type_features)
+        edge_type_features=self.normalize_edge_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_type_features=edge_type_features,
+            allow_automatic_feature=False,
+        )
+        self._check_edge_type_features_shapes(edge_type_features)
 
         try:
             predictions = self._predict(
                 graph=graph,
                 support=support,
-                node_features=self.normalize_node_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_features=node_features,
-                    allow_automatic_feature=False,
-                ),
-                node_type_features=self.normalize_node_type_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_type_features=node_type_features,
-                    allow_automatic_feature=True,
-                ),
-                # TODO! WRITE NORMALIZATION!
+                node_features=node_features,
+                node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
                 edge_features=self.normalize_edge_features(
                     graph=graph,
@@ -1079,14 +1531,23 @@ class AbstractClassifierModel(AbstractModel):
         self,
         graph: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                      List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                                List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], pd.DataFrame,
-                                      np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                pd.DataFrame,
+                np.ndarray,
+                List[Union[pd.DataFrame, np.ndarray]],
+            ]
+        ] = None,
     ) -> np.ndarray:
         """Execute predictions on the provided graph.
 
@@ -1112,35 +1573,49 @@ class AbstractClassifierModel(AbstractModel):
             raise ValueError("The provided graph is empty.")
 
         if not self._fitting_was_executed:
-            raise ValueError((
-                "The prediction cannot be executed without "
-                "having first executed the fitting of the model. "
-                "Do call the `.fit` method before the `.predict_proba` "
-                "method."
-            ))
+            raise ValueError(
+                (
+                    "The prediction cannot be executed without "
+                    "having first executed the fitting of the model. "
+                    "Do call the `.fit` method before the `.predict_proba` "
+                    "method."
+                )
+            )
 
         if support is None:
             support = graph
+
+        node_features=self.normalize_node_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_features=node_features,
+            allow_automatic_feature=False,
+        )
+        self._check_node_features_shapes(node_features)
+        node_type_features=self.normalize_node_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_type_features=node_type_features,
+            allow_automatic_feature=False,
+        )
+        self._check_node_type_features_shapes(node_type_features)
+        edge_type_features=self.normalize_edge_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_type_features=edge_type_features,
+            allow_automatic_feature=False,
+        )
+        self._check_edge_type_features_shapes(edge_type_features)
 
         try:
             predictions = self._predict_proba(
                 graph=graph,
                 support=support,
-                node_features=self.normalize_node_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_features=node_features,
-                    allow_automatic_feature=False,
-                ),
-                node_type_features=self.normalize_node_type_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    node_type_features=node_type_features,
-                    allow_automatic_feature=True,
-                ),
-                # TODO! WRITE NORMALIZATION!
+                node_features=node_features,
+                node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
                 edge_features=self.normalize_edge_features(
                     graph=graph,
@@ -1158,12 +1633,9 @@ class AbstractClassifierModel(AbstractModel):
             ) from e
 
         if (
-            not self.is_binary_prediction_task() and
-            not self.is_multilabel_prediction_task() and
-            (
-                len(predictions.shape) == 1 or
-                predictions.shape[1] == 2
-            )
+            not self.is_binary_prediction_task()
+            and not self.is_multilabel_prediction_task()
+            and (len(predictions.shape) == 1 or predictions.shape[1] == 2)
         ):
             raise ValueError(
                 "This task is not a binary prediction, "
@@ -1190,8 +1662,7 @@ class AbstractClassifierModel(AbstractModel):
         """
         if self.is_binary_prediction_task():
             return express_measures.all_binary_metrics(
-                ground_truth.flatten(),
-                predictions.flatten()
+                ground_truth.flatten(), predictions.flatten()
             )
 
         return {
@@ -1203,24 +1674,20 @@ class AbstractClassifierModel(AbstractModel):
                     *(
                         ()
                         if self.is_multilabel_prediction_task()
-                        else
-                        (balanced_accuracy_score, )
-                    )
+                        else (balanced_accuracy_score,)
+                    ),
                 )
             },
             **{
                 metric.__name__: metric(
-                    ground_truth,
-                    predictions,
-                    average="macro",
-                    zero_division=0
+                    ground_truth, predictions, average="macro", zero_division=0
                 )
                 for metric in (
                     f1_score,
                     precision_score,
                     recall_score,
                 )
-            }
+            },
         }
 
     def evaluate_prediction_probabilities(
@@ -1240,25 +1707,18 @@ class AbstractClassifierModel(AbstractModel):
         if self.is_binary_prediction_task():
             return {
                 "auroc": express_measures.binary_auroc(
-                    ground_truth.flatten(),
-                    prediction_probabilities.flatten()
+                    ground_truth.flatten(), prediction_probabilities.flatten()
                 ),
                 "auprc": express_measures.binary_auprc(
-                    ground_truth.flatten(),
-                    prediction_probabilities.flatten()
-                )
+                    ground_truth.flatten(), prediction_probabilities.flatten()
+                ),
             }
 
         @functools.wraps(roc_auc_score)
         def wrapper_roc_auc_score(*args, **kwargs):
             return roc_auc_score(*args, **kwargs, multi_class="ovr")
 
-        return {
-            "auroc": wrapper_roc_auc_score(
-                ground_truth,
-                prediction_probabilities
-            )
-        }
+        return {"auroc": wrapper_roc_auc_score(ground_truth, prediction_probabilities)}
 
     @classmethod
     def split_graph_following_evaluation_schema(
@@ -1267,7 +1727,7 @@ class AbstractClassifierModel(AbstractModel):
         evaluation_schema: str,
         holdout_number: int,
         number_of_holdouts: int,
-        **holdouts_kwargs: Dict
+        **holdouts_kwargs: Dict,
     ) -> Tuple[Graph]:
         """Return train and test graphs tuple following the provided evaluation schema.
 
@@ -1287,7 +1747,7 @@ class AbstractClassifierModel(AbstractModel):
         must_be_in_set(
             evaluation_schema,
             cls.get_available_evaluation_schemas(),
-            f"evaluation schema for {cls.task_name()}"
+            f"evaluation schema for {cls.task_name()}",
         )
 
     def _evaluate(
@@ -1296,18 +1756,22 @@ class AbstractClassifierModel(AbstractModel):
         train: Graph,
         test: Graph,
         support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                      List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                             List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                      List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+        ] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
         verbose: bool = True,
-        **kwargs: Dict
+        **kwargs: Dict,
     ) -> List[Dict[str, Any]]:
         """Return model evaluation on the provided graphs."""
         raise NotImplementedError(
@@ -1325,7 +1789,7 @@ class AbstractClassifierModel(AbstractModel):
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
         verbose: bool = True,
-        **kwargs: Dict
+        **kwargs: Dict,
     ) -> Dict[str, Any]:
         """Return additional custom parameters for the current holdout."""
         raise NotImplementedError(
@@ -1336,9 +1800,11 @@ class AbstractClassifierModel(AbstractModel):
     @classmethod
     def iterate_classifier_models(
         cls,
-        models: Union[str, Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
+        models: Union[
+            str, Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]
+        ],
         library_names: Optional[Union[str, List[str]]],
-        smoke_test: bool
+        smoke_test: bool,
     ) -> Iterator[Type["AbstractClassifierModel"]]:
         """Return iterator over the provided models after validation.
 
@@ -1364,9 +1830,7 @@ class AbstractClassifierModel(AbstractModel):
             library_names = [library_names] * number_of_models
 
         if number_of_models == 0:
-            raise ValueError(
-                "An empty list of models was provided."
-            )
+            raise ValueError("An empty list of models was provided.")
 
         number_of_libraries = len(library_names)
 
@@ -1378,16 +1842,11 @@ class AbstractClassifierModel(AbstractModel):
 
         models = [
             cls.get_model_from_library(
-                model,
-                task_name=cls.task_name(),
-                library_name=library_name
+                model, task_name=cls.task_name(), library_name=library_name
             )()
             if isinstance(model, str)
             else model
-            for model, library_name in zip(
-                models,
-                library_names
-            )
+            for model, library_name in zip(models, library_names)
         ]
 
         for model in models:
@@ -1403,8 +1862,7 @@ class AbstractClassifierModel(AbstractModel):
         # provided models with their smoke test version.
         if smoke_test:
             models = [
-                model.__class__(**model.smoke_test_parameters())
-                for model in models
+                model.__class__(**model.smoke_test_parameters()) for model in models
             ]
 
         bar = tqdm(
@@ -1412,12 +1870,13 @@ class AbstractClassifierModel(AbstractModel):
             total=number_of_models,
             disable=number_of_models == 1,
             dynamic_ncols=True,
-            leave=False
+            leave=False,
         )
 
         for model in bar:
             bar.set_description(
-                f"Evaluating model {model.model_name()} from library {model.library_name()} on {model.task_name()}")
+                f"Evaluating model {model.model_name()} from library {model.library_name()} on {model.task_name()}"
+            )
             yield model.clone()
 
     @Cache(
@@ -1430,10 +1889,10 @@ class AbstractClassifierModel(AbstractModel):
             "train_of_interest",
             "test_of_interest",
             "train",
-            "metadata"
+            "metadata",
         ],
         capture_enable_cache_arg_name=True,
-        use_approximated_hash=True
+        use_approximated_hash=True,
     )
     def _train_and_evaluate_model(
         self,
@@ -1454,11 +1913,11 @@ class AbstractClassifierModel(AbstractModel):
         features_names: List[str],
         features_parameters: Dict[str, Any],
         metadata: Dict[str, Any],
-        **validation_kwargs
+        **validation_kwargs,
     ) -> pd.DataFrame:
         """Run inner training and evaluation."""
         if self.is_stocastic():
-            self.set_random_state(random_state*(holdout_number+1))
+            self.set_random_state(random_state * (holdout_number + 1))
         # Fit the model using the training graph
         training_start = time.time()
         self.fit(
@@ -1467,7 +1926,7 @@ class AbstractClassifierModel(AbstractModel):
             node_features=node_features,
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
         )
         time_required_for_training = time.time() - training_start
 
@@ -1475,20 +1934,22 @@ class AbstractClassifierModel(AbstractModel):
 
         try:
             # We add the newly computed performance.
-            model_performance = pd.DataFrame(self._evaluate(
-                graph=graph,
-                support=train_of_interest if use_subgraph_as_support else train,
-                train=train_of_interest,
-                test=test_of_interest,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_type_features=edge_type_features,
-                edge_features=edge_features,
-                subgraph_of_interest=subgraph_of_interest,
-                random_state=random_state * holdout_number,
-                verbose=False,
-                **validation_kwargs
-            )).reset_index(drop=True)
+            model_performance = pd.DataFrame(
+                self._evaluate(
+                    graph=graph,
+                    support=train_of_interest if use_subgraph_as_support else train,
+                    train=train_of_interest,
+                    test=test_of_interest,
+                    node_features=node_features,
+                    node_type_features=node_type_features,
+                    edge_type_features=edge_type_features,
+                    edge_features=edge_features,
+                    subgraph_of_interest=subgraph_of_interest,
+                    random_state=random_state * holdout_number,
+                    verbose=False,
+                    **validation_kwargs,
+                )
+            ).reset_index(drop=True)
         except RuntimeError as e:
             raise e
         except Exception as e:
@@ -1516,10 +1977,8 @@ class AbstractClassifierModel(AbstractModel):
         for column_name, column_value in metadata.items():
             model_performance[column_name] = column_value
 
-        df_model_parameters = pd.DataFrame(
-            dict(), index=model_performance.index)
-        df_features_parameters = pd.DataFrame(
-            dict(), index=model_performance.index)
+        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
@@ -1528,12 +1987,10 @@ class AbstractClassifierModel(AbstractModel):
 
         df_model_parameters.columns = [
             ["model_parameters"] * len(df_model_parameters.columns),
-            df_model_parameters.columns
+            df_model_parameters.columns,
         ]
 
-        model_performance["features_names"] = format_list(
-            features_names
-        )
+        model_performance["features_names"] = format_list(features_names)
 
         for parameter, value in features_parameters.items():
             if parameter in df_features_parameters.columns:
@@ -1548,16 +2005,11 @@ class AbstractClassifierModel(AbstractModel):
 
         df_features_parameters.columns = [
             ["features_parameters"] * len(df_features_parameters.columns),
-            df_features_parameters.columns
+            df_features_parameters.columns,
         ]
 
         model_performance = pd.concat(
-            [
-                model_performance,
-                df_model_parameters,
-                df_features_parameters
-            ],
-            axis=1
+            [model_performance, df_model_parameters, df_features_parameters], axis=1
         )
 
         return model_performance
@@ -1567,18 +2019,15 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=[
-            "verbose",
-            "smoke_test",
-            "number_of_holdouts",
-            "metadata"
-        ],
+        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts", "metadata"],
         capture_enable_cache_arg_name=False,
-        use_approximated_hash=True
+        use_approximated_hash=True,
     )
     def _evaluate_on_single_holdout(
         cls,
-        models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
+        models: Union[
+            Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]
+        ],
         library_names: Optional[Union[str, List[str]]],
         graph: Graph,
         subgraph_of_interest: Graph,
@@ -1587,7 +2036,12 @@ class AbstractClassifierModel(AbstractModel):
         node_type_features: Optional[List[np.ndarray]],
         edge_type_features: Optional[List[np.ndarray]],
         edge_features: Optional[List[np.ndarray]],
-        node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]],
+        node_features_preprocessing_steps: Optional[
+            Union[
+                Type[AbstractFeaturePreprocessor],
+                List[Type[AbstractFeaturePreprocessor]],
+            ]
+        ],
         random_state: int,
         holdout_number: int,
         number_of_holdouts: int,
@@ -1600,7 +2054,7 @@ class AbstractClassifierModel(AbstractModel):
         features_parameters: Dict[str, Any],
         metadata: Dict[str, Any],
         verbose: bool,
-        **validation_kwargs
+        **validation_kwargs,
     ) -> pd.DataFrame:
         starting_setting_up_holdout = time.time()
 
@@ -1611,7 +2065,7 @@ class AbstractClassifierModel(AbstractModel):
             random_state=random_state,
             holdout_number=holdout_number,
             number_of_holdouts=number_of_holdouts,
-            **holdouts_kwargs
+            **holdouts_kwargs,
         )
 
         # We compute the remaining features
@@ -1619,31 +2073,49 @@ class AbstractClassifierModel(AbstractModel):
         holdout_node_features = cls.normalize_node_features(
             graph=train,
             support=train,
-            random_state=random_state*(holdout_number+1),
+            random_state=random_state * (holdout_number + 1),
             node_features=node_features,
             node_features_preprocessing_steps=node_features_preprocessing_steps,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_stocastic_features=True
+            precompute_constant_stocastic_features=True,
         )
-        time_required_to_compute_node_features = time.time() - \
-            starting_to_compute_node_features
+        time_required_to_compute_node_features = (
+            time.time() - starting_to_compute_node_features
+        )
 
         # We compute the remaining features
         starting_to_compute_node_type_features = time.time()
         holdout_node_type_features = cls.normalize_node_type_features(
             graph=train,
             support=train,
-            random_state=random_state*(holdout_number+1),
+            random_state=random_state * (holdout_number + 1),
             node_type_features=node_type_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_stocastic_features=True
+            precompute_constant_stocastic_features=True,
         )
-        time_required_to_compute_node_type_features = time.time(
-        ) - starting_to_compute_node_type_features
+        time_required_to_compute_node_type_features = (
+            time.time() - starting_to_compute_node_type_features
+        )
+
+        # We compute the remaining features
+        starting_to_compute_edge_type_features = time.time()
+        holdout_edge_type_features = cls.normalize_edge_type_features(
+            graph=train,
+            support=train,
+            random_state=random_state * (holdout_number + 1),
+            edge_type_features=edge_type_features,
+            allow_automatic_feature=True,
+            skip_evaluation_biased_feature=False,
+            smoke_test=smoke_test,
+            precompute_constant_stocastic_features=True,
+        )
+        time_required_to_compute_edge_type_features = (
+            time.time() - starting_to_compute_edge_type_features
+        )
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
@@ -1652,15 +2124,16 @@ class AbstractClassifierModel(AbstractModel):
         holdout_edge_features = cls.normalize_edge_features(
             graph=train,
             support=train,
-            random_state=random_state*(holdout_number+1),
+            random_state=random_state * (holdout_number + 1),
             edge_features=edge_features,
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=False,
             smoke_test=smoke_test,
-            precompute_constant_stocastic_features=True
+            precompute_constant_stocastic_features=True,
         )
-        time_required_to_compute_edge_features = time.time() - \
-            starting_to_compute_edge_features
+        time_required_to_compute_edge_features = (
+            time.time() - starting_to_compute_edge_features
+        )
 
         if subgraph_of_interest is not None:
             # First we align the train and test graph to have
@@ -1679,9 +2152,7 @@ class AbstractClassifierModel(AbstractModel):
                 # that the subgraph of interest allows us to use.
                 if holdout_node_features is not None:
                     # We obtain the mapping from the old to the new node IDs
-                    node_ids_mapping = train.get_node_ids_mapping_from_graph(
-                        graph
-                    )
+                    node_ids_mapping = train.get_node_ids_mapping_from_graph(graph)
 
                     holdout_node_features = [
                         holdout_node_feature[node_ids_mapping]
@@ -1704,8 +2175,8 @@ class AbstractClassifierModel(AbstractModel):
                         "subgraph of interest, does not have any more nodes."
                     )
                 if (
-                    cls.task_name() in ("Edge Prediction", "Edge Label Prediction") and
-                    not graph_partition.has_edges()
+                    cls.task_name() in ("Edge Prediction", "Edge Label Prediction")
+                    and not graph_partition.has_edges()
                 ):
                     raise ValueError(
                         f"The {graph_partition_name} graph {graph_partition.get_name()} obtained from the evaluation "
@@ -1725,7 +2196,7 @@ class AbstractClassifierModel(AbstractModel):
             subgraph_of_interest=subgraph_of_interest,
             random_state=random_state * holdout_number,
             verbose=verbose,
-            **validation_kwargs
+            **validation_kwargs,
         )
 
         time_required_for_setting_up_holdout = time.time() - starting_setting_up_holdout
@@ -1735,39 +2206,39 @@ class AbstractClassifierModel(AbstractModel):
             time_required_for_setting_up_holdout=time_required_for_setting_up_holdout,
             time_required_to_compute_node_features=time_required_to_compute_node_features,
             time_required_to_compute_node_type_features=time_required_to_compute_node_type_features,
-            time_required_to_compute_edge_features=time_required_to_compute_edge_features
+            time_required_to_compute_edge_type_features=time_required_to_compute_edge_type_features,
+            time_required_to_compute_edge_features=time_required_to_compute_edge_features,
         )
 
-        holdout_performance = pd.concat([
-            classifier._train_and_evaluate_model(
-                graph=graph,
-                train_of_interest=train_of_interest,
-                test_of_interest=test_of_interest,
-                train=train,
-                subgraph_of_interest=subgraph_of_interest,
-                use_subgraph_as_support=use_subgraph_as_support,
-                node_features=holdout_node_features,
-                node_type_features=holdout_node_type_features,
-                # TODO! WRITE NORMALIZATION!
-                edge_type_features=edge_type_features,
-                edge_features=holdout_edge_features,
-                random_state=random_state,
-                holdout_number=holdout_number,
-                evaluation_schema=evaluation_schema,
-                holdouts_kwargs=holdouts_kwargs,
-                enable_cache=enable_cache,
-                features_names=features_names,
-                features_parameters=features_parameters,
-                metadata=metadata.copy(),
-                **additional_validation_kwargs,
-                **validation_kwargs,
-            )
-            for classifier in cls.iterate_classifier_models(
-                models=models,
-                library_names=library_names,
-                smoke_test=smoke_test
-            )
-        ])
+        holdout_performance = pd.concat(
+            [
+                classifier._train_and_evaluate_model(
+                    graph=graph,
+                    train_of_interest=train_of_interest,
+                    test_of_interest=test_of_interest,
+                    train=train,
+                    subgraph_of_interest=subgraph_of_interest,
+                    use_subgraph_as_support=use_subgraph_as_support,
+                    node_features=holdout_node_features,
+                    node_type_features=holdout_node_type_features,
+                    edge_type_features=holdout_edge_type_features,
+                    edge_features=holdout_edge_features,
+                    random_state=random_state,
+                    holdout_number=holdout_number,
+                    evaluation_schema=evaluation_schema,
+                    holdouts_kwargs=holdouts_kwargs,
+                    enable_cache=enable_cache,
+                    features_names=features_names,
+                    features_parameters=features_parameters,
+                    metadata=metadata.copy(),
+                    **additional_validation_kwargs,
+                    **validation_kwargs,
+                )
+                for classifier in cls.iterate_classifier_models(
+                    models=models, library_names=library_names, smoke_test=smoke_test
+                )
+            ]
+        )
 
         return holdout_performance
 
@@ -1778,24 +2249,49 @@ class AbstractClassifierModel(AbstractModel):
         enable_cache_arg_name="enable_top_layer_cache",
         args_to_ignore=["verbose", "smoke_test"],
         capture_enable_cache_arg_name=True,
-        use_approximated_hash=True
+        use_approximated_hash=True,
     )
     def evaluate(
         cls,
-        models: Union[Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]],
+        models: Union[
+            Type["AbstractClassifierModel"], List[Type["AbstractClassifierModel"]]
+        ],
         graph: Graph,
         evaluation_schema: str,
         holdouts_kwargs: Dict[str, Any],
         library_names: Optional[Union[str, List[str]]] = None,
-        node_features: Optional[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel],
-                                      List[Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                             List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], str, pd.DataFrame,
-                                      np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]] = None,
-        node_features_preprocessing_steps: Optional[Union[Type[AbstractFeaturePreprocessor], List[Type[AbstractFeaturePreprocessor]]]] = None,
+        node_features: Optional[
+            Union[
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                Type[AbstractEmbeddingModel],
+                List[
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                ],
+            ]
+        ] = None,
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                str,
+                pd.DataFrame,
+                np.ndarray,
+                List[Union[str, pd.DataFrame, np.ndarray]],
+            ]
+        ] = None,
+        node_features_preprocessing_steps: Optional[
+            Union[
+                Type[AbstractFeaturePreprocessor],
+                List[Type[AbstractFeaturePreprocessor]],
+            ]
+        ] = None,
         subgraph_of_interest: Optional[Graph] = None,
         use_subgraph_as_support: bool = False,
         number_of_holdouts: int = 10,
@@ -1806,7 +2302,7 @@ class AbstractClassifierModel(AbstractModel):
         smoke_test: bool = False,
         number_of_slurm_nodes: Optional[int] = None,
         slurm_node_id_variable: str = "SLURM_GRAPE_ID",
-        **validation_kwargs: Dict
+        **validation_kwargs: Dict,
     ) -> pd.DataFrame:
         """Execute evaluation on the provided graph.
 
@@ -1894,15 +2390,14 @@ class AbstractClassifierModel(AbstractModel):
 
             if not subgraph_of_interest.has_edges():
                 raise ValueError(
-                    "The provided subgraph of interest does not "
-                    "have any edges!"
+                    "The provided subgraph of interest does not " "have any edges!"
                 )
 
             # We check whether the subgraph of interest shares the same vocabulary
             # of the main graph. If this is true, we can skip the filtering step to
             # drop the nodes from the train and test graph.
-            subgraph_of_interest_has_compatible_nodes = graph.has_compatible_node_vocabularies(
-                subgraph_of_interest
+            subgraph_of_interest_has_compatible_nodes = (
+                graph.has_compatible_node_vocabularies(subgraph_of_interest)
             )
         else:
             if use_subgraph_as_support:
@@ -1933,7 +2428,7 @@ class AbstractClassifierModel(AbstractModel):
                         "nodes necessary to run the holdouts."
                     ).format(
                         number_of_holdouts=number_of_holdouts,
-                        number_of_slurm_nodes=number_of_slurm_nodes
+                        number_of_slurm_nodes=number_of_slurm_nodes,
                     )
                 )
 
@@ -1959,22 +2454,24 @@ class AbstractClassifierModel(AbstractModel):
 
         # Retrieve the set of provided automatic features names
         # so we can put them in the report.
-        features_names = list({
-            feature.model_name()
-            for features in (
-                node_features
-                if isinstance(node_features, (list, tuple))
-                else (node_features,),
-                node_type_features
-                if isinstance(node_type_features, (list, tuple))
-                else (node_type_features,),
-                edge_features
-                if isinstance(edge_features, (list, tuple))
-                else (edge_features,),
-            )
-            for feature in features
-            if issubclass(feature.__class__, AbstractEmbeddingModel)
-        })
+        features_names = list(
+            {
+                feature.model_name()
+                for features in (
+                    node_features
+                    if isinstance(node_features, (list, tuple))
+                    else (node_features,),
+                    node_type_features
+                    if isinstance(node_type_features, (list, tuple))
+                    else (node_type_features,),
+                    edge_features
+                    if isinstance(edge_features, (list, tuple))
+                    else (edge_features,),
+                )
+                for feature in features
+                if issubclass(feature.__class__, AbstractEmbeddingModel)
+            }
+        )
 
         # We normalize and/or compute the node features, having
         # the care of skipping the features that induce bias when
@@ -1991,10 +2488,11 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
         )
-        time_required_to_compute_constant_node_features = time.time(
-        ) - starting_to_compute_constant_node_features
+        time_required_to_compute_constant_node_features = (
+            time.time() - starting_to_compute_constant_node_features
+        )
 
         # We execute the same thing as described above,
         # but now for the node type features instead that for
@@ -2008,10 +2506,11 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
         )
-        time_required_to_compute_constant_node_type_features = time.time(
-        ) - starting_to_compute_constant_node_type_features
+        time_required_to_compute_constant_node_type_features = (
+            time.time() - starting_to_compute_constant_node_type_features
+        )
 
         # We execute the same thing as described above,
         # but now for the edge features instead that for
@@ -2025,10 +2524,11 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
             skip_evaluation_biased_feature=True,
             precompute_constant_stocastic_features=precompute_constant_stocastic_features,
-            smoke_test=smoke_test
+            smoke_test=smoke_test,
         )
-        time_required_to_compute_constant_edge_features = time.time(
-        ) - starting_to_compute_constant_edge_features
+        time_required_to_compute_constant_edge_features = (
+            time.time() - starting_to_compute_constant_edge_features
+        )
 
         metadata = dict(
             number_of_threads=os.cpu_count(),
@@ -2055,7 +2555,7 @@ class AbstractClassifierModel(AbstractModel):
                         "You can learn more about this in the library tutorials."
                     ).format(
                         slurm_node_id_variable=slurm_node_id_variable,
-                        number_of_slurm_nodes=number_of_slurm_nodes
+                        number_of_slurm_nodes=number_of_slurm_nodes,
                     )
                 )
             slurm_node_id = int(os.environ[slurm_node_id_variable])
@@ -2063,56 +2563,63 @@ class AbstractClassifierModel(AbstractModel):
             metadata["number_of_slurm_nodes"] = number_of_slurm_nodes
 
         # We start to iterate on the holdouts.
-        performance = pd.concat([
-            cls._evaluate_on_single_holdout(
-                models=models,
-                library_names=library_names,
-                graph=graph,
-                subgraph_of_interest=subgraph_of_interest,
-                use_subgraph_as_support=use_subgraph_as_support,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_type_features=edge_type_features,
-                edge_features=edge_features,
-                node_features_preprocessing_steps=node_features_preprocessing_steps,
-                random_state=random_state,
-                holdout_number=holdout_number,
-                number_of_holdouts=number_of_holdouts,
-                evaluation_schema=evaluation_schema,
-                enable_cache=enable_cache,
-                smoke_test=smoke_test,
-                holdouts_kwargs=holdouts_kwargs,
-                subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
-                verbose=verbose and (
-                    number_of_slurm_nodes is None or slurm_node_id == 0),
-                features_names=features_names,
-                features_parameters=features_parameters,
-                metadata=metadata.copy(),
-                **validation_kwargs
-            )
-            for holdout_number in trange(
-                number_of_holdouts,
-                disable=not (verbose and (
-                    number_of_slurm_nodes is None or slurm_node_id == 0)),
-                leave=False,
-                dynamic_ncols=True,
-                desc=f"Evaluating on {graph.get_name()}"
-            )
-            if (
-                number_of_slurm_nodes is None or
-                (
-                    # We need to also mode the number of SLURM node IDs
-                    # because the user may be parallelizing across many
-                    # diffent nodes in contexts such as wide grid searches.
-                    slurm_node_id % number_of_slurm_nodes
-                ) == (
-                    # We need to mode the holdout number as the number
-                    # of holdouts may exceed the number of available SLURM
-                    # nodes that the user has made available to this pipeline.
-                    holdout_number % number_of_slurm_nodes
+        performance = pd.concat(
+            [
+                cls._evaluate_on_single_holdout(
+                    models=models,
+                    library_names=library_names,
+                    graph=graph,
+                    subgraph_of_interest=subgraph_of_interest,
+                    use_subgraph_as_support=use_subgraph_as_support,
+                    node_features=node_features,
+                    node_type_features=node_type_features,
+                    edge_type_features=edge_type_features,
+                    edge_features=edge_features,
+                    node_features_preprocessing_steps=node_features_preprocessing_steps,
+                    random_state=random_state,
+                    holdout_number=holdout_number,
+                    number_of_holdouts=number_of_holdouts,
+                    evaluation_schema=evaluation_schema,
+                    enable_cache=enable_cache,
+                    smoke_test=smoke_test,
+                    holdouts_kwargs=holdouts_kwargs,
+                    subgraph_of_interest_has_compatible_nodes=subgraph_of_interest_has_compatible_nodes,
+                    verbose=verbose
+                    and (number_of_slurm_nodes is None or slurm_node_id == 0),
+                    features_names=features_names,
+                    features_parameters=features_parameters,
+                    metadata=metadata.copy(),
+                    **validation_kwargs,
                 )
-            )
-        ])
+                for holdout_number in trange(
+                    number_of_holdouts,
+                    disable=not (
+                        verbose
+                        and (number_of_slurm_nodes is None or slurm_node_id == 0)
+                    ),
+                    leave=False,
+                    dynamic_ncols=True,
+                    desc=f"Evaluating on {graph.get_name()}",
+                )
+                if (
+                    number_of_slurm_nodes is None
+                    or (
+                        # We need to also mode the number of SLURM node IDs
+                        # because the user may be parallelizing across many
+                        # diffent nodes in contexts such as wide grid searches.
+                        slurm_node_id
+                        % number_of_slurm_nodes
+                    )
+                    == (
+                        # We need to mode the holdout number as the number
+                        # of holdouts may exceed the number of available SLURM
+                        # nodes that the user has made available to this pipeline.
+                        holdout_number
+                        % number_of_slurm_nodes
+                    )
+                )
+            ]
+        )
 
         # We save the constant values for this model
         # execution.

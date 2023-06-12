@@ -86,9 +86,9 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     )
 
                     if model.library_name() in ("TensorFlow", "scikit-learn", "LightGBM", "CatBoost", "XGBoost"):
-                        path = "model.pkl.gz"
+                        path = f"model_{model.library_name()}_{model.model_name()}.pkl.gz"
                     elif model.library_name() == "Ensmallen":
-                        path = "model.json"
+                        path = f"model_{model.library_name()}_{model.model_name()}.json"
                     else:
                         raise NotImplementedError(
                             f"The model {model.model_name()} from library {model.library_name()} "

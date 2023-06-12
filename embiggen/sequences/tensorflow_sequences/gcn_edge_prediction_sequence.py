@@ -1,10 +1,11 @@
 """Keras Sequence for Open-world assumption GCN."""
-from typing import Tuple, List, Optional, Union, Type
+from typing import List, Optional, Tuple, Type, Union
 
 import numpy as np
 import tensorflow as tf
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from keras_mixed_sequence import Sequence
+
 from embiggen.sequences.generic_sequences import EdgePredictionSequence
 from embiggen.utils import AbstractEdgeFeature
 
@@ -16,7 +17,8 @@ class GCNEdgePredictionSequence(Sequence):
         self,
         graph: Graph,
         support: Graph,
-        kernel: tf.SparseTensor,
+        kernels: Optional[List[tf.SparseTensor]],
+        batch_size: int,
         return_node_types: bool = False,
         return_edge_types: bool = False,
         return_node_ids: bool = False,
@@ -34,8 +36,10 @@ class GCNEdgePredictionSequence(Sequence):
             The graph from which to sample the edges.
         support: Graph
             The graph to be used for the topological metrics.
-        kernel: tf.SparseTensor
+        kernels: Optional[List[tf.SparseTensor]]
             The kernel to be used for the convolutions.
+        batch_size: int
+            The batch size to use.
         return_node_types: bool = False
             Whether to return the node types.
         return_edge_types: bool = False
@@ -111,10 +115,19 @@ class GCNEdgePredictionSequence(Sequence):
                     "subclass of AbstractEdgeFeature."
                 )
 
-            if not edge_feature.fit():
+            if not edge_feature.is_fit():
                 edge_feature.fit(support)
 
-        self._kernel = kernel
+        if kernels is None:
+            kernels = []
+
+        if not isinstance(kernels, list):
+            kernels = [kernels]
+
+        for kernel in kernels:
+            assert kernel is not None, "The provided kernel is None."
+
+        self._kernels = kernels
         if node_features is None:
             node_features = []
         self._node_features = [
@@ -125,7 +138,7 @@ class GCNEdgePredictionSequence(Sequence):
         # We need to reshape the node IDs into a column vector
         # so that they match exactly the shape expected by the
         # embedding layer of the model.
-        self._node_ids = graph.get_node_ids().reshape(-1, 1) if return_node_ids else None
+        self._node_ids = graph.get_node_ids().reshape(-1, 1) if return_node_ids and self.has_kernels() else None
 
         if return_node_types or node_type_features is not None:
             if graph.has_multilabel_node_types():
@@ -157,13 +170,16 @@ class GCNEdgePredictionSequence(Sequence):
         else:
             self._node_type_features = []
 
+        self._edge_type_features = [] if edge_type_features is None else edge_type_features
+        self._return_edge_types = return_edge_types
+
         self._sequence = EdgePredictionSequence(
             graph=graph,
             support=support,
             return_node_types=False,
-            return_edge_types=return_edge_types,
+            return_edge_types=self.return_edge_types() or self.has_edge_type_features(),
             use_edge_metrics=use_edge_metrics,
-            batch_size=support.get_number_of_nodes()
+            batch_size=batch_size
         )
 
         # We need to reshape the node types, when they are a flat array,
@@ -177,12 +193,11 @@ class GCNEdgePredictionSequence(Sequence):
         self._node_types = node_types if return_node_types else None
 
         self._edge_features = [] if edge_features is None else edge_features
-        self._edge_type_features = [] if edge_type_features is None else edge_type_features
 
         self._current_index = 0
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
-            batch_size=graph.get_number_of_nodes(),
+            batch_size=batch_size
         )
 
     def use_edge_metrics(self) -> bool:
@@ -195,7 +210,7 @@ class GCNEdgePredictionSequence(Sequence):
     
     def return_edge_types(self) -> bool:
         """Return whether to return edge types."""
-        return self._sequence.return_edge_types()
+        return self._return_edge_types
     
     def get_graph(self) -> Graph:
         """Return graph."""
@@ -205,19 +220,113 @@ class GCNEdgePredictionSequence(Sequence):
         """Return support graph."""
         return self._sequence.get_support()
 
-    def get_kernel(self) -> tf.SparseTensor:
-        """Return kernel."""
-        return self._kernel
+    def get_kernels(self) -> List[tf.SparseTensor]:
+        """Return kernels."""
+        return self._kernels
+    
+    def has_kernels(self) -> bool:
+        """Return whether we have kernels."""
+        return len(self._kernels) > 0
+    
+    def get_edge_type_features(self, edge_type_ids: np.ndarray) -> Tuple[np.ndarray]:
+        """Return edge type features."""
+        edge_type_features = []
 
-    def get_node_features(self) -> Tuple[np.ndarray]:
-        """Return the node features."""
+        for edge_type_feature in self._edge_type_features:
+            edge_type_features.append(
+                edge_type_feature[edge_type_ids]
+            )
+
+        return tuple(edge_type_features)
+    
+    def has_edge_type_features(self) -> bool:
+        """Return whether we have edge type features."""
+        return len(self._edge_type_features) > 0
+    
+    def get_node_features(
+        self,
+        sources: Optional[np.ndarray]=None,
+        destinations: Optional[np.ndarray]=None
+    ) -> Tuple[np.ndarray]:
+        """Return the node features associated with the provided node IDs.
+        
+        Parameters
+        ---------------------------
+        sources: Optional[np.ndarray],
+            The source node IDs.
+        destinations: Optional[np.ndarray],
+            The destination node IDs.
+
+        Implementative details
+        ---------------------------
+        When the source and destination node IDs are not provided,
+        we return the node features associated with all node IDs,
+        as is expected when dealing with whole graph convolutions.
+
+        When the source and destination node IDs are provided,
+        we MUST not be in a graph convolution scenario, and we
+        need to check that the provided kernels are an empty list
+        otherwise we find ourselves in an illegal state.
+        Furthermore, we must check that the length of the provided
+        source and destination node IDs is the same, otherwise
+        we find ourselves in an illegal state.
+
+        Raises
+        ---------------------------
+        ValueError,
+            When the provided source and destination node IDs
+            are not both None or both not None.
+        ValueError,
+            When the provided source and destination node IDs
+            have different lengths.
+        ValueError,
+            When the provided source and destination node IDs
+            are not None but the provided kernels are not an
+            empty list.
+        """
+        if not self.has_kernels() and (sources is None or destinations is None):
+            raise ValueError(
+                "The provided source and destination node IDs "
+                "must be provided when kernels are not provided."
+            )
+        if sources is None and destinations is None:
+            return tuple([
+                node_feature
+                for node_feature in (
+                    *self._kernels,
+                    *self._node_features,
+                    *self._node_type_features,
+                    self._node_ids,
+                    self._node_types,
+                )
+                if node_feature is not None
+            ])
+        if sources is None or destinations is None:
+            raise ValueError(
+                "The provided source and destination node IDs "
+                "must be either both None or both not None."
+            )
+        if len(sources) != len(destinations):
+            raise ValueError(
+                "The provided source and destination node IDs "
+                "must have the same length."
+            )
+        
+        if len(self._kernels) > 0:
+            raise ValueError(
+                "The provided source and destination node IDs "
+                "must be None when kernels are provided."
+            )
+        
         return tuple([
-            node_feature
+            node_feature[node_ids.flatten()]
+            for node_ids in (sources, destinations)
             for node_feature in (
-                self._kernel,
                 *self._node_features,
                 *self._node_type_features,
-                self._node_ids,
+                # Note that we do not return the node IDs as they are not needed when
+                # we are not running a whole graph convolution.
+                # self._node_ids,
                 self._node_types,
             )
             if node_feature is not None
@@ -244,7 +353,7 @@ class GCNEdgePredictionSequence(Sequence):
                 support=self.get_support(),
                 sources=sources,
                 destinations=destinations
-            ).keys():
+            ).items():
                 if not isinstance(rasterized_edge_feature, np.ndarray):
                     raise ValueError(
                         f"The provided edge feature {edge_feature_name} "
@@ -277,15 +386,22 @@ class GCNEdgePredictionSequence(Sequence):
         Return Tuple containing X and Y numpy arrays corresponding to given batch index.
         """
         values = list(self._sequence[idx][0])
+
         sources = values[0]
         destinations = values[1]
 
-        edge_features: Tuple[np.ndarray] = self.get_edge_features_from_edge_node_ids(sources, destinations)
+        edge_features: Tuple[np.ndarray] = self.get_edge_features_from_edge_node_ids(
+            sources,
+            destinations
+        )
 
-        edge_type_features = []
+        edge_type_features = self.get_edge_type_features(values[2]) if self.has_edge_type_features() else []
 
-        for edge_type_feature in self._edge_type_features:
-            edge_type_features.append(edge_type_feature[values[2]])
+        # If the edge types are NOT requested as the model does not have an edge type
+        # embedding layer, we remove the edge type IDs from the values, since we have
+        # retrieved them solely to index correctly the edge type features.
+        if self.has_edge_type_features() and not self.return_edge_types():
+            values[2] = None
 
         # We reshape both sources and destinations to be of shape
         # (batch_size, 1) so that they can be used as inputs for
@@ -293,10 +409,16 @@ class GCNEdgePredictionSequence(Sequence):
         values[0] = values[0].reshape(-1, 1)
         values[1] = values[1].reshape(-1, 1)
 
+        # If we have to return the edge types, we need to reshape
+        # them to be of shape (batch_size, 1) so that they can be
+        # used as inputs for the embedding layer.
+        if self.return_edge_types():
+            values[2] = values[2].reshape(-1, 1)
+
         # If necessary, we add the padding as the last batch may be
         # smaller than the required size (number of nodes).
         delta = self.batch_size - values[0].shape[0]
-        if delta > 0:
+        if delta > 0 and self.has_kernels():
             values = [
                 np.pad(value, (0, delta) if len(value.shape)
                        == 1 else [(0, delta), (0, 0)])
@@ -307,6 +429,10 @@ class GCNEdgePredictionSequence(Sequence):
                 np.pad(edge_feature, [(0, delta), (0, 0)])
                 for edge_feature in edge_features
             ]
+            edge_type_features = [
+                np.pad(edge_type_feature, [(0, delta), (0, 0)])
+                for edge_type_feature in edge_type_features
+            ]
 
         return (tuple([
             value
@@ -314,7 +440,10 @@ class GCNEdgePredictionSequence(Sequence):
                 *values,
                 *edge_features,
                 *edge_type_features,
-                *self.get_node_features(),
+                *(self.get_node_features() if self.has_kernels() else self.get_node_features(
+                    sources=sources,
+                    destinations=destinations
+                ))
             )
             if value is not None
         ]),)

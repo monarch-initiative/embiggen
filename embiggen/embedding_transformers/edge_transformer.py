@@ -1,10 +1,11 @@
 """EdgeTransformer class to convert edges to edge embeddings."""
-from typing import List, Union, Optional
+from typing import List, Optional, Union, Optional
 
 import numpy as np
 import pandas as pd
+from ensmallen import express_measures
 from userinput.utils import must_be_in_set
-from ensmallen import express_measures, Graph
+
 from embiggen.embedding_transformers.node_transformer import NodeTransformer
 
 
@@ -269,11 +270,11 @@ def get_cosine_similarity(
     ).reshape((-1, 1))
 
 
-def get_concatenate_edge_embedding(
+def get_Concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
-    """Return concatenate edge embedding of the two nodes.
+    """Return Concatenate edge embedding of the two nodes.
 
     Parameters
     --------------------------
@@ -284,7 +285,7 @@ def get_concatenate_edge_embedding(
 
     Returns
     --------------------------
-    Numpy array with the concatenate edge embedding.
+    Numpy array with the Concatenate edge embedding.
     """
     return np.hstack((
         source_node_embedding,
@@ -355,7 +356,7 @@ class EdgeTransformer:
         "AbsoluteL1": get_absolute_l1_edge_embedding,
         "SquaredL2": get_squared_l2_edge_embedding,
         "L2": get_l2_edge_embedding,
-        "Concatenate": get_concatenate_edge_embedding,
+        "Concatenate": get_Concatenate_edge_embedding,
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
         "L2Distance": get_l2_distance,
@@ -375,7 +376,7 @@ class EdgeTransformer:
             Method to use for the embedding.
             If None is used, we return instead the numeric tuples.
             If multiple edge embedding are provided, they
-            will be concatenated and fed to the model.
+            will be Concatenated and fed to the model.
             The supported edge embedding methods are:
              * Hadamard: element-wise product
              * Sum: element-wise sum
@@ -384,7 +385,7 @@ class EdgeTransformer:
              * AbsoluteL1: element-wise subtraction in absolute value
              * SquaredL2: element-wise subtraction in squared value
              * L2: element-wise squared root of squared subtraction
-             * Concatenate: concatenation of source and destination node features
+             * Concatenate: Concatenate of source and destination node features
              * Min: element-wise minimum
              * Max: element-wise maximum
              * L2Distance: vector-wise L2 distance - this yields a scalar
@@ -522,7 +523,7 @@ class EdgeTransformer:
                                           List[Optional[List[int]]]]] = None,
         destination_node_types: Optional[Union[List[Optional[List[str]]],
                                                List[Optional[List[int]]]]] = None,
-        edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None,
+        edge_types: Optional[Union[List[str], List[int], np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
         """Return embedding for given edges using provided method.
@@ -543,10 +544,10 @@ class EdgeTransformer:
             This can be either a list of strings, or a graph, or if the
             aligned_mapping is setted, then this methods also accepts
             a list of ints.
-        edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None
+        edge_types: Optional[Union[List[str], List[int], np.ndarray]] = None
             List of edge types whose embedding is to be returned.
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
 
@@ -566,23 +567,23 @@ class EdgeTransformer:
                 "The edge type features are provided, but no edge types are provided."
             )
         
-        if isinstance(edge_types, Graph):
-            edge_types.must_not_contain_unknown_edge_types()
-            edge_types.must_not_be_multigraph()
-            if self.is_aligned_mapping():
-                if edge_types.is_directed():
-                    edge_types = edge_types.get_imputed_directed_edge_type_ids(
-                        imputation_edge_type_id=0
-                    )
-                else:
-                    edge_types = edge_types.get_imputed_upper_triangular_edge_type_ids(
-                        imputation_edge_type_id=0
-                    )
-            else:
-                if edge_types.is_directed():
-                    edge_types = edge_types.get_directed_edge_type_names()
-                else:
-                    edge_types = edge_types.get_upper_triangular_edge_type_names()
+        if self.has_node_type_features() and source_node_types is None:
+            raise ValueError(
+                "The node type features are provided, but no source node types are provided."
+            )
+        
+        if len(sources) != len(destinations):
+            raise ValueError(
+                "The provided sources and destinations should have the same length, "
+                f"but we got {len(sources)} and {len(destinations)} instead."
+            )
+        
+        # The source, destination and edge types, if provided, must have the same length.
+        if edge_types is not None and len(destinations) != len(edge_types):
+            raise ValueError(
+                "The provided sources, destinations and edge types should have the same length, "
+                f"but we got {len(sources)}, {len(destinations)} and {len(edge_types)} instead."
+            )
 
         edge_type_features: List[np.ndarray] = []
 
@@ -679,14 +680,9 @@ class EdgeTransformer:
 
             if len(edge_embeddings) > 0 and edge_feature.shape[0] != edge_embeddings[0].shape[0]:
                 raise ValueError(
-                    (
-                        "The provided edge features should have a sample for each of the edges "
-                        "in the graph, which are {}, with embedding shape {}, but has shape {}."
-                    ).format(
-                        sources.shape[0],
-                        edge_embeddings[0].shape,
-                        edge_feature.shape
-                    )
+                    "The provided edge features should have a sample for each of the edges "
+                    f"in the graph, which are {sources.shape[0]}, with embedding "
+                    f"shape {edge_embeddings[0].shape}, but has shape {edge_feature.shape}."
                 )
 
         if all([
@@ -702,15 +698,24 @@ class EdgeTransformer:
                 "should be provided."
             )
 
-        expected_shape = 0
+        expected_shape: Optional[int] = None
         for features in (
             edge_features,
             edge_type_features,
             edge_embeddings
         ):
-            if len(features) > 0:
+            if len(features) > 0 and expected_shape is None:
+                # We imprint the expected shape on the
+                # first feature available.
                 expected_shape = features[0].shape[0]
-                break
+            # We check that all the features have the same first dimension.
+            for feature in features:
+                if feature.shape[0] != expected_shape:
+                    raise ValueError(
+                        "The provided edge features should have a sample for each of the edges "
+                        f"in the graph, which are {expected_shape}, but we got {feature.shape[0]}."
+                    )
+
 
         result = np.hstack([
             *[

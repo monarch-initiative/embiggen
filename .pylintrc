@@ -477,7 +477,7 @@ variable-naming-style=snake_case
 [STRING]
 
 # This flag controls whether the implicit-str-concat-in-sequence should
-# generate a warning on implicit string concatenation in sequences defined over
+# generate a warning on implicit string Concatenate in sequences defined over
 # several lines.
 check-str-concat-over-line-jumps=no
 

@@ -160,8 +160,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return (
             sampler_graph.sample_negative_graph(
                 number_of_negative_samples=int(
-                    math.ceil(sampler_graph.get_number_of_edges()
-                              * unbalance_rate)
+                    math.ceil(sampler_graph.get_number_of_edges() * unbalance_rate)
                 ),
                 random_state=random_state * (i + 1),
                 sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
@@ -240,20 +239,16 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         test: Graph,
         support: Graph,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
@@ -380,16 +375,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -457,11 +449,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     else graph.get_directed_destination_node_ids(),
                     **(
                         {
-                            "edge_types": graph.get_directed_edge_type_names() if return_edge_type_names else graph.get_directed_edge_type_ids()
+                            "edge_types": graph.get_directed_edge_type_names()
+                            if return_edge_type_names
+                            else graph.get_directed_edge_type_ids()
                         }
                         if graph.has_edge_types()
                         else {}
-                    )
+                    ),
                 },
             )
 
@@ -474,16 +468,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_ids: List[int],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -550,16 +541,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -626,16 +614,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_prefixes: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -702,16 +687,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_types: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -777,16 +759,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_ids: List[int],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -829,8 +808,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict(
-            graph.build_clique_graph_from_node_ids(
-                node_ids=node_ids, directed=True),
+            graph.build_clique_graph_from_node_ids(node_ids=node_ids, directed=True),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
@@ -847,16 +825,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -918,16 +893,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_prefixes: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -989,16 +961,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_type_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1059,16 +1028,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1115,14 +1081,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 support=support,
                 node_features=node_features,
                 node_type_features=node_type_features,
+                edge_type_features=edge_type_features,
                 edge_features=self.edge_features_check(edge_features),
             )
             .flatten()
         )
 
         if np.isnan(predictions).any():
-            raise ValueError(
-                "There are NaN values in the predicted probabilities!")
+            raise ValueError("There are NaN values in the predicted probabilities!")
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
@@ -1146,16 +1112,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_ids: List[int],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1222,16 +1185,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1298,16 +1258,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_prefixes: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1374,16 +1331,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         destination_node_types: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1449,16 +1403,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_ids: List[int],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1501,8 +1452,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             requested for a prediction dataframe to be returned.
         """
         return self.predict_proba(
-            graph.build_clique_graph_from_node_ids(
-                node_ids=node_ids, directed=True),
+            graph.build_clique_graph_from_node_ids(node_ids=node_ids, directed=True),
             support=support,
             node_features=node_features,
             node_type_features=node_type_features,
@@ -1519,16 +1469,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1590,16 +1537,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_prefixes: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1661,16 +1605,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         node_type_names: List[str],
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1731,16 +1672,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
@@ -1778,7 +1716,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
     def is_using_node_types(self) -> bool:
         """Whether the current model is using node types."""
         return self._is_using_node_type_features or self.requires_node_types()
-    
+
     def is_using_edge_types(self) -> bool:
         """Whether the current model is using edge types."""
         return self._is_using_edge_type_features or self.requires_edge_types()

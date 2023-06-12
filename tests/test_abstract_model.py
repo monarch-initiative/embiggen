@@ -23,6 +23,26 @@ class ClassForTestAbstractModelStocastic(AbstractModel):
     @classmethod 
     def can_use_edge_types(cls) -> bool:
         return False
+    
+    @classmethod
+    def model_name(cls) -> str:
+        return "test_method_name"
+    
+    @classmethod
+    def library_name(cls) -> str:
+        return "test_library_name"
+    
+    @classmethod
+    def task_name(cls) -> str:
+        return "test_task_name"
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False
 
         
 class ClassForTestAbstractModelNonStocastic(AbstractModel):
@@ -45,7 +65,26 @@ class ClassForTestAbstractModelNonStocastic(AbstractModel):
     @classmethod 
     def requires_edge_types(cls) -> bool:
         return True
-
+    
+    @classmethod
+    def model_name(cls) -> str:
+        return "test_method_name"
+    
+    @classmethod
+    def library_name(cls) -> str:
+        return "test_library_name"
+    
+    @classmethod
+    def task_name(cls) -> str:
+        return "test_task_name"
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False
 
 class TestAbstractModel(TestCase):
 
@@ -64,11 +103,7 @@ class TestAbstractModel(TestCase):
             "is_topological",
             "task_involves_node_types",
             "task_involves_edge_types",
-            "task_name",
-            "library_name",
-            "model_name",
             "clone",
-            "consistent_hash",
         ):
             with pytest.raises(NotImplementedError):
                 stocastic.__getattribute__(method_name)()

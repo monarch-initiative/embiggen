@@ -27,6 +27,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.2,
+        batch_size: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "mean",
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
@@ -82,6 +83,11 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        batch_size: Optional[int] = None
+            Batch size to use while training the model.
+            If None, the batch size will be the number of nodes.
+            In all model parametrization that involve a number of graph
+            convolution layers, the batch size will be the number of nodes.
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
@@ -95,7 +101,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
-            - Concatenation
+            - Concatenate
             - Average
             - Hadamard
             - L1
@@ -204,6 +210,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            batch_size=batch_size,
             combiner=combiner,
             apply_norm=apply_norm,
             edge_embedding_methods=edge_embedding_methods,
@@ -255,20 +262,21 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]],
     ) -> GCNEdgePredictionSequence:
         """Returns dictionary with class weights."""
         return GCNEdgePredictionSequence(
             graph,
             support=support,
-            kernel=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernel(support),
+            batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
-            return_edge_types=self.is_using_edge_types(),
+            return_node_types=self._use_node_type_embedding,
+            return_edge_types=self._use_edge_type_embedding,
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
@@ -279,21 +287,22 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]],
     ) -> GCNEdgePredictionTrainingSequence:
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
             graph,
-            kernel=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernel(support),
             support=support,
+            batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             edge_features=edge_features,
             return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
-            return_edge_types=self.is_using_edge_types(),
+            return_node_types=self._use_node_type_embedding,
+            return_edge_types=self._use_edge_type_embedding,
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
@@ -310,7 +319,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
     @classmethod
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
-        return False
+        return True
 
     def _predict_proba(
         self,
@@ -334,3 +343,28 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         # in order to run the GCN portion of the model, which
         # always requires a batch size equal to the nodes number.
         return predictions[:graph.get_number_of_directed_edges()]
+    
+    def is_using_edge_types(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        return self._use_edge_type_embedding or super().is_using_edge_types()
+    
+    @classmethod
+    def requires_edge_types(cls) -> bool:
+        """Returns whether the model requires edge types."""
+        return False
+    
+    @classmethod
+    def requires_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def requires_edge_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return True
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return True

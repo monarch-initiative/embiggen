@@ -48,10 +48,10 @@ class ConvEPyKEEN(EntityRelationEmbeddingModelPyKEEN):
         output_channels: int = 32
             the number of input channels for the convolution operation
         embedding_height: Optional[int] = None
-            the height of the "image" after reshaping the concatenated head and relation embedding. Can be inferred
+            the height of the "image" after reshaping the Concatenated head and relation embedding. Can be inferred
             from other parameters, cf. `_calculate_missing_shape_information`.
         embedding_width: Optional[int] = None
-            the width of the "image" after reshaping the concatenated head and relation embedding. Can be inferred
+            the width of the "image" after reshaping the Concatenated head and relation embedding. Can be inferred
             from other parameters, cf. `_calculate_missing_shape_information`.
         kernel_height: int = 3
             the height of the convolution kernel. Defaults to `kernel_width`

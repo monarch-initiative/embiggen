@@ -76,7 +76,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
-            - Concatenation
+            - Concatenate
             - Average
             - Hadamard
             - L1

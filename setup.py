@@ -74,7 +74,7 @@ setup(
         "sanitize_ml_labels>=1.0.50",
         "keras_mixed_sequence>=1.0.28",
         "ensmallen>=0.8.61",
-        "environments_utils>=1.0.9",
+        "environments_utils>=1.0.10",
         "compress_pickle>=2.1.0",
         "validate_version_code",
         "cache_decorator>=2.1.14",

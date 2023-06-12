@@ -1,23 +1,31 @@
 """Unit test class for GraphTransformer objects."""
-from tqdm.auto import tqdm
+import os
 from unittest import TestCase
-import pytest
+
 import numpy as np
 import pandas as pd
-import os
-from embiggen.edge_prediction import edge_prediction_evaluation
-from embiggen import get_available_models_for_edge_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
-from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
-from embiggen.edge_prediction import GraphSAGEEdgePrediction
-from embiggen.embedding_transformers import EdgeTransformer
-from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import PerceptronEdgePrediction
-from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
-from embiggen.utils import AbstractEmbeddingModel
-from ensmallen.datasets.linqs import Cora
-from ensmallen.datasets.kgobo import CIO
+import pytest
 from ensmallen import Graph
-from embiggen.edge_prediction import DecisionTreeEdgePrediction
+from ensmallen.datasets.kgobo import CIO
+from ensmallen.datasets.linqs import Cora
+from tqdm.auto import tqdm
+
+from embiggen import (get_available_models_for_edge_embedding,
+                      get_available_models_for_edge_prediction,
+                      get_available_models_for_node_embedding)
+from embiggen.edge_prediction import (DecisionTreeEdgePrediction,
+                                      GraphSAGEEdgePrediction,
+                                      edge_prediction_evaluation)
+from embiggen.edge_prediction.edge_prediction_ensmallen.perceptron import \
+    PerceptronEdgePrediction
+from embiggen.edge_prediction.edge_prediction_model import \
+    AbstractEdgePredictionModel
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
+from embiggen.embedders.ensmallen_embedders.hyper_sketching import \
+    HyperSketching
+from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.feature_preprocessors import GraphConvolution
+from embiggen.utils import AbstractEmbeddingModel
 
 
 class TestEvaluateEdgePrediction(TestCase):
@@ -34,6 +42,38 @@ class TestEvaluateEdgePrediction(TestCase):
         )
         self._number_of_holdouts = 2
 
+    def test_evaluate_edge_prediction_with_multimodal_features(self):
+        """Test edge prediction with edge and edge type features."""
+        df = get_available_models_for_edge_prediction()
+
+        df = df[
+            df.can_use_edge_features &
+            df.can_use_edge_type_features
+        ]
+
+        holdouts = edge_prediction_evaluation(
+            holdouts_kwargs=dict(train_size=0.9),
+            models=df.model_name,
+            library_names=df.library_name,
+            node_features=DegreeSPINE(embedding_size=5),
+            edge_features=HyperSketching(),
+            node_type_features=np.random.uniform(
+                size=(self._graph.get_number_of_node_types(), 7)
+            ),
+            edge_type_features=np.random.uniform(
+                size=(self._graph.get_number_of_edge_types(), 3)
+            ),
+            evaluation_schema="Connected Monte Carlo",
+            graphs=self._graph,
+            number_of_holdouts=self._number_of_holdouts,
+            verbose=True,
+            smoke_test=True,
+        )
+        self.assertEqual(
+            holdouts.shape[0],
+            self._number_of_holdouts*2*df.shape[0]
+        )
+
     def test_model_recreation(self):
         df = get_available_models_for_edge_prediction()
 
@@ -49,11 +89,11 @@ class TestEvaluateEdgePrediction(TestCase):
                     task_name=AbstractEdgePredictionModel.task_name(),
                     library_name=row.library_name
                 )(**model.parameters())
-            except Exception as e:
+            except Exception as exception:
                 raise ValueError(
                     f"Found an error in model {row.model_name} "
                     f"implemented in library {row.library_name}."
-                ) from e
+                ) from exception
 
     def test_evaluate_edge_prediction(self):
         df = get_available_models_for_edge_prediction()

@@ -16,7 +16,7 @@ import math
 import sys
 from humanize import intword, apnumber
 import inspect
-from environments_utils import is_notebook
+from environments_utils import is_notebook, is_colab
 from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 from matplotlib.collections import Collection
@@ -477,7 +477,7 @@ class GraphVisualizer:
             axes = None
         else:
             figure, axes = args[:2]
-        if is_notebook() and self._automatically_display_on_notebooks:
+        if (is_notebook() or is_colab()) and self._automatically_display_on_notebooks:
             from IPython.display import display, HTML
             if figure is not None:
                 display(figure)
@@ -2343,14 +2343,21 @@ class GraphVisualizer:
                 edge_metric_callback(subgraph=self._positive_graph),
             ))
 
+        assert len(edge_metrics.shape) == 1
+
+        number_of_bins = min(10, np.log(edge_metrics.size + 1).astype("int64") + 1)
+
         axes.hist(
-            [
-                edge_metrics[:number_of_negative_edges],
-                edge_metrics[number_of_negative_edges:],
-            ],
-            bins=10,
+            edge_metrics[:number_of_negative_edges],
+            bins=number_of_bins,
             log=True,
-            label=["Non-existent", "Existent"]
+            label="Non-existent"
+        )
+        axes.hist(
+            edge_metrics[number_of_negative_edges:],
+            bins=number_of_bins,
+            log=True,
+            label="Existent"
         )
         axes.set_xlim(edge_metrics.min(), edge_metrics.max())
         axes.set_ylabel("Counts (log scale)")

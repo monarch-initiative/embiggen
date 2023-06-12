@@ -61,7 +61,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         normalize_by_symmetric_laplacian: bool = True,
             Whether to normalize the sketches by the symmetric laplacian.
         concatenate_features: bool = False,
-            Whether to concatenate the normalized and non-normalized features.
+            Whether to Concatenate the normalized and non-normalized features.
         dtype: str = "f32",
             The type of the features.
         overlap_path: Optional[str] = None,
@@ -230,7 +230,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         return self._model.get_normalize_by_symmetric_laplacian()
     
     def get_concatenate_features(self) -> bool:
-        """Return whether the features are concatenated."""
+        """Return whether the features are Concatenated."""
         return self._model.get_concatenate_features()
 
     def _fit_transform(

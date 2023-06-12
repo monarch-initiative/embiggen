@@ -16,7 +16,8 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
         self,
         graph: Graph,
         support: Graph,
-        kernel: tf.SparseTensor,
+        kernels: Optional[List[tf.SparseTensor]],
+        batch_size: int,
         return_node_types: bool = False,
         return_node_ids: bool = False,
         node_features: Optional[List[np.ndarray]] = None,
@@ -32,8 +33,10 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
             The graph from which to sample the edges.
         support: Graph
             The graph to be used for the topological metrics.
-        kernel: tf.SparseTensor
+        kernels: Optional[List[tf.SparseTensor]]
             The kernel to be used for the convolutions.
+        batch_size: int
+            The batch size to use.
         return_node_types: bool = False
             Whether to return the node types.
         return_edge_types: bool = False
@@ -61,7 +64,8 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
         super().__init__(
             graph=graph,
             support=support,
-            kernel=kernel,
+            kernels=kernels,
+            batch_size=batch_size,
             return_node_types=return_node_types,
             return_node_ids=return_node_ids,
             node_features=node_features,
@@ -120,7 +124,7 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
         # If this last batch is smaller than the batch size, we need to pad it.
         # This is necessary because in GCNs, the batch size is fixed to the number of nodes.
         delta = self.batch_size - edge_types.shape[0]
-        if delta > 0:
+        if delta > 0 and self.has_kernels():
             edge_types = np.pad(edge_types, (0, delta))
             mask = np.pad(mask, (0, delta))
 

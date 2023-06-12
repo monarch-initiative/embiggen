@@ -139,12 +139,12 @@ class GraphConvolution(Layer):
         )
 
         return [
-            dense(embedding_ops.embedding_lookup_sparse_v2(
+            l2_norm(dropout(dense(embedding_ops.embedding_lookup_sparse_v2(
                 node_feature,
                 ids,
                 adjacency,
                 combiner=self._combiner
-            ))
+            ))))
             for dense, dropout, l2_norm, node_feature in zip(
                 self._dense_layers,
                 self._dropout_layers,
@@ -152,3 +152,4 @@ class GraphConvolution(Layer):
                 node_features
             )
         ]
+

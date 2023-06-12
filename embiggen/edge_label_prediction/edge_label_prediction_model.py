@@ -297,3 +297,11 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge label prediction task.
         """
         return False
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False

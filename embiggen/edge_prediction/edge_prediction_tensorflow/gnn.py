@@ -10,6 +10,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
     def __init__(
         self,
         epochs: int = 1000,
+        batch_size: int = 1024,
         number_of_body_layers: int = 2,
         number_of_head_layers: int = 1,
         number_of_units_per_body_layer: Union[int, List[int]] = 128,
@@ -46,6 +47,8 @@ class GNNEdgePrediction(GCNEdgePrediction):
         -------------------------------
         epochs: int = 1000
             Epochs to train the model for.
+        batch_size: int = 1024
+            Batch size to train the model.
         number_of_body_layers: int = 2
             Number of layers in the body subsection of the FFNN section of the model.
         number_of_head_layers: int = 1
@@ -57,7 +60,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
-            - Concatenation
+            - Concatenate
             - Average
             - Hadamard
             - L1
@@ -149,6 +152,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         """
         super().__init__(
             epochs=epochs,
+            batch_size=batch_size,
             number_of_graph_convolution_layers=0,
             number_of_units_per_graph_convolution_layers=0,
             number_of_ffnn_body_layers=number_of_body_layers,

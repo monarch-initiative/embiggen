@@ -23,6 +23,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
+        batch_size: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "mean",
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
@@ -74,6 +75,11 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        batch_size: Optional[int] = None
+            Batch size to use while training the model.
+            If None, the batch size will be the number of nodes.
+            In all model parametrization that involve a number of graph
+            convolution layers, the batch size will be the number of nodes.
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
@@ -87,7 +93,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
-            - Concatenation
+            - Concatenate
             - Average
             - Hadamard
             - L1
@@ -193,6 +199,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            batch_size=batch_size,
             apply_norm=apply_norm,
             combiner=combiner,
             edge_embedding_methods=edge_embedding_methods,
@@ -240,10 +247,11 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         return GCNEdgeLabelPredictionSequence(
             graph,
             support=support,
-            kernel=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernel(support),
+            batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
+            return_node_types=self._use_node_type_embedding,
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
             edge_features=edge_features
@@ -253,10 +261,10 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+        node_features: Optional[List[np.ndarray]],
+        node_type_features: Optional[List[np.ndarray]],
+        edge_type_features: Optional[List[np.ndarray]],
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]],
     ) -> GCNEdgeLabelPredictionTrainingSequence:
         """Returns training input tuple."""
         if edge_type_features is not None:
@@ -269,10 +277,11 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         return GCNEdgeLabelPredictionTrainingSequence(
             graph=graph,
             support=support,
-            kernel=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernel(support),
+            batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
-            return_node_types=self.is_using_node_types(),
+            return_node_types=self._use_node_type_embedding,
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
             edge_features=edge_features,
@@ -315,3 +324,4 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         # in order to run the GCN portion of the model, which
         # always requires a batch size equal to the nodes number.
         return predictions[:graph.get_number_of_edges()]
+    

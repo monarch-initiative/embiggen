@@ -10,6 +10,7 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
     def __init__(
         self,
         epochs: int = 1000,
+        batch_size: int = 1024,
         number_of_head_layers: int = 1,
         number_of_units_per_head_layer: Union[int, List[int]] = 128,
         optimizer: Union[str, Optimizer] = "adam",
@@ -36,7 +37,7 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         -------------------------------
         epochs: int = 1000
             Epochs to train the model for.
-        batch_size: int = 2**10
+        batch_size: int = 1024
             Batch size to train the model.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 128
             Number of units per hidden layer.
@@ -87,6 +88,7 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         """
         super().__init__(
             epochs=epochs,
+            batch_size=batch_size,
             number_of_graph_convolution_layers=0,
             number_of_head_layers=number_of_head_layers,
             number_of_units_per_graph_convolution_layers=0,

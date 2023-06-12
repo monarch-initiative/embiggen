@@ -16,7 +16,8 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         self,
         graph: Graph,
         support: Graph,
-        kernel: tf.SparseTensor,
+        kernels: Optional[List[tf.SparseTensor]],
+        batch_size: int,
         return_node_types: bool = False,
         return_node_ids: bool = False,
         node_features: Optional[List[np.ndarray]] = None,
@@ -32,8 +33,10 @@ class GCNEdgeLabelPredictionSequence(Sequence):
             The graph from which to sample the edges.
         support: Graph
             The graph to be used for the topological metrics.
-        kernel: tf.SparseTensor
+        kernels: Optional[List[tf.SparseTensor]]
             The kernel to be used for the convolutions.
+        batch_size: int
+            The batch size to use.
         return_node_types: bool = False
             Whether to return the node types.
         return_edge_types: bool = False
@@ -58,7 +61,7 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         """
         super().__init__(
             sample_number=graph.get_number_of_edges(),
-            batch_size=graph.get_number_of_nodes(),
+            batch_size=batch_size,
         )
 
         # We use the GCN edge prediction training sequence to avoid
@@ -67,7 +70,8 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         self._gcn_edge_prediction_training_sequence = GCNEdgePredictionTrainingSequence(
             graph=graph,
             support=support,
-            kernel=kernel,
+            kernels=kernels,
+            batch_size=batch_size,
             return_node_types=return_node_types,
             return_node_ids=return_node_ids,
             node_features=node_features,
@@ -129,22 +133,33 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         self._edge_features = [
             VectorSequence(
                 rasterized_edge_feature,
-                batch_size=graph.get_number_of_nodes(),
+                batch_size=self.batch_size,
             )
             for rasterized_edge_feature in rasterized_edge_features
         ]
         self._sources = VectorSequence(
             graph.get_source_node_ids(graph.is_directed()),
-            batch_size=graph.get_number_of_nodes(),
+            batch_size=self.batch_size,
         )
         self._destinations = VectorSequence(
             graph.get_destination_node_ids(graph.is_directed()),
-            batch_size=graph.get_number_of_nodes(),
+            batch_size=self.batch_size,
         )
         
-    def get_node_features(self) -> Tuple[np.ndarray]:
-        """Return the node features."""
-        return self._gcn_edge_prediction_training_sequence.get_node_features()
+    def get_node_features(
+        self,
+        sources: Optional[np.ndarray]=None,
+        destinations: Optional[np.ndarray]=None
+    ) -> Tuple[np.ndarray]:
+        """Return node features."""
+        return self._gcn_edge_prediction_training_sequence.get_node_features(
+            sources=sources,
+            destinations=destinations
+        )
+    
+    def has_kernels(self) -> bool:
+        """Return whether the sequence has kernels."""
+        return self._gcn_edge_prediction_training_sequence.has_kernels()
 
     def __getitem__(self, idx: int):
         """Return batch corresponding to given index.
@@ -168,7 +183,7 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         # If this last batch is smaller than the batch size, we need to pad it.
         # This is necessary because in GCNs, the batch size is fixed to the number of nodes.
         delta = self.batch_size - sources.shape[0]
-        if delta > 0:
+        if delta > 0 and self.has_kernels():
             edge_features = [
                 np.pad(edge_feature, [(0, delta), (0, 0)])
                 for edge_feature in edge_features
@@ -176,10 +191,10 @@ class GCNEdgeLabelPredictionSequence(Sequence):
             sources = np.pad(sources, (0, delta))
             destinations = np.pad(destinations, (0, delta))
 
-        assert sources.shape[0] == destinations.shape[0] == self.batch_size
+        assert sources.shape[0] == destinations.shape[0]
 
         for edge_feature in edge_features:
-            assert edge_feature.shape[0] == self.batch_size
+            assert edge_feature.shape[0] == sources.shape[0]
 
         # We need to reshape the source and destination nodes to be of shape
         # (batch_size, 1) instead of (batch_size, ). This is necessary because
@@ -194,6 +209,9 @@ class GCNEdgeLabelPredictionSequence(Sequence):
                 sources,
                 destinations,
                 *edge_features,
-                *self.get_node_features()
+                *(self.get_node_features() if self.has_kernels() else self.get_node_features(
+                    sources=sources,
+                    destinations=destinations
+                ))
             ),
         )

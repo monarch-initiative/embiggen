@@ -35,6 +35,14 @@ class ClassForTestAbstractClassifierModelNonStocastic(AbstractClassifierModel):
     @classmethod
     def task_name(cls) -> str:
         return "test_task_name"
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False
 
 
 class TestAbstractClassifierModel(TestCase):

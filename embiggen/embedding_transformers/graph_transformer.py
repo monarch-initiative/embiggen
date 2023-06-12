@@ -1,7 +1,8 @@
 """GraphTransformer class to convert graphs to edge embeddings."""
-from typing import List, Union, Optional
-import pandas as pd
+from typing import List, Optional, Union
+
 import numpy as np
+import pandas as pd
 from ensmallen import Graph  # pylint: disable=no-name-in-module
 
 from embiggen.embedding_transformers.edge_transformer import EdgeTransformer
@@ -23,7 +24,7 @@ class GraphTransformer:
         methods: Union[List[str], str] = "Hadamard"
             Method to use for the edge embedding.
             If multiple edge embedding are provided, they
-            will be concatenated and fed to the model.
+            will be Concatenated and fed to the model.
             The supported edge embedding methods are:
              * Hadamard: element-wise product
              * Sum: element-wise sum
@@ -32,7 +33,7 @@ class GraphTransformer:
              * AbsoluteL1: element-wise subtraction in absolute value
              * SquaredL2: element-wise subtraction in squared value
              * L2: element-wise squared root of squared subtraction
-             * Concatenate: concatenation of source and destination node features
+             * Concatenate: Concatenate of source and destination node features
              * Min: element-wise minimum
              * Max: element-wise maximum
              * L2Distance: vector-wise L2 distance - this yields a scalar
@@ -94,6 +95,10 @@ class GraphTransformer:
     def has_edge_type_features(self) -> bool:
         """Return whether the transformer has a edge type feature."""
         return self._transformer.has_edge_type_features()
+    
+    def is_aligned_mapping(self) -> bool:
+        """Return whether the transformer has a aligned mapping."""
+        return self._transformer.is_aligned_mapping()
 
     def transform(
         self,
@@ -115,7 +120,7 @@ class GraphTransformer:
             aligned_mapping is setted, then this methods also accepts
             a list of ints.
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None
-            Optional edge features to be used as input concatenated
+            Optional edge features to be used as input Concatenated
             to the obtained edge embedding. The shape must be equal
             to the number of directed edges in the provided graph.
 
@@ -203,6 +208,29 @@ class GraphTransformer:
         else:
             source_node_types = None
             destination_node_types = None
+
+        if isinstance(edge_types, Graph):
+            edge_types.must_not_contain_unknown_edge_types()
+            edge_types.must_not_be_multigraph()
+            if not self.has_edge_type_features():
+                raise ValueError(
+                    "While the provided graph has edge types, "
+                    "no edge features were provided to the graph transformer"
+                )
+            if self.is_aligned_mapping():
+                if edge_types.is_directed() or self._include_both_undirected_edges:
+                    edge_types = edge_types.get_imputed_directed_edge_type_ids(
+                        imputation_edge_type_id=0
+                    )
+                else:
+                    edge_types = edge_types.get_imputed_upper_triangular_edge_type_ids(
+                        imputation_edge_type_id=0
+                    )
+            else:
+                if edge_types.is_directed() or self._include_both_undirected_edges:
+                    edge_types = edge_types.get_directed_edge_type_names()
+                else:
+                    edge_types = edge_types.get_upper_triangular_edge_type_names()
 
         return self._transformer.transform(
             sources,

@@ -46,3 +46,4 @@ embedding
 dataset
 model.pkl
 catboost_info
+*.pkl.gz

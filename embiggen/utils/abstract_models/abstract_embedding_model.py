@@ -249,3 +249,11 @@ class AbstractEmbeddingModel(AbstractModel):
             graph=graph,
             return_dataframe=return_dataframe,
         )
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False

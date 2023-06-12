@@ -1,5 +1,5 @@
 """Module providing adapter class making edge prediction possible in sklearn models."""
-from typing import Type, List, Optional, Dict, Any, Union
+from typing import Type, List, Optional, Dict, Any, Union, Tuple
 import numpy as np
 import math
 import compress_pickle
@@ -37,7 +37,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
             The method(s) to use to compute the edges.
             If multiple edge embedding are provided, they
-            will be concatenated and fed to the model.
+            will be Concatenated and fed to the model.
             The supported edge embedding methods are:
              * Hadamard: element-wise product
              * Sum: element-wise sum
@@ -46,7 +46,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
              * AbsoluteL1: element-wise subtraction in absolute value
              * SquaredL2: element-wise subtraction in squared value
              * L2: element-wise squared root of squared subtraction
-             * Concatenate: concatenation of source and destination node features
+             * Concatenate: Concatenate of source and destination node features
              * Min: element-wise minimum
              * Max: element-wise maximum
              * L2Distance: vector-wise L2 distance - this yields a scalar
@@ -110,10 +110,11 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
 
     def _trasform_graph_into_edge_embedding(
         self,
-        graph: Union[Graph, np.ndarray],
+        graph: Union[Graph, Tuple[np.ndarray]],
         node_features: List[np.ndarray],
         support: Graph,
         node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        edge_types: Optional[np.ndarray] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
@@ -137,6 +138,8 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             This can be either a list of strings, or a graph, or if the
             aligned_mapping is setted, then this methods also accepts
             a list of ints.
+        edge_types: Optional[np.ndarray] = None
+            The edge types to use.
         node_type_features: Optional[List[np.ndarray]] = None,
             The node type features to be used in the training of the model.
         edge_type_features: Optional[List[np.ndarray]] = None
@@ -154,8 +157,9 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         ValueError
             If the two graphs do not share the same node vocabulary.
         """
+        assert self.is_using_edge_types() == (edge_types is not None)
 
-        gt = GraphTransformer(
+        graph_transformer = GraphTransformer(
             methods=self._edge_embedding_methods,
             aligned_mapping=True,
             include_both_undirected_edges=False
@@ -242,16 +246,16 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
                     f"A graph of type {type(graph)} was provided."
                 )
 
-        gt.fit(
+        graph_transformer.fit(
             node_features,
             node_type_feature=node_type_features,
             edge_type_features=edge_type_features
         )
 
-        return gt.transform(
+        return graph_transformer.transform(
             graph=graph,
             node_types=node_types,
-            edge_types=support if edge_type_features is not None else None,
+            edge_types=edge_types,
             edge_features=rasterized_edge_features
         )
 
@@ -434,8 +438,13 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         sequence = EdgePredictionSequence(
             graph=graph,
             support=support,
+            # The node types are handled within the context of the graph transformer
+            # and guarantee to be aligned with the node type features and the sampled
+            # source and destination nodes.
             return_node_types=False,
-            return_edge_types=False,
+            # The same is not possible for the edge types, and therefore we need to
+            # handle them separately within the edge prediction sequence.
+            return_edge_types=self.is_using_edge_types(),
             use_edge_metrics=False,
             batch_size=self._prediction_batch_size
         )
@@ -454,10 +463,11 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
 
         prediction_probabilities = np.concatenate([
             predict(self._trasform_graph_into_edge_embedding(
-                graph=edges[0],
+                graph=(edges[0][0], edges[0][1]),
                 support=support,
                 node_features=node_features,
                 node_types=graph,
+                edge_types=edges[0][2] if self.is_using_edge_types() else None,
                 node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
                 edge_features=edge_features,
@@ -526,3 +536,19 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             Path from where to dump the model.
         """
         compress_pickle.dump(self, path)
+
+    @classmethod
+    def requires_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def requires_edge_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return True
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return True

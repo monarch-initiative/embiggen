@@ -79,7 +79,7 @@ class LightGBMEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
         edge_embedding_method: Union[List[str], str] = "Concatenate",
             The method(s) to use to compute the edges.
             If multiple edge embedding are provided, they
-            will be concatenated and fed to the model.
+            will be Concatenated and fed to the model.
             The supported edge embedding methods are:
              * Hadamard: element-wise product
              * Sum: element-wise sum
@@ -88,7 +88,7 @@ class LightGBMEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
              * AbsoluteL1: element-wise subtraction in absolute value
              * SquaredL2: element-wise subtraction in squared value
              * L2: element-wise squared root of squared subtraction
-             * Concatenate: concatenation of source and destination node features
+             * Concatenate: Concatenate of source and destination node features
              * Min: element-wise minimum
              * Max: element-wise maximum
              * L2Distance: vector-wise L2 distance - this yields a scalar
@@ -165,3 +165,4 @@ class LightGBMEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
     def library_name(cls) -> str:
         """Return name of the model."""
         return "LightGBM"
+    

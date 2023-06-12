@@ -419,3 +419,11 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     def task_involves_topology(cls) -> bool:
         """Returns whether the model task involves topology."""
         return False
+    
+    @classmethod
+    def can_use_edge_type_features(cls) -> bool:
+        return False
+    
+    @classmethod
+    def can_use_edge_features(cls) -> bool:
+        return False

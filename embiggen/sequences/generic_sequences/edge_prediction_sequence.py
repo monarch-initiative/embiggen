@@ -1,7 +1,6 @@
 """Keras Sequence for running Neural Network on graph edge prediction."""
 import numpy as np
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
 
 
 class EdgePredictionSequence:
