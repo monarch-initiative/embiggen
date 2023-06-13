@@ -1,46 +1,46 @@
 """Module with embedding visualization tools."""
-from embiggen.utils.pipeline import iterate_graphs
-from embiggen.utils.abstract_models import format_list
-from embiggen.embedders import embed_graph
-from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
 import functools
+import inspect
+import itertools
+import math
+import sys
+import warnings
+from collections import Counter
 from multiprocessing import cpu_count
-from typing import Dict, Iterator, List, Tuple, Union, Optional, Callable, Type
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import warnings
-import math
-import sys
-from humanize import intword, apnumber
-import inspect
-from environments_utils import is_notebook, is_colab
-from collections import Counter
 from ensmallen import Graph  # pylint: disable=no-name-in-module
-from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, SymLogNorm, LogNorm
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from sklearn.tree import DecisionTreeClassifier
-from matplotlib.legend_handler import HandlerBase, HandlerTuple
+from ensmallen.datasets.graph_retrieval import normalize_node_name
+from environments_utils import is_colab, is_notebook
+from humanize import apnumber, intword
 from matplotlib import collections as mc
+from matplotlib.axes import Axes
+from matplotlib.collections import Collection
+from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
+from matplotlib.figure import Figure
+from matplotlib.legend_handler import HandlerBase, HandlerTuple
+from matplotlib.text import Annotation
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from mpl_toolkits.mplot3d.proj3d import proj_transform
 from sanitize_ml_labels import sanitize_ml_labels
 from sklearn.decomposition import PCA
-from userinput.utils import must_be_in_set
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
-import itertools
-from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
+from sklearn.tree import DecisionTreeClassifier
+from userinput.utils import must_be_in_set
+
+from embiggen.embedders import embed_graph
+from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
-from ensmallen.datasets.graph_retrieval import normalize_node_name
-
+from embiggen.utils.abstract_models import format_list
+from embiggen.utils.abstract_models.abstract_embedding_model import \
+    AbstractEmbeddingModel
 from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
-
-from mpl_toolkits.mplot3d.proj3d import proj_transform
-from matplotlib.text import Annotation
+from embiggen.utils.pipeline import iterate_graphs
 
 
 class Annotation3D(Annotation):
@@ -58,7 +58,8 @@ class Annotation3D(Annotation):
 
 
 try:
-    from ddd_subplots import subplots as subplots_3d, rotate, display_video_at_path
+    from ddd_subplots import display_video_at_path, rotate
+    from ddd_subplots import subplots as subplots_3d
 except ImportError:
     warnings.warn(
         "We were not able to detect the CV2 package and libGL.so, therefore "
@@ -478,7 +479,7 @@ class GraphVisualizer:
         else:
             figure, axes = args[:2]
         if (is_notebook() or is_colab()) and self._automatically_display_on_notebooks:
-            from IPython.display import display, HTML
+            from IPython.display import HTML, display
             if figure is not None:
                 display(figure)
             if caption is not None:
@@ -2272,18 +2273,18 @@ class GraphVisualizer:
 
         if mean_accuracy > 0.55:
             if mean_accuracy > 0.90:
-                descriptor = f"is an outstanding edge prediction feature"
+                descriptor = "is an outstanding edge prediction feature"
             elif mean_accuracy > 0.65:
-                descriptor = f"is a good edge prediction feature"
+                descriptor = "is a good edge prediction feature"
             else:
-                descriptor = f"may be considered an edge prediction feature"
+                descriptor = "may be considered an edge prediction feature"
             metric_caption = (
                 f"This metric {descriptor}"
             )
         else:
             metric_caption = (
                 "The metric is not useful as an "
-                f"edge prediction feature"
+                "edge prediction feature"
             )
 
         caption = (
@@ -4224,7 +4225,7 @@ class GraphVisualizer:
         """
         try:
             import graphviz
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as exception:
             raise ModuleNotFoundError(
                 "In order to run the graph Dot visualization, "
                 "the graphviz library must be installed. This "
@@ -4234,7 +4235,7 @@ class GraphVisualizer:
                 "to fail the installation.\n"
                 "In order to install graphviz, try running "
                 "`pip install graphviz`."
-            )
+            ) from exception
         return graphviz.Source(
             self._graph.to_dot(),
             engine=engine
@@ -4281,7 +4282,7 @@ class GraphVisualizer:
         axes.set_ylabel("Count (log scale)")
         axes.set_xlabel("Degree")
         if self._show_graph_name:
-            title = "Degree distribution of graph {}".format(self._graph_name)
+            title = f"Degree distribution of graph {self._graph_name}"
         else:
             title = "Degree distribution"
         if show_title:

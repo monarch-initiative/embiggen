@@ -11,11 +11,12 @@ from ensmallen import Graph
 from keras_mixed_sequence import Sequence
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
     EarlyStopping, ReduceLROnPlateau)
-from tensorflow.keras.layers import Concatenate, Input
+from tensorflow.keras.layers import Input
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
     Optimizer  # pylint: disable=import-error,no-name-in-module
+from userinput.utils import must_be_in_set
 
 from embiggen.layers.tensorflow import (EmbeddingLookup, FlatEmbedding,
                                         GraphConvolution, L2Norm)
@@ -29,8 +30,7 @@ from embiggen.utils.number_to_ordinal import number_to_ordinal
 
 def graph_to_sparse_tensor(
     graph: Graph,
-    use_weights: bool,
-    use_simmetric_normalized_laplacian: bool,
+    kernel: str,
     handling_multi_graph: str = "warn",
 ) -> tf.SparseTensor:
     """Returns provided graph as sparse Tensor.
@@ -39,10 +39,21 @@ def graph_to_sparse_tensor(
     -------------------
     graph: Graph,
         The graph to convert.
-    use_weights: bool,
-        Whether to load the graph weights.
-    use_simmetric_normalized_laplacian: bool
-        Whether to use the symmetrically normalized laplacian
+    kernel: str
+        The type of normalization to use. It can either be:
+        * "Weights", to just use the graph weights themselves.
+        * "Left Normalized Laplacian", for the left normalized Laplacian.
+        * "Right Normalized Laplacian", for the right normalized Laplacian.
+        * "Symmetric Normalized Laplacian", for the symmetric normalized Laplacian.
+        * "Transposed Left Normalized Laplacian", for the transposed left normalized Laplacian.
+        * "Transposed Right Normalized Laplacian", for the transposed right normalized Laplacian.
+        * "Transposed Symmetric Normalized Laplacian", for the transposed symmetric normalized Laplacian.
+        * "Weighted Left Normalized Laplacian", for the weighted left normalized Laplacian.
+        * "Weighted Right Normalized Laplacian", for the weighted right normalized Laplacian.
+        * "Weighted Symmetric Normalized Laplacian", for the weighted symmetric normalized Laplacian.
+        * "Transposed Weighted Left Normalized Laplacian", for the transposed weighted left normalized Laplacian.
+        * "Transposed Weighted Right Normalized Laplacian", for the transposed weighted right normalized Laplacian.
+        * "Transposed Weighted Symmetric Normalized Laplacian", for the transposed weighted symmetric normalized Laplacian.
     handling_multi_graph: str = "warn"
         How to behave when dealing with multigraphs.
         Possible behaviours are:
@@ -63,6 +74,18 @@ def graph_to_sparse_tensor(
     -------------------
     SparseTensor with (weighted) adjacency matrix.
     """
+    if "Weighted" in kernel:
+        use_weights = True
+        kernel = kernel.replace("Weighted ", "")
+    else:
+        use_weights = False
+    
+    if "Transposed" in kernel:
+        transpose = True
+        kernel = kernel.replace("Transposed ", "")
+    else:
+        transpose = False
+
     if use_weights and not graph.has_edge_weights():
         raise ValueError(
             "Edge weights were requested but the provided graph "
@@ -92,40 +115,77 @@ def graph_to_sparse_tensor(
 
         graph = graph.remove_parallel_edges()
 
-    if use_simmetric_normalized_laplacian:
-        edge_node_ids, weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
-        return tf.sparse.reorder(
-            tf.SparseTensor(
-                edge_node_ids,
-                np.abs(weights),
-                (graph.get_number_of_nodes(), graph.get_number_of_nodes()),
+    # We transpose the graph if requested, though the operation is skipped
+    # if we are computing the transposed of an undirected graph. A warning
+    # is raised in this case.
+    if transpose:
+        if graph.is_directed():
+            graph = graph.to_transposed()
+        else:
+            warnings.warn(
+                "You are trying to compute the transposed of an undirected graph. "
+                "The transposed of an undirected graph is the same graph. "
+                "This operation is skipped."
             )
-        )
 
-    return tf.SparseTensor(
-        graph.get_directed_edge_node_ids(),
-        (
-            graph.get_directed_edge_weights()
-            if use_weights
-            else tf.ones(graph.get_number_of_directed_edges())
-        ),
-        (graph.get_number_of_nodes(), graph.get_number_of_nodes()),
+    if kernel == "Weights":
+        edge_node_ids = graph.get_directed_edge_node_ids()
+        kernel_weights = graph.get_directed_edge_weights()
+    elif kernel == "Left Normalized Laplacian":
+        edge_node_ids, kernel_weights = graph.get_left_normalized_laplacian_coo_matrix()
+    elif kernel == "Right Normalized Laplacian":
+        edge_node_ids, kernel_weights = graph.get_right_normalized_laplacian_coo_matrix()
+    elif kernel == "Symmetric Normalized Laplacian":
+        edge_node_ids, kernel_weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
+    else:
+        raise ValueError(
+            f"Kernel {kernel} is not supported. "
+            "Supported kernels are: "
+            f"{', '.join(AbstractGCN.supported_kernels)}."
+        )
+    kernel_weights = np.abs(kernel_weights)
+    if use_weights and kernel != "Weights":
+        kernel_weights = kernel_weights * graph.get_directed_edge_weights()
+    
+    return tf.sparse.reorder(
+        tf.SparseTensor(
+            edge_node_ids,
+            kernel_weights,
+            (graph.get_number_of_nodes(), graph.get_number_of_nodes()),
+        )
     )
 
 
 @abstract_class
 class AbstractGCN(AbstractClassifierModel):
-    """Kipf GCN model for node-label prediction."""
+    """Abstract base GCN."""
+
+    supported_kernels = [
+        "Weights",
+        "Left Normalized Laplacian",
+        "Right Normalized Laplacian",
+        "Symmetric Normalized Laplacian",
+        "Transposed Left Normalized Laplacian",
+        "Transposed Right Normalized Laplacian",
+        "Transposed Symmetric Normalized Laplacian",
+        "Weighted Left Normalized Laplacian",
+        "Weighted Right Normalized Laplacian",
+        "Weighted Symmetric Normalized Laplacian",
+        "Trasposed Weighted Left Normalized Laplacian",
+        "Trasposed Weighted Right Normalized Laplacian",
+        "Trasposed Weighted Symmetric Normalized Laplacian",
+    ]
 
     def __init__(
         self,
+        kernels: Optional[Union[str, List[str]]],
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
         dropout_rate: float = 0.5,
         batch_size: Optional[int] = None,
         apply_norm: bool = False,
-        combiner: str = "mean",
+        combiner: str = "sum",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.001,
         early_stopping_patience: int = 10,
@@ -138,11 +198,11 @@ class AbstractGCN(AbstractClassifierModel):
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
@@ -152,6 +212,21 @@ class AbstractGCN(AbstractClassifierModel):
 
         Parameters
         -------------------------------
+        kernels: Optional[Union[str, List[str]]]
+            The type of normalization to use. It can either be:
+            * "Weights", to just use the graph weights themselves.
+            * "Left Normalized Laplacian", for the left normalized Laplacian.
+            * "Right Normalized Laplacian", for the right normalized Laplacian.
+            * "Symmetric Normalized Laplacian", for the symmetric normalized Laplacian.
+            * "Transposed Left Normalized Laplacian", for the transposed left normalized Laplacian.
+            * "Transposed Right Normalized Laplacian", for the transposed right normalized Laplacian.
+            * "Transposed Symmetric Normalized Laplacian", for the transposed symmetric normalized Laplacian.
+            * "Weighted Left Normalized Laplacian", for the weighted left normalized Laplacian.
+            * "Weighted Right Normalized Laplacian", for the weighted right normalized Laplacian.
+            * "Weighted Symmetric Normalized Laplacian", for the weighted symmetric normalized Laplacian.
+            * "Transposed Weighted Left Normalized Laplacian", for the transposed weighted left normalized Laplacian.
+            * "Transposed Weighted Right Normalized Laplacian", for the transposed weighted right normalized Laplacian.
+            * "Transposed Weighted Symmetric Normalized Laplacian", for the transposed weighted symmetric normalized Laplacian.
         epochs: int = 1000
             Epochs to train the model for.
         number_of_graph_convolution_layers: int = 3
@@ -203,8 +278,6 @@ class AbstractGCN(AbstractClassifierModel):
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
         random_state: int = 42
             Random state to reproduce the training samples.
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -219,6 +292,9 @@ class AbstractGCN(AbstractClassifierModel):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        residual_convolutional_layers: bool = False
+            Whether to use residual connections and concatenate all the convolutional
+            layers together before the first dense layer.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -244,12 +320,43 @@ class AbstractGCN(AbstractClassifierModel):
             )
         )
 
+        if kernels is None:
+            kernels = []
+        
+        if isinstance(kernels, str):
+            kernels = [kernels]
+        
+        if not isinstance(kernels, list):
+            raise TypeError(
+                f"Provided kernels should be either a string or a list, "
+                f"but found {type(kernels)}."
+            )
+        
+        self._kernels = [
+            must_be_in_set(
+                kernel,
+                self.supported_kernels,
+                "kernel"
+            )
+            for kernel in kernels
+        ]
+        
+        if self.has_convolutional_layers() and not self.has_kernels():
+            raise ValueError(
+                "You are trying to create a GCN model with convolutional layers "
+                "but you have not provided any kernel to use."
+            )
+        if not self.has_convolutional_layers() and self.has_kernels():
+            raise ValueError(
+                "You are trying to create a GCN model without convolutional layers "
+                "but you have provided kernels to use."
+            )
+
         self._combiner = combiner
         self._epochs = epochs
         self._use_class_weights = use_class_weights
         self._dropout_rate = dropout_rate
         self._optimizer = optimizer
-        self._use_simmetric_normalized_laplacian = use_simmetric_normalized_laplacian
         self._apply_norm = apply_norm
         self._handling_multi_graph = handling_multi_graph
         self._use_node_embedding = use_node_embedding
@@ -265,6 +372,7 @@ class AbstractGCN(AbstractClassifierModel):
 
         self._node_feature_names = node_feature_names
         self._node_type_feature_names = node_type_feature_names
+        self._residual_convolutional_layers = residual_convolutional_layers
 
         self._early_stopping_min_delta = early_stopping_min_delta
         self._early_stopping_patience = early_stopping_patience
@@ -437,24 +545,15 @@ class AbstractGCN(AbstractClassifierModel):
         input_features = []
         hidden = []
 
-        if self.has_convolutional_layers():
-            # Input layer for the adjacency matrix. Do note that we can use in this
-            # model multiple adjacency matrices because we are building it with an
-            # open world assumption in mind. This means that we can train the model
-            # and use it to run predictions on one
-            # or more graphs that can have different nodes and edges.
-            adjacency_matrix = Input(
+        kernels = [
+            Input(
                 shape=(graph.get_number_of_nodes(),),
                 batch_size=graph.get_number_of_nodes(),
                 sparse=True,
-                name=(
-                    "Laplacian Matrix"
-                    if self._use_simmetric_normalized_laplacian
-                    else "Adjacency Matrix"
-                ),
+                name=kernel,
             )
-        else:
-            adjacency_matrix = None
+            for kernel in self._kernels
+        ]
 
         # When we are not creating a node-level model but an edge-label or
         # edge-prediction model, and the model is not using convolutional layers,
@@ -475,7 +574,7 @@ class AbstractGCN(AbstractClassifierModel):
         # as a list of features, where the first half of the features are the source node
         # features and the second half of the features are the destination node features.
 
-        if not self.has_convolutional_layers() and self.is_edge_level_task():
+        if not self.has_kernels() and self.is_edge_level_task():
             prefixes = ("Source ", "Destination ")
         else:
             prefixes = ("",)
@@ -523,7 +622,7 @@ class AbstractGCN(AbstractClassifierModel):
             # we are not executing convolutional layers, we will need to create the node
             # embedding layer within the abstract edge GCN model.
             if self._use_node_embedding and (
-                self.has_convolutional_layers() or not self.is_edge_level_task()
+                self.has_kernels() or not self.is_edge_level_task()
             ):
                 node_ids = Input(shape=(1,), name="Nodes", dtype=tf.int32)
                 input_features.append(node_ids)
@@ -558,24 +657,42 @@ class AbstractGCN(AbstractClassifierModel):
                 )(node_type_ids)
                 hidden.append(node_type_embedding)
 
-        # Building the body of the model.
-        for i, units in enumerate(self._number_of_units_per_graph_convolution_layers):
-            hidden = GraphConvolution(
-                units=units,
-                combiner=self._combiner,
-                dropout_rate=self._dropout_rate,
-                apply_norm=self._apply_norm,
-                name=f"{number_to_ordinal(i+1)}GraphConvolution",
-            )((adjacency_matrix, *hidden))
+        starting_hidden = hidden
+
+        output_hiddens = []
+
+        for (kernel, kernel_name) in zip(kernels, self._kernels):
+            hidden = starting_hidden
+            # Building the body of the model.
+            for i, units in enumerate(self._number_of_units_per_graph_convolution_layers):
+                if len(self._number_of_units_per_graph_convolution_layers) > 1:
+                    ordinal = number_to_ordinal(i+1)
+                else:
+                    ordinal = ""
+                sanitized_kernel_name = kernel_name.replace(" ", "")
+                hidden = GraphConvolution(
+                    units=units,
+                    combiner=self._combiner,
+                    dropout_rate=self._dropout_rate,
+                    apply_norm=self._apply_norm,
+                    name=f"{ordinal}{sanitized_kernel_name}GraphConvolution",
+                )((kernel, *hidden))
+                if self._residual_convolutional_layers:
+                    output_hiddens.extend(hidden)
+            if not self._residual_convolutional_layers:
+                output_hiddens.extend(hidden)
+        
+        if len(output_hiddens) == 0:
+            output_hiddens = starting_hidden
 
         # Returning the convolutional portion of the model.
         return Model(
             inputs=[
                 input_layer
-                for input_layer in (adjacency_matrix, *input_features)
+                for input_layer in (*kernels, *input_features)
                 if input_layer is not None
             ],
-            outputs=hidden,
+            outputs=output_hiddens,
         )
 
     def get_model_expected_input_shapes(self, graph: Graph) -> Dict[str, Tuple[int]]:
@@ -907,8 +1024,12 @@ class AbstractGCN(AbstractClassifierModel):
     def has_convolutional_layers(self) -> bool:
         """Returns whether the present model has convolutional layers."""
         return self._number_of_graph_convolution_layers
+    
+    def has_kernels(self) -> bool:
+        """Returns whether the present model has kernels."""
+        return len(self._kernels) > 0
 
-    def convert_graph_to_kernel(self, graph: Graph) -> Optional[tf.SparseTensor]:
+    def convert_graph_to_kernels(self, graph: Graph) -> Optional[tf.SparseTensor]:
         """Returns provided graph converted to a sparse Tensor.
 
         Implementation details
@@ -917,15 +1038,16 @@ class AbstractGCN(AbstractClassifierModel):
         the model will return None, as to avoid allocating like object for
         apparently no reason.
         """
-        if not self.has_convolutional_layers():
+        if not self.has_kernels():
             return None
-        return graph_to_sparse_tensor(
-            graph,
-            use_weights=graph.has_edge_weights()
-            and not self._use_simmetric_normalized_laplacian,
-            use_simmetric_normalized_laplacian=self._use_simmetric_normalized_laplacian,
-            handling_multi_graph=self._handling_multi_graph,
-        )
+        return [
+            graph_to_sparse_tensor(
+                graph,
+                kernel=kernel,
+                handling_multi_graph=self._handling_multi_graph,
+            )
+            for kernel in self._kernels
+        ]
 
     @classmethod
     def requires_edge_weights(cls) -> bool:
@@ -947,7 +1069,10 @@ class AbstractGCN(AbstractClassifierModel):
 
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
-        return not self._use_simmetric_normalized_laplacian
+        return any([
+            "Weighted" in kernel
+            for kernel in self._kernels
+        ])
 
     def is_edge_level_task(self) -> bool:
         """Returns whether the task is edge level."""

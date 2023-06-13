@@ -104,6 +104,7 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels="Symmetric Normalized Laplacian",
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_head_layers=number_of_head_layers,
@@ -111,7 +112,6 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             number_of_units_per_head_layer=number_of_units_per_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
-            combiner="sum",
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
             early_stopping_patience=early_stopping_patience,
@@ -124,7 +124,6 @@ class KipfGCNNodeLabelPrediction(GCNNodeLabelPrediction):
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=True,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             handling_multi_graph=handling_multi_graph,

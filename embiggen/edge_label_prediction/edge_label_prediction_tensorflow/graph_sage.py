@@ -164,6 +164,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels=["Left Normalized Laplacian"],
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -188,7 +189,6 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
             use_class_weights=use_class_weights,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=False,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
@@ -203,7 +203,7 @@ class GraphSAGEEdgeLabelPrediction(GCNEdgeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "apply_norm",
-            "use_simmetric_normalized_laplacian",
+            "kernels",
             "combiner"
         ]
         return dict(

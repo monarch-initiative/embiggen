@@ -22,8 +22,9 @@ class GraphConvolution(Layer):
         self,
         units: int,
         activation: str = "relu",
-        combiner: str = "mean",
+        combiner: str = "sum",
         dropout_rate: Optional[float] = 0.5,
+        transpose: bool = False,
         apply_norm: bool = False,
         **kwargs: Dict
     ):
@@ -46,6 +47,13 @@ class GraphConvolution(Layer):
             Float between 0 and 1. Fraction of the input units to drop.
             If the provided value is either zero or None the dropout rate
             is not applied.
+        transpose: bool = False
+            Whether to transpose the adjacency matrix before applying the
+            graph convolution. Note that if you intend to compute the Symmetrically
+            Normalized Laplacian, you should first transpose the graph and only after
+            that compute the normalization.
+        apply_norm: bool = False
+            Whether to apply L2 normalization to the output of the graph convolution.
         **kwargs: Dict
             Kwargs to pass to the parent Layer class.
         """
@@ -57,6 +65,7 @@ class GraphConvolution(Layer):
         self._activation = activation
         if dropout_rate == 0.0:
             dropout_rate = None
+        self._transpose = transpose
         self._dropout_rate = dropout_rate
         self._apply_norm = apply_norm
         self._dense_layers = []
@@ -137,6 +146,16 @@ class GraphConvolution(Layer):
             values=adjacency.indices[:, 1],
             dense_shape=adjacency.dense_shape
         )
+
+        if self._transpose:
+            ids = tf.sparse.transpose(
+                ids,
+                perm=[1, 0]
+            )
+            adjacency = tf.sparse.transpose(
+                adjacency,
+                perm=[1, 0]
+            )
 
         return [
             l2_norm(dropout(dense(embedding_ops.embedding_lookup_sparse_v2(

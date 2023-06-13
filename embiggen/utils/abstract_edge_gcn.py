@@ -29,6 +29,7 @@ class AbstractEdgeGCN(AbstractGCN):
 
     def __init__(
         self,
+        kernels: Optional[Union[str, List[str]]],
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
         number_of_units_per_graph_convolution_layers: Union[int,
@@ -55,7 +56,6 @@ class AbstractEdgeGCN(AbstractGCN):
         use_class_weights: bool = True,
         use_edge_metrics: bool = False,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
@@ -71,6 +71,21 @@ class AbstractEdgeGCN(AbstractGCN):
 
         Parameters
         -------------------------------
+        kernels: Optional[Union[str, List[str]]]
+            The type of normalization to use. It can either be:
+            * "Weights", to just use the graph weights themselves.
+            * "Left Normalized Laplacian", for the left normalized Laplacian.
+            * "Right Normalized Laplacian", for the right normalized Laplacian.
+            * "Symmetric Normalized Laplacian", for the symmetric normalized Laplacian.
+            * "Transposed Left Normalized Laplacian", for the transposed left normalized Laplacian.
+            * "Transposed Right Normalized Laplacian", for the transposed right normalized Laplacian.
+            * "Transposed Symmetric Normalized Laplacian", for the transposed symmetric normalized Laplacian.
+            * "Weighted Left Normalized Laplacian", for the weighted left normalized Laplacian.
+            * "Weighted Right Normalized Laplacian", for the weighted right normalized Laplacian.
+            * "Weighted Symmetric Normalized Laplacian", for the weighted symmetric normalized Laplacian.
+            * "Transposed Weighted Left Normalized Laplacian", for the transposed weighted left normalized Laplacian.
+            * "Transposed Weighted Right Normalized Laplacian", for the transposed weighted right normalized Laplacian.
+            * "Transposed Weighted Symmetric Normalized Laplacian", for the transposed weighted symmetric normalized Laplacian.
         epochs: int = 1000
             Epochs to train the model for.
         number_of_graph_convolution_layers: int = 2
@@ -175,8 +190,6 @@ class AbstractEdgeGCN(AbstractGCN):
             - Preferential attachment
         random_state: int = 42
             Random state to reproduce the training samples.
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -214,6 +227,7 @@ class AbstractEdgeGCN(AbstractGCN):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels=kernels,
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -232,7 +246,6 @@ class AbstractEdgeGCN(AbstractGCN):
             reduce_lr_mode=reduce_lr_mode,
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
@@ -382,9 +395,10 @@ class AbstractEdgeGCN(AbstractGCN):
         # we need to consider the input features that come from the graph convolution model
         # which in this case are half for the source nodes and half for the destination nodes.
 
-        if not self.has_convolutional_layers():
+        if not self.has_kernels():
             features: List = graph_convolution_model.output
             assert isinstance(features, list), f"Expected {graph_convolution_model.output} to be a list of features."
+            assert len(features) > 0
             assert len(features) % 2 == 0
             source_related_features = features[:len(features) // 2]
             destination_related_features = features[len(features) // 2:]

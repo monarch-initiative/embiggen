@@ -19,6 +19,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
 
     def __init__(
         self,
+        kernels: Optional[Union[str, List[str]]],
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
@@ -29,7 +30,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         dropout_rate: float = 0.2,
         batch_size: Optional[int] = None,
         apply_norm: bool = False,
-        combiner: str = "mean",
+        combiner: str = "sum",
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -46,7 +47,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
@@ -62,6 +62,21 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
 
         Parameters
         -------------------------------
+        kernels: Optional[Union[str, List[str]]]
+            The type of normalization to use. It can either be:
+            * "Weights", to just use the graph weights themselves.
+            * "Left Normalized Laplacian", for the left normalized Laplacian.
+            * "Right Normalized Laplacian", for the right normalized Laplacian.
+            * "Symmetric Normalized Laplacian", for the symmetric normalized Laplacian.
+            * "Transposed Left Normalized Laplacian", for the transposed left normalized Laplacian.
+            * "Transposed Right Normalized Laplacian", for the transposed right normalized Laplacian.
+            * "Transposed Symmetric Normalized Laplacian", for the transposed symmetric normalized Laplacian.
+            * "Weighted Left Normalized Laplacian", for the weighted left normalized Laplacian.
+            * "Weighted Right Normalized Laplacian", for the weighted right normalized Laplacian.
+            * "Weighted Symmetric Normalized Laplacian", for the weighted symmetric normalized Laplacian.
+            * "Transposed Weighted Left Normalized Laplacian", for the transposed weighted left normalized Laplacian.
+            * "Transposed Weighted Right Normalized Laplacian", for the transposed weighted right normalized Laplacian.
+            * "Transposed Weighted Symmetric Normalized Laplacian", for the transposed weighted symmetric normalized Laplacian.
         epochs: int = 1000
             Epochs to train the model for.
         number_of_graph_convolution_layers: int = 2
@@ -161,8 +176,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             - Jaccard Coefficient
             - Resource allocation index
             - Preferential attachment
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -202,6 +215,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         AbstractEdgePredictionModel.__init__(self, random_state=random_state)
         AbstractEdgeGCN.__init__(
             self,
+            kernels=kernels,
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -227,7 +241,6 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             use_class_weights=False,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
@@ -271,7 +284,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         return GCNEdgePredictionSequence(
             graph,
             support=support,
-            kernels=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernels(support),
             batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
@@ -295,7 +308,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
             graph,
-            kernels=self.convert_graph_to_kernel(support),
+            kernels=self.convert_graph_to_kernels(support),
             support=support,
             batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,

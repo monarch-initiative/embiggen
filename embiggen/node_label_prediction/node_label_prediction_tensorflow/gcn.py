@@ -20,6 +20,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
 
     def __init__(
         self,
+        kernels: Optional[Union[str, List[str]]],
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
         number_of_head_layers: int = 1,
@@ -28,7 +29,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         dropout_rate: float = 0.1,
         batch_size: Optional[int] = None,
         apply_norm: bool = False,
-        combiner: str = "mean",
+        combiner: str = "sum",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 30,
@@ -41,7 +42,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         reduce_lr_factor: float = 0.9,
         use_class_weights: bool = True,
         random_state: int = 42,
-        use_simmetric_normalized_laplacian: bool = True,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
         handling_multi_graph: str = "warn",
@@ -53,6 +53,21 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
 
         Parameters
         -------------------------------
+        kernels: Optional[Union[str, List[str]]]
+            The type of normalization to use. It can either be:
+            * "Weights", to just use the graph weights themselves.
+            * "Left Normalized Laplacian", for the left normalized Laplacian.
+            * "Right Normalized Laplacian", for the right normalized Laplacian.
+            * "Symmetric Normalized Laplacian", for the symmetric normalized Laplacian.
+            * "Transposed Left Normalized Laplacian", for the transposed left normalized Laplacian.
+            * "Transposed Right Normalized Laplacian", for the transposed right normalized Laplacian.
+            * "Transposed Symmetric Normalized Laplacian", for the transposed symmetric normalized Laplacian.
+            * "Weighted Left Normalized Laplacian", for the weighted left normalized Laplacian.
+            * "Weighted Right Normalized Laplacian", for the weighted right normalized Laplacian.
+            * "Weighted Symmetric Normalized Laplacian", for the weighted symmetric normalized Laplacian.
+            * "Transposed Weighted Left Normalized Laplacian", for the transposed weighted left normalized Laplacian.
+            * "Transposed Weighted Right Normalized Laplacian", for the transposed weighted right normalized Laplacian.
+            * "Transposed Weighted Symmetric Normalized Laplacian", for the transposed weighted symmetric normalized Laplacian.
         epochs: int = 1000
             Epochs to train the model for.
         number_of_units_per_hidden_layer: Union[int, List[int]] = 128
@@ -106,8 +121,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
         random_state: int = 42
             The random state to use to reproduce the training.
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -132,6 +145,7 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
         """
         AbstractGCN.__init__(
             self,
+            kernels=kernels,
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -151,7 +165,6 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             reduce_lr_factor=reduce_lr_factor,
             use_class_weights=use_class_weights,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=use_simmetric_normalized_laplacian,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             handling_multi_graph=handling_multi_graph,
@@ -252,12 +265,12 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
                 "Edge features are not supported by this model."
             )
 
-        kernel = self.convert_graph_to_kernel(support)
+        kernels = self.convert_graph_to_kernels(support)
         return (
             *(
                 ()
-                if kernel is None
-                else (kernel,)
+                if kernels is None
+                else kernels
             ),
             *(
                 ()

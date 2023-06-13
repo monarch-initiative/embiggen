@@ -149,6 +149,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels=None,
             epochs=epochs,
             batch_size=batch_size,
             number_of_graph_convolution_layers=0,

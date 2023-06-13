@@ -136,8 +136,6 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             - Jaccard Coefficient
             - Resource allocation index
             - Preferential attachment
-        use_simmetric_normalized_laplacian: bool = True
-            Whether to use laplacian transform before training on the graph.
         use_node_embedding: bool = False
             Whether to use a node embedding layer that is automatically learned
             by the model while it trains. Please do be advised that by using
@@ -175,6 +173,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels="Symmetric Normalized Laplacian",
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -183,7 +182,6 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
-            combiner="sum",
             apply_norm=apply_norm,
             edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
@@ -201,7 +199,6 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=True,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,

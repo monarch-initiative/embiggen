@@ -168,6 +168,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Whether to show loading bars.
         """
         super().__init__(
+            kernels="Symmetric Normalized Laplacian",
             epochs=epochs,
             number_of_graph_convolution_layers=number_of_graph_convolution_layers,
             number_of_units_per_graph_convolution_layers=number_of_units_per_graph_convolution_layers,
@@ -177,7 +178,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             apply_norm=apply_norm,
-            combiner="sum",
             edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
             early_stopping_min_delta=early_stopping_min_delta,
@@ -192,7 +192,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             use_class_weights=use_class_weights,
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
-            use_simmetric_normalized_laplacian=True,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
