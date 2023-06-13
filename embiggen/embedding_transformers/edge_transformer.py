@@ -422,7 +422,7 @@ class EdgeTransformer:
             for method_name in normalized_methods
         ]
         self._method_names = normalized_methods
-        self._edge_type_feature = None
+        self._edge_type_features = []
 
     def fit(
         self,
