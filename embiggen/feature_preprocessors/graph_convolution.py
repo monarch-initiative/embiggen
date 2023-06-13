@@ -1,5 +1,5 @@
 """This module provides the Graph Convolution feature preprocessor class."""
-from typing import Union, List
+from typing import Any, Dict, Union, List
 from embiggen.utils.abstract_models.abstract_feature_preprocessor import AbstractFeaturePreprocessor
 from ensmallen import models, Graph
 import warnings
@@ -13,6 +13,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
         self,
         number_of_convolutions: int = 2,
         concatenate_features: bool = False,
+        transpose: bool = False,
         dtype: str = "f32",
         path: Union[str, List[str]] = None,
     ):
@@ -25,6 +26,9 @@ class GraphConvolution(AbstractFeaturePreprocessor):
             By default, `2`.
         concatenate_features: bool = False
             Whether to Concatenate the features at each convolution.
+            By default, `false`.
+        transpose: bool = False
+            Whether to transpose the features before convolving them.
             By default, `false`.
         dtype: str = "f32"
             The data type to use for the convolved features.
@@ -39,6 +43,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
             concatenate_features=concatenate_features,
             dtype=dtype,
         )
+        self._transpose = transpose
         self._path = path
         self._graph_convolution = models.GraphConvolution(
             **self._kwargs
@@ -69,11 +74,18 @@ class GraphConvolution(AbstractFeaturePreprocessor):
     def requires_edge_weights(cls) -> bool:
         """Return whether the model requires edge weights."""
         return False
+    
+    def parameters(self) -> Dict[str, Any]:
+        return dict(
+            **self._kwargs,
+            transpose=self._transpose,
+            path=self._path
+        )
 
     def _transform(
         self,
-        node_features: List[Union[pd.DataFrame, np.ndarray]],
         support: Graph,
+        node_features: List[Union[pd.DataFrame, np.ndarray]],
     ) -> Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]:
         """Transform the given node features.
 
@@ -118,7 +130,20 @@ class GraphConvolution(AbstractFeaturePreprocessor):
                 node_feature = np.ascontiguousarray(node_feature)
             new_node_features.append(node_feature)
 
-        node_features = new_node_features            
+        node_features = new_node_features
+
+        # We transpose the graph if requested, though the operation is skipped
+        # if we are computing the transposed of an undirected graph. A warning
+        # is raised in this case.
+        if self._transpose:
+            if graph.is_directed():
+                graph = graph.to_transposed()
+            else:
+                warnings.warn(
+                    "You are trying to compute the transposed of an undirected graph. "
+                    "The transposed of an undirected graph is the same graph. "
+                    "This operation is skipped."
+                )
 
         if self._path is None:
             return [
