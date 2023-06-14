@@ -7,7 +7,6 @@ from tensorflow.keras.optimizers import (
 )  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
-from tensorflow.keras.utils import Sequence
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
 from embiggen.sequences.tensorflow_sequences import (
