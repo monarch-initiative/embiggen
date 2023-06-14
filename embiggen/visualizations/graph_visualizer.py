@@ -617,16 +617,6 @@ class GraphVisualizer:
                     init="random",
                     method="exact" if self._n_components == 4 else "barnes_hut",
                 ),
-                # The following handles the case when the `square distances` parameter
-                # still existed in old versions in Sklearn and used to cause a warning
-                # when not provided. More recent versions of Sklearn have entirely dropped
-                # this parameter, and therefore will raise an exception if this parameter
-                # is provided, making this check necessary.
-                **(
-                    dict(square_distances=True)
-                    if "square_distances" in inspect.signature(TSNE.__init__).parameters
-                    else dict()
-                ),
                 **self._decomposition_kwargs
             }).fit_transform
         elif self._decomposition_method == "PCA":
@@ -2358,7 +2348,7 @@ class GraphVisualizer:
             edge_metrics[number_of_negative_edges:],
             bins=number_of_bins,
             log=True,
-            alpha=0.5,
+            alpha=0.7,
             label="Existent"
         )
         axes.set_xlim(edge_metrics.min(), edge_metrics.max())
