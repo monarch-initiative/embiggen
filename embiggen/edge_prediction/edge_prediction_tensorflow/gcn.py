@@ -2,24 +2,27 @@
 from typing import List, Union, Optional, Dict, Any, Type, Tuple
 
 import numpy as np
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import (
+    Optimizer,
+)  # pylint: disable=import-error,no-name-in-module
 
 from ensmallen import Graph
 from tensorflow.keras.utils import Sequence
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
-from embiggen.sequences.tensorflow_sequences import GCNEdgePredictionTrainingSequence, GCNEdgePredictionSequence
+from embiggen.sequences.tensorflow_sequences import (
+    GCNEdgePredictionTrainingSequence,
+    GCNEdgePredictionSequence,
+)
 from embiggen.utils import AbstractEdgeFeature
 
 
-@abstract_class
 class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
     """GCN model for edge prediction."""
 
     def __init__(
         self,
-        kernels: Optional[Union[str, List[str]]],
+        kernels: Optional[Union[str, List[str]]] = ["Symmetric Normalized Laplacian",],
         epochs: int = 1000,
         number_of_graph_convolution_layers: int = 2,
         number_of_units_per_graph_convolution_layers: Union[int, List[int]] = 128,
@@ -56,7 +59,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """Create new Kipf GCN object.
 
@@ -108,7 +111,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             after applying the level activations.
         combiner: str = "mean"
             A string specifying the reduction op.
-            Currently "mean", "sqrtn" and "sum" are supported. 
+            Currently "mean", "sqrtn" and "sum" are supported.
             "sum" computes the weighted sum of the embedding results for each row.
             "mean" is the weighted sum divided by the total weight.
             "sqrtn" is the weighted sum divided by the square root of the sum of the squares of the weights.
@@ -254,8 +257,10 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         )
         self._avoid_false_negatives = avoid_false_negatives
         self._training_unbalance_rate = training_unbalance_rate
-        self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
-        
+        self._training_sample_only_edges_with_heterogeneous_node_types = (
+            training_sample_only_edges_with_heterogeneous_node_types
+        )
+
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
         removed = [
@@ -268,7 +273,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
                 if key not in removed
             },
             training_unbalance_rate=self._training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types = self._training_sample_only_edges_with_heterogeneous_node_types,
+            training_sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
         )
 
     def _get_model_prediction_input(
@@ -278,7 +283,9 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_type_features: Optional[List[np.ndarray]],
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]],
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ],
     ) -> GCNEdgePredictionSequence:
         """Returns dictionary with class weights."""
         return GCNEdgePredictionSequence(
@@ -293,7 +300,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
-            edge_features=edge_features
+            edge_features=edge_features,
         )
 
     def _get_model_training_input(
@@ -303,7 +310,9 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_type_features: Optional[List[np.ndarray]],
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]],
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ],
     ) -> GCNEdgePredictionTrainingSequence:
         """Returns training input tuple."""
         return GCNEdgePredictionTrainingSequence(
@@ -320,12 +329,13 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             edge_type_features=edge_type_features,
             use_edge_metrics=self._use_edge_metrics,
             avoid_false_negatives=self._avoid_false_negatives,
-            negative_samples_rate=self._training_unbalance_rate / (self._training_unbalance_rate + 1.0),
+            negative_samples_rate=self._training_unbalance_rate
+            / (self._training_unbalance_rate + 1.0),
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
-            random_state=self._random_state
+            random_state=self._random_state,
         )
 
-    def get_output_classes(self, graph: Graph) ->int:
+    def get_output_classes(self, graph: Graph) -> int:
         """Returns number of output classes."""
         return 1
 
@@ -341,7 +351,12 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                List[Union[Type[AbstractEdgeFeature], np.ndarray]],
+            ]
+        ] = None,
     ) -> np.ndarray:
         """Run predictions on the provided graph."""
         predictions = super()._predict_proba(
@@ -350,34 +365,38 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_features=node_features,
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
-            edge_features=edge_features
+            edge_features=edge_features,
         )
         # The model will padd the predictions with a few zeros
         # in order to run the GCN portion of the model, which
         # always requires a batch size equal to the nodes number.
-        return predictions[:graph.get_number_of_directed_edges()]
-    
+        return predictions[: graph.get_number_of_directed_edges()]
+
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
         return self._use_edge_type_embedding or super().is_using_edge_types()
-    
+
     @classmethod
     def requires_edge_types(cls) -> bool:
         """Returns whether the model requires edge types."""
         return False
-    
+
     @classmethod
     def requires_edge_type_features(cls) -> bool:
         return False
-    
+
     @classmethod
     def requires_edge_features(cls) -> bool:
         return False
-    
+
     @classmethod
     def can_use_edge_type_features(cls) -> bool:
         return True
-    
+
     @classmethod
     def can_use_edge_features(cls) -> bool:
         return True
+
+    @classmethod
+    def model_name(cls) -> str:
+        return "Everything Bagel GCN"
