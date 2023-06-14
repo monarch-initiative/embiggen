@@ -40,6 +40,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         node_type_embedding_size: int = 50,
         use_edge_type_embedding: bool = False,
         edge_type_embedding_size: int = 50,
+        residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
@@ -119,16 +120,6 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             negatives in the training are of the same cardinality.
         training_sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample exclusively edges between nodes with different node types.
-        use_node_embedding: bool = False
-            Whether to use a node embedding layer to let the model automatically
-            learn an embedding of the nodes.
-        node_embedding_size: int = 50
-            Size of the node embedding.
-        use_node_types: Union[bool, str] = "auto"
-            Whether to use the node types while training the model.
-            By default, automatically uses them if the graph has them.
-        node_type_embedding_size: int = 50
-            Size of the embedding for the node types.
         use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:
@@ -157,6 +148,8 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             and this model will not work on graphs with a different edge vocabulary.
         edge_type_embedding_size: int = 50
             Dimension of the edge type embedding.
+        residual_convolutional_layers: bool = False
+            Whether to use residual connections between convolutional layers.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:

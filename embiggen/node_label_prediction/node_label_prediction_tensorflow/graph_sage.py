@@ -31,6 +31,7 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
         random_state: int = 42,
         use_node_embedding: bool = False,
         node_embedding_size: int = 50,
+        residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[List[str]] = None,
         node_type_feature_names: Optional[List[str]] = None,
@@ -87,6 +88,8 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_embedding_size: int = 50
             Dimension of the node embedding.
+        residual_convolutional_layers: bool = False
+            Whether to use residual connections between convolutional layers.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -125,6 +128,7 @@ class GraphSAGENodeLabelPrediction(GCNNodeLabelPrediction):
             random_state=random_state,
             use_node_embedding=use_node_embedding,
             node_embedding_size=node_embedding_size,
+            residual_convolutional_layers=residual_convolutional_layers,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,

@@ -372,6 +372,13 @@ class AbstractGCN(AbstractClassifierModel):
 
         self._node_feature_names = node_feature_names
         self._node_type_feature_names = node_type_feature_names
+
+        if residual_convolutional_layers and not self.has_kernels():
+            raise ValueError(
+                "You are trying to create a GCN model with residual convolutional layers "
+                "but you have not provided any kernel to use."
+            )
+
         self._residual_convolutional_layers = residual_convolutional_layers
 
         self._early_stopping_min_delta = early_stopping_min_delta

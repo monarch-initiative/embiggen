@@ -253,6 +253,7 @@ class AbstractEdgeGCN(AbstractGCN):
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
+            residual_convolutional_layers=residual_convolutional_layers,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
