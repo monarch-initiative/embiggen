@@ -2346,7 +2346,7 @@ class GraphVisualizer:
 
         assert len(edge_metrics.shape) == 1
 
-        number_of_bins = min(10, np.log(edge_metrics.size + 1).astype("int64") + 1)
+        number_of_bins = max(10, np.log(edge_metrics.size + 1).astype("int64") + 1)
 
         axes.hist(
             edge_metrics[:number_of_negative_edges],
@@ -2358,6 +2358,7 @@ class GraphVisualizer:
             edge_metrics[number_of_negative_edges:],
             bins=number_of_bins,
             log=True,
+            alpha=0.5,
             label="Existent"
         )
         axes.set_xlim(edge_metrics.min(), edge_metrics.max())
