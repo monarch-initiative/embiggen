@@ -627,6 +627,11 @@ class AbstractGCN(AbstractClassifierModel):
                             ]
                         else:
                             feature_names = [feature_category.capitalize()]
+                    else:
+                        feature_names = [
+                            f"{prefix}{feature_name}"
+                            for feature_name in feature_names
+                        ]
                     if len(feature_names) != len(features):
                         raise ValueError(
                             f"You have provided {len(feature_names)} "

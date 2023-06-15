@@ -147,7 +147,7 @@ class GCNEdgePredictionSequence(Sequence):
                 for node_id in range(graph.get_number_of_nodes()):
                     node_type: Optional[np.ndarray] = graph.get_node_type_ids_from_node_id(node_id)
                     if node_type is not None:
-                        node_types[node_id] = node_type
+                        node_types[node_id, :len(node_type)] = node_type
             else:
                 node_types = graph.get_single_label_node_type_ids()
 
