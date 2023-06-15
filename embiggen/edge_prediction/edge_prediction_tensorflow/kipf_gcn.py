@@ -43,8 +43,9 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         edge_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -161,10 +162,10 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             - "warn"
             - "raise"
             - "drop"
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
             This is used as the layer names.
         verbose: bool = False
@@ -204,9 +205,11 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             node_type_embedding_size=node_type_embedding_size,
             use_edge_type_embedding=use_edge_type_embedding,
             edge_type_embedding_size=edge_type_embedding_size,
+            residual_convolutional_layers=residual_convolutional_layers,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_type_feature_names=edge_type_feature_names,
             verbose=verbose,
         )
 

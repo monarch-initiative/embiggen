@@ -38,8 +38,9 @@ class GNNEdgePrediction(GCNEdgePrediction):
         node_type_embedding_size: int = 50,
         use_edge_type_embedding: bool = False,
         edge_type_embedding_size: int = 50,
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False
     ):
         """Create new GNN object.
@@ -146,11 +147,14 @@ class GNNEdgePrediction(GCNEdgePrediction):
             and this model will not work on graphs with a different edge vocabulary.
         edge_type_embedding_size: int = 50
             Dimension of the edge type embedding.
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
+            This is used as the layer names.
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None
+            Names of the edge type features.
             This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
@@ -190,6 +194,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             edge_type_embedding_size=edge_type_embedding_size,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_type_feature_names=edge_type_feature_names,
             verbose=verbose,
         )
 

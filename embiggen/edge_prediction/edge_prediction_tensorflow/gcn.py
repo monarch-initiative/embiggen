@@ -1,5 +1,5 @@
 """GCN model for edge prediction."""
-from typing import List, Union, Optional, Dict, Any, Type, Tuple
+from typing import List, Union, Optional, Dict, Any, Type
 
 import numpy as np
 from tensorflow.keras.optimizers import (
@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import (
 
 from ensmallen import Graph
 from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
-from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class
+from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN
 from embiggen.sequences.tensorflow_sequences import (
     GCNEdgePredictionTrainingSequence,
     GCNEdgePredictionSequence,
@@ -58,8 +58,9 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         edge_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False,
     ):
         """Create new Kipf GCN object.
@@ -213,11 +214,14 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             - "warn"
             - "raise"
             - "drop"
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
+            This is used as the layer names.
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None
+            Names of the edge type features.
             This is used as the layer names.
         verbose: bool = False
             Whether to show loading bars.
@@ -261,6 +265,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_type_feature_names=edge_type_feature_names,
             verbose=verbose,
         )
         self._number_of_batches_per_epoch = number_of_batches_per_epoch

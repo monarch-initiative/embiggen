@@ -2,6 +2,7 @@
 from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
@@ -64,8 +65,9 @@ class AbstractEdgeGCN(AbstractGCN):
         edge_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = True
     ):
         """Create new Kipf GCN object.
@@ -220,11 +222,14 @@ class AbstractEdgeGCN(AbstractGCN):
             - "warn"
             - "raise"
             - "drop"
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
+            This is used as the layer names.
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None
+            Names of the edge type features.
             This is used as the layer names.
         verbose: bool = True
             Whether to show loading bars.
@@ -282,9 +287,12 @@ class AbstractEdgeGCN(AbstractGCN):
             )
             for edge_embedding_method in edge_embedding_methods
         ]
-            
+
+        if isinstance(edge_type_feature_names, str):
+            edge_type_feature_names = [edge_type_feature_names]
 
         self._edge_embedding_methods: List[str] = edge_embedding_methods
+        self._edge_type_feature_names: Optional[List[str]] = edge_type_feature_names
         self._use_edge_metrics = use_edge_metrics
         self._use_edge_type_embedding = use_edge_type_embedding
         self._edge_type_embedding_size = edge_type_embedding_size
@@ -501,6 +509,8 @@ class AbstractEdgeGCN(AbstractGCN):
                 )
                 i += 1
 
+        shared_feature_names.extend(edge_feature_names)
+
         i = 0
         for edge_feature in edge_features:
             if isinstance(edge_feature, AbstractEdgeFeature):
@@ -540,27 +550,41 @@ class AbstractEdgeGCN(AbstractGCN):
         
         if edge_type_features is None:
             edge_type_features = []
-        
-        for i, edge_type_feature in enumerate(edge_type_features):
-            if isinstance(edge_type_feature, np.ndarray):
-                if len(edge_type_features) > 1:
-                    ordinal = number_to_ordinal(i+1)
-                else:
-                    ordinal = ""
 
+        edge_type_feature_names: List[str] = []
+        if self._edge_type_feature_names is None and len(edge_type_features) > 0:
+            if len(edge_type_features) > 1:
+                edge_type_feature_names = [
+                    f"{number_to_ordinal(i+1)} Edge Type Feature"
+                    for i in range(len(features))
+                ]
+            else:
+                edge_type_feature_names = ["Edge Type Feature"]
+            
+            if len(edge_type_feature_names) != len(edge_type_features):
+                raise ValueError(
+                    f"You have provided {len(edge_type_feature_names)} "
+                    f"edge type feature names but you have provided {len(edge_type_features)} "
+                    f"edge type features to the model."
+                )
+        
+        for edge_type_feature, edge_type_feature_name in zip(edge_type_features, edge_type_feature_names):
+            if isinstance(edge_type_feature, pd.DataFrame):
+                edge_type_feature = edge_type_feature.values
+            if isinstance(edge_type_feature, np.ndarray):
                 edge_type_feature_input = Input(
                     shape=edge_type_feature.shape[1:],
-                    name=f"{ordinal}EdgeTypeFeature",
+                    name=edge_type_feature_name,
                 )
                 edge_feature_inputs.append(edge_type_feature_input)
                 shared_features.append(edge_type_feature_input)
             else:
                 raise NotImplementedError(
                     f"Edge type feature of type {type(edge_type_feature)} is not supported."
-                    "Please provide an instance of numpy array."
+                    "Please provide an instance of numpy array or a pandas DataFrame."
                 )
 
-        shared_feature_names.extend(edge_feature_names)
+        shared_feature_names.extend(edge_type_feature_names)
 
         ffnn_outputs = []
         
@@ -569,6 +593,7 @@ class AbstractEdgeGCN(AbstractGCN):
             (source_feature_names, destination_feature_names, shared_feature_names)
         ):
             this_ffnn_output = []
+            assert len(hiddens) == len(feature_names)
             for hidden, feature_name in zip(hiddens, feature_names):
                 # Building the body of the model.
                 feature_name = feature_name.replace(" ", "")

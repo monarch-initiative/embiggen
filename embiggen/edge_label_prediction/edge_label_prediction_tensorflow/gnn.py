@@ -33,8 +33,8 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False
     ):
         """Create new GraphSAGE object.
@@ -139,10 +139,10 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
             This is used as the layer names.
         verbose: bool = False

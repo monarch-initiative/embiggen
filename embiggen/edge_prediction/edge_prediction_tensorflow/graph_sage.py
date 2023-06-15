@@ -42,8 +42,9 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         edge_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
         handling_multi_graph: str = "warn",
-        node_feature_names: Optional[List[str]] = None,
-        node_type_feature_names: Optional[List[str]] = None,
+        node_feature_names: Optional[Union[str, List[str]]] = None,
+        node_type_feature_names: Optional[Union[str, List[str]]] = None,
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False
     ):
         """Create new Kipf GCN object.
@@ -157,12 +158,13 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             - "warn"
             - "raise"
             - "drop"
-        node_feature_names: Optional[List[str]] = None
+        node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
-        node_type_feature_names: Optional[List[str]] = None
+        node_type_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node type features.
             This is used as the layer names.
+        edge_type_feature_names: Optional[Union[str, List[str]]] = None
         verbose: bool = False
             Whether to show loading bars.
         """
@@ -177,7 +179,6 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
             number_of_batches_per_epoch=number_of_batches_per_epoch,
-            combiner="mean",
             apply_norm=True,
             edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,
@@ -205,6 +206,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
+            edge_type_feature_names=edge_type_feature_names,
             verbose=verbose,
         )
 
