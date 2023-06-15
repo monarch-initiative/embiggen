@@ -142,9 +142,21 @@ class GCNEdgePredictionSequence(Sequence):
 
         if return_node_types or node_type_features is not None:
             if graph.has_multilabel_node_types():
-                node_types = graph.get_one_hot_encoded_node_types()
+                maximal_multilabel_number = graph.get_maximum_multilabel_count()
+                node_types = np.zeros((graph.get_number_of_nodes(), maximal_multilabel_number), dtype=np.int32)
+                for node_id in range(graph.get_number_of_nodes()):
+                    node_type: Optional[np.ndarray] = graph.get_node_type_ids_from_node_id(node_id)
+                    if node_type is not None:
+                        node_types[node_id] = node_type
             else:
                 node_types = graph.get_single_label_node_type_ids()
+
+            assert node_types.shape[0] == graph.get_number_of_nodes(), (
+                f"The provided node types have a different number of rows "
+                f"than the number of nodes in the graph. Expected {graph.get_number_of_nodes()} "
+                f"but found {node_types.shape[0]}. This is an internal error, please "
+                "open an issue at the Embiggen GitHub repository."
+            )
 
         if node_type_features is not None:
             if graph.has_multilabel_node_types():

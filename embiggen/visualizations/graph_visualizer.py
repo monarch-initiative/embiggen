@@ -396,8 +396,8 @@ class GraphVisualizer:
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 **edge_prediction_graph_kwargs
             )
-        except ValueError as e:
-            warnings.warn(str(e))
+        except ValueError as exception:
+            warnings.warn(str(exception))
             self._negative_graph = None
 
         self._number_of_subsampled_nodes = number_of_subsampled_nodes
@@ -692,11 +692,8 @@ class GraphVisualizer:
 
         if embedding.shape[0] != self._graph.get_number_of_nodes():
             raise ValueError(
-                ("The number of rows provided with the given node embedding {} "
-                 "does not match the number of nodes in the graph {}.").format(
-                    embedding.shape[0],
-                    self._graph.get_number_of_nodes()
-                )
+                f"The number of rows provided with the given node embedding {embedding.shape[0]} "
+                f"does not match the number of nodes in the graph {self._graph.get_number_of_nodes()}."
             )
 
         # Making sure that if the embedding is a dataframe, it is surely aligned.
@@ -858,10 +855,10 @@ class GraphVisualizer:
 
         # Setting maximum alpha to the visualization
         # to avoid transparency in the dots.
-        for lh in legend.legendHandles:
-            lh.set_alpha(1)
+        for legend_handle in legend.legendHandles:
+            legend_handle.set_alpha(1)
             try:
-                lh._legmarker.set_alpha(1)
+                legend_handle._legmarker.set_alpha(1)
             except AttributeError:
                 pass
 
@@ -1273,7 +1270,7 @@ class GraphVisualizer:
             "yellow": "#edc949",
             "purple": "#b07aa2",
             "pink": "#ff9da7",
-            "purple": "#9c755f",
+            "brown": "#9c755f",
             "grey": "#bab0ac",
         }
 
@@ -1543,18 +1540,14 @@ class GraphVisualizer:
 
         if not isinstance(type_labels, np.ndarray):
             raise ValueError(
-                (
-                    "The parameter type_labels was expected to be a numpy array, "
-                    "but an object of type `{}` was provided."
-                ).format(type(type_labels))
+                "The parameter type_labels was expected to be a numpy array, "
+                f"but an object of type `{type(type_labels)}` was provided."
             )
 
         if not isinstance(types, np.ndarray):
             raise ValueError(
-                (
-                    "The parameter types was expected to be a numpy array, "
-                    "but an object of type `{}` was provided."
-                ).format(type(types))
+                "The parameter types was expected to be a numpy array, "
+                f"but an object of type `{type(types)}` was provided."
             )
 
         counts = np.bincount(types)
@@ -4328,7 +4321,7 @@ class GraphVisualizer:
         axes.set_ylabel("Number of edges (log scale)")
         axes.set_xlabel("Edge Weights")
         if self._show_graph_name:
-            title = "Weights distribution of graph {}".format(self._graph_name)
+            title = f"Weights distribution of graph {self._graph_name}"
         else:
             title = "Weights distribution"
         axes.set_title(title)
@@ -4418,7 +4411,6 @@ class GraphVisualizer:
             itertools.chain(plotting_callbacks),
             "abcdefghjkilmnopqrstuvwxyz"
         ):
-            inspect.signature(plot_callback).parameters
             figure, axes, caption = plot_callback(
                 figure=figure,
                 axes=ax,

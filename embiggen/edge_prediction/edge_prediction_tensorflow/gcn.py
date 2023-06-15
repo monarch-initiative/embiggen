@@ -31,6 +31,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.2,
         batch_size: Optional[int] = None,
+        number_of_batches_per_epoch: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "sum",
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
@@ -106,6 +107,10 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             If None, the batch size will be the number of nodes.
             In all model parametrization that involve a number of graph
             convolution layers, the batch size will be the number of nodes.
+        number_of_batches_per_epoch: Optional[int] = None
+            Number of batches to use per epoch.
+            By default, this is None, which means that the number of batches
+            will be equal to the number of directed edges divided by the batch size.
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
@@ -258,6 +263,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
         )
+        self._number_of_batches_per_epoch = number_of_batches_per_epoch
         self._avoid_false_negatives = avoid_false_negatives
         self._training_unbalance_rate = training_unbalance_rate
         self._training_sample_only_edges_with_heterogeneous_node_types = (
@@ -323,6 +329,7 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
             kernels=self.convert_graph_to_kernels(support),
             support=support,
             batch_size=self.get_batch_size_from_graph(graph),
+            number_of_batches_per_epoch=self._number_of_batches_per_epoch,
             node_features=node_features,
             edge_features=edge_features,
             return_node_ids=self._use_node_embedding,
@@ -374,6 +381,14 @@ class GCNEdgePrediction(AbstractEdgeGCN, AbstractEdgePredictionModel):
         # in order to run the GCN portion of the model, which
         # always requires a batch size equal to the nodes number.
         return predictions[: graph.get_number_of_directed_edges()]
+
+    @classmethod
+    def smoke_test_parameters(cls) -> Dict[str, Any]:
+        """Returns parameters for smoke test."""
+        return dict(
+            number_of_batches_per_epoch=1,
+            **super().smoke_test_parameters(),
+        )
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""

@@ -17,6 +17,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
+        number_of_batches_per_epoch: Optional[int] = None,
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
         early_stopping_min_delta: float = 0.0001,
@@ -70,6 +71,10 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        number_of_batches_per_epoch: Optional[int] = None
+            Number of batches to use per epoch.
+            By default, this is None, which means that the number of batches
+            will be equal to the number of directed edges divided by the batch size.
         edge_embedding_method: str = "Concatenate"
             The edge embedding method to use to put togheter the
             source and destination node features, which includes:
@@ -171,6 +176,7 @@ class GraphSAGEEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            number_of_batches_per_epoch=number_of_batches_per_epoch,
             combiner="mean",
             apply_norm=True,
             edge_embedding_methods=edge_embedding_methods,

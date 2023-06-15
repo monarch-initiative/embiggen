@@ -453,5 +453,7 @@
         "int",
         "None"
     ],
-    "num_parallel_tree": "int"
+    "num_parallel_tree": "int",
+    "combiner": "str",
+    "number_of_batches_per_epoch": "int"
 }

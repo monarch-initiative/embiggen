@@ -10,21 +10,29 @@ import tensorflow as tf
 from ensmallen import Graph
 from keras_mixed_sequence import Sequence
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
-    EarlyStopping, ReduceLROnPlateau)
+    EarlyStopping,
+    ReduceLROnPlateau,
+)
 from tensorflow.keras.layers import Input
-from tensorflow.keras.models import \
-    Model  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import \
-    Optimizer  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import (
+    Model,
+)  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import (
+    Optimizer,
+)  # pylint: disable=import-error,no-name-in-module
 from userinput.utils import must_be_in_set
 
-from embiggen.layers.tensorflow import (EmbeddingLookup, FlatEmbedding,
-                                        GraphConvolution, L2Norm)
+from embiggen.layers.tensorflow import (
+    EmbeddingLookup,
+    FlatEmbedding,
+    GraphConvolution,
+    L2Norm,
+)
 from embiggen.utils import AbstractEdgeFeature
-from embiggen.utils.abstract_models import (AbstractClassifierModel,
-                                            abstract_class)
-from embiggen.utils.normalize_model_structural_parameters import \
-    normalize_model_list_parameter
+from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
+from embiggen.utils.normalize_model_structural_parameters import (
+    normalize_model_list_parameter,
+)
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 
 
@@ -79,7 +87,7 @@ def graph_to_sparse_tensor(
         kernel = kernel.replace("Weighted ", "")
     else:
         use_weights = False
-    
+
     if "Transposed" in kernel:
         transpose = True
         kernel = kernel.replace("Transposed ", "")
@@ -134,9 +142,15 @@ def graph_to_sparse_tensor(
     elif kernel == "Left Normalized Laplacian":
         edge_node_ids, kernel_weights = graph.get_left_normalized_laplacian_coo_matrix()
     elif kernel == "Right Normalized Laplacian":
-        edge_node_ids, kernel_weights = graph.get_right_normalized_laplacian_coo_matrix()
+        (
+            edge_node_ids,
+            kernel_weights,
+        ) = graph.get_right_normalized_laplacian_coo_matrix()
     elif kernel == "Symmetric Normalized Laplacian":
-        edge_node_ids, kernel_weights = graph.get_symmetric_normalized_laplacian_coo_matrix()
+        (
+            edge_node_ids,
+            kernel_weights,
+        ) = graph.get_symmetric_normalized_laplacian_coo_matrix()
     else:
         raise ValueError(
             f"Kernel {kernel} is not supported. "
@@ -146,7 +160,7 @@ def graph_to_sparse_tensor(
     kernel_weights = np.abs(kernel_weights)
     if use_weights and kernel != "Weights":
         kernel_weights = kernel_weights * graph.get_directed_edge_weights()
-    
+
     return tf.sparse.reorder(
         tf.SparseTensor(
             edge_node_ids,
@@ -322,25 +336,21 @@ class AbstractGCN(AbstractClassifierModel):
 
         if kernels is None:
             kernels = []
-        
+
         if isinstance(kernels, str):
             kernels = [kernels]
-        
+
         if not isinstance(kernels, list):
             raise TypeError(
                 f"Provided kernels should be either a string or a list, "
                 f"but found {type(kernels)}."
             )
-        
+
         self._kernels = [
-            must_be_in_set(
-                kernel,
-                self.supported_kernels,
-                "kernel"
-            )
+            must_be_in_set(kernel, self.supported_kernels, "kernel")
             for kernel in kernels
         ]
-        
+
         if self.has_convolutional_layers() and not self.has_kernels():
             raise ValueError(
                 "You are trying to create a GCN model with convolutional layers "
@@ -444,6 +454,20 @@ class AbstractGCN(AbstractClassifierModel):
         )
 
     def plot(self, show_shapes: bool = True, **kwargs: Dict):
+        """Plot model using dot.
+        
+        Parameters
+        -----------------------
+        show_shapes: bool = True
+            Whether to show shapes of the layers.
+        kwargs: Dict
+            Additional arguments to pass to the plot function.
+        """
+        if self._model is None:
+            raise ValueError(
+                "You are trying to plot a model that has not been compiled yet. "
+                "You should call the `compile` or `fit` methods before calling `plot`."
+            )
         return tf.keras.utils.plot_model(
             self._model,
             show_layer_names=True,
@@ -468,9 +492,7 @@ class AbstractGCN(AbstractClassifierModel):
         node_features: Optional[List[np.ndarray]],
         node_type_features: Optional[List[np.ndarray]],
         edge_type_features: Optional[List[np.ndarray]],
-        edge_features: Optional[
-            Union[Type[AbstractEdgeFeature], List[np.ndarray]]
-        ],
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[np.ndarray]]],
     ) -> Tuple[Union[np.ndarray, Type[Sequence]]]:
         """Returns training input tuple."""
         raise NotImplementedError(
@@ -668,12 +690,14 @@ class AbstractGCN(AbstractClassifierModel):
 
         output_hiddens = []
 
-        for (kernel, kernel_name) in zip(kernels, self._kernels):
+        for kernel, kernel_name in zip(kernels, self._kernels):
             hidden = starting_hidden
             # Building the body of the model.
-            for i, units in enumerate(self._number_of_units_per_graph_convolution_layers):
+            for i, units in enumerate(
+                self._number_of_units_per_graph_convolution_layers
+            ):
                 if len(self._number_of_units_per_graph_convolution_layers) > 1:
-                    ordinal = number_to_ordinal(i+1)
+                    ordinal = number_to_ordinal(i + 1)
                 else:
                     ordinal = ""
                 sanitized_kernel_name = kernel_name.replace(" ", "")
@@ -688,7 +712,7 @@ class AbstractGCN(AbstractClassifierModel):
                     output_hiddens.extend(hidden)
             if not self._residual_convolutional_layers:
                 output_hiddens.extend(hidden)
-        
+
         if len(output_hiddens) == 0:
             output_hiddens = starting_hidden
 
@@ -721,6 +745,65 @@ class AbstractGCN(AbstractClassifierModel):
             )
             for input_layer in self._model.inputs
         }
+
+    def compile(
+        self,
+        graph: Graph,
+        support: Optional[Graph] = None,
+        node_features: Optional[List[np.ndarray]] = None,
+        node_type_features: Optional[List[np.ndarray]] = None,
+        edge_type_features: Optional[List[np.ndarray]] = None,
+        edge_features: Optional[
+            Union[
+                Type[AbstractEdgeFeature],
+                List[Union[np.ndarray, Type[AbstractEdgeFeature]]],
+            ]
+        ] = None,
+    ) -> pd.DataFrame:
+        """Return pandas dataframe with training history.
+
+        Parameters
+        -----------------------
+        graph: Graph,
+            The graph whose edges are to be embedded and edge types extracted.
+        node_features: Optional[List[np.ndarray]]
+            The node features to be used in the training of the model.
+        node_type_features: Optional[List[np.ndarray]]
+            The node type features to be used in the training of the model.
+        edge_type_features: Optional[List[np.ndarray]]
+            The edge type features to be used in the training of the model.
+        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[np.ndarray, Type[AbstractEdgeFeature]]]]] = None
+            The edge features to be used in the training of the model.
+
+        Returns
+        -----------------------
+        Dataframe with training history.
+        """
+        if (
+            self.has_kernels()
+            and node_features is None
+            and not self._use_node_embedding
+            and node_type_features is None
+            and not self._use_node_type_embedding
+        ):
+            raise ValueError(
+                "Neither node features were provided nor the node "
+                "embedding was enabled through the `use_node_embedding` "
+                "parameter. If you do not provide node features or use a node embedding layer "
+                "nor use a node type embedding layer and neiher use node type features, "
+                "it does not make sense to use a GCN model."
+            )
+    
+        self._model: Type[Model] = self._build_model(
+            support,
+            graph_convolution_model=self._build_graph_convolution_model(
+                graph,
+                node_features=node_features,
+                node_type_features=node_type_features,
+            ),
+            edge_type_features=edge_type_features,
+            edge_features=edge_features,
+        )
 
     def _fit(
         self,
@@ -766,14 +849,6 @@ class AbstractGCN(AbstractClassifierModel):
         except AttributeError:
             traditional_verbose = True
 
-        if node_features is None and not self._use_node_embedding:
-            raise ValueError(
-                "Neither node features were provided nor the node "
-                "embedding was enabled through the `use_node_embedding` "
-                "parameter. If you do not provide node features or use an embedding layer "
-                "it does not make sense to use a GCN model."
-            )
-
         if support is None:
             support = graph
 
@@ -782,13 +857,11 @@ class AbstractGCN(AbstractClassifierModel):
         )
 
         if self._model is None:
-            self._model: Type[Model] = self._build_model(
-                support,
-                graph_convolution_model=self._build_graph_convolution_model(
-                    graph,
-                    node_features=node_features,
-                    node_type_features=node_type_features,
-                ),
+            self.compile(
+                graph,
+                support=support,
+                node_features=node_features,
+                node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
                 edge_features=edge_features,
             )
@@ -894,7 +967,7 @@ class AbstractGCN(AbstractClassifierModel):
                             leave=False,
                         ),
                     )
-                    if not traditional_verbose and self._verbose > 0
+                    if not traditional_verbose and self._verbose
                     else ()
                 ),
             ],
@@ -1031,7 +1104,7 @@ class AbstractGCN(AbstractClassifierModel):
     def has_convolutional_layers(self) -> bool:
         """Returns whether the present model has convolutional layers."""
         return self._number_of_graph_convolution_layers
-    
+
     def has_kernels(self) -> bool:
         """Returns whether the present model has kernels."""
         return len(self._kernels) > 0
@@ -1076,10 +1149,7 @@ class AbstractGCN(AbstractClassifierModel):
 
     def is_using_edge_weights(self) -> bool:
         """Returns whether the model is parametrized to use edge weights."""
-        return any([
-            "Weighted" in kernel
-            for kernel in self._kernels
-        ])
+        return any(["Weighted" in kernel for kernel in self._kernels])
 
     def is_edge_level_task(self) -> bool:
         """Returns whether the task is edge level."""

@@ -79,6 +79,7 @@ setup(
         "validate_version_code",
         "cache_decorator>=2.1.14",
         "threadpoolctl>=3.1.0",
+        "pydot",
         "compress_pickle>=2.1.0",
         "packaging"
     ],

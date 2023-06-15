@@ -17,6 +17,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         number_of_units_per_ffnn_body_layer: Union[int, List[int]] = 128,
         number_of_units_per_ffnn_head_layer: Union[int, List[int]] = 128,
         dropout_rate: float = 0.3,
+        number_of_batches_per_epoch: Optional[int] = None,
         apply_norm: bool = False,
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         optimizer: Union[str, Type[Optimizer]] = "adam",
@@ -71,6 +72,10 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
         dropout_rate: float = 0.3
             Float between 0 and 1.
             Fraction of the input units to dropout.
+        number_of_batches_per_epoch: Optional[int] = None
+            Number of batches to use per epoch.
+            By default, this is None, which means that the number of batches
+            will be equal to the number of directed edges divided by the batch size.
         apply_norm: bool = False
             Whether to normalize the output of the convolution operations,
             after applying the level activations.
@@ -175,6 +180,7 @@ class KipfGCNEdgePrediction(GCNEdgePrediction):
             number_of_units_per_ffnn_body_layer=number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=number_of_units_per_ffnn_head_layer,
             dropout_rate=dropout_rate,
+            number_of_batches_per_epoch=number_of_batches_per_epoch,
             apply_norm=apply_norm,
             edge_embedding_methods=edge_embedding_methods,
             optimizer=optimizer,

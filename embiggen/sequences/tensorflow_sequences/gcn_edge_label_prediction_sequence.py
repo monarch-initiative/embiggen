@@ -72,6 +72,7 @@ class GCNEdgeLabelPredictionSequence(Sequence):
             support=support,
             kernels=kernels,
             batch_size=batch_size,
+            number_of_batches_per_epoch=None,
             return_node_types=return_node_types,
             return_node_ids=return_node_ids,
             node_features=node_features,
