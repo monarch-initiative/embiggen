@@ -556,7 +556,7 @@ class AbstractEdgeGCN(AbstractGCN):
             if len(edge_type_features) > 1:
                 edge_type_feature_names = [
                     f"{number_to_ordinal(i+1)} Edge Type Feature"
-                    for i in range(len(features))
+                    for i in range(len(edge_type_features))
                 ]
             else:
                 edge_type_feature_names = ["Edge Type Feature"]
