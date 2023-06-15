@@ -567,6 +567,8 @@ class AbstractEdgeGCN(AbstractGCN):
                     f"edge type feature names but you have provided {len(edge_type_features)} "
                     f"edge type features to the model."
                 )
+        else:
+            edge_type_feature_names = self._edge_type_feature_names
         
         for edge_type_feature, edge_type_feature_name in zip(edge_type_features, edge_type_feature_names):
             if isinstance(edge_type_feature, pd.DataFrame):
