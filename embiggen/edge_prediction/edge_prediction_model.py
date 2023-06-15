@@ -1100,6 +1100,15 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     "destinations": graph.get_destination_names(directed=True)
                     if return_node_names
                     else graph.get_directed_destination_node_ids(),
+                    **(
+                        {
+                            "edge_types": graph.get_directed_edge_type_names()
+                            if return_edge_type_names
+                            else graph.get_directed_edge_type_ids()
+                        }
+                        if graph.has_edge_types()
+                        else {}
+                    ),
                 },
             )
 
