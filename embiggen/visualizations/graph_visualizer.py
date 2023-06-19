@@ -5207,21 +5207,21 @@ class GraphVisualizer:
         distribution_plot_methods_to_call = []
 
         if not self._currently_plotting_edge_embedding:
-            node_scatter_plot_methods_to_call.append(
+            node_scatter_plot_methods_to_call.extend([
                 self.plot_node_degrees,
                 self.plot_node_triangles,
                 *((self.plot_node_squares, ) if self._support.get_number_of_edges() < 1_000_000 else ()),
                 self.plot_approximated_closeness_centrality,
                 self.plot_approximated_harmonic_centrality
-            )
+            ])
 
-        distribution_plot_methods_to_call.append(
+        distribution_plot_methods_to_call.extend([
             self.plot_node_degree_distribution,
             self.plot_triangle_distribution,
             *((self.plot_square_distribution, ) if self._support.get_number_of_edges() < 1_000_000 else ()),
             self.plot_approximated_closeness_centrality_distribution,
             self.plot_approximated_harmonic_centrality_distribution
-        )
+        ])
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)
