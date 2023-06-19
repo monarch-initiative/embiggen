@@ -20,6 +20,7 @@ class GCNEdgeLabelPredictionSequence(Sequence):
         batch_size: int,
         return_node_types: bool = False,
         return_node_ids: bool = False,
+        return_edge_node_ids: bool = True,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
@@ -43,6 +44,9 @@ class GCNEdgeLabelPredictionSequence(Sequence):
             Whether to return the edge types.
         return_node_ids: bool = False
             Whether to return the node IDs.
+            These are needed when an embedding layer is used.
+        return_edge_node_ids: bool = True
+            Whether to return the edge node IDs.
             These are needed when an embedding layer is used.
         node_features: List[np.ndarray]
             The node features to be used.
@@ -75,6 +79,7 @@ class GCNEdgeLabelPredictionSequence(Sequence):
             number_of_batches_per_epoch=None,
             return_node_types=return_node_types,
             return_node_ids=return_node_ids,
+            return_edge_node_ids=return_edge_node_ids,
             node_features=node_features,
             node_type_features=node_type_features,
         )
@@ -161,6 +166,10 @@ class GCNEdgeLabelPredictionSequence(Sequence):
     def has_kernels(self) -> bool:
         """Return whether the sequence has kernels."""
         return self._gcn_edge_prediction_training_sequence.has_kernels()
+    
+    def return_edge_node_ids(self) -> bool:
+        """Return whether the sequence returns edge node IDs."""
+        return self._gcn_edge_prediction_training_sequence.return_edge_node_ids()
 
     def __getitem__(self, idx: int):
         """Return batch corresponding to given index.
@@ -207,8 +216,8 @@ class GCNEdgeLabelPredictionSequence(Sequence):
 
         return (
             (
-                sources,
-                destinations,
+                *((sources,) if self.return_edge_node_ids() else ()),
+                *((destinations,) if self.return_edge_node_ids() else ()),
                 *edge_features,
                 *(self.get_node_features() if self.has_kernels() else self.get_node_features(
                     sources=sources,

@@ -1,7 +1,7 @@
 """Kipf GCN model for node-label prediction."""
 import copy
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 import compress_pickle
 import numpy as np
@@ -10,29 +10,21 @@ import tensorflow as tf
 from ensmallen import Graph
 from keras_mixed_sequence import Sequence
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
-    EarlyStopping,
-    ReduceLROnPlateau,
-)
+    EarlyStopping, ReduceLROnPlateau)
 from tensorflow.keras.layers import Input
-from tensorflow.keras.models import (
-    Model,
-)  # pylint: disable=import-error,no-name-in-module
-from tensorflow.keras.optimizers import (
-    Optimizer,
-)  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.models import \
+    Model  # pylint: disable=import-error,no-name-in-module
+from tensorflow.keras.optimizers import \
+    Optimizer  # pylint: disable=import-error,no-name-in-module
 from userinput.utils import must_be_in_set
 
-from embiggen.layers.tensorflow import (
-    EmbeddingLookup,
-    FlatEmbedding,
-    GraphConvolution,
-    L2Norm,
-)
+from embiggen.layers.tensorflow import (EmbeddingLookup, FlatEmbedding,
+                                        GraphConvolution, L2Norm)
 from embiggen.utils import AbstractEdgeFeature
-from embiggen.utils.abstract_models import AbstractClassifierModel, abstract_class
-from embiggen.utils.normalize_model_structural_parameters import (
-    normalize_model_list_parameter,
-)
+from embiggen.utils.abstract_models import (AbstractClassifierModel,
+                                            abstract_class)
+from embiggen.utils.normalize_model_structural_parameters import \
+    normalize_model_list_parameter
 from embiggen.utils.number_to_ordinal import number_to_ordinal
 
 
@@ -403,6 +395,7 @@ class AbstractGCN(AbstractClassifierModel):
 
         self._verbose = verbose
         self._model = None
+        self._layer_names: Set[str] = set()
         self.history = None
 
         super().__init__(random_state=random_state)
@@ -417,6 +410,16 @@ class AbstractGCN(AbstractClassifierModel):
             number_of_units_per_graph_convolution_layers=2,
             handling_multi_graph="drop",
         )
+
+    def _add_layer_name(self, layer_name: str):
+        """Add layer name to the set of layer names."""
+        if layer_name in self._layer_names:
+            raise ValueError(
+                f"You are trying to add a layer with name {layer_name} "
+                f"but a layer with the same name has already been added."
+            )
+
+        self._layer_names.add(layer_name)
 
     def clone(self) -> Type["AbstractGCN"]:
         """Return copy of self."""
@@ -451,6 +454,11 @@ class AbstractGCN(AbstractClassifierModel):
             node_embedding_size=self._node_embedding_size,
             use_node_type_embedding=self._use_node_type_embedding,
             node_type_embedding_size=self._node_type_embedding_size,
+            residual_convolutional_layers=self._residual_convolutional_layers,
+            handling_multi_graph=self._handling_multi_graph,
+            node_feature_names=self._node_feature_names,
+            node_type_feature_names=self._node_type_feature_names,
+            verbose=self._verbose,
         )
 
     def plot(self, show_shapes: bool = True, **kwargs: Dict):
@@ -548,13 +556,8 @@ class AbstractGCN(AbstractClassifierModel):
         self,
         graph: Graph,
         graph_convolution_model: Model,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[
-            Union[
-                Type[AbstractEdgeFeature],
-                List[Union[np.ndarray, Type[AbstractEdgeFeature]]],
-            ]
-        ] = None,
+        edge_type_features: List[np.ndarray],
+        edge_features: List[Union[np.ndarray, Type[AbstractEdgeFeature]]],
     ) -> Type[Model]:
         """Returns GCN model."""
         raise NotImplementedError(
@@ -566,23 +569,30 @@ class AbstractGCN(AbstractClassifierModel):
     def _build_graph_convolution_model(
         self,
         graph: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
+        node_features: List[np.ndarray],
+        node_type_features: List[np.ndarray],
     ) -> Model:
         """Create new GCN model."""
         # We create the list we will use to collect the input features.
         input_features = []
         hidden = []
 
-        kernels = [
-            Input(
+        if self.has_kernels() and len(node_features) == 0 and len(node_type_features) == 0 and not self._use_node_embedding and not self._use_node_type_embedding:
+            raise ValueError(
+                "You are trying to create a GCN model with convolutional layers "
+                "but you have not provided any node or node type feature to use, "
+                "and you are not using node or node type embeddings."
+            )
+
+        kernels = []
+        for kernel in self._kernels:
+            self._add_layer_name(kernel)
+            kernels.append(Input(
                 shape=(graph.get_number_of_nodes(),),
                 batch_size=graph.get_number_of_nodes(),
                 sparse=True,
                 name=kernel,
-            )
-            for kernel in self._kernels
-        ]
+            ))
 
         # When we are not creating a node-level model but an edge-label or
         # edge-prediction model, and the model is not using convolutional layers,
@@ -618,7 +628,7 @@ class AbstractGCN(AbstractClassifierModel):
                     f"{prefix}node type feature",
                 ),
             ):
-                if features is not None:
+                if len(features) > 0:
                     if feature_names is None:
                         if len(features) > 1:
                             feature_names = [
@@ -638,15 +648,15 @@ class AbstractGCN(AbstractClassifierModel):
                             f"{feature_category} names but you have provided {len(features)} "
                             f"{feature_category}s to the model."
                         )
-                    new_input_features = [
-                        Input(
+                    new_input_features = []
+                    for node_feature, node_feature_name in zip(
+                        features, feature_names
+                    ):
+                        self._add_layer_name(node_feature_name)
+                        new_input_features.append(Input(
                             shape=node_feature.shape[1:],
                             name=node_feature_name,
-                        )
-                        for node_feature, node_feature_name in zip(
-                            features, feature_names
-                        )
-                    ]
+                        ))
                     input_features.extend(new_input_features)
                     hidden.extend(new_input_features)
 
@@ -706,6 +716,7 @@ class AbstractGCN(AbstractClassifierModel):
                 else:
                     ordinal = ""
                 sanitized_kernel_name = kernel_name.replace(" ", "")
+                assert len(hidden) > 0
                 hidden = GraphConvolution(
                     units=units,
                     combiner=self._combiner,
@@ -1059,15 +1070,10 @@ class AbstractGCN(AbstractClassifierModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[
-            Union[
-                Type[AbstractEdgeFeature],
-                List[Union[np.ndarray, Type[AbstractEdgeFeature]]],
-            ]
-        ] = None,
+        node_features: List[np.ndarray],
+        node_type_features: List[np.ndarray],
+        edge_type_features: List[np.ndarray],
+        edge_features: List[Union[np.ndarray, Type[AbstractEdgeFeature]]],
     ) -> pd.DataFrame:
         """Run predictions on the provided graph."""
         predictions = self._predict_proba(

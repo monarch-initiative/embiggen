@@ -20,6 +20,7 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
         batch_size: int,
         return_node_types: bool = False,
         return_node_ids: bool = False,
+        return_edge_node_ids: bool = True,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
@@ -43,6 +44,9 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
             Whether to return the edge types.
         return_node_ids: bool = False
             Whether to return the node IDs.
+            These are needed when an embedding layer is used.
+        return_edge_node_ids: bool = True
+            Whether to return the edge node IDs.
             These are needed when an embedding layer is used.
         node_features: List[np.ndarray]
             The node features to be used.
@@ -68,6 +72,7 @@ class GCNEdgeLabelPredictionTrainingSequence(GCNEdgeLabelPredictionSequence):
             batch_size=batch_size,
             return_node_types=return_node_types,
             return_node_ids=return_node_ids,
+            return_edge_node_ids=return_edge_node_ids,
             node_features=node_features,
             node_type_features=node_type_features,
             edge_features=edge_features,

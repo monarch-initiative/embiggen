@@ -1,12 +1,16 @@
 """GCN model for edge-label prediction."""
-from typing import List, Union, Optional, Dict, Type
+from typing import Dict, List, Optional, Type, Union, Any
 
 import numpy as np
 from ensmallen import Graph
 from tensorflow.keras.optimizers import Optimizer
-from embiggen.utils.abstract_edge_gcn import AbstractEdgeGCN, abstract_class, AbstractEdgeFeature
-from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
-from embiggen.sequences.tensorflow_sequences import GCNEdgeLabelPredictionTrainingSequence, GCNEdgeLabelPredictionSequence
+
+from embiggen.edge_label_prediction.edge_label_prediction_model import \
+    AbstractEdgeLabelPredictionModel
+from embiggen.sequences.tensorflow_sequences import (
+    GCNEdgeLabelPredictionSequence, GCNEdgeLabelPredictionTrainingSequence)
+from embiggen.utils.abstract_edge_gcn import (AbstractEdgeFeature,
+                                              AbstractEdgeGCN, abstract_class)
 
 
 @abstract_class
@@ -46,6 +50,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
+        siamese_node_feature_module: bool = True,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
@@ -190,6 +195,8 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             Dimension of the node type embedding.
         residual_convolutional_layers: bool = False
             Whether to use residual connections between convolutional layers.
+        siamese_node_feature_module: bool = True
+            Whether to use a siamese module to process the node features.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -238,6 +245,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
             residual_convolutional_layers=residual_convolutional_layers,
+            siamese_node_feature_module=siamese_node_feature_module,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
@@ -249,18 +257,12 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]] = None,
-        node_type_features: Optional[List[np.ndarray]] = None,
-        edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]] = None,
+        node_features: List[np.ndarray],
+        node_type_features: List[np.ndarray],
+        edge_type_features: List[np.ndarray],
+        edge_features: List[Union[Type[AbstractEdgeFeature], np.ndarray]],
     ) -> GCNEdgeLabelPredictionSequence:
         """Returns prediction sequence."""
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Edge type features are not yet supported for training "
-                f"the {self.__class__.__name__} model for the "
-                "edge label prediction task."
-            )
         return GCNEdgeLabelPredictionSequence(
             graph,
             support=support,
@@ -268,6 +270,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
+            return_edge_node_ids=self._use_node_embedding or self.has_kernels(),
             return_node_types=self._use_node_type_embedding,
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
@@ -278,19 +281,12 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         self,
         graph: Graph,
         support: Graph,
-        node_features: Optional[List[np.ndarray]],
-        node_type_features: Optional[List[np.ndarray]],
-        edge_type_features: Optional[List[np.ndarray]],
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Union[Type[AbstractEdgeFeature], np.ndarray]]]],
+        node_features: List[np.ndarray],
+        node_type_features: List[np.ndarray],
+        edge_type_features: List[np.ndarray],
+        edge_features: List[Union[Type[AbstractEdgeFeature], np.ndarray]],
     ) -> GCNEdgeLabelPredictionTrainingSequence:
         """Returns training input tuple."""
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Edge type features are not yet supported for training "
-                f"the {self.__class__.__name__} model for the "
-                "edge label prediction task."
-            )
-
         return GCNEdgeLabelPredictionTrainingSequence(
             graph=graph,
             support=support,
@@ -298,6 +294,7 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
             batch_size=self.get_batch_size_from_graph(graph),
             node_features=node_features,
             return_node_ids=self._use_node_embedding,
+            return_edge_node_ids=self._use_node_embedding or self.has_kernels(),
             return_node_types=self._use_node_type_embedding,
             node_type_features=node_type_features,
             use_edge_metrics=self._use_edge_metrics,
@@ -342,3 +339,17 @@ class GCNEdgeLabelPrediction(AbstractEdgeGCN, AbstractEdgeLabelPredictionModel):
         # always requires a batch size equal to the nodes number.
         return predictions[:graph.get_number_of_edges()]
     
+    def parameters(self) -> Dict[str, Any]:
+        """Returns parameters used for this model."""
+        removed = [
+            "use_edge_type_embedding",
+            "edge_type_embedding_size",
+            "edge_type_feature_names"
+        ]
+        return dict(
+            **{
+                key: value
+                for key, value in AbstractEdgeGCN.parameters(self).items()
+                if key not in removed
+            },
+        )

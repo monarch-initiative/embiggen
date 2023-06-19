@@ -1770,3 +1770,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         task. Therefore, this method always returns False.
         """
         return False
+
+    @classmethod
+    def can_use_node_type_features(cls) -> bool:
+        """Returns whether the model can use node type features."""
+        return True

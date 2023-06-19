@@ -573,7 +573,7 @@ class AbstractClassifierModel(AbstractModel):
             once and therefore the experiment will be overall faster.
         """
         if node_features is None:
-            return None
+            return []
 
         if not isinstance(node_features, (list, tuple)):
             node_features = [node_features]
@@ -794,7 +794,7 @@ class AbstractClassifierModel(AbstractModel):
             once and therefore the experiment will be overall faster.
         """
         if node_type_features is None:
-            return None
+            return []
 
         if not isinstance(node_type_features, (list, tuple)):
             node_type_features = [node_type_features]
@@ -1016,7 +1016,7 @@ class AbstractClassifierModel(AbstractModel):
             once and therefore the experiment will be overall faster.
         """
         if edge_type_features is None:
-            return None
+            return []
 
         if not isinstance(edge_type_features, (list, tuple)):
             edge_type_features = [edge_type_features]
@@ -1096,16 +1096,14 @@ class AbstractClassifierModel(AbstractModel):
         if isinstance(edge_feature, str):
             if not allow_automatic_feature:
                 raise ValueError(
-                    (
-                        "The edge feature `{}` was requested, but "
-                        "the `allow_automatic_feature` has been set to False. "
-                        "This may be because this is an evaluation execution or "
-                        "a prediction, and the string feature should be obtained "
-                        "from either the training graph, the test graph or the "
-                        "complete graph and it is not clear which one was provided. "
-                        "Consider calling the `normalize_edge_features` method "
-                        "yourselves to completely define your intentions."
-                    ).format(edge_feature)
+                    f"The edge feature `{edge_feature}` was requested, but "
+                    "the `allow_automatic_feature` has been set to False. "
+                    "This may be because this is an evaluation execution or "
+                    "a prediction, and the string feature should be obtained "
+                    "from either the training graph, the test graph or the "
+                    "complete graph and it is not clear which one was provided. "
+                    "Consider calling the `normalize_edge_features` method "
+                    "yourselves to completely define your intentions."
                 )
 
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
@@ -1163,29 +1161,23 @@ class AbstractClassifierModel(AbstractModel):
                 continue
             if not isinstance(ef, (np.ndarray, pd.DataFrame)):
                 raise ValueError(
-                    (
-                        "The provided edge features are of type `{edge_features_type}`, "
-                        "while we only currently support numpy arrays and pandas DataFrames. "
-                        "What behaviour were you expecting with this feature? "
-                        "Please do open an issue on Embiggen and let us know!"
-                    ).format(edge_features_type=type(ef))
+                    f"The provided edge features are of type `{type(ef)}`, "
+                    "while we only currently support numpy arrays and pandas DataFrames. "
+                    "What behaviour were you expecting with this feature? "
+                    "Please do open an issue on Embiggen and let us know!"
                 )
 
             if graph.get_number_of_edges() != ef.shape[0]:
+                if graph.get_name().lower() == "graph":
+                    graph_name = ""
+                else:
+                    graph_name = " {}".format(graph.get_name())
                 raise ValueError(
-                    (
-                        "The provided edge features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {edges_number} edges. "
-                        "Maybe these features refer to another "
-                        "version of the graph or another graph "
-                        "entirely?"
-                    ).format(
-                        rows_number=ef.shape[0],
-                        graph_name=""
-                        if graph.get_name().lower() == "graph"
-                        else " {}".format(graph.get_name()),
-                        edges_number=graph.get_number_of_edges(),
-                    )
+                    f"The provided edge features have {ef.shape[0]} rows "
+                    f"but the provided graph{graph_name} has {graph.get_number_of_edges()} edges. "
+                    "Maybe these features refer to another "
+                    "version of the graph or another graph "
+                    "entirely?"
                 )
 
             # If it is a dataframe we align it
@@ -1256,7 +1248,7 @@ class AbstractClassifierModel(AbstractModel):
             once and therefore the experiment will be overall faster.
         """
         if edge_features is None:
-            return None
+            return []
 
         if not isinstance(edge_features, list):
             edge_features = [edge_features]
@@ -1321,23 +1313,6 @@ class AbstractClassifierModel(AbstractModel):
         if not graph.has_nodes():
             raise ValueError("The provided graph is empty.")
 
-        if node_type_features is not None and not graph.has_node_types():
-            raise ValueError(
-                "The node type features have been provided but the current "
-                f"instance of graph {graph.get_name()} does not have node types. "
-                "It is unclear how to proceed with this data."
-            )
-
-        if edge_type_features is not None and not graph.has_edge_types():
-            raise ValueError(
-                "The edge type features have been provided but the current "
-                f"instance of graph {graph.get_name()} does not have edge types. "
-                "It is unclear how to proceed with this data."
-            )
-
-        self._is_using_node_type_features = node_type_features is not None
-        self._is_using_edge_type_features = edge_type_features is not None
-
         if (
             self.requires_node_types()
             or self.can_use_node_types()
@@ -1395,6 +1370,53 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+
+        if edge_features is None:
+            edge_features = []
+
+        if not isinstance(edge_features, list):
+            edge_features = [edge_features]
+
+        if len(node_type_features) > 0 and not graph.has_node_types():
+            raise ValueError(
+                "The node type features have been provided but the current "
+                f"instance of graph {graph.get_name()} does not have node types. "
+                "It is unclear how to proceed with this data."
+            )
+
+        if len(edge_type_features) > 0 and not graph.has_edge_types():
+            raise ValueError(
+                "The edge type features have been provided but the current "
+                f"instance of graph {graph.get_name()} does not have edge types. "
+                "It is unclear how to proceed with this data."
+            )
+        
+        self._is_using_node_type_features = len(node_type_features) > 0
+        self._is_using_edge_type_features = len(edge_type_features) > 0
+
+        if len(node_type_features) > 0 and not self.can_use_node_type_features():
+            raise ValueError(
+                f"The current model {self.model_name()} for task {self.task_name()} "
+                f"from library {self.library_name()} "
+                "does not support node type features, "
+                f"but you provided {len(node_type_features)} node type features. "
+            )
+        
+        if len(edge_type_features) > 0 and not self.can_use_edge_type_features():
+            raise ValueError(
+                f"The current model {self.model_name()} for task {self.task_name()} "
+                f"from library {self.library_name()} "
+                "does not support edge type features, "
+                f"but you provided {len(edge_type_features)} edge type features. "
+            )
+        
+        if len(edge_features) > 0 and not self.can_use_edge_features():
+            raise ValueError(
+                f"The current model {self.model_name()} for task {self.task_name()} "
+                f"from library {self.library_name()} "
+                "does not support edge features, "
+                f"but you provided {len(edge_features)} edge features. "
+            )
 
         try:
             self._fit(
@@ -1518,7 +1540,7 @@ class AbstractClassifierModel(AbstractModel):
                     allow_automatic_feature=False,
                 ),
             )
-        except Exception as e:
+        except Exception as exception:
             raise RuntimeError(
                 f"An exception was raised while calling the `._predict` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
@@ -2417,19 +2439,14 @@ class AbstractClassifierModel(AbstractModel):
                 )
             if number_of_holdouts > number_of_slurm_nodes:
                 raise ValueError(
-                    (
-                        "Please be advised that you are currently running an excessive "
-                        "parametrization of the SLURM cluster. We currently can only parallelize "
-                        "the execution of different holdouts. "
-                        "The number of holdouts requested are {number_of_holdouts} but you are "
-                        "currently using {number_of_slurm_nodes} SLURM nodes! "
-                        "Possibly, you are currently running a task such as a grid search "
-                        "and therefore you intend us to parallelize only the sub-segment of SLURM "
-                        "nodes necessary to run the holdouts."
-                    ).format(
-                        number_of_holdouts=number_of_holdouts,
-                        number_of_slurm_nodes=number_of_slurm_nodes,
-                    )
+                    "Please be advised that you are currently running an excessive "
+                    "parametrization of the SLURM cluster. We currently can only parallelize "
+                    "the execution of different holdouts. "
+                    f"The number of holdouts requested are {number_of_holdouts} but you are "
+                    f"currently using {number_of_slurm_nodes} SLURM nodes! "
+                    "Possibly, you are currently running a task such as a grid search "
+                    "and therefore you intend us to parallelize only the sub-segment of SLURM "
+                    "nodes necessary to run the holdouts."
                 )
 
         # Retrieve the set of provided automatic features parameters

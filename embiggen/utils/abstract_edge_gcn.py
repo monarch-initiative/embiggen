@@ -6,8 +6,8 @@ import pandas as pd
 import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
-    Activation, Add, Average, Concatenate, Dense, Dot, Flatten, Input,
-    Maximum, Minimum, Multiply, Subtract)
+    Activation, Add, Average, Concatenate, Dense, Dot, Flatten, Input, Maximum, Layer,
+    Minimum, Multiply, Subtract)
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
@@ -43,7 +43,7 @@ class AbstractEdgeGCN(AbstractGCN):
         batch_size: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "sum",
-        edge_embedding_methods: Union[List[str], str] = "Concatenate",
+        edge_embedding_methods: Optional[Union[List[str], str]] = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -64,6 +64,7 @@ class AbstractEdgeGCN(AbstractGCN):
         use_edge_type_embedding: bool = False,
         edge_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
+        siamese_node_feature_module: bool = False,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
@@ -216,6 +217,8 @@ class AbstractEdgeGCN(AbstractGCN):
             Dimension of the edge type embedding.
         residual_convolutional_layers: bool = False
             Whether to use residual connections in the convolutional layers.
+        siamese_node_feature_module: bool = False
+            Whether to use a siamese module for the node features.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -276,10 +279,13 @@ class AbstractEdgeGCN(AbstractGCN):
             object_type=int
         )
 
-        if not isinstance(edge_embedding_methods, list):
-            edge_embedding_methods = [edge_embedding_methods]
+        if edge_embedding_methods is None:
+            edge_embedding_methods: List[str] = []
 
-        edge_embedding_methods = [
+        if not isinstance(edge_embedding_methods, list):
+            edge_embedding_methods: List[str] = [edge_embedding_methods]
+
+        edge_embedding_methods: List[str] = [
             must_be_in_set(
                 edge_embedding_method,
                 self.get_available_edge_embedding_methods(),
@@ -291,6 +297,7 @@ class AbstractEdgeGCN(AbstractGCN):
         if isinstance(edge_type_feature_names, str):
             edge_type_feature_names = [edge_type_feature_names]
 
+        self._siamese_node_feature_module: bool = siamese_node_feature_module
         self._edge_embedding_methods: List[str] = edge_embedding_methods
         self._edge_type_feature_names: Optional[List[str]] = edge_type_feature_names
         self._use_edge_metrics = use_edge_metrics
@@ -311,9 +318,14 @@ class AbstractEdgeGCN(AbstractGCN):
         """Returns parameters used for this model."""
         return dict(
             **AbstractGCN.parameters(self),
+            edge_embedding_methods=self._edge_embedding_methods,
+            siamese_node_feature_module=self._siamese_node_feature_module,
             number_of_units_per_ffnn_body_layer=self._number_of_units_per_ffnn_body_layer,
             number_of_units_per_ffnn_head_layer=self._number_of_units_per_ffnn_head_layer,
             use_edge_metrics=self._use_edge_metrics,
+            use_edge_type_embedding=self._use_edge_type_embedding,
+            edge_type_embedding_size=self._edge_type_embedding_size,
+            edge_type_feature_names=self._edge_type_feature_names,
         )
 
     def _get_model_training_output(self, graph: Graph) -> Optional[np.ndarray]:
@@ -344,22 +356,26 @@ class AbstractEdgeGCN(AbstractGCN):
         self,
         graph: Graph,
         graph_convolution_model: Model,
-        edge_type_features: Optional[List[np.ndarray]],
-        edge_features: Optional[Union[Type[AbstractEdgeFeature],
-                                      List[Union[Type[AbstractEdgeFeature], np.ndarray]]]],
+        edge_type_features: List[np.ndarray],
+        edge_features: List[Union[Type[AbstractEdgeFeature], np.ndarray]],
     ) -> Type[Model]:
         """Create new GCN model."""
+        assert isinstance(graph, Graph)
 
-        source_nodes = Input(
-            (1,),
-            name="Sources",
-            dtype=tf.int32
-        )
-        destination_nodes = Input(
-            (1,),
-            name="Destinations",
-            dtype=tf.int32
-        )
+        if self._use_node_embedding or self.has_kernels():
+            source_nodes = Input(
+                (1,),
+                name="Sources",
+                dtype=tf.int32
+            )
+            destination_nodes = Input(
+                (1,),
+                name="Destinations",
+                dtype=tf.int32
+            )
+        else:
+            source_nodes = None
+            destination_nodes = None
 
         source_features = []
         source_feature_names = []
@@ -407,65 +423,75 @@ class AbstractEdgeGCN(AbstractGCN):
         # we need to consider the input features that come from the graph convolution model
         # which in this case are half for the source nodes and half for the destination nodes.
 
-        if not self.has_kernels():
-            features: List = graph_convolution_model.output
-            assert isinstance(features, list), f"Expected {graph_convolution_model.output} to be a list of features."
-            assert len(features) > 0
-            assert len(features) % 2 == 0
-            source_related_features = features[:len(features) // 2]
-            destination_related_features = features[len(features) // 2:]
+        features = graph_convolution_model.output
+        if not isinstance(features, list):
+            features = [features]
 
-            if len(source_related_features) > 1:
-                source_related_features = Concatenate(
-                    name="ConcatenatedSourceFeatures",
-                    axis=-1
-                )(source_related_features)
-            else:
-                source_related_features = source_related_features[0]
+        if (
+            len(features) == 0 and
+            not self._use_node_embedding and
+            not self._use_edge_type_embedding and
+            len(edge_features) == 0 and
+            len(edge_type_features) == 0 and
+            not self._use_edge_metrics
+        ):
+            raise ValueError(
+                "You have not provided any features to the model."
+            )
 
-            if len(destination_related_features) > 1:
-                destination_related_features = Concatenate(
-                    name="ConcatenatedDestinationFeatures",
-                    axis=-1
-                )(destination_related_features)
-            else:
-                destination_related_features = destination_related_features[0]
-
-            # The features have shape (batch size, number of features),
-            # with the batch size generally SIGNIFICANTLY LESS than the number of nodes.
-            # We do not need to execute an embedding lookup here,
-            # as the features are already queries in the training
-            # sequence. 
-            source_features.append(source_related_features)
+        if len(features) > 0:
             source_feature_names.append("Source Node Features")
-            destination_features.append(destination_related_features)
             destination_feature_names.append("Destination Node Features")
-        else:
-            features = graph_convolution_model.output
-            if not isinstance(features, list):
-                features = [features]
-            if len(features) > 1:
-                features = Concatenate(
-                    name="ConcatenatedNodeFeatures",
-                    axis=-1
-                )(features)
-            else:
-                features = features[0]
 
-            # The features have shape (number of nodes, number of features)
-            # and we need to extract the features for the source and destination nodes.
-            # For this reason, we need to query the features using the source and destination nodes
-            # using an embedding lookup.
-            source_features.append(EmbeddingLookup(name=f"{source_nodes.name}Features")((
-                source_nodes,
-                features
-            )))
-            source_feature_names.append("Source Node Features")
-            destination_features.append(EmbeddingLookup(name=f"{destination_nodes.name}Features")((
-                destination_nodes,
-                features
-            )))
-            destination_feature_names.append("Destination Node Features")
+            if not self.has_kernels():
+                assert len(features) % 2 == 0
+                source_related_features = features[:len(features) // 2]
+                destination_related_features = features[len(features) // 2:]
+
+                if len(source_related_features) > 1:
+                    source_related_features = Concatenate(
+                        name="ConcatenatedSourceFeatures",
+                        axis=-1
+                    )(source_related_features)
+                else:
+                    source_related_features = source_related_features[0]
+
+                if len(destination_related_features) > 1:
+                    destination_related_features = Concatenate(
+                        name="ConcatenatedDestinationFeatures",
+                        axis=-1
+                    )(destination_related_features)
+                else:
+                    destination_related_features = destination_related_features[0]
+
+                # The features have shape (batch size, number of features),
+                # with the batch size generally SIGNIFICANTLY LESS than the number of nodes.
+                # We do not need to execute an embedding lookup here,
+                # as the features are already queries in the training
+                # sequence. 
+                source_features.append(source_related_features)
+                destination_features.append(destination_related_features)
+            else:
+                if len(features) > 1:
+                    features = Concatenate(
+                        name="ConcatenatedNodeFeatures",
+                        axis=-1
+                    )(features)
+                else:
+                    features = features[0]
+
+                # The features have shape (number of nodes, number of features)
+                # and we need to extract the features for the source and destination nodes.
+                # For this reason, we need to query the features using the source and destination nodes
+                # using an embedding lookup.
+                source_features.append(EmbeddingLookup(name=f"{source_nodes.name}Features")((
+                    source_nodes,
+                    features
+                )))
+                destination_features.append(EmbeddingLookup(name=f"{destination_nodes.name}Features")((
+                    destination_nodes,
+                    features
+                )))
 
         edge_feature_inputs = []
 
@@ -480,9 +506,6 @@ class AbstractEdgeGCN(AbstractGCN):
             shared_features.append(edge_metrics)
         else:
             edge_metrics = None
-
-        if edge_features is None:
-            edge_features = []
 
         edge_feature_names = []
 
@@ -548,28 +571,29 @@ class AbstractEdgeGCN(AbstractGCN):
                     "Please provide an instance of AbstractEdgeFeature or a numpy array."
                 )
         
-        if edge_type_features is None:
-            edge_type_features = []
-
         edge_type_feature_names: List[str] = []
-        if self._edge_type_feature_names is None and len(edge_type_features) > 0:
+        if self._edge_type_feature_names is None:
             if len(edge_type_features) > 1:
                 edge_type_feature_names = [
                     f"{number_to_ordinal(i+1)} Edge Type Feature"
                     for i in range(len(edge_type_features))
                 ]
-            else:
+            elif len(edge_type_features) == 1:
                 edge_type_feature_names = ["Edge Type Feature"]
-            
-            if len(edge_type_feature_names) != len(edge_type_features):
-                raise ValueError(
-                    f"You have provided {len(edge_type_feature_names)} "
-                    f"edge type feature names but you have provided {len(edge_type_features)} "
-                    f"edge type features to the model."
-                )
         else:
             edge_type_feature_names = self._edge_type_feature_names
+
+        if len(edge_type_feature_names) != len(edge_type_features):
+            raise ValueError(
+                f"You have provided {len(edge_type_feature_names)} "
+                f"edge type feature names but you have provided {len(edge_type_features)} "
+                f"edge type features to the model."
+            )
         
+        assert edge_type_features is not None
+        assert edge_type_feature_names is not None
+        assert len(edge_type_features) == len(edge_type_feature_names)
+
         for edge_type_feature, edge_type_feature_name in zip(edge_type_features, edge_type_feature_names):
             if isinstance(edge_type_feature, pd.DataFrame):
                 edge_type_feature = edge_type_feature.values
@@ -590,13 +614,76 @@ class AbstractEdgeGCN(AbstractGCN):
 
         ffnn_outputs = []
         
-        for hiddens, feature_names in zip(
-            (source_features, destination_features, shared_features),
-            (source_feature_names, destination_feature_names, shared_feature_names)
-        ):
+        if len(source_features) > 0 and len(destination_features) > 0:
+            if self._siamese_node_feature_module:
+                siamese_layers = []
+                for source_feature_name in source_feature_names:
+                    partial_siamese_layers = []
+                    source_feature_name = source_feature_name.replace("Source", "").replace(" ", "")
+                    for i, units in enumerate(self._number_of_units_per_ffnn_body_layer):
+                        assert isinstance(units, int)
+                        if len(self._number_of_units_per_ffnn_body_layer) > 1:
+                            ordinal = number_to_ordinal(i+1)
+                        else:
+                            ordinal = ""
+                        layer_name = f"{ordinal}{source_feature_name}SiameseDense"
+                        self._add_layer_name(layer_name)
+                        layer = Dense(
+                            units=units,
+                            activation="relu",
+                            name=layer_name
+                        )
+                        assert issubclass(type(layer), Layer), f"Expected a layer, but found {type(layer)}."
+                        partial_siamese_layers.append(layer)
+                    siamese_layers.append(partial_siamese_layers)
+                for zip_iter in (
+                    zip(source_features, siamese_layers),
+                    zip(destination_features, siamese_layers)
+                ):
+                    for hidden, partial_siamese_layers in zip_iter:
+                        this_ffnn_output = []
+                        # Building the body of the model.
+                        for siamese_layer in partial_siamese_layers:
+                            assert issubclass(type(siamese_layer), Layer), f"Expected a layer, but found {type(siamese_layer)}."
+                            hidden = siamese_layer(hidden)
+                        this_ffnn_output.append(hidden)
+                    ffnn_outputs.append(this_ffnn_output)
+            else:
+                for hiddens, feature_names in zip(
+                    (source_features, destination_features),
+                    (source_feature_names, destination_feature_names)
+                ):
+                    this_ffnn_output = []
+                    assert len(hiddens) == len(feature_names)
+                    assert len(set(feature_names)) == len(feature_names), f"Expected unique feature names, but found duplicates: {feature_names}."
+                    for hidden, feature_name in zip(hiddens, feature_names):
+                        # Building the body of the model.
+                        feature_name = feature_name.replace(" ", "")
+                        for i, units in enumerate(self._number_of_units_per_ffnn_body_layer):
+                            assert isinstance(units, int)
+                            assert not isinstance(hidden, list)
+                            if len(self._number_of_units_per_ffnn_body_layer) > 1:
+                                ordinal = number_to_ordinal(i+1)
+                            else:
+                                ordinal = ""
+                            layer_name = f"{ordinal}{feature_name}Dense"
+                            self._add_layer_name(layer_name)
+                            hidden = Dense(
+                                units=units,
+                                activation="relu",
+                                name=layer_name
+                            )(hidden)
+                        this_ffnn_output.append(hidden)
+                    ffnn_outputs.append(this_ffnn_output)
+            source_feature_hidden = ffnn_outputs[0]
+            destination_feature_hidden = ffnn_outputs[1]
+        else:
+            source_feature_hidden = []
+            destination_feature_hidden = []
+
+        if len(shared_features) > 0:
             this_ffnn_output = []
-            assert len(hiddens) == len(feature_names)
-            for hidden, feature_name in zip(hiddens, feature_names):
+            for hidden, feature_name in zip(shared_features, shared_feature_names):
                 # Building the body of the model.
                 feature_name = feature_name.replace(" ", "")
                 for i, units in enumerate(self._number_of_units_per_ffnn_body_layer):
@@ -606,39 +693,58 @@ class AbstractEdgeGCN(AbstractGCN):
                         ordinal = number_to_ordinal(i+1)
                     else:
                         ordinal = ""
+                    layer_name = f"{ordinal}{feature_name}Dense"
+                    self._add_layer_name(layer_name)
                     hidden = Dense(
                         units=units,
                         activation="relu",
-                        name=f"{ordinal}{feature_name}Dense"
+                        name=layer_name
                     )(hidden)
                 this_ffnn_output.append(hidden)
+            shared_feature_hidden = this_ffnn_output
             ffnn_outputs.append(this_ffnn_output)
-
-        source_feature_hidden = ffnn_outputs[0]
+        else:
+            shared_feature_hidden = []
 
         if len(source_feature_hidden) > 1:
             source_feature_hidden = Concatenate(
                 name="ConcatenatedProcessedSourceFeatures",
                 axis=-1
             )(source_feature_hidden)
-        else:
+        elif len(source_feature_hidden) == 1:
             source_feature_hidden = source_feature_hidden[0]
-
-        destination_feature_hidden = ffnn_outputs[1]
+        else:
+            source_feature_hidden = None
 
         if len(destination_feature_hidden) > 1:
             destination_feature_hidden = Concatenate(
                 name="ConcatenatedProcessedDestinationFeatures",
                 axis=-1
             )(destination_feature_hidden)
-        else:
+        elif len(destination_feature_hidden) == 1:
             destination_feature_hidden = destination_feature_hidden[0]
-            
-        shared_feature_hidden = ffnn_outputs[2]
+        else:
+            destination_feature_hidden = None
 
         edge_embedding_layers = []
 
-        assert len(self._edge_embedding_methods) > 0
+        assert (source_feature_hidden is None) == (destination_feature_hidden is None), (
+            "Source and destination feature hidden must be both None or both not None. "
+            f"Source feature hidden: {source_feature_hidden}. "
+            f"Destination feature hidden: {destination_feature_hidden}."
+        )
+
+        if len(self._edge_embedding_methods) > 0 and source_feature_hidden is None and destination_feature_hidden is None:
+            raise ValueError(
+                "You have provided edge embedding methods but you have not provided "
+                "any source or destination node features - It is unclear how to embed the edges. "
+            )
+        
+        if len(self._edge_embedding_methods) == 0 and source_feature_hidden is not None and destination_feature_hidden is not None:
+            raise ValueError(
+                "You have provided source and destination node features but you have not provided "
+                "any edge embedding methods - It is unclear how to embed the edges. "
+            )
 
         for edge_embedding_method in self._edge_embedding_methods:
             if edge_embedding_method == "Concatenate":
@@ -716,28 +822,30 @@ class AbstractEdgeGCN(AbstractGCN):
                 ]))
 
         if len(edge_embedding_layers) > 1:
-            hidden = Concatenate(
+            edge_embedding_layer_concatenation = Concatenate(
                 name="EdgeEmbeddings",
                 axis=-1
             )(edge_embedding_layers)
         elif len(edge_embedding_layers) == 1:
-            hidden = edge_embedding_layers[0]
+            edge_embedding_layer_concatenation = edge_embedding_layers[0]
         else:
-            raise ValueError(
-                "The provided edge embedding methods are empty. "
-                f"You provided {self._edge_embedding_methods} "
-                "as the selected edge embedding methods for the "
-                f"model {self.model_name()} for the task {self.task_name()}."
-            )
+            edge_embedding_layer_concatenation = None
 
-        if len(shared_feature_hidden) > 0:
+        if len(shared_feature_hidden) > 0 and edge_embedding_layer_concatenation is not None:
             hidden = Concatenate(
                 name="EdgeFeatures",
                 axis=-1
             )([
-                hidden,
+                edge_embedding_layer_concatenation,
                 *shared_feature_hidden
             ])
+        elif len(shared_feature_hidden) > 0:
+            hidden = Concatenate(
+                name="EdgeFeatures",
+                axis=-1
+            )(shared_feature_hidden)
+        elif edge_embedding_layer_concatenation is not None:
+            hidden = edge_embedding_layer_concatenation
 
         # Building the head of the model.
         for i, units in enumerate(self._number_of_units_per_ffnn_head_layer):

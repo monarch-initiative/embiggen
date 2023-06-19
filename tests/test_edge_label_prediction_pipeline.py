@@ -190,11 +190,11 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     task_name=AbstractEdgeLabelPredictionModel.task_name(),
                     library_name=row.library_name
                 )(**model.parameters())
-            except Exception as e:
+            except Exception as exception:
                 raise ValueError(
                     f"Found an error in model {row.model_name} "
                     f"implemented in library {row.library_name}."
-                ) from e
+                ) from exception
 
     def test_all_node_embedding_models_as_feature(self):
         """Test graph visualization."""

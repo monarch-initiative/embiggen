@@ -22,8 +22,8 @@ class NodeTransformer:
             If these two mappings do not match, the generated edge embedding
             will be meaningless.
         """
-        self._node_feature = None
-        self._node_type_feature = None
+        self._node_feature = []
+        self._node_type_feature = []
         self._aligned_mapping = aligned_mapping
 
     def fit(
@@ -40,10 +40,14 @@ class NodeTransformer:
         node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             Node type feature to use to fit the transformer.
         """
-        if node_feature is not None and not isinstance(node_feature, list):
+        if node_feature is None:
+            node_feature = []
+        if not isinstance(node_feature, list):
             node_feature = [node_feature]
 
-        if node_type_feature is not None and not isinstance(node_type_feature, list):
+        if node_type_feature is None:
+            node_type_feature = []
+        if not isinstance(node_type_feature, list):
             node_type_feature = [node_type_feature]
 
         # We check if any of the provided node features
@@ -83,32 +87,34 @@ class NodeTransformer:
                 )
 
         if self._aligned_mapping:
-            if node_feature is not None:
-                if len(node_feature) > 1:
-                    self._node_feature = np.hstack([
-                        nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
-                        for nf in node_feature
-                    ])
-                else:
-                    self._node_feature = node_feature[0]
+            if len(node_feature) > 1:
+                self._node_feature = np.hstack([
+                    nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
+                    for nf in node_feature
+                ])
+            elif len(node_feature) == 1:
+                self._node_feature = node_feature[0]
 
-            if node_type_feature is not None:
-                if len(node_type_feature) > 1:
-                    self._node_type_feature = np.hstack([
-                        nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
-                        for nf in node_type_feature
-                    ])
-                else:
-                    self._node_type_feature = node_type_feature[0]
+            if len(node_type_feature) > 1:
+                self._node_type_feature = np.hstack([
+                    nf.to_numpy() if isinstance(nf, pd.DataFrame) else nf
+                    for nf in node_type_feature
+                ])
+            elif len(node_type_feature) == 1:
+                self._node_type_feature = node_type_feature[0]
         else:
-            if node_feature is not None:
+            if len(node_feature) > 0:
                 self._node_feature = pd.concat(node_feature, axis=1)
-            if node_type_feature is not None:
+            if len(node_type_feature) > 0:
                 self._node_type_feature = pd.concat(node_type_feature, axis=1)
 
     def has_node_type_features(self) -> bool:
         """Return whether the transformer has node type feature."""
-        return self._node_type_feature is not None
+        return len(self._node_type_feature) > 0
+    
+    def has_node_features(self) -> bool:
+        """Return whether the transformer has node feature."""
+        return len(self._node_feature) > 0
 
     def is_aligned_mapping(self) -> bool:
         """Return whether the transformer can assume aligned mapping."""
@@ -116,7 +122,7 @@ class NodeTransformer:
 
     def is_fit(self) -> bool:
         """Return whether the transformer is fitted."""
-        return self._node_feature is not None or self._node_type_feature is not None
+        return len(self._node_feature) + len(self._node_type_feature) > 0
 
     def transform(
         self,
@@ -156,7 +162,7 @@ class NodeTransformer:
         node_features = None
 
         if self._aligned_mapping:
-            if nodes is not None and self._node_feature is not None:
+            if nodes is not None and self.has_node_features():
                 if not isinstance(nodes, (np.ndarray, Graph)):
                     raise ValueError(
                         "The provided nodes are not numpy array and the "
@@ -168,7 +174,7 @@ class NodeTransformer:
                 else:
                     node_features = self._node_feature[nodes]
 
-            if node_types is not None and self._node_type_feature is not None:
+            if node_types is not None and self.has_node_type_features():
                 if isinstance(node_types, Graph):
                     node_types = node_types.get_node_type_ids()
                 node_type_feature_dimensionality = self._node_type_feature.shape[1]
@@ -183,13 +189,13 @@ class NodeTransformer:
                     for node_type_ids in node_types
                 ])
         else:
-            if nodes is not None and self._node_feature is not None:
+            if nodes is not None and self.has_node_features():
                 if isinstance(nodes, Graph):
                     nodes = nodes.get_node_names()
 
                 node_features = self._node_feature.loc[nodes].to_numpy()
 
-            if node_types is not None and self._node_type_feature is not None:
+            if node_types is not None and self.has_node_type_features():
                 node_type_feature_dimensionality = self._node_type_feature.shape[1]
                 node_type_features = np.vstack([
                     np.mean(

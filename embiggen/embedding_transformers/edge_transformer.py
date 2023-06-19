@@ -646,7 +646,7 @@ class EdgeTransformer:
                             self._transformer._node_feature
                         )
 
-                    if self._transformer._node_type_feature is not None:
+                    if self.has_node_type_features():
                         raise NotImplementedError(
                             "The node type features are not yet supported for the "
                             "Cosine Similarity."

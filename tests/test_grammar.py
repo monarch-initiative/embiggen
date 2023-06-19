@@ -1,8 +1,9 @@
 """Unit tests to identify quickly potentially grammatical errors in the code base."""
 
 import os
-import pytest
 from glob import glob
+
+import pytest
 
 
 def test_typos():
@@ -15,7 +16,7 @@ def test_typos():
     # The dictionary is structured with the correct
     # spelling as the key and a list of common typos
     # as the value.
-    typos = {"edge": ["edg", "egde"], "prediction": ["prediction prediction"]}
+    typos = {"edge": ["edg", "egde"], "prediction": ["prediction prediction"], "concatenation": ["conatenation"]}
 
     for path in paths:
         with open(path, "r", encoding="utf-8") as f:

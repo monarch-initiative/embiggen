@@ -86,8 +86,7 @@ def test_catboost_edge_prediction_smoke_test():
         ).into_smoke_test()
         model.fit(g, node_features=data, edge_features=HyperSketching())
         model.predict(g, node_features=data, edge_features=HyperSketching())
-        model.predict_proba(g, node_features=data,
-                            edge_features=HyperSketching())
+        model.predict_proba(g, node_features=data, edge_features=HyperSketching())
 
 
 def test_catboost_edge_label_prediction_smoke_test():
@@ -107,5 +106,4 @@ def test_catboost_edge_label_prediction_smoke_test():
         ).into_smoke_test()
         model.fit(g, node_features=data, edge_features=HyperSketching())
         model.predict(g, node_features=data, edge_features=HyperSketching())
-        model.predict_proba(g, node_features=data,
-                            edge_features=HyperSketching())
+        model.predict_proba(g, node_features=data, edge_features=HyperSketching())

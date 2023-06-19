@@ -183,7 +183,7 @@ class GraphTransformer:
             sources = edge_node_ids[:, 0]
             destinations = edge_node_ids[:, 1]
 
-        if node_types is not None and self._transformer._transformer._node_type_feature is not None:
+        if node_types is not None and self.has_node_type_features():
             if isinstance(node_types, Graph):
                 if self._aligned_mapping:
                     source_node_types = [

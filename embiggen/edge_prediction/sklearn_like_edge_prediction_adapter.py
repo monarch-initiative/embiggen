@@ -322,7 +322,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             random_state=self._random_state,
             sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             use_scale_free_distribution=self._use_scale_free_distribution,
-            sample_edge_types=edge_type_features is not None
+            sample_edge_types=len(edge_type_features) > 0
         )
 
         assert negative_graph.has_edges()

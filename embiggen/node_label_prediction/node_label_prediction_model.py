@@ -200,106 +200,6 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
 
         return performance
 
-    def predict(
-        self,
-        graph: Graph,
-        support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-    ) -> np.ndarray:
-        """Execute predictions on the provided graph.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run predictions on.
-        support: Optional[Graph] = None
-            The graph describiding the topological structure that
-            includes also the above graph. This parameter
-            is mostly useful for topological classifiers
-            such as Graph Convolutional Networks.
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The node features to use.
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The node type features to use.
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The edge type features to use.
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The edge features to use.
-        """
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Currently edge type features are not supported in node-label prediction models."
-            )
-        
-        if edge_features is not None:
-            raise NotImplementedError(
-                "Currently edge features are not supported in node-label prediction models."
-            )
-
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the node-label prediction models."
-            )
-
-        return super().predict(graph, support=support, node_features=node_features)
-
-    def predict_proba(
-        self,
-        graph: Graph,
-        support: Optional[Graph] = None,
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-    ) -> np.ndarray:
-        """Execute predictions on the provided graph.
-
-        Parameters
-        --------------------
-        graph: Graph
-            The graph to run predictions on.
-        support: Optional[Graph] = None
-            The graph describiding the topological structure that
-            includes also the above graph. This parameter
-            is mostly useful for topological classifiers
-            such as Graph Convolutional Networks.
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The node features to use.
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The node type features to use.
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The edge type features to use.
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
-            The edge features to use.
-
-        Raises
-        --------------------
-        NotImplementedError
-            If edge features are provided.
-            If node type features are provided.
-            If edge type features are provided.
-        """
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Currently edge type features are not supported in node-label prediction models."
-            )
-        if edge_features is not None:
-            raise NotImplementedError(
-                "Currently edge features are not supported in node-label prediction models."
-            )
-
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the node-label prediction models."
-            )
-
-        return super().predict_proba(graph, support=support, node_features=node_features)
-
     def fit(
         self,
         graph: Graph,
@@ -338,22 +238,6 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
             If node type features are provided.
             If edge type features are provided.
         """
-        if edge_features is not None:
-            raise NotImplementedError(
-                "Currently edge features are not supported in node-label prediction models."
-            )
-        
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Currently edge type features are not supported in node-label prediction models."
-            )
-
-        if node_type_features is not None:
-            raise NotImplementedError(
-                "Support for node type features is not currently available for any "
-                "of the node-label prediction models."
-            )
-
         non_zero_node_types = sum([
             1
             for count in graph.get_node_type_names_counts_hashmap().values()
@@ -381,23 +265,20 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
 
         if most_common_count > least_common_count * 20:
             warnings.warn(
-                (
-                    "Please do be advised that this graph defines "
-                    "an unbalanced node-label prediction task, with the "
-                    "most common node type `{}` appearing {} times, "
-                    "while the least common one, `{}`, appears only `{}` times. "
-                    "Do take this into account when designing the node-label prediction model."
-                ).format(
-                    most_common_node_type_name, most_common_count,
-                    least_common_node_type_name, least_common_count
-                )
+                "Please do be advised that this graph defines "
+                "an unbalanced node-label prediction task, with the "
+                f"most common node type `{most_common_node_type_name}` appearing {most_common_count} times, "
+                f"while the least common one, `{least_common_node_type_name}`, appears only `{least_common_count}` times. "
+                "Do take this into account when designing the node-label prediction model."
             )
 
         super().fit(
             graph=graph,
             support=support,
             node_features=node_features,
-            edge_features=None,
+            node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
+            edge_features=edge_features,
         )
 
     @classmethod
@@ -422,8 +303,15 @@ class AbstractNodeLabelPredictionModel(AbstractClassifierModel):
     
     @classmethod
     def can_use_edge_type_features(cls) -> bool:
+        """Returns whether the model can use edge type features."""
+        return False
+    
+    @classmethod
+    def can_use_node_type_features(cls) -> bool:
+        """Returns whether the model can use node type features."""
         return False
     
     @classmethod
     def can_use_edge_features(cls) -> bool:
+        """Returns whether the model can use edge features."""
         return False

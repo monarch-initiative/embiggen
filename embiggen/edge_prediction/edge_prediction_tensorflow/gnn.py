@@ -38,6 +38,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         node_type_embedding_size: int = 50,
         use_edge_type_embedding: bool = False,
         edge_type_embedding_size: int = 50,
+        siamese_node_feature_module: bool = True,
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
         edge_type_feature_names: Optional[Union[str, List[str]]] = None,
@@ -147,6 +148,8 @@ class GNNEdgePrediction(GCNEdgePrediction):
             and this model will not work on graphs with a different edge vocabulary.
         edge_type_embedding_size: int = 50
             Dimension of the edge type embedding.
+        siamese_node_feature_module: bool = True
+            Whether to use a siamese module for the node features.
         node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
@@ -192,6 +195,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             node_type_embedding_size=node_type_embedding_size,
             use_edge_type_embedding=use_edge_type_embedding,
             edge_type_embedding_size=edge_type_embedding_size,
+            siamese_node_feature_module=siamese_node_feature_module,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             edge_type_feature_names=edge_type_feature_names,
@@ -222,6 +226,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
         removed = [
             "number_of_units_per_graph_convolution_layers",
             "handling_multi_graph",
+            "residual_convolutional_layers",
             "number_of_units_per_ffnn_body_layer",
             "number_of_units_per_ffnn_head_layer",
             "combiner",

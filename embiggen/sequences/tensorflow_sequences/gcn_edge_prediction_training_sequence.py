@@ -27,6 +27,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         edge_type_features: Optional[List[np.ndarray]] = None,
         edge_features: Optional[List[AbstractEdgeFeature]] = None,
         return_node_ids: bool = False,
+        return_edge_node_ids: bool = True,
         return_node_types: bool = False,
         return_edge_types: bool = False,
         use_edge_metrics: bool = False,
@@ -68,6 +69,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         return_node_ids: bool = False
             Whether to return the node IDs.
             These are needed when a node embedding layer is used.
+        return_edge_node_ids: bool = True
+            Whether to return the edge node IDs.
         return_node_types: bool = False,
             Whether to return the node type IDs.
             These are needed when a node type embedding layer is used.
@@ -117,6 +120,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             edge_type_features=edge_type_features,
             edge_features=edge_features,
             return_node_ids=return_node_ids,
+            return_edge_node_ids=return_edge_node_ids,
             return_node_types=return_node_types,
             return_edge_types=return_edge_types,
             use_edge_metrics=use_edge_metrics,
@@ -169,6 +173,10 @@ class GCNEdgePredictionTrainingSequence(Sequence):
     def has_edge_type_features(self) -> bool:
         """Return whether to return edge type features."""
         return self._prediction_sequence.has_edge_type_features()
+    
+    def return_edge_node_ids(self) -> bool:
+        """Return whether to return edge node IDs."""
+        return self._prediction_sequence.return_edge_node_ids()
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
         """Return batch corresponding to given index.
@@ -228,8 +236,8 @@ class GCNEdgePredictionTrainingSequence(Sequence):
                 [
                     value
                     for value in (
-                        sources,
-                        destinations,
+                        sources if self.return_edge_node_ids() else None,
+                        destinations if self.return_edge_node_ids() else None,
                         (edge_types if self.return_edge_types() else None),
                         edge_metrics,
                         *edge_features,

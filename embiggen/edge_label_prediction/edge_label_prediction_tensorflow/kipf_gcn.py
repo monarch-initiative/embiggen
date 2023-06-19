@@ -38,6 +38,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
         residual_convolutional_layers: bool = False,
+        siamese_node_feature_module: bool = True,
         handling_multi_graph: str = "warn",
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
@@ -145,6 +146,8 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Dimension of the node type embedding.
         residual_convolutional_layers: bool = False
             Whether to use residual connections between the convolutional layers.
+        siamese_node_feature_module: bool = True
+            Whether to use a siamese module to process the node features.
         handling_multi_graph: str = "warn"
             How to behave when dealing with multigraphs.
             Possible behaviours are:
@@ -190,6 +193,7 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
             residual_convolutional_layers=residual_convolutional_layers,
+            siamese_node_feature_module=siamese_node_feature_module,
             handling_multi_graph=handling_multi_graph,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,

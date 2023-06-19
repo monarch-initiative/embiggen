@@ -453,6 +453,12 @@ class GraphVisualizer:
         if self._subsampled_node_ids is None:
             return range(self._graph.get_number_of_nodes())
         return iter(self._subsampled_node_ids)
+    
+    def get_number_of_subsampled_nodes(self) -> int:
+        """Return the number of subsampled nodes."""
+        return sum([
+            1 for _ in self.iterate_subsampled_node_ids()
+        ])
 
     def _handle_notebook_display(
         self,
@@ -3443,6 +3449,171 @@ class GraphVisualizer:
 
         return self._handle_notebook_display(fig, axes, caption=caption)
 
+    def _plot_node_metric(
+        self,
+        metric: np.ndarray,
+        metric_name: str,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        use_log_scale: bool = True,
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: Union[str, bool] = "auto",
+        edge_scatter_kwargs: Optional[Dict] = None,
+        **kwargs: Dict
+    ):
+        """Plot node degrees heatmap.
+
+        Parameters
+        ------------------------------
+        metric: np.ndarray
+            Metric to plot.
+        metric_name: str,
+            Name of the metric to plot.
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: Union[str, bool] = "auto",
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        if self._node_decomposition is None:
+            raise ValueError(
+                "Node fitting must be executed before plot."
+                "Please do call the `visualizer.fit_nodes()` "
+                "method before plotting the nodes."
+            )
+
+        assert isinstance(metric_name, str)
+        assert len(metric_name) > 0
+        assert isinstance(metric, np.ndarray)
+
+        if metric.shape[0] == self._support.get_number_of_nodes():
+            metric = np.fromiter(
+                (
+                    self._support.get_node_degree_from_node_id(node_id)
+                    for node_id in self.iterate_subsampled_node_ids()
+                ),
+                dtype=metric.dtype
+            )
+
+        assert metric.shape[0] == self.get_number_of_subsampled_nodes()
+
+        if annotate_nodes == "auto":
+            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
+
+        if show_edges == "auto":
+            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
+
+        if show_edges:
+            figure, axes = self.plot_edge_segments(
+                figure,
+                axes,
+                scatter_kwargs=edge_scatter_kwargs,
+                **kwargs
+            )
+
+        if self._rotate:
+            return_caption = False
+
+        returned_values = self._wrapped_plot_scatter(
+            points=self._node_decomposition,
+            title=self._get_complete_title(metric_name),
+            colors=metric,
+            figure=figure,
+            axes=axes,
+            scatter_kwargs={
+                **({} if scatter_kwargs is None else scatter_kwargs),
+                "cmap": plt.cm.get_cmap('RdYlBu'),
+                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
+            },
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            show_title=show_title,
+            show_legend=show_legend,
+            return_caption=return_caption,
+            loc=loc,
+            return_collections=True,
+            **kwargs
+        )
+
+        if not self._rotate:
+            if return_caption:
+                figure, axes, scatter, color_caption = returned_values
+            else:
+                figure, axes, scatter = returned_values
+            color_bar = figure.colorbar(scatter[0], ax=axes)
+            color_bar.set_alpha(1)
+            color_bar.draw_all()
+
+        if annotate_nodes:
+            figure, axes = self.annotate_nodes(
+                figure=figure,
+                axes=axes,
+                points=self._node_decomposition,
+            )
+
+        if not return_caption or self._rotate:
+            if self._rotate:
+                return returned_values
+            return self._handle_notebook_display(figure, axes, scatter)
+
+        # TODO! Add caption node abount gaussian ball!
+        caption = f"<i>{metric_name} heatmap</i>.{color_caption}"
+
+        return self._handle_notebook_display(figure, axes, caption=caption)
+    
     def plot_node_degrees(
         self,
         figure: Optional[Figure] = None,
@@ -3514,88 +3685,400 @@ class GraphVisualizer:
         ------------------------------
         Figure and Axis of the plot.
         """
-        if self._node_decomposition is None:
-            raise ValueError(
-                "Node fitting must be executed before plot."
-                "Please do call the `visualizer.fit_nodes()` "
-                "method before plotting the nodes."
-            )
-
-        degrees = np.fromiter(
-            (
-                self._support.get_node_degree_from_node_id(node_id)
-                for node_id in self.iterate_subsampled_node_ids()
+        return self._plot_node_metric(
+            metric=np.fromiter(
+                (
+                    self._support.get_node_degree_from_node_id(node_id)
+                    for node_id in self.iterate_subsampled_node_ids()
+                ),
+                dtype=np.uint32
             ),
-            dtype=np.uint32
-        )
-
-        if annotate_nodes == "auto":
-            annotate_nodes = self._graph.get_number_of_nodes() < 50 and not self._rotate
-
-        if show_edges == "auto":
-            show_edges = self._graph.get_number_of_nodes() < 50 and not self._rotate
-
-        if show_edges:
-            figure, axes = self.plot_edge_segments(
-                figure,
-                axes,
-                scatter_kwargs=edge_scatter_kwargs,
-                **kwargs
-            )
-
-        if self._rotate:
-            return_caption = False
-
-        returned_values = self._wrapped_plot_scatter(
-            points=self._node_decomposition,
-            title=self._get_complete_title("Node degrees"),
-            colors=degrees,
+            metric_name="Node degrees",
             figure=figure,
             axes=axes,
-            scatter_kwargs={
-                **({} if scatter_kwargs is None else scatter_kwargs),
-                "cmap": plt.cm.get_cmap('RdYlBu'),
-                **({"norm": SymLogNorm(linthresh=10, linscale=1)} if use_log_scale else {})
-            },
+            scatter_kwargs=scatter_kwargs,
             train_indices=train_indices,
             test_indices=test_indices,
             train_marker=train_marker,
             test_marker=test_marker,
+            use_log_scale=use_log_scale,
             show_title=show_title,
             show_legend=show_legend,
             return_caption=return_caption,
             loc=loc,
-            return_collections=True,
+            annotate_nodes=annotate_nodes,
+            show_edges=show_edges,
+            edge_scatter_kwargs=edge_scatter_kwargs,
+            **kwargs
+        )
+    
+    def plot_node_triangles(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        use_log_scale: bool = True,
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: Union[str, bool] = "auto",
+        edge_scatter_kwargs: Optional[Dict] = None,
+        **kwargs: Dict
+    ):
+        """Plot Triangless heatmap.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: Union[str, bool] = "auto",
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_node_metric(
+            metric=self._support.get_number_of_triangles_per_node(),
+            metric_name="Triangless",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            use_log_scale=use_log_scale,
+            show_title=show_title,
+            show_legend=show_legend,
+            return_caption=return_caption,
+            loc=loc,
+            annotate_nodes=annotate_nodes,
+            show_edges=show_edges,
+            edge_scatter_kwargs=edge_scatter_kwargs,
+            **kwargs
+        )
+    
+    def plot_node_squares(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        use_log_scale: bool = True,
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: Union[str, bool] = "auto",
+        edge_scatter_kwargs: Optional[Dict] = None,
+        **kwargs: Dict
+    ):
+        """Plot node squares heatmap.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: Union[str, bool] = "auto",
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_node_metric(
+            metric=self._support.get_number_of_squares_per_node(),
+            metric_name="Node squares",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            use_log_scale=use_log_scale,
+            show_title=show_title,
+            show_legend=show_legend,
+            return_caption=return_caption,
+            loc=loc,
+            annotate_nodes=annotate_nodes,
+            show_edges=show_edges,
+            edge_scatter_kwargs=edge_scatter_kwargs,
             **kwargs
         )
 
-        if not self._rotate:
-            if return_caption:
-                figure, axes, scatter, color_caption = returned_values
-            else:
-                figure, axes, scatter = returned_values
-            color_bar = figure.colorbar(scatter[0], ax=axes)
-            color_bar.set_alpha(1)
-            color_bar.draw_all()
+    def plot_approximated_closeness_centrality(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        use_log_scale: bool = True,
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: Union[str, bool] = "auto",
+        edge_scatter_kwargs: Optional[Dict] = None,
+        **kwargs: Dict
+    ):
+        """Plot approximated closeness centrality heatmap.
 
-        if annotate_nodes:
-            figure, axes = self.annotate_nodes(
-                figure=figure,
-                axes=axes,
-                points=self._node_decomposition,
-            )
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: Union[str, bool] = "auto",
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
 
-        if not return_caption or self._rotate:
-            if self._rotate:
-                return returned_values
-            return self._handle_notebook_display(figure, axes, scatter)
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
 
-        # TODO! Add caption node abount gaussian ball!
-        caption = (
-            "<i>Node degrees heatmap</i>.{}".format(color_caption)
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_node_metric(
+            metric=self._support.get_approximated_closeness_centrality(),
+            metric_name="Approximated closeness centrality",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            use_log_scale=use_log_scale,
+            show_title=show_title,
+            show_legend=show_legend,
+            return_caption=return_caption,
+            loc=loc,
+            annotate_nodes=annotate_nodes,
+            show_edges=show_edges,
+            edge_scatter_kwargs=edge_scatter_kwargs,
+            **kwargs
         )
+    
+    def plot_approximated_harmonic_centrality(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Axes] = None,
+        scatter_kwargs: Optional[Dict] = None,
+        train_indices: Optional[np.ndarray] = None,
+        test_indices: Optional[np.ndarray] = None,
+        train_marker: str = "o",
+        test_marker: str = "X",
+        use_log_scale: bool = True,
+        show_title: bool = True,
+        show_legend: bool = True,
+        return_caption: bool = True,
+        loc: str = "best",
+        annotate_nodes: Union[str, bool] = "auto",
+        show_edges: Union[str, bool] = "auto",
+        edge_scatter_kwargs: Optional[Dict] = None,
+        **kwargs: Dict
+    ):
+        """Plot approximated harmonic centrality heatmap.
 
-        return self._handle_notebook_display(figure, axes, caption=caption)
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        scatter_kwargs: Optional[Dict] = None,
+            Kwargs to pass to the scatter plot call.
+        train_indices: Optional[np.ndarray] = None,
+            Indices to draw using the training marker.
+            If None, all points are drawn using the training marker.
+        test_indices: Optional[np.ndarray] = None,
+            Indices to draw using the test marker.
+            If None, while providing the train indices, 
+        train_marker: str = "o",
+            The marker to use to draw the training points.
+        test_marker: str = "X",
+            The marker to use to draw the test points.
+        use_log_scale: bool = True,
+            Whether to use log scale.
+        show_title: bool = True,
+            Whether to show the figure title.
+        show_legend: bool = True,
+            Whether to show the legend.
+        return_caption: bool = True,
+            Whether to return a caption.
+        loc: str = 'best'
+            Position for the legend.
+        show_edges: Union[str, bool] = "auto",
+            Whether to show edges between the different nodes
+            shown in the scatter plot.
+            It is enabled by default with `auto` when the graph
+            has less than 50 nodes.
+        edge_scatter_kwargs: Optional[Dict] = None,
+            Arguments to provide to the scatter plot of the edges
+            if they were required.
+        **kwargs: Dict,
+            Additional kwargs for the subplots.
+
+        Raises
+        ------------------------------
+        ValueError,
+            If edge fitting was not yet executed.
+
+        Returns
+        ------------------------------
+        Figure and Axis of the plot.
+        """
+        return self._plot_node_metric(
+            metric=self._support.get_approximated_harmonic_centrality(),
+            metric_name="Approximated harmonic centrality",
+            figure=figure,
+            axes=axes,
+            scatter_kwargs=scatter_kwargs,
+            train_indices=train_indices,
+            test_indices=test_indices,
+            train_marker=train_marker,
+            test_marker=test_marker,
+            use_log_scale=use_log_scale,
+            show_title=show_title,
+            show_legend=show_legend,
+            return_caption=return_caption,
+            loc=loc,
+            annotate_nodes=annotate_nodes,
+            show_edges=show_edges,
+            edge_scatter_kwargs=edge_scatter_kwargs,
+            **kwargs
+        )
 
     def plot_edge_types(
         self,
@@ -4225,6 +4708,81 @@ class GraphVisualizer:
             engine=engine
         )
 
+    def _plot_node_metric_distribution(
+        self,
+        metric: np.ndarray,
+        metric_name: str,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        show_title: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph node metric distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        assert isinstance(metric, np.ndarray), (
+            "The metric must be a numpy array! "
+            f"Got {type(metric)} instead."
+        )
+        assert metric.ndim == 1, (
+            "The metric must be a 1D array! "
+            f"Got {metric.ndim} dimensions instead."
+        )
+        assert isinstance(metric_name, str), (
+            "The metric name must be a string! "
+            f"Got {type(metric_name)} instead."
+        )
+        assert len(metric_name) > 0
+
+        if axes is None:
+            figure, axes = plt.subplots(figsize=(5, 5))
+            figure.patch.set_facecolor("white")
+        number_of_buckets = min(
+            100,
+            metric.size // 10
+        )
+        axes.hist(
+            metric,
+            bins=number_of_buckets,
+            log=True
+        )
+        axes.set_ylabel("Count (log scale)")
+        axes.set_xlabel(metric_name)
+        if self._show_graph_name:
+            title = f"{metric_name} distribution of graph {self._graph_name}"
+        else:
+            title = "{metric_name} distribution"
+        if show_title:
+            axes.set_title(title)
+        if apply_tight_layout:
+            figure.tight_layout()
+
+        if not return_caption:
+            return self._handle_notebook_display(figure, axes)
+
+        caption = (
+            f"<i>{metric_name} distribution.</i> {metric_name} is on the "
+            "horizontal axis and node counts are on the vertical axis on a logarithmic scale."
+        )
+
+        return self._handle_notebook_display(figure, axes, caption=caption)
+    
     def plot_node_degree_distribution(
         self,
         figure: Optional[Figure] = None,
@@ -4251,38 +4809,159 @@ class GraphVisualizer:
         return_caption: bool = True,
             Whether to return a caption for the plot.
         """
-        if axes is None:
-            figure, axes = plt.subplots(figsize=(5, 5))
-            figure.patch.set_facecolor("white")
-        number_of_buckets = min(
-            100,
-            self._graph.get_number_of_nodes() // 10
+        return self._plot_node_metric_distribution(
+            metric = self._support.get_non_zero_subgraph_node_degrees(self._graph),
+            metric_name = "Node degree",
+            figure = figure,
+            axes = axes,
+            apply_tight_layout = apply_tight_layout,
+            show_title = show_title,
+            return_caption = return_caption,
         )
-        axes.hist(
-            self._support.get_non_zero_subgraph_node_degrees(self._graph),
-            bins=number_of_buckets,
-            log=True
+    
+    def plot_triangle_distribution(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        show_title: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph triangle distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_node_metric_distribution(
+            metric = self._support.get_number_of_triangles_per_node(),
+            metric_name = "Triangles",
+            figure = figure,
+            axes = axes,
+            apply_tight_layout = apply_tight_layout,
+            show_title = show_title,
+            return_caption = return_caption,
         )
-        axes.set_ylabel("Count (log scale)")
-        axes.set_xlabel("Degree")
-        if self._show_graph_name:
-            title = f"Degree distribution of graph {self._graph_name}"
-        else:
-            title = "Degree distribution"
-        if show_title:
-            axes.set_title(title)
-        if apply_tight_layout:
-            figure.tight_layout()
+    
+    def plot_square_distribution(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        show_title: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph square distribution.
 
-        if not return_caption:
-            return self._handle_notebook_display(figure, axes)
-
-        caption = (
-            "<i>Node degree distribution.</i> Node degrees are on the "
-            "horizontal axis and node counts are on the vertical axis on a logarithmic scale."
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_node_metric_distribution(
+            metric = self._support.get_number_of_squares_per_node(),
+            metric_name = "Squares",
+            figure = figure,
+            axes = axes,
+            apply_tight_layout = apply_tight_layout,
+            show_title = show_title,
+            return_caption = return_caption,
         )
+    
+    def plot_approximated_harmonic_centrality_distribution(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        show_title: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph Approximated Harmonic Centrality distribution.
 
-        return self._handle_notebook_display(figure, axes, caption=caption)
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_node_metric_distribution(
+            metric = self._support.get_approximated_harmonic_centrality(),
+            metric_name = "Approximated Harmonic Centrality",
+            figure = figure,
+            axes = axes,
+            apply_tight_layout = apply_tight_layout,
+            show_title = show_title,
+            return_caption = return_caption,
+        )
+    
+    def plot_approximated_closeness_centrality_distribution(
+        self,
+        figure: Optional[Figure] = None,
+        axes: Optional[Figure] = None,
+        apply_tight_layout: bool = True,
+        show_title: bool = True,
+        return_caption: bool = True,
+    ) -> Tuple[Figure, Axes]:
+        """Plot the given graph Approximated Closeness Centrality distribution.
+
+        Parameters
+        ------------------------------
+        figure: Optional[Figure] = None,
+            Figure to use to plot. If None, a new one is created using the
+            provided kwargs.
+        axes: Optional[Axes] = None,
+            Axes to use to plot. If None, a new one is created using the
+            provided kwargs.
+        apply_tight_layout: bool = True,
+            Whether to apply the tight layout on the matplotlib
+            Figure object.
+        show_title: bool = True
+            Wether to show the figure title.
+        return_caption: bool = True,
+            Whether to return a caption for the plot.
+        """
+        return self._plot_node_metric_distribution(
+            metric = self._support.get_approximated_closeness_centrality(),
+            metric_name = "Approximated Closeness Centrality",
+            figure = figure,
+            axes = axes,
+            apply_tight_layout = apply_tight_layout,
+            show_title = show_title,
+            return_caption = return_caption,
+        )
 
     def plot_edge_weight_distribution(
         self,
@@ -4530,10 +5209,18 @@ class GraphVisualizer:
         if not self._currently_plotting_edge_embedding:
             node_scatter_plot_methods_to_call.append(
                 self.plot_node_degrees,
+                self.plot_node_triangles,
+                *((self.plot_node_squares, ) if self._support.get_number_of_edges() < 1_000_000 else ()),
+                self.plot_approximated_closeness_centrality,
+                self.plot_approximated_harmonic_centrality
             )
 
         distribution_plot_methods_to_call.append(
             self.plot_node_degree_distribution,
+            self.plot_triangle_distribution,
+            *((self.plot_square_distribution, ) if self._support.get_number_of_edges() < 1_000_000 else ()),
+            self.plot_approximated_closeness_centrality_distribution,
+            self.plot_approximated_harmonic_centrality_distribution
         )
 
         def plot_distance_wrapper(plot_distance):

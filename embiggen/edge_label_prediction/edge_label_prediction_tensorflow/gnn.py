@@ -33,6 +33,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         node_embedding_size: int = 50,
         use_node_type_embedding: bool = False,
         node_type_embedding_size: int = 50,
+        siamese_node_feature_module: bool = True,
         node_feature_names: Optional[Union[str, List[str]]] = None,
         node_type_feature_names: Optional[Union[str, List[str]]] = None,
         verbose: bool = False
@@ -139,6 +140,8 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             and this model will not work on graphs with a different node vocabulary.
         node_type_embedding_size: int = 50
             Dimension of the node type embedding.
+        siamese_node_feature_module: bool = True
+            Whether to use a siamese module for the node features.
         node_feature_names: Optional[Union[str, List[str]]] = None
             Names of the node features.
             This is used as the layer names.
@@ -176,6 +179,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             node_embedding_size=node_embedding_size,
             use_node_type_embedding=use_node_type_embedding,
             node_type_embedding_size=node_type_embedding_size,
+            siamese_node_feature_module=siamese_node_feature_module,
             node_feature_names=node_feature_names,
             node_type_feature_names=node_type_feature_names,
             verbose=verbose,
@@ -204,6 +208,7 @@ class GNNEdgeLabelPrediction(GCNEdgeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "number_of_units_per_graph_convolution_layers",
+            "residual_convolutional_layers",
             "handling_multi_graph",
             "number_of_units_per_ffnn_body_layer",
             "number_of_units_per_ffnn_head_layer",

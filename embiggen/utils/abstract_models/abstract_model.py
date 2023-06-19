@@ -415,6 +415,53 @@ class AbstractModel(Hashable):
                 f"It was not implemented in the class {self.__name__}."
             )
         )
+    
+    @classmethod
+    def requires_node_type_features(cls) -> bool:
+        """Returns whether the model requires edge types."""
+        try:
+            if not cls.can_use_node_type_features():
+                return False
+        except (NotImplementedError, RecursionError):
+            pass
+        raise NotImplementedError(
+            (
+                "The `requires_node_type_features` method must be implemented "
+                "in the child classes of abstract model. "
+                f"It was not implemented in the class {cls.__name__}."
+            )
+        )
+
+    @classmethod
+    def can_use_node_type_features(cls) -> bool:
+        """Returns whether the model can optionally use edge types."""
+        try:
+            if cls.requires_node_type_features():
+                return True
+        except (NotImplementedError, RecursionError):
+            pass
+        raise NotImplementedError(
+            (
+                "The `can_use_node_type_features` method must be implemented "
+                "in the child classes of abstract model. "
+                f"It was not implemented in the class {cls.__name__}."
+            )
+        )
+
+    def is_using_node_type_features(self) -> bool:
+        """Returns whether the model is parametrized to use edge types."""
+        try:
+            if self.requires_node_type_features():
+                return True
+        except (NotImplementedError, RecursionError):
+            pass
+        raise NotImplementedError(
+            (
+                "The `is_using_node_type_features` method must be implemented "
+                "in the child classes of abstract model. "
+                f"It was not implemented in the class {self.__name__}."
+            )
+        )
 
     @classmethod
     def requires_edge_features(cls) -> bool:

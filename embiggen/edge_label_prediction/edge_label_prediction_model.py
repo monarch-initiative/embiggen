@@ -226,13 +226,6 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
         edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
             The edge features to use.
         """
-        if edge_type_features is not None:
-            raise NotImplementedError(
-                "Currently we do not support edge type features "
-                f"in the {self.model_name()} from the {self.library_name()} "
-                f"for the task {self.task_name()}."
-            )
-
         non_zero_edge_types = sum([
             1
             for count in graph.get_edge_type_names_counts_hashmap().values()
@@ -300,8 +293,20 @@ class AbstractEdgeLabelPredictionModel(AbstractClassifierModel):
     
     @classmethod
     def can_use_edge_type_features(cls) -> bool:
+        """Returns whether the model can use edge type features."""
         return False
     
     @classmethod
     def can_use_edge_features(cls) -> bool:
+        """Returns whether the model can use edge features."""
+        return True
+    
+    @classmethod
+    def requires_edge_features(cls) -> bool:
+        """Returns whether the model requires edge features."""
         return False
+    
+    @classmethod
+    def can_use_node_type_features(cls) -> bool:
+        """Returns whether the model can use node type features."""
+        return True

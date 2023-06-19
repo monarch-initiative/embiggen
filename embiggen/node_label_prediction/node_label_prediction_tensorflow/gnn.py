@@ -119,6 +119,7 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "number_of_units_per_graph_convolution_layers",
+            "residual_convolutional_layers",
             "handling_multi_graph",
             "number_of_units_per_head_layer"
         ]
@@ -135,6 +136,7 @@ class GNNNodeLabelPrediction(GCNNodeLabelPrediction):
         """Returns parameters for smoke test."""
         removed = [
             "number_of_units_per_graph_convolution_layers",
+            "residual_convolutional_layers",
             "handling_multi_graph",
             "number_of_units_per_head_layer",
             "combiner",

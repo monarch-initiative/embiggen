@@ -22,6 +22,7 @@ class GCNEdgePredictionSequence(Sequence):
         return_node_types: bool = False,
         return_edge_types: bool = False,
         return_node_ids: bool = False,
+        return_edge_node_ids: bool = True,
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
@@ -47,6 +48,9 @@ class GCNEdgePredictionSequence(Sequence):
         return_node_ids: bool = False
             Whether to return the node IDs.
             These are needed when an embedding layer is used.
+        return_edge_node_ids: bool = True
+            Whether to return the edge node IDs.
+            These are needed when an edge feature extractor is used.
         node_features: List[np.ndarray]
             The node features to be used.
         node_type_features: Optional[List[np.ndarray]]
@@ -71,26 +75,6 @@ class GCNEdgePredictionSequence(Sequence):
                 f"An empty instance of graph {graph.get_name()} was provided!"
             )
         
-        if (
-            return_node_types or
-            node_type_features is not None
-        ) and graph.has_unknown_node_types():
-            raise ValueError(
-                f"The provided graph {graph.get_name()} "
-                "contains unknown node types but node types "
-                "have been requested for the sequence."
-            )
-        
-        if (
-            return_edge_types or
-            edge_type_features is not None
-        ) and graph.has_unknown_edge_types():
-            raise ValueError(
-                f"The provided graph {graph.get_name()} "
-                "contains unknown edge types but edge types "
-                "have been requested for the sequence."
-            )
-
         if edge_features is None:
             edge_features = []
 
@@ -105,6 +89,26 @@ class GCNEdgePredictionSequence(Sequence):
 
         if support is None:
             support = graph
+
+        if (
+            return_node_types or
+            len(node_type_features) > 0
+        ) and graph.has_unknown_node_types():
+            raise ValueError(
+                f"The provided graph {graph.get_name()} "
+                "contains unknown node types but node types "
+                "have been requested for the sequence."
+            )
+        
+        if (
+            return_edge_types or
+            len(edge_type_features) > 0
+        ) and graph.has_unknown_edge_types():
+            raise ValueError(
+                f"The provided graph {graph.get_name()} "
+                "contains unknown edge types but edge types "
+                "have been requested for the sequence."
+            )
 
         # We verify that the provided edge features are valid
         for edge_feature in edge_features:
@@ -139,8 +143,9 @@ class GCNEdgePredictionSequence(Sequence):
         # so that they match exactly the shape expected by the
         # embedding layer of the model.
         self._node_ids = graph.get_node_ids().reshape(-1, 1) if return_node_ids and self.has_kernels() else None
+        self._return_edge_node_ids = return_edge_node_ids
 
-        if return_node_types or node_type_features is not None:
+        if return_node_types or len(node_type_features) > 0:
             if graph.has_multilabel_node_types():
                 maximal_multilabel_number = graph.get_maximum_multilabel_count()
                 node_types = np.zeros((graph.get_number_of_nodes(), maximal_multilabel_number), dtype=np.int32)
@@ -158,7 +163,7 @@ class GCNEdgePredictionSequence(Sequence):
                 "open an issue at the Embiggen GitHub repository."
             )
 
-        if node_type_features is not None:
+        if len(node_type_features) > 0:
             if graph.has_multilabel_node_types():
                 self._node_type_features = []
                 minus_node_types = node_types - 1
@@ -182,7 +187,7 @@ class GCNEdgePredictionSequence(Sequence):
         else:
             self._node_type_features = []
 
-        self._edge_type_features = [] if edge_type_features is None else edge_type_features
+        self._edge_type_features = edge_type_features
         self._return_edge_types = return_edge_types
 
         self._sequence = EdgePredictionSequence(
@@ -204,7 +209,7 @@ class GCNEdgePredictionSequence(Sequence):
 
         self._node_types = node_types if return_node_types else None
 
-        self._edge_features = [] if edge_features is None else edge_features
+        self._edge_features = edge_features
 
         self._current_index = 0
         super().__init__(
@@ -239,6 +244,10 @@ class GCNEdgePredictionSequence(Sequence):
     def has_kernels(self) -> bool:
         """Return whether we have kernels."""
         return len(self._kernels) > 0
+    
+    def return_edge_node_ids(self) -> bool:
+        """Return whether to return edge node IDs."""
+        return self._return_edge_node_ids
     
     def get_edge_type_features(self, edge_type_ids: np.ndarray) -> Tuple[np.ndarray]:
         """Return edge type features."""
@@ -402,6 +411,8 @@ class GCNEdgePredictionSequence(Sequence):
         sources = values[0]
         destinations = values[1]
 
+        current_batch_size = sources.shape[0]
+
         edge_features: Tuple[np.ndarray] = self.get_edge_features_from_edge_node_ids(
             sources,
             destinations
@@ -421,6 +432,11 @@ class GCNEdgePredictionSequence(Sequence):
         values[0] = values[0].reshape(-1, 1)
         values[1] = values[1].reshape(-1, 1)
 
+        # We remove the edge node IDs if they are not requested.
+        if not self._return_edge_node_ids:
+            values[0] = None
+            values[1] = None
+
         # If we have to return the edge types, we need to reshape
         # them to be of shape (batch_size, 1) so that they can be
         # used as inputs for the embedding layer.
@@ -429,7 +445,7 @@ class GCNEdgePredictionSequence(Sequence):
 
         # If necessary, we add the padding as the last batch may be
         # smaller than the required size (number of nodes).
-        delta = self.batch_size - values[0].shape[0]
+        delta = self.batch_size - current_batch_size
         if delta > 0 and self.has_kernels():
             values = [
                 np.pad(value, (0, delta) if len(value.shape)

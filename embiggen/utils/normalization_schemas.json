@@ -455,5 +455,12 @@
     ],
     "num_parallel_tree": "int",
     "combiner": "str",
-    "number_of_batches_per_epoch": "int"
+    "number_of_batches_per_epoch": "int",
+    "residual_convolutional_layers": "bool",
+    "node_feature_names": "pass",
+    "node_type_feature_names": "pass",
+    "siamese_node_feature_module": "bool",
+    "use_edge_type_embedding": "bool",
+    "edge_type_embedding_size": "int",
+    "edge_type_feature_names": "pass"
 }
