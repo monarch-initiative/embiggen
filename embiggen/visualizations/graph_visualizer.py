@@ -3540,7 +3540,7 @@ class GraphVisualizer:
         if metric.shape[0] == self._support.get_number_of_nodes():
             metric = np.fromiter(
                 (
-                    self._support.get_node_degree_from_node_id(node_id)
+                    metric[node_id]
                     for node_id in self.iterate_subsampled_node_ids()
                 ),
                 dtype=metric.dtype
@@ -4767,7 +4767,7 @@ class GraphVisualizer:
         if self._show_graph_name:
             title = f"{metric_name} distribution of graph {self._graph_name}"
         else:
-            title = "{metric_name} distribution"
+            title = f"{metric_name} distribution"
         if show_title:
             axes.set_title(title)
         if apply_tight_layout:
