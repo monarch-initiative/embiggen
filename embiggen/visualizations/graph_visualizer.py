@@ -1127,10 +1127,7 @@ class GraphVisualizer:
             Whether to add to the title the edge embedding.
         """
         if self._show_graph_name:
-            title = "{} - {}".format(
-                title,
-                self._graph_name,
-            )
+            title = f"{title} - {self._graph_name}"
 
         if (
             show_edge_embedding and
@@ -1138,16 +1135,14 @@ class GraphVisualizer:
             self._embedding_method_name is not None and
             self._embedding_method_name != "auto"
         ):
-            title = "{} - {}".format(
-                title,
-                self._embedding_method_name,
-            )
+            title = f"{title} - {self._embedding_method_name}"
 
-        if not self._currently_plotting_edge_embedding and self._edge_embedding_methods is not None:
-            title = "{} - {}".format(
-                title,
-                self._edge_embedding_methods,
-            )
+        if (
+            show_edge_embedding and
+            not self._currently_plotting_edge_embedding and
+            self._edge_embedding_methods is not None
+        ):
+            title = f"{title} - {self._edge_embedding_methods}"
 
         return sanitize_ml_labels(title)
 
@@ -3971,7 +3966,7 @@ class GraphVisualizer:
         """
         return self._plot_node_metric(
             metric=self._support.get_approximated_closeness_centrality(),
-            metric_name="Approximated closeness centrality",
+            metric_name="Approx closeness centrality",
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -4063,7 +4058,7 @@ class GraphVisualizer:
         """
         return self._plot_node_metric(
             metric=self._support.get_approximated_harmonic_centrality(),
-            metric_name="Approximated harmonic centrality",
+            metric_name="Approx harmonic centrality",
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -4921,7 +4916,7 @@ class GraphVisualizer:
         """
         return self._plot_node_metric_distribution(
             metric = self._support.get_approximated_harmonic_centrality(),
-            metric_name = "Approximated Harmonic Centrality",
+            metric_name = "Approx Harmonic Centrality",
             figure = figure,
             axes = axes,
             apply_tight_layout = apply_tight_layout,
@@ -4957,7 +4952,7 @@ class GraphVisualizer:
         """
         return self._plot_node_metric_distribution(
             metric = self._support.get_approximated_closeness_centrality(),
-            metric_name = "Approximated Closeness Centrality",
+            metric_name = "Approx Closeness Centrality",
             figure = figure,
             axes = axes,
             apply_tight_layout = apply_tight_layout,
