@@ -3565,10 +3565,12 @@ class GraphVisualizer:
         if self._rotate:
             return_caption = False
 
+        mask = metric > 0
+
         returned_values = self._wrapped_plot_scatter(
-            points=self._node_decomposition,
+            points=self._node_decomposition[mask],
             title=self._get_complete_title(metric_name),
-            colors=metric,
+            colors=metric[mask],
             figure=figure,
             axes=axes,
             scatter_kwargs={
