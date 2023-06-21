@@ -1545,7 +1545,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"An exception was raised while calling the `._predict` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
-            ) from e
+            ) from exception
 
         return predictions
 
@@ -1647,12 +1647,12 @@ class AbstractClassifierModel(AbstractModel):
                     allow_automatic_feature=False,
                 ),
             )
-        except Exception as e:
+        except Exception as exception:
             raise RuntimeError(
                 f"An exception was raised while calling the `._predict_proba` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
-            ) from e
+            ) from exception
 
         if (
             not self.is_binary_prediction_task()
@@ -1972,14 +1972,14 @@ class AbstractClassifierModel(AbstractModel):
                     **validation_kwargs,
                 )
             ).reset_index(drop=True)
-        except RuntimeError as e:
-            raise e
-        except Exception as e:
+        except RuntimeError as exception:
+            raise exception
+        except Exception as exception:
             raise RuntimeError(
                 f"An exception was raised while calling the `._evaluate` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}. "
-            ) from e
+            ) from exception
 
         time_required_for_evaluation = time.time() - start_evaluation
 
