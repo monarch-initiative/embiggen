@@ -957,12 +957,16 @@ class GraphVisualizer:
                     self._graph.get_number_of_nodes(),
                     size=self._number_of_subsampled_nodes,
                 )
-            node_transformer = NodeTransformer(aligned_mapping=True)
-            node_transformer.fit(
-                node_feature=node_features,
-                node_type_feature=node_type_features,
-            )
-            node_embedding = node_transformer.transform(self._subsampled_node_ids)
+            subsampled_node_ids = self._subsampled_node_ids
+        else:
+            subsampled_node_ids = np.arange(self._graph.get_number_of_nodes())
+
+        node_transformer = NodeTransformer(aligned_mapping=True)
+        node_transformer.fit(
+            node_feature=node_features,
+            node_type_feature=node_type_features,
+        )
+        node_embedding = node_transformer.transform(subsampled_node_ids)
 
         self._node_decomposition = self.decompose(node_embedding)
 
