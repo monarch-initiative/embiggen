@@ -5408,7 +5408,7 @@ class GraphVisualizer:
             ]
         )
 
-        if not self._currently_plotting_edge_embedding:
+        if len(node_features) > 0:
             distribution_plot_methods_to_call.extend(
                 [
                     plot_distance_wrapper(
