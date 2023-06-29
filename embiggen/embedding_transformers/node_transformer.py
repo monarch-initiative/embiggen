@@ -56,18 +56,37 @@ class NodeTransformer:
             (node_type_feature, "node type"),
             (node_feature, "node"),
         ):
-            if features is None:
-                continue
-            for nf in features:
-                if not isinstance(nf, (pd.DataFrame, np.ndarray)):
+            for feature in features:
+                if not isinstance(feature, (pd.DataFrame, np.ndarray)):
                     raise ValueError(
                         (
                             f"One of the provided {feature_name} features is not "
                             "neither a pandas DataFrame nor a numpy array, but "
-                            f"of type {type(nf)}. It is not clear "
+                            f"of type {type(feature)}. It is not clear "
                             "what to do with this feature."
                         )
                     )
+                # We check whether the provided features contain any NaN
+                if isinstance(feature, pd.DataFrame) and feature.isna().any().any():
+                    raise ValueError(
+                        (
+                            f"One of the provided {feature_name} features contains NaNs. "
+                            "This is not supported. The DataFrame has shape "
+                            f"{feature.shape} and the first 5 rows are:\n"
+                            f"{feature.head(5)}"
+                        )
+                    )
+                
+                if isinstance(feature, np.ndarray) and np.isnan(feature).any():
+                    raise ValueError(
+                        (
+                            f"One of the provided {feature_name} features contains NaNs. "
+                            "This is not supported. The array has shape "
+                            f"{feature.shape} and the first 5 rows are:\n"
+                            f"{feature[:5]}"
+                        )
+                    )
+                
 
             # We check if, while the parameters for alignment
             # has not been provided, numpy arrays were provided.

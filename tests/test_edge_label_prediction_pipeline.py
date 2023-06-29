@@ -1,17 +1,25 @@
 """Unit test class for Node-label prediction pipeline."""
-from tqdm.auto import tqdm
-from unittest import TestCase
-import pytest
 import os
+from unittest import TestCase
+
 import numpy as np
 import pandas as pd
+import pytest
+from ensmallen.datasets.kgobo import CIO, HP
+from tqdm.auto import tqdm
+
+from embiggen import (get_available_models_for_edge_embedding,
+                      get_available_models_for_edge_label_prediction,
+                      get_available_models_for_node_embedding)
 from embiggen.edge_label_prediction import edge_label_prediction_evaluation
-from embiggen import get_available_models_for_edge_label_prediction, get_available_models_for_node_embedding, get_available_models_for_edge_embedding
-from embiggen.edge_label_prediction.edge_label_prediction_model import AbstractEdgeLabelPredictionModel
-from embiggen.utils import AbstractEmbeddingModel
-from ensmallen.datasets.kgobo import HP, CIO
+from embiggen.edge_label_prediction.edge_label_prediction_model import \
+    AbstractEdgeLabelPredictionModel
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 from embiggen.feature_preprocessors import GraphConvolution
+from embiggen.utils import AbstractEmbeddingModel
+from glob import glob
+
+from .cached_tests import cache_or_store
 
 
 class TestEvaluateEdgeLabelPrediction(TestCase):
@@ -24,6 +32,14 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
 
     def test_evaluate_embedding_for_edge_label_prediction(self):
         """Test graph visualization."""
+        if cache_or_store([
+            "./tests/test_edge_label_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            *glob("./embiggen/edge_label_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_label_prediction()
         feature = DegreeSPINE(embedding_size=5)
         red = self.graph.set_all_edge_types("red")
@@ -50,6 +66,14 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                          self._number_of_holdouts*2*2*df.shape[0])
 
     def test_edge_label_prediction_models_apis(self):
+        if cache_or_store([
+            "./tests/test_edge_label_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            *glob("./embiggen/edge_label_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_label_prediction()
         graph = self.graph
         red = graph.set_all_edge_types("red")
@@ -130,6 +154,14 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     )
 
     def test_evaluate_edge_label_prediction_with_node_types_features(self):
+        if cache_or_store([
+            "./tests/test_edge_label_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            *glob("./embiggen/edge_label_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_label_prediction()
         graph = self.graph
         holdouts = edge_label_prediction_evaluation(
@@ -198,6 +230,15 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
 
     def test_all_node_embedding_models_as_feature(self):
         """Test graph visualization."""
+        if cache_or_store([
+            "./tests/test_edge_label_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            *glob("./embiggen/embedders/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_node_embedding()
         bar = tqdm(
             df.iterrows(),
@@ -213,7 +254,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
 
             bar.set_description(
                 f"Testing {row.model_name} from library {row.library_name}")
-
+            
             edge_label_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
@@ -232,6 +273,15 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
 
     def test_all_edge_embedding_models_as_feature(self):
         """Test graph visualization."""
+        if cache_or_store([
+            "./tests/test_edge_label_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            *glob("./embiggen/embedders/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_label_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_embedding()
         bar = tqdm(
             df.iterrows(),

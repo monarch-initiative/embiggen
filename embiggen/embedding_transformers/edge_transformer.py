@@ -626,7 +626,7 @@ class EdgeTransformer:
         edge_embeddings: List[np.ndarray] = []
         if self._transformer.is_fit():
             for method in self._methods:
-                edge_embeddings.append(method(
+                edge_embedding = method(
                     self._transformer.transform(
                         sources,
                         node_types=source_node_types
@@ -635,7 +635,13 @@ class EdgeTransformer:
                         destinations,
                         node_types=destination_node_types
                     )
-                ))
+                )
+                assert not np.isnan(edge_embedding).any(), (
+                    "The provided edge embedding should not have NaN values, but we got "
+                    f"a numpy array with shape {edge_embedding.shape} and NaN values. "
+                    f"The object was obtained using the method {method}."
+                )
+                edge_embeddings.append(edge_embedding)
 
         if edge_features is None:
             edge_features = []
@@ -671,10 +677,10 @@ class EdgeTransformer:
             )
 
         expected_shape: Optional[int] = None
-        for features in (
-            edge_features,
-            edge_type_features,
-            edge_embeddings
+        for features, feature_kind in (
+            (edge_features, "edge features"),
+            (edge_type_features, "edge type features"),
+            (edge_embeddings, "edge embeddings")
         ):
             if len(features) > 0 and expected_shape is None:
                 # We imprint the expected shape on the
@@ -682,6 +688,11 @@ class EdgeTransformer:
                 expected_shape = features[0].shape[0]
             # We check that all the features have the same first dimension.
             for feature in features:
+                assert not np.isnan(feature).any(), (
+                    "The provided edge features should not have NaN values, but we got "
+                    f"a numpy array with shape {feature.shape} and NaN values. "
+                    f"It is a {feature_kind}."
+                )
                 if feature.shape[0] != expected_shape:
                     raise ValueError(
                         "The provided edge features should have a sample for each of the edges "
@@ -703,7 +714,5 @@ class EdgeTransformer:
                 for edge_type_feature in edge_type_features
             ]
         ])
-
-        assert not np.isnan(result).any()
 
         return result

@@ -1,19 +1,25 @@
 """This module provides the Graph Convolution feature preprocessor class."""
-from typing import Any, Dict, Union, List
-from embiggen.utils.abstract_models.abstract_feature_preprocessor import AbstractFeaturePreprocessor
-from ensmallen import models, Graph
 import warnings
+from typing import Any, Dict, List, Union
+
 import numpy as np
 import pandas as pd
+from ensmallen import Graph, models
+
+from embiggen.utils.abstract_models.abstract_feature_preprocessor import \
+    AbstractFeaturePreprocessor
+from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
 
 class GraphConvolution(AbstractFeaturePreprocessor):
+    """Graph Convolution feature preprocessor class."""
 
     def __init__(
         self,
         number_of_convolutions: int = 2,
         concatenate_features: bool = False,
         transpose: bool = False,
+        normalize_rows: bool = False,
         dtype: str = "f32",
         path: Union[str, List[str]] = None,
     ):
@@ -30,6 +36,9 @@ class GraphConvolution(AbstractFeaturePreprocessor):
         transpose: bool = False
             Whether to transpose the features before convolving them.
             By default, `false`.
+        normalize_rows: bool = True
+            Whether to normalize the rows of the features before convolving them.
+            By default, `true`.
         dtype: str = "f32"
             The data type to use for the convolved features.
             The supported values are `f16`, `f32` and `f64`.
@@ -41,6 +50,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
         self._kwargs = dict(
             number_of_convolutions=number_of_convolutions,
             concatenate_features=concatenate_features,
+            normalize_rows=normalize_rows,
             dtype=dtype,
         )
         self._transpose = transpose
@@ -51,7 +61,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
         super().__init__()
 
     @classmethod
-    def model_name(self) -> str:
+    def model_name(cls) -> str:
         """Return the name of the feature preprocessor."""
         return "Graph Convolution"
 
@@ -86,7 +96,7 @@ class GraphConvolution(AbstractFeaturePreprocessor):
         self,
         support: Graph,
         node_features: List[Union[pd.DataFrame, np.ndarray]],
-    ) -> Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]:
+    ) -> EmbeddingResult:
         """Transform the given node features.
 
         Parameters
@@ -146,21 +156,26 @@ class GraphConvolution(AbstractFeaturePreprocessor):
                 )
 
         if self._path is None:
-            return [
+            transposed_features = [
                 self._graph_convolution.transform(
                     support=support,
                     node_features=node_feature,
                 )
                 for node_feature in node_features
             ]
-        return [
-            self._graph_convolution.transform(
-                support=support,
-                node_feature=node_feature,
-                path=path
-            )
-            for node_feature, path in zip(node_features, self._path)
-        ]
+        else:
+            transposed_features = [
+                self._graph_convolution.transform(
+                    support=support,
+                    node_feature=node_feature,
+                    path=path
+                )
+                for node_feature, path in zip(node_features, self._path)
+            ]
+        return EmbeddingResult(
+            embedding_method_name=self.model_name(),
+            node_embeddings=transposed_features,
+        )
 
     @classmethod
     def is_stocastic(cls) -> bool:

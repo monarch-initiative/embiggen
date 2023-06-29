@@ -83,7 +83,7 @@ class GraphTransformer:
             If the given method is None there is no need to call the fit method.
         """
         self._transformer.fit(
-            node_feature,
+            node_feature=node_feature,
             node_type_feature=node_type_feature,
             edge_type_features=edge_type_features
         )

@@ -26,6 +26,8 @@ from embiggen.embedders.ensmallen_embedders.hyper_sketching import \
 from embiggen.embedding_transformers import EdgeTransformer
 from embiggen.feature_preprocessors import GraphConvolution
 from embiggen.utils import AbstractEmbeddingModel
+from .cached_tests import cache_or_store
+from glob import glob
 
 
 class TestEvaluateEdgePrediction(TestCase):
@@ -44,6 +46,15 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def test_evaluate_edge_prediction_with_multimodal_features(self):
         """Test edge prediction with edge and edge type features."""
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
 
         df = df[
@@ -75,6 +86,15 @@ class TestEvaluateEdgePrediction(TestCase):
         )
 
     def test_model_recreation(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
 
         for _, row in df.iterrows():
@@ -96,6 +116,15 @@ class TestEvaluateEdgePrediction(TestCase):
                 ) from exception
 
     def test_evaluate_edge_prediction(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(train_size=0.9),
@@ -114,6 +143,15 @@ class TestEvaluateEdgePrediction(TestCase):
         )
 
     def test_evaluate_edge_prediction_with_subgraphs(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(train_size=0.9),
@@ -131,6 +169,15 @@ class TestEvaluateEdgePrediction(TestCase):
             holdouts.shape[0], self._number_of_holdouts*2*df.shape[0])
 
     def test_evaluate_edge_prediction_with_node_types_features(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
         holdouts = edge_prediction_evaluation(
             holdouts_kwargs=dict(train_size=0.9),
@@ -152,6 +199,15 @@ class TestEvaluateEdgePrediction(TestCase):
         )
 
     def test_edge_prediction_models_apis(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_prediction()
         graph = CIO().remove_singleton_nodes()
         multi_label_graph = graph.set_all_node_types("hu") | graph
@@ -391,6 +447,15 @@ class TestEvaluateEdgePrediction(TestCase):
                     )
 
     def test_tree_with_cosine(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         graph = CIO().remove_singleton_nodes().sort_by_decreasing_outbound_node_degree()
         for edge_embedding in EdgeTransformer.methods:
             for evaluation_schema in AbstractEdgePredictionModel.get_available_evaluation_schemas():
@@ -421,6 +486,16 @@ class TestEvaluateEdgePrediction(TestCase):
                                 == set((1.0, 2.0)))
 
     def test_all_node_embedding_models_as_feature(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/embedders/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_node_embedding()
         bar = tqdm(
             df.iterrows(),
@@ -481,6 +556,15 @@ class TestEvaluateEdgePrediction(TestCase):
             )
 
     def test_all_edge_embedding_methods(self):
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         if not GraphSAGEEdgePrediction.is_available():
             return
         for edge_embedding_method in GraphSAGEEdgePrediction.get_available_edge_embedding_methods():
@@ -500,6 +584,15 @@ class TestEvaluateEdgePrediction(TestCase):
 
     def test_all_edge_embedding_models_as_feature(self):
         """Test graph visualization."""
+        if cache_or_store([
+            "./tests/test_edge_prediction_pipeline.py",
+            "./embiggen/embedders/ensmallen_embedders/degree_spine.py",
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            *glob("./embiggen/edge_prediction/**/*.py", recursive=True),
+            *glob("./embiggen/edge_prediction/*.py",),
+            "./embiggen/utils/abstract_models/abstract_classifier_model.py",
+        ]):
+            return
         df = get_available_models_for_edge_embedding()
         bar = tqdm(
             df.iterrows(),

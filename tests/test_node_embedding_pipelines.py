@@ -2,19 +2,17 @@
 from unittest import TestCase
 
 import pytest
-from embiggen.embedders import embed_graph, HOPEEnsmallen
 from ensmallen.datasets.kgobo import CIO
-from embiggen import get_available_models_for_node_embedding
 from tqdm.auto import tqdm
 
-from embiggen.utils.abstract_models.abstract_embedding_model import AbstractEmbeddingModel
+from embiggen import get_available_models_for_node_embedding
+from embiggen.embedders import HOPEEnsmallen, embed_graph
+from embiggen.utils.abstract_models.abstract_embedding_model import \
+    AbstractEmbeddingModel
+
 
 class TestNodeEmbeddingPipeline(TestCase):
     """Unit test for model GloVe on graph walks."""
-
-    def setUp(self):
-        """Setting up objects to test CBOW model on graph walks."""
-        super().setUp()
 
     def test_embedding_pipeline(self):
         """Test that embed pipeline works."""
@@ -83,6 +81,7 @@ class TestNodeEmbeddingPipeline(TestCase):
             )
     
     def test_model_recreation(self):
+        """Test that embed pipeline works."""
         df = get_available_models_for_node_embedding()
 
         for _, row in df.iterrows():
@@ -100,8 +99,8 @@ class TestNodeEmbeddingPipeline(TestCase):
                 )(**parameters)
                 for key, value in second_model.parameters().items():
                     self.assertEqual(parameters[key], value)
-            except Exception as e:
+            except Exception as exception:
                 raise ValueError(
                     f"Found an error in model {row.model_name} "
                     f"implemented in library {row.library_name}."
-                ) from e
+                ) from exception

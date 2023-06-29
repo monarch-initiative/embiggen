@@ -14,9 +14,11 @@ import numpy as np
 import warnings
 from ensmallen import Graph
 from embiggen.utils.abstract_models.abstract_model import AbstractModel
+from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 
 
 class AbstractFeaturePreprocessor(AbstractModel):
+    """Abstract class for feature preprocessors."""
 
     def __init__(self, random_state: Optional[int] = None):
         """Create new abstract feature preprocessor.
@@ -36,7 +38,7 @@ class AbstractFeaturePreprocessor(AbstractModel):
         self,
         support: Graph,
         node_features: List[Union[pd.DataFrame, np.ndarray]],
-    ) -> Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]:
+    ) -> EmbeddingResult:
         """Transform the given node features.
 
         Parameters
@@ -54,7 +56,7 @@ class AbstractFeaturePreprocessor(AbstractModel):
         self,
         support: Graph,
         node_features: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-    ) -> Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]:
+    ) -> EmbeddingResult:
         """Transform the given node features.
 
         Parameters

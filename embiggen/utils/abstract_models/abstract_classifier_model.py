@@ -438,9 +438,9 @@ class AbstractClassifierModel(AbstractModel):
                     and node_feature.is_using_edge_weights()
                     or cls.task_involves_topology()
                     and node_feature.is_topological()
+                    or not precompute_constant_stocastic_features
+                    and node_feature.is_stocastic()
                 )
-                or not precompute_constant_stocastic_features
-                and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
@@ -473,6 +473,9 @@ class AbstractClassifierModel(AbstractModel):
                 support=support, node_features=node_feature
             )
 
+        if isinstance(node_feature, EmbeddingResult):
+            node_feature = node_feature.get_all_node_embedding()
+
         for nf in node_feature:
             if not isinstance(nf, (np.ndarray, pd.DataFrame)):
                 raise ValueError(
@@ -494,7 +497,7 @@ class AbstractClassifierModel(AbstractModel):
                         rows_number=nf.shape[0],
                         graph_name=""
                         if graph.get_name().lower() == "graph"
-                        else " {}".format(graph.get_name()),
+                        else f" {graph.get_name()}",
                         number_of_nodes=graph.get_number_of_nodes(),
                     )
                 )
@@ -679,9 +682,9 @@ class AbstractClassifierModel(AbstractModel):
                     and node_type_feature.is_using_edge_weights()
                     or cls.task_involves_topology()
                     and node_type_feature.is_topological()
+                    or not precompute_constant_stocastic_features
+                    and node_type_feature.is_stocastic()
                 )
-                or not precompute_constant_stocastic_features
-                and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
@@ -900,9 +903,9 @@ class AbstractClassifierModel(AbstractModel):
                     and edge_type_feature.is_using_edge_weights()
                     or cls.task_involves_topology()
                     and edge_type_feature.is_topological()
+                    or not precompute_constant_stocastic_features
+                    and edge_type_feature.is_stocastic()
                 )
-                or not precompute_constant_stocastic_features
-                and edge_type_feature.is_stocastic()
             ):
                 yield edge_type_feature
                 return None
@@ -1113,6 +1116,7 @@ class AbstractClassifierModel(AbstractModel):
 
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
                 model_name=edge_feature,
+                task_name="Edge Embedding"
             )()
 
         # If this object is an implementation of an abstract
@@ -1129,10 +1133,11 @@ class AbstractClassifierModel(AbstractModel):
                     and edge_feature.is_using_edge_weights()
                     or cls.task_involves_topology()
                     and edge_feature.is_topological()
+                    or not precompute_constant_stocastic_features
+                    and edge_feature.is_stocastic()
                 )
-                or not precompute_constant_stocastic_features
-                and edge_feature.is_stocastic()
             ):
+                print("SKIPPING!", skip_evaluation_biased_feature)
                 yield edge_feature
                 return None
 
@@ -1176,7 +1181,7 @@ class AbstractClassifierModel(AbstractModel):
                 if graph.get_name().lower() == "graph":
                     graph_name = ""
                 else:
-                    graph_name = " {}".format(graph.get_name())
+                    graph_name = f" {graph.get_name()}"
                 raise ValueError(
                     f"The provided edge features have {ef.shape[0]} rows "
                     f"but the provided graph{graph_name} has {graph.get_number_of_edges()} edges. "
@@ -1387,6 +1392,10 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
 
+        for edge_feature in edge_features:
+            if issubclass(type(edge_feature), AbstractEdgeFeature):
+                assert edge_feature.is_fit()
+
         if len(node_type_features) > 0 and not graph.has_node_types():
             raise ValueError(
                 "The node type features have been provided but the current "
@@ -1435,20 +1444,14 @@ class AbstractClassifierModel(AbstractModel):
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
-                edge_features=self.normalize_edge_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    edge_features=edge_features,
-                    allow_automatic_feature=True,
-                ),
+                edge_features=edge_features
             )
-        except Exception as e:
+        except Exception as exception:
             raise RuntimeError(
                 f"An exception was raised while calling the `_fit` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
-            ) from e
+            ) from exception
 
         self._fitting_was_executed = True
 

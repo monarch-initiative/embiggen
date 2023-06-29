@@ -200,7 +200,7 @@ class SklearnLikeEdgeLabelPredictionAdapter(AbstractEdgeLabelPredictionModel):
         )
 
         lpt.fit(
-            node_features,
+            node_feature=node_features,
             node_type_feature=node_type_features,
             edge_type_features=edge_type_features,
         )

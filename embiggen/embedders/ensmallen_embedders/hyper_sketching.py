@@ -97,7 +97,6 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             include_node_ids=include_node_ids,
             include_selfloops=include_selfloops,
             include_typed_graphlets=include_typed_graphlets,
-            random_state=random_state,
             number_of_random_integers=number_of_random_integers,
             normalize_by_symmetric_laplacian=normalize_by_symmetric_laplacian,
             concatenate_features=concatenate_features,
@@ -109,7 +108,8 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         self._right_difference_path=right_difference_path
 
         self._model = models.HyperSketching(
-            **self._kwargs
+            **self._kwargs,
+            random_state=random_state,
         )
 
         self._fitting_was_executed = False

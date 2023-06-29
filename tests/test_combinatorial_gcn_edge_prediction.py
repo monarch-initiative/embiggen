@@ -12,6 +12,7 @@ from embiggen.edge_prediction import GCNEdgePrediction
 from embiggen.embedders import HyperSketching
 from embiggen.embedders.ensmallen_embedders.hyper_sketching import \
     HyperSketching
+from .cached_tests import cache_or_store
 
 
 class TestGCNEdgePrediction(TestCase):
@@ -31,14 +32,13 @@ class TestGCNEdgePrediction(TestCase):
         if not GCNEdgePrediction.is_available():
             return
 
-        involved_files = dict(
-            a="./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
-            b="./embiggen/edge_prediction/edge_prediction_tensorflow/gcn.py",
-            c="./embiggen/utils/abstract_gcn.py",
-            d="./embiggen/utils/abstract_edge_gcn.py",
-        )
-
-        files_hash = sha256(involved_files)
+        if cache_or_store([
+            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+            "./embiggen/edge_prediction/edge_prediction_tensorflow/gcn.py",
+            "./embiggen/utils/abstract_gcn.py",
+            "./embiggen/utils/abstract_edge_gcn.py",
+        ]):
+            return
 
         parametrizations = []
         features = []
@@ -137,8 +137,6 @@ class TestGCNEdgePrediction(TestCase):
                                                         use_edge_type_embedding=use_edge_type_embedding,
                                                         use_edge_metrics=use_edge_metrics,
                                                     ))
-        target_path = f"./tests/cache/test_combinatorial_gcn_edge_prediction_{files_hash}_{{parameters}}.json.gz"
-
         for parametrization, feature_set in tqdm(
             zip(parametrizations, features),
             total=len(parametrizations),
@@ -151,15 +149,23 @@ class TestGCNEdgePrediction(TestCase):
             if parametrization["kernels"] is None:
                 parametrization["residual_convolutional_layers"] = False
             
-            path = target_path.format(parameters=sha256(
+            salt = sha256(
                 dict(
                     parametrization=parametrization,
                     feature_set=feature_set
                 ),
                 use_approximation=True
-            ))
+            )
 
-            if os.path.exists(path):
+            if cache_or_store(
+                [
+                    "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+                    "./embiggen/edge_prediction/edge_prediction_tensorflow/gcn.py",
+                    "./embiggen/utils/abstract_gcn.py",
+                    "./embiggen/utils/abstract_edge_gcn.py",
+                ],
+                salt=salt
+            ):
                 continue
 
             model: GCNEdgePrediction = GCNEdgePrediction(

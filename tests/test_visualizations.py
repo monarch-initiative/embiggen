@@ -1,12 +1,16 @@
 """Unit test class for GraphTransformer objects."""
 from unittest import TestCase
-import pytest
+
 import numpy as np
 import pandas as pd
-from embiggen import GraphVisualizer
+import pytest
 from ensmallen.datasets.kgobo import CIO, MIAPA
 from ensmallen.datasets.networkrepository import Usair97
-from embiggen.embedders.ensmallen_embedders.deepwalk_glove import DeepWalkGloVeEnsmallen
+
+from embiggen import GraphVisualizer
+from embiggen.embedders.ensmallen_embedders.deepwalk_glove import \
+    DeepWalkGloVeEnsmallen
+from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
 
 
 class TestGraphVisualizer(TestCase):
@@ -14,10 +18,10 @@ class TestGraphVisualizer(TestCase):
 
     def setUp(self):
         """Setup objects for running tests on GraphTransformer objects class."""
-        pass
 
     def test_graph_visualization(self):
         """Test graph visualization."""
+        spine = DegreeSPINE(embedding_size=5)
         for gr in (CIO() | MIAPA(), Usair97(), MIAPA()):
             node_type_predictions = None
             gr = gr.remove_parallel_edges()
@@ -70,7 +74,7 @@ class TestGraphVisualizer(TestCase):
                     ):
                         with pytest.raises(ValueError):
                             visualization.__getattribute__(callback_method)()
-                    visualization.fit_and_plot_all("Degree-based SPINE", embedding_size=5)
+                    visualization.fit_and_plot_all(spine)
                     visualization.plot_dot()
                     visualization.plot_edges()
                     visualization.plot_node_degree_distribution()
@@ -117,7 +121,7 @@ class TestGraphVisualizer(TestCase):
                             visualization.plot_edge_weight_distribution()
                         with pytest.raises(ValueError):
                             visualization.plot_edge_weights()
-                    visualization.fit_and_plot_all("Degree-based SPINE", embedding_size=2)
+                    visualization.fit_and_plot_all(spine)
                     try:
                         visualization = GraphVisualizer(
                             graph,
@@ -132,8 +136,7 @@ class TestGraphVisualizer(TestCase):
                         visualization.plot_edges()
                         visualization.plot_nodes(annotate_nodes=True, show_edges=True)
                         visualization.fit_and_plot_all(
-                            "Degree-based SPINE",
-                            embedding_size=3,
+                            spine,
                             include_distribution_plots=False
                         )
                         visualization = GraphVisualizer(
@@ -145,7 +148,7 @@ class TestGraphVisualizer(TestCase):
                             duration=1,
                             decomposition_kwargs=decomposition_kwargs,
                         )
-                        visualization.fit_negative_and_positive_edges("Degree-based SPINE", embedding_size=3)
+                        visualization.fit_negative_and_positive_edges(spine)
                         visualization.fit_nodes(pd.DataFrame(
                             np.random.uniform(size=(
                                 graph.get_number_of_nodes(),
@@ -177,5 +180,4 @@ class TestGraphVisualizer(TestCase):
                         visualization.plot_nodes(annotate_nodes=True)
                     except NameError:
                         print("ddd_subplot might have some problems")
-                        pass
 

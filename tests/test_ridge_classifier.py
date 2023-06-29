@@ -13,10 +13,21 @@ from ensmallen.datasets.kgobo import MIAPA
 from ensmallen import Graph
 from ensmallen.datasets.linqs import Cora, get_words_data
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
+from .cached_tests import cache_or_store
 
 
 def test_ridge_classifier_node_label_prediction_smoke_test():
     """Smoke test for the Ridge Classifier node-label prediction model."""
+    if cache_or_store([
+        "tests/test_ridge_classifier.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/node_label_prediction/node_label_prediction_sklearn/ridge_classifier_node_label_prediction.py",
+        "embiggen/node_label_prediction/node_label_prediction_sklearn/sklearn_node_label_prediction_adapter.py",
+        "embiggen/node_label_prediction/sklearn_like_node_label_prediction_adapter.py",
+        "embiggen/node_label_prediction/node_label_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -53,6 +64,16 @@ def test_ridge_classifier_node_label_prediction_smoke_test():
 
 def test_ridge_classifier_edge_prediction_smoke_test():
     """Smoke test for the Ridge Classifier edge-label prediction model."""
+    if cache_or_store([
+        "tests/test_ridge_classifier.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/edge_label_prediction/edge_label_prediction_sklearn/ridge_classifier_edge_label_prediction.py",
+        "embiggen/edge_label_prediction/edge_label_prediction_sklearn/sklearn_edge_label_prediction_adapter.py",
+        "embiggen/edge_label_prediction/sklearn_like_edge_label_prediction_adapter.py",
+        "embiggen/edge_label_prediction/edge_label_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -89,6 +110,16 @@ def test_ridge_classifier_edge_prediction_smoke_test():
 
 def test_ridge_classifier_edge_label_prediction_smoke_test():
     """Smoke test for the Ridge Classifier edge-label prediction model."""
+    if cache_or_store([
+        "tests/test_ridge_classifier.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/edge_prediction/edge_prediction_sklearn/ridge_classifier_edge_prediction.py",
+        "embiggen/edge_prediction/edge_prediction_sklearn/sklearn_edge_prediction_adapter.py",
+        "embiggen/edge_prediction/sklearn_like_edge_prediction_adapter.py",
+        "embiggen/edge_prediction/edge_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     red = graph.set_all_edge_types("red")
     blue = MIAPA().remove_singleton_nodes().set_all_edge_types("blue")

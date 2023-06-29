@@ -1,22 +1,29 @@
 """Module to test the XGBoost models for node-label, edge-label and edge prediction."""
-from embiggen.node_label_prediction import (
-    XGBNodeLabelPrediction,
-)
-from embiggen.edge_prediction import (
-    XGBEdgePrediction,
-)
-from embiggen.edge_label_prediction import (
-    XGBEdgeLabelPrediction,
-)
-from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
-from ensmallen.datasets.kgobo import MIAPA
 from ensmallen import Graph
+from ensmallen.datasets.kgobo import MIAPA
 from ensmallen.datasets.linqs import Cora, get_words_data
+
+from embiggen.edge_label_prediction import XGBEdgeLabelPrediction
+from embiggen.edge_prediction import XGBEdgePrediction
 from embiggen.embedders.ensmallen_embedders.degree_spine import DegreeSPINE
+from embiggen.embedders.ensmallen_embedders.hyper_sketching import \
+    HyperSketching
+from embiggen.node_label_prediction import XGBNodeLabelPrediction
+
+from .cached_tests import cache_or_store
 
 
 def test_xgb_node_label_prediction_smoke_test():
     """Smoke test for the XGBoost node-label prediction model."""
+    if cache_or_store([
+        "tests/test_xgboost.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/node_label_prediction/node_label_prediction_xgboost/xgboost_node_label_prediction.py",
+        "embiggen/node_label_prediction/sklearn_like_node_label_prediction_adapter.py",
+        "embiggen/node_label_prediction/node_label_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -49,6 +56,15 @@ def test_xgb_node_label_prediction_smoke_test():
 
 def test_xgb_edge_prediction_smoke_test():
     """Smoke test for the XGBoost edge-label prediction model."""
+    if cache_or_store([
+        "tests/test_xgboost.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/edge_prediction/edge_prediction_xgboost/xgboost_edge_prediction.py",
+        "embiggen/edge_prediction/sklearn_like_edge_prediction_adapter.py",
+        "embiggen/edge_prediction/edge_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     graph = graph.remove_singleton_nodes()
     red = graph.set_all_node_types("red")
@@ -86,6 +102,15 @@ def test_xgb_edge_prediction_smoke_test():
 
 def test_xgb_edge_label_prediction_smoke_test():
     """Smoke test for the XGBoost edge-label prediction model."""
+    if cache_or_store([
+        "tests/test_xgboost.py",
+        "embiggen/embedders/ensmallen_embedders/degree_spine.py",
+        "embiggen/edge_label_prediction/edge_label_prediction_xgboost/xgboost_edge_label_prediction.py",
+        "embiggen/edge_label_prediction/sklearn_like_edge_label_prediction_adapter.py",
+        "embiggen/edge_label_prediction/edge_label_prediction_model.py",
+        "embiggen/utils/abstract_models/abstract_classifier_model.py",
+    ]):
+        return
     graph, data = get_words_data(Cora())
     red = graph.set_all_edge_types("red")
     blue = MIAPA().remove_singleton_nodes().set_all_edge_types("blue")

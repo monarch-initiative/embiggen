@@ -682,7 +682,7 @@ class AbstractEdgeGCN(AbstractGCN):
                                 activation="relu",
                                 name=layer_name
                             )(hidden)
-                        if len(partial_siamese_layers) > 0:
+                        if len(self._number_of_units_per_ffnn_body_layer) > 0:
                             hidden = BatchNormalization()(hidden)
                         this_ffnn_output.append(hidden)
                     ffnn_outputs.append(this_ffnn_output)
