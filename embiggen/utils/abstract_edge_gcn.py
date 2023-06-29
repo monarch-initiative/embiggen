@@ -7,7 +7,7 @@ import tensorflow as tf
 from ensmallen import Graph
 from tensorflow.keras.layers import (  # pylint: disable=import-error,no-name-in-module
     Activation, Add, Average, Concatenate, Dense, Dot, Flatten, Input, Maximum, Layer,
-    Minimum, Multiply, Subtract)
+    Minimum, Multiply, Subtract, BatchNormalization, Dropout)
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
 from tensorflow.keras.optimizers import \
@@ -43,7 +43,8 @@ class AbstractEdgeGCN(AbstractGCN):
         batch_size: Optional[int] = None,
         apply_norm: bool = False,
         combiner: str = "sum",
-        edge_embedding_methods: Optional[Union[List[str], str]] = "Concatenate",
+        edge_embedding_methods: Optional[Union[List[str],
+                                               str]] = "Concatenate",
         optimizer: Union[str, Optimizer] = "adam",
         early_stopping_min_delta: float = 0.0001,
         early_stopping_patience: int = 20,
@@ -299,7 +300,8 @@ class AbstractEdgeGCN(AbstractGCN):
 
         self._siamese_node_feature_module: bool = siamese_node_feature_module
         self._edge_embedding_methods: List[str] = edge_embedding_methods
-        self._edge_type_feature_names: Optional[List[str]] = edge_type_feature_names
+        self._edge_type_feature_names: Optional[List[str]
+                                                ] = edge_type_feature_names
         self._use_edge_metrics = use_edge_metrics
         self._use_edge_type_embedding = use_edge_type_embedding
         self._edge_type_embedding_size = edge_type_embedding_size
@@ -468,7 +470,7 @@ class AbstractEdgeGCN(AbstractGCN):
                 # with the batch size generally SIGNIFICANTLY LESS than the number of nodes.
                 # We do not need to execute an embedding lookup here,
                 # as the features are already queries in the training
-                # sequence. 
+                # sequence.
                 source_features.append(source_related_features)
                 destination_features.append(destination_related_features)
             else:
@@ -518,8 +520,9 @@ class AbstractEdgeGCN(AbstractGCN):
                     counter = 0
                     while adjusted_new_feature_name in edge_feature_names:
                         counter += 1
-                        adjusted_new_feature_name = new_feature_name + str(counter)
-                    
+                        adjusted_new_feature_name = new_feature_name + \
+                            str(counter)
+
                     edge_feature_names.append(adjusted_new_feature_name)
             else:
                 if len(edge_features) > 1:
@@ -570,7 +573,7 @@ class AbstractEdgeGCN(AbstractGCN):
                     f"Edge feature of type {type(edge_feature)} is not supported."
                     "Please provide an instance of AbstractEdgeFeature or a numpy array."
                 )
-        
+
         edge_type_feature_names: List[str] = []
         if self._edge_type_feature_names is None:
             if len(edge_type_features) > 1:
@@ -589,7 +592,7 @@ class AbstractEdgeGCN(AbstractGCN):
                 f"edge type feature names but you have provided {len(edge_type_features)} "
                 f"edge type features to the model."
             )
-        
+
         assert edge_type_features is not None
         assert edge_type_feature_names is not None
         assert len(edge_type_features) == len(edge_type_feature_names)
@@ -613,13 +616,14 @@ class AbstractEdgeGCN(AbstractGCN):
         shared_feature_names.extend(edge_type_feature_names)
 
         ffnn_outputs = []
-        
+
         if len(source_features) > 0 and len(destination_features) > 0:
             if self._siamese_node_feature_module:
                 siamese_layers = []
                 for source_feature_name in source_feature_names:
                     partial_siamese_layers = []
-                    source_feature_name = source_feature_name.replace("Source", "").replace(" ", "")
+                    source_feature_name = source_feature_name.replace(
+                        "Source", "").replace(" ", "")
                     for i, units in enumerate(self._number_of_units_per_ffnn_body_layer):
                         assert isinstance(units, int)
                         if len(self._number_of_units_per_ffnn_body_layer) > 1:
@@ -633,8 +637,11 @@ class AbstractEdgeGCN(AbstractGCN):
                             activation="relu",
                             name=layer_name
                         )
-                        assert issubclass(type(layer), Layer), f"Expected a layer, but found {type(layer)}."
+                        assert issubclass(
+                            type(layer), Layer), f"Expected a layer, but found {type(layer)}."
                         partial_siamese_layers.append(layer)
+                    if len(partial_siamese_layers) > 0:
+                        partial_siamese_layers.append(BatchNormalization())
                     siamese_layers.append(partial_siamese_layers)
                 for zip_iter in (
                     zip(source_features, siamese_layers),
@@ -644,7 +651,8 @@ class AbstractEdgeGCN(AbstractGCN):
                         this_ffnn_output = []
                         # Building the body of the model.
                         for siamese_layer in partial_siamese_layers:
-                            assert issubclass(type(siamese_layer), Layer), f"Expected a layer, but found {type(siamese_layer)}."
+                            assert issubclass(type(
+                                siamese_layer), Layer), f"Expected a layer, but found {type(siamese_layer)}."
                             hidden = siamese_layer(hidden)
                         this_ffnn_output.append(hidden)
                     ffnn_outputs.append(this_ffnn_output)
@@ -655,7 +663,8 @@ class AbstractEdgeGCN(AbstractGCN):
                 ):
                     this_ffnn_output = []
                     assert len(hiddens) == len(feature_names)
-                    assert len(set(feature_names)) == len(feature_names), f"Expected unique feature names, but found duplicates: {feature_names}."
+                    assert len(set(feature_names)) == len(
+                        feature_names), f"Expected unique feature names, but found duplicates: {feature_names}."
                     for hidden, feature_name in zip(hiddens, feature_names):
                         # Building the body of the model.
                         feature_name = feature_name.replace(" ", "")
@@ -673,6 +682,8 @@ class AbstractEdgeGCN(AbstractGCN):
                                 activation="relu",
                                 name=layer_name
                             )(hidden)
+                        if len(partial_siamese_layers) > 0:
+                            hidden = BatchNormalization()(hidden)
                         this_ffnn_output.append(hidden)
                     ffnn_outputs.append(this_ffnn_output)
             source_feature_hidden = ffnn_outputs[0]
@@ -739,7 +750,7 @@ class AbstractEdgeGCN(AbstractGCN):
                 "You have provided edge embedding methods but you have not provided "
                 "any source or destination node features - It is unclear how to embed the edges. "
             )
-        
+
         if len(self._edge_embedding_methods) == 0 and source_feature_hidden is not None and destination_feature_hidden is not None:
             raise ValueError(
                 "You have provided source and destination node features but you have not provided "
@@ -831,6 +842,13 @@ class AbstractEdgeGCN(AbstractGCN):
         else:
             edge_embedding_layer_concatenation = None
 
+        shared_feature_hidden = [
+            BatchNormalization(
+
+            )(shared_feature_hidden)
+            for shared_feature_hidden in shared_feature_hidden
+        ]
+
         if len(shared_feature_hidden) > 0 and edge_embedding_layer_concatenation is not None:
             hidden = Concatenate(
                 name="EdgeFeatures",
@@ -846,6 +864,11 @@ class AbstractEdgeGCN(AbstractGCN):
             )(shared_feature_hidden)
         elif edge_embedding_layer_concatenation is not None:
             hidden = edge_embedding_layer_concatenation
+
+        hidden = Dropout(
+            rate=self._dropout_rate,
+            name="EdgeFeaturesDropout"
+        )(hidden)
 
         # Building the head of the model.
         for i, units in enumerate(self._number_of_units_per_ffnn_head_layer):

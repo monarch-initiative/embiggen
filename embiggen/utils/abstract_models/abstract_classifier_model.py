@@ -43,7 +43,7 @@ class AbstractClassifierModel(AbstractModel):
         self._fitting_was_executed = False
         self._is_using_node_type_features = False
         self._is_using_edge_type_features = False
-        
+
         # The following three lists will imprint on the provided features and
         # will help in the case of potential mis-alignments between the provided
         # training features and those later provided for the predictions. The
@@ -56,7 +56,7 @@ class AbstractClassifierModel(AbstractModel):
         # Furthermore, some features are rasterized at different points in time.
         # When a feature has not yet been turned into a numpy array, we will put
         # 'None' as its shape, and skip that particular feature when checking
-        # for the feature shapes. We will still check, of course, that the 
+        # for the feature shapes. We will still check, of course, that the
         # number of features is the same.
         self._node_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
         self._node_type_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
@@ -71,7 +71,7 @@ class AbstractClassifierModel(AbstractModel):
         """Check that the provided features have the expected shapes."""
         if provided_features is None and expected_feature_shapes is None:
             return None
-        
+
         if provided_features is None and expected_feature_shapes is not None:
             raise ValueError(
                 f"The provided {feature_name} features are None, "
@@ -85,7 +85,8 @@ class AbstractClassifierModel(AbstractModel):
         # it on the provided features.
         if expected_feature_shapes is None:
             return [
-                provided_feature.shape if isinstance(provided_feature, np.ndarray) else None
+                provided_feature.shape if isinstance(
+                    provided_feature, np.ndarray) else None
                 for provided_feature in provided_features
             ]
         if len(expected_feature_shapes) != len(provided_features):
@@ -119,7 +120,7 @@ class AbstractClassifierModel(AbstractModel):
                         "version of the graph or another graph "
                         "entirely?"
                     )
-        return expected_feature_shapes        
+        return expected_feature_shapes
 
     def _check_node_features_shapes(self, provided_node_features: Optional[List[Union[np.ndarray, Any]]],):
         """Check that the provided node features have the expected shapes."""
@@ -464,7 +465,8 @@ class AbstractClassifierModel(AbstractModel):
             node_features_preprocessing_steps = []
 
         if not isinstance(node_features_preprocessing_steps, list):
-            node_features_preprocessing_steps = [node_features_preprocessing_steps]
+            node_features_preprocessing_steps = [
+                node_features_preprocessing_steps]
 
         for preprocessing_step in node_features_preprocessing_steps:
             node_feature = preprocessing_step.transform(
@@ -518,7 +520,8 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray,
+                          Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -747,7 +750,8 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray,
+                          Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -969,7 +973,8 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray,
+                          Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -1201,7 +1206,8 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray,
+                          Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -1273,13 +1279,16 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1346,7 +1355,7 @@ class AbstractClassifierModel(AbstractModel):
         if support is None:
             support = graph
 
-        node_features=self.normalize_node_features(
+        node_features = self.normalize_node_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1354,7 +1363,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_node_features_shapes(node_features)
-        node_type_features=self.normalize_node_type_features(
+        node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1362,7 +1371,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_node_type_features_shapes(node_type_features)
-        edge_type_features=self.normalize_edge_type_features(
+        edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1370,12 +1379,13 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_edge_type_features_shapes(edge_type_features)
-
-        if edge_features is None:
-            edge_features = []
-
-        if not isinstance(edge_features, list):
-            edge_features = [edge_features]
+        edge_features = self.normalize_edge_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_features=edge_features,
+            allow_automatic_feature=True,
+        )
 
         if len(node_type_features) > 0 and not graph.has_node_types():
             raise ValueError(
@@ -1390,7 +1400,7 @@ class AbstractClassifierModel(AbstractModel):
                 f"instance of graph {graph.get_name()} does not have edge types. "
                 "It is unclear how to proceed with this data."
             )
-        
+
         self._is_using_node_type_features = len(node_type_features) > 0
         self._is_using_edge_type_features = len(edge_type_features) > 0
 
@@ -1401,7 +1411,7 @@ class AbstractClassifierModel(AbstractModel):
                 "does not support node type features, "
                 f"but you provided {len(node_type_features)} node type features. "
             )
-        
+
         if len(edge_type_features) > 0 and not self.can_use_edge_type_features():
             raise ValueError(
                 f"The current model {self.model_name()} for task {self.task_name()} "
@@ -1409,7 +1419,7 @@ class AbstractClassifierModel(AbstractModel):
                 "does not support edge type features, "
                 f"but you provided {len(edge_type_features)} edge type features. "
             )
-        
+
         if len(edge_features) > 0 and not self.can_use_edge_features():
             raise ValueError(
                 f"The current model {self.model_name()} for task {self.task_name()} "
@@ -1447,13 +1457,16 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1500,7 +1513,7 @@ class AbstractClassifierModel(AbstractModel):
         if support is None:
             support = graph
 
-        node_features=self.normalize_node_features(
+        node_features = self.normalize_node_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1508,7 +1521,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_features_shapes(node_features)
-        node_type_features=self.normalize_node_type_features(
+        node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1516,7 +1529,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_type_features_shapes(node_type_features)
-        edge_type_features=self.normalize_edge_type_features(
+        edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1554,13 +1567,16 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1607,7 +1623,7 @@ class AbstractClassifierModel(AbstractModel):
         if support is None:
             support = graph
 
-        node_features=self.normalize_node_features(
+        node_features = self.normalize_node_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1615,7 +1631,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_features_shapes(node_features)
-        node_type_features=self.normalize_node_type_features(
+        node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1623,7 +1639,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_type_features_shapes(node_type_features)
-        edge_type_features=self.normalize_edge_type_features(
+        edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
             random_state=self._random_state,
@@ -1779,16 +1795,20 @@ class AbstractClassifierModel(AbstractModel):
         test: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
@@ -1877,7 +1897,11 @@ class AbstractClassifierModel(AbstractModel):
                     "The provided classifier model is expected to be "
                     f"an implementation of the {cls.__name__} class, but you provided "
                     f"an object of type {type(model)} that does not hereditate from "
-                    "the expected class."
+                    "the expected class. If you are using a model provided from the GRAPE "
+                    "library and you see this error, you should report it on the GitHub "
+                    "repository of the library. If you are using a custom model, you should "
+                    "check that you are correctly implementing the required abstract class "
+                    "methods, such as the `_fit` and `_predict` methods."
                 )
 
         # If this is a smoke test, we replace all of the
@@ -1999,8 +2023,10 @@ class AbstractClassifierModel(AbstractModel):
         for column_name, column_value in metadata.items():
             model_performance[column_name] = column_value
 
-        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
-        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_model_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(
+            dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
@@ -2041,7 +2067,8 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts", "metadata"],
+        args_to_ignore=["verbose", "smoke_test",
+                        "number_of_holdouts", "metadata"],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True,
     )
@@ -2174,7 +2201,8 @@ class AbstractClassifierModel(AbstractModel):
                 # that the subgraph of interest allows us to use.
                 if holdout_node_features is not None:
                     # We obtain the mapping from the old to the new node IDs
-                    node_ids_mapping = train.get_node_ids_mapping_from_graph(graph)
+                    node_ids_mapping = train.get_node_ids_mapping_from_graph(
+                        graph)
 
                     holdout_node_features = [
                         holdout_node_feature[node_ids_mapping]
@@ -2289,15 +2317,18 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray,
+                          Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray,
+                  List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[

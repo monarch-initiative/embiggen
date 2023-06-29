@@ -25,6 +25,8 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         include_node_ids: bool = True,
         include_selfloops: bool = True,
         include_typed_graphlets: bool = False,
+        random_state: int = 42,
+        number_of_random_integers: int = 0,
         normalize_by_symmetric_laplacian: bool = True,
         concatenate_features: bool = False,
         dtype: str = "f32",
@@ -58,6 +60,10 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             Whether to include selfloops in the sketches.
         include_typed_graphlets: bool = False,
             Whether to include typed graphlets in the sketches.
+        random_state: int = 42,
+            The random state to use.
+        number_of_random_integers: int = 0,
+            The number of random integers to use per node.
         normalize_by_symmetric_laplacian: bool = True,
             Whether to normalize the sketches by the symmetric laplacian.
         concatenate_features: bool = False,
@@ -91,6 +97,8 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             include_node_ids=include_node_ids,
             include_selfloops=include_selfloops,
             include_typed_graphlets=include_typed_graphlets,
+            random_state=random_state,
+            number_of_random_integers=number_of_random_integers,
             normalize_by_symmetric_laplacian=normalize_by_symmetric_laplacian,
             concatenate_features=concatenate_features,
             dtype=dtype,
@@ -99,7 +107,6 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         self._overlap_path=overlap_path
         self._left_difference_path=left_difference_path
         self._right_difference_path=right_difference_path
-
 
         self._model = models.HyperSketching(
             **self._kwargs
@@ -110,6 +117,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         super().__init__(
             enable_cache=enable_cache,
             ring_bell=ring_bell,
+            random_state=random_state,
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -480,7 +488,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     @classmethod
     def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
-        return False
+        return True
     
     def clone(self) -> "Self":
         """Return a fresh clone of the model."""

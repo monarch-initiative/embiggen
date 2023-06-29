@@ -240,37 +240,34 @@ def get_l2_distance(
 
 
 def get_cosine_similarity(
-    embedding: np.ndarray,
-    source_node_ids: np.ndarray,
-    destination_node_ids: np.ndarray
+    source_node_embedding: np.ndarray,
+    destination_node_embedding: np.ndarray
 ) -> np.ndarray:
     """Return cosine similarity of the two nodes.
 
     Parameters
     --------------------------
-    embedding: np.ndarray
-        Numpy array with the embedding matrix.
-    source_node_ids: np.ndarray
-        Numpy array with the ids of the source node.
-    destination_node_ids: np.ndarray
-        Numpy array with the ids of the destination node.
+    source_node_embedding: np.ndarray
+        Numpy array with the embedding of the source node.
+    destination_node_embedding: np.ndarray
+        Numpy array with the embedding of the destination node.
 
     Returns
     --------------------------
     Numpy array with the cosine similarity.
     """
-    if not source_node_ids.data.c_contiguous:
-        source_node_ids = np.ascontiguousarray(source_node_ids)
-    if not destination_node_ids.data.c_contiguous:
-        destination_node_ids = np.ascontiguousarray(destination_node_ids)
-    return express_measures.cosine_similarity_from_indices_unchecked(
-        matrix=embedding,
-        sources=source_node_ids,
-        destinations=destination_node_ids
-    ).reshape((-1, 1))
+    assert source_node_embedding.dtype == destination_node_embedding.dtype
+    assert source_node_embedding.shape == destination_node_embedding.shape
+    hadamard_product = source_node_embedding * destination_node_embedding
+    norm = (
+        get_l2_norm_edge_embedding(source_node_embedding) *
+        get_l2_norm_edge_embedding(destination_node_embedding)
+    )
+    norm[norm < 1e-6] = 1e-6
+    return np.sum(hadamard_product, axis=1, keepdims=True) / norm
 
 
-def get_Concatenate_edge_embedding(
+def get_concatenate_edge_embedding(
     source_node_embedding: np.ndarray,
     destination_node_embedding: np.ndarray
 ) -> np.ndarray:
@@ -356,7 +353,7 @@ class EdgeTransformer:
         "AbsoluteL1": get_absolute_l1_edge_embedding,
         "SquaredL2": get_squared_l2_edge_embedding,
         "L2": get_l2_edge_embedding,
-        "Concatenate": get_Concatenate_edge_embedding,
+        "Concatenate": get_concatenate_edge_embedding,
         "Min": get_min_edge_embedding,
         "Max": get_max_edge_embedding,
         "L2Distance": get_l2_distance,
@@ -492,7 +489,7 @@ class EdgeTransformer:
 
         self._edge_type_features = edge_type_features
         self._transformer.fit(
-            node_feature,
+            node_feature=node_feature,
             node_type_feature=node_type_feature,
         )
 
@@ -618,52 +615,27 @@ class EdgeTransformer:
                         "The provided edge types should be either strings or integers, but we got "
                         f"{type(edge_types[0])} instead."
                     )
-
+            else:
+                raise ValueError(
+                    "The provided edge type features should be either Pandas Dataframes or "
+                    f"Numpy arrays, but we got {type(edge_type_feature)} instead."
+                )
+            
+        assert len(self._edge_type_features) == len(edge_type_features)
+        
         edge_embeddings: List[np.ndarray] = []
         if self._transformer.is_fit():
-            for (method, method_name) in zip(self._methods, self._method_names):
-                if method_name == "CosineSimilarity":
-                    if (
-                        not isinstance(sources, np.ndarray) or
-                        not isinstance(destinations, np.ndarray)
-                    ):
-                        raise NotImplementedError(
-                            "The Cosine Similarity is currently implemented exclusively for "
-                            "numpy arrays of type uint32, but you have provided objects of type "
-                            f"{type(sources)} and {type(destinations)}. "
-                        )
-                    if (
-                        sources.dtype != np.uint32 or
-                        destinations.dtype != np.uint32
-                    ):
-                        raise NotImplementedError(
-                            "The Cosine Similarity is currently implemented exclusively for "
-                            "numpy arrays of type uint32, but you have provided objects of type "
-                            f"{sources.dtype} and {destinations.dtype}. "
-                        )
-                    if not self._transformer._node_feature.data.c_contiguous:
-                        self._transformer._node_feature = np.ascontiguousarray(
-                            self._transformer._node_feature
-                        )
-
-                    if self.has_node_type_features():
-                        raise NotImplementedError(
-                            "The node type features are not yet supported for the "
-                            "Cosine Similarity."
-                        )
-
-                    edge_embeddings.append(method(
-                        embedding=self._transformer._node_feature,
-                        source_node_ids=sources,
-                        destination_node_ids=destinations,
-                    ))
-                else:
-                    edge_embeddings.append(method(
-                        self._transformer.transform(
-                            sources, node_types=source_node_types),
-                        self._transformer.transform(
-                            destinations, node_types=destination_node_types)
-                    ))
+            for method in self._methods:
+                edge_embeddings.append(method(
+                    self._transformer.transform(
+                        sources,
+                        node_types=source_node_types
+                    ),
+                    self._transformer.transform(
+                        destinations,
+                        node_types=destination_node_types
+                    )
+                ))
 
         if edge_features is None:
             edge_features = []
@@ -722,11 +694,11 @@ class EdgeTransformer:
                 edge_embedding.reshape((expected_shape, -1))
                 for edge_embedding in edge_embeddings
             ],
-            * [
+            *[
                 edge_feature.reshape((expected_shape, -1))
                 for edge_feature in edge_features
             ],
-            * [
+            *[
                 edge_type_feature.reshape((expected_shape, -1))
                 for edge_type_feature in edge_type_features
             ]

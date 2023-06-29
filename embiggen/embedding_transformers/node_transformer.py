@@ -177,6 +177,11 @@ class NodeTransformer:
             if node_types is not None and self.has_node_type_features():
                 if isinstance(node_types, Graph):
                     node_types = node_types.get_node_type_ids()
+                    if isinstance(nodes, np.ndarray):
+                        node_types = [
+                            node_types[node]
+                            for node in nodes
+                        ]
                 node_type_feature_dimensionality = self._node_type_feature.shape[1]
                 node_type_features = np.vstack([
                     np.mean(

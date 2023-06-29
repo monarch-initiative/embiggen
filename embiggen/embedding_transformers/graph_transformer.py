@@ -209,6 +209,9 @@ class GraphTransformer:
             source_node_types = None
             destination_node_types = None
 
+        assert (source_node_types is not None) == self.has_node_type_features()
+        assert (destination_node_types is not None) == self.has_node_type_features()
+
         if isinstance(edge_types, Graph):
             edge_types.must_not_contain_unknown_edge_types()
             edge_types.must_not_be_multigraph()
@@ -231,6 +234,8 @@ class GraphTransformer:
                     edge_types = edge_types.get_directed_edge_type_names()
                 else:
                     edge_types = edge_types.get_upper_triangular_edge_type_names()
+
+        assert (edge_types is not None) == self.has_edge_type_features()
 
         return self._transformer.transform(
             sources,

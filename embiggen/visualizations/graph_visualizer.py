@@ -20,7 +20,7 @@ from humanize import apnumber, intword
 from matplotlib import collections as mc
 from matplotlib.axes import Axes
 from matplotlib.collections import Collection
-from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
+from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerBase, HandlerTuple
 from matplotlib.text import Annotation
@@ -642,106 +642,6 @@ class GraphVisualizer:
                 }
             ).fit_transform
 
-    def _get_embedding(
-        self,
-        embedding: Optional[
-            Union[
-                Type[AbstractEdgeFeature],
-                pd.DataFrame,
-                np.ndarray,
-                str,
-                EmbeddingResult,
-                Type[AbstractEmbeddingModel],
-            ]
-        ] = None,
-        **embedding_kwargs: Dict,
-    ) -> np.ndarray:
-        """Computes the node embedding if it was not otherwise provided.
-
-        Parameters
-        -------------------------
-        embedding: Optional[Union[pd.DataFrame, np.ndarray, str]] = None
-            Embedding of the graph.
-            If a string is provided, we will run the node embedding
-            from one of the available methods.
-        **embedding_kwargs: Dict
-            Kwargs to be forwarded to the node embedding algorithm.
-        """
-        if embedding is None:
-            if self._embedding_method_name == "auto":
-                raise ValueError(
-                    "The node embedding provided to the fit method was left "
-                    "to None, and the `node_embedding_method_name` parameter "
-                    "of the constructor of the GraphVisualizer was also left "
-                    "to the default `'auto'` value, therefore it was not "
-                    "possible to infer which node embedding you desired to "
-                    "compute for this visualization. Do provide either "
-                    "a node embedding method, such as `CBOW` or `SPINE` "
-                    "or a pre-computed embedding."
-                )
-            else:
-                embedding = self._embedding_method_name
-        if issubclass(type(embedding), AbstractEdgeFeature):
-            self._currently_plotting_edge_embedding = True
-            if (
-                self._embedding_method_name == "auto"
-                or self._has_autodetermined_embedding_name
-            ):
-                self._has_autodetermined_embedding_name = True
-                self._embedding_method_name = embedding.get_feature_name()
-            if not embedding.is_fit():
-                embedding.fit(self._support)
-            return embedding
-        if isinstance(embedding, str) or issubclass(
-            embedding.__class__, AbstractEmbeddingModel
-        ):
-            embedding = embed_graph(
-                graph=self._support,
-                embedding_model=embedding,
-                return_dataframe=False,
-                **embedding_kwargs,
-            )
-        if isinstance(embedding, EmbeddingResult):
-            if (
-                self._embedding_method_name == "auto"
-                or self._has_autodetermined_embedding_name
-            ):
-                self._has_autodetermined_embedding_name = True
-                self._embedding_method_name = embedding.embedding_method_name
-            embedding = np.hstack(embedding.get_all_node_embedding())
-        elif (
-            self._embedding_method_name == "auto"
-            or self._has_autodetermined_embedding_name
-        ):
-            self._has_autodetermined_embedding_name = True
-            self._embedding_method_name = self.automatically_detect_embedding_method(
-                embedding.values if isinstance(embedding, pd.DataFrame) else embedding
-            )
-
-        if embedding.shape[0] != self._graph.get_number_of_nodes():
-            raise ValueError(
-                f"The number of rows provided with the given node embedding {embedding.shape[0]} "
-                f"does not match the number of nodes in the graph {self._graph.get_number_of_nodes()}."
-            )
-
-        # Making sure that if the embedding is a dataframe, it is surely aligned.
-        if isinstance(embedding, pd.DataFrame):
-            for node_id in self.iterate_subsampled_node_ids():
-                node_name = self._graph.get_node_name_from_node_id(node_id)
-                if embedding.index[node_id] != node_name:
-                    raise ValueError(
-                        "The provided pandas DataFrame with the node embedding "
-                        "does not seem to be aligned with the provided graph. "
-                        f"Specifically, the value at the row `{node_id}` was expected "
-                        f"to have an index curresponding to the node name `{node_name}`, "
-                        f"but we have found `{embedding.index[node_id]}`."
-                    )
-            embedding = embedding.to_numpy()
-
-        self._currently_plotting_edge_embedding = False
-
-        return embedding
-
     def _shuffle(
         self,
         *args: List[Union[np.ndarray, pd.DataFrame, None]],
@@ -961,14 +861,28 @@ class GraphVisualizer:
         else:
             subsampled_node_ids = np.arange(self._graph.get_number_of_nodes())
 
+        assert node_features is not None or node_type_features is not None
+
         node_transformer = NodeTransformer(aligned_mapping=True)
         node_transformer.fit(
             node_feature=node_features,
             node_type_feature=node_type_features,
         )
-        node_embedding = node_transformer.transform(subsampled_node_ids)
+        node_embedding = node_transformer.transform(
+            subsampled_node_ids,
+            node_types=(self._support if self._support.has_node_types() else None),
+        )
+
+        assert node_embedding is not None
+        assert node_embedding.shape[0] == self.get_number_of_subsampled_nodes(), (
+            f"The number of rows of the node embedding ({node_embedding.shape[0]}) "
+            f"does not match the number of subsampled nodes ({self.get_number_of_subsampled_nodes()}). "
+            f"The graph has {self._graph.get_number_of_nodes()} nodes, and the subsampled "
+            f"nodes are {self._subsampled_node_ids.size}."
+        )
 
         self._node_decomposition = self.decompose(node_embedding)
+        assert self._node_decomposition.shape[0] == self.get_number_of_subsampled_nodes()
 
     def _get_positive_edges_embedding(
         self,
@@ -1059,6 +973,7 @@ class GraphVisualizer:
             edge_type_features=edge_type_features,
             allow_automatic_feature=True,
         )
+        self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
         self._positive_edge_decomposition = self.decompose(
             self._get_positive_edges_embedding(
                 node_features=node_features,
@@ -1070,15 +985,9 @@ class GraphVisualizer:
 
     def _get_edge_embedding(
         self,
-        node_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
-        ],
-        node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
-        ],
-        edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
-        ],
+        node_features: List[Union[pd.DataFrame, np.ndarray]],
+        node_type_features: List[Union[pd.DataFrame, np.ndarray]],
+        edge_type_features: List[Union[pd.DataFrame, np.ndarray]],
         edge_features: Optional[
             Union[
                 Type[AbstractEdgeFeature],
@@ -1123,7 +1032,12 @@ class GraphVisualizer:
                 node_type_feature=node_type_features,
                 edge_type_features=edge_type_features,
             )
-        return graph_transformer.transform(graph, edge_features=edge_features)
+        return graph_transformer.transform(
+            graph,
+            node_types=(graph if graph.has_node_types() and graph_transformer.has_node_type_features() else None),
+            edge_types=(graph if graph.has_edge_types() and graph_transformer.has_edge_type_features() else None),
+            edge_features=edge_features
+        )
 
     def _get_negative_edge_embedding(
         self,
@@ -1212,6 +1126,7 @@ class GraphVisualizer:
             edge_type_features=edge_type_features,
             allow_automatic_feature=True,
         )
+        self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
         positive_edge_embedding = self._get_positive_edges_embedding(
             node_features=node_features,
             node_type_features=node_type_features,
@@ -3643,6 +3558,11 @@ class GraphVisualizer:
         assert isinstance(metric_name, str)
         assert len(metric_name) > 0
         assert isinstance(metric, np.ndarray)
+        assert metric.shape[0] == self._graph.get_number_of_nodes() or metric.shape[0] == self._node_decomposition.shape[0], (
+            f"Metric shape {metric.shape} does not match "
+            f"node decomposition shape {self._node_decomposition.shape}. "
+            f"The graph has {self._graph.get_number_of_nodes()} nodes."
+        )
 
         if metric.shape[0] == self._support.get_number_of_nodes():
             metric = np.fromiter(
@@ -3669,7 +3589,10 @@ class GraphVisualizer:
         mask = metric > 0
 
         if not np.any(mask):
+            zeroed = True
             mask = np.full_like(mask, True, dtype=bool)
+        else:
+            zeroed = False
 
         returned_values = self._wrapped_plot_scatter(
             points=self._node_decomposition[mask],
@@ -3681,8 +3604,8 @@ class GraphVisualizer:
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap("RdYlBu"),
                 **(
-                    {"norm": SymLogNorm(linthresh=10, linscale=1)}
-                    if use_log_scale
+                    {"norm": LogNorm()}
+                    if use_log_scale and not zeroed
                     else {}
                 ),
             },
@@ -3987,7 +3910,7 @@ class GraphVisualizer:
         """
         return self._plot_node_metric(
             metric=self._support.get_number_of_squares_per_node(),
-            metric_name="Node squares",
+            metric_name="Squares",
             figure=figure,
             axes=axes,
             scatter_kwargs=scatter_kwargs,
@@ -4436,7 +4359,12 @@ class GraphVisualizer:
 
     def _plot_positive_and_negative_edges_distance_histogram(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         distance_name: str,
         distance_callback: str,
         figure: Optional[Figure] = None,
@@ -4448,8 +4376,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         distance_name: str
             The title for the heatmap.
         distance_callback: str
@@ -4471,14 +4401,23 @@ class GraphVisualizer:
             aligned_mapping=True,
             include_both_undirected_edges=False,
         )
-        graph_transformer.fit(node_features)
+        graph_transformer.fit(
+            node_feature=node_features,
+            node_type_feature=node_type_features,
+        )
 
         return self._plot_positive_and_negative_edges_metric_histogram(
             metric_name=distance_name,
             edge_metrics=np.vstack(
                 [
-                    graph_transformer.transform(self._negative_graph),
-                    graph_transformer.transform(self._positive_graph),
+                    graph_transformer.transform(
+                        self._negative_graph,
+                        node_types=(self._negative_graph if graph_transformer.has_node_type_features() else None),
+                    ),
+                    graph_transformer.transform(
+                        self._positive_graph,
+                        node_types=(self._positive_graph if graph_transformer.has_node_type_features() else None),
+                    ),
                 ]
             ).flatten(),
             figure=figure,
@@ -4489,7 +4428,12 @@ class GraphVisualizer:
 
     def _plot_positive_and_negative_edges_distance(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         distance_name: str,
         distance_callback: str,
         **kwargs: Dict,
@@ -4498,8 +4442,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         distance_name: str
             The title for the heatmap.
         distance_callback: str
@@ -4522,14 +4468,23 @@ class GraphVisualizer:
             include_both_undirected_edges=False,
         )
 
-        graph_transformer.fit(node_features)
+        graph_transformer.fit(
+            node_feature=node_features,
+            node_type_feature=node_type_features,
+        )
 
         return self._plot_positive_and_negative_edges_metric(
             metric_name=distance_name,
             edge_metrics=np.vstack(
                 [
-                    graph_transformer.transform(self._negative_graph),
-                    graph_transformer.transform(self._positive_graph),
+                    graph_transformer.transform(
+                        self._negative_graph,
+                        node_types=(self._negative_graph if graph_transformer.has_node_type_features() else None),
+                    ),
+                    graph_transformer.transform(
+                        self._positive_graph,
+                        node_types=(self._positive_graph if graph_transformer.has_node_type_features() else None),
+                    ),
                 ]
             ),
             **kwargs,
@@ -4537,7 +4492,12 @@ class GraphVisualizer:
 
     def plot_positive_and_negative_edges_euclidean_distance_histogram(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         figure: Optional[Figure] = None,
         axes: Optional[Figure] = None,
         apply_tight_layout: bool = True,
@@ -4547,8 +4507,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -4563,6 +4525,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_distance_histogram(
             node_features=node_features,
+            node_type_features=node_type_features,
             distance_name="Euclidean distance",
             distance_callback="L2Distance",
             figure=figure,
@@ -4573,7 +4536,12 @@ class GraphVisualizer:
 
     def plot_positive_and_negative_edges_euclidean_distance(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -4591,8 +4559,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -4633,6 +4603,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_distance(
             node_features=node_features,
+            node_type_features=node_type_features,
             distance_name="Euclidean distance",
             distance_callback="L2Distance",
             figure=figure,
@@ -4651,7 +4622,12 @@ class GraphVisualizer:
 
     def plot_positive_and_negative_edges_cosine_similarity_histogram(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         figure: Optional[Figure] = None,
         axes: Optional[Figure] = None,
         apply_tight_layout: bool = True,
@@ -4661,8 +4637,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -4677,6 +4655,7 @@ class GraphVisualizer:
         """
         return self._plot_positive_and_negative_edges_distance_histogram(
             node_features=node_features,
+            node_type_features=node_type_features,
             distance_name="Cosine similarity",
             distance_callback="CosineSimilarity",
             figure=figure,
@@ -4687,7 +4666,12 @@ class GraphVisualizer:
 
     def plot_positive_and_negative_edges_cosine_similarity(
         self,
-        node_features: np.ndarray,
+        node_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
+        node_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ],
         figure: Optional[Figure] = None,
         axes: Optional[Axes] = None,
         scatter_kwargs: Optional[Dict] = None,
@@ -4705,8 +4689,10 @@ class GraphVisualizer:
 
         Parameters
         ------------------------------
-        node_features: np.ndarray
-            Node features to compute distances on.
+        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node features to use.
+        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]]
+            The node type features to use.
         figure: Optional[Figure] = None,
             Figure to use to plot. If None, a new one is created using the
             provided kwargs.
@@ -4747,6 +4733,7 @@ class GraphVisualizer:
         """
         returned_values = self._plot_positive_and_negative_edges_distance(
             node_features=node_features,
+            node_type_features=node_type_features,
             distance_name="Cosine similarity",
             distance_callback="CosineSimilarity",
             figure=figure,
@@ -5265,7 +5252,6 @@ class GraphVisualizer:
         number_of_columns: int = 4,
         show_letters: bool = True,
         include_distribution_plots: bool = True,
-        **embedding_kwargs: Dict,
     ) -> Tuple[Figure, Axes]:
         """Fits and plots all available features of the graph.
 
@@ -5308,7 +5294,7 @@ class GraphVisualizer:
             edge_type_features=edge_type_features,
             allow_automatic_feature=True,
         )
-        if not self._currently_plotting_edge_embedding:
+        if len(node_features) + len(node_type_features) > 0:
             self.fit_nodes(
                 node_features=node_features,
                 node_type_features=node_type_features,
@@ -5323,7 +5309,7 @@ class GraphVisualizer:
         node_scatter_plot_methods_to_call = []
         distribution_plot_methods_to_call = []
 
-        if not self._currently_plotting_edge_embedding:
+        if len(node_features) + len(node_type_features) > 0:
             node_scatter_plot_methods_to_call.extend(
                 [
                     self.plot_node_degrees,
@@ -5350,36 +5336,40 @@ class GraphVisualizer:
                 ]
             )
 
-        distribution_plot_methods_to_call.extend(
-            [
-                self.plot_node_degree_distribution,
-                *(
-                    (self.plot_triangle_distribution,)
-                    if self._support.get_number_of_nodes() < 10_000_000
-                    else ()
-                ),
-                *(
-                    (self.plot_square_distribution,)
-                    if self._support.get_number_of_edges() < 1_000_000
-                    else ()
-                ),
-                *(
-                    (self.plot_approximated_closeness_centrality_distribution,)
-                    if self._support.get_number_of_nodes() < 10_000_000
-                    else ()
-                ),
-                *(
-                    (self.plot_approximated_harmonic_centrality_distribution,)
-                    if self._support.get_number_of_nodes() < 10_000_000
-                    else ()
-                ),
-            ]
-        )
+            distribution_plot_methods_to_call.extend(
+                [
+                    self.plot_node_degree_distribution,
+                    *(
+                        (self.plot_triangle_distribution,)
+                        if self._support.get_number_of_nodes() < 10_000_000
+                        else ()
+                    ),
+                    *(
+                        (self.plot_square_distribution,)
+                        if self._support.get_number_of_edges() < 1_000_000
+                        else ()
+                    ),
+                    *(
+                        (self.plot_approximated_closeness_centrality_distribution,)
+                        if self._support.get_number_of_nodes() < 10_000_000
+                        else ()
+                    ),
+                    *(
+                        (self.plot_approximated_harmonic_centrality_distribution,)
+                        if self._support.get_number_of_nodes() < 10_000_000
+                        else ()
+                    ),
+                ]
+            )
 
         def plot_distance_wrapper(plot_distance):
             @functools.wraps(plot_distance)
             def wrapped_plot_distance(**kwargs):
-                return plot_distance(node_features=node_features, **kwargs)
+                return plot_distance(
+                    node_features=node_features,
+                    node_type_features=node_type_features,
+                    **kwargs
+                )
 
             return wrapped_plot_distance
 
@@ -5391,38 +5381,32 @@ class GraphVisualizer:
             self.plot_positive_and_negative_edges_resource_allocation_index,
         ]
 
-        if len(node_features) > 0:
-            edge_scatter_plot_methods_to_call.extend(
-                [
-                    plot_distance_wrapper(
-                        self.plot_positive_and_negative_edges_euclidean_distance
-                    ),
-                    plot_distance_wrapper(
-                        self.plot_positive_and_negative_edges_cosine_similarity
-                    ),
-                ]
-            )
+        if len(node_features) + len(node_type_features) > 0:
+            edge_scatter_plot_methods_to_call.extend([
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_euclidean_distance
+                ),
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_cosine_similarity
+                ),
+            ])
 
-        distribution_plot_methods_to_call.extend(
-            [
-                self.plot_positive_and_negative_adamic_adar_histogram,
-                self.plot_positive_and_negative_jaccard_coefficient_histogram,
-                self.plot_positive_and_negative_preferential_attachment_histogram,
-                self.plot_positive_and_negative_resource_allocation_index_histogram,
-            ]
-        )
+        distribution_plot_methods_to_call.extend([
+            self.plot_positive_and_negative_adamic_adar_histogram,
+            self.plot_positive_and_negative_jaccard_coefficient_histogram,
+            self.plot_positive_and_negative_preferential_attachment_histogram,
+            self.plot_positive_and_negative_resource_allocation_index_histogram,
+        ])
 
-        if len(node_features) > 0:
-            distribution_plot_methods_to_call.extend(
-                [
-                    plot_distance_wrapper(
-                        self.plot_positive_and_negative_edges_euclidean_distance_histogram
-                    ),
-                    plot_distance_wrapper(
-                        self.plot_positive_and_negative_edges_cosine_similarity_histogram
-                    ),
-                ]
-            )
+        if len(node_features) + len(node_type_features) > 0:
+            distribution_plot_methods_to_call.extend([
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_euclidean_distance_histogram
+                ),
+                plot_distance_wrapper(
+                    self.plot_positive_and_negative_edges_cosine_similarity_histogram
+                ),
+            ])
 
         if (
             not self._currently_plotting_edge_embedding

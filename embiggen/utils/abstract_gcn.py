@@ -809,7 +809,36 @@ class AbstractGCN(AbstractClassifierModel):
                 "nor use a node type embedding layer and neiher use node type features, "
                 "it does not make sense to use a GCN model."
             )
-    
+
+        node_features=self.normalize_node_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_features=node_features,
+            allow_automatic_feature=True,
+        )
+        node_type_features=self.normalize_node_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            node_type_features=node_type_features,
+            allow_automatic_feature=True,
+        )
+        edge_type_features=self.normalize_edge_type_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_type_features=edge_type_features,
+            allow_automatic_feature=True,
+        )
+        edge_features=self.normalize_edge_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_features=edge_features,
+            allow_automatic_feature=True,
+        )
+
         self._model: Type[Model] = self._build_model(
             support,
             graph_convolution_model=self._build_graph_convolution_model(
