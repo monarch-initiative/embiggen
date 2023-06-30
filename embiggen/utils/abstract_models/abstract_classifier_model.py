@@ -259,7 +259,7 @@ class AbstractClassifierModel(AbstractModel):
                 isinstance(feature, pd.DataFrame)
                 and feature.shape[0] >= expected_number_of_elements
             ):
-                if feature.has_duplicates:
+                if feature.index.has_duplicates:
                     raise ValueError(
                         f"The feature provided as {expected_parameter_name} has {feature.shape[0]} rows, "
                         f"while the expected number of elements is {expected_number_of_elements}. "
@@ -338,7 +338,7 @@ class AbstractClassifierModel(AbstractModel):
                             isinstance(feature, pd.DataFrame)
                             and feature.shape[0] >= candidate_number_of_elements
                         ):
-                            if feature.has_duplicates:
+                            if feature.index.has_duplicates:
                                 raise ValueError(
                                     f"The feature provided as {candidate_feature_parameter} has {feature.shape[0]} rows, "
                                     f"while the candidate number of elements is {candidate_number_of_elements}. "
