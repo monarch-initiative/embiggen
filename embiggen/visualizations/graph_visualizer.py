@@ -1021,11 +1021,12 @@ class GraphVisualizer:
         )
     
         edge_features = [
-            edge_feature.get_edge_feature_from_graph(
+            feature
+            for edge_feature in edge_features
+            for feature in edge_feature.get_edge_feature_from_graph(
                 graph=graph,
                 support=self._support,
             ).values()
-            for edge_feature in edge_features
         ]
         graph_transformer.fit(
             node_feature=node_features,
