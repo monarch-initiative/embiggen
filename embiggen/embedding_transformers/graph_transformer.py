@@ -15,7 +15,7 @@ class GraphTransformer:
         self,
         methods: Union[List[str], str] = "Hadamard",
         aligned_mapping: bool = False,
-        include_both_undirected_edges: bool = True
+        include_both_undirected_edges: bool = True,
     ):
         """Create new GraphTransformer object.
 
@@ -60,10 +60,15 @@ class GraphTransformer:
 
     def fit(
         self,
-        node_feature: Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]],
-        node_type_feature: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None,
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray,
-                                           List[Union[pd.DataFrame, np.ndarray]]]] = None,
+        node_feature: Union[
+            pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]
+        ],
+        node_type_feature: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
+        edge_type_features: Optional[
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
+        ] = None,
     ):
         """Fit the model.
 
@@ -85,17 +90,17 @@ class GraphTransformer:
         self._transformer.fit(
             node_feature=node_feature,
             node_type_feature=node_type_feature,
-            edge_type_features=edge_type_features
+            edge_type_features=edge_type_features,
         )
 
     def has_node_type_features(self) -> bool:
         """Return whether the transformer has a node type feature."""
         return self._transformer.has_node_type_features()
-    
+
     def has_edge_type_features(self) -> bool:
         """Return whether the transformer has a edge type feature."""
         return self._transformer.has_edge_type_features()
-    
+
     def is_aligned_mapping(self) -> bool:
         """Return whether the transformer has a aligned mapping."""
         return self._transformer.is_aligned_mapping()
@@ -103,7 +108,9 @@ class GraphTransformer:
     def transform(
         self,
         graph: Union[Graph, np.ndarray, List[List[str]], List[List[int]]],
-        node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        node_types: Optional[
+            Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]
+        ] = None,
         edge_types: Optional[Union[Graph, List[str], List[int], np.ndarray]] = None,
         edge_features: Optional[Union[np.ndarray, List[np.ndarray]]] = None,
     ) -> np.ndarray:
@@ -153,16 +160,16 @@ class GraphTransformer:
         if isinstance(edge_node_ids, List):
             edge_node_ids = np.array(edge_node_ids)
         if (
-            isinstance(edge_node_ids, tuple) and
-            len(edge_node_ids) == 2 and
-            all(isinstance(e, np.ndarray) for e in edge_node_ids)
+            isinstance(edge_node_ids, tuple)
+            and len(edge_node_ids) == 2
+            and all(isinstance(e, np.ndarray) for e in edge_node_ids)
         ):
             if (
-                len(edge_node_ids[0].shape) != 1 or
-                len(edge_node_ids[1].shape) != 1 or
-                edge_node_ids[0].shape[0] == 0 or
-                edge_node_ids[1].shape[0] == 0 or
-                edge_node_ids[0].shape[0] != edge_node_ids[1].shape[0]
+                len(edge_node_ids[0].shape) != 1
+                or len(edge_node_ids[1].shape) != 1
+                or edge_node_ids[0].shape[0] == 0
+                or edge_node_ids[1].shape[0] == 0
+                or edge_node_ids[0].shape[0] != edge_node_ids[1].shape[0]
             ):
                 raise ValueError(
                     "When providing a tuple of numpy arrays containing the source and destination "
@@ -174,7 +181,11 @@ class GraphTransformer:
             sources = edge_node_ids[0]
             destinations = edge_node_ids[1]
         elif isinstance(edge_node_ids, np.ndarray):
-            if len(edge_node_ids.shape) != 2 or edge_node_ids.shape[1] != 2 or edge_node_ids.shape[0] == 0:
+            if (
+                len(edge_node_ids.shape) != 2
+                or edge_node_ids.shape[1] != 2
+                or edge_node_ids.shape[0] == 0
+            ):
                 raise ValueError(
                     "When providing a numpy array containing the source and destination "
                     "node IDs representing the graph edges, we expect to receive an array "
@@ -243,5 +254,5 @@ class GraphTransformer:
             source_node_types=source_node_types,
             destination_node_types=destination_node_types,
             edge_types=edge_types,
-            edge_features=edge_features
+            edge_features=edge_features,
         )

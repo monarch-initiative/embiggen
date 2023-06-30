@@ -996,27 +996,20 @@ class GraphVisualizer:
         node_features: List[Union[pd.DataFrame, np.ndarray]],
         node_type_features: List[Union[pd.DataFrame, np.ndarray]],
         edge_type_features: List[Union[pd.DataFrame, np.ndarray]],
-        edge_features: Optional[
-            Union[
-                Type[AbstractEdgeFeature],
-                pd.DataFrame,
-                np.ndarray,
-                List[Union[pd.DataFrame, np.ndarray]],
-            ]
-        ],
+        edge_features: List[Type[AbstractEdgeFeature]],
         graph: Graph,
     ) -> np.ndarray:
         """Executes aggregation of negative edge embeddings.
 
         Parameters
         -------------------------
-        node_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+        node_features: List[Union[pd.DataFrame, np.ndarray]],
             The node features to use.
-        node_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+        node_type_features: List[Union[pd.DataFrame, np.ndarray]],
             The node type features to use.
-        edge_type_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+        edge_type_features: List[Union[pd.DataFrame, np.ndarray]],
             The edge type features to use.
-        edge_features: Optional[Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]] = None
+        edge_features: List[Type[AbstractEdgeFeature]]
             The edge features to use.
         graph: Graph
             Graph to use to compute the edge embedding.
@@ -1026,20 +1019,19 @@ class GraphVisualizer:
             aligned_mapping=True,
             include_both_undirected_edges=False,
         )
-        if issubclass(type(edge_features), AbstractEdgeFeature):
-            edge_features = list(
-                edge_features.get_edge_feature_from_graph(
-                    graph=graph,
-                    support=self._support,
-                ).values()
-            )
-        else:
-            edge_features = None
-            graph_transformer.fit(
-                node_feature=node_features,
-                node_type_feature=node_type_features,
-                edge_type_features=edge_type_features,
-            )
+    
+        edge_features = [
+            edge_feature.get_edge_feature_from_graph(
+                graph=graph,
+                support=self._support,
+            ).values()
+            for edge_feature in edge_features
+        ]
+        graph_transformer.fit(
+            node_feature=node_features,
+            node_type_feature=node_type_features,
+            edge_type_features=edge_type_features,
+        )
         return graph_transformer.transform(
             graph,
             node_types=(graph if graph.has_node_types() and graph_transformer.has_node_type_features() else None),
