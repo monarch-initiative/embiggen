@@ -11,19 +11,27 @@ import pandas as pd
 from cache_decorator import Cache
 from ensmallen import Graph, express_measures
 from environments_utils import must_be_in_slurm_node
-from sklearn.metrics import (accuracy_score, balanced_accuracy_score, f1_score,
-                             hamming_loss, precision_score, recall_score,
-                             roc_auc_score)
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    f1_score,
+    hamming_loss,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 from tqdm.auto import tqdm, trange
 from userinput.utils import must_be_in_set
 
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.abstract_models.abstract_embedding_model import (
-    AbstractEmbeddingModel, EmbeddingResult)
-from embiggen.utils.abstract_models.abstract_feature_preprocessor import \
-    AbstractFeaturePreprocessor
-from embiggen.utils.abstract_models.abstract_model import (AbstractModel,
-                                                           abstract_class)
+    AbstractEmbeddingModel,
+    EmbeddingResult,
+)
+from embiggen.utils.abstract_models.abstract_feature_preprocessor import (
+    AbstractFeaturePreprocessor,
+)
+from embiggen.utils.abstract_models.abstract_model import AbstractModel, abstract_class
 from embiggen.utils.abstract_models.list_formatting import format_list
 
 
@@ -66,7 +74,7 @@ class AbstractClassifierModel(AbstractModel):
         self,
         expected_feature_shapes: Optional[List[Optional[Tuple[int]]]],
         provided_features: Optional[List[Union[np.ndarray, Any]]],
-        feature_name: str
+        feature_name: str,
     ) -> List[Optional[Tuple[int]]]:
         """Check that the provided features have the expected shapes."""
         if provided_features is None and expected_feature_shapes is None:
@@ -85,8 +93,9 @@ class AbstractClassifierModel(AbstractModel):
         # it on the provided features.
         if expected_feature_shapes is None:
             return [
-                provided_feature.shape if isinstance(
-                    provided_feature, np.ndarray) else None
+                provided_feature.shape
+                if isinstance(provided_feature, np.ndarray)
+                else None
                 for provided_feature in provided_features
             ]
         if len(expected_feature_shapes) != len(provided_features):
@@ -122,29 +131,252 @@ class AbstractClassifierModel(AbstractModel):
                     )
         return expected_feature_shapes
 
-    def _check_node_features_shapes(self, provided_node_features: Optional[List[Union[np.ndarray, Any]]],):
+    def _check_node_features_shapes(
+        self,
+        provided_node_features: Optional[List[Union[np.ndarray, Any]]],
+    ):
         """Check that the provided node features have the expected shapes."""
         self._node_feature_shapes = self._check_feature_shapes(
             expected_feature_shapes=self._node_feature_shapes,
             provided_features=provided_node_features,
-            feature_name="node"
+            feature_name="node",
         )
 
-    def _check_node_type_features_shapes(self, provided_node_type_features: Optional[List[Union[np.ndarray, Any]]],):
+    def _check_node_type_features_shapes(
+        self,
+        provided_node_type_features: Optional[List[Union[np.ndarray, Any]]],
+    ):
         """Check that the provided node type features have the expected shapes."""
         self._node_type_feature_shapes = self._check_feature_shapes(
             expected_feature_shapes=self._node_type_feature_shapes,
             provided_features=provided_node_type_features,
-            feature_name="node type"
+            feature_name="node type",
         )
 
-    def _check_edge_type_features_shapes(self, provided_edge_type_features: Optional[List[Union[np.ndarray, Any]]],):
+    def _check_edge_type_features_shapes(
+        self,
+        provided_edge_type_features: Optional[List[Union[np.ndarray, Any]]],
+    ):
         """Check that the provided edge type features have the expected shapes."""
         self._edge_type_feature_shapes = self._check_feature_shapes(
             expected_feature_shapes=self._edge_type_feature_shapes,
             provided_features=provided_edge_type_features,
-            feature_name="edge type"
+            feature_name="edge type",
         )
+
+    @classmethod
+    def _handle_potentially_misparametrized_edge_features(
+        cls, features: List[Any], expected_parameter_name: str
+    ):
+        """Raises an exception if an edge feature-like type was provided instead than the expected feature type.
+
+        Parameters
+        ---------------------
+        features: List[Any]
+            The features to check.
+        expected_feature_name: str
+            The name of the expected feature type.
+        """
+        for feature in features:
+            if issubclass(type(feature), AbstractEdgeFeature):
+                raise ValueError(
+                    f"The provided {expected_parameter_name} features are of type `{type(feature)}`, "
+                    f"which is an edge feature, called {feature.get_feature_name()}. Edge features are not supported "
+                    f"as {expected_parameter_name}, most likely you meant to provide them as edge features. "
+                    f"Instead of providing them for the parameter `{expected_parameter_name}`, "
+                    "please provide them for the `edge_features` parameter."
+                )
+
+    @classmethod
+    def _handle_potentially_misparametrized_features(
+        cls,
+        features: List[Union[pd.DataFrame, np.ndarray]],
+        expected_parameter_name: str,
+        expected_number_of_elements: int,
+        expected_getter_from_index,
+        expected_has_index_name,
+        graph: Graph,
+    ):
+        """Raises an exception if a feature was provided instead of expected feature type.
+
+        Parameters
+        ---------------------
+        features: List[Union[pd.DataFrame, np.ndarray]]
+            The features to check.
+        expected_parameter_name: str
+            The name of the expected parameter.
+        expected_number_of_elements: int
+            The expected number of elements in the feature.
+        expected_getter_from_index
+            The expected getter from index.
+        expected_has_index_name
+            Checks whether a provided index name exists in the current graph.
+        graph: Graph
+            The graph to check for.
+        """
+
+        if graph.get_name().lower() != "graph":
+            graph_name_message = (
+                f"You are using a graph with name `{graph.get_name()}`. "
+            )
+        else:
+            graph_name_message = ""
+
+        for feature in features:
+            # If the feature is neither a numpy array nor a pandas dataframe, we raise an exception.
+            if not isinstance(feature, (np.ndarray, pd.DataFrame)):
+                raise ValueError(
+                    f"The provided {expected_parameter_name} features are of type `{type(feature)}`, "
+                    "while we only currently support numpy arrays and pandas DataFrames. "
+                    f"{graph_name_message}"
+                    "What behaviour were you expecting with this feature? "
+                    "Please do open an issue on Embiggen and let us know!"
+                )
+
+            # We check whether the provided feature has the expected number of elements.
+            if feature.shape[0] == expected_number_of_elements:
+                # If the feature is a numpy array, we cannot execute any more checks
+                # other than the number of elements and therefore we skip the rest.
+                if isinstance(feature, np.ndarray):
+                    continue
+
+                # If the feature is a pandas dataframe, we check that the index is the same as the one
+                # of the expected feature.
+                if isinstance(feature, pd.DataFrame):
+                    index_full_match = True
+                    for index, index_value in enumerate(feature.index):
+                        # We convert the index value from the dataframe to string
+                        # in the case that pandas has converted it to a number.
+                        if expected_getter_from_index(index) != str(index_value):
+                            index_full_match = False
+                            break
+                    if index_full_match:
+                        continue
+            # We don't give up yet - if the provided feature is a DataFrame, and the number of rows
+            # in the dataframe is higher or equal to the expected number of elements, we check that
+            # all of the index of the expected feature are contained in the provided dataframe.
+            if (
+                isinstance(feature, pd.DataFrame)
+                and feature.shape[0] >= expected_number_of_elements
+            ):
+                if feature.has_duplicates:
+                    raise ValueError(
+                        f"The feature provided as {expected_parameter_name} has {feature.shape[0]} rows, "
+                        f"while the expected number of elements is {expected_number_of_elements}. "
+                        "Furthermore, the provided feature has duplicate rows, which is not supported. "
+                        f"{graph_name_message}"
+                    )
+                matched_index_name_counter = 0
+                for index_value in feature.index:
+                    if expected_has_index_name(index_value):
+                        matched_index_name_counter += 1
+                if matched_index_name_counter == expected_number_of_elements:
+                    continue
+
+            for (
+                candidate_feature_parameter,
+                candidate_number_of_elements,
+                getter_from_index,
+                candidate_has_index_name,
+            ) in (
+                (
+                    "node_features",
+                    graph.get_number_of_nodes(),
+                    graph.get_node_name_from_node_id,
+                    graph.has_node_name,
+                ),
+                (
+                    "node_type_features",
+                    graph.get_number_of_node_types() if graph.has_node_types() else 0,
+                    graph.get_node_type_name_from_node_type_id,
+                    graph.has_node_type_name,
+                ),
+                (
+                    "edge_type_features",
+                    graph.get_number_of_edge_types() if graph.has_edge_types() else 0,
+                    graph.get_edge_type_name_from_edge_type_id,
+                    graph.has_edge_type_name,
+                ),
+            ):
+                # If the number of elements of the candidate feature is not equal to the number of elements
+                # of the provided feature, surely the provided feature is not of the type of the candidate feature.
+                if candidate_number_of_elements != feature.shape[0]:
+                    continue
+                # If the current candidate feature parameter is equal to the expected parameter name,
+                # we skip it, as we are checking for the other features.
+                if expected_parameter_name == candidate_feature_parameter:
+                    continue
+                # If the number of elements of the candidate feature is equal to the number of elements
+                # of the provided feature, we check that the provided feature is not of the type of the candidate feature.
+                if candidate_number_of_elements == feature.shape[0]:
+                    # If the provided feature is a dataframe, we check that the index is the same as the one
+                    # of the candidate feature. If so, it is extremely likely that the user provided the feature
+                    # as the wrong parameter.
+                    if isinstance(feature, pd.DataFrame):
+                        index_match_completely = True
+                        for index, index_value in enumerate(feature.index):
+                            # We convert the index value from the dataframe to string
+                            # in the case that pandas has converted it to a number.
+                            if getter_from_index(index) != str(index_value):
+                                index_match_completely = False
+                                break
+                        if index_match_completely:
+                            raise ValueError(
+                                f"The provided {expected_parameter_name} features have shape {feature.shape[0]} "
+                                f"which matches the shape of the {candidate_feature_parameter} features. "
+                                "Furthermore, the index of the provided features matches the index of the "
+                                f"{candidate_feature_parameter} features. "
+                                f"{graph_name_message}"
+                                "Instead of providing them for the parameter `{expected_parameter_name}`, "
+                                f"most likely you meant to provide them as {candidate_feature_parameter}."
+                            )
+
+                        # We don't give up yet - if the provided feature is a DataFrame, and the number of rows
+                        # in the dataframe is higher or equal to the candidate number of elements, we check that
+                        # all of the index of the candidate feature are contained in the provided dataframe.
+                        if (
+                            isinstance(feature, pd.DataFrame)
+                            and feature.shape[0] >= candidate_number_of_elements
+                        ):
+                            if feature.has_duplicates:
+                                raise ValueError(
+                                    f"The feature provided as {candidate_feature_parameter} has {feature.shape[0]} rows, "
+                                    f"while the candidate number of elements is {candidate_number_of_elements}. "
+                                    f"{graph_name_message}"
+                                    "Furthermore, the provided feature has duplicate rows, which is not supported."
+                                )
+                            matched_index_name_counter = 0
+                            for index_value in feature.index:
+                                if candidate_has_index_name(index_value):
+                                    matched_index_name_counter += 1
+                            if (
+                                matched_index_name_counter
+                                == candidate_number_of_elements
+                            ):
+                                continue
+
+                        # If not even that works, the current feature is surely not of the candidate
+                        # feature type and we can continue to the next candidate.
+                        continue
+
+                    raise ValueError(
+                        f"The provided {expected_parameter_name} features have shape {feature.shape[0]} "
+                        f"which matches the shape of the {candidate_feature_parameter} features "
+                        f"and does not match the expepected number of elements {expected_number_of_elements}."
+                        f"{graph_name_message}"
+                        f"Instead of providing them for the parameter `{expected_parameter_name}`, "
+                        f"most likely you meant to provide them as {candidate_feature_parameter}."
+                    )
+
+            # If we got this far down, it means that the current feature is not compatible with
+            # the expected feature and NONE of the candidate features. Therefore, we raise an exception.
+            raise ValueError(
+                f"The provided {expected_parameter_name} features have shape {feature.shape[0]} "
+                f"and do not match the expected number of elements {expected_number_of_elements}. "
+                f"{graph_name_message}"
+                "We checked this feature against node features, node type features and edge type features "
+                "and none of them seem to match - it is unclear what you expected this feature to be."
+            )
 
     def _fit(
         self,
@@ -424,23 +656,20 @@ class AbstractClassifierModel(AbstractModel):
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(type(node_feature), AbstractEmbeddingModel):
-            if (
-                skip_evaluation_biased_feature
-                and (
-                    cls.task_involves_edge_types()
-                    and node_feature.can_use_edge_types()
-                    and node_feature.is_using_edge_types()
-                    or cls.task_involves_node_types()
-                    and node_feature.can_use_node_types()
-                    and node_feature.is_using_node_types()
-                    or cls.task_involves_edge_weights()
-                    and node_feature.can_use_edge_weights()
-                    and node_feature.is_using_edge_weights()
-                    or cls.task_involves_topology()
-                    and node_feature.is_topological()
-                    or not precompute_constant_stocastic_features
-                    and node_feature.is_stocastic()
-                )
+            if skip_evaluation_biased_feature and (
+                cls.task_involves_edge_types()
+                and node_feature.can_use_edge_types()
+                and node_feature.is_using_edge_types()
+                or cls.task_involves_node_types()
+                and node_feature.can_use_node_types()
+                and node_feature.is_using_node_types()
+                or cls.task_involves_edge_weights()
+                and node_feature.can_use_edge_weights()
+                and node_feature.is_using_edge_weights()
+                or cls.task_involves_topology()
+                and node_feature.is_topological()
+                or not precompute_constant_stocastic_features
+                and node_feature.is_stocastic()
             ):
                 yield node_feature
                 return None
@@ -465,8 +694,7 @@ class AbstractClassifierModel(AbstractModel):
             node_features_preprocessing_steps = []
 
         if not isinstance(node_features_preprocessing_steps, list):
-            node_features_preprocessing_steps = [
-                node_features_preprocessing_steps]
+            node_features_preprocessing_steps = [node_features_preprocessing_steps]
 
         for preprocessing_step in node_features_preprocessing_steps:
             node_feature = preprocessing_step.transform(
@@ -476,32 +704,16 @@ class AbstractClassifierModel(AbstractModel):
         if isinstance(node_feature, EmbeddingResult):
             node_feature = node_feature.get_all_node_embedding()
 
+        cls._handle_potentially_misparametrized_features(
+            features=node_feature,
+            expected_parameter_name="node_features",
+            expected_number_of_elements=graph.get_number_of_nodes(),
+            expected_getter_from_index=graph.get_node_name_from_node_id,
+            expected_has_index_name=graph.has_node_name,
+            graph=graph,
+        )
+
         for nf in node_feature:
-            if not isinstance(nf, (np.ndarray, pd.DataFrame)):
-                raise ValueError(
-                    f"The provided node features are of type `{type(nf)}`, "
-                    "while we only currently support numpy arrays and pandas DataFrames. "
-                    "What behaviour were you expecting with this feature? "
-                    "Please do open an issue on Embiggen and let us know!"
-                )
-
-            if graph.get_number_of_nodes() != nf.shape[0]:
-                raise ValueError(
-                    (
-                        "The provided node features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {number_of_nodes} nodes. "
-                        "Maybe these features refer to another "
-                        "version of the graph or another graph "
-                        "entirely?"
-                    ).format(
-                        rows_number=nf.shape[0],
-                        graph_name=""
-                        if graph.get_name().lower() == "graph"
-                        else f" {graph.get_name()}",
-                        number_of_nodes=graph.get_number_of_nodes(),
-                    )
-                )
-
             # If it is a dataframe we align it
             if isinstance(nf, pd.DataFrame):
                 yield nf.loc[graph.get_node_names()].to_numpy()
@@ -523,8 +735,7 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray,
-                          Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -583,6 +794,13 @@ class AbstractClassifierModel(AbstractModel):
 
         if not isinstance(node_features, (list, tuple)):
             node_features = [node_features]
+
+        # We check that the provided features are not edge features,
+        # and if they are we provide a meaningful error.
+        cls._handle_potentially_misparametrized_edge_features(
+            features=node_features,
+            expected_parameter_name="node_features",
+        )
 
         return [
             normalized_node_feature
@@ -671,20 +889,17 @@ class AbstractClassifierModel(AbstractModel):
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(node_type_feature.__class__, AbstractEmbeddingModel):
-            if (
-                skip_evaluation_biased_feature
-                and (
-                    cls.task_involves_edge_types()
-                    and node_type_feature.is_using_edge_types()
-                    or cls.task_involves_node_types()
-                    and node_type_feature.is_using_node_types()
-                    or cls.task_involves_edge_weights()
-                    and node_type_feature.is_using_edge_weights()
-                    or cls.task_involves_topology()
-                    and node_type_feature.is_topological()
-                    or not precompute_constant_stocastic_features
-                    and node_type_feature.is_stocastic()
-                )
+            if skip_evaluation_biased_feature and (
+                cls.task_involves_edge_types()
+                and node_type_feature.is_using_edge_types()
+                or cls.task_involves_node_types()
+                and node_type_feature.is_using_node_types()
+                or cls.task_involves_edge_weights()
+                and node_type_feature.is_using_edge_weights()
+                or cls.task_involves_topology()
+                and node_type_feature.is_topological()
+                or not precompute_constant_stocastic_features
+                and node_type_feature.is_stocastic()
             ):
                 yield node_type_feature
                 return None
@@ -706,32 +921,16 @@ class AbstractClassifierModel(AbstractModel):
         if not isinstance(node_type_feature, list):
             node_type_feature = [node_type_feature]
 
+        cls._handle_potentially_misparametrized_features(
+            features=node_type_feature,
+            expected_parameter_name="node_type_features",
+            expected_number_of_elements=graph.get_number_of_node_types(),
+            expected_getter_from_index=graph.get_node_type_name_from_node_type_id,
+            expected_has_index_name=graph.has_node_type_name,
+            graph=graph,
+        )
+
         for nf in node_type_feature:
-            if not isinstance(nf, (np.ndarray, pd.DataFrame)):
-                raise ValueError(
-                    f"The provided node type features are of type `{type(nf)}`, "
-                    "while we only currently support numpy arrays and pandas DataFrames. "
-                    "What behaviour were you expecting with this feature? "
-                    "Please do open an issue on Embiggen and let us know!"
-                )
-
-            if graph.get_number_of_node_types() != nf.shape[0]:
-                raise ValueError(
-                    (
-                        "The provided node type features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {number_of_node_types} nodes. "
-                        "Maybe these features refer to another "
-                        "version of the graph or another graph "
-                        "entirely?"
-                    ).format(
-                        rows_number=nf.shape[0],
-                        graph_name=""
-                        if graph.get_name().lower() == "graph"
-                        else " {}".format(graph.get_name()),
-                        number_of_node_types=graph.get_number_of_node_types(),
-                    )
-                )
-
             # If it is a dataframe we align it
             if isinstance(nf, pd.DataFrame):
                 yield nf.loc[graph.get_unique_node_type_names()].to_numpy()
@@ -753,8 +952,7 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray,
-                          Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -805,6 +1003,13 @@ class AbstractClassifierModel(AbstractModel):
 
         if not isinstance(node_type_features, (list, tuple)):
             node_type_features = [node_type_features]
+
+        # We check that the provided features are not edge features,
+        # and if they are we provide a meaningful error.
+        cls._handle_potentially_misparametrized_edge_features(
+            features=node_type_features,
+            expected_parameter_name="node_type_features",
+        )
 
         return [
             normalized_node_type_feature
@@ -892,20 +1097,17 @@ class AbstractClassifierModel(AbstractModel):
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(edge_type_feature.__class__, AbstractEmbeddingModel):
-            if (
-                skip_evaluation_biased_feature
-                and (
-                    cls.task_involves_edge_types()
-                    and edge_type_feature.is_using_edge_types()
-                    or cls.task_involves_edge_types()
-                    and edge_type_feature.is_using_edge_types()
-                    or cls.task_involves_edge_weights()
-                    and edge_type_feature.is_using_edge_weights()
-                    or cls.task_involves_topology()
-                    and edge_type_feature.is_topological()
-                    or not precompute_constant_stocastic_features
-                    and edge_type_feature.is_stocastic()
-                )
+            if skip_evaluation_biased_feature and (
+                cls.task_involves_edge_types()
+                and edge_type_feature.is_using_edge_types()
+                or cls.task_involves_edge_types()
+                and edge_type_feature.is_using_edge_types()
+                or cls.task_involves_edge_weights()
+                and edge_type_feature.is_using_edge_weights()
+                or cls.task_involves_topology()
+                and edge_type_feature.is_topological()
+                or not precompute_constant_stocastic_features
+                and edge_type_feature.is_stocastic()
             ):
                 yield edge_type_feature
                 return None
@@ -927,32 +1129,16 @@ class AbstractClassifierModel(AbstractModel):
         if not isinstance(edge_type_feature, list):
             edge_type_feature = [edge_type_feature]
 
+        cls._handle_potentially_misparametrized_features(
+            features=edge_type_feature,
+            expected_parameter_name="edge_type_features",
+            expected_number_of_elements=graph.get_number_of_edge_types(),
+            expected_getter_from_index=graph.get_edge_type_name_from_edge_type_id,
+            expected_has_index_name=graph.has_edge_type_name,
+            graph=graph,
+        )
+
         for edge_type_feature in edge_type_feature:
-            if not isinstance(edge_type_feature, (np.ndarray, pd.DataFrame)):
-                raise ValueError(
-                    f"The provided edge type features are of type `{type(edge_type_feature)}`, "
-                    "while we only currently support numpy arrays and pandas DataFrames. "
-                    "What behaviour were you expecting with this feature? "
-                    "Please do open an issue on Embiggen and let us know!"
-                )
-
-            if graph.get_number_of_edge_types() != edge_type_feature.shape[0]:
-                raise ValueError(
-                    (
-                        "The provided edge type features have {rows_number} rows "
-                        "but the provided graph{graph_name} has {number_of_edge_types} edge types. "
-                        "Maybe these features refer to another "
-                        "version of the graph or another graph "
-                        "entirely?"
-                    ).format(
-                        rows_number=edge_type_feature.shape[0],
-                        graph_name=""
-                        if graph.get_name().lower() == "graph"
-                        else " {}".format(graph.get_name()),
-                        number_of_edge_types=graph.get_number_of_edge_types(),
-                    )
-                )
-
             # If it is a dataframe we align it
             if isinstance(edge_type_feature, pd.DataFrame):
                 yield edge_type_feature.loc[
@@ -976,8 +1162,7 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray,
-                          Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -1028,6 +1213,13 @@ class AbstractClassifierModel(AbstractModel):
 
         if not isinstance(edge_type_features, (list, tuple)):
             edge_type_features = [edge_type_features]
+
+        # We check that the provided features are not edge features,
+        # and if they are we provide a meaningful error.
+        cls._handle_potentially_misparametrized_edge_features(
+            features=edge_type_features,
+            expected_parameter_name="edge_type_features",
+        )
 
         return [
             normalized_edge_type_feature
@@ -1115,29 +1307,24 @@ class AbstractClassifierModel(AbstractModel):
                 )
 
             edge_feature = AbstractEmbeddingModel.get_model_from_library(
-                model_name=edge_feature,
-                task_name="Edge Embedding"
+                model_name=edge_feature, task_name="Edge Embedding"
             )()
 
         # If this object is an implementation of an abstract
         # embedding model, we compute the embedding.
         if issubclass(type(edge_feature), AbstractEmbeddingModel):
-            if (
-                skip_evaluation_biased_feature
-                and (
-                    cls.task_involves_edge_types()
-                    and edge_feature.is_using_edge_types()
-                    or cls.task_involves_node_types()
-                    and edge_feature.is_using_node_types()
-                    or cls.task_involves_edge_weights()
-                    and edge_feature.is_using_edge_weights()
-                    or cls.task_involves_topology()
-                    and edge_feature.is_topological()
-                    or not precompute_constant_stocastic_features
-                    and edge_feature.is_stocastic()
-                )
+            if skip_evaluation_biased_feature and (
+                cls.task_involves_edge_types()
+                and edge_feature.is_using_edge_types()
+                or cls.task_involves_node_types()
+                and edge_feature.is_using_node_types()
+                or cls.task_involves_edge_weights()
+                and edge_feature.is_using_edge_weights()
+                or cls.task_involves_topology()
+                and edge_feature.is_topological()
+                or not precompute_constant_stocastic_features
+                and edge_feature.is_stocastic()
             ):
-                print("SKIPPING!", skip_evaluation_biased_feature)
                 yield edge_feature
                 return None
 
@@ -1211,8 +1398,7 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray,
-                          Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
@@ -1284,16 +1470,13 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1444,7 +1627,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
-                edge_features=edge_features
+                edge_features=edge_features,
             )
         except Exception as exception:
             raise RuntimeError(
@@ -1460,16 +1643,13 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1540,6 +1720,13 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+        edge_features = self.normalize_edge_features(
+            graph=graph,
+            support=support,
+            random_state=self._random_state,
+            edge_features=edge_features,
+            allow_automatic_feature=False,
+        )
 
         try:
             predictions = self._predict(
@@ -1548,13 +1735,7 @@ class AbstractClassifierModel(AbstractModel):
                 node_features=node_features,
                 node_type_features=node_type_features,
                 edge_type_features=edge_type_features,
-                edge_features=self.normalize_edge_features(
-                    graph=graph,
-                    support=support,
-                    random_state=self._random_state,
-                    edge_features=edge_features,
-                    allow_automatic_feature=False,
-                ),
+                edge_features=edge_features,
             )
         except Exception as exception:
             raise RuntimeError(
@@ -1570,16 +1751,13 @@ class AbstractClassifierModel(AbstractModel):
         graph: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[
@@ -1798,20 +1976,16 @@ class AbstractClassifierModel(AbstractModel):
         test: Graph,
         support: Optional[Graph] = None,
         node_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[str, pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[str, pd.DataFrame, np.ndarray]]]
         ] = None,
         subgraph_of_interest: Optional[Graph] = None,
         random_state: int = 42,
@@ -2026,10 +2200,8 @@ class AbstractClassifierModel(AbstractModel):
         for column_name, column_value in metadata.items():
             model_performance[column_name] = column_value
 
-        df_model_parameters = pd.DataFrame(
-            dict(), index=model_performance.index)
-        df_features_parameters = pd.DataFrame(
-            dict(), index=model_performance.index)
+        df_model_parameters = pd.DataFrame(dict(), index=model_performance.index)
+        df_features_parameters = pd.DataFrame(dict(), index=model_performance.index)
 
         for parameter_name, parameter_value in self.parameters().items():
             if isinstance(parameter_value, (list, tuple)):
@@ -2070,8 +2242,7 @@ class AbstractClassifierModel(AbstractModel):
         cache_path="{cache_dir}/{cls.task_name()}/{graph.get_name()}/holdout_{holdout_number}/{_hash}.csv.gz",
         cache_dir="experiments",
         enable_cache_arg_name="enable_cache",
-        args_to_ignore=["verbose", "smoke_test",
-                        "number_of_holdouts", "metadata"],
+        args_to_ignore=["verbose", "smoke_test", "number_of_holdouts", "metadata"],
         capture_enable_cache_arg_name=False,
         use_approximated_hash=True,
     )
@@ -2204,8 +2375,7 @@ class AbstractClassifierModel(AbstractModel):
                 # that the subgraph of interest allows us to use.
                 if holdout_node_features is not None:
                     # We obtain the mapping from the old to the new node IDs
-                    node_ids_mapping = train.get_node_ids_mapping_from_graph(
-                        graph)
+                    node_ids_mapping = train.get_node_ids_mapping_from_graph(graph)
 
                     holdout_node_features = [
                         holdout_node_feature[node_ids_mapping]
@@ -2320,18 +2490,15 @@ class AbstractClassifierModel(AbstractModel):
                 np.ndarray,
                 Type[AbstractEmbeddingModel],
                 List[
-                    Union[str, pd.DataFrame, np.ndarray,
-                          Type[AbstractEmbeddingModel]]
+                    Union[str, pd.DataFrame, np.ndarray, Type[AbstractEmbeddingModel]]
                 ],
             ]
         ] = None,
         node_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_type_features: Optional[
-            Union[pd.DataFrame, np.ndarray,
-                  List[Union[pd.DataFrame, np.ndarray]]]
+            Union[pd.DataFrame, np.ndarray, List[Union[pd.DataFrame, np.ndarray]]]
         ] = None,
         edge_features: Optional[
             Union[

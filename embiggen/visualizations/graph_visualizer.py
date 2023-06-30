@@ -973,6 +973,14 @@ class GraphVisualizer:
             edge_type_features=edge_type_features,
             allow_automatic_feature=True,
         )
+        edge_features = AbstractClassifierModel.normalize_edge_features(
+            graph=self._support,
+            support=self._support,
+            random_state=self._random_state,
+            edge_features=edge_features,
+            allow_automatic_feature=True,
+        )
+
         self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
         self._positive_edge_decomposition = self.decompose(
             self._get_positive_edges_embedding(
@@ -1124,6 +1132,13 @@ class GraphVisualizer:
             support=self._support,
             random_state=self._random_state,
             edge_type_features=edge_type_features,
+            allow_automatic_feature=True,
+        )
+        edge_features = AbstractClassifierModel.normalize_edge_features(
+            graph=self._support,
+            support=self._support,
+            random_state=self._random_state,
+            edge_features=edge_features,
             allow_automatic_feature=True,
         )
         self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
@@ -5292,6 +5307,13 @@ class GraphVisualizer:
             support=self._support,
             random_state=self._random_state,
             edge_type_features=edge_type_features,
+            allow_automatic_feature=True,
+        )
+        edge_features = AbstractClassifierModel.normalize_edge_features(
+            graph=self._support,
+            support=self._support,
+            random_state=self._random_state,
+            edge_features=edge_features,
             allow_automatic_feature=True,
         )
         if len(node_features) + len(node_type_features) > 0:
