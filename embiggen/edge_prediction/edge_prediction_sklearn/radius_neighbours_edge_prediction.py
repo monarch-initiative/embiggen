@@ -5,7 +5,7 @@ from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_ad
 from embiggen.utils import normalize_kwargs
 
 
-class RadiusNeighborsClassifierEdgeLabelPrediction(SklearnEdgePredictionAdapter):
+class RadiusNeighborsClassifierEdgePrediction(SklearnEdgePredictionAdapter):
     """Create wrapper over Sklearn Radius Neighbour classifier for Edge Prediction prediction."""
 
     def __init__(

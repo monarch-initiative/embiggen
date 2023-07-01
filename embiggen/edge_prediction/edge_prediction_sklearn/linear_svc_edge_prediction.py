@@ -5,7 +5,7 @@ from embiggen.edge_prediction.edge_prediction_sklearn.sklearn_edge_prediction_ad
 from embiggen.utils import normalize_kwargs
 
 
-class LinearSVCEdgeLabelPrediction(SklearnEdgePredictionAdapter):
+class LinearSVCEdgePrediction(SklearnEdgePredictionAdapter):
     """Create wrapper over Sklearn Linear Support Vector Machine classifier for Edge prediction."""
 
     def __init__(
