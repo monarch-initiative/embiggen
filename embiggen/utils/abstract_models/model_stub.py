@@ -187,6 +187,16 @@ def get_model_or_stub(
                 def is_stocastic(cls) -> bool:
                     """Returns whether the model can optionally use edge weights."""
                     return None
+                
+                @classmethod
+                def requires_edge_type_features(cls) -> str:
+                    """Returns whether the model requires edge type features."""
+                    return None
+                
+                @classmethod
+                def requires_edge_features(cls) -> str:
+                    """Returns whether the model requires edge features."""
+                    return None
 
                 @classmethod
                 def is_topological(cls) -> str:
