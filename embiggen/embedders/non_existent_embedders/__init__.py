@@ -5,5 +5,5 @@ build_init(
     module_library_names="non_existent_module",
     formatted_library_name="Non Existent Module",
     task_name="Node Embedding",
-    expected_parent_class=AbstractEmbeddingModel
+    expected_parent_class=AbstractEmbeddingModel,
 )
