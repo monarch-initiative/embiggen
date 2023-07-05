@@ -100,7 +100,7 @@ def get_model_or_stub(
         ):
             class StubClass(parent_class):
 
-                def __init__(self, *args, **kwargs) :
+                def __init__(self, *args, **kwargs):
                     """Raises a useful error message about this class."""
                     self.__class__.__name__ = model_class_name
                     other_candidates = self.find_available_models(
@@ -194,8 +194,18 @@ def get_model_or_stub(
                     return None
                 
                 @classmethod
+                def can_use_edge_type_features(cls) -> bool:
+                    """Returns whether the model can optionally use edge type features."""
+                    return None
+                
+                @classmethod
                 def requires_edge_features(cls) -> str:
                     """Returns whether the model requires edge features."""
+                    return None
+                
+                @classmethod
+                def can_use_edge_features(cls) -> bool:
+                    """Returns whether the model can optionally use edge features."""
                     return None
 
                 @classmethod
