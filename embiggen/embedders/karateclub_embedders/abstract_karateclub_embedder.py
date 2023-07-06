@@ -1,5 +1,5 @@
 """Submodule providing wrapper for the Karate Club models."""
-from typing import Type, Dict, Any
+from typing import Optional, Type, Dict, Any
 from ensmallen import Graph
 import numpy as np
 import pandas as pd
@@ -10,6 +10,10 @@ from embiggen.utils.networkx_utils import convert_ensmallen_graph_to_networkx_gr
 
 @abstract_class
 class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._model: Optional[Type[Estimator]] = None
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
@@ -51,14 +55,14 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
         verbose: bool = True
             Whether to show a loading bar.
         """
-        model: Type[Estimator] = self._build_model()
+        self._model = self._build_model()
 
-        if not issubclass(model.__class__, Estimator):
+        if not issubclass(self._model.__class__, Estimator):
             raise NotImplementedError(
                 "The model created with the `_build_model` in the child "
                 f"class {self.__class__.__name__} for the model {self.model_name()} "
                 f"in the library {self.library_name()} did not return a "
-                f"Estimator but an object of type {type(model)}. "
+                f"Estimator but an object of type {type(self._model)}. "
                 "It is not clear what to do with this object."
             )
         
@@ -66,16 +70,16 @@ class AbstractKarateClubEmbedder(AbstractEmbeddingModel):
             graph,
             numeric_node_ids=True
         )
-        model.fit(graph_nx)
+        self._model.fit(graph_nx)
 
-        node_embeddings: np.ndarray = model.get_embedding()
+        node_embeddings: np.ndarray = self._model.get_embedding()
 
         if not issubclass(node_embeddings.__class__, np.ndarray):
             raise NotImplementedError(
                 "The model created with the `get_embedding` in the child "
                 f"class {self.__class__.__name__} for the model {self.model_name()} "
                 f"in the library {self.library_name()} did not return a "
-                f"Numpy Array but an object of type {type(model)}. "
+                f"Numpy Array but an object of type {type(self._model)}. "
                 "It is not clear what to do with this object."
             )
 
