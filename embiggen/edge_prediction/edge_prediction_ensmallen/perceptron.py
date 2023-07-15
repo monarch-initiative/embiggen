@@ -1,12 +1,15 @@
 """Module providing Perceptron for edge prediction."""
-from typing import Optional,  Dict, Any, List, Union
-from ensmallen import Graph
-import numpy as np
-from ensmallen import models
-import compress_json
 import json
+from typing import Any, Dict, List, Optional, Union
+
+import compress_json
+import compress_pickle
+import numpy as np
+from ensmallen import Graph, models
+
+from embiggen.edge_prediction.edge_prediction_model import \
+    AbstractEdgePredictionModel
 from embiggen.embedding_transformers import NodeTransformer
-from embiggen.edge_prediction.edge_prediction_model import AbstractEdgePredictionModel
 
 
 class PerceptronEdgePrediction(AbstractEdgePredictionModel):
@@ -18,10 +21,10 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         edge_embeddings: Optional[Union[str, List[str]]] = None,
         cooccurrence_iterations: int = 100,
         cooccurrence_window_size: int = 10,
-        number_of_epochs: int = 100,
+        number_of_epochs: int = 1000,
         number_of_edges_per_mini_batch: int = 4096,
         sample_only_edges_with_heterogeneous_node_types: bool = False,
-        learning_rate: float = 0.01,
+        learning_rate: float = 0.001,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
         avoid_false_negatives: bool = False,
@@ -63,15 +66,16 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         cooccurrence_window_size: int = 10
             Window size to consider to measure the cooccurrence.
             By default 100.
-        number_of_epochs: int = 100
+        number_of_epochs: int = 1000
             The number of epochs to train the model for. By default, 100.
         number_of_edges_per_mini_batch: int = 4096
             The number of samples to include for each mini-batch. By default 4096.
         sample_only_edges_with_heterogeneous_node_types: bool = False
             Whether to sample negative edges only with source and
             destination nodes that have different node types. By default false.
-        learning_rate: float = 0.01
-            Learning rate to use while training the model. By default 0.001.
+        learning_rate: float = 0.001
+            Learning rate to use while training the model.
+            By default 0.001.
         first_order_decay_factor: float = 0.9
             First order decay factor for the first order momentum.
             By default 0.9.
@@ -275,11 +279,24 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             The edge features to use.
         """
         new_node_features = []
-        if node_features is not None:
-            for node_feature in node_features:
-                if not node_feature.data.c_contiguous:
-                    node_feature = np.ascontiguousarray(node_feature)
-                new_node_features.append(node_feature)
+        for node_feature in node_features:
+            if not node_feature.data.c_contiguous:
+                node_feature = np.ascontiguousarray(node_feature)
+            new_node_features.append(node_feature)
+        
+        for node_type_feature in node_type_features:
+            node_transformer = NodeTransformer(
+                aligned_mapping=True
+            )
+            node_transformer.fit(
+                node_type_feature=node_type_feature
+            )
+            node_feature = node_transformer.transform(
+                node_types=graph
+            )
+            if not node_feature.data.c_contiguous:
+                node_feature = np.ascontiguousarray(node_feature)
+            new_node_features.append(node_feature)
 
         return self._model.predict(
             graph=graph,
@@ -356,9 +373,21 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         path: str
             Path from where to dump the model.
         """
-        compress_json.dump(
-            self.dumps(),
-            path
+        if ".json" in path:
+            compress_json.dump(
+                self.dumps(),
+                path
+            )
+        if ".pkl" in path:
+            compress_pickle.dump(
+                self.dumps(),
+                path
+            )
+
+        raise NotImplementedError(
+            "The provided path does not have a valid extension. "
+            "Please use either .json or .pkl, followed by the eventual "
+            "desired compression algorithm extension."
         )
 
     @classmethod
@@ -368,3 +397,5 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
     @classmethod
     def can_use_edge_features(cls) -> bool:
         return False
+    
+    

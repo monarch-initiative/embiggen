@@ -484,6 +484,21 @@ class AbstractGCN(AbstractClassifierModel):
             show_shapes=show_shapes,
             **kwargs,
         )
+    
+    def summary(self, **kwargs: Dict):
+        """Print summary of the model.
+        
+        Parameters
+        -----------------------
+        kwargs: Dict
+            Additional arguments to pass to the summary function.
+        """
+        if self._model is None:
+            raise ValueError(
+                "You are trying to print the summary of a model that has not been compiled yet. "
+                "You should call the `compile` or `fit` methods before calling `summary`."
+            )
+        return self._model.summary(**kwargs)
 
     def _get_class_weights(self, graph: Graph) -> Dict[int, float]:
         """Returns dictionary with class weights."""
@@ -628,6 +643,13 @@ class AbstractGCN(AbstractClassifierModel):
                     f"{prefix}node type feature",
                 ),
             ):
+                if feature_names is not None and len(features) == 0:
+                    raise ValueError(
+                        f"You have provided {len(feature_names)} {feature_category} names, "
+                        f"but then you have not provided any {feature_category}. Either "
+                        f"provide the {feature_category} to the compile or fit method, or "
+                        "remove the feature names from the constructor call."
+                    )
                 if len(features) > 0:
                     if feature_names is None:
                         if len(features) > 1:
@@ -646,7 +668,8 @@ class AbstractGCN(AbstractClassifierModel):
                         raise ValueError(
                             f"You have provided {len(feature_names)} "
                             f"{feature_category} names but you have provided {len(features)} "
-                            f"{feature_category}s to the model."
+                            f"{feature_category}s to the model. Specifically, the provided "
+                            f"feature names are {feature_names}."
                         )
                     new_input_features = []
                     for node_feature, node_feature_name in zip(

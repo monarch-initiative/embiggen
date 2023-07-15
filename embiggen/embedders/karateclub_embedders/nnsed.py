@@ -1,45 +1,28 @@
-"""Wrapper for MNMF model provided from the Karate Club package."""
+"""Wrapper for NNSED model provided from the Karate Club package."""
 from typing import Dict, Any
-from karateclub.community_detection import MNMF
+from karateclub.community_detection import NNSED
 from embiggen.embedders.karateclub_embedders.abstract_karateclub_embedder import AbstractKarateClubEmbedder
 
 
-class MNMFKarateClub(AbstractKarateClubEmbedder):
+class NNSEDKarateClub(AbstractKarateClubEmbedder):
 
     def __init__(
         self,
-        embedding_size: int = 128,
-        clusters: int = 10,
-        lambd: float = 0.2,
-        alpha: float = 0.05,
-        beta: float = 0.05,
-        iterations: int = 200,
-        lower_control: float = 10**-15,
-        eta: float = 5.0,
+        embedding_size: int = 32,
+        iterations: int = 10,
+        noise: float = 10**-6,
         random_state: int = 42,
         ring_bell: bool = False,
         enable_cache: bool = False
     ):
-        """Return a new MNMF embedding model.
+        """Return a new NNSED embedding model.
 
         Parameters
         ----------------------
-        embedding_size: int = 128
-            Number of dimensions. Default is 128.
-        clusters: int = 10
-            Number of clusters. Default is 10.
-        lambd: float = 0.2
-            KKT penalty. Default is 0.2
-        alpha: float = 0.05
-            Clustering penalty. Default is 0.05.
-        beta: float = 0.05
-            Modularity regularization penalty. Default is 0.05.
-        iterations: int = 200
-            Number of power iterations. Default is 200.
-        lower_control: float = 10**-15
-            Floating point overflow control. Default is 10**-15.
-        eta: float = 5.0
-            Similarity mixing parameter. Default is 5.0.
+        embedding_size: int = 32
+            Number of dimensions. Default is 32.
+        noise: float = 10**-6
+            Random noise for normalization stability. Default is 10**-6.
         random_state: int = 42
             Random state to use for the stocastic
             portions of the embedding algorithm.
@@ -49,13 +32,8 @@ class MNMFKarateClub(AbstractKarateClubEmbedder):
             Whether to enable the cache, that is to
             store the computed embedding.
         """
-        self._clusters = clusters
-        self._lambd = lambd
-        self._alpha = alpha
-        self._beta = beta
         self._iterations = iterations
-        self._lower_control = lower_control
-        self._eta = eta
+        self._noise = noise
 
         super().__init__(
             embedding_size=embedding_size,
@@ -68,13 +46,8 @@ class MNMFKarateClub(AbstractKarateClubEmbedder):
         """Returns the parameters used in the model."""
         return dict(
             **super().parameters(),
-            clusters = self._clusters,
-            lambd=self._lambd,
-            alpha=self._alpha,
-            beta=self._beta,
             iterations=self._iterations,
-            lower_control=self._lower_control,
-            eta=self._eta,
+            noise=self._noise
         )
 
     @classmethod
@@ -85,27 +58,19 @@ class MNMFKarateClub(AbstractKarateClubEmbedder):
             iterations=1,
         )
 
-    def _build_model(self) -> MNMF:
-        """Return new instance of the MNMF model."""
-        return MNMF(
+    def _build_model(self) -> NNSED:
+        """Return new instance of the NNSED model."""
+        return NNSED(
             dimensions=self._embedding_size,
-            clusters = self._clusters,
-            lambd=self._lambd,
-            alpha=self._alpha,
-            beta=self._beta,
             iterations=self._iterations,
-            lower_control=self._lower_control,
-            eta=self._eta,
+            noise=self._noise,
             seed=self._random_state
         )
 
     @classmethod
     def model_name(cls) -> str:
         """Returns name of the model"""
-        return "MNMF"
-
-    def get_cluster_centers(self):
-        return self._model.get_cluster_centers()
+        return "NNSED"
 
     def get_memberships(self):
         """Getting the cluster membership of nodes."""

@@ -1,10 +1,11 @@
 """Subclass providing EmbeddingResult object."""
-import types
-from typing import List, Union, Optional, Dict
-import pandas as pd
-import numpy as np
 import inspect
+import types
 import warnings
+from typing import Dict, List, Optional, Union
+
+import numpy as np
+import pandas as pd
 
 
 class EmbeddingResult:
@@ -104,17 +105,17 @@ class EmbeddingResult:
                         "contains exclusively zeros."
                     )
 
-        self._embedding_method_name = embedding_method_name
-        self._node_embeddings = node_embeddings
-        self._edge_embeddings = edge_embeddings
-        self._node_type_embeddings = node_type_embeddings
-        self._edge_type_embeddings = edge_type_embeddings
+        self._embedding_method_name: str = embedding_method_name
+        self._node_embeddings: List[np.ndarray] = node_embeddings
+        self._edge_embeddings: List[np.ndarray] = edge_embeddings
+        self._node_type_embeddings: List[np.ndarray] = node_type_embeddings
+        self._edge_type_embeddings: List[np.ndarray] = edge_type_embeddings
 
         if self.is_single_embedding():
             embedding = self.get_single_embedding()
             for method_name, method in inspect.getmembers(
                 embedding, lambda o: isinstance(o, types.MethodType)
-            ):             
+            ):
                 def metawrap(method_name: str):
                     def wrapper(*args, **kwargs):
                         return getattr(embedding, method_name)(

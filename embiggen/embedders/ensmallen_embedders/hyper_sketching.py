@@ -156,6 +156,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         """
         self._fitting_was_executed = True
         self._model.fit(graph)
+        return self
         
     def get_bits(self):
         """Return the number of bits used for the HyperLogLog counters."""
@@ -265,13 +266,13 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             right_difference_path=self._right_difference_path,
         )
         if return_dataframe:
-            factor = 2 if self.get_concatenate_features() else 0
+            factor = 2 if self.get_concatenate_features() else 1
             extra_columns = ["N"] if self.get_concatenate_features() else []
             overlaps = pd.DataFrame(
                 overlaps.reshape(-1, factor * self.get_number_of_hops()**2),
                 index=graph.get_edge_node_names(),
                 columns=[
-                    "{column}_{i}{j}".format(column=column, i=i, j=j)
+                    f"{column}_{i}{j}"
                     for column in ["A"] + extra_columns
                     for i in range(self.get_number_of_hops())
                     for j in range(self.get_number_of_hops())
@@ -281,7 +282,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                 left_difference.reshape(-1, factor * self.get_number_of_hops()),
                 index=graph.get_edge_node_names(),
                 columns=[
-                    "{column}_{i}".format(column=column, i=i)
+                    f"{column}_{i}"
                     for column in ["L"] + extra_columns
                     for i in range(self.get_number_of_hops())
                 ]
@@ -290,7 +291,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                 right_difference.reshape(-1, factor * self.get_number_of_hops()),
                 index=graph.get_edge_node_names(),
                 columns=[
-                    "{column}_{i}".format(column=column, i=i)
+                    f"{column}_{i}"
                     for column in ["R"] + extra_columns
                     for i in range(self.get_number_of_hops())
                 ]

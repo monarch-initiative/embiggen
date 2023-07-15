@@ -462,5 +462,11 @@
     "siamese_node_feature_module": "bool",
     "use_edge_type_embedding": "bool",
     "edge_type_embedding_size": "int",
-    "edge_type_feature_names": "pass"
+    "edge_type_feature_names": "pass",
+    "noise": "float",
+    "clusters": "int",
+    "lambd": "float",
+    "beta": "float",
+    "lower_control": "float",
+    "eta": "float"
 }
