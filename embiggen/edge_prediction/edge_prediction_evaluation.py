@@ -34,7 +34,7 @@ def edge_prediction_evaluation(
     destination_edge_types_names: Optional[List[str]] = None,
     source_nodes_prefixes: Optional[List[str]] = None,
     destination_nodes_prefixes: Optional[List[str]] = None,
-    validation_unbalance_rates: Tuple[float] = (1.0, ),
+    validation_unbalance_rates: Union[float, Tuple[float]] = (1.0, ),
     use_scale_free_distribution: bool = True,
     enable_cache: bool = False,
     precompute_constant_stocastic_features: bool = False,
@@ -166,6 +166,8 @@ def edge_prediction_evaluation(
     verbose: bool = True
         Whether to show loading bars
     """
+    if isinstance(validation_unbalance_rates, float):
+        validation_unbalance_rates = (validation_unbalance_rates,)
     return classification_evaluation_pipeline(
         evaluation_schema=evaluation_schema,
         holdouts_kwargs=holdouts_kwargs,
