@@ -2186,6 +2186,7 @@ class AbstractClassifierModel(AbstractModel):
 
         model_performance["time_required_for_training"] = time_required_for_training
         model_performance["time_required_for_evaluation"] = time_required_for_evaluation
+        model_performance["time"] = time.time()
         model_performance["task_name"] = self.task_name()
         model_performance["model_name"] = self.model_name()
         model_performance["library_name"] = self.library_name()
