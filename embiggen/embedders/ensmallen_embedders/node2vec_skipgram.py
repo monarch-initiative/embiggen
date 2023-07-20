@@ -17,6 +17,8 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
         window_size: int = 5,
         return_weight: float = 0.25,
         explore_weight: float = 4.0,
+        change_node_type_weight: float = 1.0,
+        change_edge_type_weight: float = 1.0,
         max_neighbours: Optional[int] = 100,
         learning_rate: float = 0.01,
         learning_rate_decay: float = 0.9,
@@ -67,6 +69,12 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             Having this very high makes search more outward.
             Having this very low makes search very local.
             Equal to the inverse of q in the Node2Vec paper.
+        change_node_type_weight: float = 1.0
+            Weight on the probability of changing the node type.
+            By default, 1.0.
+        change_edge_type_weight: float = 1.0
+            Weight on the probability of changing the edge type.
+            By default, 1.0.
         max_neighbours: Optional[int] = 100
             Number of maximum neighbours to consider when using approximated walks.
             By default, None, we execute exact random walks.
@@ -77,12 +85,10 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             Factor to reduce the learning rate for at each epoch. By default 0.9.
         central_nodes_embedding_path: Optional[str] = None
             Path where to mmap and store the central nodes embedding.
-            
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
         contextual_nodes_embedding_path: Optional[str] = None
             Path where to mmap and store the central nodes embedding.
-            
             This is necessary to embed large graphs whose embedding will not
             fit into the available main memory.
         normalize_by_degree: bool = False
@@ -121,6 +127,8 @@ class Node2VecSkipGramEnsmallen(Node2VecEnsmallen):
             window_size=window_size,
             return_weight=return_weight,
             explore_weight=explore_weight,
+            change_node_type_weight=change_node_type_weight,
+            change_edge_type_weight=change_edge_type_weight,
             max_neighbours=max_neighbours,
             learning_rate=learning_rate,
             learning_rate_decay=learning_rate_decay,
