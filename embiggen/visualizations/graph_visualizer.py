@@ -365,6 +365,8 @@ class GraphVisualizer:
             **edge_prediction_graph_kwargs,
         )
 
+        # If the parameter is set to auto, we set it to True if the graph
+        # is small enought to avoid a memory requirement explosion.
         if only_from_same_component == "auto":
             only_from_same_component = graph.get_number_of_nodes() < 50_000_000
 
@@ -386,6 +388,7 @@ class GraphVisualizer:
                 graph_to_avoid=self._support,
                 support=self._support,
                 only_from_same_component=only_from_same_component,
+                node_degree_distribution_graph=subgraph_of_interest,
                 sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
                 **edge_prediction_graph_kwargs,
             )
@@ -2375,14 +2378,9 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
             figure.patch.set_facecolor("white")
 
-        if self._negative_graph.is_directed() and edge_metrics is None:
-            number_of_negative_edges = (
-                self._negative_graph.get_number_of_directed_edges()
-            )
-        else:
-            number_of_negative_edges = (
-                self._negative_graph.get_number_of_undirected_edges()
-            )
+        number_of_negative_edges = (
+            self._negative_graph.get_number_of_edges()
+        )
 
         if edge_metrics is None:
             edge_metrics = np.concatenate(
