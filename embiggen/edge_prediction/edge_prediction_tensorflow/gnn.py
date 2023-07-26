@@ -29,7 +29,6 @@ class GNNEdgePrediction(GCNEdgePrediction):
         reduce_lr_factor: float = 0.9,
         avoid_false_negatives: bool = True,
         training_unbalance_rate: float = 1.0,
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         random_state: int = 42,
         use_node_embedding: bool = False,
@@ -108,8 +107,6 @@ class GNNEdgePrediction(GCNEdgePrediction):
             The amount of negatives to be sampled during the training of the model.
             By default this is 1.0, which means that the same number of positives and
             negatives in the training are of the same cardinality.
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample exclusively edges between nodes with different node types.
         use_node_embedding: bool = False
             Whether to use a node embedding layer to let the model automatically
             learn an embedding of the nodes.
@@ -186,7 +183,7 @@ class GNNEdgePrediction(GCNEdgePrediction):
             reduce_lr_factor=reduce_lr_factor,
             avoid_false_negatives=avoid_false_negatives,
             training_unbalance_rate=training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            
             use_edge_metrics=use_edge_metrics,
             random_state=random_state,
             use_node_embedding=use_node_embedding,

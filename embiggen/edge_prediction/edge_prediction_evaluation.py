@@ -27,7 +27,6 @@ def edge_prediction_evaluation(
     random_state: int = 42,
     repositories: Optional[Union[str, List[str]]] = None,
     versions: Optional[Union[str, List[str]]] = None,
-    validation_sample_only_edges_with_heterogeneous_node_types: bool = False,
     source_node_types_names: Optional[List[str]] = None,
     destination_node_types_names: Optional[List[str]] = None,
     source_edge_types_names: Optional[List[str]] = None,
@@ -112,9 +111,6 @@ def edge_prediction_evaluation(
         from the Ensmallen automatic retrieval.
     versions: Optional[Union[str, List[str]]] = None
         Graph versions to retrieve.
-    validation_sample_only_edges_with_heterogeneous_node_types: bool = False
-        Whether to sample negative edges exclusively between nodes with different node types.
-        This can be useful when executing a bipartite edge prediction task.
     source_node_types_names: Optional[List[str]]
         Node type names of the nodes to be samples as sources.
         If a node has any of the provided node types, it can be sampled as a source node.
@@ -193,7 +189,6 @@ def edge_prediction_evaluation(
         number_of_slurm_nodes=number_of_slurm_nodes,
         slurm_node_id_variable=slurm_node_id_variable,
         verbose=verbose,
-        validation_sample_only_edges_with_heterogeneous_node_types=validation_sample_only_edges_with_heterogeneous_node_types,
         source_node_types_names=source_node_types_names,
         destination_node_types_names=destination_node_types_names,
         source_edge_types_names=source_edge_types_names,

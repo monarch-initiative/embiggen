@@ -33,7 +33,6 @@ class LLeavesEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
         importance_type: str = "split",
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
@@ -144,7 +143,7 @@ class LLeavesEdgePredictionModel(SklearnLikeEdgePredictionAdapter):
             model_instance=LLeavesClassifier(path),
             edge_embedding_methods=edge_embedding_methods,
             training_unbalance_rate=training_unbalance_rate,
-            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,
             prediction_batch_size=prediction_batch_size,

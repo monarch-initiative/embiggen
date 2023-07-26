@@ -34,7 +34,7 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         graph_to_avoid: Graph = None,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        
         random_state: int = 42,
     ):
         """Create new Open-world assumption GCN training sequence for edge prediction.
@@ -93,10 +93,6 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the Graph package.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to only sample edges between heterogeneous node types.
-            This may be useful when training a model to predict between
-            two portions in a bipartite graph.
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
@@ -105,9 +101,6 @@ class GCNEdgePredictionTrainingSequence(Sequence):
         self._avoid_false_negatives = avoid_false_negatives
         self._graph_to_avoid = graph_to_avoid
         self._random_state = random_state
-        self._sample_only_edges_with_heterogeneous_node_types = (
-            sample_only_edges_with_heterogeneous_node_types
-        )
         self._current_index = 0
 
         self._prediction_sequence = GCNEdgePredictionSequence(
@@ -204,9 +197,9 @@ class GCNEdgePredictionTrainingSequence(Sequence):
             return_edge_types=self.return_edge_types() or self.has_edge_type_features(),
             return_edge_metrics=self.use_edge_metrics(),
             batch_size=self.batch_size,
+            sample_only_edges_with_heterogeneous_node_types=False,
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
-            sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
             support=self.get_support(),
             graph_to_avoid=self._graph_to_avoid,
         )

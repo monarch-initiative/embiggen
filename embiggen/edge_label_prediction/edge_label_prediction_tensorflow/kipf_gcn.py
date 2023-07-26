@@ -117,10 +117,6 @@ class KipfGCNEdgeLabelPrediction(GCNEdgeLabelPrediction):
             Learn more about class weights here: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data
         training_unbalance_rate: float = 1.0
             Unbalance rate for the training non-existing edges.
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to only sample edges between heterogeneous node types.
-            This may be useful when training a model to predict between
-            two portions in a bipartite graph.
         use_edge_metrics: bool = False
             Whether to use the edge metrics from traditional edge prediction.
             These metrics currently include:

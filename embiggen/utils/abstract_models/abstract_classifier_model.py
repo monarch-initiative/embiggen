@@ -22,6 +22,7 @@ from sklearn.metrics import (
 )
 from tqdm.auto import tqdm, trange
 from userinput.utils import must_be_in_set
+from embiggen.__version__ import __version__ as __embiggen_version__
 
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.abstract_models.abstract_embedding_model import (
@@ -2753,6 +2754,7 @@ class AbstractClassifierModel(AbstractModel):
             number_of_threads=os.cpu_count(),
             python_version=platform.python_version(),
             platform=platform.platform(),
+            embiggen_version=__embiggen_version__,
             number_of_holdouts=number_of_holdouts,
             number_of_slurm_nodes=number_of_slurm_nodes,
             time_required_to_compute_constant_node_features=time_required_to_compute_constant_node_features,

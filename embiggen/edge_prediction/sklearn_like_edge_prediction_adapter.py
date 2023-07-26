@@ -22,7 +22,6 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         model_instance,
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_scale_free_distribution: bool = True,
         use_edge_metrics: bool = False,
         prediction_batch_size: int = 2**15,
@@ -53,10 +52,6 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
              * CosineSimilarity: vector-wise cosine similarity - this yields a scalar
         training_unbalance_rate: float = 1.0
             Unbalance rate for the training non-existing edges.
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges exclusively between nodes with different node types
-            to generate the negative edges used during the training of the model.
-            This can be useful when executing a bipartite edge prediction task.
         use_scale_free_distribution: bool = True
             Whether to sample the negative edges for the TRAINING of the model
             using a zipfian-like distribution that follows the degree distribution
@@ -90,12 +85,10 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         self._prediction_batch_size = prediction_batch_size
         self._use_edge_metrics = use_edge_metrics
         self._use_scale_free_distribution = use_scale_free_distribution
-        self._training_sample_only_edges_with_heterogeneous_node_types = training_sample_only_edges_with_heterogeneous_node_types
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters used for this model."""
         return {
-            "training_sample_only_edges_with_heterogeneous_node_types": self._training_sample_only_edges_with_heterogeneous_node_types,
             "edge_embedding_methods": self._edge_embedding_methods,
             "training_unbalance_rate": self._training_unbalance_rate,
             "prediction_batch_size": self._prediction_batch_size,
@@ -320,7 +313,6 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             ),
             only_from_same_component=True,
             random_state=self._random_state,
-            sample_only_edges_with_heterogeneous_node_types=self._training_sample_only_edges_with_heterogeneous_node_types,
             use_scale_free_distribution=self._use_scale_free_distribution,
             sample_edge_types=len(edge_type_features) > 0
         )

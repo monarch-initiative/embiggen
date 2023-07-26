@@ -94,7 +94,6 @@
     "erase_base_features": "bool",
     "decay": "float",
     "alphas": "pass",
-    "training_sample_only_edges_with_heterogeneous_node_types": "bool",
     "edge_embedding_methods": "pass",
     "training_unbalance_rate": "float",
     "prediction_batch_size": "int",
@@ -183,7 +182,6 @@
     "cooccurrence_window_size": "int",
     "number_of_epochs": "int",
     "number_of_edges_per_mini_batch": "int",
-    "sample_only_edges_with_heterogeneous_node_types": "bool",
     "first_order_decay_factor": "float",
     "second_order_decay_factor": "float",
     "input_channels": [

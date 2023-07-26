@@ -20,7 +20,7 @@ class EdgePredictionTrainingSequence(Sequence):
         negative_samples_rate: float = 0.5,
         avoid_false_negatives: bool = False,
         graph_to_avoid: Graph = None,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        
         random_state: int = 42
     ):
         """Create new EdgePredictionSequence object.
@@ -49,10 +49,6 @@ class EdgePredictionTrainingSequence(Sequence):
             This can be the validation component of the graph, for example.
             More information to how to generate the holdouts is available
             in the Graph package.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to only sample edges between heterogeneous node types.
-            This may be useful when training a model to predict between
-            two portions in a bipartite graph.
         random_state: int = 42,
             The random_state to use to make extraction reproducible.
         """
@@ -63,7 +59,6 @@ class EdgePredictionTrainingSequence(Sequence):
         self._random_state = random_state
         self._use_node_types = use_node_types
         self._use_edge_metrics = use_edge_metrics
-        self._sample_only_edges_with_heterogeneous_node_types = sample_only_edges_with_heterogeneous_node_types
         self._current_index = 0
         super().__init__(
             sample_number=graph.get_number_of_directed_edges(),
@@ -88,9 +83,9 @@ class EdgePredictionTrainingSequence(Sequence):
             return_edge_types=False,
             return_edge_metrics=self._use_edge_metrics,
             batch_size=self.batch_size,
+            sample_only_edges_with_heterogeneous_node_types=False,
             negative_samples_rate=self._negative_samples_rate,
             avoid_false_negatives=self._avoid_false_negatives,
-            sample_only_edges_with_heterogeneous_node_types=self._sample_only_edges_with_heterogeneous_node_types,
             graph_to_avoid=self._graph_to_avoid,
         )
 

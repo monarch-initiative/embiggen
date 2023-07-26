@@ -23,7 +23,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
         cooccurrence_window_size: int = 10,
         number_of_epochs: int = 1000,
         number_of_edges_per_mini_batch: int = 4096,
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
         learning_rate: float = 0.001,
         first_order_decay_factor: float = 0.9,
         second_order_decay_factor: float = 0.999,
@@ -70,9 +69,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             The number of epochs to train the model for. By default, 100.
         number_of_edges_per_mini_batch: int = 4096
             The number of samples to include for each mini-batch. By default 4096.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges only with source and
-            destination nodes that have different node types. By default false.
         learning_rate: float = 0.001
             Learning rate to use while training the model.
             By default 0.001.
@@ -107,7 +103,6 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             cooccurrence_window_size=cooccurrence_window_size,
             number_of_epochs=number_of_epochs,
             number_of_edges_per_mini_batch=number_of_edges_per_mini_batch,
-            sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
             learning_rate=learning_rate,
             first_order_decay_factor=first_order_decay_factor,
             second_order_decay_factor=second_order_decay_factor,

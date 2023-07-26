@@ -97,7 +97,7 @@ class GraphVisualizer:
         minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
         only_from_same_component: Union[bool, str] = "auto",
-        sample_only_edges_with_heterogeneous_node_types: bool = False,
+        
         source_node_types_names: Optional[Union[str, List[str]]] = None,
         destination_node_types_names: Optional[Union[str, List[str]]] = None,
         source_edge_types_names: Optional[Union[str, List[str]]] = None,
@@ -198,12 +198,6 @@ class GraphVisualizer:
             By default, it is set to `auto`, which will set it to `True` if the
             graph is smaller than 50M nodes, as computing and masking the connected
             components can get expensive on very large graphs, such as WikiData.
-        sample_only_edges_with_heterogeneous_node_types: bool = False
-            Whether to sample negative edges only with source and
-            destination nodes that have different node types.
-            Using this parameter will raise an exception when the provided
-            graph wither does not have node types or has exclusively constant
-            node types.
         minimum_node_degree: Optional[int] = 0
             The minimum node degree of either the source or
             destination node to be sampled.
@@ -388,8 +382,7 @@ class GraphVisualizer:
                 graph_to_avoid=self._support,
                 support=self._support,
                 only_from_same_component=only_from_same_component,
-                node_degree_distribution_graph=subgraph_of_interest,
-                sample_only_edges_with_heterogeneous_node_types=sample_only_edges_with_heterogeneous_node_types,
+                
                 **edge_prediction_graph_kwargs,
             )
         except ValueError as exception:

@@ -20,7 +20,6 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
         store_cv_values: bool = False,
         edge_embedding_methods: Union[List[str], str] = "Concatenate",
         training_unbalance_rate: float = 1.0,
-        training_sample_only_edges_with_heterogeneous_node_types: bool = False,
         use_edge_metrics: bool = False,
         use_scale_free_distribution: bool = True,
         prediction_batch_size: int = 2**12,
@@ -45,7 +44,7 @@ class RidgeClassifierCVEdgePrediction(SklearnEdgePredictionAdapter):
             training_unbalance_rate=training_unbalance_rate,
             use_edge_metrics=use_edge_metrics,
             use_scale_free_distribution=use_scale_free_distribution,
-            training_sample_only_edges_with_heterogeneous_node_types=training_sample_only_edges_with_heterogeneous_node_types,
+            
             prediction_batch_size=prediction_batch_size,
             random_state=random_state,
         )
