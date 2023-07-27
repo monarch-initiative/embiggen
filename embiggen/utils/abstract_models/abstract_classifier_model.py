@@ -2754,6 +2754,7 @@ class AbstractClassifierModel(AbstractModel):
             number_of_threads=os.cpu_count(),
             python_version=platform.python_version(),
             platform=platform.platform(),
+            node=platform.node(),
             embiggen_version=__embiggen_version__,
             number_of_holdouts=number_of_holdouts,
             number_of_slurm_nodes=number_of_slurm_nodes,
