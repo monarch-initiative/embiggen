@@ -1586,12 +1586,30 @@ class AbstractClassifierModel(AbstractModel):
                 f"instance of graph {graph.get_name()} does not have node types. "
                 "It is unclear how to proceed with this data."
             )
+        
+        if len(node_type_features) > 0 and graph.has_homogeneous_node_types():
+            raise ValueError(
+                "The node type features have been provided but the current "
+                f"instance of graph {graph.get_name()} has homogeneous node types. "
+                "This means that all of the nodes in the graph have the same node type, "
+                "and therefore all of the nodes in the graph will have the same node type "
+                "features. It is unclear how to proceed with this data."
+            )
 
         if len(edge_type_features) > 0 and not graph.has_edge_types():
             raise ValueError(
                 "The edge type features have been provided but the current "
                 f"instance of graph {graph.get_name()} does not have edge types. "
                 "It is unclear how to proceed with this data."
+            )
+        
+        if len(edge_type_features) > 0 and graph.has_homogeneous_edge_types():
+            raise ValueError(
+                "The edge type features have been provided but the current "
+                f"instance of graph {graph.get_name()} has homogeneous edge types. "
+                "This means that all of the edges in the graph have the same edge type, "
+                "and therefore all of the edges in the graph will have the same edge type "
+                "features. It is unclear how to proceed with this data."
             )
 
         self._is_using_node_type_features = len(node_type_features) > 0
@@ -2610,12 +2628,16 @@ class AbstractClassifierModel(AbstractModel):
             if not graph.contains(subgraph_of_interest):
                 raise ValueError(
                     "The provided subgraph of interest is not "
-                    f"contained in the provided graph {graph.get_name()}."
+                    f"contained in the provided graph {graph.get_name()}. "
+                    "Potentially you edited the graph and removed some nodes "
+                    "or edges in the graph processing step, such as reoving the "
+                    "connected components, self-loops, multi-edges or dentritic "
+                    "elements?"
                 )
 
             if not subgraph_of_interest.has_edges():
                 raise ValueError(
-                    "The provided subgraph of interest does not " "have any edges!"
+                    "The provided subgraph of interest does not have any edges!"
                 )
 
             # We check whether the subgraph of interest shares the same vocabulary
