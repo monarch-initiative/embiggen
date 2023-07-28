@@ -2236,6 +2236,9 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["holdout_number"] = holdout_number
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
+        model_performance["node_feature_shapes"] = self._node_feature_shapes
+        model_performance["node_type_feature_shapes"] = self._node_type_feature_shapes
+        model_performance["edge_type_feature_shapes"] = self._edge_type_feature_shapes
 
         for column_name, column_value in metadata.items():
             model_performance[column_name] = column_value
