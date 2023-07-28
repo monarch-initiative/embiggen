@@ -1587,13 +1587,23 @@ class AbstractClassifierModel(AbstractModel):
                 "It is unclear how to proceed with this data."
             )
         
-        if len(node_type_features) > 0 and graph.has_homogeneous_node_types():
+        if len(node_type_features) > 0 and graph.has_exclusively_homogeneous_node_types():
             raise ValueError(
                 "The node type features have been provided but the current "
                 f"instance of graph {graph.get_name()} has homogeneous node types. "
                 "This means that all of the nodes in the graph have the same node type, "
                 "and therefore all of the nodes in the graph will have the same node type "
                 "features. It is unclear how to proceed with this data."
+            )
+        
+        if len(node_type_features) > 0 and not graph.has_exclusively_singleton_node_types():
+            raise ValueError(
+                "The node type features have been provided but the current "
+                f"instance of graph {graph.get_name()} has exclusively singleton node types, "
+                "meaning that all of the nodes in the graph have a unique node type. "
+                "This means that the node type features will effectively be the same as "
+                "the node features. We recommend that you use such features directly as "
+                "node features instead of node type features so as to avoid confusion."
             )
 
         if len(edge_type_features) > 0 and not graph.has_edge_types():
@@ -1603,13 +1613,23 @@ class AbstractClassifierModel(AbstractModel):
                 "It is unclear how to proceed with this data."
             )
         
-        if len(edge_type_features) > 0 and graph.has_homogeneous_edge_types():
+        if len(edge_type_features) > 0 and graph.has_exclusively_homogeneous_edge_types():
             raise ValueError(
                 "The edge type features have been provided but the current "
                 f"instance of graph {graph.get_name()} has homogeneous edge types. "
                 "This means that all of the edges in the graph have the same edge type, "
                 "and therefore all of the edges in the graph will have the same edge type "
                 "features. It is unclear how to proceed with this data."
+            )
+        
+        if len(edge_type_features) > 0 and not graph.has_exclusively_singleton_edge_types():
+            raise ValueError(
+                "The edge type features have been provided but the current "
+                f"instance of graph {graph.get_name()} has exclusively singleton edge types, "
+                "meaning that all of the edges in the graph have a unique edge type. "
+                "This means that the edge type features will effectively be the same as "
+                "the edge features. We recommend that you use such features directly as "
+                "edge features instead of edge type features so as to avoid confusion."
             )
 
         self._is_using_node_type_features = len(node_type_features) > 0
