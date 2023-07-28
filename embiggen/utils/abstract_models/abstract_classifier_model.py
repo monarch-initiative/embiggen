@@ -71,6 +71,13 @@ class AbstractClassifierModel(AbstractModel):
         self._node_type_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
         self._edge_type_feature_shapes: Optional[List[Optional[Tuple[int]]]] = None
 
+        # We additionally imprint the model on the training graph density. In this manner,
+        # if the model is later used on a different graph, we can check whether the density
+        # of the graph changes significantly and, if so, we can warn the user that the
+        # model may not be applicable to the new graph and a different support graph may
+        # be required.
+        self._training_graph_density: Optional[float] = None
+
     def _check_feature_shapes(
         self,
         expected_feature_shapes: Optional[List[Optional[Tuple[int]]]],
@@ -1658,6 +1665,8 @@ class AbstractClassifierModel(AbstractModel):
                 "does not support edge features, "
                 f"but you provided {len(edge_features)} edge features. "
             )
+        
+        self._training_graph_density = support.get_density()
 
         try:
             self._fit(
@@ -1767,6 +1776,16 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
 
+        if self._training_graph_density > support.get_density() * 3.0 or self._training_graph_density < support.get_density() / 3.0:
+            raise ValueError(
+                f"The density of the support graph has changed too much from the training graph. "
+                f"The density of the training graph was {self._training_graph_density} while the "
+                f"density of the support graph is {support.get_density()}. This may be due to a "
+                f"change in the graph structure or the provided support graph is not the one used "
+                f"during training. If you are using the same graph, please do provide the same "
+                f"support graph during prediction as you did during training."
+            )
+
         try:
             predictions = self._predict(
                 graph=graph,
@@ -1867,6 +1886,16 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+
+        if self._training_graph_density > support.get_density() * 3.0 or self._training_graph_density < support.get_density() / 3.0:
+            raise ValueError(
+                f"The density of the support graph has changed too much from the training graph. "
+                f"The density of the training graph was {self._training_graph_density} while the "
+                f"density of the support graph is {support.get_density()}. This may be due to a "
+                f"change in the graph structure or the provided support graph is not the one used "
+                f"during training. If you are using the same graph, please do provide the same "
+                f"support graph during prediction as you did during training."
+            )
 
         try:
             predictions = self._predict_proba(
