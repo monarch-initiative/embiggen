@@ -1106,7 +1106,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     "Please use either csv, tsv or txt."
                 )
             with open(path, "w", encoding="utf8") as file:
-                file.writeline(
+                file.write(
                     separator.join(
                         [
                             "source",
@@ -1114,7 +1114,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                             *(("edge_type",) if return_edge_type_names else ()),
                             "prediction",
                         ]
-                    )
+                    ) + "\n"
                 )
                 for prediction_mini_batch in predictions:
                     if not consume_predictions:
@@ -1133,7 +1133,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                                 dst = f"\"{dst}\""
                         else:
                             src, dst = graph.get_edge_node_ids_from_edge_id(edge_id)
-                        file.writeline(
+                        file.write(
                             separator.join(
                                 [
                                     src,
@@ -1141,7 +1141,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                                     *(graph.get_edge_type_name_from_edge_id(edge_id) if return_edge_type_names else ()),
                                     prediction_score,
                                 ]
-                            )
+                            ) + "\n"
                         )
                         edge_id += 1
                     if consume_predictions:
