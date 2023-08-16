@@ -1121,7 +1121,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                         prediction_mini_batches.append(prediction_mini_batch)
                     for prediction_score in prediction_mini_batch:
                         if return_node_names:
-                            src, dst = graph.get_edge_node_names_from_edge_id(edge_id)
+                            src, dst = graph.get_node_names_from_edge_id(edge_id)
 
                             # We need to normalize the node names in the unfortunate
                             # case that they contain the selected separator.
@@ -1132,7 +1132,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                                 dst = dst.replace("\"", "\\\"")
                                 dst = f"\"{dst}\""
                         else:
-                            src, dst = graph.get_edge_node_ids_from_edge_id(edge_id)
+                            src, dst = graph.get_node_ids_from_edge_id(edge_id)
                         file.write(
                             separator.join(
                                 [
