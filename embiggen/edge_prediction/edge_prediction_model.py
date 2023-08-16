@@ -1133,13 +1133,15 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                                 dst = f"\"{dst}\""
                         else:
                             src, dst = graph.get_node_ids_from_edge_id(edge_id)
+                            src = str(src)
+                            dst = str(dst)
                         file.write(
                             separator.join(
                                 [
                                     src,
                                     dst,
                                     *(graph.get_edge_type_name_from_edge_id(edge_id) if return_edge_type_names else ()),
-                                    prediction_score,
+                                    str(prediction_score),
                                 ]
                             ) + "\n"
                         )
