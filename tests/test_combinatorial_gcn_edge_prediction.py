@@ -1,8 +1,6 @@
 """Unit test class for testing corner cases in edge-label GCN model."""
-import os
 from unittest import TestCase
 
-import compress_json
 import numpy as np
 from dict_hash import sha256
 from ensmallen import Graph
@@ -10,8 +8,7 @@ from tqdm import tqdm
 
 from embiggen.edge_prediction import GCNEdgePrediction
 from embiggen.embedders import HyperSketching
-from embiggen.embedders.ensmallen_embedders.hyper_sketching import \
-    HyperSketching
+from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
 from .cached_tests import cache_or_store
 
 
@@ -23,7 +20,11 @@ class TestGCNEdgePrediction(TestCase):
         graph = Graph.generate_random_connected_graph(
             node_type="hallo", edge_type="huhu", weight=56.0, number_of_nodes=20
         ) | Graph.generate_random_connected_graph(
-            node_type="hallo2", edge_type="huhu2", weight=56.0, number_of_nodes=20
+            node_type="hallo2",
+            edge_type="huhu2",
+            weight=56.0,
+            number_of_nodes=20,
+            minimum_node_id=10,
         )
         self.graph = graph.remove_parallel_edges().add_selfloops("huhu2", 3.0)
 
@@ -32,12 +33,14 @@ class TestGCNEdgePrediction(TestCase):
         if not GCNEdgePrediction.is_available():
             return
 
-        if cache_or_store([
-            "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
-            "./embiggen/edge_prediction/edge_prediction_tensorflow/gcn.py",
-            "./embiggen/utils/abstract_gcn.py",
-            "./embiggen/utils/abstract_edge_gcn.py",
-        ]):
+        if cache_or_store(
+            [
+                "./embiggen/embedders/ensmallen_embedders/hyper_sketching.py",
+                "./embiggen/edge_prediction/edge_prediction_tensorflow/gcn.py",
+                "./embiggen/utils/abstract_gcn.py",
+                "./embiggen/utils/abstract_edge_gcn.py",
+            ]
+        ):
             return
 
         parametrizations = []
@@ -110,7 +113,11 @@ class TestGCNEdgePrediction(TestCase):
                                             None,
                                         ]:
                                             for edge_features in [edge_features, None]:
-                                                for siamese_node_feature_module in (True, False):
+                                                for siamese_node_feature_module in (
+                                                    True,
+                                                    False,
+                                                ):
+
                                                     if (
                                                         not use_node_embedding
                                                         and not use_node_type_embedding
@@ -122,39 +129,45 @@ class TestGCNEdgePrediction(TestCase):
                                                         and edge_type_features is None
                                                     ):
                                                         continue
-                                                    features.append(dict(
-                                                        node_type_features=node_type_features,
-                                                        node_features=node_features,
-                                                        edge_type_features=edge_type_features,
-                                                        edge_features=edge_features,
-                                                    ))
-                                                    parametrizations.append(dict(
-                                                        use_node_embedding=use_node_embedding,
-                                                        use_node_type_embedding=use_node_type_embedding,
-                                                        residual_convolutional_layers=residual_convolutional_layers,
-                                                        siamese_node_feature_module=siamese_node_feature_module,
-                                                        kernels=kernels,
-                                                        use_edge_type_embedding=use_edge_type_embedding,
-                                                        use_edge_metrics=use_edge_metrics,
-                                                    ))
-        for parametrization, feature_set in tqdm(
-            zip(parametrizations, features),
+                                                    features.append(
+                                                        dict(
+                                                            node_type_features=node_type_features,
+                                                            node_features=node_features,
+                                                            edge_type_features=edge_type_features,
+                                                            edge_features=edge_features,
+                                                        )
+                                                    )
+                                                    parametrizations.append(
+                                                        dict(
+                                                            use_node_embedding=use_node_embedding,
+                                                            use_node_type_embedding=use_node_type_embedding,
+                                                            residual_convolutional_layers=residual_convolutional_layers,
+                                                            siamese_node_feature_module=siamese_node_feature_module,
+                                                            kernels=kernels,
+                                                            use_edge_type_embedding=use_edge_type_embedding,
+                                                            use_edge_metrics=use_edge_metrics,
+                                                        )
+                                                    )
+        for i, (parametrization, feature_set) in tqdm(
+            enumerate(zip(parametrizations, features)),
             total=len(parametrizations),
             desc="Testing parametrization combo",
         ):
-            if not parametrization["use_node_embedding"] and not parametrization["use_node_type_embedding"] and feature_set["node_type_features"] is None and feature_set["node_features"] is None:
+            if (
+                not parametrization["use_node_embedding"]
+                and not parametrization["use_node_type_embedding"]
+                and feature_set["node_type_features"] is None
+                and feature_set["node_features"] is None
+            ):
                 parametrization["kernels"] = None
                 parametrization["edge_embedding_methods"] = None
 
             if parametrization["kernels"] is None:
                 parametrization["residual_convolutional_layers"] = False
-            
+
             salt = sha256(
-                dict(
-                    parametrization=parametrization,
-                    feature_set=feature_set
-                ),
-                use_approximation=True
+                dict(parametrization=parametrization, feature_set=feature_set),
+                use_approximation=True,
             )
 
             if cache_or_store(
@@ -164,7 +177,7 @@ class TestGCNEdgePrediction(TestCase):
                     "./embiggen/utils/abstract_gcn.py",
                     "./embiggen/utils/abstract_edge_gcn.py",
                 ],
-                salt=salt
+                salt=salt,
             ):
                 continue
 
@@ -182,11 +195,12 @@ class TestGCNEdgePrediction(TestCase):
                 edge_type_embedding_size=5,
                 **parametrization
             )
-            model.fit(graph=self.graph, **feature_set)
-            model.predict(graph=self.graph, **feature_set)
-            model.predict_proba(graph=self.graph, **feature_set)
-
-            compress_json.dump(
-                parametrization,
-                path,
-            )
+            try:
+                model.fit(graph=self.graph, **feature_set)
+                model.predict_proba(graph=self.graph, **feature_set)
+                model.predict(graph=self.graph, **feature_set)
+            except Exception as e:
+                raise ValueError(
+                    f"Error raised for parametrization {parametrization} and feature set {feature_set} "
+                    f"at the test number {i} out of {len(parametrizations)}."
+                ) from e

@@ -28,7 +28,14 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
     def setUp(self):
         """Setup objects for running tests on edge-label prediction pipeline class."""
         self._number_of_holdouts = 2
-        self.graph = HP().remove_singleton_nodes().remove_parallel_edges()
+        self.graph = HP().remove_singleton_nodes().remove_parallel_edges().remove_components(top_k_components=1).sort_by_decreasing_outbound_node_degree()
+
+        self.graph.remove_inplace_edge_type_name(
+            "biolink:subPropertyOf",
+        )
+        self.graph.remove_inplace_edge_type_name(
+            "biolink:inverseOf",
+        )
 
     def test_evaluate_embedding_for_edge_label_prediction(self):
         """Test graph visualization."""
@@ -289,15 +296,13 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
             leave=False,
             desc="Testing edge embedding methods"
         )
-        graph = HP().remove_components(top_k_components=1).sort_by_decreasing_outbound_node_degree()
-
         for _, row in bar:
             if row.requires_edge_weights or row.requires_edge_types or row.requires_node_types:
                 continue
 
             bar.set_description(
                 f"Testing {row.model_name} from library {row.library_name}")
-
+            
             edge_label_prediction_evaluation(
                 holdouts_kwargs=dict(train_size=0.8),
                 models="Decision Tree Classifier",
@@ -307,7 +312,7 @@ class TestEvaluateEdgeLabelPrediction(TestCase):
                     task_name="Edge Embedding"
                 )(),
                 evaluation_schema="Stratified Monte Carlo",
-                graphs=graph,
+                graphs=self.graph,
                 number_of_holdouts=self._number_of_holdouts,
                 verbose=False,
                 smoke_test=True,

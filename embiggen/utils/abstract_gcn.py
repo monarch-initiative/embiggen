@@ -10,7 +10,9 @@ import tensorflow as tf
 from ensmallen import Graph
 from keras_mixed_sequence import Sequence
 from tensorflow.keras.callbacks import (  # pylint: disable=import-error,no-name-in-module
-    EarlyStopping, ReduceLROnPlateau)
+    EarlyStopping, ReduceLROnPlateau,
+    TerminateOnNaN
+)
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import \
     Model  # pylint: disable=import-error,no-name-in-module
@@ -153,6 +155,20 @@ def graph_to_sparse_tensor(
     if use_weights and kernel != "Weights":
         kernel_weights = kernel_weights * graph.get_directed_edge_weights()
 
+    # We check that no NaNs are present in the kernel weights.
+    number_of_nans = np.isnan(kernel_weights).sum()
+    if number_of_nans > 0:
+        raise ValueError(
+            f"The provided graph contains {number_of_nans} NaNs in the kernel weights."
+        )
+    
+    # We check that no value is set to zero.
+    number_of_zeros = (kernel_weights == 0).sum()
+    if number_of_zeros > 0:
+        raise ValueError(
+            f"The provided graph contains {number_of_zeros} zeros in the kernel weights."
+        )
+    
     return tf.sparse.reorder(
         tf.SparseTensor(
             edge_node_ids,
@@ -711,15 +727,13 @@ class AbstractGCN(AbstractClassifierModel):
                 input_features.append(node_type_ids)
 
                 space_adjusted_input_layer_name = node_type_ids.name.replace(" ", "")
+                use_masking = graph.has_multilabel_node_types() or graph.has_unknown_node_types()
 
                 node_type_embedding = FlatEmbedding(
-                    vocabulary_size=graph.get_number_of_node_types(),
+                    vocabulary_size=graph.get_number_of_node_types() + (1 if use_masking else 0),
                     dimension=self._node_type_embedding_size,
                     input_length=graph.get_maximum_multilabel_count(),
-                    mask_zero=(
-                        graph.has_multilabel_node_types()
-                        or graph.has_unknown_node_types()
-                    ),
+                    mask_zero=use_masking,
                     name=f"{space_adjusted_input_layer_name}Embedding",
                 )(node_type_ids)
                 hidden.append(node_type_embedding)
@@ -1028,6 +1042,7 @@ class AbstractGCN(AbstractClassifierModel):
                     factor=self._reduce_lr_factor,
                     mode=self._reduce_lr_mode,
                 ),
+                TerminateOnNaN(),
                 *(
                     (
                         TqdmCallback(

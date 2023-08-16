@@ -50,19 +50,29 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
             Further parameters to forward to the model.
         """
         model_name = must_be_in_set(self.model_name(), self.MODELS.keys(), "model name")
-        self._model_kwargs = normalize_kwargs(self, model_kwargs)
-        
+        self._model_kwargs = normalize_kwargs(
+            self,
+            {
+                **model_kwargs,
+                "embedding_size": embedding_size,
+                "random_state": random_state,
+            },
+        )
+
+        embedding_size = self._model_kwargs.pop("embedding_size")
+        random_state = self._model_kwargs.pop("random_state")
+
         self._model = Node2VecEnsmallen.MODELS[model_name](
             embedding_size=embedding_size,
             random_state=random_state,
-            **model_kwargs
+            **self._model_kwargs
         )
 
         super().__init__(
             embedding_size=embedding_size,
             enable_cache=enable_cache,
             ring_bell=ring_bell,
-            random_state=random_state
+            random_state=random_state,
         )
 
     @classmethod
@@ -78,10 +88,7 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
 
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
-        return dict(
-            **super().parameters(),
-            **self._model_kwargs
-        )
+        return dict(**super().parameters(), **self._model_kwargs)
 
     def _fit_transform(
         self,
@@ -97,15 +104,11 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
         if return_dataframe:
             node_names = graph.get_node_names()
             node_embeddings = [
-                pd.DataFrame(
-                    node_embedding,
-                    index=node_names
-                )
+                pd.DataFrame(node_embedding, index=node_names)
                 for node_embedding in node_embeddings
             ]
         return EmbeddingResult(
-            embedding_method_name=self.model_name(),
-            node_embeddings=node_embeddings
+            embedding_method_name=self.model_name(), node_embeddings=node_embeddings
         )
 
     @classmethod
@@ -132,7 +135,10 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
 
     def is_using_node_types(self) -> bool:
         """Returns whether the model is parametrized to use node types."""
-        return "change_node_type_weight" in self._model_kwargs and self._model_kwargs["change_node_type_weight"] != 1.0
+        return (
+            "change_node_type_weight" in self._model_kwargs
+            and self._model_kwargs["change_node_type_weight"] != 1.0
+        )
 
     @classmethod
     def can_use_edge_types(cls) -> bool:
@@ -141,7 +147,10 @@ class Node2VecEnsmallen(EnsmallenEmbedder):
 
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is parametrized to use edge types."""
-        return "change_edge_type_weight" in self._model_kwargs and  self._model_kwargs["change_edge_type_weight"] != 1.0
+        return (
+            "change_edge_type_weight" in self._model_kwargs
+            and self._model_kwargs["change_edge_type_weight"] != 1.0
+        )
 
     @classmethod
     def is_stocastic(cls) -> bool:

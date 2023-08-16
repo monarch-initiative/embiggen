@@ -1,17 +1,17 @@
 """Module providing abstract edge prediction model."""
-import warnings
-from typing import Optional, Union, List, Dict, Any, Tuple, Iterator, Type
-import pandas as pd
-import numpy as np
 import math
+import gc
+import warnings
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
+
+import numpy as np
+import pandas as pd
 from ensmallen import Graph
 from tqdm.auto import tqdm
+
 from embiggen.utils import AbstractEdgeFeature
-from embiggen.utils.abstract_models import (
-    AbstractClassifierModel,
-    abstract_class,
-    format_list,
-)
+from embiggen.utils.abstract_models import (AbstractClassifierModel,
+                                            abstract_class)
 
 
 @abstract_class
@@ -312,7 +312,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             total=len(validation_unbalance_rates),
             leave=False,
             dynamic_ncols=True,
-            desc=f"Evaluating on unbalances",
+            desc="Evaluating on unbalances",
         ):
             for evaluation_mode, (existent_predict_proba, non_existent_graph) in (
                 ("train", (train_predict_proba, negative_train)),
@@ -382,7 +382,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph.
 
         Parameters
@@ -475,7 +475,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -548,7 +548,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -621,7 +621,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -694,7 +694,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -766,7 +766,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -832,7 +832,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -900,7 +900,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -968,7 +968,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph bipartite portion.
 
         Parameters
@@ -1032,10 +1032,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph.
 
         Parameters
@@ -1055,6 +1057,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1067,21 +1071,95 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             This value is ignored when the values to be returned the user has not
             requested for a prediction dataframe to be returned.
         """
-        predictions = (
-            super()
-            .predict_proba(
-                graph,
-                support=support,
-                node_features=node_features,
-                node_type_features=node_type_features,
-                edge_type_features=edge_type_features,
-                edge_features=self.edge_features_check(edge_features),
-            )
-            .flatten()
+        predictions: Union[Iterator[np.ndarray], np.ndarray] = super().predict_proba(
+            graph,
+            support=support,
+            node_features=node_features,
+            node_type_features=node_type_features,
+            edge_type_features=edge_type_features,
+            edge_features=self.edge_features_check(edge_features),
         )
 
-        if np.isnan(predictions).any():
-            raise ValueError("There are NaN values in the predicted probabilities!")
+        if isinstance(predictions, np.ndarray) and path is not None:
+            predictions = [predictions]
+
+        if consume_predictions and return_predictions_dataframe:
+            raise ValueError(
+                "Cannot consume predictions and return a DataFrame at the same time."
+            )
+
+        if not consume_predictions:
+            prediction_mini_batches = []
+        
+        if path is not None:
+            edge_id = 0
+            extension = path.split(".")[-1]
+            if extension == "csv":
+                separator = ","
+            elif extension == "tsv":
+                separator = "\t"
+            elif extension == "txt":
+                separator = " "
+            else:
+                raise ValueError(
+                    f"Unsupported file extension {extension}. "
+                    "Please use either csv, tsv or txt."
+                )
+            with open(path, "w", encoding="utf8") as file:
+                file.writeline(
+                    separator.join(
+                        [
+                            "source",
+                            "destination",
+                            *(("edge_type",) if return_edge_type_names else ()),
+                            "prediction",
+                        ]
+                    )
+                )
+                for prediction_mini_batch in predictions:
+                    if not consume_predictions:
+                        prediction_mini_batches.append(prediction_mini_batch)
+                    for prediction_score in prediction_mini_batch:
+                        if return_node_names:
+                            src, dst = graph.get_edge_node_names_from_edge_id(edge_id)
+
+                            # We need to normalize the node names in the unfortunate
+                            # case that they contain the selected separator.
+                            if separator in src:
+                                src = src.replace("\"", "\\\"")
+                                src = f"\"{src}\""
+                            if separator in dst:
+                                dst = dst.replace("\"", "\\\"")
+                                dst = f"\"{dst}\""
+                        else:
+                            src, dst = graph.get_edge_node_ids_from_edge_id(edge_id)
+                        file.writeline(
+                            separator.join(
+                                [
+                                    src,
+                                    dst,
+                                    *(graph.get_edge_type_name_from_edge_id(edge_id) if return_edge_type_names else ()),
+                                    prediction_score,
+                                ]
+                            )
+                        )
+                        edge_id += 1
+                    if consume_predictions:
+                        # We make sure that the predictions are consumed
+                        # and we don't cause a memory peak by various odd
+                        # behaviour of the GC.
+                        del prediction_mini_batch
+                        gc.collect()
+
+            if consume_predictions:
+                predictions = None
+            else:
+                predictions = prediction_mini_batches
+
+        if not consume_predictions and not isinstance(predictions, np.ndarray):
+            if not isinstance(predictions, list):
+                predictions = list(predictions)
+            predictions = np.concatenate(predictions)
 
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
@@ -1104,7 +1182,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                     ),
                 },
             )
-
+        
         return predictions
 
     def predict_proba_bipartite_graph_from_edge_node_ids(
@@ -1125,10 +1203,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1152,6 +1232,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1175,6 +1262,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1198,10 +1287,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1225,6 +1316,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1248,6 +1346,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1271,10 +1371,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1298,6 +1400,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1321,6 +1430,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1344,10 +1455,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1371,6 +1484,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1394,6 +1514,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1416,10 +1538,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1441,6 +1565,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1460,6 +1591,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1482,10 +1615,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1507,6 +1642,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1528,6 +1670,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1550,10 +1694,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1575,6 +1721,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1596,6 +1749,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,
@@ -1618,10 +1773,12 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
         ] = None,
+        path: Optional[str] = None,
+        consume_predictions: bool = False,
         return_predictions_dataframe: bool = False,
         return_edge_type_names: bool = True,
         return_node_names: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> Union[np.ndarray, pd.DataFrame, Iterator[np.ndarray]]:
         """Execute predictions probabilities on the provided graph bipartite portion.
 
         Parameters
@@ -1643,6 +1800,13 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             The node type features to use.
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
+        path: Optional[str] = None
+            The path to the file where to save the predictions.    
+        consume_predictions: bool = False
+            Whether to consume the predictions iterator as it is being used
+            instead of collecting it into a list. This is useful when the
+            predictions are just being stored to disk and the graph size
+            is large enough to be problematic to store in main memory.
         return_predictions_dataframe: bool = False
             Whether to return a pandas DataFrame, which as indices has the node IDs.
             By default, a numpy array with the predictions is returned as it weights much less.
@@ -1664,6 +1828,8 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             node_type_features=node_type_features,
             edge_type_features=edge_type_features,
             edge_features=edge_features,
+            path=path,
+            consume_predictions=consume_predictions,
             return_predictions_dataframe=return_predictions_dataframe,
             return_edge_type_names=return_edge_type_names,
             return_node_names=return_node_names,

@@ -172,6 +172,28 @@ class AbstractClassifierModel(AbstractModel):
             feature_name="edge type",
         )
 
+    def _check_nan(
+        self,
+        features: List[np.ndarray],
+        feature_kind: str
+    ):
+        """Check that the provided features do not contain NaNs."""
+        for feature in features:
+            nan_mask = np.isnan(feature)
+            number_of_nans = nan_mask.sum()
+            if number_of_nans > 0:
+                number_of_rows_with_nans = nan_mask.any(axis=1).sum()
+                number_of_columns_with_nans = nan_mask.any(axis=0).sum()
+                raise ValueError(
+                    f"The provided {feature_kind} features contain {number_of_nans} NaNs "
+                    f"out or {feature.size} elements. "
+                    f"Furthermore, {number_of_rows_with_nans} out of {number_of_rows_with_nans.shape[0]} "
+                    f"rows and {number_of_columns_with_nans} out of {number_of_rows_with_nans.shape[1]} columns "
+                    f"contain at least one NaN. "
+                    "Please remove them before fitting the model, "
+                    "either by dropping the rows or by imputing them."
+                )
+
     @classmethod
     def _handle_potentially_misparametrized_edge_features(
         cls, features: List[Any], expected_parameter_name: str
@@ -335,7 +357,7 @@ class AbstractClassifierModel(AbstractModel):
                                 "Furthermore, the index of the provided features matches the index of the "
                                 f"{candidate_feature_parameter} features. "
                                 f"{graph_name_message}"
-                                "Instead of providing them for the parameter `{expected_parameter_name}`, "
+                                f"Instead of providing them for the parameter `{expected_parameter_name}`, "
                                 f"most likely you meant to provide them as {candidate_feature_parameter}."
                             )
 
@@ -476,7 +498,7 @@ class AbstractClassifierModel(AbstractModel):
         edge_features: Optional[
             Union[Type[AbstractEdgeFeature], List[np.ndarray]]
         ] = None,
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, Iterator[np.ndarray]]:
         """Run prediction on the provided graph.
 
         Parameters
@@ -1559,6 +1581,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_node_features_shapes(node_features)
+        self._check_nan(node_features, "node features")
         node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
@@ -1567,6 +1590,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_node_type_features_shapes(node_type_features)
+        self._check_nan(node_type_features, "node type features")
         edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
@@ -1575,6 +1599,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=True,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+        self._check_nan(edge_type_features, "edge type features")
         edge_features = self.normalize_edge_features(
             graph=graph,
             support=support,
@@ -1603,11 +1628,13 @@ class AbstractClassifierModel(AbstractModel):
                 "features. It is unclear how to proceed with this data."
             )
         
-        if len(node_type_features) > 0 and not graph.has_exclusively_singleton_node_types():
+        if len(node_type_features) > 0 and graph.has_exclusively_singleton_node_types():
+            node_type_name_counts = json.dumps(graph.get_node_type_names_counts_hashmap(), indent=4)
             raise ValueError(
                 "The node type features have been provided but the current "
                 f"instance of graph {graph.get_name()} has exclusively singleton node types, "
                 "meaning that all of the nodes in the graph have a unique node type. "
+                f"Specifically, this means that the node type counts of your graph as as follows: {node_type_name_counts}"
                 "This means that the node type features will effectively be the same as "
                 "the node features. We recommend that you use such features directly as "
                 "node features instead of node type features so as to avoid confusion."
@@ -1629,7 +1656,7 @@ class AbstractClassifierModel(AbstractModel):
                 "features. It is unclear how to proceed with this data."
             )
         
-        if len(edge_type_features) > 0 and not graph.has_exclusively_singleton_edge_types():
+        if len(edge_type_features) > 0 and graph.has_exclusively_singleton_edge_types():
             raise ValueError(
                 "The edge type features have been provided but the current "
                 f"instance of graph {graph.get_name()} has exclusively singleton edge types, "
@@ -1752,6 +1779,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_features_shapes(node_features)
+        self._check_nan(node_features, "node features")
         node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
@@ -1760,6 +1788,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_type_features_shapes(node_type_features)
+        self._check_nan(node_type_features, "node type features")
         edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
@@ -1768,6 +1797,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+        self._check_nan(edge_type_features, "edge type features")
         edge_features = self.normalize_edge_features(
             graph=graph,
             support=support,
@@ -1825,7 +1855,7 @@ class AbstractClassifierModel(AbstractModel):
                 List[Union[pd.DataFrame, np.ndarray]],
             ]
         ] = None,
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, Iterator[np.ndarray]]:
         """Execute predictions on the provided graph.
 
         Parameters
@@ -1870,6 +1900,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_features_shapes(node_features)
+        self._check_nan(node_features, "node features")
         node_type_features = self.normalize_node_type_features(
             graph=graph,
             support=support,
@@ -1878,6 +1909,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_node_type_features_shapes(node_type_features)
+        self._check_nan(node_type_features, "node type features")
         edge_type_features = self.normalize_edge_type_features(
             graph=graph,
             support=support,
@@ -1886,6 +1918,7 @@ class AbstractClassifierModel(AbstractModel):
             allow_automatic_feature=False,
         )
         self._check_edge_type_features_shapes(edge_type_features)
+        self._check_nan(edge_type_features, "edge type features")
 
         if self._training_graph_density > support.get_density() * 3.0 or self._training_graph_density < support.get_density() / 3.0:
             raise ValueError(
@@ -1898,7 +1931,7 @@ class AbstractClassifierModel(AbstractModel):
             )
 
         try:
-            predictions = self._predict_proba(
+            predictions: Union[np.ndarray, Iterator[np.ndarray]] = self._predict_proba(
                 graph=graph,
                 support=support,
                 node_features=node_features,
@@ -1912,24 +1945,34 @@ class AbstractClassifierModel(AbstractModel):
                     allow_automatic_feature=False,
                 ),
             )
+            if isinstance(predictions, np.ndarray):
+                if np.isnan(predictions).any():
+                    # If the predictions have the terrible misfortune of having NaN values,
+                    # we raise an extensive error including all of the information that we have
+                    # about the graph and the current model, and how many NaN values there are.
+                    raise ValueError(
+                        f"The predictions for the graph {graph.get_name()} and the model {self.model_name()} "
+                        f"from the library {self.library_name()} and task {self.task_name()} have NaN values. "
+                        f"Specifically, there are {np.isnan(predictions).sum()} NaN values out of {len(predictions)} predictions."
+                    )
+                
+                if (
+                    not self.is_binary_prediction_task()
+                    and not self.is_multilabel_prediction_task()
+                    and (len(predictions.shape) == 1 or predictions.shape[1] == 2)
+                ):
+                    raise ValueError(
+                        "This task is not a binary prediction, "
+                        f"yet the {self.model_name()} model predict proba method has "
+                        "returned a vector of prediction probabilities with "
+                        f"shape {predictions.shape}. "
+                    )
         except Exception as exception:
             raise RuntimeError(
                 f"An exception was raised while calling the `._predict_proba` method of {self.model_name()} "
                 f"implemented using the {self.library_name()} for the {self.task_name()} task. "
                 f"Specifically, the class of the model is {self.__class__.__name__}."
             ) from exception
-
-        if (
-            not self.is_binary_prediction_task()
-            and not self.is_multilabel_prediction_task()
-            and (len(predictions.shape) == 1 or predictions.shape[1] == 2)
-        ):
-            raise ValueError(
-                "This task is not a binary prediction, "
-                f"yet the {self.model_name()} model predict proba method has "
-                "returned a vector of prediction probabilities with "
-                f"shape {predictions.shape}. "
-            )
 
         return predictions
 
@@ -2265,9 +2308,9 @@ class AbstractClassifierModel(AbstractModel):
         model_performance["holdout_number"] = holdout_number
         model_performance["holdouts_kwargs"] = json.dumps(holdouts_kwargs)
         model_performance["use_subgraph_as_support"] = use_subgraph_as_support
-        model_performance["node_feature_shapes"] = self._node_feature_shapes
-        model_performance["node_type_feature_shapes"] = self._node_type_feature_shapes
-        model_performance["edge_type_feature_shapes"] = self._edge_type_feature_shapes
+        model_performance["node_feature_shapes"] = json.dumps([self._node_feature_shapes])
+        model_performance["node_type_feature_shapes"] = json.dumps([self._node_type_feature_shapes])
+        model_performance["edge_type_feature_shapes"] = json.dumps([self._edge_type_feature_shapes])
 
         for column_name, column_value in metadata.items():
             model_performance[column_name] = column_value

@@ -25,7 +25,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         use_scale_free_distribution: bool = True,
         use_edge_metrics: bool = False,
         prediction_batch_size: int = 2**15,
-        random_state: int = 42
+        random_state: int = 42,
     ):
         """Create the adapter for Sklearn object.
 
@@ -94,7 +94,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             "prediction_batch_size": self._prediction_batch_size,
             "use_edge_metrics": self._use_edge_metrics,
             "use_scale_free_distribution": self._use_scale_free_distribution,
-            **super().parameters()
+            **super().parameters(),
         }
 
     def clone(self):
@@ -106,11 +106,15 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         graph: Union[Graph, Tuple[np.ndarray]],
         node_features: List[np.ndarray],
         support: Graph,
-        node_types: Optional[Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]] = None,
+        node_types: Optional[
+            Union[Graph, List[Optional[List[str]]], List[Optional[List[int]]]]
+        ] = None,
         edge_types: Optional[np.ndarray] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
     ) -> np.ndarray:
         """Transforms the provided data into an Sklearn-compatible numpy array.
 
@@ -155,7 +159,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         graph_transformer = GraphTransformer(
             methods=self._edge_embedding_methods,
             aligned_mapping=True,
-            include_both_undirected_edges=False
+            include_both_undirected_edges=False,
         )
 
         if edge_features is None:
@@ -188,7 +192,9 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
                         )
                     rasterized_edge_features.append(rasterized_edge_feature)
             elif isinstance(graph, tuple):
-                for rasterized_edge_feature in edge_feature.get_edge_feature_from_edge_node_ids(
+                for (
+                    rasterized_edge_feature
+                ) in edge_feature.get_edge_feature_from_edge_node_ids(
                     support=support,
                     sources=graph[0],
                     destinations=graph[1],
@@ -242,14 +248,14 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         graph_transformer.fit(
             node_features,
             node_type_feature=node_type_features,
-            edge_type_features=edge_type_features
+            edge_type_features=edge_type_features,
         )
 
         return graph_transformer.transform(
             graph=graph,
             node_types=node_types,
             edge_types=edge_types,
-            edge_features=rasterized_edge_features
+            edge_features=rasterized_edge_features,
         )
 
     def _fit(
@@ -259,7 +265,9 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
     ):
         """Run fitting on the provided graph.
 
@@ -284,13 +292,13 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         lpt = EdgePredictionTransformer(
             methods=self._edge_embedding_methods,
             aligned_mapping=True,
-            include_both_undirected_edges=False
+            include_both_undirected_edges=False,
         )
 
         lpt.fit(
             node_features,
             node_type_feature=node_type_features,
-            edge_type_features=edge_type_features
+            edge_type_features=edge_type_features,
         )
 
         if support is None:
@@ -306,18 +314,48 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
                     "We currently only support edge features of type AbstractEdgeFeature."
                 )
 
+        number_of_negative_samples = int(
+            math.ceil(
+                graph.get_number_of_directed_edges() * self._training_unbalance_rate
+            )
+        )
         negative_graph = graph.sample_negative_graph(
-            number_of_negative_samples=int(
-                math.ceil(graph.get_number_of_edges() *
-                          self._training_unbalance_rate)
-            ),
+            number_of_negative_samples=number_of_negative_samples,
             only_from_same_component=True,
             random_state=self._random_state,
             use_scale_free_distribution=self._use_scale_free_distribution,
-            sample_edge_types=len(edge_type_features) > 0
+            sample_edge_types=len(edge_type_features) > 0,
         )
 
         assert negative_graph.has_edges()
+
+        if negative_graph.has_selfloops():
+            assert graph.has_selfloops(), (
+                "The negative graph contains self loops, "
+                "but the positive graph does not."
+            )
+
+        if self._training_unbalance_rate == 1.0:
+            number_of_negative_edges = negative_graph.get_number_of_directed_edges()
+            number_of_positive_edges = graph.get_number_of_directed_edges()
+            self_loop_message = (
+                ("The graph contains self loops.")
+                if negative_graph.has_selfloops()
+                else ("The graph does not contain self loops.")
+            )
+            assert (
+                number_of_negative_edges in (
+                    number_of_positive_edges + 1,
+                    number_of_positive_edges,
+                )
+            ), (
+                "The negative graph should have the same number of edges as the "
+                "positive graph when using a training unbalance rate of 1.0. "
+                "We expect the negative graph to have "
+                f"{number_of_positive_edges} or {number_of_positive_edges + 1} edges, but found "
+                f"{number_of_negative_edges}. {self_loop_message} "
+                f"The exact number requested was {number_of_negative_samples}"
+            )
 
         rasterized_edge_features = []
 
@@ -330,32 +368,37 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
                 edge_feature.get_edge_feature_from_graph(
                     graph=negative_graph,
                     support=support,
-                ).values()
+                ).values(),
             ):
-                rasterized_edge_features.append(np.vstack((
-                    positive_edge_features,
-                    negative_edge_features
-                )))
+                rasterized_edge_features.append(
+                    np.vstack((positive_edge_features, negative_edge_features))
+                )
 
         if self._use_edge_metrics:
-            rasterized_edge_features.append(np.vstack((
-                support.get_all_edge_metrics(
-                    normalize=True,
-                    subgraph=graph,
-                ),
-                support.get_all_edge_metrics(
-                    normalize=True,
-                    subgraph=negative_graph,
+            rasterized_edge_features.append(
+                np.vstack(
+                    (
+                        support.get_all_edge_metrics(
+                            normalize=True,
+                            subgraph=graph,
+                        ),
+                        support.get_all_edge_metrics(
+                            normalize=True,
+                            subgraph=negative_graph,
+                        ),
+                    )
                 )
-            )))
+            )
 
-        self._model_instance.fit(*lpt.transform(
-            positive_graph=graph,
-            negative_graph=negative_graph,
-            edge_features=rasterized_edge_features,
-            shuffle=True,
-            random_state=self._random_state
-        ))
+        self._model_instance.fit(
+            *lpt.transform(
+                positive_graph=graph,
+                negative_graph=negative_graph,
+                edge_features=rasterized_edge_features,
+                shuffle=True,
+                random_state=self._random_state,
+            )
+        )
 
     def _predict(
         self,
@@ -364,7 +407,9 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -386,14 +431,17 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None
             The edge features to use.
         """
-        return self.predict_proba(
-            graph=graph,
-            support=support,
-            node_features=node_features,
-            node_type_features=node_type_features,
-            edge_type_features=edge_type_features,
-            edge_features=edge_features,
-        ) > 0.5
+        return (
+            self.predict_proba(
+                graph=graph,
+                support=support,
+                node_features=node_features,
+                node_type_features=node_type_features,
+                edge_type_features=edge_type_features,
+                edge_features=edge_features,
+            )
+            > 0.5
+        )
 
     def _predict_proba(
         self,
@@ -402,7 +450,9 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
         node_features: Optional[List[np.ndarray]] = None,
         node_type_features: Optional[List[np.ndarray]] = None,
         edge_type_features: Optional[List[np.ndarray]] = None,
-        edge_features: Optional[Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]] = None,
+        edge_features: Optional[
+            Union[Type[AbstractEdgeFeature], List[Type[AbstractEdgeFeature]]]
+        ] = None,
     ) -> np.ndarray:
         """Run prediction on the provided graph.
 
@@ -438,50 +488,54 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
             # handle them separately within the edge prediction sequence.
             return_edge_types=self.is_using_edge_types(),
             use_edge_metrics=False,
-            batch_size=self._prediction_batch_size
+            batch_size=self._prediction_batch_size,
         )
 
         def predict(features):
             if hasattr(self._model_instance, "predict_proba"):
-                return self._model_instance.predict_proba(features)
+                prediction_probabilities = self._model_instance.predict_proba(features)
+            else:
+                predictions = self._model_instance.predict(features).astype(np.int32)
+                prediction_probabilities = np.zeros(
+                    (predictions.shape[0], len(self._model_instance.classes_)),
+                    dtype=np.float32,
+                )
+                prediction_probabilities[np.arange(predictions.size), predictions] = 1
 
-            predictions = self._model_instance.predict(features).astype(np.int32)
-            prediction_probabilities = np.zeros(
-                (predictions.shape[0], len(self._model_instance.classes_)),
-                dtype=np.float32,
-            )
-            prediction_probabilities[np.arange(predictions.size), predictions] = 1
+            assert len(prediction_probabilities.shape) in (1, 2)
+
+            # In the majority but not totality of sklearn models,
+            # the predictions of binary models are returned as
+            # a couple of vectors for the positive and negative class.
+            if (
+                len(prediction_probabilities.shape) > 1
+                and prediction_probabilities.shape[1] > 1
+            ):
+                prediction_probabilities = prediction_probabilities[:, 1]
+
             return prediction_probabilities
 
-        prediction_probabilities = np.concatenate([
-            predict(self._trasform_graph_into_edge_embedding(
-                graph=(edges[0][0], edges[0][1]),
-                support=support,
-                node_features=node_features,
-                node_types=graph,
-                edge_types=edges[0][2] if self.is_using_edge_types() else None,
-                node_type_features=node_type_features,
-                edge_type_features=edge_type_features,
-                edge_features=edge_features,
-            ))
+        return (
+            predict(
+                self._trasform_graph_into_edge_embedding(
+                    graph=(edges[0][0], edges[0][1]),
+                    support=support,
+                    node_features=node_features,
+                    node_types=graph,
+                    edge_types=edges[0][2] if self.is_using_edge_types() else None,
+                    node_type_features=node_type_features,
+                    edge_type_features=edge_type_features,
+                    edge_features=edge_features,
+                )
+            )
             for edges in tqdm(
                 (sequence[i] for i in range(len(sequence))),
                 total=len(sequence),
                 dynamic_ncols=True,
                 desc="Running edge predictions",
-                leave=False
+                leave=False,
             )
-        ])
-
-        assert len(prediction_probabilities.shape) in (1, 2)
-
-        # In the majority but not totality of sklearn models,
-        # the predictions of binary models are returned as
-        # a couple of vectors for the positive and negative class.
-        if len(prediction_probabilities.shape) > 1 and prediction_probabilities.shape[1] > 1:
-            prediction_probabilities = prediction_probabilities[:, 1]
-
-        return prediction_probabilities
+        )
 
     @classmethod
     def can_use_edge_weights(cls) -> bool:
@@ -492,7 +546,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
     def can_use_node_types(cls) -> bool:
         """Returns whether the model can optionally use node types."""
         return True
-    
+
     @classmethod
     def requires_node_types(cls) -> bool:
         """Returns whether the model requires node types."""
@@ -502,7 +556,7 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
     def can_use_edge_types(cls) -> bool:
         """Returns whether the model can optionally use edge types."""
         return True
-    
+
     @classmethod
     def requires_edge_types(cls) -> bool:
         """Returns whether the model requires edge types."""
@@ -532,15 +586,15 @@ class SklearnLikeEdgePredictionAdapter(AbstractEdgePredictionModel):
     @classmethod
     def requires_edge_type_features(cls) -> bool:
         return False
-    
+
     @classmethod
     def requires_edge_features(cls) -> bool:
         return False
-    
+
     @classmethod
     def can_use_edge_type_features(cls) -> bool:
         return True
-    
+
     @classmethod
     def can_use_edge_features(cls) -> bool:
         return True
