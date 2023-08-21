@@ -64,11 +64,11 @@ class Annotation3D(Annotation):
 try:
     from ddd_subplots import display_video_at_path, rotate
     from ddd_subplots import subplots as subplots_3d
-except ImportError:
+except (ImportError, TypeError) as exception:
     warnings.warn(
         "We were not able to detect the CV2 package and libGL.so, therefore "
         "you will not be able to execute 3D animations with the visualization "
-        "pipeline."
+        f"pipeline. Specifically, the following error was raised: {exception}."
     )
 
 
