@@ -370,6 +370,45 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         if right_difference_path is None:
             right_difference_path = self._right_difference_path
 
+        # We make sure that the sources and destinations are numpy arrays.
+        if not isinstance(sources, np.ndarray):
+            raise ValueError(
+                "The provided sources are not a numpy array. "
+                f"You provided sources of type {type(sources)} instead of numpy.ndarray."
+            )
+
+        if not isinstance(destinations, np.ndarray):
+            raise ValueError(
+                "The provided destinations are not a numpy array. "
+                f"You provided destinations of type {type(destinations)} instead of numpy.ndarray."
+            )
+        
+        # We make sure that the sources and destinations are flat numpy arrays.
+        if len(sources.shape) != 1:
+            raise ValueError(
+                "The provided sources are not a flat numpy array. "
+                f"You provided sources of shape {sources.shape} instead of (n, )."
+            )
+        
+        if len(destinations.shape) != 1:
+            raise ValueError(
+                "The provided destinations are not a flat numpy array. "
+                f"You provided destinations of shape {destinations.shape} instead of (n, )."
+            )
+
+        if sources.dtype != np.uint32:
+            sources = sources.astype(np.uint32)
+
+        if destinations.dtype != np.uint32:
+            destinations = destinations.astype(np.uint32)
+
+        # We check that the length of the sources and destinations is the same.
+        if sources.shape != destinations.shape:
+            raise ValueError(
+                "The provided sources and destinations have different shapes. "
+                f"You provided sources of shape {sources.shape} and destinations of shape {destinations.shape}."
+            )
+
         return self._model.get_sketching_from_edge_node_ids(
             support,
             sources,
