@@ -4,6 +4,7 @@ from ensmallen import Graph
 import pandas as pd
 import numpy as np
 import compress_json
+import warnings
 import json
 from ensmallen import models
 from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
@@ -397,9 +398,23 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             )
 
         if sources.dtype != np.uint32:
+            warnings.warn(
+                "The provided sources are not of type uint32. "
+                f"You provided sources of type {sources.dtype} instead of uint32. "
+                "This will cause a cast of the sources to uint32, which might be slow "
+                "and might cause memory issues."
+            )
+
             sources = sources.astype(np.uint32)
 
         if destinations.dtype != np.uint32:
+            warnings.warn(
+                "The provided destinations are not of type uint32. "
+                f"You provided destinations of type {destinations.dtype} instead of uint32. "
+                "This will cause a cast of the destinations to uint32, which might be slow "
+                "and might cause memory issues."
+            )
+
             destinations = destinations.astype(np.uint32)
 
         # We check that the length of the sources and destinations is the same.
