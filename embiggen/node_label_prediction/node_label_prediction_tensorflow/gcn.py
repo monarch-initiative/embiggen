@@ -12,7 +12,7 @@ from tensorflow.keras.utils import Sequence
 from embiggen.utils.abstract_gcn import AbstractGCN, abstract_class
 from embiggen.utils.normalize_model_structural_parameters import normalize_model_list_parameter
 from embiggen.node_label_prediction.node_label_prediction_model import AbstractNodeLabelPredictionModel
-
+from embiggen.utils.number_to_ordinal import number_to_ordinal
 
 @abstract_class
 class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
@@ -202,10 +202,15 @@ class GCNNodeLabelPrediction(AbstractGCN, AbstractNodeLabelPredictionModel):
             )(hidden)
 
         # Building the head of the model.
-        for units in self._number_of_units_per_head_layer:
+        for i, units in enumerate(self._number_of_units_per_head_layer):
+            if len(self._number_of_units_per_head_layer) > 1:
+                ordinal = number_to_ordinal(i + 1)
+            else:
+                ordinal = ""
             hidden = Dense(
                 units=units,
-                activation="relu"
+                activation="relu",
+                name=f"{ordinal}HeadLayer"
             )(hidden)
 
         output = Dense(

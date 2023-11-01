@@ -23,15 +23,27 @@ class TestEdgeLabelGCN(TestCase):
 
         if not KipfGCNEdgeLabelPrediction.is_available():
             return
-
+        
         model: KipfGCNEdgeLabelPrediction = KipfGCNEdgeLabelPrediction(
             epochs=1,
             use_edge_metrics=True,
             edge_embedding_methods=["Concatenate", "Hadamard", "Average"],
             verbose=True
         )
+
+        edge_features = HyperSketching()
+        edge_features.fit(binary_graph)
+        
         model.fit(
             binary_graph,
             node_features=feature,
-            edge_features=HyperSketching(),
+            edge_features=edge_features,
+        )
+
+        beheaded: KipfGCNEdgeLabelPrediction = model.into_beheaded_edge_model()
+
+        edge_features = beheaded.predict_proba(
+            binary_graph,
+            node_features=feature,
+            edge_features=edge_features,
         )

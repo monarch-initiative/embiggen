@@ -18,8 +18,8 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     def __init__(
         self,
         number_of_hops: int = 3,
-        precision: int = 6,
-        bits: int = 4,
+        precision: int = 8,
+        bits: int = 6,
         include_node_types: bool = False,
         include_edge_types: bool = False,
         include_edge_ids: bool = False,
@@ -41,12 +41,12 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
 
         Parameters
         --------------------------
-        number_of_hops: int = 2
+        number_of_hops: int = 3
             The number of hops for the Sketches.
         precision: int = 6
             The precision of the HyperLogLog counters.
             The supported values range from 4 to 16.
-        bits: int = 5
+        bits: int = 6
             The number of bits of the HyperLogLog counters.
             The supported values range from 4 to 6.
         include_node_types: bool = False,

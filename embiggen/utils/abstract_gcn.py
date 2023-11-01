@@ -439,7 +439,15 @@ class AbstractGCN(AbstractClassifierModel):
 
     def clone(self) -> Type["AbstractGCN"]:
         """Return copy of self."""
-        return copy.deepcopy(self)
+        with tf.keras.utils.custom_object_scope(
+            {
+                "GraphConvolution": GraphConvolution,
+                "EmbeddingLookup": EmbeddingLookup,
+                "FlatEmbedding": FlatEmbedding,
+                "L2Norm": L2Norm,
+            }
+        ):
+            return copy.deepcopy(self)
 
     def get_batch_size_from_graph(self, graph: Graph) -> int:
         """Returns batch size to use for the given graph."""
@@ -1151,6 +1159,9 @@ class AbstractGCN(AbstractClassifierModel):
             edge_type_features=edge_type_features,
             edge_features=edge_features,
         )
+
+        if "Beheaded" in self._model.name:
+            return predictions
 
         if self.is_binary_prediction_task() or self.is_multilabel_prediction_task():
             return predictions > 0.5
