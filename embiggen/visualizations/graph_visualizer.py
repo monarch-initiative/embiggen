@@ -2275,7 +2275,16 @@ class GraphVisualizer:
 
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
-            color_bar.draw_all()
+            try:
+                # In the newer version of matplotlib the colorbar
+                # does not have the `draw_all` method, which has been
+                # replaced by the figure method, which we call when
+                # the colorbar fails in the first place.
+                color_bar.draw_all()
+            except AttributeError:
+                # If the colorbar does not have the `draw_all` method
+                # We call the figure method.
+                figure.draw_without_rendering()
             returned_values = figure, axes
 
         if not return_caption:
@@ -3627,7 +3636,16 @@ class GraphVisualizer:
                 figure, axes, scatter = returned_values
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
-            color_bar.draw_all()
+            try:
+                # In the newer version of matplotlib the colorbar
+                # does not have the `draw_all` method, which has been
+                # replaced by the figure method, which we call when
+                # the colorbar fails in the first place.
+                color_bar.draw_all()
+            except AttributeError:
+                # If the colorbar does not have the `draw_all` method
+                # We call the figure method.
+                figure.draw_without_rendering()
 
         if annotate_nodes:
             figure, axes = self.annotate_nodes(
@@ -4346,7 +4364,16 @@ class GraphVisualizer:
                 figure, axes, scatter = returned_values
             color_bar = figure.colorbar(scatter[0], ax=axes)
             color_bar.set_alpha(1)
-            color_bar.draw_all()
+            try:
+                # In the newer version of matplotlib the colorbar
+                # does not have the `draw_all` method, which has been
+                # replaced by the figure method, which we call when
+                # the colorbar fails in the first place.
+                color_bar.draw_all()
+            except AttributeError:
+                # If the colorbar does not have the `draw_all` method
+                # We call the figure method.
+                figure.draw_without_rendering()
             returned_values = figure, axes
 
         if not return_caption:
