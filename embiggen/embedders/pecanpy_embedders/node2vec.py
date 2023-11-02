@@ -1,14 +1,15 @@
 """Node2Vec wrapper for PecanPy numba-based node embedding library."""
 from typing import Dict, Union, Any
+from multiprocessing import cpu_count
+from time import time
+from pecanpy.pecanpy import SparseOTF
 
 import numpy as np
 import pandas as pd
 from ensmallen import Graph
 
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
-from pecanpy.pecanpy import SparseOTF
-from multiprocessing import cpu_count
-from time import time
+
 
 class Node2VecPecanPy(AbstractEmbeddingModel):
     """Node2Vec wrapper for PecanPy numba-based node embedding library."""
@@ -28,10 +29,10 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
         verbose: bool = False,
         random_state: int = 42,
         ring_bell: bool = False,
-        enable_cache: bool = False
+        enable_cache: bool = False,
     ):
         """Create new wrapper for Node2Vec model from PecanPy library.
-        
+
         Parameters
         -------------------------
         embedding_size: int = 100
@@ -70,18 +71,14 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
             embedding_size=embedding_size,
             enable_cache=enable_cache,
             ring_bell=ring_bell,
-            random_state=random_state
+            random_state=random_state,
         )
 
     @classmethod
     def smoke_test_parameters(cls) -> Dict[str, Any]:
         """Returns parameters for smoke test."""
         return dict(
-            embedding_size=5,
-            epochs=1,
-            window_size=1,
-            walk_length=2,
-            iterations=1
+            embedding_size=5, epochs=1, window_size=1, walk_length=2, iterations=1
         )
 
     def parameters(self) -> Dict[str, Any]:
@@ -121,12 +118,14 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
         self,
         graph: Graph,
         return_dataframe: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]]:
+    ) -> Union[
+        np.ndarray, pd.DataFrame, Dict[str, np.ndarray], Dict[str, pd.DataFrame]
+    ]:
         """Return node embedding"""
 
         model: SparseOTF = SparseOTF(
-            p=1.0/self._return_weight,
-            q=1.0/self._explore_weight,
+            p=1.0 / self._return_weight,
+            q=1.0 / self._explore_weight,
             workers=self._number_of_workers,
             verbose=self._verbose,
         )
@@ -136,7 +135,7 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
         # in order to avoid a memory peak and making
         # the conversion of the Ensmallen graph object
         # into the `SparseOTF` more seamless.
-        
+
         # The `indptr` attribute contains the indices
         # of the rows in the CSR representation, which
         # are the comulative node degrees.
@@ -148,9 +147,11 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
         # In the `indices` attribute we need to store the destinations.
         model.indices = graph.get_directed_destination_node_ids()
 
-        # We also need to set the `IDlst` attribute, which are
-        # the node IDs.
-        model.IDlst = graph.get_node_ids()
+        model.set_node_ids(
+            node_ids=None,
+            implicit_ids=True,
+            num_nodes=graph.get_number_of_nodes(),
+        )
 
         # In model data we need to store the edge weights
         # if are present. If the graph is weighted, we use
@@ -169,20 +170,16 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
             walk_length=self._walk_length,
             window_size=self._window_size,
             epochs=self._epochs,
-            verbose=self._verbose
+            verbose=self._verbose,
         )
 
         self._time_required_by_last_embedding = time() - start
 
         if return_dataframe:
-            node_embedding = pd.DataFrame(
-                node_embedding,
-                index=graph.get_node_names()
-            )
+            node_embedding = pd.DataFrame(node_embedding, index=graph.get_node_names())
 
         return EmbeddingResult(
-            embedding_method_name=self.model_name(),
-            node_embeddings=node_embedding
+            embedding_method_name=self.model_name(), node_embeddings=node_embedding
         )
 
     @classmethod
