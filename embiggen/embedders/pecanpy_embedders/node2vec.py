@@ -6,7 +6,7 @@ import pandas as pd
 from ensmallen import Graph
 
 from embiggen.utils.abstract_models import AbstractEmbeddingModel, EmbeddingResult
-from pecanpy.node2vec import SparseOTF
+from pecanpy.pecanpy import SparseOTF
 from multiprocessing import cpu_count
 from time import time
 
@@ -96,17 +96,6 @@ class Node2VecPecanPy(AbstractEmbeddingModel):
                 return_weight=self._return_weight,
                 explore_weight=self._explore_weight,
             )
-        )
-
-    @classmethod
-    def smoke_test_parameters(cls) -> Dict[str, Any]:
-        """Returns parameters for smoke test."""
-        return dict(
-            embedding_size=5,
-            epochs=1,
-            window_size=1,
-            walk_length=2,
-            iterations=1
         )
 
     @classmethod
