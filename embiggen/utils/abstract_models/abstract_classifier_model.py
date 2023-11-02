@@ -129,7 +129,11 @@ class AbstractClassifierModel(AbstractModel):
                         "What behaviour were you expecting with this feature? "
                         "Please do open an issue on Embiggen and let us know!"
                     )
-                if provided_feature.shape != expected_feature_shapes[i]:
+                # We check that the provided feature has the expected shape, except
+                # for the first colum which is the number of elements in the graph and
+                # the user may want to run the models on graphs with different number
+                # of nodes.
+                if provided_feature.shape[1:] != expected_feature_shapes[i][1:]:
                     raise ValueError(
                         f"The provided {feature_name} features have shape {provided_feature.shape}, "
                         f"while the expected features have shape {expected_feature_shapes[i]}. "
