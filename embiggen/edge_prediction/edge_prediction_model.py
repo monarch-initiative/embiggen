@@ -34,7 +34,7 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
 
     @classmethod
     def get_available_evaluation_schemas(cls) -> List[str]:
-        """Returns available evaluation schemas for this task."""ñ
+        """Returns available evaluation schemas for this task."""
         return ["Connected Monte Carlo", "Monte Carlo", "Kfold"]
 
     @classmethod
