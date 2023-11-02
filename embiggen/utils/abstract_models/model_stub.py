@@ -91,6 +91,7 @@ def get_model_or_stub(
                 "reported to the Embiggen repository as an issue."
             )
     except (ModuleNotFoundError, OSError) as exception:
+        exception_message = str(exception)
         # If effectively the error is that we cannot load the desired
         # library name, we catch this and re-raise it.
         if any(
@@ -135,7 +136,7 @@ def get_model_or_stub(
                             f"{self.library_name()} library. "
                             "Please do refer to the requested library documentation "
                             f"to proceed with the installation. {other_candidates_message}. "
-                            f"The original error message was: {exception}"
+                            f"The original error message was: {exception_message}"
                         )
                     )
 
