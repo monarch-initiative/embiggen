@@ -134,7 +134,8 @@ def get_model_or_stub(
                             f"model {self.model_name()}, as it is based on the "
                             f"{self.library_name()} library. "
                             "Please do refer to the requested library documentation "
-                            f"to proceed with the installation. {other_candidates_message}"
+                            f"to proceed with the installation. {other_candidates_message}. "
+                            f"The original error message was: {exception}"
                         )
                     )
 
