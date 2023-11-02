@@ -137,7 +137,7 @@ def get_model_or_stub(
                             f"to proceed with the installation. {other_candidates_message}. "
                             f"The original error message was: {exception}"
                         )
-                    ) from exception
+                    )
 
                 @staticmethod
                 def library_name() -> str:
