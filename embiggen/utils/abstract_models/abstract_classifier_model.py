@@ -1576,6 +1576,11 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
+        # We check that the support graph is compatible with the provided graph.
+        elif not support.is_compatible(graph):
+            raise ValueError(
+                f"The provided graph {graph.get_name()} is not compatible with the support graph {support.get_name()}."
+            )
 
         node_features = self.normalize_node_features(
             graph=graph,
