@@ -829,6 +829,16 @@ class AbstractClassifierModel(AbstractModel):
         if not isinstance(node_features, (list, tuple)):
             node_features = [node_features]
 
+        # If any node features are provided, we need to make sure that
+        # the support and the graph have aligned vocabularies for what
+        # entails the node names.
+        if not support.has_compatible_node_vocabularies(graph):
+            raise ValueError(
+                "The provided graph and support graphs do not have compatible "
+                "node vocabularies. Please make sure that the node names "
+                "are the same for both graphs."
+            )
+
         # We check that the provided features are not edge features,
         # and if they are we provide a meaningful error.
         cls._handle_potentially_misparametrized_edge_features(
@@ -1037,6 +1047,16 @@ class AbstractClassifierModel(AbstractModel):
 
         if not isinstance(node_type_features, (list, tuple)):
             node_type_features = [node_type_features]
+
+        # If any node type features are provided, we need to make sure that
+        # the support and the graph have aligned vocabularies for what
+        # entails the node type names.
+        if not support.has_compatible_node_types_vocabularies(graph):
+            raise ValueError(
+                "The provided graph and support graphs do not have compatible "
+                "node type vocabularies. Please make sure that the node type names "
+                "are the same for both graphs."
+            )
 
         # We check that the provided features are not edge features,
         # and if they are we provide a meaningful error.
@@ -1247,6 +1267,16 @@ class AbstractClassifierModel(AbstractModel):
 
         if not isinstance(edge_type_features, (list, tuple)):
             edge_type_features = [edge_type_features]
+
+        # If any edge type features are provided, we need to make sure that
+        # the support and the graph have aligned vocabularies for what
+        # entails the edge type names.
+        if not support.has_compatible_edge_types_vocabularies(graph):
+            raise ValueError(
+                "The provided graph and support graphs do not have compatible "
+                "edge type vocabularies. Please make sure that the edge type names "
+                "are the same for both graphs."
+            )
 
         # We check that the provided features are not edge features,
         # and if they are we provide a meaningful error.
@@ -1576,11 +1606,6 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
-        # We check that the support graph is compatible with the provided graph.
-        elif not support.is_compatible(graph):
-            raise ValueError(
-                f"The provided graph {graph.get_name()} is not compatible with the support graph {support.get_name()}."
-            )
 
         node_features = self.normalize_node_features(
             graph=graph,
@@ -1779,11 +1804,6 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
-        # We check that the support graph is compatible with the provided graph.
-        elif not support.is_compatible(graph):
-            raise ValueError(
-                f"The provided graph {graph.get_name()} is not compatible with the support graph {support.get_name()}."
-            )
 
         node_features = self.normalize_node_features(
             graph=graph,
@@ -1905,11 +1925,6 @@ class AbstractClassifierModel(AbstractModel):
 
         if support is None:
             support = graph
-        # We check that the support graph is compatible with the provided graph.
-        elif not support.is_compatible(graph):
-            raise ValueError(
-                f"The provided graph {graph.get_name()} is not compatible with the support graph {support.get_name()}."
-            )
 
         node_features = self.normalize_node_features(
             graph=graph,
