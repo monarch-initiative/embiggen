@@ -137,7 +137,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         return dict(
             number_of_hops=2,
             precision=4,
-            bits=4,
+            bits=6,
         )
     
     def is_fit(self) -> bool:

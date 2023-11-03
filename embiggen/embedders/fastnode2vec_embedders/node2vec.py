@@ -139,7 +139,7 @@ class Node2VecFastNode2Vec(AbstractEmbeddingModel):
             edges_iterator,
             directed=True,
             weighted=graph.has_edge_weights(),
-            n_edges=graph.get_number_of_directed_edges()
+            number_of_edges=graph.get_number_of_directed_edges()
         )
 
         start = time()
@@ -148,7 +148,7 @@ class Node2VecFastNode2Vec(AbstractEmbeddingModel):
             graph=fn_graph,
             dim=self._embedding_size,
             walk_length=self._walk_length,
-            context=self._window_size,
+            window=self._window_size,
             p=1.0/self._return_weight,
             q=1.0/self._explore_weight,
             workers=self._number_of_workers,
@@ -158,7 +158,7 @@ class Node2VecFastNode2Vec(AbstractEmbeddingModel):
 
         model.train(
             epochs=self._epochs * self._iterations,
-            progress_bar=self._verbose
+            verbose=self._verbose
         )
 
         self._time_required_by_last_embedding = time() - start
