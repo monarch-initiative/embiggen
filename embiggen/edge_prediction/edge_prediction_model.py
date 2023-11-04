@@ -1087,9 +1087,19 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
             raise ValueError(
                 "Cannot consume predictions and return a DataFrame at the same time."
             )
-
+        
         if not consume_predictions:
             prediction_mini_batches = []
+
+        # Whether we have already written the header of the file.
+        # This boolean is necessary because we imprint the dimensionality
+        # of the CSV on the first set of predictions, as we cannot know
+        # apriori in some cases the number of outputs. 
+        header_was_written: bool = False
+        # The dimensionality of the predictions, which we need to know
+        # in order to validate that the different batches have the same
+        # dimensionality.  
+        dimensionality: Optional[int] = None
         
         if path is not None:
             edge_id = 0
@@ -1098,28 +1108,44 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                 separator = ","
             elif extension == "tsv":
                 separator = "\t"
-            elif extension == "txt":
+            elif extension in ("txt", "ssv"):
                 separator = " "
             else:
                 raise ValueError(
                     f"Unsupported file extension {extension}. "
-                    "Please use either csv, tsv or txt."
+                    "Please use either csv, tsv, ssv or txt."
                 )
             with open(path, "w", encoding="utf8") as file:
-                file.write(
-                    separator.join(
-                        [
-                            "source",
-                            "destination",
-                            *(("edge_type",) if return_edge_type_names else ()),
-                            "prediction",
-                        ]
-                    ) + "\n"
-                )
                 for prediction_mini_batch in predictions:
                     if not consume_predictions:
                         prediction_mini_batches.append(prediction_mini_batch)
-                    for prediction_score in prediction_mini_batch:
+
+                    if not header_was_written:
+                        dimensionality = prediction_mini_batch.shape[1]
+                        header_was_written = True
+                        file.write(
+                            separator.join(
+                                [
+                                    "source",
+                                    "destination",
+                                    *(("edge_type",) if return_edge_type_names else ()),
+                                    *(
+                                        [
+                                            f"prediction_{i}"
+                                            for i in range(dimensionality)
+                                        ] if dimensionality > 1 else ("prediction",)
+                                    )
+                                ]
+                            ) + "\n"
+                        )
+
+                    if prediction_mini_batch.shape[1] != dimensionality:
+                        raise ValueError(
+                            "The predictions have different dimensionality. "
+                            f"Expected {dimensionality}, found {prediction_mini_batch.shape[1]}."
+                        )
+
+                    for prediction_score_line in prediction_mini_batch:
                         if return_node_names:
                             src, dst = graph.get_node_names_from_edge_id(edge_id)
 
@@ -1141,7 +1167,10 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
                                     src,
                                     dst,
                                     *(graph.get_edge_type_name_from_edge_id(edge_id) if return_edge_type_names else ()),
-                                    str(prediction_score),
+                                    *(
+                                        [str(prediction_score) for prediction_score in prediction_score_line]
+                                        if dimensionality > 1 else (str(prediction_score_line[0]),)
+                                    )
                                 ]
                             ) + "\n"
                         )
@@ -1166,7 +1195,14 @@ class AbstractEdgePredictionModel(AbstractClassifierModel):
         if return_predictions_dataframe:
             predictions = pd.DataFrame(
                 {
-                    "predictions": predictions,
+                    **(
+                        {
+                            "prediction": predictions
+                        } if predictions.ndim == 1 else {
+                            f"prediction_{i}": predictions[:, i]
+                            for i in range(predictions.shape[1])
+                        }
+                    ),
                     "sources": graph.get_source_names(directed=True)
                     if return_node_names
                     else graph.get_directed_source_node_ids(),
