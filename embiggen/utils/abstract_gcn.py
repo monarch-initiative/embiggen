@@ -627,8 +627,9 @@ class AbstractGCN(AbstractClassifierModel):
         for kernel in self._kernels:
             self._add_layer_name(kernel)
             kernels.append(Input(
-                shape=(graph.get_number_of_nodes(),),
-                batch_size=graph.get_number_of_nodes(),
+                shape=(None,),
+                # shape=(graph.get_number_of_nodes(),),
+                # batch_size=graph.get_number_of_nodes(),
                 sparse=True,
                 name=kernel,
             ))

@@ -1,5 +1,6 @@
 """Unit test class for testing corner cases in edge GCN model."""
 import os
+import pandas as pd
 from unittest import TestCase
 from ensmallen.datasets.kgobo import HP, CIO
 from embiggen.embedders.ensmallen_embedders.hyper_sketching import HyperSketching
@@ -17,10 +18,10 @@ class TestEdgeGCN(TestCase):
 
     def test_evaluate_embedding_for_edge_prediction(self):
         """Test graph visualization."""
-        feature = DegreeSPINE(embedding_size=5)
         red = self.graph.set_all_edge_types("red")
         blue = CIO().remove_singleton_nodes().set_all_edge_types("blue")
         binary_graph = red | blue
+        feature: pd.DataFrame = DegreeSPINE(embedding_size=5).fit_transform(binary_graph).get_single_embedding()
 
         if not KipfGCNEdgePrediction.is_available():
             return
@@ -32,9 +33,14 @@ class TestEdgeGCN(TestCase):
             verbose=True
         )
 
+        subset_feature = feature.loc[red.get_node_names()]
+
         edge_features = HyperSketching()
         edge_features.fit(binary_graph)
-        
+
+        red_edge_features = HyperSketching()
+        red_edge_features.fit(red)
+
         model.fit(
             binary_graph,
             node_features=feature,
@@ -53,6 +59,12 @@ class TestEdgeGCN(TestCase):
             binary_graph,
             node_features=feature,
             edge_features=edge_features,
+        )
+
+        _processed_edge_features = beheaded.predict_proba(
+            red,
+            node_features=subset_feature,
+            edge_features=red_edge_features,
         )
 
         if os.path.exists("test.csv"):
