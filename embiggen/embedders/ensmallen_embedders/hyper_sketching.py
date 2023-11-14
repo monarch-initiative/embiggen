@@ -30,6 +30,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         number_of_random_integers: int = 0,
         normalize_by_symmetric_laplacian: bool = True,
         concatenate_features: bool = False,
+        zero_out_differences_cardinalities: bool = True,
         dtype: str = "f32",
         overlap_path: Optional[str] = None,
         left_difference_path: Optional[str] = None,
@@ -69,6 +70,10 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             Whether to normalize the sketches by the symmetric laplacian.
         concatenate_features: bool = False,
             Whether to Concatenate the normalized and non-normalized features.
+        zero_out_differences_cardinalities: bool = True,
+            Whether to zero out the cardinalities of the differences.
+            This parameter if set to True will zero out all the cardinalities
+            of the differences between the two nodes, except for the largest one.
         dtype: str = "f32",
             The type of the features.
         overlap_path: Optional[str] = None,
@@ -107,6 +112,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         self._overlap_path=overlap_path
         self._left_difference_path=left_difference_path
         self._right_difference_path=right_difference_path
+        self._zero_out_differences_cardinalities = zero_out_differences_cardinalities
 
         self._model = models.HyperSketching(
             **self._kwargs,
@@ -121,11 +127,22 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             random_state=random_state,
         )
 
+    def _apply_zero_out_differences_cardinalities(self, left_difference: np.ndarray, right_difference: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        if not self._zero_out_differences_cardinalities:
+            return left_difference, right_difference
+        
+        for hop in range(self.get_number_of_hops() - 1):
+            left_difference[:, hop] = 0.0
+            right_difference[:, hop] = 0.0
+
+        return left_difference, right_difference
+
     def parameters(self) -> Dict[str, Any]:
         """Returns parameters of the model."""
         return dict(
             **super().parameters(),
             **self._kwargs,
+            zero_out_differences_cardinalities=self._zero_out_differences_cardinalities,
             overlap_path=self._overlap_path,
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,
@@ -189,52 +206,6 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             right_difference=[factor * self.get_number_of_hops()],
         )
     
-    def get_difference_cardinalities_from_node_ids(self, src: int, dst: int)-> np.ndarray:
-        """Return the cardinalities of the differences between the sketches of the two nodes.
-        
-        Parameters
-        -------------------
-        src: int,
-            The source node id.
-        dst: int,
-            The destination node id.
-
-        Returns
-        -------------------
-        The cardinalities of the differences between the sketches of the two nodes.
-        This is a numpy array of shape (self.get_number_of_hops(), ).
-
-        Raises
-        -------------------
-        ValueError,
-            If the provided node ids are not in the graph.
-            If the model was not fitted.
-        """
-        return self._model.get_difference_cardinalities_from_node_ids(src, dst)
-    
-    def get_overlap_cardinalities_from_node_ids(self, src: int, dst: int) -> np.ndarray:
-        """Return the cardinalities of the overlaps between the sketches of the two nodes.
-
-        Parameters
-        -------------------
-        src: int,
-            The source node id.
-        dst: int,
-            The destination node id.
-
-        Returns
-        -------------------
-        The cardinalities of the overlaps between the sketches of the two nodes.
-        This is a numpy array of shape (self.get_number_of_hops(), self.get_number_of_hops()).
-
-        Raises
-        -------------------
-        ValueError,
-            If the provided node ids are not in the graph.
-            If the model was not fitted.
-        """
-        return self._model.get_overlap_cardinalities_from_node_ids(src, dst)
-
     def get_normalize_by_symmetric_laplacian(self) -> bool:
         """Return whether the sketches are normalized by the symmetric laplacian."""
         return self._model.get_normalize_by_symmetric_laplacian()
