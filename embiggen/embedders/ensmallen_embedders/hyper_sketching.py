@@ -237,6 +237,10 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,
         )
+        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+            left_difference,
+            right_difference
+        )
         if return_dataframe:
             factor = 2 if self.get_concatenate_features() else 1
             extra_columns = ["N"] if self.get_concatenate_features() else []
@@ -395,7 +399,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                 f"You provided sources of shape {sources.shape} and destinations of shape {destinations.shape}."
             )
 
-        return self._model.get_sketching_from_edge_node_ids(
+        overlap, left_difference, right_difference = self._model.get_sketching_from_edge_node_ids(
             support,
             sources,
             destinations,
@@ -403,6 +407,13 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             left_difference_path=left_difference_path,
             right_difference_path=right_difference_path,
         )
+
+        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+            left_difference,
+            right_difference
+        )
+
+        return overlap, left_difference, right_difference
     
     def get_edge_feature_from_edge_node_ids(
         self,
@@ -426,6 +437,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             sources,
             destinations,
         )
+        
         return dict(
             overlap=overlap,
             left_difference=left_difference,
@@ -452,6 +464,11 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             overlap_path=self._overlap_path,
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,
+        )
+
+        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+            left_difference,
+            right_difference
         )
 
         # A small debug assert to ensure the APIs are not broken.
