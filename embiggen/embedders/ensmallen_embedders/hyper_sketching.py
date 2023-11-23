@@ -1,15 +1,16 @@
 """Module providing HyperSketching implementation."""
-from typing import Dict, Any, Optional, Tuple, List
-from ensmallen import Graph
-import pandas as pd
-import numpy as np
-import compress_json
-import warnings
 import json
-from ensmallen import models
-from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import EnsmallenEmbedder
-from embiggen.utils import EmbeddingResult
-from embiggen.utils import AbstractEdgeFeature
+import warnings
+from typing import Any, Dict, List, Optional, Tuple
+
+import compress_json
+import numpy as np
+import pandas as pd
+from ensmallen import Graph, models
+
+from embiggen.embedders.ensmallen_embedders.ensmallen_embedder import \
+    EnsmallenEmbedder
+from embiggen.utils import AbstractEdgeFeature, EmbeddingResult
 
 
 class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
@@ -36,7 +37,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         left_difference_path: Optional[str] = None,
         right_difference_path: Optional[str] = None,
         ring_bell: bool = False,
-        enable_cache: bool = False
+        enable_cache: bool = False,
     ):
         """Create new HyperSketching model.
 
@@ -109,9 +110,9 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             dtype=dtype,
         )
 
-        self._overlap_path=overlap_path
-        self._left_difference_path=left_difference_path
-        self._right_difference_path=right_difference_path
+        self._overlap_path = overlap_path
+        self._left_difference_path = left_difference_path
+        self._right_difference_path = right_difference_path
         self._zero_out_differences_cardinalities = zero_out_differences_cardinalities
 
         self._model = models.HyperSketching(
@@ -127,10 +128,12 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             random_state=random_state,
         )
 
-    def _apply_zero_out_differences_cardinalities(self, left_difference: np.ndarray, right_difference: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _apply_zero_out_differences_cardinalities(
+        self, left_difference: np.ndarray, right_difference: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         if not self._zero_out_differences_cardinalities:
             return left_difference, right_difference
-        
+
         for hop in range(self.get_number_of_hops() - 1):
             left_difference[:, hop] = 0.0
             right_difference[:, hop] = 0.0
@@ -156,11 +159,11 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             precision=4,
             bits=6,
         )
-    
+
     def is_fit(self) -> bool:
         """Return whether the model was fit."""
         return self._fitting_was_executed
-    
+
     def fit(
         self,
         graph: Graph,
@@ -175,19 +178,19 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         self._fitting_was_executed = True
         self._model.fit(graph)
         return self
-        
+
     def get_bits(self):
         """Return the number of bits used for the HyperLogLog counters."""
         return self._model.get_bits()
-    
+
     def get_precision(self):
         """Return the precision used for the HyperLogLog counters."""
         return self._model.get_precision()
-        
+
     def get_number_of_hops(self):
         """Return the number of hops used for the sketches."""
         return self._model.get_number_of_hops()
-    
+
     @classmethod
     def get_feature_dictionary_keys(cls) -> List[str]:
         """Return the list of keys to be used in the feature dictionary."""
@@ -196,20 +199,20 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             "left_difference",
             "right_difference",
         ]
-    
+
     def get_feature_dictionary_shapes(self) -> Dict[str, List[int]]:
         """Return the dictionary of shapes to be used in the feature dictionary."""
         factor = 2 if self.get_concatenate_features() else 1
         return dict(
-            overlap=[factor * self.get_number_of_hops()**2],
+            overlap=[factor * self.get_number_of_hops() ** 2],
             left_difference=[factor * self.get_number_of_hops()],
             right_difference=[factor * self.get_number_of_hops()],
         )
-    
+
     def get_normalize_by_symmetric_laplacian(self) -> bool:
         """Return whether the sketches are normalized by the symmetric laplacian."""
         return self._model.get_normalize_by_symmetric_laplacian()
-    
+
     def get_concatenate_features(self) -> bool:
         """Return whether the features are Concatenated."""
         return self._model.get_concatenate_features()
@@ -220,7 +223,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         return_dataframe: bool = True,
     ) -> EmbeddingResult:
         """Return edge sketches.
-        
+
         Parameters
         -------------------
         graph: Graph,
@@ -230,29 +233,35 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         """
         if not self._fitting_was_executed:
             self.fit(graph)
-        (overlaps, left_difference, right_difference) = self._model.get_sketching_for_all_edges(
+        (
+            overlaps,
+            left_difference,
+            right_difference,
+        ) = self._model.get_sketching_for_all_edges(
             graph,
             support=graph,
             overlap_path=self._overlap_path,
             left_difference_path=self._left_difference_path,
             right_difference_path=self._right_difference_path,
         )
-        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+        (
             left_difference,
-            right_difference
+            right_difference,
+        ) = self._apply_zero_out_differences_cardinalities(
+            left_difference, right_difference
         )
         if return_dataframe:
             factor = 2 if self.get_concatenate_features() else 1
             extra_columns = ["N"] if self.get_concatenate_features() else []
             overlaps = pd.DataFrame(
-                overlaps.reshape(-1, factor * self.get_number_of_hops()**2),
+                overlaps.reshape(-1, factor * self.get_number_of_hops() ** 2),
                 index=graph.get_edge_node_names(),
                 columns=[
                     f"{column}_{i}{j}"
                     for column in ["A"] + extra_columns
                     for i in range(self.get_number_of_hops())
                     for j in range(self.get_number_of_hops())
-                ]
+                ],
             )
             left_difference = pd.DataFrame(
                 left_difference.reshape(-1, factor * self.get_number_of_hops()),
@@ -261,7 +270,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                     f"{column}_{i}"
                     for column in ["L"] + extra_columns
                     for i in range(self.get_number_of_hops())
-                ]
+                ],
             )
             right_difference = pd.DataFrame(
                 right_difference.reshape(-1, factor * self.get_number_of_hops()),
@@ -270,14 +279,14 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                     f"{column}_{i}"
                     for column in ["R"] + extra_columns
                     for i in range(self.get_number_of_hops())
-                ]
+                ],
             )
 
         return EmbeddingResult(
             embedding_method_name=self.model_name(),
             edge_embeddings=[overlaps, left_difference, right_difference],
         )
-    
+
     def get_sketching_from_edge_node_ids(
         self,
         support: Graph,
@@ -288,7 +297,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         right_difference_path: Optional[str] = None,
     ) -> Tuple[np.ndarray]:
         """Return the sketches for the provided edges.
-        
+
         Parameters
         -------------------
         support: Graph,
@@ -333,16 +342,14 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             If the model was not fitted.
         """
         if not self._fitting_was_executed:
-            raise ValueError(
-                "The model was not fitted."
-            )
+            raise ValueError("The model was not fitted.")
 
         if overlap_path is None:
             overlap_path = self._overlap_path
 
         if left_difference_path is None:
             left_difference_path = self._left_difference_path
-        
+
         if right_difference_path is None:
             right_difference_path = self._right_difference_path
 
@@ -358,14 +365,14 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                 "The provided destinations are not a numpy array. "
                 f"You provided destinations of type {type(destinations)} instead of numpy.ndarray."
             )
-        
+
         # We make sure that the sources and destinations are flat numpy arrays.
         if len(sources.shape) != 1:
             raise ValueError(
                 "The provided sources are not a flat numpy array. "
                 f"You provided sources of shape {sources.shape} instead of (n, )."
             )
-        
+
         if len(destinations.shape) != 1:
             raise ValueError(
                 "The provided destinations are not a flat numpy array. "
@@ -399,7 +406,11 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
                 f"You provided sources of shape {sources.shape} and destinations of shape {destinations.shape}."
             )
 
-        overlap, left_difference, right_difference = self._model.get_sketching_from_edge_node_ids(
+        (
+            overlap,
+            left_difference,
+            right_difference,
+        ) = self._model.get_sketching_from_edge_node_ids(
             support,
             sources,
             destinations,
@@ -408,13 +419,15 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             right_difference_path=right_difference_path,
         )
 
-        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+        (
             left_difference,
-            right_difference
+            right_difference,
+        ) = self._apply_zero_out_differences_cardinalities(
+            left_difference, right_difference
         )
 
         return overlap, left_difference, right_difference
-    
+
     def get_edge_feature_from_edge_node_ids(
         self,
         support: Graph,
@@ -422,7 +435,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         destinations: np.ndarray,
     ) -> Dict[str, np.ndarray]:
         """Return the edge feature for the given edge.
-        
+
         Parameters
         -----------------------
         support: Graph,
@@ -432,21 +445,27 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         destinations: np.ndarray,
             The destination node ids.
         """
-        overlap, left_difference, right_difference = self.get_sketching_from_edge_node_ids(
+        (
+            overlap,
+            left_difference,
+            right_difference,
+        ) = self.get_sketching_from_edge_node_ids(
             support,
             sources,
             destinations,
         )
-        
+
         return dict(
             overlap=overlap,
             left_difference=left_difference,
             right_difference=right_difference,
         )
-    
-    def get_edge_feature_from_graph(self, graph: Graph, support: Graph) -> Dict[str, np.ndarray]:
+
+    def get_edge_feature_from_graph(
+        self, graph: Graph, support: Graph
+    ) -> Dict[str, np.ndarray]:
         """Return the edge feature for the given graph.
-        
+
         Parameters
         -----------------------
         graph: Graph,
@@ -455,10 +474,12 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             The graph to use as base for the topological metrics.
         """
         if not self._fitting_was_executed:
-            raise ValueError(
-                "The model was not fitted."
-            )
-        overlap, left_difference, right_difference = self._model.get_sketching_for_all_edges(
+            raise ValueError("The model was not fitted.")
+        (
+            overlap,
+            left_difference,
+            right_difference,
+        ) = self._model.get_sketching_for_all_edges(
             graph,
             support=support,
             overlap_path=self._overlap_path,
@@ -466,9 +487,11 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             right_difference_path=self._right_difference_path,
         )
 
-        left_difference, right_difference = self._apply_zero_out_differences_cardinalities(
+        (
             left_difference,
-            right_difference
+            right_difference,
+        ) = self._apply_zero_out_differences_cardinalities(
+            left_difference, right_difference
         )
 
         # A small debug assert to ensure the APIs are not broken.
@@ -485,7 +508,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     def get_feature_name(cls) -> str:
         """Return the feature names."""
         return cls.model_name()
-    
+
     @classmethod
     def task_name(cls) -> str:
         return "Edge Embedding"
@@ -494,7 +517,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     def model_name(cls) -> str:
         """Returns name of the model."""
         return "HyperSketching"
-    
+
     @classmethod
     def can_use_edge_weights(cls) -> bool:
         """Returns whether the model can optionally use edge weights."""
@@ -509,7 +532,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     def requires_node_types(cls) -> bool:
         """Returns whether the model requires node types."""
         return False
-    
+
     def is_using_node_types(self) -> bool:
         """Returns whether the model is using node types."""
         return self._kwargs["include_node_types"]
@@ -523,20 +546,20 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
     def requires_edge_types(cls) -> bool:
         """Returns whether the model requires edge types."""
         return False
-    
+
     def is_using_edge_types(self) -> bool:
         """Returns whether the model is using edge types."""
         return self._kwargs["include_edge_types"]
-    
+
     @classmethod
     def is_stocastic(cls) -> bool:
         """Returns whether the model is stocastic and has therefore a random state."""
         return True
-    
+
     def clone(self) -> "Self":
         """Return a fresh clone of the model."""
         return HyperSketching(**self.parameters())
-    
+
     @classmethod
     def load(cls, path: str) -> "Self":
         """Load a saved version of the model from the provided path.
@@ -548,9 +571,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         """
         data = compress_json.load(path)
         model = HyperSketching(**data["parameters"])
-        model._model = models.HyperSketching.loads(
-            json.dumps(data["inner_model"])
-        )
+        model._model = models.HyperSketching.loads(json.dumps(data["inner_model"]))
         for key, value in data["metadata"].items():
             model.__setattr__(key, value)
         return model
@@ -560,9 +581,7 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         return dict(
             parameters=self.parameters(),
             inner_model=json.loads(self._model.dumps()),
-            metadata=dict(
-                _fitting_was_executed=self._fitting_was_executed
-            )
+            metadata=dict(_fitting_was_executed=self._fitting_was_executed),
         )
 
     def dump(self, path: str):
@@ -573,7 +592,4 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         path: str
             Path from where to dump the model.
         """
-        compress_json.dump(
-            self.dumps(),
-            path
-        )
+        compress_json.dump(self.dumps(), path)
