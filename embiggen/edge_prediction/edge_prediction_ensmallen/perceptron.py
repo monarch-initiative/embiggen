@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 import compress_json
 import compress_pickle
 import numpy as np
-from ensmallen import Graph, models
+from ensmallen import Graph, models # pylint: disable=no-name-in-module
 
 from embiggen.edge_prediction.edge_prediction_model import \
     AbstractEdgePredictionModel
@@ -347,7 +347,7 @@ class PerceptronEdgePrediction(AbstractEdgePredictionModel):
             json.dumps(data["inner_model"])
         )
         for key, value in data["metadata"].items():
-            model.__setattr__(key, value)
+            setattr(model, key, value)
         return model
 
     def dumps(self) -> Dict[str, Any]:

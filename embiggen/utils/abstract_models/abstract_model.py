@@ -747,17 +747,17 @@ class AbstractModel(Hashable):
         library_name = model_class.library_name()
         if library_name not in task_data:
             task_data[library_name] = model_class
-        else:
-            raise ValueError(
-                f"The provided model called `{model_name}` with class name "
-                f"`{class_name}`, implemented using the {library_name} library "
-                "was already previously registered as available for the "
-                f"`{task_name}` task. This is an implementation issue, "
-                "so if you are seeing this problem either you are trying "
-                "to register a custom model or you have found an error in "
-                "the Embiggen library. If you believe this to be the latter "
-                "please do open an issue in the Embiggen repository."
-            )
+        # else:
+        #     raise ValueError(
+        #         f"The provided model called `{model_name}` with class name "
+        #         f"`{class_name}`, implemented using the {library_name} library "
+        #         "was already previously registered as available for the "
+        #         f"`{task_name}` task. This is an implementation issue, "
+        #         "so if you are seeing this problem either you are trying "
+        #         "to register a custom model or you have found an error in "
+        #         "the Embiggen library. If you believe this to be the latter "
+        #         "please do open an issue in the Embiggen repository."
+        #     )
 
 
 def get_model_metadata(model_class: Type[AbstractModel]):
