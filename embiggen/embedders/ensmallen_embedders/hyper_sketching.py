@@ -103,6 +103,13 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
             dtype=dtype,
         )
 
+        if zero_out_differences_cardinalities and unbiased:
+            raise ValueError(
+                "The parameter zero_out_differences_cardinalities is used to reduce the bias "
+                "of the biased version. If you choose to use the unbiased version, then you "
+                "should set the parameter 'zero_out_differences_cardinalities' to False."
+            )
+
         self._edge_features_path = edge_features_path
         self._zero_out_differences_cardinalities = zero_out_differences_cardinalities
 
@@ -121,8 +128,16 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
 
     def _apply_zero_out_differences_cardinalities(
         self, edge_features: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        # TODO!
+    ) -> Tuple[np.ndarray]:
+        
+        if self._zero_out_differences_cardinalities:
+            # We zero out the features relative to the left and right
+            # differences, except the one relative to the largest shell.
+            offset = self.get_number_of_hops() ** 2
+            for i in range(self.get_number_of_hops()):
+                edge_features[:, offset + i] = 0
+                edge_features[:, offset + self.get_number_of_hops() + i] = 0
+
         return edge_features
 
     def is_unbiased(self) -> bool:
