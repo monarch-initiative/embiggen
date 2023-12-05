@@ -86,6 +86,26 @@ class HyperSketching(EnsmallenEmbedder, AbstractEdgeFeature):
         enable_cache: bool = False,
             Whether to enable caching of the sketches.
         """
+        assert isinstance(exact, bool), "The parameter exact must be a boolean."
+        assert isinstance(unbiased, bool), "The parameter unbiased must be a boolean."
+        assert isinstance(number_of_hops, int), "The parameter number_of_hops must be an integer."
+        assert isinstance(precision, int), "The parameter precision must be an integer."
+        assert isinstance(bits, int), "The parameter bits must be an integer."
+        assert isinstance(include_node_types, bool), "The parameter include_node_types must be a boolean."
+        assert isinstance(include_edge_types, bool), "The parameter include_edge_types must be a boolean."
+        assert isinstance(include_edge_ids, bool), "The parameter include_edge_ids must be a boolean."
+        assert isinstance(include_node_ids, bool), "The parameter include_node_ids must be a boolean."
+        assert isinstance(include_selfloops, bool), "The parameter include_selfloops must be a boolean."
+        assert isinstance(include_typed_graphlets, bool), "The parameter include_typed_graphlets must be a boolean."
+        assert isinstance(random_state, int), "The parameter random_state must be an integer."
+        assert isinstance(number_of_random_integers, int), "The parameter number_of_random_integers must be an integer."
+        assert isinstance(normalize, bool), "The parameter normalize must be a boolean."
+        assert isinstance(zero_out_differences_cardinalities, bool), "The parameter zero_out_differences_cardinalities must be a boolean."
+        assert isinstance(dtype, str), "The parameter dtype must be a string."
+        assert isinstance(edge_features_path, (str, type(None))), "The parameter edge_features_path must be a string or None."
+        assert isinstance(ring_bell, bool), "The parameter ring_bell must be a boolean."
+        assert isinstance(enable_cache, bool), "The parameter enable_cache must be a boolean."
+        
         self._kwargs = dict(
             exact=exact,
             unbiased=unbiased,
