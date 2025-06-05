@@ -774,7 +774,7 @@ class GraphVisualizer:
 
         # Setting maximum alpha to the visualization
         # to avoid transparency in the dots.
-        for legend_handle in legend.legendHandles:
+        for legend_handle in legend.legend_handles:
             legend_handle.set_alpha(1)
             try:
                 legend_handle._legmarker.set_alpha(1)

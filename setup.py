@@ -66,7 +66,7 @@ setup(
         "Jinja2",
         "tqdm",
         "humanize",
-        "matplotlib>=3.5.2",
+        "matplotlib>=3.9",
         "scikit-learn>=1.2",
         "dict_hash>=1.1.32",
         "userinput>=1.0.20",
