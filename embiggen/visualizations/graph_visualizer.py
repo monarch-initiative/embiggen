@@ -774,12 +774,8 @@ class GraphVisualizer:
 
         # Setting maximum alpha to the visualization
         # to avoid transparency in the dots.
-        for legend_handle in legend.legendHandles:
+        for legend_handle in ((*legend.get_lines(), *legend.get_patches())):
             legend_handle.set_alpha(1)
-            try:
-                legend_handle._legmarker.set_alpha(1)
-            except AttributeError:
-                pass
 
     def automatically_detect_embedding_method(
         self, node_embedding: np.ndarray
