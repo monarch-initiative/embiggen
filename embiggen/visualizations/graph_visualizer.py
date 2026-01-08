@@ -1,4 +1,5 @@
 """Module with embedding visualization tools."""
+
 import functools
 import inspect
 import itertools
@@ -33,14 +34,9 @@ from sklearn.model_selection import ShuffleSplit, StratifiedShuffleSplit
 from sklearn.tree import DecisionTreeClassifier
 from userinput.utils import must_be_in_set
 
-from embiggen.embedders import embed_graph
 from embiggen.embedding_transformers import GraphTransformer, NodeTransformer
 from embiggen.utils.abstract_edge_feature import AbstractEdgeFeature
 from embiggen.utils.abstract_models import format_list
-from embiggen.utils.abstract_models.abstract_embedding_model import (
-    AbstractEmbeddingModel,
-)
-from embiggen.utils.abstract_models.embedding_result import EmbeddingResult
 from embiggen.utils.abstract_models.abstract_classifier_model import (
     AbstractClassifierModel,
 )
@@ -97,7 +93,6 @@ class GraphVisualizer:
         minimum_node_degree: int = 0,
         maximum_node_degree: Optional[int] = None,
         only_from_same_component: Union[bool, str] = "auto",
-        
         source_node_types_names: Optional[Union[str, List[str]]] = None,
         destination_node_types_names: Optional[Union[str, List[str]]] = None,
         source_edge_types_names: Optional[Union[str, List[str]]] = None,
@@ -382,7 +377,6 @@ class GraphVisualizer:
                 graph_to_avoid=self._support,
                 support=self._support,
                 only_from_same_component=only_from_same_component,
-                
                 **edge_prediction_graph_kwargs,
             )
         except ValueError as exception:
@@ -508,11 +502,13 @@ class GraphVisualizer:
             "with a 70/30 split between training and test sets."
         ).format(
             plural=plural,
-            letters="for figure{plural} {letters} ".format(
-                plural=plural, letters=format_list(letters, bold_words=True)
-            )
-            if number_of_letters > 0
-            else "",
+            letters=(
+                "for figure{plural} {letters} ".format(
+                    plural=plural, letters=format_list(letters, bold_words=True)
+                )
+                if number_of_letters > 0
+                else ""
+            ),
             holdouts_number=apnumber(self._number_of_holdouts_for_cluster_comments),
         )
 
@@ -535,9 +531,11 @@ class GraphVisualizer:
             "The values are on a logarithmic scale"
         ).format(
             plural=plural,
-            letters="{}, ".format(format_list(letters, bold_words=True))
-            if number_of_letters > 0
-            else "",
+            letters=(
+                "{}, ".format(format_list(letters, bold_words=True))
+                if number_of_letters > 0
+                else ""
+            ),
         )
 
     def get_non_existing_edges_sampling_description(self) -> str:
@@ -620,7 +618,7 @@ class GraphVisualizer:
                         random_state=self._random_state,
                         verbose=self._verbose,
                         learning_rate=200,
-                        n_iter=400,
+                        max_iter=400,
                         init="random",
                         method="exact" if self._n_components == 4 else "barnes_hut",
                     ),
@@ -663,11 +661,11 @@ class GraphVisualizer:
         )
         random_state.shuffle(index)
         return [
-            arg[index]
-            if isinstance(arg, np.ndarray)
-            else arg.iloc[index]
-            if isinstance(arg, pd.DataFrame)
-            else None
+            (
+                arg[index]
+                if isinstance(arg, np.ndarray)
+                else arg.iloc[index] if isinstance(arg, pd.DataFrame) else None
+            )
             for arg in args
         ]
 
@@ -703,11 +701,7 @@ class GraphVisualizer:
         # be applied to the embedding before providing it to this visualization tool.
         if "complex" in str(X.dtype):
             X = np.hstack([np.real(X), np.imag(X)])
-        if (
-            self._decomposition_method == "TSNE"
-            and X.shape[1] > 50
-            and X.shape[0] > 50
-        ):
+        if self._decomposition_method == "TSNE" and X.shape[1] > 50 and X.shape[0] > 50:
             X = PCA(n_components=50, random_state=self._random_state).fit_transform(X)
         return self.get_decomposition_method()(X)
 
@@ -774,7 +768,7 @@ class GraphVisualizer:
 
         # Setting maximum alpha to the visualization
         # to avoid transparency in the dots.
-        for legend_handle in ((*legend.get_lines(), *legend.get_patches())):
+        for legend_handle in (*legend.get_lines(), *legend.get_patches()):
             legend_handle.set_alpha(1)
 
     def automatically_detect_embedding_method(
@@ -874,7 +868,9 @@ class GraphVisualizer:
         )
 
         self._node_decomposition = self.decompose(node_embedding)
-        assert self._node_decomposition.shape[0] == self.get_number_of_subsampled_nodes()
+        assert (
+            self._node_decomposition.shape[0] == self.get_number_of_subsampled_nodes()
+        )
 
     def _get_positive_edges_embedding(
         self,
@@ -973,7 +969,9 @@ class GraphVisualizer:
             allow_automatic_feature=True,
         )
 
-        self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
+        self._currently_plotting_edge_embedding = (
+            len(node_features) + len(node_type_features) == 0
+        )
         self._positive_edge_decomposition = self.decompose(
             self._get_positive_edges_embedding(
                 node_features=node_features,
@@ -1011,7 +1009,7 @@ class GraphVisualizer:
             aligned_mapping=True,
             include_both_undirected_edges=False,
         )
-    
+
         edge_features = [
             feature
             for edge_feature in edge_features
@@ -1027,9 +1025,17 @@ class GraphVisualizer:
         )
         return graph_transformer.transform(
             graph,
-            node_types=(graph if graph.has_node_types() and graph_transformer.has_node_type_features() else None),
-            edge_types=(graph if graph.has_edge_types() and graph_transformer.has_edge_type_features() else None),
-            edge_features=edge_features
+            node_types=(
+                graph
+                if graph.has_node_types() and graph_transformer.has_node_type_features()
+                else None
+            ),
+            edge_types=(
+                graph
+                if graph.has_edge_types() and graph_transformer.has_edge_type_features()
+                else None
+            ),
+            edge_features=edge_features,
         )
 
     def _get_negative_edge_embedding(
@@ -1126,7 +1132,9 @@ class GraphVisualizer:
             edge_features=edge_features,
             allow_automatic_feature=True,
         )
-        self._currently_plotting_edge_embedding = len(node_features) + len(node_type_features) == 0
+        self._currently_plotting_edge_embedding = (
+            len(node_features) + len(node_type_features) == 0
+        )
         positive_edge_embedding = self._get_positive_edges_embedding(
             node_features=node_features,
             node_type_features=node_type_features,
@@ -1240,7 +1248,7 @@ class GraphVisualizer:
         title: str,
         colors: Optional[List[int]] = None,
         edgecolors: Optional[List[int]] = None,
-        labels: List[str] = None,
+        labels: Optional[List[str]] = None,
         show_title: bool = True,
         show_legend: bool = True,
         return_caption: bool = True,
@@ -2376,9 +2384,7 @@ class GraphVisualizer:
             figure, axes = plt.subplots(figsize=(5, 5))
             figure.patch.set_facecolor("white")
 
-        number_of_negative_edges = (
-            self._negative_graph.get_number_of_edges()
-        )
+        number_of_negative_edges = self._negative_graph.get_number_of_edges()
 
         if edge_metrics is None:
             edge_metrics = np.concatenate(
@@ -2876,9 +2882,11 @@ class GraphVisualizer:
             list(ontologies_by_frequencies.keys()),
             np.fromiter(
                 (
-                    unknown_ontology_id
-                    if ontology is None
-                    else ontologies_by_frequencies[ontology]
+                    (
+                        unknown_ontology_id
+                        if ontology is None
+                        else ontologies_by_frequencies[ontology]
+                    )
                     for ontology in ontology_names
                 ),
                 dtype=np.uint32,
@@ -2906,13 +2914,15 @@ class GraphVisualizer:
         # the most common node type of the set.
         return np.fromiter(
             (
-                unknown_node_types_id
-                if node_type_ids is None
-                else sorted(
-                    node_type_ids,
-                    key=lambda node_type: node_types_counts[node_type],
-                    reverse=True,
-                )[0]
+                (
+                    unknown_node_types_id
+                    if node_type_ids is None
+                    else sorted(
+                        node_type_ids,
+                        key=lambda node_type: node_types_counts[node_type],
+                        reverse=True,
+                    )[0]
+                )
                 for node_type_ids in (
                     self._graph.get_node_type_ids_from_node_id(node_id)
                     for node_id in self.iterate_subsampled_node_ids()
@@ -3562,7 +3572,10 @@ class GraphVisualizer:
         assert isinstance(metric_name, str)
         assert len(metric_name) > 0
         assert isinstance(metric, np.ndarray)
-        assert metric.shape[0] == self._graph.get_number_of_nodes() or metric.shape[0] == self._node_decomposition.shape[0], (
+        assert (
+            metric.shape[0] == self._graph.get_number_of_nodes()
+            or metric.shape[0] == self._node_decomposition.shape[0]
+        ), (
             f"Metric shape {metric.shape} does not match "
             f"node decomposition shape {self._node_decomposition.shape}. "
             f"The graph has {self._graph.get_number_of_nodes()} nodes."
@@ -3607,11 +3620,7 @@ class GraphVisualizer:
             scatter_kwargs={
                 **({} if scatter_kwargs is None else scatter_kwargs),
                 "cmap": plt.cm.get_cmap("RdYlBu"),
-                **(
-                    {"norm": LogNorm()}
-                    if use_log_scale and not zeroed
-                    else {}
-                ),
+                **({"norm": LogNorm()} if use_log_scale and not zeroed else {}),
             },
             train_indices=train_indices,
             test_indices=test_indices,
@@ -4434,11 +4443,19 @@ class GraphVisualizer:
                 [
                     graph_transformer.transform(
                         self._negative_graph,
-                        node_types=(self._negative_graph if graph_transformer.has_node_type_features() else None),
+                        node_types=(
+                            self._negative_graph
+                            if graph_transformer.has_node_type_features()
+                            else None
+                        ),
                     ),
                     graph_transformer.transform(
                         self._positive_graph,
-                        node_types=(self._positive_graph if graph_transformer.has_node_type_features() else None),
+                        node_types=(
+                            self._positive_graph
+                            if graph_transformer.has_node_type_features()
+                            else None
+                        ),
                     ),
                 ]
             ).flatten(),
@@ -4501,11 +4518,19 @@ class GraphVisualizer:
                 [
                     graph_transformer.transform(
                         self._negative_graph,
-                        node_types=(self._negative_graph if graph_transformer.has_node_type_features() else None),
+                        node_types=(
+                            self._negative_graph
+                            if graph_transformer.has_node_type_features()
+                            else None
+                        ),
                     ),
                     graph_transformer.transform(
                         self._positive_graph,
-                        node_types=(self._positive_graph if graph_transformer.has_node_type_features() else None),
+                        node_types=(
+                            self._positive_graph
+                            if graph_transformer.has_node_type_features()
+                            else None
+                        ),
                     ),
                 ]
             ),
@@ -5397,7 +5422,7 @@ class GraphVisualizer:
                 return plot_distance(
                     node_features=node_features,
                     node_type_features=node_type_features,
-                    **kwargs
+                    **kwargs,
                 )
 
             return wrapped_plot_distance
@@ -5411,31 +5436,37 @@ class GraphVisualizer:
         ]
 
         if len(node_features) + len(node_type_features) > 0:
-            edge_scatter_plot_methods_to_call.extend([
-                plot_distance_wrapper(
-                    self.plot_positive_and_negative_edges_euclidean_distance
-                ),
-                plot_distance_wrapper(
-                    self.plot_positive_and_negative_edges_cosine_similarity
-                ),
-            ])
+            edge_scatter_plot_methods_to_call.extend(
+                [
+                    plot_distance_wrapper(
+                        self.plot_positive_and_negative_edges_euclidean_distance
+                    ),
+                    plot_distance_wrapper(
+                        self.plot_positive_and_negative_edges_cosine_similarity
+                    ),
+                ]
+            )
 
-        distribution_plot_methods_to_call.extend([
-            self.plot_positive_and_negative_adamic_adar_histogram,
-            self.plot_positive_and_negative_jaccard_coefficient_histogram,
-            self.plot_positive_and_negative_preferential_attachment_histogram,
-            self.plot_positive_and_negative_resource_allocation_index_histogram,
-        ])
+        distribution_plot_methods_to_call.extend(
+            [
+                self.plot_positive_and_negative_adamic_adar_histogram,
+                self.plot_positive_and_negative_jaccard_coefficient_histogram,
+                self.plot_positive_and_negative_preferential_attachment_histogram,
+                self.plot_positive_and_negative_resource_allocation_index_histogram,
+            ]
+        )
 
         if len(node_features) + len(node_type_features) > 0:
-            distribution_plot_methods_to_call.extend([
-                plot_distance_wrapper(
-                    self.plot_positive_and_negative_edges_euclidean_distance_histogram
-                ),
-                plot_distance_wrapper(
-                    self.plot_positive_and_negative_edges_cosine_similarity_histogram
-                ),
-            ])
+            distribution_plot_methods_to_call.extend(
+                [
+                    plot_distance_wrapper(
+                        self.plot_positive_and_negative_edges_euclidean_distance_histogram
+                    ),
+                    plot_distance_wrapper(
+                        self.plot_positive_and_negative_edges_cosine_similarity_histogram
+                    ),
+                ]
+            )
 
         if (
             not self._currently_plotting_edge_embedding
