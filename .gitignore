@@ -48,3 +48,4 @@ model.pkl
 catboost_info
 *.pkl.gz
 cache
+dist
